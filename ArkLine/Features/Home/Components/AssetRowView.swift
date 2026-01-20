@@ -66,8 +66,7 @@ struct AssetRowView: View {
             }
         }
         .padding(12)
-        .background(Color(hex: "2A2A2A"))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 

@@ -3,6 +3,9 @@ import SwiftUI
 // MARK: - Sentiment View Model
 @Observable
 class SentimentViewModel {
+    // MARK: - Dependencies
+    private let sentimentService: SentimentServiceProtocol
+
     // MARK: - Properties
     var isLoading = false
     var errorMessage: String?
@@ -15,6 +18,14 @@ class SentimentViewModel {
     var liquidations: LiquidationData?
     var altcoinSeason: AltcoinSeasonIndex?
     var globalLiquidity: GlobalLiquidity?
+
+    // New Properties for Market Overview Redesign
+    var riskLevel: RiskLevel?
+    var appStoreRanking: AppStoreRanking?
+    var bitcoinSearchIndex: Int = 66
+    var totalMarketCap: Double = 3_320_000_000_000
+    var marketCapChange24h: Double = 2.29
+    var marketCapHistory: [Double] = []
 
     // Historical Data
     var fearGreedHistory: [FearGreedIndex] = []
@@ -112,8 +123,9 @@ class SentimentViewModel {
     }
 
     // MARK: - Initialization
-    init() {
-        loadMockData()
+    init(sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService) {
+        self.sentimentService = sentimentService
+        Task { await loadInitialData() }
     }
 
     // MARK: - Public Methods
@@ -122,22 +134,24 @@ class SentimentViewModel {
         errorMessage = nil
 
         do {
-            async let fg = fetchFearGreedIndex()
-            async let btc = fetchBTCDominance()
-            async let etf = fetchETFNetFlow()
-            async let funding = fetchFundingRate()
-            async let liq = fetchLiquidations()
-            async let alt = fetchAltcoinSeason()
+            async let fgTask = sentimentService.fetchFearGreedIndex()
+            async let btcTask = sentimentService.fetchBTCDominance()
+            async let etfTask = fetchETFSafe()
+            async let fundingTask = fetchFundingSafe()
+            async let liqTask = fetchLiquidationsSafe()
+            async let altTask = fetchAltcoinSeasonSafe()
+            async let riskTask = fetchRiskLevelSafe()
 
-            let (fgResult, btcResult, etfResult, fundingResult, liqResult, altResult) = try await (fg, btc, etf, funding, liq, alt)
+            let (fg, btc, etf, funding, liq, alt, risk) = try await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
 
             await MainActor.run {
-                self.fearGreedIndex = fgResult
-                self.btcDominance = btcResult
-                self.etfNetFlow = etfResult
-                self.fundingRate = fundingResult
-                self.liquidations = liqResult
-                self.altcoinSeason = altResult
+                self.fearGreedIndex = fg
+                self.btcDominance = btc
+                self.etfNetFlow = etf
+                self.fundingRate = funding
+                self.liquidations = liq
+                self.altcoinSeason = alt
+                self.riskLevel = risk
                 self.isLoading = false
             }
         } catch {
@@ -148,53 +162,42 @@ class SentimentViewModel {
         }
     }
 
+    func fetchFearGreedHistory(days: Int = 30) async {
+        do {
+            let history = try await sentimentService.fetchFearGreedHistory(days: days)
+            await MainActor.run {
+                self.fearGreedHistory = history
+            }
+        } catch {
+            // Silently fail for history - not critical
+        }
+    }
+
     // MARK: - Private Methods
-    private func fetchFearGreedIndex() async throws -> FearGreedIndex {
-        try await Task.sleep(nanoseconds: 300_000_000)
-        return FearGreedIndex(value: 65, classification: "Greed", timestamp: Date())
+    private func loadInitialData() async {
+        await refresh()
+        await fetchFearGreedHistory()
     }
 
-    private func fetchBTCDominance() async throws -> BTCDominance {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return BTCDominance(value: 52.3, change24h: 0.5, timestamp: Date())
+    // Safe fetch methods that return nil on error (for non-critical data)
+    private func fetchETFSafe() async -> ETFNetFlow? {
+        try? await sentimentService.fetchETFNetFlow()
     }
 
-    private func fetchETFNetFlow() async throws -> ETFNetFlow {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return ETFNetFlow(
-            totalNetFlow: 58_000_000_000,
-            dailyNetFlow: 245_000_000,
-            etfData: [
-                ETFData(ticker: "IBIT", name: "BlackRock iShares", netFlow: 125_000_000, aum: 21_000_000_000),
-                ETFData(ticker: "FBTC", name: "Fidelity", netFlow: 85_000_000, aum: 12_500_000_000),
-                ETFData(ticker: "GBTC", name: "Grayscale", netFlow: -45_000_000, aum: 15_000_000_000)
-            ],
-            timestamp: Date()
-        )
+    private func fetchFundingSafe() async -> FundingRate? {
+        try? await sentimentService.fetchFundingRate()
     }
 
-    private func fetchFundingRate() async throws -> FundingRate {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return FundingRate(averageRate: 0.0125, exchanges: [], timestamp: Date())
+    private func fetchLiquidationsSafe() async -> LiquidationData? {
+        try? await sentimentService.fetchLiquidations()
     }
 
-    private func fetchLiquidations() async throws -> LiquidationData {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return LiquidationData(total24h: 125_000_000, longLiquidations: 85_000_000, shortLiquidations: 40_000_000, largestSingleLiquidation: 5_200_000, timestamp: Date())
+    private func fetchAltcoinSeasonSafe() async -> AltcoinSeasonIndex? {
+        try? await sentimentService.fetchAltcoinSeason()
     }
 
-    private func fetchAltcoinSeason() async throws -> AltcoinSeasonIndex {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return AltcoinSeasonIndex(value: 42, isBitcoinSeason: true, timestamp: Date())
-    }
-
-    private func loadMockData() {
-        fearGreedIndex = FearGreedIndex(value: 65, classification: "Greed", timestamp: Date())
-        btcDominance = BTCDominance(value: 52.3, change24h: 0.5, timestamp: Date())
-        etfNetFlow = ETFNetFlow(totalNetFlow: 58_000_000_000, dailyNetFlow: 245_000_000, etfData: [], timestamp: Date())
-        fundingRate = FundingRate(averageRate: 0.0125, exchanges: [], timestamp: Date())
-        liquidations = LiquidationData(total24h: 125_000_000, longLiquidations: 85_000_000, shortLiquidations: 40_000_000, largestSingleLiquidation: 5_200_000, timestamp: Date())
-        altcoinSeason = AltcoinSeasonIndex(value: 42, isBitcoinSeason: true, timestamp: Date())
+    private func fetchRiskLevelSafe() async -> RiskLevel? {
+        try? await sentimentService.fetchRiskLevel()
     }
 }
 

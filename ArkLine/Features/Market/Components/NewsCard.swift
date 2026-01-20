@@ -60,8 +60,7 @@ struct NewsCard: View {
             Spacer()
         }
         .padding(12)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 
@@ -123,8 +122,7 @@ struct FeaturedNewsCard: View {
             }
         }
         .padding(16)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 

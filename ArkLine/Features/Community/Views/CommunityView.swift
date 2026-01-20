@@ -2,12 +2,28 @@ import SwiftUI
 
 struct CommunityView: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @State private var viewModel = CommunityViewModel()
     @State private var showCreatePost = false
 
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ZStack {
+                // Animated mesh gradient background
+                MeshGradientBackground()
+
+                // Brush effect overlay for dark mode
+                if isDarkMode {
+                    BrushEffectOverlay()
+                }
+
+                // Content
+                VStack(spacing: 0) {
                 // Tab Selector
                 CommunityTabSelector(selectedTab: $viewModel.selectedTab)
                     .padding(.horizontal, 20)
@@ -24,13 +40,13 @@ struct CommunityView: View {
                         ChatRoomsContent(viewModel: viewModel)
                     }
 
-                    Spacer(minLength: 100)
-                }
-                .refreshable {
-                    await viewModel.refresh()
+                        Spacer(minLength: 100)
+                    }
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
                 }
             }
-            .background(AppColors.background(colorScheme))
             .navigationTitle("Community")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
@@ -70,8 +86,7 @@ struct CommunityTabSelector: View {
             }
         }
         .padding(4)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(24)
+        .glassCard(cornerRadius: 24)
     }
 }
 
@@ -277,8 +292,7 @@ struct PostCard: View {
             }
         }
         .padding(16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 
@@ -329,8 +343,7 @@ struct ChatRoomCard: View {
                 .foregroundColor(AppColors.textSecondary)
         }
         .padding(16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 

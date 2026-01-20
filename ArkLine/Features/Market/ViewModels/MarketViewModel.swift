@@ -19,6 +19,10 @@ enum AssetCategoryFilter: String, CaseIterable {
 // MARK: - Market View Model
 @Observable
 class MarketViewModel {
+    // MARK: - Dependencies
+    private let marketService: MarketServiceProtocol
+    private let newsService: NewsServiceProtocol
+
     // MARK: - Properties
     var selectedTab: MarketTab = .overview
     var selectedCategory: AssetCategoryFilter = .all
@@ -31,6 +35,12 @@ class MarketViewModel {
     var trendingAssets: [CryptoAsset] = []
     var topGainers: [CryptoAsset] = []
     var topLosers: [CryptoAsset] = []
+
+    // Stock Assets (for segment control)
+    var stockAssets: [StockAsset] = []
+
+    // Metal Assets (for segment control)
+    var metalAssets: [MetalAsset] = []
 
     // Market Stats
     var totalMarketCap: Double = 0
@@ -56,8 +66,13 @@ class MarketViewModel {
     }
 
     // MARK: - Initialization
-    init() {
-        loadMockData()
+    init(
+        marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
+        newsService: NewsServiceProtocol = ServiceContainer.shared.newsService
+    ) {
+        self.marketService = marketService
+        self.newsService = newsService
+        Task { await loadInitialData() }
     }
 
     // MARK: - Public Methods
@@ -66,20 +81,24 @@ class MarketViewModel {
         errorMessage = nil
 
         do {
-            async let assets = fetchCryptoAssets()
-            async let stats = fetchMarketStats()
-            async let news = fetchNews()
+            async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 50)
+            async let stocksTask = marketService.fetchStockAssets(symbols: ["AAPL", "MSFT", "NVDA", "TSLA", "NOK", "PLUG"])
+            async let metalsTask = marketService.fetchMetalAssets(symbols: ["XAU", "XAG", "XPT", "XPD"])
+            async let globalTask = marketService.fetchGlobalMarketData()
+            async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 10)
 
-            let (a, s, n) = try await (assets, stats, news)
+            let (crypto, stocks, metals, global, news) = try await (cryptoTask, stocksTask, metalsTask, globalTask, newsTask)
 
             await MainActor.run {
-                self.cryptoAssets = a
+                self.cryptoAssets = crypto
+                self.stockAssets = stocks
+                self.metalAssets = metals
                 self.updateDerivedData()
-                self.totalMarketCap = s.marketCap
-                self.total24hVolume = s.volume
-                self.btcDominance = s.btcDominance
-                self.marketCapChange24h = s.change
-                self.newsItems = n
+                self.totalMarketCap = global.data.totalMarketCap["usd"] ?? 0
+                self.total24hVolume = global.data.totalVolume["usd"] ?? 0
+                self.btcDominance = global.data.marketCapPercentage["btc"] ?? 0
+                self.marketCapChange24h = global.data.marketCapChangePercentage24hUsd
+                self.newsItems = news
                 self.isLoading = false
             }
         } catch {
@@ -94,60 +113,54 @@ class MarketViewModel {
         selectedCategory = category
     }
 
+    func loadMoreCrypto() async {
+        guard !isLoading else { return }
+
+        let nextPage = (cryptoAssets.count / 50) + 1
+
+        do {
+            let moreAssets = try await marketService.fetchCryptoAssets(page: nextPage, perPage: 50)
+
+            await MainActor.run {
+                self.cryptoAssets.append(contentsOf: moreAssets)
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func searchAssets(query: String) async {
+        guard !query.isEmpty else {
+            await MainActor.run {
+                self.searchText = ""
+            }
+            return
+        }
+
+        do {
+            let results = try await marketService.searchCrypto(query: query)
+
+            await MainActor.run {
+                self.cryptoAssets = results
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+            }
+        }
+    }
+
     // MARK: - Private Methods
-    private func fetchCryptoAssets() async throws -> [CryptoAsset] {
-        try await Task.sleep(nanoseconds: 500_000_000)
-        return generateMockCryptoAssets()
-    }
-
-    private func fetchMarketStats() async throws -> (marketCap: Double, volume: Double, btcDominance: Double, change: Double) {
-        try await Task.sleep(nanoseconds: 300_000_000)
-        return (2_450_000_000_000, 98_500_000_000, 52.3, 1.8)
-    }
-
-    private func fetchNews() async throws -> [NewsItem] {
-        try await Task.sleep(nanoseconds: 400_000_000)
-        return generateMockNews()
+    private func loadInitialData() async {
+        await refresh()
     }
 
     private func updateDerivedData() {
         trendingAssets = Array(cryptoAssets.prefix(5))
         topGainers = cryptoAssets.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }.prefix(5).map { $0 }
         topLosers = cryptoAssets.sorted { $0.priceChangePercentage24h < $1.priceChangePercentage24h }.prefix(5).map { $0 }
-    }
-
-    private func loadMockData() {
-        cryptoAssets = generateMockCryptoAssets()
-        updateDerivedData()
-        totalMarketCap = 2_450_000_000_000
-        total24hVolume = 98_500_000_000
-        btcDominance = 52.3
-        marketCapChange24h = 1.8
-        newsItems = generateMockNews()
-    }
-
-    private func generateMockCryptoAssets() -> [CryptoAsset] {
-        [
-            CryptoAsset(id: "bitcoin", symbol: "BTC", name: "Bitcoin", currentPrice: 67234.50, priceChange24h: 1523.40, priceChangePercentage24h: 2.32, iconUrl: nil, marketCap: 1324500000000, marketCapRank: 1),
-            CryptoAsset(id: "ethereum", symbol: "ETH", name: "Ethereum", currentPrice: 3456.78, priceChange24h: -45.23, priceChangePercentage24h: -1.29, iconUrl: nil, marketCap: 415600000000, marketCapRank: 2),
-            CryptoAsset(id: "tether", symbol: "USDT", name: "Tether", currentPrice: 1.00, priceChange24h: 0.001, priceChangePercentage24h: 0.01, iconUrl: nil, marketCap: 112000000000, marketCapRank: 3),
-            CryptoAsset(id: "binancecoin", symbol: "BNB", name: "BNB", currentPrice: 598.45, priceChange24h: 12.34, priceChangePercentage24h: 2.11, iconUrl: nil, marketCap: 89200000000, marketCapRank: 4),
-            CryptoAsset(id: "solana", symbol: "SOL", name: "Solana", currentPrice: 145.67, priceChange24h: 8.92, priceChangePercentage24h: 6.52, iconUrl: nil, marketCap: 67800000000, marketCapRank: 5),
-            CryptoAsset(id: "ripple", symbol: "XRP", name: "XRP", currentPrice: 0.52, priceChange24h: -0.02, priceChangePercentage24h: -3.71, iconUrl: nil, marketCap: 28500000000, marketCapRank: 6),
-            CryptoAsset(id: "cardano", symbol: "ADA", name: "Cardano", currentPrice: 0.45, priceChange24h: 0.03, priceChangePercentage24h: 7.14, iconUrl: nil, marketCap: 16200000000, marketCapRank: 8),
-            CryptoAsset(id: "dogecoin", symbol: "DOGE", name: "Dogecoin", currentPrice: 0.12, priceChange24h: 0.008, priceChangePercentage24h: 7.14, iconUrl: nil, marketCap: 17500000000, marketCapRank: 9),
-            CryptoAsset(id: "avalanche", symbol: "AVAX", name: "Avalanche", currentPrice: 35.67, priceChange24h: -1.23, priceChangePercentage24h: -3.33, iconUrl: nil, marketCap: 14200000000, marketCapRank: 10),
-            CryptoAsset(id: "polkadot", symbol: "DOT", name: "Polkadot", currentPrice: 7.23, priceChange24h: 0.45, priceChangePercentage24h: 6.63, iconUrl: nil, marketCap: 10500000000, marketCapRank: 11)
-        ]
-    }
-
-    private func generateMockNews() -> [NewsItem] {
-        [
-            NewsItem(id: UUID(), title: "Bitcoin Surges Past $67,000 Amid ETF Inflows", source: "CoinDesk", publishedAt: Date().addingTimeInterval(-3600), imageUrl: nil, url: "https://coindesk.com"),
-            NewsItem(id: UUID(), title: "Ethereum Layer 2 Networks See Record Activity", source: "The Block", publishedAt: Date().addingTimeInterval(-7200), imageUrl: nil, url: "https://theblock.co"),
-            NewsItem(id: UUID(), title: "Federal Reserve Signals Potential Rate Cut", source: "Reuters", publishedAt: Date().addingTimeInterval(-14400), imageUrl: nil, url: "https://reuters.com"),
-            NewsItem(id: UUID(), title: "Solana DeFi TVL Reaches All-Time High", source: "DeFi Llama", publishedAt: Date().addingTimeInterval(-21600), imageUrl: nil, url: "https://defillama.com")
-        ]
     }
 }
 

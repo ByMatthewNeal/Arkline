@@ -5,11 +5,21 @@ struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 // Animated mesh gradient background
                 MeshGradientBackground()
+
+                // Brush effect overlay for dark mode
+                if isDarkMode {
+                    BrushEffectOverlay()
+                }
 
                 // Content
                 ScrollView(showsIndicators: false) {
@@ -18,7 +28,8 @@ struct HomeView: View {
                         GlassHeader(
                             greeting: viewModel.greeting,
                             userName: viewModel.userName,
-                            avatarUrl: viewModel.userAvatar
+                            avatarUrl: viewModel.userAvatar,
+                            appState: appState
                         )
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
@@ -60,7 +71,7 @@ struct HomeView: View {
                         if viewModel.hasTodayReminders {
                             DCARemindersSection(
                                 reminders: viewModel.todayReminders,
-                                onComplete: { viewModel.markReminderComplete($0) }
+                                onComplete: { reminder in Task { await viewModel.markReminderComplete(reminder) } }
                             )
                             .padding(.horizontal, 20)
                         }
@@ -88,23 +99,31 @@ struct GlassHeader: View {
     let greeting: String
     let userName: String
     let avatarUrl: URL?
+    @ObservedObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
 
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(greeting)
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(textPrimary.opacity(0.6))
 
                 Text(userName.isEmpty ? "Welcome" : userName)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
             }
 
             Spacer()
 
             HStack(spacing: 12) {
+                // Dark/Light Mode Toggle
+                GlassThemeToggleButton(appState: appState)
+
                 // Notification Bell with glow
                 GlassIconButton(icon: "bell.fill", hasNotification: true)
 
@@ -115,12 +134,63 @@ struct GlassHeader: View {
     }
 }
 
+// MARK: - Glass Theme Toggle Button
+struct GlassThemeToggleButton: View {
+    @ObservedObject var appState: AppState
+    @State private var isPressed = false
+    @Environment(\.colorScheme) var colorScheme
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                // Toggle between light and dark
+                if appState.darkModePreference == .dark {
+                    appState.setDarkModePreference(.light)
+                } else {
+                    appState.setDarkModePreference(.dark)
+                }
+            }
+        }) {
+            ZStack {
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: isDarkMode ? "moon.fill" : "sun.max.fill")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(isDarkMode ? Color(hex: "A78BFA") : Color(hex: "F59E0B"))
+                    .rotationEffect(.degrees(isDarkMode ? 0 : 360))
+            }
+        }
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .animation(.spring(response: 0.3), value: isPressed)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
 // MARK: - Glass Icon Button
 struct GlassIconButton: View {
     let icon: String
     var hasNotification: Bool = false
     @State private var isPressed = false
     @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
 
     var body: some View {
         Button(action: { }) {
@@ -135,7 +205,7 @@ struct GlassIconButton: View {
 
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 // Notification dot
                 if hasNotification {
@@ -162,6 +232,10 @@ struct GlassAvatar: View {
     let name: String
     let size: CGFloat
     @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
 
     var body: some View {
         ZStack {
@@ -196,14 +270,14 @@ struct GlassAvatar: View {
                 } placeholder: {
                     Text(String(name.prefix(1)).uppercased())
                         .font(.system(size: size * 0.4, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(textPrimary)
                 }
                 .frame(width: size - 4, height: size - 4)
                 .clipShape(Circle())
             } else {
                 Text(String(name.prefix(1)).uppercased())
                     .font(.system(size: size * 0.4, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
             }
         }
     }
@@ -218,17 +292,21 @@ struct PortfolioHeroCard: View {
 
     var isPositive: Bool { change24h >= 0 }
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             // Total Value
             VStack(spacing: 8) {
                 Text("Portfolio Value")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(textPrimary.opacity(0.6))
 
                 Text(totalValue.asCurrency)
                     .font(.system(size: 42, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 // Change indicator
                 HStack(spacing: 6) {
@@ -301,20 +379,24 @@ struct GlassQuickActions: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            QuickActionButton(icon: "plus", label: "Buy", color: AppColors.success)
-            QuickActionButton(icon: "arrow.up.right", label: "Send", color: AppColors.accent)
-            QuickActionButton(icon: "arrow.down.left", label: "Receive", color: AppColors.meshPurple)
-            QuickActionButton(icon: "chart.bar.fill", label: "Trade", color: AppColors.meshCyan)
+            GlassQuickActionButton(icon: "plus", label: "Buy", color: AppColors.success)
+            GlassQuickActionButton(icon: "arrow.up.right", label: "Send", color: AppColors.accent)
+            GlassQuickActionButton(icon: "arrow.down.left", label: "Receive", color: AppColors.meshPurple)
+            GlassQuickActionButton(icon: "chart.bar.fill", label: "Trade", color: AppColors.meshCyan)
         }
     }
 }
 
-struct QuickActionButton: View {
+struct GlassQuickActionButton: View {
     let icon: String
     let label: String
     let color: Color
     @State private var isPressed = false
     @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
 
     var body: some View {
         Button(action: { }) {
@@ -343,7 +425,7 @@ struct QuickActionButton: View {
                 Text(label)
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(textPrimary.opacity(0.8))
             }
         }
         .frame(maxWidth: .infinity)
@@ -361,6 +443,10 @@ struct QuickActionButton: View {
 struct RiskScoreCard: View {
     let score: Int
     @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
 
     var riskColor: Color {
         switch score {
@@ -409,13 +495,13 @@ struct RiskScoreCard: View {
                 // Score text
                 Text("\(score)")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("ArkLine Risk Score")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Text(riskLabel)
                     .font(.subheadline)
@@ -423,14 +509,14 @@ struct RiskScoreCard: View {
 
                 Text("Based on 10 indicators")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(textPrimary.opacity(0.5))
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white.opacity(0.4))
+                .foregroundColor(textPrimary.opacity(0.4))
         }
         .padding(20)
         .glassCard(cornerRadius: 20)
@@ -442,12 +528,16 @@ struct GlassFearGreedCard: View {
     let index: FearGreedIndex
     @Environment(\.colorScheme) var colorScheme
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             HStack {
                 Text("Fear & Greed Index")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Spacer()
 
@@ -491,11 +581,11 @@ struct GlassFearGreedCard: View {
                 VStack(spacing: 4) {
                     Text("\(index.value)")
                         .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(textPrimary)
 
                     Text("/ 100")
                         .font(.caption)
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(textPrimary.opacity(0.5))
                 }
             }
             .padding(.vertical, 8)
@@ -513,11 +603,15 @@ struct MarketMoversSection: View {
     let ethChange: Double
     @Environment(\.colorScheme) var colorScheme
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Market Movers")
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundColor(textPrimary)
 
             HStack(spacing: 12) {
                 GlassCoinCard(
@@ -553,6 +647,10 @@ struct GlassCoinCard: View {
 
     var isPositive: Bool { change >= 0 }
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -583,11 +681,11 @@ struct GlassCoinCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(symbol)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Text(price.asCurrency)
                     .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(textPrimary.opacity(0.7))
             }
         }
         .padding(16)
@@ -602,18 +700,22 @@ struct DCARemindersSection: View {
     let onComplete: (DCAReminder) -> Void
     @Environment(\.colorScheme) var colorScheme
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Today's DCA")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Spacer()
 
                 Text("\(reminders.count) reminder\(reminders.count == 1 ? "" : "s")")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(textPrimary.opacity(0.5))
             }
 
             ForEach(reminders) { reminder in
@@ -628,6 +730,10 @@ struct GlassDCACard: View {
     let onComplete: () -> Void
     @State private var isPressed = false
     @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
 
     var body: some View {
         HStack(spacing: 16) {
@@ -644,17 +750,17 @@ struct GlassDCACard: View {
 
                 Text(reminder.symbol.prefix(1))
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(reminder.name)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Text(reminder.amount.asCurrency)
                     .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(textPrimary.opacity(0.6))
             }
 
             Spacer()
@@ -663,7 +769,7 @@ struct GlassDCACard: View {
             Button(action: onComplete) {
                 Text("Invest")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(
@@ -696,12 +802,16 @@ struct FavoritesSection: View {
     let assets: [CryptoAsset]
     @Environment(\.colorScheme) var colorScheme
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Favorites")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Spacer()
 
@@ -729,12 +839,16 @@ struct GlassFavoriteCard: View {
 
     var isPositive: Bool { asset.priceChangePercentage24h >= 0 }
 
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(asset.symbol.uppercased())
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(textPrimary)
 
                 Spacer()
 
@@ -745,7 +859,7 @@ struct GlassFavoriteCard: View {
 
             Text(asset.currentPrice.asCurrency)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(textPrimary.opacity(0.8))
         }
         .padding(14)
         .frame(width: 120)

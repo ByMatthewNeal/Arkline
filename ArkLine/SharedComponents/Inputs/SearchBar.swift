@@ -39,8 +39,7 @@ struct SearchBar: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(AppColors.cardBackground(colorScheme))
-            .cornerRadius(10)
+            .glassCard(cornerRadius: 10)
 
             if isEditing {
                 Button("Cancel") {

@@ -2,11 +2,27 @@ import SwiftUI
 
 struct AIChatView: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @State private var viewModel = AIChatViewModel()
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ZStack {
+                // Animated mesh gradient background
+                MeshGradientBackground()
+
+                // Brush effect overlay for dark mode
+                if isDarkMode {
+                    BrushEffectOverlay()
+                }
+
+                // Content
+                VStack(spacing: 0) {
                 // Messages
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -25,12 +41,11 @@ struct AIChatView: View {
                         .padding(.vertical, 16)
                     }
                     .onChange(of: viewModel.messages.count) { _, _ in
-                        withAnimation {
-                            if let lastId = viewModel.messages.last?.id {
-                                proxy.scrollTo(lastId, anchor: .bottom)
-                            } else {
-                                proxy.scrollTo("typing", anchor: .bottom)
-                            }
+                        scrollToBottom(proxy: proxy)
+                    }
+                    .onChange(of: viewModel.isTyping) { _, isTyping in
+                        if isTyping {
+                            scrollToBottom(proxy: proxy)
                         }
                     }
                 }
@@ -46,7 +61,7 @@ struct AIChatView: View {
                     }
                 )
             }
-            .background(AppColors.background(colorScheme))
+            }
             .navigationTitle("AI Assistant")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -68,6 +83,16 @@ struct AIChatView: View {
             #endif
         }
     }
+
+    private func scrollToBottom(proxy: ScrollViewProxy) {
+        withAnimation {
+            if viewModel.isTyping {
+                proxy.scrollTo("typing", anchor: .bottom)
+            } else if let lastId = viewModel.messages.last?.id {
+                proxy.scrollTo(lastId, anchor: .bottom)
+            }
+        }
+    }
 }
 
 // MARK: - Chat Bubble
@@ -87,8 +112,13 @@ struct ChatBubble: View {
                     .foregroundColor(isUser ? .white : AppColors.textPrimary(colorScheme))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(isUser ? AppColors.accent : AppColors.cardBackground(colorScheme))
-                    .cornerRadius(16)
+                    .if(isUser) { view in
+                        view.background(AppColors.accent)
+                            .cornerRadius(16)
+                    }
+                    .if(!isUser) { view in
+                        view.glassCard(cornerRadius: 16)
+                    }
 
                 Text(message.createdAt.displayTime)
                     .font(AppFonts.footnote10)
@@ -102,6 +132,7 @@ struct ChatBubble: View {
 
 // MARK: - Typing Indicator
 struct TypingIndicator: View {
+    @Environment(\.colorScheme) var colorScheme
     @State private var animationPhase = 0
 
     var body: some View {
@@ -122,8 +153,7 @@ struct TypingIndicator: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(AppColors.cardBackground(.dark))
-            .cornerRadius(16)
+            .glassCard(cornerRadius: 16)
 
             Spacer()
         }
@@ -148,8 +178,7 @@ struct ChatInputBar: View {
                 .font(AppFonts.body14)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(AppColors.cardBackground(colorScheme))
-                .cornerRadius(24)
+                .glassCard(cornerRadius: 24)
                 .lineLimit(1...5)
                 .disabled(isTyping)
 
@@ -162,55 +191,65 @@ struct ChatInputBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(AppColors.surface(colorScheme))
+        .glassCard(cornerRadius: 0)
+        .padding(.bottom, 80)
     }
 }
 
 // MARK: - Chat History View
 struct ChatHistoryView: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: AIChatViewModel
 
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
     var body: some View {
-        List {
-            ForEach(viewModel.sortedSessions) { session in
-                Button(action: { viewModel.selectSession(session) }) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(session.title ?? "New Chat")
-                                .font(AppFonts.body14Medium)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
+        ZStack {
+            MeshGradientBackground()
+            if isDarkMode { BrushEffectOverlay() }
+            List {
+                ForEach(viewModel.sortedSessions) { session in
+                    Button(action: { viewModel.selectSession(session) }) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(session.title ?? "New Chat")
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                            Text(session.updatedAt.relativeTime)
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.textSecondary)
+                                Text(session.updatedAt.relativeTime)
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+
+                            Spacer()
+
+                            if viewModel.currentSession?.id == session.id {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(AppColors.accent)
+                            }
                         }
-
-                        Spacer()
-
-                        if viewModel.currentSession?.id == session.id {
-                            Image(systemName: "checkmark")
-                                .foregroundColor(AppColors.accent)
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            viewModel.deleteSession(session)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
                         }
                     }
                 }
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        viewModel.deleteSession(session)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
+                .glassListRowBackground()
             }
-            .listRowBackground(AppColors.cardBackground(colorScheme))
+            #if os(iOS)
+            .listStyle(.insetGrouped)
+            #else
+            .listStyle(.sidebar)
+            #endif
+            .scrollContentBackground(.hidden)
         }
-        #if os(iOS)
-        .listStyle(.insetGrouped)
-        #else
-        .listStyle(.sidebar)
-        #endif
-        .scrollContentBackground(.hidden)
-        .background(AppColors.background(colorScheme))
         .navigationTitle("Chat History")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

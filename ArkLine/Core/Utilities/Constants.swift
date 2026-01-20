@@ -80,6 +80,7 @@ enum Constants {
         static let darkModePreference = "darkModePreference"
         static let riskCoins = "riskCoins"
         static let notificationsEnabled = "notificationsEnabled"
+        static let biometricEnabled = "biometricEnabled"
         static let lastSyncTimestamp = "lastSyncTimestamp"
     }
 

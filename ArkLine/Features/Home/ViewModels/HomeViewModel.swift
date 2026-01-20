@@ -3,6 +3,12 @@ import SwiftUI
 // MARK: - Home View Model
 @Observable
 class HomeViewModel {
+    // MARK: - Dependencies
+    private let sentimentService: SentimentServiceProtocol
+    private let marketService: MarketServiceProtocol
+    private let dcaService: DCAServiceProtocol
+    private let newsService: NewsServiceProtocol
+
     // MARK: - Properties
     var isLoading = false
     var errorMessage: String?
@@ -42,6 +48,9 @@ class HomeViewModel {
     var userName: String = ""
     var userAvatar: URL?
 
+    // User context
+    private var currentUserId: UUID?
+
     // MARK: - Computed Properties
     var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -66,8 +75,17 @@ class HomeViewModel {
     }
 
     // MARK: - Initialization
-    init() {
-        loadMockData()
+    init(
+        sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
+        marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
+        dcaService: DCAServiceProtocol = ServiceContainer.shared.dcaService,
+        newsService: NewsServiceProtocol = ServiceContainer.shared.newsService
+    ) {
+        self.sentimentService = sentimentService
+        self.marketService = marketService
+        self.dcaService = dcaService
+        self.newsService = newsService
+        Task { await loadInitialData() }
     }
 
     // MARK: - Public Methods
@@ -76,24 +94,38 @@ class HomeViewModel {
         errorMessage = nil
 
         do {
-            async let fearGreed = fetchFearGreedIndex()
-            async let favorites = fetchFavorites()
-            async let reminders = fetchDCAReminders()
-            async let events = fetchTodaysEvents()
-            async let prices = fetchMarketPrices()
+            let userId = currentUserId ?? UUID()
 
-            let (fg, fav, rem, ev, pr) = try await (fearGreed, favorites, reminders, events, prices)
+            // Fetch all data concurrently
+            async let fgTask = sentimentService.fetchFearGreedIndex()
+            async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 20)
+            async let remindersTask = dcaService.fetchReminders(userId: userId)
+            async let eventsTask = newsService.fetchTodaysEvents()
+
+            let (fg, crypto, reminders, events) = try await (fgTask, cryptoTask, remindersTask, eventsTask)
+
+            // Extract BTC and ETH prices from crypto data
+            let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
+            let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
+
+            // Calculate top gainers and losers
+            let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
+            let gainers = Array(sortedByGain.prefix(3))
+            let losers = Array(sortedByGain.suffix(3).reversed())
 
             await MainActor.run {
                 self.fearGreedIndex = fg
-                self.favoriteAssets = fav
-                self.activeReminders = rem
-                self.todayReminders = rem.filter { $0.isDueToday }
-                self.todaysEvents = ev
-                self.btcPrice = pr.btc
-                self.ethPrice = pr.eth
-                self.btcChange24h = pr.btcChange
-                self.ethChange24h = pr.ethChange
+                self.favoriteAssets = Array(crypto.prefix(3))
+                self.activeReminders = reminders.filter { $0.isActive }
+                self.todayReminders = reminders.filter { $0.isDueToday }
+                self.todaysEvents = events
+                self.btcPrice = btc?.currentPrice ?? 0
+                self.ethPrice = eth?.currentPrice ?? 0
+                self.btcChange24h = btc?.priceChangePercentage24h ?? 0
+                self.ethChange24h = eth?.priceChangePercentage24h ?? 0
+                self.topGainers = gainers
+                self.topLosers = losers
+                self.compositeRiskScore = fg.value
                 self.isLoading = false
             }
         } catch {
@@ -104,291 +136,35 @@ class HomeViewModel {
         }
     }
 
-    func markReminderComplete(_ reminder: DCAReminder) {
-        if let index = activeReminders.firstIndex(where: { $0.id == reminder.id }) {
-            activeReminders[index].completedPurchases += 1
-        }
-        if let index = todayReminders.firstIndex(where: { $0.id == reminder.id }) {
-            todayReminders.remove(at: index)
+    func markReminderComplete(_ reminder: DCAReminder) async {
+        do {
+            _ = try await dcaService.markAsInvested(id: reminder.id)
+
+            await MainActor.run {
+                if let index = self.activeReminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.activeReminders[index].completedPurchases += 1
+                }
+                if let index = self.todayReminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.todayReminders.remove(at: index)
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+            }
         }
     }
 
     // MARK: - Private Methods
-    private func fetchFearGreedIndex() async throws -> FearGreedIndex {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 500_000_000)
-        return FearGreedIndex(
-            value: 65,
-            classification: "Greed",
-            timestamp: Date()
-        )
-    }
+    private func loadInitialData() async {
+        // Set initial user data
+        await MainActor.run {
+            self.userName = "Daniel"
+            self.portfolioValue = 125432.67
+            self.portfolioChange24h = 2341.23
+            self.portfolioChangePercent = 1.89
+        }
 
-    private func fetchFavorites() async throws -> [CryptoAsset] {
-        try await Task.sleep(nanoseconds: 300_000_000)
-        return [
-            CryptoAsset(
-                id: "bitcoin",
-                symbol: "BTC",
-                name: "Bitcoin",
-                currentPrice: 67234.50,
-                priceChange24h: 1523.40,
-                priceChangePercentage24h: 2.32,
-                iconUrl: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
-                marketCap: 1324500000000,
-                marketCapRank: 1
-            ),
-            CryptoAsset(
-                id: "ethereum",
-                symbol: "ETH",
-                name: "Ethereum",
-                currentPrice: 3456.78,
-                priceChange24h: -45.23,
-                priceChangePercentage24h: -1.29,
-                iconUrl: "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
-                marketCap: 415600000000,
-                marketCapRank: 2
-            ),
-            CryptoAsset(
-                id: "solana",
-                symbol: "SOL",
-                name: "Solana",
-                currentPrice: 145.67,
-                priceChange24h: 8.92,
-                priceChangePercentage24h: 6.52,
-                iconUrl: "https://assets.coingecko.com/coins/images/4128/large/solana.png",
-                marketCap: 67800000000,
-                marketCapRank: 5
-            )
-        ]
-    }
-
-    private func fetchDCAReminders() async throws -> [DCAReminder] {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return [
-            DCAReminder(
-                id: UUID(),
-                userId: UUID(),
-                symbol: "BTC",
-                name: "Bitcoin",
-                amount: 100,
-                frequency: .weekly,
-                totalPurchases: 52,
-                completedPurchases: 12,
-                notificationTime: Date(),
-                startDate: Date().addingTimeInterval(-86400 * 84),
-                nextReminderDate: Date(),
-                isActive: true,
-                createdAt: Date()
-            ),
-            DCAReminder(
-                id: UUID(),
-                userId: UUID(),
-                symbol: "ETH",
-                name: "Ethereum",
-                amount: 50,
-                frequency: .biweekly,
-                totalPurchases: 26,
-                completedPurchases: 6,
-                notificationTime: Date(),
-                startDate: Date().addingTimeInterval(-86400 * 84),
-                nextReminderDate: Date().addingTimeInterval(86400 * 7),
-                isActive: true,
-                createdAt: Date()
-            )
-        ]
-    }
-
-    private func fetchTodaysEvents() async throws -> [EconomicEvent] {
-        try await Task.sleep(nanoseconds: 200_000_000)
-        return [
-            EconomicEvent(
-                id: UUID(),
-                title: "FOMC Meeting Minutes",
-                country: "US",
-                date: Date(),
-                time: nil,
-                impact: .high,
-                forecast: nil,
-                previous: nil,
-                actual: nil,
-                currency: "USD",
-                description: "Federal Open Market Committee meeting minutes release"
-            ),
-            EconomicEvent(
-                id: UUID(),
-                title: "Initial Jobless Claims",
-                country: "US",
-                date: Date(),
-                time: nil,
-                impact: .medium,
-                forecast: "210K",
-                previous: "215K",
-                actual: nil,
-                currency: "USD",
-                description: "Weekly unemployment claims"
-            )
-        ]
-    }
-
-    private func fetchMarketPrices() async throws -> (btc: Double, eth: Double, btcChange: Double, ethChange: Double) {
-        try await Task.sleep(nanoseconds: 300_000_000)
-        return (67234.50, 3456.78, 2.32, -1.29)
-    }
-
-    private func loadMockData() {
-        userName = "Daniel"
-        fearGreedIndex = FearGreedIndex(
-            value: 65,
-            classification: "Greed",
-            timestamp: Date()
-        )
-
-        favoriteAssets = [
-            CryptoAsset(
-                id: "bitcoin",
-                symbol: "BTC",
-                name: "Bitcoin",
-                currentPrice: 67234.50,
-                priceChange24h: 1523.40,
-                priceChangePercentage24h: 2.32,
-                iconUrl: nil,
-                marketCap: 1324500000000,
-                marketCapRank: 1
-            ),
-            CryptoAsset(
-                id: "ethereum",
-                symbol: "ETH",
-                name: "Ethereum",
-                currentPrice: 3456.78,
-                priceChange24h: -45.23,
-                priceChangePercentage24h: -1.29,
-                iconUrl: nil,
-                marketCap: 415600000000,
-                marketCapRank: 2
-            )
-        ]
-
-        activeReminders = [
-            DCAReminder(
-                id: UUID(),
-                userId: UUID(),
-                symbol: "BTC",
-                name: "Bitcoin",
-                amount: 100,
-                frequency: .weekly,
-                totalPurchases: 52,
-                completedPurchases: 12,
-                notificationTime: Date(),
-                startDate: Date().addingTimeInterval(-86400 * 84),
-                nextReminderDate: Date(),
-                isActive: true,
-                createdAt: Date()
-            )
-        ]
-        todayReminders = activeReminders.filter { $0.isDueToday }
-
-        todaysEvents = [
-            EconomicEvent(
-                id: UUID(),
-                title: "FOMC Meeting Minutes",
-                country: "US",
-                date: Date(),
-                time: nil,
-                impact: .high,
-                forecast: nil,
-                previous: nil,
-                actual: nil,
-                currency: "USD",
-                description: "Federal Open Market Committee meeting minutes release"
-            )
-        ]
-
-        btcPrice = 67234.50
-        ethPrice = 3456.78
-        btcChange24h = 2.32
-        ethChange24h = -1.29
-
-        // Portfolio mock data
-        portfolioValue = 125432.67
-        portfolioChange24h = 2341.23
-        portfolioChangePercent = 1.89
-
-        // Composite Risk Score (65 = Moderately Bullish)
-        compositeRiskScore = 65
-
-        // Top Gainers
-        topGainers = [
-            CryptoAsset(
-                id: "solana",
-                symbol: "SOL",
-                name: "Solana",
-                currentPrice: 145.67,
-                priceChange24h: 12.34,
-                priceChangePercentage24h: 9.25,
-                iconUrl: nil,
-                marketCap: 67800000000,
-                marketCapRank: 5
-            ),
-            CryptoAsset(
-                id: "avalanche",
-                symbol: "AVAX",
-                name: "Avalanche",
-                currentPrice: 38.92,
-                priceChange24h: 2.87,
-                priceChangePercentage24h: 7.96,
-                iconUrl: nil,
-                marketCap: 15200000000,
-                marketCapRank: 12
-            ),
-            CryptoAsset(
-                id: "chainlink",
-                symbol: "LINK",
-                name: "Chainlink",
-                currentPrice: 14.56,
-                priceChange24h: 0.89,
-                priceChangePercentage24h: 6.51,
-                iconUrl: nil,
-                marketCap: 8500000000,
-                marketCapRank: 15
-            )
-        ]
-
-        // Top Losers
-        topLosers = [
-            CryptoAsset(
-                id: "dogecoin",
-                symbol: "DOGE",
-                name: "Dogecoin",
-                currentPrice: 0.0823,
-                priceChange24h: -0.0067,
-                priceChangePercentage24h: -7.52,
-                iconUrl: nil,
-                marketCap: 11800000000,
-                marketCapRank: 9
-            ),
-            CryptoAsset(
-                id: "shiba-inu",
-                symbol: "SHIB",
-                name: "Shiba Inu",
-                currentPrice: 0.00001234,
-                priceChange24h: -0.00000089,
-                priceChangePercentage24h: -6.73,
-                iconUrl: nil,
-                marketCap: 7200000000,
-                marketCapRank: 18
-            ),
-            CryptoAsset(
-                id: "cardano",
-                symbol: "ADA",
-                name: "Cardano",
-                currentPrice: 0.456,
-                priceChange24h: -0.023,
-                priceChangePercentage24h: -4.80,
-                iconUrl: nil,
-                marketCap: 16100000000,
-                marketCapRank: 10
-            )
-        ]
+        await refresh()
     }
 }

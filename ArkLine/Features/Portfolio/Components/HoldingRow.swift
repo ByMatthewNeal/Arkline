@@ -40,8 +40,7 @@ struct HoldingRow: View {
             }
         }
         .padding(16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 
@@ -77,13 +76,13 @@ struct HoldingRowCompact: View {
             }
         }
         .padding(12)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(10)
+        .glassCard(cornerRadius: 10)
     }
 }
 
 // MARK: - Coin Icon View
 struct CoinIconView: View {
+    @Environment(\.colorScheme) var colorScheme
     let symbol: String
     let size: CGFloat
     var iconUrl: String? = nil
@@ -91,7 +90,7 @@ struct CoinIconView: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(AppColors.fillSecondary(.dark))
+                .fill(AppColors.fillSecondary(colorScheme))
 
             if let iconUrl = iconUrl, let url = URL(string: iconUrl) {
                 AsyncImage(url: url) { image in
@@ -125,7 +124,7 @@ struct CoinIconView: View {
             name: "Bitcoin",
             quantity: 0.5,
             averageBuyPrice: 45000
-        ))
+        ).withLiveData(currentPrice: 67500, change24h: 2.5))
 
         HoldingRowCompact(holding: PortfolioHolding(
             portfolioId: UUID(),
@@ -134,8 +133,8 @@ struct CoinIconView: View {
             name: "Ethereum",
             quantity: 3.2,
             averageBuyPrice: 2800
-        ))
+        ).withLiveData(currentPrice: 3450, change24h: -1.2))
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

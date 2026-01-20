@@ -22,16 +22,6 @@
     <string>1</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
-    <key>UIAppFonts</key>
-    <array>
-        <string>Inter-Regular.ttf</string>
-        <string>Inter-Medium.ttf</string>
-        <string>Inter-SemiBold.ttf</string>
-        <string>Inter-Bold.ttf</string>
-        <string>Urbanist-Regular.ttf</string>
-        <string>Urbanist-Medium.ttf</string>
-        <string>Urbanist-SemiBold.ttf</string>
-    </array>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>

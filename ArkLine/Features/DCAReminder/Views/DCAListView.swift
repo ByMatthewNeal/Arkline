@@ -20,8 +20,8 @@ struct DCAListView: View {
                                 ForEach(viewModel.todayReminders) { reminder in
                                     DCACardToday(
                                         reminder: reminder,
-                                        onInvest: { viewModel.markAsInvested(reminder) },
-                                        onSkip: { viewModel.skipReminder(reminder) }
+                                        onInvest: { Task { await viewModel.markAsInvested(reminder) } },
+                                        onSkip: { Task { await viewModel.skipReminder(reminder) } }
                                     )
                                 }
                             }
@@ -113,8 +113,7 @@ struct DCACard: View {
             }
         }
         .padding(16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 
@@ -180,8 +179,7 @@ struct DCACardToday: View {
             }
         }
         .padding(16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 
@@ -259,13 +257,12 @@ struct DCADetailView: View {
                     }
                 }
                 .padding(16)
-                .background(AppColors.cardBackground(colorScheme))
-                .cornerRadius(16)
+                .glassCard(cornerRadius: 16)
                 .padding(.horizontal, 20)
 
                 // Actions
                 VStack(spacing: 12) {
-                    Button(action: { viewModel.toggleReminder(reminder) }) {
+                    Button(action: { Task { await viewModel.toggleReminder(reminder) } }) {
                         HStack {
                             Image(systemName: reminder.isActive ? "pause.fill" : "play.fill")
                             Text(reminder.isActive ? "Pause Reminder" : "Resume Reminder")
@@ -278,7 +275,7 @@ struct DCADetailView: View {
                         .cornerRadius(12)
                     }
 
-                    Button(action: { viewModel.deleteReminder(reminder) }) {
+                    Button(action: { Task { await viewModel.deleteReminder(reminder) } }) {
                         HStack {
                             Image(systemName: "trash")
                             Text("Delete Reminder")
@@ -389,7 +386,7 @@ struct CreateDCAView: View {
             nextReminderDate: Date(),
             isActive: true
         )
-        viewModel.createReminder(reminder)
+        Task { await viewModel.createReminder(reminder) }
     }
 }
 

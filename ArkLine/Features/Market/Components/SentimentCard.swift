@@ -49,8 +49,7 @@ struct SentimentCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 
@@ -113,8 +112,7 @@ struct LargeSentimentCard: View {
             }
         }
         .padding(20)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 

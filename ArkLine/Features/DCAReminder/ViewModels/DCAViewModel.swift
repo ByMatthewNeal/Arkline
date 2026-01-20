@@ -4,6 +4,9 @@ import Foundation
 // MARK: - DCA View Model
 @Observable
 final class DCAViewModel {
+    // MARK: - Dependencies
+    private let dcaService: DCAServiceProtocol
+
     // MARK: - State
     var reminders: [DCAReminder] = []
     var selectedReminder: DCAReminder?
@@ -13,6 +16,9 @@ final class DCAViewModel {
     // MARK: - Create/Edit State
     var editingReminder: DCAReminder?
     var showCreateSheet = false
+
+    // User context
+    private var currentUserId: UUID?
 
     // MARK: - Computed Properties
     var activeReminders: [DCAReminder] {
@@ -33,8 +39,9 @@ final class DCAViewModel {
     }
 
     // MARK: - Initialization
-    init() {
-        loadMockData()
+    init(dcaService: DCAServiceProtocol = ServiceContainer.shared.dcaService) {
+        self.dcaService = dcaService
+        Task { await loadInitialData() }
     }
 
     // MARK: - Data Loading
@@ -42,90 +49,123 @@ final class DCAViewModel {
         isLoading = true
         error = nil
 
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        do {
+            let userId = currentUserId ?? UUID()
+            let fetchedReminders = try await dcaService.fetchReminders(userId: userId)
 
-        loadMockData()
-        isLoading = false
+            await MainActor.run {
+                self.reminders = fetchedReminders
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+                self.isLoading = false
+            }
+        }
     }
 
-    private func loadMockData() {
-        let userId = UUID()
-
-        reminders = [
-            DCAReminder(
-                userId: userId,
-                symbol: "BTC",
-                name: "Bitcoin",
-                amount: 100,
-                frequency: .weekly,
-                totalPurchases: 52,
-                completedPurchases: 12,
-                notificationTime: Calendar.current.date(from: DateComponents(hour: 9, minute: 0)) ?? Date(),
-                startDate: Date().addingTimeInterval(-86400 * 84),
-                nextReminderDate: Date(),
-                isActive: true
-            ),
-            DCAReminder(
-                userId: userId,
-                symbol: "ETH",
-                name: "Ethereum",
-                amount: 50,
-                frequency: .biweekly,
-                totalPurchases: 24,
-                completedPurchases: 8,
-                notificationTime: Calendar.current.date(from: DateComponents(hour: 10, minute: 0)) ?? Date(),
-                startDate: Date().addingTimeInterval(-86400 * 112),
-                nextReminderDate: Date().addingTimeInterval(86400 * 3),
-                isActive: true
-            ),
-            DCAReminder(
-                userId: userId,
-                symbol: "SOL",
-                name: "Solana",
-                amount: 25,
-                frequency: .monthly,
-                totalPurchases: 12,
-                completedPurchases: 3,
-                notificationTime: Calendar.current.date(from: DateComponents(hour: 8, minute: 30)) ?? Date(),
-                startDate: Date().addingTimeInterval(-86400 * 90),
-                nextReminderDate: Date().addingTimeInterval(86400 * 15),
-                isActive: true
-            )
-        ]
+    private func loadInitialData() async {
+        await refresh()
     }
 
     // MARK: - Actions
-    func createReminder(_ reminder: DCAReminder) {
-        reminders.append(reminder)
-    }
+    func createReminder(_ reminder: DCAReminder) async {
+        do {
+            let request = CreateDCARequest(
+                userId: reminder.userId,
+                symbol: reminder.symbol,
+                name: reminder.name,
+                amount: reminder.amount,
+                frequency: reminder.frequency.rawValue,
+                totalPurchases: reminder.totalPurchases,
+                notificationTime: reminder.notificationTime,
+                startDate: reminder.startDate,
+                nextReminderDate: reminder.nextReminderDate ?? Date()
+            )
+            let createdReminder = try await dcaService.createReminder(request)
 
-    func updateReminder(_ reminder: DCAReminder) {
-        if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
-            reminders[index] = reminder
+            await MainActor.run {
+                self.reminders.append(createdReminder)
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
         }
     }
 
-    func deleteReminder(_ reminder: DCAReminder) {
-        reminders.removeAll { $0.id == reminder.id }
-    }
+    func updateReminder(_ reminder: DCAReminder) async {
+        do {
+            try await dcaService.updateReminder(reminder)
 
-    func toggleReminder(_ reminder: DCAReminder) {
-        if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
-            reminders[index].isActive.toggle()
+            await MainActor.run {
+                if let index = self.reminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.reminders[index] = reminder
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
         }
     }
 
-    func markAsInvested(_ reminder: DCAReminder) {
-        if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
-            reminders[index].completedPurchases += 1
-            reminders[index].nextReminderDate = calculateNextDate(for: reminders[index])
+    func deleteReminder(_ reminder: DCAReminder) async {
+        do {
+            try await dcaService.deleteReminder(id: reminder.id)
+
+            await MainActor.run {
+                self.reminders.removeAll { $0.id == reminder.id }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
         }
     }
 
-    func skipReminder(_ reminder: DCAReminder) {
-        if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
-            reminders[index].nextReminderDate = calculateNextDate(for: reminders[index])
+    func toggleReminder(_ reminder: DCAReminder) async {
+        var updatedReminder = reminder
+        updatedReminder.isActive.toggle()
+        await updateReminder(updatedReminder)
+    }
+
+    func markAsInvested(_ reminder: DCAReminder) async {
+        do {
+            try await dcaService.markAsInvested(id: reminder.id)
+
+            await MainActor.run {
+                if let index = self.reminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.reminders[index].completedPurchases += 1
+                    self.reminders[index].nextReminderDate = self.calculateNextDate(for: self.reminders[index])
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
         }
+    }
+
+    func skipReminder(_ reminder: DCAReminder) async {
+        do {
+            try await dcaService.skipReminder(id: reminder.id)
+
+            await MainActor.run {
+                if let index = self.reminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.reminders[index].nextReminderDate = self.calculateNextDate(for: self.reminders[index])
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func dismissError() {
+        error = nil
     }
 
     private func calculateNextDate(for reminder: DCAReminder) -> Date? {

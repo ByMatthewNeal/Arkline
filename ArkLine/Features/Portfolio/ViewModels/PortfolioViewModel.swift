@@ -12,9 +12,12 @@ enum PortfolioTab: String, CaseIterable {
 // MARK: - Portfolio View Model
 @Observable
 final class PortfolioViewModel {
+    // MARK: - Dependencies
+    private let portfolioService: PortfolioServiceProtocol
+    private let marketService: MarketServiceProtocol
+
     // MARK: - State
     var selectedTab: PortfolioTab = .overview
-    var portfolio: Portfolio?
     var holdings: [PortfolioHolding] = []
     var transactions: [Transaction] = []
     var allocations: [PortfolioAllocation] = []
@@ -22,6 +25,10 @@ final class PortfolioViewModel {
 
     var isLoading = false
     var error: AppError?
+
+    // User context
+    private var currentUserId: UUID?
+    private var portfolioId: UUID?
 
     // MARK: - Filters
     var holdingsSearchText = ""
@@ -96,8 +103,13 @@ final class PortfolioViewModel {
     }
 
     // MARK: - Initialization
-    init() {
-        loadMockData()
+    init(
+        portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
+        marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
+    ) {
+        self.portfolioService = portfolioService
+        self.marketService = marketService
+        Task { await loadInitialData() }
     }
 
     // MARK: - Data Loading
@@ -105,118 +117,57 @@ final class PortfolioViewModel {
         isLoading = true
         error = nil
 
-        // Simulate network delay
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        do {
+            // In a real app, get userId from auth service
+            let userId = currentUserId ?? UUID()
 
-        loadMockData()
-        isLoading = false
-    }
+            // Fetch portfolio
+            if let portfolio = try await portfolioService.fetchPortfolio(userId: userId) {
+                self.portfolioId = portfolio.id
 
-    private func loadMockData() {
-        let portfolioId = UUID()
+                // Fetch holdings and transactions concurrently
+                async let holdingsTask = portfolioService.fetchHoldings(portfolioId: portfolio.id)
+                async let transactionsTask = portfolioService.fetchTransactions(portfolioId: portfolio.id)
+                async let historyTask = portfolioService.fetchPortfolioHistory(portfolioId: portfolio.id, days: 30)
 
-        // Mock holdings
-        holdings = [
-            PortfolioHolding(
-                portfolioId: portfolioId,
-                assetType: "crypto",
-                symbol: "BTC",
-                name: "Bitcoin",
-                quantity: 0.5,
-                averageBuyPrice: 45000
-            ).withLiveData(currentPrice: 67500, change24h: 2.5),
+                let (fetchedHoldings, fetchedTransactions, history) = try await (holdingsTask, transactionsTask, historyTask)
 
-            PortfolioHolding(
-                portfolioId: portfolioId,
-                assetType: "crypto",
-                symbol: "ETH",
-                name: "Ethereum",
-                quantity: 3.2,
-                averageBuyPrice: 2800
-            ).withLiveData(currentPrice: 3450, change24h: -1.2),
+                // Refresh live prices for holdings
+                let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: fetchedHoldings)
 
-            PortfolioHolding(
-                portfolioId: portfolioId,
-                assetType: "crypto",
-                symbol: "SOL",
-                name: "Solana",
-                quantity: 25,
-                averageBuyPrice: 120
-            ).withLiveData(currentPrice: 175, change24h: 5.8),
-
-            PortfolioHolding(
-                portfolioId: portfolioId,
-                assetType: "stock",
-                symbol: "AAPL",
-                name: "Apple Inc.",
-                quantity: 10,
-                averageBuyPrice: 175
-            ).withLiveData(currentPrice: 195, change24h: 0.8),
-
-            PortfolioHolding(
-                portfolioId: portfolioId,
-                assetType: "metal",
-                symbol: "XAU",
-                name: "Gold",
-                quantity: 2,
-                averageBuyPrice: 1950
-            ).withLiveData(currentPrice: 2050, change24h: 0.3)
-        ]
-
-        // Calculate allocations
-        allocations = PortfolioAllocation.calculate(from: holdings)
-
-        // Mock transactions
-        transactions = [
-            Transaction(
-                portfolioId: portfolioId,
-                holdingId: holdings[0].id,
-                type: .buy,
-                assetType: "crypto",
-                symbol: "BTC",
-                quantity: 0.25,
-                pricePerUnit: 43000,
-                transactionDate: Date().addingTimeInterval(-86400 * 30)
-            ),
-            Transaction(
-                portfolioId: portfolioId,
-                holdingId: holdings[0].id,
-                type: .buy,
-                assetType: "crypto",
-                symbol: "BTC",
-                quantity: 0.25,
-                pricePerUnit: 47000,
-                transactionDate: Date().addingTimeInterval(-86400 * 15)
-            ),
-            Transaction(
-                portfolioId: portfolioId,
-                holdingId: holdings[1].id,
-                type: .buy,
-                assetType: "crypto",
-                symbol: "ETH",
-                quantity: 3.2,
-                pricePerUnit: 2800,
-                transactionDate: Date().addingTimeInterval(-86400 * 45)
-            )
-        ]
-
-        // Mock history
-        historyPoints = generateMockHistory()
-    }
-
-    private func generateMockHistory() -> [PortfolioHistoryPoint] {
-        var points: [PortfolioHistoryPoint] = []
-        let calendar = Calendar.current
-        var value = totalValue * 0.85
-
-        for i in (0..<30).reversed() {
-            let date = calendar.date(byAdding: .day, value: -i, to: Date()) ?? Date()
-            let change = Double.random(in: -0.03...0.04)
-            value = value * (1 + change)
-            points.append(PortfolioHistoryPoint(date: date, value: value))
+                await MainActor.run {
+                    self.holdings = holdingsWithPrices
+                    self.transactions = fetchedTransactions
+                    self.historyPoints = history
+                    self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
+                    self.isLoading = false
+                }
+            } else {
+                await MainActor.run {
+                    self.isLoading = false
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+                self.isLoading = false
+            }
         }
+    }
 
-        return points
+    func refreshPrices() async {
+        guard !holdings.isEmpty else { return }
+
+        do {
+            let updatedHoldings = try await portfolioService.refreshHoldingPrices(holdings: holdings)
+
+            await MainActor.run {
+                self.holdings = updatedHoldings
+                self.allocations = PortfolioAllocation.calculate(from: updatedHoldings)
+            }
+        } catch {
+            // Silently fail - prices will update on next full refresh
+        }
     }
 
     // MARK: - Actions
@@ -232,13 +183,53 @@ final class PortfolioViewModel {
         transactionFilter = filter
     }
 
-    func toggleFavorite(_ holding: PortfolioHolding) {
-        // TODO: Implement
+    func dismissError() {
+        error = nil
     }
 
-    func deleteHolding(_ holding: PortfolioHolding) {
-        holdings.removeAll { $0.id == holding.id }
-        allocations = PortfolioAllocation.calculate(from: holdings)
+    func addTransaction(_ transaction: Transaction) async {
+        do {
+            let createdTransaction = try await portfolioService.addTransaction(transaction)
+
+            await MainActor.run {
+                self.transactions.append(createdTransaction)
+            }
+
+            // Update holdings after transaction
+            if let portfolioId = portfolioId {
+                let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+                let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
+
+                await MainActor.run {
+                    self.holdings = holdingsWithPrices
+                    self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .transactionFailed
+            }
+        }
+    }
+
+    func deleteHolding(_ holding: PortfolioHolding) async {
+        do {
+            try await portfolioService.deleteHolding(holdingId: holding.id)
+
+            await MainActor.run {
+                self.holdings.removeAll { $0.id == holding.id }
+                self.allocations = PortfolioAllocation.calculate(from: self.holdings)
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    // MARK: - Private Methods
+    private func loadInitialData() async {
+        await refresh()
     }
 }
 

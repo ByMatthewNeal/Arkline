@@ -16,26 +16,25 @@ struct ContentView: View {
             }
 
             #if DEBUG
-            // Dev button to skip login
+            // Dev button to skip login (top right)
             VStack {
-                Spacer()
                 HStack {
                     Spacer()
                     Button(action: {
                         skipToMainApp()
                     }) {
-                        Text("DEV: Skip Login")
-                            .font(.caption)
-                            .fontWeight(.bold)
+                        Text("DEV")
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.red.opacity(0.8))
-                            .cornerRadius(8)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.red.opacity(0.7))
+                            .cornerRadius(4)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 50)
+                    .padding(.trailing, 4)
+                    .padding(.top, 60)
                 }
+                Spacer()
             }
             #endif
         }

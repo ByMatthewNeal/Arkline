@@ -40,8 +40,7 @@ struct TransactionRow: View {
             }
         }
         .padding(16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 
     private var transactionIcon: some View {

@@ -9,6 +9,9 @@ final class AIChatViewModel {
     var currentSession: AIChatSession?
     var messages: [AIChatMessage] = []
 
+    // Store messages per session
+    private var sessionMessages: [UUID: [AIChatMessage]] = [:]
+
     var isLoading = false
     var isTyping = false
     var error: AppError?
@@ -43,63 +46,100 @@ final class AIChatViewModel {
 
     private func loadMockData() {
         let userId = UUID()
-        let sessionId = UUID()
 
-        sessions = [
-            AIChatSession(
-                userId: userId,
-                title: "Bitcoin Price Analysis",
-                createdAt: Date().addingTimeInterval(-3600),
-                updatedAt: Date().addingTimeInterval(-1800)
-            ),
-            AIChatSession(
-                userId: userId,
-                title: "DeFi Strategy Discussion",
-                createdAt: Date().addingTimeInterval(-86400),
-                updatedAt: Date().addingTimeInterval(-43200)
-            ),
-            AIChatSession(
-                userId: userId,
-                title: "Portfolio Rebalancing",
-                createdAt: Date().addingTimeInterval(-172800),
-                updatedAt: Date().addingTimeInterval(-86400)
-            )
-        ]
+        // Create sessions with fixed IDs for demo
+        let btcSession = AIChatSession(
+            userId: userId,
+            title: "Bitcoin Price Analysis",
+            createdAt: Date().addingTimeInterval(-3600),
+            updatedAt: Date().addingTimeInterval(-1800)
+        )
+        let defiSession = AIChatSession(
+            userId: userId,
+            title: "DeFi Strategy Discussion",
+            createdAt: Date().addingTimeInterval(-86400),
+            updatedAt: Date().addingTimeInterval(-43200)
+        )
+        let portfolioSession = AIChatSession(
+            userId: userId,
+            title: "Portfolio Rebalancing",
+            createdAt: Date().addingTimeInterval(-172800),
+            updatedAt: Date().addingTimeInterval(-86400)
+        )
 
-        // Load messages for mock current session
-        messages = [
+        sessions = [btcSession, defiSession, portfolioSession]
+
+        // Store messages per session
+        sessionMessages[btcSession.id] = [
             AIChatMessage(
-                sessionId: sessionId,
+                sessionId: btcSession.id,
                 role: .user,
                 content: "What do you think about the current Bitcoin price action?",
                 createdAt: Date().addingTimeInterval(-1800)
             ),
             AIChatMessage(
-                sessionId: sessionId,
+                sessionId: btcSession.id,
                 role: .assistant,
                 content: "Based on current market data, Bitcoin is showing strong support around the $65,000 level. The recent consolidation suggests accumulation phase, with key resistance at $70,000. Volume indicators and on-chain metrics point to healthy market conditions. However, macro factors like Fed policy decisions could impact short-term price action.",
                 createdAt: Date().addingTimeInterval(-1780)
             ),
             AIChatMessage(
-                sessionId: sessionId,
+                sessionId: btcSession.id,
                 role: .user,
                 content: "Should I consider DCA into BTC at these levels?",
                 createdAt: Date().addingTimeInterval(-900)
             ),
             AIChatMessage(
-                sessionId: sessionId,
+                sessionId: btcSession.id,
                 role: .assistant,
                 content: "DCA (Dollar Cost Averaging) is generally a sound strategy for long-term investors, especially when:\n\n1. You believe in Bitcoin's long-term potential\n2. You want to minimize timing risk\n3. You can commit to regular investments regardless of price\n\nAt current levels, historical data shows we're still below the previous all-time high on an inflation-adjusted basis. However, always consider your risk tolerance and never invest more than you can afford to lose.",
                 createdAt: Date().addingTimeInterval(-880)
             )
         ]
+
+        sessionMessages[defiSession.id] = [
+            AIChatMessage(
+                sessionId: defiSession.id,
+                role: .user,
+                content: "Can you explain yield farming strategies?",
+                createdAt: Date().addingTimeInterval(-43200)
+            ),
+            AIChatMessage(
+                sessionId: defiSession.id,
+                role: .assistant,
+                content: "Yield farming involves providing liquidity to DeFi protocols in exchange for rewards. Key strategies include:\n\n1. **Liquidity Provision**: Add assets to DEX pools (Uniswap, Curve)\n2. **Lending**: Supply assets to protocols like Aave or Compound\n3. **Staking**: Lock tokens for protocol rewards\n\nRisks to consider: impermanent loss, smart contract vulnerabilities, and token price volatility.",
+                createdAt: Date().addingTimeInterval(-43100)
+            )
+        ]
+
+        sessionMessages[portfolioSession.id] = [
+            AIChatMessage(
+                sessionId: portfolioSession.id,
+                role: .user,
+                content: "How should I rebalance my crypto portfolio?",
+                createdAt: Date().addingTimeInterval(-86400)
+            ),
+            AIChatMessage(
+                sessionId: portfolioSession.id,
+                role: .assistant,
+                content: "Portfolio rebalancing depends on your risk tolerance and goals. Common approaches:\n\n1. **Time-based**: Rebalance quarterly or monthly\n2. **Threshold-based**: Rebalance when allocations drift >5-10%\n3. **Hybrid**: Combine both methods\n\nConsider tax implications and transaction costs when rebalancing.",
+                createdAt: Date().addingTimeInterval(-86300)
+            )
+        ]
+
+        // Set initial session and load its messages
+        currentSession = btcSession
+        messages = sessionMessages[btcSession.id] ?? []
     }
 
     // MARK: - Actions
     func createNewSession() {
+        // Save current messages before switching
+        saveCurrentSessionMessages()
+
         let session = AIChatSession(
             userId: UUID(),
-            title: "New Chat",
+            title: nil,
             createdAt: Date(),
             updatedAt: Date()
         )
@@ -109,23 +149,39 @@ final class AIChatViewModel {
     }
 
     func selectSession(_ session: AIChatSession) {
+        // Save current messages before switching
+        saveCurrentSessionMessages()
+
+        // Switch to new session and load its messages
         currentSession = session
-        // In real app, load messages for this session
-        loadMockData()
+        messages = sessionMessages[session.id] ?? []
     }
 
     func deleteSession(_ session: AIChatSession) {
         sessions.removeAll { $0.id == session.id }
+        sessionMessages.removeValue(forKey: session.id)
+
         if currentSession?.id == session.id {
             currentSession = sessions.first
+            if let firstSession = currentSession {
+                messages = sessionMessages[firstSession.id] ?? []
+            } else {
+                messages = []
+            }
         }
+    }
+
+    private func saveCurrentSessionMessages() {
+        guard let sessionId = currentSession?.id, !messages.isEmpty else { return }
+        sessionMessages[sessionId] = messages
     }
 
     func sendMessage() async {
         guard canSend else { return }
 
+        let sessionId = currentSession?.id ?? UUID()
         let userMessage = AIChatMessage(
-            sessionId: currentSession?.id ?? UUID(),
+            sessionId: sessionId,
             role: .user,
             content: inputText.trimmingCharacters(in: .whitespacesAndNewlines),
             createdAt: Date()
@@ -134,36 +190,58 @@ final class AIChatViewModel {
         messages.append(userMessage)
         inputText = ""
         isTyping = true
+        error = nil
 
-        // Simulate AI response
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        do {
+            // Call Claude API
+            let responseContent = try await sendToClaudeAPI()
 
-        let assistantMessage = AIChatMessage(
-            sessionId: currentSession?.id ?? UUID(),
-            role: .assistant,
-            content: generateMockResponse(for: userMessage.content),
-            createdAt: Date()
-        )
+            let assistantMessage = AIChatMessage(
+                sessionId: sessionId,
+                role: .assistant,
+                content: responseContent,
+                createdAt: Date()
+            )
 
-        messages.append(assistantMessage)
+            messages.append(assistantMessage)
+        } catch {
+            // On error, show error message and use fallback
+            self.error = error as? AppError ?? .networkError(underlying: error)
+
+            let errorMessage = AIChatMessage(
+                sessionId: sessionId,
+                role: .assistant,
+                content: "I'm sorry, I couldn't connect to the AI service. Please check your internet connection and try again.\n\nError: \(error.localizedDescription)",
+                createdAt: Date()
+            )
+            messages.append(errorMessage)
+        }
+
         isTyping = false
 
         // Update session
         if let index = sessions.firstIndex(where: { $0.id == currentSession?.id }) {
             sessions[index].updatedAt = Date()
-            if sessions[index].title == "New Chat" {
+            if sessions[index].title == nil || sessions[index].title == "New Chat" {
                 sessions[index].title = String(userMessage.content.prefix(30)) + (userMessage.content.count > 30 ? "..." : "")
             }
         }
+
+        // Save messages to session storage
+        saveCurrentSessionMessages()
     }
 
-    private func generateMockResponse(for query: String) -> String {
-        let responses = [
-            "Based on current market analysis, I can provide some insights on this topic. The cryptocurrency market has been showing interesting patterns lately, with several key indicators pointing to potential opportunities.",
-            "That's a great question! Looking at the data, there are several factors to consider. Market sentiment, on-chain metrics, and macroeconomic conditions all play a role in determining the best strategy.",
-            "I'd recommend approaching this with a balanced perspective. While the short-term volatility can be concerning, the long-term fundamentals remain strong. Consider diversifying your approach and maintaining a clear investment thesis."
-        ]
-        return responses.randomElement() ?? responses[0]
+    private func sendToClaudeAPI() async throws -> String {
+        // Build the request with conversation history
+        let request = ClaudeMessageRequest.create(messages: messages)
+        let endpoint = ClaudeEndpoint.messages(request: request)
+
+        let response: ClaudeMessageResponse = try await NetworkManager.shared.request(
+            endpoint: endpoint,
+            responseType: ClaudeMessageResponse.self
+        )
+
+        return response.textContent
     }
 
     func clearChat() {

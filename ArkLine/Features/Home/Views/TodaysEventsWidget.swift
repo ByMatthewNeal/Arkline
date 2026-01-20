@@ -26,8 +26,7 @@ struct TodaysEventsWidget: View {
             }
         }
         .padding(20)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 

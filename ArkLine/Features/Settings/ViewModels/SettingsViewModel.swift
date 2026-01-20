@@ -1,7 +1,9 @@
 import SwiftUI
 import Foundation
+import Supabase
 
 // MARK: - Settings View Model
+@MainActor
 @Observable
 final class SettingsViewModel {
     // MARK: - Preferences
@@ -43,8 +45,8 @@ final class SettingsViewModel {
             darkModePreference = preference
         }
 
-        notificationsEnabled = UserDefaults.standard.bool(forKey: "notifications_enabled")
-        biometricEnabled = UserDefaults.standard.bool(forKey: "biometric_enabled")
+        notificationsEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.notificationsEnabled)
+        biometricEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.biometricEnabled)
     }
 
     func saveCurrency(_ currency: String) {
@@ -59,45 +61,44 @@ final class SettingsViewModel {
 
     func toggleNotifications(_ enabled: Bool) {
         notificationsEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: "notifications_enabled")
+        UserDefaults.standard.set(enabled, forKey: Constants.UserDefaults.notificationsEnabled)
     }
 
     func toggleBiometric(_ enabled: Bool) {
         biometricEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: "biometric_enabled")
+        UserDefaults.standard.set(enabled, forKey: Constants.UserDefaults.biometricEnabled)
     }
 
     func signOut() async {
         isLoading = true
-        // TODO: Call Supabase signOut
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        isLoading = false
+        defer { isLoading = false }
+
+        do {
+            try await SupabaseAuthManager.shared.signOut()
+        } catch {
+            logError(error, context: "Sign Out", category: .auth)
+        }
     }
 
     func deleteAccount() async {
         isLoading = true
-        // TODO: Call Supabase delete account
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        isLoading = false
+        defer { isLoading = false }
+
+        do {
+            // Delete user profile from database first
+            if let userId = SupabaseAuthManager.shared.currentUserId {
+                try await SupabaseManager.shared.database
+                    .from(SupabaseTable.profiles.rawValue)
+                    .delete()
+                    .eq("id", value: userId.uuidString)
+                    .execute()
+            }
+
+            // Sign out (Supabase doesn't support client-side account deletion,
+            // this should be handled by a server-side function in production)
+            try await SupabaseAuthManager.shared.signOut()
+        } catch {
+            logError(error, context: "Delete Account", category: .auth)
+        }
     }
-}
-
-// MARK: - Settings Section
-enum SettingsSection: String, CaseIterable {
-    case general = "General"
-    case notifications = "Notifications"
-    case security = "Security"
-    case support = "Support"
-    case account = "Account"
-}
-
-// MARK: - Settings Item
-struct SettingsItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let icon: String
-    let iconColor: Color
-    let section: SettingsSection
-    var value: String? = nil
-    var isDestructive = false
 }

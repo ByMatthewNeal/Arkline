@@ -55,6 +55,8 @@ enum AppError: Error, LocalizedError {
     // MARK: - General Errors
     case unknown(message: String?)
     case custom(message: String)
+    case notFound
+    case notImplemented
 
     // MARK: - Error Description
     var errorDescription: String? {
@@ -150,6 +152,10 @@ enum AppError: Error, LocalizedError {
             return message ?? "An unknown error occurred"
         case .custom(let message):
             return message
+        case .notFound:
+            return "Resource not found"
+        case .notImplemented:
+            return "This feature is not yet implemented"
         }
     }
 
@@ -166,6 +172,8 @@ enum AppError: Error, LocalizedError {
             return "Please check your connection and try again"
         case .biometricNotAvailable:
             return "Please use your passcode instead"
+        case .notImplemented:
+            return "This feature is coming soon"
         default:
             return nil
         }
@@ -176,6 +184,8 @@ enum AppError: Error, LocalizedError {
         switch self {
         case .timeout, .noInternetConnection, .rateLimitExceeded, .apiUnavailable:
             return true
+        case .notImplemented:
+            return false
         default:
             return false
         }

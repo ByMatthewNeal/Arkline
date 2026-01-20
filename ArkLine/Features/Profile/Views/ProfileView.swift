@@ -4,36 +4,53 @@ struct ProfileView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @State private var viewModel = ProfileViewModel()
-    @State private var showSettings = false
     @State private var showReferral = false
+    @State private var showPortfolio = false
+    @State private var showAlerts = false
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
+            ZStack {
+                // Animated mesh gradient background
+                MeshGradientBackground()
+
+                // Brush effect overlay for dark mode
+                if isDarkMode {
+                    BrushEffectOverlay()
+                }
+
+                // Content
+                ScrollView {
+                    VStack(spacing: 24) {
                     // Profile Header
                     ProfileHeader(viewModel: viewModel)
 
                     // Quick Actions
                     ProfileQuickActions(
-                        onSettings: { showSettings = true },
-                        onReferral: { showReferral = true }
+                        onReferral: { showReferral = true },
+                        onPortfolio: { showPortfolio = true },
+                        onAlerts: { showAlerts = true }
                     )
                     .padding(.horizontal, 20)
 
                     // Stats
-                    ProfileStats()
+                    ProfileStats(stats: viewModel.stats)
                         .padding(.horizontal, 20)
 
                     // Recent Activity
-                    ProfileRecentActivity()
+                    ProfileRecentActivity(activities: viewModel.recentActivity)
                         .padding(.horizontal, 20)
 
-                    Spacer(minLength: 100)
+                        Spacer(minLength: 100)
+                    }
+                    .padding(.top, 20)
                 }
-                .padding(.top, 20)
             }
-            .background(AppColors.background(colorScheme))
             .navigationTitle("Profile")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
@@ -48,6 +65,12 @@ struct ProfileView: View {
             #endif
             .sheet(isPresented: $showReferral) {
                 ReferFriendView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showPortfolio) {
+                PortfolioSheetView()
+            }
+            .sheet(isPresented: $showAlerts) {
+                AlertsSheetView()
             }
         }
     }
@@ -171,8 +194,9 @@ struct SocialLinkButton: View {
 // MARK: - Quick Actions
 struct ProfileQuickActions: View {
     @Environment(\.colorScheme) var colorScheme
-    let onSettings: () -> Void
     let onReferral: () -> Void
+    let onPortfolio: () -> Void
+    let onAlerts: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -187,14 +211,14 @@ struct ProfileQuickActions: View {
                 icon: "chart.pie",
                 title: "My Portfolio",
                 color: AppColors.accent,
-                action: {}
+                action: onPortfolio
             )
 
             ProfileQuickActionButton(
                 icon: "bell",
                 title: "Alerts",
                 color: AppColors.warning,
-                action: {}
+                action: onAlerts
             )
         }
     }
@@ -220,8 +244,7 @@ struct ProfileQuickActionButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(AppColors.cardBackground(colorScheme))
-            .cornerRadius(12)
+            .glassCard(cornerRadius: 12)
         }
     }
 }
@@ -229,6 +252,7 @@ struct ProfileQuickActionButton: View {
 // MARK: - Profile Stats
 struct ProfileStats: View {
     @Environment(\.colorScheme) var colorScheme
+    let stats: ProfileStatsData
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -237,9 +261,9 @@ struct ProfileStats: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             HStack(spacing: 12) {
-                ProfileStatItem(value: "12", label: "DCA Reminders")
-                ProfileStatItem(value: "45", label: "Chat Sessions")
-                ProfileStatItem(value: "3", label: "Portfolios")
+                ProfileStatItem(value: "\(stats.dcaReminders)", label: "DCA Reminders")
+                ProfileStatItem(value: "\(stats.chatSessions)", label: "Chat Sessions")
+                ProfileStatItem(value: "\(stats.portfolios)", label: "Portfolios")
             }
         }
     }
@@ -263,14 +287,14 @@ struct ProfileStatItem: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 
 // MARK: - Recent Activity
 struct ProfileRecentActivity: View {
     @Environment(\.colorScheme) var colorScheme
+    let activities: [ActivityItem]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -278,27 +302,23 @@ struct ProfileRecentActivity: View {
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            VStack(spacing: 8) {
-                ActivityRow(
-                    icon: "arrow.down.left",
-                    iconColor: AppColors.success,
-                    title: "Bought 0.01 BTC",
-                    subtitle: "2 hours ago"
-                )
-
-                ActivityRow(
-                    icon: "bell.fill",
-                    iconColor: AppColors.warning,
-                    title: "DCA Reminder completed",
-                    subtitle: "Yesterday"
-                )
-
-                ActivityRow(
-                    icon: "bubble.left.fill",
-                    iconColor: AppColors.accent,
-                    title: "Asked AI about ETH",
-                    subtitle: "2 days ago"
-                )
+            if activities.isEmpty {
+                Text("No recent activity")
+                    .font(AppFonts.body14)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(activities) { activity in
+                        ActivityRow(
+                            icon: activity.icon,
+                            iconColor: activity.iconColor,
+                            title: activity.title,
+                            subtitle: activity.formattedTime
+                        )
+                    }
+                }
             }
         }
     }
@@ -333,8 +353,7 @@ struct ActivityRow: View {
             Spacer()
         }
         .padding(12)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 
@@ -384,8 +403,7 @@ struct ReferFriendView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
-                    .background(AppColors.cardBackground(colorScheme))
-                    .cornerRadius(12)
+                    .glassCard(cornerRadius: 12)
                 }
 
                 // Stats
@@ -420,6 +438,110 @@ struct ReferFriendView: View {
             }
             .background(AppColors.background(colorScheme))
             .navigationTitle("Refer Friends")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            #endif
+        }
+    }
+}
+
+// MARK: - Portfolio Sheet View
+struct PortfolioSheetView: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Spacer()
+
+                Image(systemName: "chart.pie.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(AppColors.accent)
+
+                Text("My Portfolio")
+                    .font(AppFonts.title24)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("Track your crypto holdings and performance in one place.")
+                    .font(AppFonts.body14)
+                    .foregroundColor(AppColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+
+                Spacer()
+
+                NavigationLink(destination: Text("Portfolio Detail")) {
+                    Text("View Portfolio")
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(AppColors.accent)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Portfolio")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            #endif
+        }
+    }
+}
+
+// MARK: - Alerts Sheet View
+struct AlertsSheetView: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Spacer()
+
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 60))
+                    .foregroundColor(AppColors.warning)
+
+                Text("Price Alerts")
+                    .font(AppFonts.title24)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("Set up alerts to get notified when prices hit your targets.")
+                    .font(AppFonts.body14)
+                    .foregroundColor(AppColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+
+                Spacer()
+
+                NavigationLink(destination: Text("Alerts Detail")) {
+                    Text("Manage Alerts")
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(AppColors.warning)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Alerts")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

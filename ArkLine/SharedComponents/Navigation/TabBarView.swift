@@ -1,18 +1,20 @@
 import SwiftUI
 
-// MARK: - Tab Item (4 Tabs as per Design Spec)
+// MARK: - Tab Item (5 Tabs as per Design)
 enum AppTab: String, CaseIterable {
     case home = "Home"
     case market = "Market"
     case portfolio = "Portfolio"
-    case community = "Community"
+    case chat = "Chat"
+    case profile = "Profile"
 
     var icon: String {
         switch self {
         case .home: return "house.fill"
         case .market: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "wallet.pass.fill"
-        case .community: return "person.2.fill"
+        case .chat: return "message.fill"
+        case .profile: return "person.fill"
         }
     }
 
@@ -21,12 +23,13 @@ enum AppTab: String, CaseIterable {
         case .home: return "house"
         case .market: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "wallet.pass"
-        case .community: return "person.2"
+        case .chat: return "message"
+        case .profile: return "person"
         }
     }
 }
 
-// MARK: - Custom Tab Bar
+// MARK: - Custom Tab Bar (Floating Design - Slim)
 struct CustomTabBar: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: AppTab
@@ -40,60 +43,73 @@ struct CustomTabBar: View {
                     isSelected: selectedTab == tab,
                     badge: badges[tab]
                 ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedTab = tab
                     }
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 8)
-        .padding(.bottom, 20)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(
-            AppColors.surface(colorScheme)
+            Capsule()
+                .fill(
+                    colorScheme == .dark
+                        ? Color(hex: "1A1A1A").opacity(0.95)
+                        : Color.white.opacity(0.95)
+                )
                 .overlay(
-                    Rectangle()
-                        .fill(AppColors.divider(colorScheme))
-                        .frame(height: 1),
-                    alignment: .top
+                    Capsule()
+                        .stroke(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.08)
+                                : Color.black.opacity(0.05),
+                            lineWidth: 0.5
+                        )
                 )
         )
+        .shadow(
+            color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.12),
+            radius: 12,
+            x: 0,
+            y: 4
+        )
+        .padding(.horizontal, 40)
+        .padding(.bottom, 0)
     }
 }
 
-// MARK: - Tab Bar Item
+// MARK: - Tab Bar Item (Icon Only - Slim)
 struct TabBarItem: View {
     let tab: AppTab
     let isSelected: Bool
     var badge: Int? = nil
     let action: () -> Void
+    @Environment(\.colorScheme) var colorScheme
 
     private let activeColor = AppColors.accent      // #3B69FF
     private let inactiveColor = AppColors.textSecondary  // #888888
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: isSelected ? tab.icon : tab.unselectedIcon)
-                        .font(.system(size: 22))
-                        .foregroundColor(isSelected ? activeColor : inactiveColor)
-
-                    if let badge = badge, badge > 0 {
-                        Circle()
-                            .fill(AppColors.error)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 4, y: -2)
-                    }
-                }
-
-                Text(tab.rawValue)
-                    .font(AppFonts.footnote10)
-                    .fontWeight(isSelected ? .semibold : .regular)
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: isSelected ? tab.icon : tab.unselectedIcon)
+                    .font(.system(size: 20, weight: isSelected ? .medium : .regular))
                     .foregroundColor(isSelected ? activeColor : inactiveColor)
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
+
+                // Badge dot
+                if let badge = badge, badge > 0 {
+                    Circle()
+                        .fill(AppColors.error)
+                        .frame(width: 6, height: 6)
+                        .offset(x: 3, y: -3)
+                }
             }
             .frame(maxWidth: .infinity)
+            .frame(height: 36)
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -105,27 +121,24 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                // Home Tab
-                HomeView()
-                    .tag(AppTab.home)
-
-                // Market Tab
-                MarketOverviewView()
-                    .tag(AppTab.market)
-
-                // Portfolio Tab
-                PortfolioView()
-                    .tag(AppTab.portfolio)
-
-                // Community Tab
-                CommunityView()
-                    .tag(AppTab.community)
+            // Content based on selected tab
+            Group {
+                switch selectedTab {
+                case .home:
+                    HomeView()
+                case .market:
+                    MarketOverviewView()
+                case .portfolio:
+                    PortfolioView()
+                case .chat:
+                    AIChatView()
+                case .profile:
+                    ProfileView()
+                }
             }
-            #if os(iOS)
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            #endif
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // Floating Tab Bar
             CustomTabBar(selectedTab: $selectedTab)
         }
         .ignoresSafeArea(.keyboard)

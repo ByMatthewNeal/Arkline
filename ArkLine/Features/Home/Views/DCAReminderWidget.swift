@@ -30,8 +30,7 @@ struct DCAReminderWidget: View {
             }
         }
         .padding(20)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(16)
+        .glassCard(cornerRadius: 16)
     }
 }
 
@@ -82,8 +81,7 @@ struct DCAReminderCard: View {
             }
         }
         .padding(12)
-        .background(Color(hex: "2A2A2A"))
-        .cornerRadius(12)
+        .glassCard(cornerRadius: 12)
     }
 }
 

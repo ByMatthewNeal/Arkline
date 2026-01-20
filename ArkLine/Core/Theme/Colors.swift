@@ -205,12 +205,12 @@ extension AppColors {
             : Color.white.opacity(0.5)
     }
 
-    // MARK: - Mesh Gradient Colors (Apple-style)
-    static let meshPurple = Color(hex: "7C3AED")
-    static let meshBlue = Color(hex: "3B82F6")
-    static let meshCyan = Color(hex: "06B6D4")
-    static let meshPink = Color(hex: "EC4899")
-    static let meshIndigo = Color(hex: "6366F1")
+    // MARK: - Mesh Gradient Colors (Based on ArkLine palette)
+    static let meshPurple = Color(hex: "2F2858")  // fill-secondary dark
+    static let meshBlue = Color(hex: "3369FF")    // accent/fill-primary
+    static let meshCyan = Color(hex: "3B82F6")    // info blue
+    static let meshPink = Color(hex: "6366F1")    // subtle purple
+    static let meshIndigo = Color(hex: "1E3A8A")  // deep blue
 
     // MARK: - Glow Colors
     static let glowPrimary = Color(hex: "3B69FF")
@@ -238,12 +238,12 @@ extension AppColors {
 }
 
 // MARK: - Glassmorphism Card Modifier
-struct GlassCard: ViewModifier {
+struct GlassmorphismCardModifier: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
     let cornerRadius: CGFloat
     let blur: CGFloat
 
-    init(cornerRadius: CGFloat = 20, blur: CGFloat = 10) {
+    init(cornerRadius: CGFloat = 16, blur: CGFloat = 10) {
         self.cornerRadius = cornerRadius
         self.blur = blur
     }
@@ -252,20 +252,60 @@ struct GlassCard: ViewModifier {
         content
             .background(
                 ZStack {
-                    // Frosted glass effect
+                    // Ultra-thin material for blur effect
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(AppColors.glassBackground(colorScheme))
-                        .background(
-                            RoundedRectangle(cornerRadius: cornerRadius)
-                                .fill(.ultraThinMaterial)
+                        .fill(.ultraThinMaterial)
+
+                    // Subtle tinted glass overlay
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(
+                            colorScheme == .dark
+                                ? Color(hex: "1F1F1F").opacity(0.45)
+                                : Color.white.opacity(0.55)
                         )
 
-                    // Border glow
+                    // Very subtle blue tint from accent color
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(AppColors.glassBorder(colorScheme), lineWidth: 1)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    AppColors.accent.opacity(colorScheme == .dark ? 0.05 : 0.03),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    // Inner highlight at top (very subtle)
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(colorScheme == .dark ? 0.08 : 0.3),
+                                    Color.clear
+                                ],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                        )
+
+                    // Border - subtle gradient
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4),
+                                    Color.white.opacity(colorScheme == .dark ? 0.03 : 0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.5
+                        )
                 }
             )
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.08), radius: 10, x: 0, y: 4)
     }
 }
 
@@ -303,72 +343,99 @@ struct GlowButton: ViewModifier {
 // MARK: - Mesh Background View
 struct MeshGradientBackground: View {
     @State private var animateGradient = false
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         ZStack {
-            // Base dark background
-            Color(hex: "050507")
+            // Base dark background (matches ArkLine #0F0F0F)
+            Color(hex: colorScheme == .dark ? "0A0A0B" : "F5F5F5")
 
-            // Animated mesh blobs
+            // Animated mesh blobs - subtle, dark blue/purple tones
             GeometryReader { geometry in
                 ZStack {
-                    // Purple blob
+                    // Large deep blue blob (top-left)
                     Circle()
-                        .fill(AppColors.meshPurple.opacity(0.4))
-                        .frame(width: 300, height: 300)
-                        .blur(radius: 80)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    AppColors.meshIndigo.opacity(colorScheme == .dark ? 0.7 : 0.3),
+                                    AppColors.meshIndigo.opacity(0)
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 250
+                            )
+                        )
+                        .frame(width: 500, height: 500)
                         .offset(
-                            x: animateGradient ? -50 : 50,
-                            y: animateGradient ? -100 : -50
+                            x: animateGradient ? -120 : -80,
+                            y: animateGradient ? -200 : -150
                         )
 
-                    // Blue blob
+                    // Accent blue blob (center-right)
                     Circle()
-                        .fill(AppColors.meshBlue.opacity(0.35))
-                        .frame(width: 250, height: 250)
-                        .blur(radius: 70)
-                        .offset(
-                            x: animateGradient ? 80 : 20,
-                            y: animateGradient ? 100 : 150
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    AppColors.meshBlue.opacity(colorScheme == .dark ? 0.4 : 0.25),
+                                    AppColors.meshBlue.opacity(0)
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 200
+                            )
                         )
-
-                    // Cyan blob
-                    Circle()
-                        .fill(AppColors.meshCyan.opacity(0.25))
-                        .frame(width: 200, height: 200)
-                        .blur(radius: 60)
-                        .offset(
-                            x: animateGradient ? -80 : -30,
-                            y: animateGradient ? 200 : 250
-                        )
-
-                    // Pink accent
-                    Circle()
-                        .fill(AppColors.meshPink.opacity(0.2))
-                        .frame(width: 150, height: 150)
-                        .blur(radius: 50)
+                        .frame(width: 400, height: 400)
                         .offset(
                             x: animateGradient ? 100 : 60,
-                            y: animateGradient ? -50 : 0
+                            y: animateGradient ? 80 : 120
+                        )
+
+                    // Purple blob (bottom-left)
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    AppColors.meshPurple.opacity(colorScheme == .dark ? 0.6 : 0.25),
+                                    AppColors.meshPurple.opacity(0)
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 180
+                            )
+                        )
+                        .frame(width: 360, height: 360)
+                        .offset(
+                            x: animateGradient ? -80 : -40,
+                            y: animateGradient ? 350 : 400
+                        )
+
+                    // Subtle accent glow (top-right)
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    AppColors.accent.opacity(colorScheme == .dark ? 0.25 : 0.15),
+                                    AppColors.accent.opacity(0)
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 150
+                            )
+                        )
+                        .frame(width: 300, height: 300)
+                        .offset(
+                            x: animateGradient ? 120 : 80,
+                            y: animateGradient ? -100 : -60
                         )
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
             }
-
-            // Noise overlay for texture
-            Rectangle()
-                .fill(Color.white.opacity(0.02))
-                .background(
-                    Image(systemName: "circle.grid.3x3.fill")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .opacity(0.03)
-                )
         }
         .ignoresSafeArea()
         .onAppear {
             withAnimation(
-                .easeInOut(duration: 8)
+                .easeInOut(duration: 12)
                 .repeatForever(autoreverses: true)
             ) {
                 animateGradient = true
@@ -378,9 +445,47 @@ struct MeshGradientBackground: View {
 }
 
 // MARK: - View Extensions
+// MARK: - Glass List Row Background
+struct GlassListRowBackground: View {
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        ZStack {
+            // Ultra-thin material for blur effect
+            Rectangle()
+                .fill(.ultraThinMaterial)
+
+            // Subtle tinted glass overlay
+            Rectangle()
+                .fill(
+                    colorScheme == .dark
+                        ? Color(hex: "1F1F1F").opacity(0.45)
+                        : Color.white.opacity(0.55)
+                )
+
+            // Very subtle accent tint
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            AppColors.accent.opacity(colorScheme == .dark ? 0.03 : 0.02),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
+    }
+}
+
 extension View {
     func glassCard(cornerRadius: CGFloat = 20, blur: CGFloat = 10) -> some View {
-        modifier(GlassCard(cornerRadius: cornerRadius, blur: blur))
+        modifier(GlassmorphismCardModifier(cornerRadius: cornerRadius, blur: blur))
+    }
+
+    func glassListRowBackground() -> some View {
+        listRowBackground(GlassListRowBackground())
     }
 
     func glowButton(color: Color = AppColors.glowPrimary, isPressed: Bool = false) -> some View {
@@ -396,5 +501,108 @@ extension View {
                 .offset(y: 1)
                 .mask(RoundedRectangle(cornerRadius: 20).fill(LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)))
         )
+    }
+}
+
+// MARK: - Brush Effect Overlay for Dark Mode
+struct BrushEffectOverlay: View {
+    @State private var animateBrush = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Primary brush stroke - diagonal sweep
+                BrushStroke(
+                    startPoint: CGPoint(x: -100, y: geometry.size.height * 0.2),
+                    endPoint: CGPoint(x: geometry.size.width + 100, y: geometry.size.height * 0.4),
+                    color: AppColors.meshBlue.opacity(0.15),
+                    width: 180
+                )
+                .blur(radius: 40)
+                .offset(x: animateBrush ? 20 : -20, y: animateBrush ? 10 : -10)
+
+                // Secondary brush stroke - opposite diagonal
+                BrushStroke(
+                    startPoint: CGPoint(x: geometry.size.width + 50, y: geometry.size.height * 0.5),
+                    endPoint: CGPoint(x: -50, y: geometry.size.height * 0.8),
+                    color: AppColors.meshPurple.opacity(0.12),
+                    width: 150
+                )
+                .blur(radius: 50)
+                .offset(x: animateBrush ? -15 : 15, y: animateBrush ? -8 : 8)
+
+                // Accent brush stroke - subtle cyan touch
+                BrushStroke(
+                    startPoint: CGPoint(x: geometry.size.width * 0.3, y: -50),
+                    endPoint: CGPoint(x: geometry.size.width * 0.7, y: geometry.size.height * 0.4),
+                    color: AppColors.meshCyan.opacity(0.08),
+                    width: 120
+                )
+                .blur(radius: 60)
+                .offset(x: animateBrush ? 10 : -10, y: animateBrush ? 15 : -5)
+
+                // Bottom accent brush
+                BrushStroke(
+                    startPoint: CGPoint(x: -50, y: geometry.size.height * 0.7),
+                    endPoint: CGPoint(x: geometry.size.width * 0.5, y: geometry.size.height + 50),
+                    color: AppColors.accent.opacity(0.10),
+                    width: 100
+                )
+                .blur(radius: 45)
+                .offset(x: animateBrush ? 5 : -5, y: animateBrush ? -10 : 10)
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .onAppear {
+            withAnimation(
+                .easeInOut(duration: 8)
+                .repeatForever(autoreverses: true)
+            ) {
+                animateBrush = true
+            }
+        }
+    }
+}
+
+// MARK: - Brush Stroke Shape
+struct BrushStroke: View {
+    let startPoint: CGPoint
+    let endPoint: CGPoint
+    let color: Color
+    let width: CGFloat
+
+    var body: some View {
+        Canvas { context, size in
+            var path = Path()
+            path.move(to: startPoint)
+
+            // Create a bezier curve for organic brush feel
+            let midX = (startPoint.x + endPoint.x) / 2
+            let midY = (startPoint.y + endPoint.y) / 2
+            let controlOffset: CGFloat = 80
+
+            path.addQuadCurve(
+                to: CGPoint(x: midX, y: midY),
+                control: CGPoint(
+                    x: startPoint.x + controlOffset,
+                    y: startPoint.y - controlOffset
+                )
+            )
+
+            path.addQuadCurve(
+                to: endPoint,
+                control: CGPoint(
+                    x: endPoint.x - controlOffset,
+                    y: endPoint.y + controlOffset
+                )
+            )
+
+            context.stroke(
+                path,
+                with: .color(color),
+                style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round)
+            )
+        }
     }
 }

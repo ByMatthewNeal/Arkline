@@ -219,7 +219,7 @@ enum MetalsAPIEndpoint: APIEndpoint {
 
 // MARK: - Claude API Endpoints
 enum ClaudeEndpoint: APIEndpoint {
-    case messages(model: String, maxTokens: Int, messages: [[String: String]])
+    case messages(request: ClaudeMessageRequest)
 
     var baseURL: String { Constants.Endpoints.claudeBase }
 
@@ -241,15 +241,65 @@ enum ClaudeEndpoint: APIEndpoint {
 
     var body: Data? {
         switch self {
-        case .messages(let model, let maxTokens, let messages):
-            let payload: [String: Any] = [
-                "model": model,
-                "max_tokens": maxTokens,
-                "messages": messages
-            ]
-            return try? JSONSerialization.data(withJSONObject: payload)
+        case .messages(let request):
+            let encoder = JSONEncoder()
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+            return try? encoder.encode(request)
         }
     }
 
     var requiresAuth: Bool { true }
+}
+
+// MARK: - Fear & Greed Index Endpoint (Alternative.me)
+enum FearGreedEndpoint: APIEndpoint {
+    case current
+    case historical(days: Int)
+
+    var baseURL: String { "https://api.alternative.me" }
+
+    var path: String { "/fng/" }
+
+    var method: HTTPMethod { .get }
+
+    var queryParameters: [String: String]? {
+        switch self {
+        case .current:
+            return nil
+        case .historical(let days):
+            return ["limit": "\(days)"]
+        }
+    }
+}
+
+// MARK: - CryptoCompare News Endpoint
+enum CryptoCompareEndpoint: APIEndpoint {
+    case news(language: String, categories: [String]?)
+    case newsCategories
+
+    var baseURL: String { "https://min-api.cryptocompare.com" }
+
+    var path: String {
+        switch self {
+        case .news:
+            return "/data/v2/news/"
+        case .newsCategories:
+            return "/data/news/categories"
+        }
+    }
+
+    var method: HTTPMethod { .get }
+
+    var queryParameters: [String: String]? {
+        switch self {
+        case .news(let language, let categories):
+            var params: [String: String] = ["lang": language]
+            if let cats = categories, !cats.isEmpty {
+                params["categories"] = cats.joined(separator: ",")
+            }
+            return params
+        case .newsCategories:
+            return nil
+        }
+    }
 }
