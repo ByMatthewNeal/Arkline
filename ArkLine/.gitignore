@@ -1,0 +1,24 @@
+# Build artifacts
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Xcode
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Dependencies
+Packages/
+
+# Environment and secrets
+.env
+*.pem
+credentials.json

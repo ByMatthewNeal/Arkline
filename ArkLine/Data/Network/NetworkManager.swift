@@ -1,0 +1,227 @@
+import Foundation
+
+// MARK: - Network Manager
+actor NetworkManager {
+    // MARK: - Singleton
+    static let shared = NetworkManager()
+
+    // MARK: - Properties
+    private let session: URLSession
+    private var cache: [String: CachedResponse] = [:]
+
+    // MARK: - Cache Entry
+    private struct CachedResponse {
+        let data: Data
+        let timestamp: Date
+        let ttl: TimeInterval
+    }
+
+    // MARK: - Init
+    private init() {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 60
+        configuration.waitsForConnectivity = true
+        configuration.requestCachePolicy = .returnCacheDataElseLoad
+
+        self.session = URLSession(configuration: configuration)
+    }
+
+    // MARK: - Generic Request
+    func request<T: Decodable>(
+        endpoint: APIEndpoint,
+        responseType: T.Type,
+        cacheTTL: TimeInterval? = nil
+    ) async throws -> T {
+        // Check cache first
+        if let ttl = cacheTTL, let cachedData = getCachedData(for: endpoint, ttl: ttl) {
+            return try decode(cachedData, as: responseType)
+        }
+
+        let request = try endpoint.asURLRequest()
+        AppLogger.shared.logRequest(request)
+
+        do {
+            let (data, response) = try await session.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AppError.invalidResponse
+            }
+
+            AppLogger.shared.logResponse(httpResponse, data: data, error: nil)
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                let errorMessage = try? JSONDecoder().decode(APIErrorResponse.self, from: data).message
+                throw AppError.from(httpStatusCode: httpResponse.statusCode, message: errorMessage)
+            }
+
+            // Cache successful response
+            if let ttl = cacheTTL {
+                cacheData(data, for: endpoint, ttl: ttl)
+            }
+
+            return try decode(data, as: responseType)
+        } catch let error as AppError {
+            throw error
+        } catch let error as URLError {
+            AppLogger.shared.logResponse(nil, data: nil, error: error)
+            throw mapURLError(error)
+        } catch {
+            AppLogger.shared.logResponse(nil, data: nil, error: error)
+            throw AppError.networkError(underlying: error)
+        }
+    }
+
+    // MARK: - Request with Raw Data Response
+    func requestData(endpoint: APIEndpoint) async throws -> Data {
+        let request = try endpoint.asURLRequest()
+        AppLogger.shared.logRequest(request)
+
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AppError.invalidResponse
+        }
+
+        AppLogger.shared.logResponse(httpResponse, data: data, error: nil)
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw AppError.from(httpStatusCode: httpResponse.statusCode)
+        }
+
+        return data
+    }
+
+    // MARK: - Streaming Request (for AI chat)
+    func streamRequest(
+        endpoint: APIEndpoint,
+        onReceive: @escaping (String) -> Void
+    ) async throws {
+        let request = try endpoint.asURLRequest()
+        AppLogger.shared.logRequest(request)
+
+        let (bytes, response) = try await session.bytes(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AppError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw AppError.from(httpStatusCode: httpResponse.statusCode)
+        }
+
+        var buffer = ""
+        for try await byte in bytes {
+            let char = Character(UnicodeScalar(byte))
+            buffer.append(char)
+
+            if char == "\n" && buffer.hasPrefix("data: ") {
+                let jsonString = String(buffer.dropFirst(6).dropLast())
+                if jsonString != "[DONE]" {
+                    onReceive(jsonString)
+                }
+                buffer = ""
+            }
+        }
+    }
+
+    // MARK: - Cache Management
+    private func getCachedData(for endpoint: APIEndpoint, ttl: TimeInterval) -> Data? {
+        let key = cacheKey(for: endpoint)
+        guard let cached = cache[key] else { return nil }
+
+        let isValid = Date().timeIntervalSince(cached.timestamp) < ttl
+        if isValid {
+            return cached.data
+        }
+
+        cache.removeValue(forKey: key)
+        return nil
+    }
+
+    private func cacheData(_ data: Data, for endpoint: APIEndpoint, ttl: TimeInterval) {
+        let key = cacheKey(for: endpoint)
+        cache[key] = CachedResponse(data: data, timestamp: Date(), ttl: ttl)
+    }
+
+    private func cacheKey(for endpoint: APIEndpoint) -> String {
+        var key = endpoint.baseURL + endpoint.path
+        if let params = endpoint.queryParameters?.sorted(by: { $0.key < $1.key }) {
+            key += params.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
+        }
+        return key
+    }
+
+    func clearCache() {
+        cache.removeAll()
+    }
+
+    func clearExpiredCache() {
+        let now = Date()
+        cache = cache.filter { _, value in
+            now.timeIntervalSince(value.timestamp) < value.ttl
+        }
+    }
+
+    // MARK: - Helpers
+    private func decode<T: Decodable>(_ data: Data, as type: T.Type) throws -> T {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
+
+        do {
+            return try decoder.decode(type, from: data)
+        } catch {
+            logDebug("Decoding error: \(error)", category: .network)
+            throw AppError.decodingError(underlying: error)
+        }
+    }
+
+    private func mapURLError(_ error: URLError) -> AppError {
+        switch error.code {
+        case .notConnectedToInternet, .networkConnectionLost:
+            return .noInternetConnection
+        case .timedOut:
+            return .timeout
+        case .badURL:
+            return .invalidURL
+        default:
+            return .networkError(underlying: error)
+        }
+    }
+}
+
+// MARK: - API Error Response
+struct APIErrorResponse: Decodable {
+    let message: String?
+    let error: String?
+    let code: Int?
+}
+
+// MARK: - Network Monitor
+@MainActor
+@Observable
+final class NetworkMonitor {
+    static let shared = NetworkMonitor()
+
+    private(set) var isConnected = true
+    private(set) var connectionType: ConnectionType = .unknown
+
+    enum ConnectionType {
+        case wifi
+        case cellular
+        case wired
+        case unknown
+    }
+
+    private init() {
+        startMonitoring()
+    }
+
+    private func startMonitoring() {
+        // In a real app, use NWPathMonitor
+        // For now, assume connected
+        isConnected = true
+        connectionType = .wifi
+    }
+}

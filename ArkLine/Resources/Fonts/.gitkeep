@@ -1,0 +1,21 @@
+# Font Files Required
+
+Download and add the following font files to this directory:
+
+## Inter Font (for numbers and body text)
+Download from: https://fonts.google.com/specimen/Inter
+- Inter-Regular.ttf
+- Inter-Medium.ttf
+- Inter-SemiBold.ttf
+- Inter-Bold.ttf
+
+## Urbanist Font (for titles and headings)
+Download from: https://fonts.google.com/specimen/Urbanist
+- Urbanist-Regular.ttf
+- Urbanist-Medium.ttf
+- Urbanist-SemiBold.ttf
+
+After adding the fonts, make sure to:
+1. Add them to the Xcode project
+2. Set Target Membership for each font file
+3. Verify the font names match exactly in Info.plist
