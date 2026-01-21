@@ -62,14 +62,12 @@ struct HomeView: View {
                         )
                         .padding(.horizontal, 20)
 
-                        // Today's DCA Reminders
-                        if viewModel.hasTodayReminders {
-                            DCARemindersSection(
-                                reminders: viewModel.todayReminders,
-                                onComplete: { reminder in Task { await viewModel.markReminderComplete(reminder) } }
-                            )
-                            .padding(.horizontal, 20)
-                        }
+                        // DCA Reminders Section (Always Visible)
+                        DCARemindersEntrySection(
+                            todayReminders: viewModel.todayReminders,
+                            onComplete: { reminder in Task { await viewModel.markReminderComplete(reminder) } }
+                        )
+                        .padding(.horizontal, 20)
 
                         // Favorites
                         if !viewModel.favoriteAssets.isEmpty {
@@ -808,6 +806,236 @@ struct GlassFavoriteCard: View {
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - DCA Reminders Entry Section (Always Visible)
+struct DCARemindersEntrySection: View {
+    let todayReminders: [DCAReminder]
+    let onComplete: (DCAReminder) -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with bell icon
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("DCA Reminders")
+                        .font(.headline)
+                        .foregroundColor(textPrimary)
+                }
+
+                Spacer()
+
+                NavigationLink(destination: DCAListView()) {
+                    HStack(spacing: 4) {
+                        Text("View All")
+                            .font(.caption)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(AppColors.accent)
+                }
+            }
+
+            // Show today's reminders if any, otherwise show entry card
+            if todayReminders.isEmpty {
+                // Entry card when no reminders today
+                NavigationLink(destination: DCAListView()) {
+                    HStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(AppColors.accent.opacity(0.15))
+                                .frame(width: 48, height: 48)
+
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 20))
+                                .foregroundColor(AppColors.accent)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Manage DCA Strategies")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(textPrimary)
+
+                            Text("Time-based & Risk-based reminders")
+                                .font(.caption)
+                                .foregroundColor(textPrimary.opacity(0.6))
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.4))
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(cardBackground)
+                    )
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                }
+                .buttonStyle(.plain)
+            } else {
+                // Today's Reminders header
+                Text("Today's Reminders")
+                    .font(.system(size: 13))
+                    .foregroundColor(textPrimary.opacity(0.6))
+                    .padding(.top, 4)
+
+                // Show today's reminders with new design
+                ForEach(todayReminders) { reminder in
+                    HomeDCACard(reminder: reminder, onInvest: { onComplete(reminder) })
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Home DCA Card (Today's reminder with actions)
+struct HomeDCACard: View {
+    let reminder: DCAReminder
+    let onInvest: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showHistory = false
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            // Header row
+            HStack(spacing: 12) {
+                // Coin icon
+                HomeCoinIcon(symbol: reminder.symbol, size: 44)
+
+                // Info
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(reminder.name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(textPrimary)
+
+                        // Today badge
+                        Text(todayDateBadge)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppColors.accent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(AppColors.accent.opacity(0.15))
+                            )
+                    }
+
+                    Text("Purchase Amount: \(reminder.amount.asCurrency)")
+                        .font(.system(size: 13))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+
+                Spacer()
+            }
+
+            // Action buttons
+            HStack(spacing: 10) {
+                // History button
+                Button(action: { showHistory = true }) {
+                    Text("History")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(textPrimary.opacity(0.7))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                        )
+                }
+
+                // Mark as Invested button
+                Button(action: onInvest) {
+                    Text("Mark as Invested")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppColors.accent.opacity(0.15))
+                        )
+                }
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(cardBackground)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+
+    private var todayDateBadge: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: Date())
+    }
+}
+
+// MARK: - Home Coin Icon
+struct HomeCoinIcon: View {
+    let symbol: String
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(coinColor.opacity(0.15))
+                .frame(width: size, height: size)
+
+            if let iconName = coinSystemIcon {
+                Image(systemName: iconName)
+                    .font(.system(size: size * 0.45, weight: .semibold))
+                    .foregroundColor(coinColor)
+            } else {
+                Text(String(symbol.prefix(1)))
+                    .font(.system(size: size * 0.4, weight: .bold))
+                    .foregroundColor(coinColor)
+            }
+        }
+    }
+
+    private var coinColor: Color {
+        switch symbol.uppercased() {
+        case "BTC": return Color(hex: "F7931A")
+        case "ETH": return Color(hex: "627EEA")
+        case "SOL": return Color(hex: "00FFA3")
+        default: return AppColors.accent
+        }
+    }
+
+    private var coinSystemIcon: String? {
+        switch symbol.uppercased() {
+        case "BTC": return "bitcoinsign"
+        case "ETH": return "diamond.fill"
+        default: return nil
+        }
     }
 }
 

@@ -116,6 +116,74 @@ final class APISentimentService: SentimentServiceProtocol {
         throw AppError.notImplemented
     }
 
+    func fetchAppStoreRankings() async throws -> [AppStoreRanking] {
+        // TODO: Implement with App Store Connect API or scraping service
+        // This would fetch rankings for Coinbase, Binance, Kraken, etc.
+        throw AppError.notImplemented
+    }
+
+    func fetchArkLineRiskScore() async throws -> ArkLineRiskScore {
+        // Calculate ArkLine Risk Score from available indicators
+        async let fearGreed = fetchFearGreedIndex()
+        async let btcDom = fetchBTCDominance()
+
+        let (fg, btc) = try await (fearGreed, btcDom)
+
+        // Build components from available data
+        var components: [RiskScoreComponent] = []
+
+        // Fear & Greed component (20% weight)
+        let fgValue = Double(fg.value) / 100.0
+        components.append(RiskScoreComponent(
+            name: "Fear & Greed",
+            value: fgValue,
+            weight: 0.35,
+            signal: SentimentTier.from(score: fg.value)
+        ))
+
+        // BTC Dominance component (15% weight)
+        let btcValue = btc.value / 100.0
+        components.append(RiskScoreComponent(
+            name: "BTC Dominance",
+            value: btcValue,
+            weight: 0.25,
+            signal: btcValue > 0.55 ? .bullish : (btcValue < 0.45 ? .bearish : .neutral)
+        ))
+
+        // Add placeholder components for unavailable data
+        components.append(RiskScoreComponent(
+            name: "Market Momentum",
+            value: 0.5,
+            weight: 0.20,
+            signal: .neutral
+        ))
+
+        components.append(RiskScoreComponent(
+            name: "Volatility",
+            value: 0.5,
+            weight: 0.20,
+            signal: .neutral
+        ))
+
+        // Calculate weighted score
+        let weightedSum = components.reduce(0.0) { $0 + ($1.value * $1.weight) }
+        let score = Int(weightedSum * 100)
+
+        return ArkLineRiskScore(
+            score: score,
+            tier: SentimentTier.from(score: score),
+            components: components,
+            recommendation: generateArkLineRecommendation(score: score),
+            timestamp: Date()
+        )
+    }
+
+    func fetchGoogleTrends() async throws -> GoogleTrendsData {
+        // TODO: Implement with Google Trends API or SerpAPI
+        // For now, throw not implemented
+        throw AppError.notImplemented
+    }
+
     func fetchMarketOverview() async throws -> MarketOverview {
         async let fg = fetchFearGreedIndex()
         async let btc = fetchBTCDominance()
@@ -149,6 +217,21 @@ final class APISentimentService: SentimentServiceProtocol {
         case 4...6: return "Moderate risk - maintain balanced positions"
         case 7...8: return "High risk - consider reducing exposure"
         default: return "Extreme risk - exercise caution"
+        }
+    }
+
+    private func generateArkLineRecommendation(score: Int) -> String {
+        switch score {
+        case 0...20:
+            return "Extreme fear in the market. Historically a good accumulation zone. Consider DCA buying."
+        case 21...40:
+            return "Market showing fear. Potential buying opportunity with caution."
+        case 41...60:
+            return "Neutral sentiment. Market in consolidation. Hold positions and monitor."
+        case 61...80:
+            return "Greed in the market. Consider taking partial profits. Reduce leverage."
+        default:
+            return "Extreme greed. High risk zone. Consider de-risking portfolio significantly."
         }
     }
 }

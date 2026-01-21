@@ -138,6 +138,136 @@ final class MockSentimentService: SentimentServiceProtocol {
         )
     }
 
+    func fetchAppStoreRankings() async throws -> [AppStoreRanking] {
+        try await simulateNetworkDelay()
+        return [
+            AppStoreRanking(
+                id: UUID(),
+                appName: "Coinbase",
+                ranking: 243,
+                change: -12,
+                recordedAt: Date()
+            ),
+            AppStoreRanking(
+                id: UUID(),
+                appName: "Binance",
+                ranking: 89,
+                change: 5,
+                recordedAt: Date()
+            ),
+            AppStoreRanking(
+                id: UUID(),
+                appName: "Kraken",
+                ranking: 412,
+                change: -28,
+                recordedAt: Date()
+            ),
+            AppStoreRanking(
+                id: UUID(),
+                appName: "Crypto.com",
+                ranking: 156,
+                change: 3,
+                recordedAt: Date()
+            ),
+            AppStoreRanking(
+                id: UUID(),
+                appName: "Robinhood",
+                ranking: 42,
+                change: -8,
+                recordedAt: Date()
+            )
+        ]
+    }
+
+    func fetchArkLineRiskScore() async throws -> ArkLineRiskScore {
+        try await simulateNetworkDelay()
+
+        // Calculate composite score from multiple indicators
+        let components = [
+            RiskScoreComponent(
+                name: "Fear & Greed",
+                value: 0.49,
+                weight: 0.20,
+                signal: .neutral
+            ),
+            RiskScoreComponent(
+                name: "App Store Sentiment",
+                value: 0.35,
+                weight: 0.15,
+                signal: .bearish
+            ),
+            RiskScoreComponent(
+                name: "Funding Rates",
+                value: 0.62,
+                weight: 0.15,
+                signal: .bullish
+            ),
+            RiskScoreComponent(
+                name: "ETF Flows",
+                value: 0.71,
+                weight: 0.15,
+                signal: .bullish
+            ),
+            RiskScoreComponent(
+                name: "Liquidation Ratio",
+                value: 0.55,
+                weight: 0.10,
+                signal: .neutral
+            ),
+            RiskScoreComponent(
+                name: "BTC Dominance",
+                value: 0.62,
+                weight: 0.10,
+                signal: .bullish
+            ),
+            RiskScoreComponent(
+                name: "Google Trends",
+                value: 0.66,
+                weight: 0.15,
+                signal: .bullish
+            )
+        ]
+
+        // Weighted average calculation
+        let weightedSum = components.reduce(0.0) { $0 + ($1.value * $1.weight) }
+        let score = Int(weightedSum * 100)
+
+        return ArkLineRiskScore(
+            score: score,
+            tier: SentimentTier.from(score: score),
+            components: components,
+            recommendation: recommendationFor(score: score),
+            timestamp: Date()
+        )
+    }
+
+    func fetchGoogleTrends() async throws -> GoogleTrendsData {
+        try await simulateNetworkDelay()
+        return GoogleTrendsData(
+            keyword: "Bitcoin",
+            currentIndex: 66,
+            weekAgoIndex: 58,
+            monthAgoIndex: 45,
+            trend: .rising,
+            timestamp: Date()
+        )
+    }
+
+    private func recommendationFor(score: Int) -> String {
+        switch score {
+        case 0...20:
+            return "Extreme fear in the market. Historically a good accumulation zone. Consider DCA buying."
+        case 21...40:
+            return "Market showing fear. Potential buying opportunity with caution."
+        case 41...60:
+            return "Neutral sentiment. Market in consolidation. Hold positions and monitor."
+        case 61...80:
+            return "Greed in the market. Consider taking partial profits. Reduce leverage."
+        default:
+            return "Extreme greed. High risk zone. Consider de-risking portfolio significantly."
+        }
+    }
+
     func fetchMarketOverview() async throws -> MarketOverview {
         async let fg = fetchFearGreedIndex()
         async let btc = fetchBTCDominance()

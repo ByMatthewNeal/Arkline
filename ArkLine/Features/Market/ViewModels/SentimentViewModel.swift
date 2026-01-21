@@ -19,9 +19,22 @@ class SentimentViewModel {
     var altcoinSeason: AltcoinSeasonIndex?
     var globalLiquidity: GlobalLiquidity?
 
-    // New Properties for Market Overview Redesign
-    var riskLevel: RiskLevel?
+    // Legacy single app ranking (backwards compatibility)
     var appStoreRanking: AppStoreRanking?
+
+    // NEW: Multiple App Store Rankings (Coinbase, Binance, Kraken, etc.)
+    var appStoreRankings: [AppStoreRanking] = []
+
+    // NEW: ArkLine Proprietary Risk Score (0-100)
+    var arkLineRiskScore: ArkLineRiskScore?
+
+    // NEW: Google Trends Data
+    var googleTrends: GoogleTrendsData?
+
+    // Legacy risk level (backwards compatibility)
+    var riskLevel: RiskLevel?
+
+    // Market Overview Data
     var bitcoinSearchIndex: Int = 66
     var totalMarketCap: Double = 3_320_000_000_000
     var marketCapChange24h: Double = 2.29
@@ -29,6 +42,36 @@ class SentimentViewModel {
 
     // Historical Data
     var fearGreedHistory: [FearGreedIndex] = []
+
+    // MARK: - Computed Properties for UI
+
+    /// Overall market sentiment tier based on ArkLine Risk Score
+    var overallSentimentTier: SentimentTier {
+        arkLineRiskScore?.tier ?? .neutral
+    }
+
+    /// Primary app for display (Coinbase as main indicator)
+    var primaryAppRanking: AppStoreRanking? {
+        appStoreRankings.first { $0.appName == "Coinbase" } ?? appStoreRankings.first
+    }
+
+    /// Average app store ranking change (sentiment indicator)
+    var averageAppStoreChange: Int {
+        guard !appStoreRankings.isEmpty else { return 0 }
+        let total = appStoreRankings.reduce(0) { $0 + $1.change }
+        return total / appStoreRankings.count
+    }
+
+    /// Is it Bitcoin season based on altcoin index?
+    var isBitcoinSeason: Bool {
+        altcoinSeason?.isBitcoinSeason ?? true
+    }
+
+    /// Season display text
+    var seasonDisplayText: String {
+        guard let alt = altcoinSeason else { return "Loading..." }
+        return alt.isBitcoinSeason ? "Bitcoin Season" : "Altcoin Season"
+    }
 
     // MARK: - Computed Properties
     var overallSentiment: SentimentLevel {
@@ -134,6 +177,7 @@ class SentimentViewModel {
         errorMessage = nil
 
         do {
+            // Core sentiment indicators
             async let fgTask = sentimentService.fetchFearGreedIndex()
             async let btcTask = sentimentService.fetchBTCDominance()
             async let etfTask = fetchETFSafe()
@@ -142,9 +186,16 @@ class SentimentViewModel {
             async let altTask = fetchAltcoinSeasonSafe()
             async let riskTask = fetchRiskLevelSafe()
 
+            // NEW: Enhanced indicators
+            async let appRankingsTask = fetchAppStoreRankingsSafe()
+            async let arkLineScoreTask = fetchArkLineRiskScoreSafe()
+            async let googleTrendsTask = fetchGoogleTrendsSafe()
+
             let (fg, btc, etf, funding, liq, alt, risk) = try await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
+            let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
 
             await MainActor.run {
+                // Core indicators
                 self.fearGreedIndex = fg
                 self.btcDominance = btc
                 self.etfNetFlow = etf
@@ -152,6 +203,18 @@ class SentimentViewModel {
                 self.liquidations = liq
                 self.altcoinSeason = alt
                 self.riskLevel = risk
+
+                // Enhanced indicators
+                self.appStoreRankings = appRankings ?? []
+                self.appStoreRanking = appRankings?.first // Legacy compatibility
+                self.arkLineRiskScore = arkLineScore
+                self.googleTrends = trends
+
+                // Update search index from Google Trends
+                if let trends = trends {
+                    self.bitcoinSearchIndex = trends.currentIndex
+                }
+
                 self.isLoading = false
             }
         } catch {
@@ -198,6 +261,18 @@ class SentimentViewModel {
 
     private func fetchRiskLevelSafe() async -> RiskLevel? {
         try? await sentimentService.fetchRiskLevel()
+    }
+
+    private func fetchAppStoreRankingsSafe() async -> [AppStoreRanking]? {
+        try? await sentimentService.fetchAppStoreRankings()
+    }
+
+    private func fetchArkLineRiskScoreSafe() async -> ArkLineRiskScore? {
+        try? await sentimentService.fetchArkLineRiskScore()
+    }
+
+    private func fetchGoogleTrendsSafe() async -> GoogleTrendsData? {
+        try? await sentimentService.fetchGoogleTrends()
     }
 }
 
