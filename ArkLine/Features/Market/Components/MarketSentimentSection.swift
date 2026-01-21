@@ -22,6 +22,8 @@ struct MarketSentimentSection: View {
                     // ArkLine Risk Score (Proprietary)
                     if let arkLineScore = viewModel.arkLineRiskScore {
                         ArkLineScoreCard(score: arkLineScore)
+                    } else {
+                        PlaceholderCard(title: "ArkLine Score", icon: "sparkles")
                     }
 
                     // Fear & Greed Index
@@ -30,6 +32,8 @@ struct MarketSentimentSection: View {
                             FearGreedSentimentCard(index: fearGreed)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    } else {
+                        PlaceholderCard(title: "Fear & Greed", icon: "gauge.with.needle")
                     }
 
                     // Bitcoin/Altcoin Season
@@ -38,6 +42,8 @@ struct MarketSentimentSection: View {
                             BitcoinSeasonCard(index: altcoin)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    } else {
+                        PlaceholderCard(title: "Season Indicator", icon: "bitcoinsign.circle")
                     }
 
                     // Market Cap
@@ -53,6 +59,8 @@ struct MarketSentimentSection: View {
                             BTCDominanceCard(dominance: btcDom)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    } else {
+                        PlaceholderCard(title: "BTC Dominance", icon: "chart.pie")
                     }
 
                     // Liquidation Levels
@@ -61,6 +69,8 @@ struct MarketSentimentSection: View {
                             LiquidationLevelsCard(liquidation: liquidation)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    } else {
+                        PlaceholderCard(title: "Liquidations", icon: "flame")
                     }
                 }
             }
@@ -73,7 +83,11 @@ struct MarketSentimentSection: View {
             ) {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // App Store Rankings (Multiple Apps)
-                    AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
+                    if viewModel.appStoreRankings.isEmpty {
+                        PlaceholderCard(title: "App Store Rankings", icon: "arrow.down.app")
+                    } else {
+                        AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
+                    }
 
                     // Google Trends / Bitcoin Search
                     if let trends = viewModel.googleTrends {
@@ -97,6 +111,8 @@ struct MarketSentimentSection: View {
                             ETFNetFlowCard(etfFlow: etf)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    } else {
+                        PlaceholderCard(title: "ETF Net Flow", icon: "building.2")
                     }
 
                     // Funding Rate
@@ -105,6 +121,8 @@ struct MarketSentimentSection: View {
                             FundingRateCard(fundingRate: funding)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    } else {
+                        PlaceholderCard(title: "Funding Rate", icon: "percent")
                     }
                 }
             }
@@ -190,6 +208,41 @@ struct SentimentCategorySection<Content: View>: View {
             content
                 .padding(.horizontal, 20)
         }
+    }
+}
+
+// MARK: - Placeholder Card (Coming Soon)
+struct PlaceholderCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    let title: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            Spacer()
+
+            VStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+
+                Text("Coming Soon")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+
+            Spacer()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 120)
+        .glassCard(cornerRadius: 16)
+        .opacity(0.7)
     }
 }
 
