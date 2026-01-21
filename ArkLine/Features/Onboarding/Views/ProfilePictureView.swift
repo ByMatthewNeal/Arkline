@@ -2,74 +2,39 @@ import SwiftUI
 import PhotosUI
 #if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 
+// MARK: - Profile Picture View
 struct ProfilePictureView: View {
     @Bindable var viewModel: OnboardingViewModel
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImage: Image?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 12) {
-                        Text("Add a profile picture")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
+                VStack(spacing: ArkSpacing.xxl) {
+                    // Header
+                    OnboardingHeader(
+                        icon: "camera.circle.fill",
+                        title: "Add a profile picture",
+                        subtitle: "Help others recognize you",
+                        isOptional: true
+                    )
 
-                        Text("Help others recognize you")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "A1A1AA"))
-                    }
-                    .padding(.top, 40)
-
-                    // Profile Picture Picker
+                    // Profile picture picker
                     PhotosPicker(selection: $selectedItem, matching: .images) {
-                        ZStack {
-                            if let selectedImage = selectedImage {
-                                selectedImage
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 150, height: 150)
-                                    .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .frame(width: 150, height: 150)
-                                    .overlay(
-                                        Text(viewModel.fullName.isEmpty ? "?" : String(viewModel.fullName.prefix(1)).uppercased())
-                                            .font(.system(size: 60, weight: .bold))
-                                            .foregroundColor(.white)
-                                    )
-                            }
-
-                            Circle()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 2)
-                                .frame(width: 150, height: 150)
-
-                            // Edit badge
-                            Circle()
-                                .fill(Color(hex: "6366F1"))
-                                .frame(width: 40, height: 40)
-                                .overlay(
-                                    Image(systemName: "camera.fill")
-                                        .foregroundColor(.white)
-                                        .font(.system(size: 16))
-                                )
-                                .offset(x: 50, y: 50)
-                        }
+                        ProfilePicturePreview(
+                            selectedImage: selectedImage,
+                            fullName: viewModel.fullName,
+                            colorScheme: colorScheme
+                        )
                     }
                     .onChange(of: selectedItem) { _, newItem in
-                        Task {
+                        Task { @MainActor in
                             if let data = try? await newItem?.loadTransferable(type: Data.self) {
                                 viewModel.profileImageData = data
                                 #if canImport(UIKit)
@@ -85,46 +50,87 @@ struct ProfilePictureView: View {
                         }
                     }
 
-                    Spacer()
+                    // Hint
+                    Text("Tap to select a photo from your library")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            VStack(spacing: 12) {
-                PrimaryButton(
-                    title: "Continue",
-                    action: {
-                        Task {
-                            await viewModel.saveProfilePicture()
-                        }
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Continue",
+                primaryAction: {
+                    Task {
+                        await viewModel.saveProfilePicture()
                     }
-                )
-
-                Button(action: { viewModel.skipStep() }) {
-                    Text("Skip")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+                },
+                showSkip: true,
+                skipAction: { viewModel.skipStep() }
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
-        }
-        #endif
+        .onboardingBackButton { viewModel.previousStep() }
     }
 }
 
+// MARK: - Profile Picture Preview
+struct ProfilePicturePreview: View {
+    let selectedImage: Image?
+    let fullName: String
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        ZStack {
+            // Selected image or placeholder
+            if let selectedImage = selectedImage {
+                selectedImage
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 150, height: 150)
+                    .clipShape(Circle())
+            } else {
+                // Gradient placeholder with initial
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [AppColors.fillPrimary, AppColors.accentLight],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 150, height: 150)
+                    .overlay(
+                        Text(fullName.isEmpty ? "?" : String(fullName.prefix(1)).uppercased())
+                            .font(AppFonts.number44)
+                            .foregroundColor(.white)
+                    )
+            }
+
+            // Border
+            Circle()
+                .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                .frame(width: 150, height: 150)
+
+            // Camera badge
+            Circle()
+                .fill(AppColors.fillPrimary)
+                .frame(width: 40, height: 40)
+                .overlay(
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                )
+                .offset(x: 50, y: 50)
+        }
+    }
+}
+
+// MARK: - Preview
 #Preview {
     NavigationStack {
         ProfilePictureView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

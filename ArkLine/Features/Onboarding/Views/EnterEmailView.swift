@@ -4,38 +4,21 @@ import SwiftUI
 struct EnterEmailView: View {
     @Bindable var viewModel: OnboardingViewModel
     @FocusState private var isEmailFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Progress
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
+                VStack(spacing: ArkSpacing.xxl) {
                     // Header
-                    VStack(spacing: 12) {
-                        Image(systemName: "envelope.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-
-                        Text("What's your email?")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-
-                        Text("We'll send you a verification code")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "A1A1AA"))
-                    }
-                    .padding(.top, 40)
+                    OnboardingHeader(
+                        icon: "envelope.circle.fill",
+                        title: "What's your email?",
+                        subtitle: "We'll send you a verification code"
+                    )
 
                     // Email Input
-                    VStack(spacing: 16) {
+                    VStack(spacing: ArkSpacing.md) {
                         #if canImport(UIKit)
                         CustomTextField(
                             placeholder: "Email address",
@@ -55,36 +38,26 @@ struct EnterEmailView: View {
                         )
                         #endif
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, ArkSpacing.xl)
 
-                    Spacer()
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            // Continue Button
-            VStack(spacing: 16) {
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(Color(hex: "EF4444"))
-                }
-
-                PrimaryButton(
-                    title: "Continue",
-                    action: {
-                        Task {
-                            await viewModel.sendVerificationCode()
-                        }
-                    },
-                    isLoading: viewModel.isLoading,
-                    isDisabled: !viewModel.isEmailValid
-                )
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Continue",
+                primaryAction: {
+                    Task {
+                        await viewModel.sendVerificationCode()
+                    }
+                },
+                isLoading: viewModel.isLoading,
+                isDisabled: !viewModel.isEmailValid,
+                errorMessage: viewModel.errorMessage
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
+        .onboardingBackButton { viewModel.previousStep() }
         .onAppear {
             isEmailFocused = true
         }
@@ -96,4 +69,5 @@ struct EnterEmailView: View {
     NavigationStack {
         EnterEmailView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

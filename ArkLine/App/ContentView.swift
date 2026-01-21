@@ -127,6 +127,8 @@ struct OnboardingFlowView: View {
     var body: some View {
         Group {
             switch viewModel.currentStep {
+            case .welcome:
+                WelcomeView(viewModel: viewModel)
             case .email:
                 EnterEmailView(viewModel: viewModel)
             case .verification:

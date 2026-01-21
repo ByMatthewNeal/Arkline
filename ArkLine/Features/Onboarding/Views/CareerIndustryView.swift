@@ -1,106 +1,88 @@
 import SwiftUI
 
+// MARK: - Career Industry View
 struct CareerIndustryView: View {
     @Bindable var viewModel: OnboardingViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 12) {
-                        Image(systemName: "briefcase.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                VStack(spacing: ArkSpacing.xxl) {
+                    // Header
+                    OnboardingHeader(
+                        icon: "briefcase.circle.fill",
+                        title: "What industry are you in?",
+                        subtitle: "Helps personalize your experience",
+                        isOptional: true
+                    )
 
-                        Text("What industry are you in?")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-
-                        Text("Optional - helps personalize your experience")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "A1A1AA"))
-                    }
-                    .padding(.top, 40)
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    // Industry grid
+                    LazyVGrid(
+                        columns: [GridItem(.flexible()), GridItem(.flexible())],
+                        spacing: ArkSpacing.sm
+                    ) {
                         ForEach(CareerIndustry.allCases, id: \.self) { industry in
-                            IndustryButton(
+                            SelectableChip(
                                 title: industry.displayName,
-                                isSelected: viewModel.careerIndustry == industry
+                                isSelected: viewModel.careerIndustry == industry,
+                                colorScheme: colorScheme
                             ) {
                                 viewModel.careerIndustry = industry
                             }
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, ArkSpacing.xl)
 
-                    Spacer()
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            VStack(spacing: 12) {
-                PrimaryButton(
-                    title: "Continue",
-                    action: { viewModel.saveCareerIndustry() }
-                )
-
-                Button(action: { viewModel.skipStep() }) {
-                    Text("Skip")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Continue",
+                primaryAction: { viewModel.saveCareerIndustry() },
+                showSkip: true,
+                skipAction: { viewModel.skipStep() }
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
-        }
-        #endif
+        .onboardingBackButton { viewModel.previousStep() }
     }
 }
 
-struct IndustryButton: View {
+// MARK: - Selectable Chip
+/// Reusable selection chip for grids
+struct SelectableChip: View {
     let title: String
     let isSelected: Bool
+    let colorScheme: ColorScheme
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(isSelected ? .white : Color(hex: "A1A1AA"))
+                .font(AppFonts.body14Medium)
+                .foregroundColor(isSelected ? .white : AppColors.textSecondary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(isSelected ? Color(hex: "6366F1") : Color(hex: "1F1F1F"))
-                .cornerRadius(10)
+                .padding(.vertical, ArkSpacing.sm)
+                .background(isSelected ? AppColors.fillPrimary : AppColors.cardBackground(colorScheme))
+                .cornerRadius(ArkSpacing.Radius.input)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(isSelected ? Color.clear : Color(hex: "2A2A2A"), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.input)
+                        .stroke(
+                            isSelected ? Color.clear : AppColors.divider(colorScheme),
+                            lineWidth: ArkSpacing.Border.thin
+                        )
                 )
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
+// MARK: - Preview
 #Preview {
     NavigationStack {
         CareerIndustryView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

@@ -1,95 +1,63 @@
 import SwiftUI
+import Combine
 
 // MARK: - Verification Code View
 struct VerificationCodeView: View {
     @Bindable var viewModel: OnboardingViewModel
-    @FocusState private var isCodeFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
+                VStack(spacing: ArkSpacing.xxl) {
                     // Header
-                    VStack(spacing: 12) {
-                        Image(systemName: "number.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                    OnboardingHeader(
+                        icon: "number.circle.fill",
+                        title: "Enter verification code",
+                        subtitle: "We sent a code to \(viewModel.email)"
+                    )
 
-                        Text("Enter verification code")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-
-                        Text("We sent a code to \(viewModel.email)")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "A1A1AA"))
-                    }
-                    .padding(.top, 40)
-
-                    // Code Input
+                    // Code Input via keypad
                     PasscodeKeypad(
                         code: $viewModel.verificationCode,
-                        length: 6,
+                        length: 8,
                         title: ""
                     )
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, ArkSpacing.xl)
 
-                    // Resend
+                    // Resend link
                     Button(action: {
                         Task {
                             await viewModel.sendVerificationCode()
                         }
                     }) {
                         Text("Didn't receive code? Resend")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "6366F1"))
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.fillPrimary)
                     }
 
-                    Spacer()
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            // Continue Button
-            VStack(spacing: 16) {
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(Color(hex: "EF4444"))
-                }
-
-                PrimaryButton(
-                    title: "Verify",
-                    action: {
-                        Task {
-                            await viewModel.verifyCode()
-                        }
-                    },
-                    isLoading: viewModel.isLoading,
-                    isDisabled: !viewModel.isVerificationCodeValid
-                )
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Verify",
+                primaryAction: {
+                    Task {
+                        await viewModel.verifyCode()
+                    }
+                },
+                isLoading: viewModel.isLoading,
+                isDisabled: !viewModel.isVerificationCodeValid,
+                errorMessage: viewModel.errorMessage
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
+        .onboardingBackButton { viewModel.previousStep() }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("DeepLinkAuthSuccess"))) { _ in
+            // Auth succeeded via magic link, advance to next step
+            viewModel.nextStep()
         }
-        #endif
     }
 }
 
@@ -98,4 +66,5 @@ struct VerificationCodeView: View {
     NavigationStack {
         VerificationCodeView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

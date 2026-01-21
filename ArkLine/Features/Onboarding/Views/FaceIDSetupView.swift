@@ -1,10 +1,12 @@
 import SwiftUI
 import LocalAuthentication
 
+// MARK: - Face ID Setup View
 struct FaceIDSetupView: View {
     @Bindable var viewModel: OnboardingViewModel
-    @State private var showingError = false
-    @State private var errorMessage = ""
+    @State private var showingBiometricError = false
+    @State private var biometricErrorMessage = ""
+    @Environment(\.colorScheme) private var colorScheme
 
     private var biometricType: LABiometryType {
         let context = LAContext()
@@ -14,115 +16,112 @@ struct FaceIDSetupView: View {
 
     private var biometricIcon: String {
         switch biometricType {
-        case .faceID:
-            return "faceid"
-        case .touchID:
-            return "touchid"
-        case .opticID:
-            return "opticid"
-        default:
-            return "faceid"
+        case .faceID: return "faceid"
+        case .touchID: return "touchid"
+        case .opticID: return "opticid"
+        default: return "faceid"
         }
     }
 
     private var biometricName: String {
         switch biometricType {
-        case .faceID:
-            return "Face ID"
-        case .touchID:
-            return "Touch ID"
-        case .opticID:
-            return "Optic ID"
-        default:
-            return "Face ID"
+        case .faceID: return "Face ID"
+        case .touchID: return "Touch ID"
+        case .opticID: return "Optic ID"
+        default: return "Face ID"
         }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
-            VStack(spacing: 32) {
-                VStack(spacing: 12) {
+        OnboardingContainer(step: viewModel.currentStep) {
+            VStack(spacing: ArkSpacing.xxl) {
+                // Header with biometric icon
+                VStack(spacing: ArkSpacing.sm) {
                     Image(systemName: biometricIcon)
                         .font(.system(size: 80))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                colors: [AppColors.fillPrimary, AppColors.accentLight],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .padding(.bottom, 8)
+                        .padding(.bottom, ArkSpacing.xs)
 
                     Text("Enable \(biometricName)")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                        .font(AppFonts.title30)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("Use \(biometricName) for quick and secure access")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, ArkSpacing.xl)
                 }
-                .padding(.top, 60)
+                .padding(.top, ArkSpacing.xxxl)
 
-                VStack(spacing: 16) {
-                    FeatureRow(
+                // Feature list
+                VStack(spacing: ArkSpacing.md) {
+                    BiometricFeatureRow(
                         icon: "bolt.fill",
                         title: "Quick Access",
-                        description: "Unlock the app instantly"
+                        description: "Unlock the app instantly",
+                        colorScheme: colorScheme
                     )
 
-                    FeatureRow(
+                    BiometricFeatureRow(
                         icon: "lock.shield.fill",
                         title: "Secure",
-                        description: "Your biometric data stays on device"
+                        description: "Your biometric data stays on device",
+                        colorScheme: colorScheme
                     )
 
-                    FeatureRow(
+                    BiometricFeatureRow(
                         icon: "key.fill",
                         title: "Passcode Backup",
-                        description: "Always use passcode as fallback"
+                        description: "Always use passcode as fallback",
+                        colorScheme: colorScheme
                     )
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
+                .padding(.horizontal, ArkSpacing.xl)
+                .padding(.top, ArkSpacing.md)
 
                 Spacer()
-            }
 
-            VStack(spacing: 12) {
-                PrimaryButton(
-                    title: "Enable \(biometricName)",
-                    action: { authenticateWithBiometrics() }
-                )
+                // Bottom buttons
+                VStack(spacing: ArkSpacing.sm) {
+                    // Error message from view model
+                    if let error = viewModel.errorMessage {
+                        Text(error)
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.error)
+                            .multilineTextAlignment(.center)
+                            .transition(.opacity)
+                    }
 
-                Button(action: { viewModel.setupFaceID(enabled: false) }) {
-                    Text("Skip for now")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                    PrimaryButton(
+                        title: "Enable \(biometricName)",
+                        action: { authenticateWithBiometrics() },
+                        isLoading: viewModel.isLoading,
+                        isDisabled: viewModel.isLoading
+                    )
+
+                    Button(action: { viewModel.setupFaceID(enabled: false) }) {
+                        Text("Skip for now")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .disabled(viewModel.isLoading)
                 }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
+                .padding(.horizontal, ArkSpacing.xl)
+                .padding(.bottom, ArkSpacing.xxl)
             }
         }
-        #endif
-        .alert("Error", isPresented: $showingError) {
+        .onboardingBackButton { viewModel.previousStep() }
+        .alert("Error", isPresented: $showingBiometricError) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text(errorMessage)
+            Text(biometricErrorMessage)
         }
     }
 
@@ -145,54 +144,59 @@ struct FaceIDSetupView: View {
                         case .userFallback:
                             viewModel.setupFaceID(enabled: false)
                         default:
-                            errorMessage = authError.localizedDescription
-                            showingError = true
+                            biometricErrorMessage = authError.localizedDescription
+                            showingBiometricError = true
                         }
                     }
                 }
             }
         } else {
-            errorMessage = error?.localizedDescription ?? "\(biometricName) is not available"
-            showingError = true
+            biometricErrorMessage = error?.localizedDescription ?? "\(biometricName) is not available"
+            showingBiometricError = true
         }
     }
 }
 
-struct FeatureRow: View {
+// MARK: - Biometric Feature Row
+struct BiometricFeatureRow: View {
     let icon: String
     let title: String
     let description: String
+    let colorScheme: ColorScheme
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: ArkSpacing.md) {
+            // Icon
             Image(systemName: icon)
                 .font(.system(size: 20))
-                .foregroundColor(Color(hex: "6366F1"))
+                .foregroundColor(AppColors.fillPrimary)
                 .frame(width: 44, height: 44)
-                .background(Color(hex: "6366F1").opacity(0.1))
-                .cornerRadius(12)
+                .background(AppColors.fillPrimary.opacity(0.1))
+                .cornerRadius(ArkSpacing.Radius.md)
 
-            VStack(alignment: .leading, spacing: 2) {
+            // Text
+            VStack(alignment: .leading, spacing: ArkSpacing.xxxs) {
                 Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 Text(description)
-                    .font(.caption)
-                    .foregroundColor(Color(hex: "A1A1AA"))
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
             }
 
             Spacer()
         }
-        .padding(16)
-        .background(Color(hex: "1F1F1F"))
-        .cornerRadius(12)
+        .padding(ArkSpacing.md)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(ArkSpacing.Radius.md)
     }
 }
 
+// MARK: - Preview
 #Preview {
     NavigationStack {
         FaceIDSetupView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

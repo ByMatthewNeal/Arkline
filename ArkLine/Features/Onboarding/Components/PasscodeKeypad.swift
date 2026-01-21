@@ -1,37 +1,45 @@
 import SwiftUI
 
 // MARK: - Passcode Keypad
+/// Numeric keypad for passcode entry with design system styling
 struct PasscodeKeypad: View {
     @Binding var code: String
     var length: Int = 6
     var title: String = "Enter Passcode"
     var onComplete: ((String) -> Void)? = nil
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: ArkSpacing.xxl) {
+            // Title
             if !title.isEmpty {
                 Text(title)
-                    .font(.headline)
-                    .foregroundColor(.white)
+                    .font(AppFonts.title18SemiBold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
             }
 
-            // Dots
-            HStack(spacing: 16) {
+            // Passcode dots
+            HStack(spacing: ArkSpacing.md) {
                 ForEach(0..<length, id: \.self) { index in
-                    Circle()
-                        .fill(index < code.count ? Color(hex: "6366F1") : Color(hex: "3A3A3A"))
-                        .frame(width: 16, height: 16)
-                        .animation(.easeInOut(duration: 0.15), value: code.count)
+                    PasscodeDot(
+                        isFilled: index < code.count,
+                        colorScheme: colorScheme
+                    )
                 }
             }
 
-            // Keypad
-            VStack(spacing: 16) {
+            // Numeric keypad
+            VStack(spacing: ArkSpacing.md) {
+                // Rows 1-3
                 ForEach(0..<3, id: \.self) { row in
-                    HStack(spacing: 24) {
-                        ForEach(1...3, id: \.self) { col in
+                    HStack(spacing: ArkSpacing.xl) {
+                        ForEach(1..<4, id: \.self) { col in
                             let number = row * 3 + col
-                            OnboardingKeypadButton(number: "\(number)") {
+                            OnboardingKeypadButton(
+                                label: "\(number)",
+                                colorScheme: colorScheme
+                            ) {
                                 appendDigit("\(number)")
                             }
                         }
@@ -39,22 +47,25 @@ struct PasscodeKeypad: View {
                 }
 
                 // Bottom row: empty, 0, delete
-                HStack(spacing: 24) {
-                    // Empty space
+                HStack(spacing: ArkSpacing.xl) {
+                    // Empty placeholder
                     Color.clear
                         .frame(width: 72, height: 72)
 
-                    // 0
-                    OnboardingKeypadButton(number: "0") {
+                    // Zero
+                    OnboardingKeypadButton(
+                        label: "0",
+                        colorScheme: colorScheme
+                    ) {
                         appendDigit("0")
                     }
 
-                    // Delete
-                    Button(action: deleteDigit) {
-                        Image(systemName: "delete.left.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(.white)
-                            .frame(width: 72, height: 72)
+                    // Delete button
+                    OnboardingKeypadButton(
+                        icon: "delete.left.fill",
+                        colorScheme: colorScheme
+                    ) {
+                        deleteDigit()
                     }
                 }
             }
@@ -65,6 +76,12 @@ struct PasscodeKeypad: View {
         guard code.count < length else { return }
         code += digit
 
+        // Haptic feedback
+        #if os(iOS)
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        #endif
+
         if code.count == length {
             onComplete?(code)
         }
@@ -73,57 +90,89 @@ struct PasscodeKeypad: View {
     private func deleteDigit() {
         guard !code.isEmpty else { return }
         code.removeLast()
+
+        // Haptic feedback
+        #if os(iOS)
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
+        #endif
     }
 }
 
-// MARK: - Keypad Button (Onboarding)
+// MARK: - Passcode Dot
+struct PasscodeDot: View {
+    let isFilled: Bool
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        Circle()
+            .fill(isFilled ? AppColors.fillPrimary : AppColors.divider(colorScheme))
+            .frame(width: 16, height: 16)
+            .animation(.easeInOut(duration: 0.15), value: isFilled)
+    }
+}
+
+// MARK: - Onboarding Keypad Button
 struct OnboardingKeypadButton: View {
-    let number: String
+    var label: String? = nil
+    var icon: String? = nil
+    let colorScheme: ColorScheme
     let action: () -> Void
+
+    @State private var isPressed = false
 
     var body: some View {
         Button(action: action) {
-            Text(number)
-                .font(.system(size: 32, weight: .medium))
-                .foregroundColor(.white)
-                .frame(width: 72, height: 72)
-                .background(Color(hex: "1F1F1F"))
-                .clipShape(Circle())
+            ZStack {
+                // Background
+                Circle()
+                    .fill(AppColors.cardBackground(colorScheme))
+                    .frame(width: 72, height: 72)
+
+                // Border
+                Circle()
+                    .stroke(AppColors.divider(colorScheme), lineWidth: ArkSpacing.Border.thin)
+                    .frame(width: 72, height: 72)
+
+                // Content
+                if let label = label {
+                    Text(label)
+                        .font(AppFonts.title30)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                } else if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                }
+            }
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: isPressed)
         }
+        .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
     }
 }
 
-// MARK: - Onboarding Progress
+// MARK: - Legacy OnboardingProgress (Deprecated)
+/// @deprecated Use OnboardingProgressBar from OnboardingHeader.swift instead
 struct OnboardingProgress: View {
     let progress: Double
 
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color(hex: "2A2A2A"))
-                    .frame(height: 4)
+    @Environment(\.colorScheme) private var colorScheme
 
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: geometry.size.width * progress, height: 4)
-                    .animation(.easeInOut(duration: 0.3), value: progress)
-            }
-        }
-        .frame(height: 4)
+    var body: some View {
+        OnboardingProgressBar(progress: progress)
     }
 }
 
 // MARK: - Preview
 #Preview {
     VStack {
-        OnboardingProgress(progress: 0.5)
+        OnboardingProgressBar(progress: 0.5)
             .padding()
 
         PasscodeKeypad(code: .constant("12"))

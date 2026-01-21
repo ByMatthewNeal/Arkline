@@ -1,32 +1,22 @@
 import SwiftUI
 
+// MARK: - Personal Info View
 struct PersonalInfoView: View {
     @Bindable var viewModel: OnboardingViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 12) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                VStack(spacing: ArkSpacing.xxl) {
+                    // Header
+                    OnboardingHeader(
+                        icon: "person.circle.fill",
+                        title: "What's your name?"
+                    )
 
-                        Text("What's your name?")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.top, 40)
-
-                    VStack(spacing: 16) {
+                    // Form fields
+                    VStack(spacing: ArkSpacing.md) {
                         #if canImport(UIKit)
                         CustomTextField(
                             placeholder: "Full Name",
@@ -42,57 +32,61 @@ struct PersonalInfoView: View {
                         )
                         #endif
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Date of Birth (Optional)")
-                                .font(.subheadline)
-                                .foregroundColor(Color(hex: "A1A1AA"))
+                        // Date of birth
+                        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                            Text("Date of Birth")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(AppColors.textSecondary)
 
-                            DatePicker(
-                                "",
-                                selection: Binding(
-                                    get: { viewModel.dateOfBirth ?? Date() },
-                                    set: { viewModel.dateOfBirth = $0 }
-                                ),
-                                displayedComponents: .date
-                            )
-                            .datePickerStyle(.compact)
-                            .labelsHidden()
-                            .tint(Color(hex: "6366F1"))
+                            HStack {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .frame(width: 24)
+
+                                DatePicker(
+                                    "",
+                                    selection: Binding(
+                                        get: { viewModel.dateOfBirth ?? Date() },
+                                        set: { viewModel.dateOfBirth = $0 }
+                                    ),
+                                    displayedComponents: .date
+                                )
+                                .datePickerStyle(.compact)
+                                .labelsHidden()
+                                .tint(AppColors.fillPrimary)
+                            }
+                            .padding(.horizontal, ArkSpacing.md)
+                            .padding(.vertical, ArkSpacing.sm)
+                            .background(AppColors.cardBackground(colorScheme))
+                            .cornerRadius(ArkSpacing.Radius.input)
+
+                            Text("Optional")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary.opacity(0.7))
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, ArkSpacing.xl)
 
-                    Spacer()
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            VStack(spacing: 16) {
-                PrimaryButton(
-                    title: "Continue",
-                    action: { viewModel.savePersonalInfo() },
-                    isDisabled: !viewModel.isPersonalInfoValid
-                )
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Continue",
+                primaryAction: { viewModel.savePersonalInfo() },
+                isDisabled: !viewModel.isPersonalInfoValid
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
-        }
-        #endif
+        .onboardingBackButton { viewModel.previousStep() }
     }
 }
 
+// MARK: - Preview
 #Preview {
     NavigationStack {
         PersonalInfoView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

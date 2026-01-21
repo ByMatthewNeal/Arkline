@@ -1,33 +1,40 @@
 import SwiftUI
 
 // MARK: - Splash View
+/// Animated launch screen with ArkLine branding
 struct SplashView: View {
     @State private var isAnimating = false
     @State private var showLogo = false
     @State private var showTagline = false
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         ZStack {
-            // Background gradient
+            // Background
+            AppColors.background(colorScheme)
+                .ignoresSafeArea()
+
+            // Subtle gradient overlay
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(hex: "0F0F0F"),
-                    Color(hex: "1A1A2E")
+                    AppColors.surface(colorScheme),
+                    AppColors.background(colorScheme)
                 ]),
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                // Logo
+            VStack(spacing: ArkSpacing.xl) {
+                // Logo with glow
                 ZStack {
                     // Glow effect
                     Circle()
                         .fill(
                             RadialGradient(
                                 gradient: Gradient(colors: [
-                                    Color(hex: "6366F1").opacity(0.3),
+                                    AppColors.fillPrimary.opacity(0.3),
                                     Color.clear
                                 ]),
                                 center: .center,
@@ -46,10 +53,7 @@ struct SplashView: View {
                         .frame(width: 80, height: 80)
                         .foregroundStyle(
                             LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(hex: "6366F1"),
-                                    Color(hex: "8B5CF6")
-                                ]),
+                                colors: [AppColors.fillPrimary, AppColors.accentLight],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -58,17 +62,17 @@ struct SplashView: View {
                         .opacity(showLogo ? 1 : 0)
                 }
 
-                // App name
-                VStack(spacing: 8) {
+                // App name and tagline
+                VStack(spacing: ArkSpacing.xs) {
                     Text("ArkLine")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                        .font(AppFonts.title32)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
                         .opacity(showLogo ? 1 : 0)
                         .offset(y: showLogo ? 0 : 20)
 
                     Text("Track • Analyze • Grow")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(AppColors.textSecondary)
                         .opacity(showTagline ? 1 : 0)
                         .offset(y: showTagline ? 0 : 10)
                 }
@@ -105,4 +109,10 @@ struct SplashView: View {
 // MARK: - Preview
 #Preview {
     SplashView()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Light Mode") {
+    SplashView()
+        .preferredColorScheme(.light)
 }

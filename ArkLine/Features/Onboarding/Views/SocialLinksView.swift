@@ -1,69 +1,53 @@
 import SwiftUI
 
+// MARK: - Social Links View
 struct SocialLinksView: View {
     @Bindable var viewModel: OnboardingViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 12) {
-                        Image(systemName: "link.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                VStack(spacing: ArkSpacing.xxl) {
+                    // Header
+                    OnboardingHeader(
+                        icon: "link.circle.fill",
+                        title: "Add social links",
+                        subtitle: "Connect with the community",
+                        isOptional: true
+                    )
 
-                        Text("Add social links")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-
-                        Text("Optional - connect with the community")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "A1A1AA"))
-                    }
-                    .padding(.top, 40)
-
-                    VStack(spacing: 16) {
+                    // Social link inputs
+                    VStack(spacing: ArkSpacing.md) {
                         #if canImport(UIKit)
-                        CustomTextField(
-                            placeholder: "Twitter handle",
+                        SocialLinkField(
+                            placeholder: "Twitter / X handle",
                             text: $viewModel.twitterHandle,
-                            icon: "at",
-                            autocapitalization: .never
+                            icon: "at"
                         )
 
-                        CustomTextField(
+                        SocialLinkField(
                             placeholder: "LinkedIn URL",
                             text: $viewModel.linkedinUrl,
                             icon: "link",
-                            keyboardType: .URL,
-                            autocapitalization: .never
+                            keyboardType: .URL
                         )
 
-                        CustomTextField(
+                        SocialLinkField(
                             placeholder: "Telegram username",
                             text: $viewModel.telegramHandle,
-                            icon: "paperplane.fill",
-                            autocapitalization: .never
+                            icon: "paperplane.fill"
                         )
 
-                        CustomTextField(
+                        SocialLinkField(
                             placeholder: "Website URL",
                             text: $viewModel.websiteUrl,
                             icon: "globe",
-                            keyboardType: .URL,
-                            autocapitalization: .never
+                            keyboardType: .URL
                         )
                         #else
                         CustomTextField(
-                            placeholder: "Twitter handle",
+                            placeholder: "Twitter / X handle",
                             text: $viewModel.twitterHandle,
                             icon: "at"
                         )
@@ -87,44 +71,48 @@ struct SocialLinksView: View {
                         )
                         #endif
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, ArkSpacing.xl)
 
-                    Spacer()
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            VStack(spacing: 12) {
-                PrimaryButton(
-                    title: "Continue",
-                    action: { viewModel.saveSocialLinks() }
-                )
-
-                Button(action: { viewModel.skipStep() }) {
-                    Text("Skip")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Continue",
+                primaryAction: { viewModel.saveSocialLinks() },
+                showSkip: true,
+                skipAction: { viewModel.skipStep() }
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
-        }
-        #endif
+        .onboardingBackButton { viewModel.previousStep() }
     }
 }
 
+// MARK: - Social Link Field (iOS specific)
+#if canImport(UIKit)
+struct SocialLinkField: View {
+    let placeholder: String
+    @Binding var text: String
+    let icon: String
+    var keyboardType: UIKeyboardType = .default
+
+    var body: some View {
+        CustomTextField(
+            placeholder: placeholder,
+            text: $text,
+            icon: icon,
+            keyboardType: keyboardType,
+            autocapitalization: .never
+        )
+    }
+}
+#endif
+
+// MARK: - Preview
 #Preview {
     NavigationStack {
         SocialLinksView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }

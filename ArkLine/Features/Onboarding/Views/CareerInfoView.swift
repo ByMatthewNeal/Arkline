@@ -1,83 +1,59 @@
 import SwiftUI
 
+// MARK: - Career Info View
 struct CareerInfoView: View {
     @Bindable var viewModel: OnboardingViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            OnboardingProgress(progress: viewModel.currentStep.progress)
-
+        OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: 32) {
-                    VStack(spacing: 12) {
-                        Image(systemName: "chart.bar.xaxis")
-                            .font(.system(size: 60))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
+                VStack(spacing: ArkSpacing.xxl) {
+                    // Header
+                    OnboardingHeader(
+                        icon: "chart.bar.xaxis",
+                        title: "Your investing experience?",
+                        isOptional: true
+                    )
 
-                        Text("Your investing experience?")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.top, 40)
-
-                    VStack(spacing: 12) {
+                    // Experience level options
+                    VStack(spacing: ArkSpacing.sm) {
                         ForEach(ExperienceLevel.allCases, id: \.self) { level in
-                            ExperienceLevelButton(
+                            ExperienceLevelCard(
                                 level: level,
-                                isSelected: viewModel.experienceLevel == level
+                                isSelected: viewModel.experienceLevel == level,
+                                colorScheme: colorScheme
                             ) {
                                 viewModel.experienceLevel = level
                             }
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, ArkSpacing.xl)
 
-                    Spacer()
+                    Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
-            VStack(spacing: 12) {
-                PrimaryButton(
-                    title: "Continue",
-                    action: { viewModel.saveCareerInfo() }
-                )
-
-                Button(action: { viewModel.skipStep() }) {
-                    Text("Skip")
-                        .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            // Bottom actions
+            OnboardingBottomActions(
+                primaryTitle: "Continue",
+                primaryAction: { viewModel.saveCareerInfo() },
+                showSkip: true,
+                skipAction: { viewModel.skipStep() }
+            )
         }
-        .background(Color(hex: "0F0F0F"))
-        .navigationBarBackButtonHidden()
-        #if os(iOS)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { viewModel.previousStep() }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
-                }
-            }
-        }
-        #endif
+        .onboardingBackButton { viewModel.previousStep() }
     }
 }
 
-struct ExperienceLevelButton: View {
+// MARK: - Experience Level Card
+struct ExperienceLevelCard: View {
     let level: ExperienceLevel
     let isSelected: Bool
+    let colorScheme: ColorScheme
     let action: () -> Void
 
-    var description: String {
+    private var description: String {
         switch level {
         case .beginner: return "New to investing"
         case .intermediate: return "1-3 years of experience"
@@ -89,36 +65,47 @@ struct ExperienceLevelButton: View {
     var body: some View {
         Button(action: action) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
                     Text(level.displayName)
-                        .font(.headline)
-                        .foregroundColor(.white)
+                        .font(AppFonts.title16)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text(description)
-                        .font(.caption)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
                 }
 
                 Spacer()
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "6366F1"))
+                        .font(.system(size: 22))
+                        .foregroundColor(AppColors.fillPrimary)
                 }
             }
-            .padding(16)
-            .background(isSelected ? Color(hex: "6366F1").opacity(0.1) : Color(hex: "1F1F1F"))
-            .cornerRadius(12)
+            .padding(ArkSpacing.md)
+            .background(
+                isSelected
+                    ? AppColors.fillPrimary.opacity(0.1)
+                    : AppColors.cardBackground(colorScheme)
+            )
+            .cornerRadius(ArkSpacing.Radius.md)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color(hex: "6366F1") : Color.clear, lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                    .stroke(
+                        isSelected ? AppColors.fillPrimary : Color.clear,
+                        lineWidth: ArkSpacing.Border.medium
+                    )
             )
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
+// MARK: - Preview
 #Preview {
     NavigationStack {
         CareerInfoView(viewModel: OnboardingViewModel())
     }
+    .preferredColorScheme(.dark)
 }
