@@ -1,7 +1,12 @@
 import Foundation
 
+// MARK: - Sparkline Wrapper
+struct SparklineData: Codable, Hashable {
+    let price: [Double]?
+}
+
 // MARK: - Crypto Asset
-struct CryptoAsset: Asset, Hashable {
+struct CryptoAsset: Asset, Hashable, Codable {
     let id: String
     let symbol: String
     let name: String
@@ -26,7 +31,7 @@ struct CryptoAsset: Asset, Hashable {
     var atl: Double?
     var atlChangePercentage: Double?
     var atlDate: Date?
-    var sparklineIn7d: [Double]?
+    var sparklineIn7d: SparklineData?
     var lastUpdated: Date?
 
     enum CodingKeys: String, CodingKey {
@@ -54,6 +59,11 @@ struct CryptoAsset: Asset, Hashable {
         case atlDate = "atl_date"
         case sparklineIn7d = "sparkline_in_7d"
         case lastUpdated = "last_updated"
+    }
+
+    // Convenience accessor for sparkline prices
+    var sparklinePrices: [Double]? {
+        sparklineIn7d?.price
     }
 }
 

@@ -45,7 +45,7 @@ struct ArkSpacing {
         static let xxl: CGFloat = 24
         static let full: CGFloat = 9999
 
-        static let card: CGFloat = md
+        static let card: CGFloat = 16
         static let button: CGFloat = sm
         static let input: CGFloat = sm
         static let sheet: CGFloat = xl

@@ -16,7 +16,17 @@ final class APIMarketService: MarketServiceProtocol {
             perPage: perPage,
             sparkline: true
         )
-        return try await networkManager.request(endpoint)
+        do {
+            let assets: [CryptoAsset] = try await networkManager.request(endpoint)
+            print("DEBUG: Successfully fetched \(assets.count) crypto assets")
+            if let btc = assets.first(where: { $0.symbol.uppercased() == "BTC" }) {
+                print("DEBUG: BTC price = \(btc.currentPrice)")
+            }
+            return assets
+        } catch {
+            print("DEBUG: Failed to fetch crypto assets: \(error)")
+            throw error
+        }
     }
 
     func fetchStockAssets(symbols: [String]) async throws -> [StockAsset] {
@@ -31,7 +41,7 @@ final class APIMarketService: MarketServiceProtocol {
                 assets.append(response.globalQuote.toStockAsset())
             } catch {
                 // Log error but continue with other symbols
-                Logger.error("Failed to fetch stock \(symbol): \(error)")
+                logError("Failed to fetch stock \(symbol): \(error)")
             }
         }
 
@@ -65,7 +75,7 @@ final class APIMarketService: MarketServiceProtocol {
                 )
             }
         } catch {
-            Logger.error("Failed to fetch metals: \(error)")
+            logError("Failed to fetch metals: \(error)")
             throw error
         }
     }

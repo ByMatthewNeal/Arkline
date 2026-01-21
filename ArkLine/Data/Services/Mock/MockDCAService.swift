@@ -9,10 +9,14 @@ final class MockDCAService: DCAServiceProtocol {
     // MARK: - Mock Storage
     private var mockReminders: [DCAReminder] = []
     private var mockInvestments: [DCAInvestment] = []
+    private var mockRiskBasedReminders: [RiskBasedDCAReminder] = []
+    private var mockRiskBasedInvestments: [RiskDCAInvestment] = []
+    private var mockRiskLevels: [String: AssetRiskLevel] = [:]
 
     // MARK: - Initialization
     init() {
         setupMockData()
+        setupRiskBasedMockData()
     }
 
     // MARK: - DCAServiceProtocol
@@ -224,5 +228,268 @@ final class MockDCAService: DCAServiceProtocol {
             "DOGE": 0.12
         ]
         return prices[symbol.uppercased()] ?? 100.0
+    }
+
+    // MARK: - Risk-Based Mock Data Setup
+
+    private func setupRiskBasedMockData() {
+        let userId = UUID()
+
+        // Setup mock risk levels for various assets
+        mockRiskLevels = [
+            "BTC": AssetRiskLevel(
+                assetId: "bitcoin",
+                symbol: "BTC",
+                riskScore: 35.0,
+                riskCategory: .low,
+                lastUpdated: Date()
+            ),
+            "ETH": AssetRiskLevel(
+                assetId: "ethereum",
+                symbol: "ETH",
+                riskScore: 42.0,
+                riskCategory: .moderate,
+                lastUpdated: Date()
+            ),
+            "SOL": AssetRiskLevel(
+                assetId: "solana",
+                symbol: "SOL",
+                riskScore: 65.0,
+                riskCategory: .high,
+                lastUpdated: Date()
+            ),
+            "XRP": AssetRiskLevel(
+                assetId: "ripple",
+                symbol: "XRP",
+                riskScore: 55.0,
+                riskCategory: .moderate,
+                lastUpdated: Date()
+            ),
+            "ADA": AssetRiskLevel(
+                assetId: "cardano",
+                symbol: "ADA",
+                riskScore: 48.0,
+                riskCategory: .moderate,
+                lastUpdated: Date()
+            ),
+            "DOGE": AssetRiskLevel(
+                assetId: "dogecoin",
+                symbol: "DOGE",
+                riskScore: 78.0,
+                riskCategory: .high,
+                lastUpdated: Date()
+            )
+        ]
+
+        // Setup mock risk-based DCA reminders
+        mockRiskBasedReminders = [
+            RiskBasedDCAReminder(
+                userId: userId,
+                symbol: "BTC",
+                name: "Bitcoin",
+                amount: 500,
+                riskThreshold: 30.0,
+                riskCondition: .below,
+                isTriggered: false,
+                isActive: true
+            ),
+            RiskBasedDCAReminder(
+                userId: userId,
+                symbol: "ETH",
+                name: "Ethereum",
+                amount: 200,
+                riskThreshold: 40.0,
+                riskCondition: .below,
+                isTriggered: true,
+                lastTriggeredRiskLevel: 38.5,
+                isActive: true
+            ),
+            RiskBasedDCAReminder(
+                userId: userId,
+                symbol: "SOL",
+                name: "Solana",
+                amount: 100,
+                riskThreshold: 70.0,
+                riskCondition: .above,
+                isTriggered: false,
+                isActive: true
+            )
+        ]
+
+        // Setup mock investment history for risk-based reminders
+        for reminder in mockRiskBasedReminders where reminder.isTriggered {
+            mockRiskBasedInvestments.append(RiskDCAInvestment(
+                id: UUID(),
+                reminderId: reminder.id,
+                amount: reminder.amount,
+                priceAtPurchase: getMockPrice(for: reminder.symbol),
+                quantity: reminder.amount / getMockPrice(for: reminder.symbol),
+                riskLevelAtPurchase: reminder.lastTriggeredRiskLevel ?? 0,
+                purchaseDate: Date().addingTimeInterval(-86400 * 2)
+            ))
+        }
+    }
+
+    // MARK: - Risk-Based DCA Methods
+
+    func fetchRiskBasedReminders(userId: UUID) async throws -> [RiskBasedDCAReminder] {
+        try await simulateNetworkDelay()
+        return mockRiskBasedReminders.filter { $0.userId == userId }
+    }
+
+    func fetchActiveRiskBasedReminders(userId: UUID) async throws -> [RiskBasedDCAReminder] {
+        try await simulateNetworkDelay()
+        return mockRiskBasedReminders.filter { $0.userId == userId && $0.isActive }
+    }
+
+    func fetchTriggeredReminders(userId: UUID) async throws -> [RiskBasedDCAReminder] {
+        try await simulateNetworkDelay()
+        return mockRiskBasedReminders.filter { $0.userId == userId && $0.isActive && $0.isTriggered }
+    }
+
+    func createRiskBasedReminder(_ request: CreateRiskBasedDCARequest) async throws -> RiskBasedDCAReminder {
+        try await simulateNetworkDelay()
+
+        guard let condition = RiskCondition(rawValue: request.riskCondition) else {
+            throw AppError.custom(message: "Invalid risk condition")
+        }
+
+        let reminder = RiskBasedDCAReminder(
+            userId: request.userId,
+            symbol: request.symbol,
+            name: request.name,
+            amount: request.amount,
+            riskThreshold: request.riskThreshold,
+            riskCondition: condition,
+            isTriggered: false,
+            isActive: true
+        )
+
+        mockRiskBasedReminders.append(reminder)
+        return reminder
+    }
+
+    func updateRiskBasedReminder(_ reminder: RiskBasedDCAReminder) async throws {
+        try await simulateNetworkDelay()
+        if let index = mockRiskBasedReminders.firstIndex(where: { $0.id == reminder.id }) {
+            mockRiskBasedReminders[index] = reminder
+        }
+    }
+
+    func deleteRiskBasedReminder(id: UUID) async throws {
+        try await simulateNetworkDelay()
+        mockRiskBasedReminders.removeAll { $0.id == id }
+        mockRiskBasedInvestments.removeAll { $0.reminderId == id }
+    }
+
+    func markRiskBasedAsInvested(id: UUID) async throws -> RiskBasedDCAReminder {
+        try await simulateNetworkDelay()
+        guard let index = mockRiskBasedReminders.firstIndex(where: { $0.id == id }) else {
+            throw AppError.notFound
+        }
+
+        var reminder = mockRiskBasedReminders[index]
+
+        // Create investment record
+        let investment = RiskDCAInvestment(
+            id: UUID(),
+            reminderId: id,
+            amount: reminder.amount,
+            priceAtPurchase: getMockPrice(for: reminder.symbol),
+            quantity: reminder.amount / getMockPrice(for: reminder.symbol),
+            riskLevelAtPurchase: reminder.lastTriggeredRiskLevel ?? 0,
+            purchaseDate: Date()
+        )
+        mockRiskBasedInvestments.append(investment)
+
+        // Reset triggered state
+        reminder.isTriggered = false
+        reminder.lastTriggeredRiskLevel = nil
+        mockRiskBasedReminders[index] = reminder
+
+        return reminder
+    }
+
+    func resetTrigger(id: UUID) async throws -> RiskBasedDCAReminder {
+        try await simulateNetworkDelay()
+        guard let index = mockRiskBasedReminders.firstIndex(where: { $0.id == id }) else {
+            throw AppError.notFound
+        }
+
+        mockRiskBasedReminders[index].isTriggered = false
+        mockRiskBasedReminders[index].lastTriggeredRiskLevel = nil
+
+        return mockRiskBasedReminders[index]
+    }
+
+    func toggleRiskBasedReminder(id: UUID) async throws -> RiskBasedDCAReminder {
+        try await simulateNetworkDelay()
+        guard let index = mockRiskBasedReminders.firstIndex(where: { $0.id == id }) else {
+            throw AppError.notFound
+        }
+
+        mockRiskBasedReminders[index].isActive.toggle()
+        return mockRiskBasedReminders[index]
+    }
+
+    func fetchRiskBasedInvestmentHistory(reminderId: UUID) async throws -> [RiskDCAInvestment] {
+        try await simulateNetworkDelay()
+        return mockRiskBasedInvestments.filter { $0.reminderId == reminderId }
+    }
+
+    func fetchRiskLevel(symbol: String) async throws -> AssetRiskLevel {
+        try await simulateNetworkDelay()
+
+        // Add some randomness to simulate live risk updates
+        if var level = mockRiskLevels[symbol.uppercased()] {
+            let variance = Double.random(in: -5...5)
+            let newScore = max(0, min(100, level.riskScore + variance))
+            level = AssetRiskLevel(
+                assetId: level.assetId,
+                symbol: level.symbol,
+                riskScore: newScore,
+                riskCategory: RiskCategory.from(score: newScore),
+                lastUpdated: Date()
+            )
+            mockRiskLevels[symbol.uppercased()] = level
+            return level
+        }
+
+        // Generate a random risk level for unknown assets
+        let randomScore = Double.random(in: 20...80)
+        return AssetRiskLevel(
+            assetId: symbol.lowercased(),
+            symbol: symbol.uppercased(),
+            riskScore: randomScore,
+            riskCategory: RiskCategory.from(score: randomScore),
+            lastUpdated: Date()
+        )
+    }
+
+    func checkAndTriggerReminders(userId: UUID) async throws -> [RiskBasedDCAReminder] {
+        try await simulateNetworkDelay()
+
+        var triggeredReminders: [RiskBasedDCAReminder] = []
+
+        for index in mockRiskBasedReminders.indices {
+            var reminder = mockRiskBasedReminders[index]
+
+            guard reminder.userId == userId,
+                  reminder.isActive,
+                  !reminder.isTriggered else { continue }
+
+            // Fetch current risk level
+            let riskLevel = try await fetchRiskLevel(symbol: reminder.symbol)
+
+            // Check if condition is met
+            if reminder.shouldTrigger(currentRisk: riskLevel.riskScore) {
+                reminder.isTriggered = true
+                reminder.lastTriggeredRiskLevel = riskLevel.riskScore
+                mockRiskBasedReminders[index] = reminder
+                triggeredReminders.append(reminder)
+            }
+        }
+
+        return triggeredReminders
     }
 }

@@ -163,15 +163,38 @@ actor NetworkManager {
         }
     }
 
+    // MARK: - Type-Inferred Request
+    /// Convenience method that infers the response type from the return type
+    func request<T: Decodable>(_ endpoint: APIEndpoint, cacheTTL: TimeInterval? = nil) async throws -> T {
+        return try await request(endpoint: endpoint, responseType: T.self, cacheTTL: cacheTTL)
+    }
+
     // MARK: - Helpers
     private func decode<T: Decodable>(_ data: Data, as type: T.Type) throws -> T {
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        decoder.dateDecodingStrategy = .iso8601
+        // Don't use .convertFromSnakeCase - models have explicit CodingKeys
+        // Use custom ISO8601 formatter that handles fractional seconds
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            // Try with fractional seconds first
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+            // Fall back to standard ISO8601
+            let standardFormatter = ISO8601DateFormatter()
+            if let date = standardFormatter.date(from: dateString) {
+                return date
+            }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date: \(dateString)")
+        }
 
         do {
             return try decoder.decode(type, from: data)
         } catch {
+            print("DEBUG: Decoding error for \(type): \(error)")
             logDebug("Decoding error: \(error)", category: .network)
             throw AppError.decodingError(underlying: error)
         }

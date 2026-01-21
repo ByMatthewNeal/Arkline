@@ -5,7 +5,7 @@ import Foundation
 /// Uses Supabase for portfolio data storage.
 final class APIPortfolioService: PortfolioServiceProtocol {
     // MARK: - Dependencies
-    private let supabase = SupabaseClient.shared
+    private let supabase = SupabaseManager.shared
     private let marketService: MarketServiceProtocol
 
     // MARK: - Initialization

@@ -76,20 +76,20 @@ struct CustomTextField: View {
             if let error = errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundColor(Color(hex: "EF4444"))
+                    .foregroundColor(AppColors.error)
             }
         }
     }
 
     private var iconColor: Color {
-        if errorMessage != nil { return Color(hex: "EF4444") }
-        if isFocused { return Color(hex: "6366F1") }
+        if errorMessage != nil { return AppColors.error }
+        if isFocused { return AppColors.focusRing }
         return Color(hex: "71717A")
     }
 
     private var borderColor: Color {
-        if errorMessage != nil { return Color(hex: "EF4444") }
-        if isFocused { return Color(hex: "6366F1") }
+        if errorMessage != nil { return AppColors.error }
+        if isFocused { return AppColors.focusRing }
         return Color.clear
     }
 }

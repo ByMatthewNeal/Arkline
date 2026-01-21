@@ -13,13 +13,8 @@ struct AIChatView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Animated mesh gradient background
+                // Gradient background with subtle blue glow
                 MeshGradientBackground()
-
-                // Brush effect overlay for dark mode
-                if isDarkMode {
-                    BrushEffectOverlay()
-                }
 
                 // Content
                 VStack(spacing: 0) {
@@ -210,7 +205,6 @@ struct ChatHistoryView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
                 ForEach(viewModel.sortedSessions) { session in
                     Button(action: { viewModel.selectSession(session) }) {

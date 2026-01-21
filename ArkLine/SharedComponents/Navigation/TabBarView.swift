@@ -79,7 +79,7 @@ struct CustomTabBar: View {
     }
 }
 
-// MARK: - Tab Bar Item (Icon Only - Slim)
+// MARK: - Tab Bar Item (Icon Only - With Floating Pill)
 struct TabBarItem: View {
     let tab: AppTab
     let isSelected: Bool
@@ -87,27 +87,36 @@ struct TabBarItem: View {
     let action: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
-    private let activeColor = AppColors.accent      // #3B69FF
-    private let inactiveColor = AppColors.textSecondary  // #888888
+    private let activeColor = Color.white  // White icon when selected
+    private let inactiveColor = AppColors.textSecondary  // Gray when not selected
+    private let pillColor = AppColors.accent  // Blue pill background
 
     var body: some View {
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
-                Image(systemName: isSelected ? tab.icon : tab.unselectedIcon)
-                    .font(.system(size: 20, weight: isSelected ? .medium : .regular))
-                    .foregroundColor(isSelected ? activeColor : inactiveColor)
-                    .scaleEffect(isSelected ? 1.1 : 1.0)
+                ZStack {
+                    // Blue pill background for selected tab
+                    if isSelected {
+                        Capsule()
+                            .fill(pillColor)
+                            .frame(width: 56, height: 36)
+                    }
+
+                    Image(systemName: isSelected ? tab.icon : tab.unselectedIcon)
+                        .font(.system(size: 20, weight: isSelected ? .semibold : .regular))
+                        .foregroundColor(isSelected ? activeColor : inactiveColor)
+                }
 
                 // Badge dot
                 if let badge = badge, badge > 0 {
                     Circle()
                         .fill(AppColors.error)
                         .frame(width: 6, height: 6)
-                        .offset(x: 3, y: -3)
+                        .offset(x: 8, y: -2)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 36)
+            .frame(height: 44)
         }
         .buttonStyle(.plain)
     }

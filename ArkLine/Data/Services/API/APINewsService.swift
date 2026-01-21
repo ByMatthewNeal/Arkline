@@ -30,7 +30,7 @@ final class APINewsService: NewsServiceProtocol {
     func fetchTodaysEvents() async throws -> [EconomicEvent] {
         // TODO: Implement with economic calendar API
         // Options: Forex Factory, Investing.com API, TradingEconomics
-        throw AppError.notImplemented
+        return []
     }
 
     func fetchEconomicEvents(from startDate: Date, to endDate: Date) async throws -> [EconomicEvent] {

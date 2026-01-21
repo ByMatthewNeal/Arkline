@@ -1,6 +1,12 @@
 import SwiftUI
 import Foundation
 
+// MARK: - DCA Tab Selection
+enum DCAViewTab: String, CaseIterable {
+    case timeBased = "Time-Based"
+    case riskBased = "Risk-Based"
+}
+
 // MARK: - DCA View Model
 @Observable
 final class DCAViewModel {
@@ -9,13 +15,22 @@ final class DCAViewModel {
 
     // MARK: - State
     var reminders: [DCAReminder] = []
+    var riskBasedReminders: [RiskBasedDCAReminder] = []
     var selectedReminder: DCAReminder?
+    var selectedRiskBasedReminder: RiskBasedDCAReminder?
     var isLoading = false
     var error: AppError?
+
+    // MARK: - Tab Selection
+    var selectedTab: DCAViewTab = .timeBased
 
     // MARK: - Create/Edit State
     var editingReminder: DCAReminder?
     var showCreateSheet = false
+    var showCreateRiskBasedSheet = false
+
+    // MARK: - Risk Level Cache
+    var cachedRiskLevels: [String: AssetRiskLevel] = [:]
 
     // User context
     private var currentUserId: UUID?
@@ -38,6 +53,20 @@ final class DCAViewModel {
         reminders.filter { !$0.isActive || $0.isCompleted }
     }
 
+    // MARK: - Risk-Based Computed Properties
+
+    var activeRiskBasedReminders: [RiskBasedDCAReminder] {
+        riskBasedReminders.filter { $0.isActive }
+    }
+
+    var triggeredReminders: [RiskBasedDCAReminder] {
+        riskBasedReminders.filter { $0.isActive && $0.isTriggered }
+    }
+
+    var pendingRiskReminders: [RiskBasedDCAReminder] {
+        riskBasedReminders.filter { $0.isActive && !$0.isTriggered }
+    }
+
     // MARK: - Initialization
     init(dcaService: DCAServiceProtocol = ServiceContainer.shared.dcaService) {
         self.dcaService = dcaService
@@ -51,12 +80,21 @@ final class DCAViewModel {
 
         do {
             let userId = currentUserId ?? UUID()
-            let fetchedReminders = try await dcaService.fetchReminders(userId: userId)
+
+            // Fetch time-based and risk-based reminders concurrently
+            async let timeBasedTask = dcaService.fetchReminders(userId: userId)
+            async let riskBasedTask = dcaService.fetchRiskBasedReminders(userId: userId)
+
+            let (fetchedReminders, fetchedRiskBased) = try await (timeBasedTask, riskBasedTask)
 
             await MainActor.run {
                 self.reminders = fetchedReminders
+                self.riskBasedReminders = fetchedRiskBased
                 self.isLoading = false
             }
+
+            // Cache risk levels for all risk-based reminders
+            await refreshRiskLevels()
         } catch {
             await MainActor.run {
                 self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
@@ -67,6 +105,62 @@ final class DCAViewModel {
 
     private func loadInitialData() async {
         await refresh()
+    }
+
+    /// Refreshes risk levels for all risk-based reminder symbols
+    func refreshRiskLevels() async {
+        let symbols = Set(riskBasedReminders.map { $0.symbol })
+
+        for symbol in symbols {
+            do {
+                let riskLevel = try await dcaService.fetchRiskLevel(symbol: symbol)
+                await MainActor.run {
+                    self.cachedRiskLevels[symbol.uppercased()] = riskLevel
+                }
+            } catch {
+                // Silently fail - will retry on next refresh
+            }
+        }
+    }
+
+    /// Checks all risk-based reminders and triggers those that meet conditions
+    func checkAndTriggerReminders() async {
+        let userId = currentUserId ?? UUID()
+
+        do {
+            let triggered = try await dcaService.checkAndTriggerReminders(userId: userId)
+
+            if !triggered.isEmpty {
+                await MainActor.run {
+                    // Update local state with triggered reminders
+                    for triggered in triggered {
+                        if let index = self.riskBasedReminders.firstIndex(where: { $0.id == triggered.id }) {
+                            self.riskBasedReminders[index] = triggered
+                        }
+                    }
+                }
+            }
+        } catch {
+            // Silently fail - will retry on next check
+        }
+    }
+
+    /// Gets cached risk level for a symbol
+    func riskLevel(for symbol: String) -> AssetRiskLevel? {
+        cachedRiskLevels[symbol.uppercased()]
+    }
+
+    /// Fetches current risk level for a symbol (for UI components that need fresh data)
+    func fetchRiskLevel(for symbol: String) async -> AssetRiskLevel? {
+        do {
+            let level = try await dcaService.fetchRiskLevel(symbol: symbol)
+            await MainActor.run {
+                self.cachedRiskLevels[symbol.uppercased()] = level
+            }
+            return level
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - Actions
@@ -183,6 +277,128 @@ final class DCAViewModel {
             return calendar.date(byAdding: .weekOfYear, value: 2, to: current)
         case .monthly:
             return calendar.date(byAdding: .month, value: 1, to: current)
+        }
+    }
+
+    // MARK: - Risk-Based DCA Actions
+
+    func createRiskBasedReminder(
+        symbol: String,
+        name: String,
+        amount: Double,
+        riskThreshold: Double,
+        riskCondition: RiskCondition
+    ) async {
+        do {
+            let request = CreateRiskBasedDCARequest(
+                userId: currentUserId ?? UUID(),
+                symbol: symbol.uppercased(),
+                name: name,
+                amount: amount,
+                riskThreshold: riskThreshold,
+                riskCondition: riskCondition.rawValue
+            )
+            let createdReminder = try await dcaService.createRiskBasedReminder(request)
+
+            await MainActor.run {
+                self.riskBasedReminders.append(createdReminder)
+            }
+
+            // Fetch risk level for the new reminder
+            let riskLevel = try await dcaService.fetchRiskLevel(symbol: symbol)
+            await MainActor.run {
+                self.cachedRiskLevels[symbol.uppercased()] = riskLevel
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func updateRiskBasedReminder(_ reminder: RiskBasedDCAReminder) async {
+        do {
+            try await dcaService.updateRiskBasedReminder(reminder)
+
+            await MainActor.run {
+                if let index = self.riskBasedReminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.riskBasedReminders[index] = reminder
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func deleteRiskBasedReminder(_ reminder: RiskBasedDCAReminder) async {
+        do {
+            try await dcaService.deleteRiskBasedReminder(id: reminder.id)
+
+            await MainActor.run {
+                self.riskBasedReminders.removeAll { $0.id == reminder.id }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func toggleRiskBasedReminder(_ reminder: RiskBasedDCAReminder) async {
+        do {
+            let updatedReminder = try await dcaService.toggleRiskBasedReminder(id: reminder.id)
+
+            await MainActor.run {
+                if let index = self.riskBasedReminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.riskBasedReminders[index] = updatedReminder
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func markRiskBasedAsInvested(_ reminder: RiskBasedDCAReminder) async {
+        do {
+            let updatedReminder = try await dcaService.markRiskBasedAsInvested(id: reminder.id)
+
+            await MainActor.run {
+                if let index = self.riskBasedReminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.riskBasedReminders[index] = updatedReminder
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func dismissRiskTrigger(_ reminder: RiskBasedDCAReminder) async {
+        do {
+            let updatedReminder = try await dcaService.resetTrigger(id: reminder.id)
+
+            await MainActor.run {
+                if let index = self.riskBasedReminders.firstIndex(where: { $0.id == reminder.id }) {
+                    self.riskBasedReminders[index] = updatedReminder
+                }
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            }
+        }
+    }
+
+    func fetchRiskBasedInvestmentHistory(reminderId: UUID) async -> [RiskDCAInvestment] {
+        do {
+            return try await dcaService.fetchRiskBasedInvestmentHistory(reminderId: reminderId)
+        } catch {
+            return []
         }
     }
 }

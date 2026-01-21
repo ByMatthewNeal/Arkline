@@ -13,13 +13,8 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Animated mesh gradient background
+                // Gradient background with subtle blue glow
                 MeshGradientBackground()
-
-                // Brush effect overlay for dark mode
-                if isDarkMode {
-                    BrushEffectOverlay()
-                }
 
                 // Content
                 ScrollView(showsIndicators: false) {
@@ -110,11 +105,11 @@ struct GlassHeader: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(greeting)
-                    .font(.subheadline)
-                    .foregroundColor(textPrimary.opacity(0.6))
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(AppColors.textSecondary)
 
                 Text(userName.isEmpty ? "Welcome" : userName)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 26, weight: .bold))
                     .foregroundColor(textPrimary)
             }
 
@@ -148,7 +143,6 @@ struct GlassThemeToggleButton: View {
     var body: some View {
         Button(action: {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                // Toggle between light and dark
                 if appState.darkModePreference == .dark {
                     appState.setDarkModePreference(.light)
                 } else {
@@ -156,28 +150,15 @@ struct GlassThemeToggleButton: View {
                 }
             }
         }) {
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                    .frame(width: 44, height: 44)
-
-                Image(systemName: isDarkMode ? "moon.fill" : "sun.max.fill")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(isDarkMode ? Color(hex: "A78BFA") : Color(hex: "F59E0B"))
-                    .rotationEffect(.degrees(isDarkMode ? 0 : 360))
-            }
+            Circle()
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F5"))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: isDarkMode ? "moon.fill" : "sun.max.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(isDarkMode ? Color(hex: "A78BFA") : Color(hex: "F59E0B"))
+                )
         }
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .animation(.spring(response: 0.3), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
-        )
     }
 }
 
@@ -196,11 +177,7 @@ struct GlassIconButton: View {
         Button(action: { }) {
             ZStack {
                 Circle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
+                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F5"))
                     .frame(width: 44, height: 44)
 
                 Image(systemName: icon)
@@ -211,18 +188,11 @@ struct GlassIconButton: View {
                 if hasNotification {
                     Circle()
                         .fill(AppColors.error)
-                        .frame(width: 10, height: 10)
-                        .overlay(
-                            Circle()
-                                .fill(AppColors.error)
-                                .blur(radius: 4)
-                        )
+                        .frame(width: 8, height: 8)
                         .offset(x: 12, y: -12)
                 }
             }
         }
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .animation(.spring(response: 0.3), value: isPressed)
     }
 }
 
@@ -239,25 +209,12 @@ struct GlassAvatar: View {
 
     var body: some View {
         ZStack {
-            // Glow ring
+            // Avatar container with border
             Circle()
-                .fill(AppColors.accent.opacity(0.3))
-                .blur(radius: 8)
-                .frame(width: size + 8, height: size + 8)
-
-            // Avatar container
-            Circle()
-                .fill(.ultraThinMaterial)
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color.white)
                 .overlay(
                     Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [AppColors.accent, AppColors.meshPurple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 2
-                        )
+                        .stroke(AppColors.accent, lineWidth: 2)
                 )
                 .frame(width: size, height: size)
 
@@ -305,7 +262,7 @@ struct PortfolioHeroCard: View {
                     .foregroundColor(textPrimary.opacity(0.6))
 
                 Text(totalValue.asCurrency)
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .font(.system(size: 42, weight: .bold))
                     .foregroundColor(textPrimary)
 
                 // Change indicator
@@ -325,13 +282,13 @@ struct PortfolioHeroCard: View {
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill((isPositive ? AppColors.success : AppColors.error).opacity(0.2))
+                        .fill((isPositive ? AppColors.success : AppColors.error).opacity(0.15))
                 )
             }
 
             // Mini chart placeholder
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white.opacity(0.1))
+                .fill(AppColors.accent.opacity(0.1))
                 .frame(height: 60)
                 .overlay(
                     // Fake sparkline
@@ -344,32 +301,17 @@ struct PortfolioHeroCard: View {
                             path.addLine(to: CGPoint(x: width * CGFloat(index) / CGFloat(points.count - 1), y: height * (1 - point)))
                         }
                     }
-                    .stroke(
-                        LinearGradient(
-                            colors: [AppColors.accent, AppColors.meshCyan],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        lineWidth: 2
-                    )
+                    .stroke(AppColors.accent, lineWidth: 2)
                     .padding(8)
                 )
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .glassCard(cornerRadius: 24)
-        .overlay(
-            // Accent glow at top
+        .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(
-                    LinearGradient(
-                        colors: [AppColors.accent.opacity(0.3), .clear],
-                        startPoint: .top,
-                        endPoint: .center
-                    )
-                )
-                .allowsHitTesting(false)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
 }
 
@@ -401,26 +343,15 @@ struct GlassQuickActionButton: View {
     var body: some View {
         Button(action: { }) {
             VStack(spacing: 8) {
-                ZStack {
-                    // Glow effect
-                    Circle()
-                        .fill(color.opacity(0.4))
-                        .blur(radius: 10)
-                        .frame(width: 50, height: 50)
-
-                    // Icon container
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            Circle()
-                                .stroke(color.opacity(0.5), lineWidth: 1)
-                        )
-                        .frame(width: 48, height: 48)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(color)
-                }
+                // Icon container - simple circle with border
+                Circle()
+                    .stroke(color, lineWidth: 1.5)
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(color)
+                    )
 
                 Text(label)
                     .font(.caption)
@@ -429,13 +360,6 @@ struct GlassQuickActionButton: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .animation(.spring(response: 0.3), value: isPressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
-        )
     }
 }
 
@@ -519,7 +443,11 @@ struct RiskScoreCard: View {
                 .foregroundColor(textPrimary.opacity(0.4))
         }
         .padding(20)
-        .glassCard(cornerRadius: 20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -591,7 +519,11 @@ struct GlassFearGreedCard: View {
             .padding(.vertical, 8)
         }
         .padding(20)
-        .glassCard(cornerRadius: 20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -690,7 +622,11 @@ struct GlassCoinCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard(cornerRadius: 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -793,7 +729,11 @@ struct GlassDCACard: View {
             .scaleEffect(isPressed ? 0.95 : 1.0)
         }
         .padding(16)
-        .glassCard(cornerRadius: 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -863,7 +803,11 @@ struct GlassFavoriteCard: View {
         }
         .padding(14)
         .frame(width: 120)
-        .glassCard(cornerRadius: 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 

@@ -148,8 +148,11 @@ enum CoinGeckoEndpoint: APIEndpoint {
     }
 
     var headers: [String: String]? {
-        if !Constants.API.coinGeckoAPIKey.isEmpty && Constants.API.coinGeckoAPIKey != "your-coingecko-api-key" {
-            return ["x-cg-pro-api-key": Constants.API.coinGeckoAPIKey]
+        let apiKey = Constants.API.coinGeckoAPIKey
+        if !apiKey.isEmpty && apiKey != "your-coingecko-api-key" {
+            // Demo API keys start with "CG-", Pro keys don't have this prefix
+            let headerKey = apiKey.hasPrefix("CG-") ? "x-cg-demo-api-key" : "x-cg-pro-api-key"
+            return [headerKey: apiKey]
         }
         return nil
     }

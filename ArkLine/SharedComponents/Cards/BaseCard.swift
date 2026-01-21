@@ -4,13 +4,13 @@ import SwiftUI
 struct BaseCard<Content: View>: View {
     let content: () -> Content
     var backgroundColor: Color = Color(hex: "1F1F1F")
-    var cornerRadius: CGFloat = ArkSpacing.Radius.card
+    var cornerRadius: CGFloat = 16
     var padding: CGFloat = ArkSpacing.Component.cardPadding
     var hasShadow: Bool = false
 
     init(
         backgroundColor: Color = Color(hex: "1F1F1F"),
-        cornerRadius: CGFloat = 12,
+        cornerRadius: CGFloat = 16,
         padding: CGFloat = 16,
         hasShadow: Bool = false,
         @ViewBuilder content: @escaping () -> Content
@@ -27,9 +27,7 @@ struct BaseCard<Content: View>: View {
             .padding(padding)
             .background(backgroundColor)
             .cornerRadius(cornerRadius)
-            .if(hasShadow) { view in
-                view.arkShadowMedium()
-            }
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
 
@@ -39,7 +37,7 @@ struct TappableCard<Content: View>: View {
     let content: () -> Content
     var backgroundColor: Color = Color(hex: "1F1F1F")
     var pressedBackgroundColor: Color = Color(hex: "2A2A2A")
-    var cornerRadius: CGFloat = 12
+    var cornerRadius: CGFloat = 16
     var padding: CGFloat = 16
 
     @State private var isPressed = false
@@ -47,7 +45,7 @@ struct TappableCard<Content: View>: View {
     init(
         backgroundColor: Color = Color(hex: "1F1F1F"),
         pressedBackgroundColor: Color = Color(hex: "2A2A2A"),
-        cornerRadius: CGFloat = 12,
+        cornerRadius: CGFloat = 16,
         padding: CGFloat = 16,
         action: @escaping () -> Void,
         @ViewBuilder content: @escaping () -> Content
@@ -102,7 +100,7 @@ struct SectionCard<Header: View, Content: View>: View {
         }
         .padding(16)
         .background(backgroundColor)
-        .cornerRadius(12)
+        .cornerRadius(16)
     }
 }
 

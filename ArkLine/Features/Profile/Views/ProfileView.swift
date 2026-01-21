@@ -16,13 +16,8 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Animated mesh gradient background
+                // Gradient background with subtle blue glow
                 MeshGradientBackground()
-
-                // Brush effect overlay for dark mode
-                if isDarkMode {
-                    BrushEffectOverlay()
-                }
 
                 // Content
                 ScrollView {

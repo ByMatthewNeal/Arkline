@@ -10,22 +10,25 @@ struct AppColors {
     static let systemBlack = Color.black
 
     // MARK: - Primary Brand Colors
-    static let fillPrimary = Color(hex: "3369FF")
-    static let accent = Color(hex: "3B69FF")
-    static let accentDark = Color(hex: "2B4FCC")
-    static let accentLight = Color(hex: "5A8AFF")
+    static let fillPrimary = Color(hex: "3B82F6")    // blue-500
+    static let accent = Color(hex: "3B82F6")          // blue-500
+    static let accentDark = Color(hex: "2563EB")      // blue-600
+    static let accentLight = Color(hex: "60A5FA")     // blue-400
 
     // MARK: - Semantic Colors (Same in both modes)
     static let success = Color(hex: "22C55E")
     static let warning = Color(hex: "F59E0B")
-    static let error = Color(hex: "EF4444")
+    static let error = Color(hex: "DC2626")  // red-600
     static let info = Color(hex: "3B82F6")
+
+    /// Focus ring color for inputs (sky-500)
+    static let focusRing = Color(hex: "0EA5E9")  // sky-500
 
     // MARK: - Adaptive Colors (Light/Dark mode)
 
     /// Background color - adapts to color scheme
     static func background(_ colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F5")
+        colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F8F8F8")
     }
 
     /// Surface color for cards and elevated elements
@@ -40,7 +43,12 @@ struct AppColors {
 
     /// Divider/separator color
     static func divider(_ colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "E5E5E5")
+        colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "E2E8F0")  // slate-200
+    }
+
+    /// Card border color (visible in light mode)
+    static func cardBorder(_ colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color.clear : Color(hex: "E2E8F0")  // slate-200
     }
 
     /// Secondary fill color
@@ -50,11 +58,11 @@ struct AppColors {
 
     /// Primary text color
     static func textPrimary(_ colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? Color.white : Color.black
+        colorScheme == .dark ? Color.white : Color(hex: "1E293B")  // slate-800
     }
 
     /// Secondary text color
-    static let textSecondary = Color(hex: "888888")
+    static let textSecondary = Color(hex: "475569")  // slate-600
 
     /// Disabled text color
     static func textDisabled(_ colorScheme: ColorScheme) -> Color {
@@ -207,16 +215,16 @@ extension AppColors {
 
     // MARK: - Mesh Gradient Colors (Based on ArkLine palette)
     static let meshPurple = Color(hex: "2F2858")  // fill-secondary dark
-    static let meshBlue = Color(hex: "3369FF")    // accent/fill-primary
+    static let meshBlue = Color(hex: "3B82F6")     // blue-500
     static let meshCyan = Color(hex: "3B82F6")    // info blue
     static let meshPink = Color(hex: "6366F1")    // subtle purple
     static let meshIndigo = Color(hex: "1E3A8A")  // deep blue
 
     // MARK: - Glow Colors
-    static let glowPrimary = Color(hex: "3B69FF")
+    static let glowPrimary = Color(hex: "3B82F6")  // blue-500
     static let glowSuccess = Color(hex: "22C55E")
     static let glowWarning = Color(hex: "F59E0B")
-    static let glowError = Color(hex: "EF4444")
+    static let glowError = Color(hex: "DC2626")  // red-600
 
     // MARK: - Modern Gradients
     static let meshGradient = LinearGradient(
@@ -604,5 +612,33 @@ struct BrushStroke: View {
                 style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round)
             )
         }
+    }
+}
+
+// MARK: - Focus Ring Modifier
+struct FocusRingModifier: ViewModifier {
+    let isFocused: Bool
+    let cornerRadius: CGFloat
+
+    init(isFocused: Bool, cornerRadius: CGFloat = ArkSpacing.Radius.input) {
+        self.isFocused = isFocused
+        self.cornerRadius = cornerRadius
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(AppColors.focusRing.opacity(0.5), lineWidth: 2)
+                    .opacity(isFocused ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.15), value: isFocused)
+            )
+    }
+}
+
+extension View {
+    /// Adds a sky-500 focus ring when focused (matches Julia's focus:ring-2 focus:ring-sky-500/50)
+    func arkFocusRing(_ isFocused: Bool, cornerRadius: CGFloat = ArkSpacing.Radius.input) -> some View {
+        modifier(FocusRingModifier(isFocused: isFocused, cornerRadius: cornerRadius))
     }
 }

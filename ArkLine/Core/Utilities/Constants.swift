@@ -4,11 +4,11 @@ import Foundation
 enum Constants {
     // MARK: - API Keys (to be replaced with actual keys or environment variables)
     enum API {
-        static let supabaseURL = "https://your-project.supabase.co"
-        static let supabaseAnonKey = "your-anon-key"
+        static let supabaseURL = "https://mprbbjgrshfbupheuscn.supabase.co"
+        static let supabaseAnonKey = "sb_publishable_OD56MqP74dT54PEDZNpcrQ_PPm5ug0P"
         static let claudeAPIKey = "your-claude-api-key"
-        static let coinGeckoAPIKey = "your-coingecko-api-key"
-        static let alphaVantageAPIKey = "your-alphavantage-api-key"
+        static let coinGeckoAPIKey = "CG-Ggho8wQf8mXQeyPUzcgTJc3B"
+        static let alphaVantageAPIKey = "MBSPLHGZOUELTCOJ"
         static let metalsAPIKey = "your-metals-api-key"
     }
 

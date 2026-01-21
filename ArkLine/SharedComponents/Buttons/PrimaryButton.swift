@@ -33,16 +33,7 @@ struct PrimaryButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: size.height)
             .foregroundColor(.white)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(hex: "6366F1"),
-                        Color(hex: "8B5CF6")
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .background(Color(hex: "0284C7"))  // sky-600 solid
             .cornerRadius(ArkSpacing.Radius.button)
             .opacity(isDisabled ? 0.5 : 1)
         }

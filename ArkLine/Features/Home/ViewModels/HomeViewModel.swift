@@ -104,9 +104,13 @@ class HomeViewModel {
 
             let (fg, crypto, reminders, events) = try await (fgTask, cryptoTask, remindersTask, eventsTask)
 
+            logInfo("HomeViewModel: Fetched \(crypto.count) crypto assets", category: .data)
+
             // Extract BTC and ETH prices from crypto data
             let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
             let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
+
+            logInfo("HomeViewModel: BTC = \(btc?.currentPrice ?? -1), ETH = \(eth?.currentPrice ?? -1)", category: .data)
 
             // Calculate top gainers and losers
             let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
@@ -127,8 +131,10 @@ class HomeViewModel {
                 self.topLosers = losers
                 self.compositeRiskScore = fg.value
                 self.isLoading = false
+                logInfo("HomeViewModel: Set btcPrice=\(self.btcPrice), ethPrice=\(self.ethPrice)", category: .data)
             }
         } catch {
+            logError("HomeViewModel refresh failed: \(error)", category: .data)
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
                 self.isLoading = false
@@ -159,7 +165,7 @@ class HomeViewModel {
     private func loadInitialData() async {
         // Set initial user data
         await MainActor.run {
-            self.userName = "Daniel"
+            self.userName = "Matthew"
             self.portfolioValue = 125432.67
             self.portfolioChange24h = 2341.23
             self.portfolioChangePercent = 1.89

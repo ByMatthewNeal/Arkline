@@ -324,7 +324,7 @@ final class MockMarketService: MarketServiceProtocol {
         )
     }
 
-    private func generateSparklineData(basePrice: Double = 100, volatility: Double = 0.03) -> [Double] {
+    private func generateSparklineData(basePrice: Double = 100, volatility: Double = 0.03) -> SparklineData {
         var data: [Double] = []
         var price = basePrice
         for _ in 0..<168 { // 7 days * 24 hours
@@ -332,6 +332,6 @@ final class MockMarketService: MarketServiceProtocol {
             price *= (1 + change)
             data.append(price)
         }
-        return data
+        return SparklineData(price: data)
     }
 }
