@@ -183,22 +183,17 @@ struct ProfessionalAvatar: View {
     let name: String
     let size: CGFloat
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
 
-    // Generate a subtle gradient based on name
+    // Use the selected avatar color theme from AppState
     private var avatarGradient: LinearGradient {
-        let hash = abs(name.hashValue)
-        let hue1 = Double(hash % 360) / 360.0
-        let hue2 = Double((hash + 40) % 360) / 360.0
-
+        let colors = appState.avatarColorTheme.gradientColors
         return LinearGradient(
-            colors: [
-                Color(hue: hue1, saturation: 0.6, brightness: colorScheme == .dark ? 0.5 : 0.85),
-                Color(hue: hue2, saturation: 0.5, brightness: colorScheme == .dark ? 0.4 : 0.75)
-            ],
+            colors: [colors.light, colors.dark],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )

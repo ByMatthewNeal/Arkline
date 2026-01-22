@@ -79,6 +79,7 @@ enum Constants {
         static let currentUser = "currentUser"
         static let preferredCurrency = "preferredCurrency"
         static let darkModePreference = "darkModePreference"
+        static let avatarColorTheme = "avatarColorTheme"
         static let riskCoins = "riskCoins"
         static let notificationsEnabled = "notificationsEnabled"
         static let biometricEnabled = "biometricEnabled"
@@ -179,6 +180,55 @@ enum Constants {
             case .light: return "Light"
             case .dark: return "Dark"
             case .automatic: return "Automatic"
+            }
+        }
+    }
+
+    // MARK: - Avatar Color Theme (Blue Variations)
+    enum AvatarColorTheme: String, CaseIterable {
+        case ocean = "ocean"
+        case sky = "sky"
+        case royal = "royal"
+        case midnight = "midnight"
+        case teal = "teal"
+        case indigo = "indigo"
+
+        var displayName: String {
+            switch self {
+            case .ocean: return "Ocean"
+            case .sky: return "Sky"
+            case .royal: return "Royal"
+            case .midnight: return "Midnight"
+            case .teal: return "Teal"
+            case .indigo: return "Indigo"
+            }
+        }
+
+        var gradientHexColors: (light: String, dark: String) {
+            switch self {
+            case .ocean:
+                return ("0077B6", "00B4D8")
+            case .sky:
+                return ("38BDF8", "7DD3FC")
+            case .royal:
+                return ("3B82F6", "60A5FA")
+            case .midnight:
+                return ("1E3A8A", "3B82F6")
+            case .teal:
+                return ("0D9488", "2DD4BF")
+            case .indigo:
+                return ("4F46E5", "818CF8")
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .ocean: return "water.waves"
+            case .sky: return "cloud.sun"
+            case .royal: return "crown"
+            case .midnight: return "moon.stars"
+            case .teal: return "leaf"
+            case .indigo: return "sparkles"
             }
         }
     }

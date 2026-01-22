@@ -642,3 +642,12 @@ extension View {
         modifier(FocusRingModifier(isFocused: isFocused, cornerRadius: cornerRadius))
     }
 }
+
+// MARK: - Avatar Color Theme Extension
+extension Constants.AvatarColorTheme {
+    /// SwiftUI Color values for the avatar gradient
+    var gradientColors: (light: Color, dark: Color) {
+        let hexColors = gradientHexColors
+        return (Color(hex: hexColors.light), Color(hex: hexColors.dark))
+    }
+}

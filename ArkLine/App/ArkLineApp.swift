@@ -67,6 +67,7 @@ class AppState: ObservableObject {
     @Published var isOnboarded = false
     @Published var currentUser: User?
     @Published var darkModePreference: Constants.DarkModePreference = .automatic
+    @Published var avatarColorTheme: Constants.AvatarColorTheme = .ocean
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
 
     // Navigation reset triggers - increment to pop to root
@@ -94,6 +95,12 @@ class AppState: ObservableObject {
         if let darkModeValue = UserDefaults.standard.string(forKey: Constants.UserDefaults.darkModePreference),
            let preference = Constants.DarkModePreference(rawValue: darkModeValue) {
             darkModePreference = preference
+        }
+
+        // Load avatar color theme
+        if let avatarColorValue = UserDefaults.standard.string(forKey: Constants.UserDefaults.avatarColorTheme),
+           let theme = Constants.AvatarColorTheme(rawValue: avatarColorValue) {
+            avatarColorTheme = theme
         }
 
         // Load widget configuration
@@ -130,6 +137,11 @@ class AppState: ObservableObject {
     func setDarkModePreference(_ preference: Constants.DarkModePreference) {
         darkModePreference = preference
         UserDefaults.standard.set(preference.rawValue, forKey: Constants.UserDefaults.darkModePreference)
+    }
+
+    func setAvatarColorTheme(_ theme: Constants.AvatarColorTheme) {
+        avatarColorTheme = theme
+        UserDefaults.standard.set(theme.rawValue, forKey: Constants.UserDefaults.avatarColorTheme)
     }
 
     func setWidgetConfiguration(_ config: WidgetConfiguration) {

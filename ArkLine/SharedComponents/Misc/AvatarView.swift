@@ -6,6 +6,7 @@ struct AvatarView: View {
     let name: String
     var size: CGFloat = 40
     var showBorder: Bool = false
+    @EnvironmentObject var appState: AppState
 
     private var initials: String {
         let components = name.components(separatedBy: " ")
@@ -17,6 +18,16 @@ struct AvatarView: View {
 
     private var fontSize: CGFloat {
         size * 0.4
+    }
+
+    // Use the selected avatar color theme from AppState
+    private var avatarGradient: LinearGradient {
+        let colors = appState.avatarColorTheme.gradientColors
+        return LinearGradient(
+            colors: [colors.light, colors.dark],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     var body: some View {
@@ -53,14 +64,7 @@ struct AvatarView: View {
 
     private var placeholderView: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    AppColors.accentLight,
-                    AppColors.accent
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            avatarGradient
 
             Text(initials)
                 .font(.system(size: fontSize, weight: .semibold))
@@ -123,4 +127,5 @@ enum AvatarSizeEnum {
     }
     .padding()
     .background(AppColors.background(.dark))
+    .environmentObject(AppState())
 }

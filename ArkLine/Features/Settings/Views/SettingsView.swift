@@ -46,6 +46,15 @@ struct SettingsView: View {
                         )
                     }
 
+                    NavigationLink(destination: AvatarColorSelectView(appState: appState)) {
+                        SettingsRow(
+                            icon: "person.crop.circle.fill",
+                            iconColor: appState.avatarColorTheme.gradientColors.light,
+                            title: "Avatar Color",
+                            value: appState.avatarColorTheme.displayName
+                        )
+                    }
+
                     NavigationLink(destination: RiskLevelSelectView(viewModel: viewModel)) {
                         SettingsRow(
                             icon: "chart.bar.fill",
@@ -360,6 +369,152 @@ struct ModeSettingsView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+}
+
+// MARK: - Avatar Color Select View
+struct AvatarColorSelectView: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+    var appState: AppState
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    var body: some View {
+        ZStack {
+            MeshGradientBackground()
+            if isDarkMode { BrushEffectOverlay() }
+
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Preview Avatar
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            appState.avatarColorTheme.gradientColors.light,
+                                            appState.avatarColorTheme.gradientColors.dark
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 100, height: 100)
+
+                            Circle()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                .frame(width: 100, height: 100)
+
+                            Text("M")
+                                .font(.system(size: 38, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
+
+                        Text("Preview")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.top, 24)
+
+                    // Color Options Grid
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        ForEach(Constants.AvatarColorTheme.allCases, id: \.self) { theme in
+                            AvatarColorOption(
+                                theme: theme,
+                                isSelected: appState.avatarColorTheme == theme,
+                                action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        appState.setAvatarColorTheme(theme)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    Spacer(minLength: 100)
+                }
+            }
+        }
+        .navigationTitle("Avatar Color")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+}
+
+// MARK: - Avatar Color Option
+struct AvatarColorOption: View {
+    let theme: Constants.AvatarColorTheme
+    let isSelected: Bool
+    let action: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                // Color preview circle
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [theme.gradientColors.light, theme.gradientColors.dark],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 56, height: 56)
+
+                    if isSelected {
+                        Circle()
+                            .stroke(Color.white, lineWidth: 3)
+                            .frame(width: 56, height: 56)
+
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+
+                // Theme name and icon
+                HStack(spacing: 6) {
+                    Image(systemName: theme.icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(isSelected ? theme.gradientColors.light : AppColors.textSecondary)
+
+                    Text(theme.displayName)
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(isSelected ? AppColors.textPrimary(colorScheme) : AppColors.textSecondary)
+                }
+            }
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        isSelected
+                            ? (colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
+                            : (colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.02))
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        isSelected ? theme.gradientColors.light : Color.clear,
+                        lineWidth: 2
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
