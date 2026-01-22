@@ -19,6 +19,7 @@ struct CustomTextField: View {
 
     @State private var isShowingPassword = false
     @FocusState private var isFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -44,7 +45,7 @@ struct CustomTextField: View {
                 #endif
                 .autocorrectionDisabled()
                 .focused($isFocused)
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 if isSecure {
                     Button(action: { isShowingPassword.toggle() }) {
@@ -64,11 +65,11 @@ struct CustomTextField: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(Color(hex: "1F1F1F"))
-            .cornerRadius(10)
+            .background(colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "F5F5F5"))
+            .cornerRadius(12)
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(borderColor, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(borderColor, lineWidth: 1.5)
             )
             .disabled(isDisabled)
             .opacity(isDisabled ? 0.5 : 1)
@@ -89,8 +90,8 @@ struct CustomTextField: View {
 
     private var borderColor: Color {
         if errorMessage != nil { return AppColors.error }
-        if isFocused { return AppColors.focusRing }
-        return Color.clear
+        if isFocused { return AppColors.accent }
+        return colorScheme == .dark ? Color.clear : Color(hex: "E2E8F0")
     }
 }
 

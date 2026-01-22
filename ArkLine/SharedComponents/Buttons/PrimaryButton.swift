@@ -33,7 +33,7 @@ struct PrimaryButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: size.height)
             .foregroundColor(.white)
-            .background(Color(hex: "0284C7"))  // sky-600 solid
+            .background(AppColors.accent)  // blue-500
             .cornerRadius(ArkSpacing.Radius.button)
             .opacity(isDisabled ? 0.5 : 1)
         }
