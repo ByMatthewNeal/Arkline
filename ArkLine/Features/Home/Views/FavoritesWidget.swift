@@ -2,6 +2,8 @@ import SwiftUI
 
 struct FavoritesWidget: View {
     let assets: [CryptoAsset]
+    @State private var selectedAsset: CryptoAsset?
+    @State private var showTechnicalDetail = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -21,12 +23,23 @@ struct FavoritesWidget: View {
 
             VStack(spacing: 8) {
                 ForEach(assets) { asset in
-                    AssetRowView(asset: asset)
+                    Button {
+                        selectedAsset = asset
+                        showTechnicalDetail = true
+                    } label: {
+                        AssetRowView(asset: asset)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
         .padding(20)
         .glassCard(cornerRadius: 16)
+        .sheet(isPresented: $showTechnicalDetail) {
+            if let asset = selectedAsset {
+                AssetTechnicalDetailSheet(asset: asset)
+            }
+        }
     }
 }
 

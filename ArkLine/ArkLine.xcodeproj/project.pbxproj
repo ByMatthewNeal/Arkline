@@ -116,6 +116,8 @@
 		DFAAE987876735F0CDF5E9A6 /* AddRealEstateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2C2C9C43A1D1A90BA39B2D /* AddRealEstateView.swift */; };
 		E1E8AA0B3CA1915144C5D3A7 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFD7DF1166F174ACA2EFFB5 /* TransactionDetailView.swift */; };
 		E8B61F5290537F3B5234979B /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0055D207871438FBAECAE1 /* Portfolio.swift */; };
+		EA51944C89E5AFC8C4678320 /* TechnicalAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C114A4C65CADC41B5B8BF6 /* TechnicalAnalysis.swift */; };
+		EAF7360AC62E0E3C7BA3337A /* AssetTechnicalDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E19E054569FE504692A0E2C /* AssetTechnicalDetailSheet.swift */; };
 		F028D46763B28837C63AF7D4 /* SentimentCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9997D8052D5270DC5237E5E6 /* SentimentCard.swift */; };
 		F127FC028818445B43404988 /* GradientCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC34A1FDFF566C6A0501418 /* GradientCard.swift */; };
 		F374FD71053262F2670E0F46 /* MarketSentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C363BE93C1AF81DE643E762B /* MarketSentiment.swift */; };
@@ -143,6 +145,7 @@
 		06077059E66D4476A4C70F20 /* HomeMarketWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketWidgets.swift; sourceTree = "<group>"; };
 		07A3D4FB06E03FA228047903 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		0C8185913CA90DB0567893C5 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
+		0E19E054569FE504692A0E2C /* AssetTechnicalDetailSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssetTechnicalDetailSheet.swift; path = Features/Home/Views/AssetTechnicalDetailSheet.swift; sourceTree = "<group>"; };
 		0F899A618850ED4F1DCABE67 /* QuickActionsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsBar.swift; sourceTree = "<group>"; };
 		0FFD7DF1166F174ACA2EFFB5 /* TransactionDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
 		11255E8D99752FF4FB569E1F /* BaseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseCard.swift; sourceTree = "<group>"; };
@@ -154,6 +157,7 @@
 		1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSentimentSection.swift; sourceTree = "<group>"; };
 		1C56B9433400F805DDB08F5E /* PerformanceMetricsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceMetricsCalculator.swift; sourceTree = "<group>"; };
 		1E999CFE901A34DC1FADC4B9 /* StockAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockAsset.swift; sourceTree = "<group>"; };
+		20C114A4C65CADC41B5B8BF6 /* TechnicalAnalysis.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TechnicalAnalysis.swift; path = Domain/Models/TechnicalAnalysis.swift; sourceTree = "<group>"; };
 		20FE43164BCBFA94F69EA31F /* SparklineChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineChart.swift; sourceTree = "<group>"; };
 		226992D4574D4FB6A57D1757 /* EnterEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterEmailView.swift; sourceTree = "<group>"; };
 		24693986FAAA5B2A0724CFF8 /* PerformanceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
@@ -411,6 +415,14 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
+		1D3991E0067F6677EC28D846 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				20C114A4C65CADC41B5B8BF6 /* TechnicalAnalysis.swift */,
+			);
+			name = Models;
+			sourceTree = "<group>";
+		};
 		1DD60057E7FA3D0CE660A2A8 /* Domain */ = {
 			isa = PBXGroup;
 			children = (
@@ -445,6 +457,14 @@
 				0C8185913CA90DB0567893C5 /* CommunityView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		3211DDAFA776A26CA3E98E4A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				0E19E054569FE504692A0E2C /* AssetTechnicalDetailSheet.swift */,
+			);
+			name = Views;
 			sourceTree = "<group>";
 		};
 		35E2337C8AA09E78D6BB9C39 /* Supabase */ = {
@@ -496,6 +516,14 @@
 				5A89784E34696A045BCC5CC8 /* Views */,
 			);
 			path = AIChat;
+			sourceTree = "<group>";
+		};
+		4C6B549D546DE5D51BE25D15 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				1D3991E0067F6677EC28D846 /* Models */,
+			);
+			name = Domain;
 			sourceTree = "<group>";
 		};
 		5088718CA1A2453BF3DA6935 /* Components */ = {
@@ -568,8 +596,17 @@
 			isa = PBXGroup;
 			children = (
 				80CCB7753FD1C844CA0F54F8 /* Features */,
+				4C6B549D546DE5D51BE25D15 /* Domain */,
 			);
 			name = ArkLine;
+			sourceTree = "<group>";
+		};
+		5E7A23D88E9A41D3B8B5C6C7 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				3211DDAFA776A26CA3E98E4A /* Views */,
+			);
+			name = Home;
 			sourceTree = "<group>";
 		};
 		5F20A6695E28B64615EBE60B /* SentimentDetailViews */ = {
@@ -689,6 +726,7 @@
 			children = (
 				F7173E3D272E4F2FE60D8903 /* Market */,
 				F86F71E7F5B5FD70625164B0 /* Portfolio */,
+				5E7A23D88E9A41D3B8B5C6C7 /* Home */,
 			);
 			name = Features;
 			sourceTree = "<group>";
@@ -1291,6 +1329,8 @@
 				901058F51414A72F9F1412B7 /* ExportService.swift in Sources */,
 				301D5C8341D6392B042E2D0E /* PerformanceView.swift in Sources */,
 				E1E8AA0B3CA1915144C5D3A7 /* TransactionDetailView.swift in Sources */,
+				EA51944C89E5AFC8C4678320 /* TechnicalAnalysis.swift in Sources */,
+				EAF7360AC62E0E3C7BA3337A /* AssetTechnicalDetailSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

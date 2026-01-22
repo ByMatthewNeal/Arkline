@@ -1330,9 +1330,40 @@ struct MarketMoversSection: View {
     let ethChange: Double
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
+    @State private var selectedAsset: CryptoAsset?
+    @State private var showTechnicalDetail = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
+    }
+
+    // Create CryptoAsset objects from available data for technical analysis
+    private var btcAsset: CryptoAsset {
+        CryptoAsset(
+            id: "bitcoin",
+            symbol: "BTC",
+            name: "Bitcoin",
+            currentPrice: btcPrice,
+            priceChange24h: btcPrice * (btcChange / 100),
+            priceChangePercentage24h: btcChange,
+            iconUrl: nil,
+            marketCap: 1_320_000_000_000,
+            marketCapRank: 1
+        )
+    }
+
+    private var ethAsset: CryptoAsset {
+        CryptoAsset(
+            id: "ethereum",
+            symbol: "ETH",
+            name: "Ethereum",
+            currentPrice: ethPrice,
+            priceChange24h: ethPrice * (ethChange / 100),
+            priceChangePercentage24h: ethChange,
+            iconUrl: nil,
+            marketCap: 400_000_000_000,
+            marketCapRank: 2
+        )
     }
 
     var body: some View {
@@ -1344,31 +1375,61 @@ struct MarketMoversSection: View {
             if size == .compact {
                 // Compact: horizontal row
                 HStack(spacing: 8) {
-                    CompactCoinCard(symbol: "BTC", price: btcPrice, change: btcChange, accentColor: AppColors.accent)
-                    CompactCoinCard(symbol: "ETH", price: ethPrice, change: ethChange, accentColor: AppColors.accent)
+                    Button {
+                        selectedAsset = btcAsset
+                        showTechnicalDetail = true
+                    } label: {
+                        CompactCoinCard(symbol: "BTC", price: btcPrice, change: btcChange, accentColor: AppColors.accent)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    Button {
+                        selectedAsset = ethAsset
+                        showTechnicalDetail = true
+                    } label: {
+                        CompactCoinCard(symbol: "ETH", price: ethPrice, change: ethChange, accentColor: AppColors.accent)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             } else {
                 HStack(spacing: 12) {
-                    GlassCoinCard(
-                        symbol: "BTC",
-                        name: "Bitcoin",
-                        price: btcPrice,
-                        change: btcChange,
-                        icon: "bitcoinsign.circle.fill",
-                        accentColor: AppColors.accent,
-                        isExpanded: size == .expanded
-                    )
+                    Button {
+                        selectedAsset = btcAsset
+                        showTechnicalDetail = true
+                    } label: {
+                        GlassCoinCard(
+                            symbol: "BTC",
+                            name: "Bitcoin",
+                            price: btcPrice,
+                            change: btcChange,
+                            icon: "bitcoinsign.circle.fill",
+                            accentColor: AppColors.accent,
+                            isExpanded: size == .expanded
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
 
-                    GlassCoinCard(
-                        symbol: "ETH",
-                        name: "Ethereum",
-                        price: ethPrice,
-                        change: ethChange,
-                        icon: "diamond.fill",
-                        accentColor: AppColors.accent,
-                        isExpanded: size == .expanded
-                    )
+                    Button {
+                        selectedAsset = ethAsset
+                        showTechnicalDetail = true
+                    } label: {
+                        GlassCoinCard(
+                            symbol: "ETH",
+                            name: "Ethereum",
+                            price: ethPrice,
+                            change: ethChange,
+                            icon: "diamond.fill",
+                            accentColor: AppColors.accent,
+                            isExpanded: size == .expanded
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
+            }
+        }
+        .sheet(isPresented: $showTechnicalDetail) {
+            if let asset = selectedAsset {
+                AssetTechnicalDetailSheet(asset: asset)
             }
         }
     }
