@@ -396,6 +396,7 @@ struct ReorderableWidgetStack: View {
                 RiskScoreCard(
                     score: score,
                     riskScore: viewModel.arkLineRiskScore,
+                    itcRiskLevel: viewModel.btcRiskLevel,
                     size: appState.widgetSize(.riskScore)
                 )
             }
@@ -806,6 +807,7 @@ struct GlassQuickActionButton: View {
 struct RiskScoreCard: View {
     let score: Int
     var riskScore: ArkLineRiskScore? = nil
+    var itcRiskLevel: ITCRiskLevel? = nil
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -814,7 +816,11 @@ struct RiskScoreCard: View {
         AppColors.textPrimary(colorScheme)
     }
 
+    // Use ITC risk level if available, otherwise fall back to computed label
     var riskLabel: String {
+        if let itc = itcRiskLevel {
+            return itc.riskCategory
+        }
         switch score {
         case 0..<30: return "Low Risk"
         case 30..<50: return "Moderate"
@@ -823,14 +829,15 @@ struct RiskScoreCard: View {
         }
     }
 
-    /// Dynamic blue color based on risk level
-    /// Higher score = more intense/saturated blue, lower score = lighter blue
+    // Use ITC-based coloring if available
     private var riskColor: Color {
-        // Base blue hue with varying saturation and brightness
+        if let itc = itcRiskLevel {
+            return ITCRiskColors.color(for: itc.riskLevel, colorScheme: colorScheme)
+        }
+        // Fallback: Dynamic blue color based on risk level
         let normalizedScore = Double(score) / 100.0
-        // Low risk (0): Light sky blue, High risk (100): Deep vivid blue
-        let saturation = 0.4 + (normalizedScore * 0.5)  // 0.4 to 0.9
-        let brightness = 0.9 - (normalizedScore * 0.25) // 0.9 to 0.65
+        let saturation = 0.4 + (normalizedScore * 0.5)
+        let brightness = 0.9 - (normalizedScore * 0.25)
         return Color(hue: 0.6, saturation: saturation, brightness: brightness)
     }
 
@@ -858,10 +865,34 @@ struct RiskScoreCard: View {
         riskScore?.components.count ?? 10
     }
 
+    // Display score: prefer ITC percentage, fallback to ArkLine score
+    private var displayScore: Int {
+        if let itc = itcRiskLevel {
+            return Int(itc.riskPercentage)
+        }
+        return score
+    }
+
+    // Title changes based on data source
+    private var cardTitle: String {
+        if itcRiskLevel != nil {
+            return "ITC Risk Level"
+        }
+        return "ArkLine Risk Score"
+    }
+
+    // Subtitle/attribution
+    private var cardSubtitle: String {
+        if itcRiskLevel != nil {
+            return "Into The Cryptoverse"
+        }
+        return "Based on \(indicatorCount) indicators"
+    }
+
     var body: some View {
         Button(action: { showingDetail = true }) {
             HStack(spacing: size == .compact ? 12 : 16) {
-                // Score circle - dynamic blue based on risk
+                // Score circle - colored based on risk
                 ZStack {
                     // Background ring
                     Circle()
@@ -875,7 +906,7 @@ struct RiskScoreCard: View {
 
                     // Progress ring - dynamic gradient
                     Circle()
-                        .trim(from: 0, to: CGFloat(score) / 100)
+                        .trim(from: 0, to: CGFloat(displayScore) / 100)
                         .stroke(
                             LinearGradient(
                                 colors: [riskColorLight, riskColor],
@@ -894,33 +925,46 @@ struct RiskScoreCard: View {
                         .frame(width: circleSize * 0.6, height: circleSize * 0.6)
 
                     // Score text
-                    Text("\(score)")
+                    Text("\(displayScore)")
                         .font(.system(size: size == .compact ? 18 : (size == .expanded ? 30 : 24), weight: .bold, design: .rounded))
                         .foregroundColor(textPrimary)
                 }
 
                 VStack(alignment: .leading, spacing: size == .compact ? 2 : 4) {
-                    Text("ArkLine Risk Score")
+                    Text(cardTitle)
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)
 
-                    // Neutral badge for risk level
-                    Text(riskLabel)
-                        .font(size == .compact ? .caption : .subheadline)
-                        .foregroundColor(AppColors.textSecondary)
+                    // Risk level badge with color indicator
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(riskColor)
+                            .frame(width: 8, height: 8)
+
+                        Text(riskLabel)
+                            .font(size == .compact ? .caption : .subheadline)
+                            .foregroundColor(riskColor)
+                    }
 
                     if size != .compact {
-                        Text("Based on \(indicatorCount) indicators")
+                        Text(cardSubtitle)
                             .font(.caption)
                             .foregroundColor(textPrimary.opacity(0.5))
                     }
 
-                    if size == .expanded, let recommendation = riskScore?.recommendation {
-                        Text(recommendation)
-                            .font(.caption)
-                            .foregroundColor(textPrimary.opacity(0.6))
-                            .lineLimit(2)
-                            .padding(.top, 4)
+                    if size == .expanded {
+                        if let recommendation = riskScore?.recommendation {
+                            Text(recommendation)
+                                .font(.caption)
+                                .foregroundColor(textPrimary.opacity(0.6))
+                                .lineLimit(2)
+                                .padding(.top, 4)
+                        } else if let itc = itcRiskLevel {
+                            Text("Updated: \(itc.date)")
+                                .font(.caption)
+                                .foregroundColor(textPrimary.opacity(0.5))
+                                .padding(.top, 4)
+                        }
                     }
                 }
 
@@ -939,7 +983,11 @@ struct RiskScoreCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            RiskScoreDetailView(riskScore: riskScore, score: score)
+            if let itc = itcRiskLevel {
+                ITCRiskDetailView(riskLevel: itc)
+            } else {
+                RiskScoreDetailView(riskScore: riskScore, score: score)
+            }
         }
     }
 }

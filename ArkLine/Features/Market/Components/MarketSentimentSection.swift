@@ -75,6 +75,35 @@ struct MarketSentimentSection: View {
                 }
             }
 
+            // SECTION: ITC Risk Levels (Into The Cryptoverse)
+            if viewModel.btcRiskLevel != nil || viewModel.ethRiskLevel != nil {
+                SentimentCategorySection(
+                    title: "ITC Risk Levels",
+                    icon: "chart.line.uptrend.xyaxis",
+                    iconColor: AppColors.accent
+                ) {
+                    VStack(spacing: 12) {
+                        // BTC and ETH Risk Cards in grid
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                            // BTC Risk Level
+                            if let btcRisk = viewModel.btcRiskLevel {
+                                ITCRiskCard(riskLevel: btcRisk, coinSymbol: "BTC")
+                            }
+
+                            // ETH Risk Level
+                            if let ethRisk = viewModel.ethRiskLevel {
+                                ITCRiskCard(riskLevel: ethRisk, coinSymbol: "ETH")
+                            }
+                        }
+
+                        // Historical trend chart (if expanded and data available)
+                        if !viewModel.btcRiskHistory.isEmpty {
+                            ITCRiskHistoryCard(history: viewModel.btcRiskHistory)
+                        }
+                    }
+                }
+            }
+
             // SECTION 2: Retail Sentiment
             SentimentCategorySection(
                 title: "Retail Sentiment",
@@ -947,6 +976,190 @@ struct LiquidationLevelsCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 120)
         .glassCard(cornerRadius: 16)
+    }
+}
+
+// MARK: - ITC Risk History Card
+struct ITCRiskHistoryCard: View {
+    let history: [ITCRiskLevel]
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var chartData: [CGFloat] {
+        // Convert risk levels to chart data points
+        history.suffix(30).map { CGFloat($0.riskLevel) }
+    }
+
+    private var latestRisk: ITCRiskLevel? {
+        history.last
+    }
+
+    private var trendDirection: String {
+        guard history.count >= 2 else { return "stable" }
+        let recent = history.suffix(7)
+        guard let first = recent.first, let last = recent.last else { return "stable" }
+        let diff = last.riskLevel - first.riskLevel
+        if diff > 0.05 { return "rising" }
+        else if diff < -0.05 { return "falling" }
+        return "stable"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("BTC Risk History")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(textPrimary)
+
+                    Text("30 Day Trend")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                // Trend indicator
+                HStack(spacing: 4) {
+                    Image(systemName: trendIcon)
+                        .font(.system(size: 12, weight: .bold))
+                    Text(trendLabel)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(trendColor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(trendColor.opacity(0.15))
+                )
+            }
+
+            // Mini chart
+            if !chartData.isEmpty {
+                ITCRiskSparkline(dataPoints: chartData, colorScheme: colorScheme)
+                    .frame(height: 60)
+            }
+
+            // Attribution
+            HStack {
+                Image(systemName: "link")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Powered by Into The Cryptoverse")
+                    .font(.caption2)
+                    .foregroundColor(textPrimary.opacity(0.5))
+            }
+        }
+        .padding(16)
+        .glassCard(cornerRadius: 16)
+    }
+
+    private var trendIcon: String {
+        switch trendDirection {
+        case "rising": return "arrow.up.right"
+        case "falling": return "arrow.down.right"
+        default: return "arrow.right"
+        }
+    }
+
+    private var trendLabel: String {
+        switch trendDirection {
+        case "rising": return "Rising"
+        case "falling": return "Falling"
+        default: return "Stable"
+        }
+    }
+
+    private var trendColor: Color {
+        switch trendDirection {
+        case "rising": return AppColors.error
+        case "falling": return AppColors.success
+        default: return AppColors.warning
+        }
+    }
+}
+
+// MARK: - ITC Risk Sparkline
+struct ITCRiskSparkline: View {
+    let dataPoints: [CGFloat]
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let stepX = width / CGFloat(max(dataPoints.count - 1, 1))
+
+            ZStack {
+                // Risk zone backgrounds
+                VStack(spacing: 0) {
+                    // High risk zone (top)
+                    Rectangle()
+                        .fill(AppColors.error.opacity(0.05))
+                        .frame(height: height * 0.3)
+
+                    // Medium risk zone
+                    Rectangle()
+                        .fill(AppColors.warning.opacity(0.05))
+                        .frame(height: height * 0.4)
+
+                    // Low risk zone (bottom)
+                    Rectangle()
+                        .fill(AppColors.success.opacity(0.05))
+                        .frame(height: height * 0.3)
+                }
+
+                // Risk line
+                Path { path in
+                    guard dataPoints.count > 1 else { return }
+
+                    for (index, point) in dataPoints.enumerated() {
+                        let x = CGFloat(index) * stepX
+                        let y = height - (point * height) // Invert Y axis
+
+                        if index == 0 {
+                            path.move(to: CGPoint(x: x, y: y))
+                        } else {
+                            path.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                }
+                .stroke(
+                    LinearGradient(
+                        colors: [AppColors.success, AppColors.warning, AppColors.error],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    ),
+                    style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                )
+
+                // End point indicator
+                if let lastPoint = dataPoints.last {
+                    let lastX = CGFloat(dataPoints.count - 1) * stepX
+                    let lastY = height - (lastPoint * height)
+
+                    Circle()
+                        .fill(ITCRiskColors.color(for: Double(lastPoint), colorScheme: colorScheme))
+                        .frame(width: 8, height: 8)
+                        .position(x: lastX, y: lastY)
+
+                    // Glow effect
+                    Circle()
+                        .fill(ITCRiskColors.color(for: Double(lastPoint), colorScheme: colorScheme).opacity(0.3))
+                        .frame(width: 16, height: 16)
+                        .blur(radius: 4)
+                        .position(x: lastX, y: lastY)
+                }
+            }
+        }
     }
 }
 
