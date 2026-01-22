@@ -7,7 +7,7 @@ final class MockPortfolioService: PortfolioServiceProtocol {
     var simulatedDelay: UInt64 = 500_000_000
 
     // MARK: - Mock Storage
-    private var mockPortfolio: Portfolio?
+    private var mockPortfolios: [Portfolio] = []
     private var mockHoldings: [PortfolioHolding] = []
     private var mockTransactions: [Transaction] = []
 
@@ -18,9 +18,14 @@ final class MockPortfolioService: PortfolioServiceProtocol {
 
     // MARK: - PortfolioServiceProtocol
 
+    func fetchPortfolios(userId: UUID) async throws -> [Portfolio] {
+        try await simulateNetworkDelay()
+        return mockPortfolios
+    }
+
     func fetchPortfolio(userId: UUID) async throws -> Portfolio? {
         try await simulateNetworkDelay()
-        return mockPortfolio
+        return mockPortfolios.first
     }
 
     func fetchHoldings(portfolioId: UUID) async throws -> [PortfolioHolding] {
@@ -40,22 +45,22 @@ final class MockPortfolioService: PortfolioServiceProtocol {
 
     func createPortfolio(_ portfolio: Portfolio) async throws -> Portfolio {
         try await simulateNetworkDelay()
-        mockPortfolio = portfolio
+        mockPortfolios.append(portfolio)
         return portfolio
     }
 
     func updatePortfolio(_ portfolio: Portfolio) async throws {
         try await simulateNetworkDelay()
-        mockPortfolio = portfolio
+        if let index = mockPortfolios.firstIndex(where: { $0.id == portfolio.id }) {
+            mockPortfolios[index] = portfolio
+        }
     }
 
     func deletePortfolio(portfolioId: UUID) async throws {
         try await simulateNetworkDelay()
-        if mockPortfolio?.id == portfolioId {
-            mockPortfolio = nil
-            mockHoldings.removeAll()
-            mockTransactions.removeAll()
-        }
+        mockPortfolios.removeAll { $0.id == portfolioId }
+        mockHoldings.removeAll { $0.portfolioId == portfolioId }
+        mockTransactions.removeAll { $0.portfolioId == portfolioId }
     }
 
     func addHolding(_ holding: PortfolioHolding) async throws -> PortfolioHolding {
@@ -119,28 +124,70 @@ final class MockPortfolioService: PortfolioServiceProtocol {
 
     private func setupMockData() {
         let userId = UUID()
-        let portfolioId = UUID()
 
-        mockPortfolio = Portfolio(
-            id: portfolioId,
+        // Portfolio 1: Main Portfolio (diversified)
+        let mainPortfolioId = UUID()
+        let mainPortfolio = Portfolio(
+            id: mainPortfolioId,
             userId: userId,
             name: "Main Portfolio",
             isPublic: false,
             createdAt: Date().addingTimeInterval(-86400 * 90)
         )
 
-        mockHoldings = [
-            createHolding(portfolioId: portfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 0.5, avgPrice: 45000, currentPrice: 67500, change: 2.5),
-            createHolding(portfolioId: portfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 3.2, avgPrice: 2800, currentPrice: 3450, change: -1.2),
-            createHolding(portfolioId: portfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 25, avgPrice: 120, currentPrice: 175, change: 5.8),
-            createHolding(portfolioId: portfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 10, avgPrice: 175, currentPrice: 195, change: 0.8),
-            createHolding(portfolioId: portfolioId, assetType: "metal", symbol: "XAU", name: "Gold", quantity: 2, avgPrice: 1950, currentPrice: 2050, change: 0.3)
+        // Portfolio 2: Crypto Only
+        let cryptoPortfolioId = UUID()
+        let cryptoPortfolio = Portfolio(
+            id: cryptoPortfolioId,
+            userId: userId,
+            name: "Crypto Only",
+            isPublic: false,
+            createdAt: Date().addingTimeInterval(-86400 * 60)
+        )
+
+        // Portfolio 3: Long Term
+        let longTermPortfolioId = UUID()
+        let longTermPortfolio = Portfolio(
+            id: longTermPortfolioId,
+            userId: userId,
+            name: "Long Term",
+            isPublic: false,
+            createdAt: Date().addingTimeInterval(-86400 * 180)
+        )
+
+        mockPortfolios = [mainPortfolio, cryptoPortfolio, longTermPortfolio]
+
+        // Holdings for Main Portfolio
+        let mainHoldings = [
+            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 0.5, avgPrice: 45000, currentPrice: 67500, change: 2.5),
+            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 3.2, avgPrice: 2800, currentPrice: 3450, change: -1.2),
+            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 25, avgPrice: 120, currentPrice: 175, change: 5.8),
+            createHolding(portfolioId: mainPortfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 10, avgPrice: 175, currentPrice: 195, change: 0.8),
+            createHolding(portfolioId: mainPortfolioId, assetType: "metal", symbol: "XAU", name: "Gold", quantity: 2, avgPrice: 1950, currentPrice: 2050, change: 0.3)
         ]
+
+        // Holdings for Crypto Only Portfolio
+        let cryptoHoldings = [
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 1.2, avgPrice: 42000, currentPrice: 67500, change: 2.5),
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 8.5, avgPrice: 2500, currentPrice: 3450, change: -1.2),
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 50, avgPrice: 100, currentPrice: 175, change: 5.8),
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "AVAX", name: "Avalanche", quantity: 100, avgPrice: 25, currentPrice: 42, change: 3.2)
+        ]
+
+        // Holdings for Long Term Portfolio
+        let longTermHoldings = [
+            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 50, avgPrice: 120, currentPrice: 195, change: 0.8),
+            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "MSFT", name: "Microsoft", quantity: 30, avgPrice: 250, currentPrice: 420, change: 1.1),
+            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "NVDA", name: "NVIDIA", quantity: 20, avgPrice: 150, currentPrice: 875, change: 2.3),
+            createHolding(portfolioId: longTermPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 0.25, avgPrice: 30000, currentPrice: 67500, change: 2.5)
+        ]
+
+        mockHoldings = mainHoldings + cryptoHoldings + longTermHoldings
 
         mockTransactions = [
             Transaction(
-                portfolioId: portfolioId,
-                holdingId: mockHoldings[0].id,
+                portfolioId: mainPortfolioId,
+                holdingId: mainHoldings[0].id,
                 type: .buy,
                 assetType: "crypto",
                 symbol: "BTC",
@@ -149,8 +196,8 @@ final class MockPortfolioService: PortfolioServiceProtocol {
                 transactionDate: Date().addingTimeInterval(-86400 * 30)
             ),
             Transaction(
-                portfolioId: portfolioId,
-                holdingId: mockHoldings[0].id,
+                portfolioId: mainPortfolioId,
+                holdingId: mainHoldings[0].id,
                 type: .buy,
                 assetType: "crypto",
                 symbol: "BTC",
@@ -159,8 +206,8 @@ final class MockPortfolioService: PortfolioServiceProtocol {
                 transactionDate: Date().addingTimeInterval(-86400 * 15)
             ),
             Transaction(
-                portfolioId: portfolioId,
-                holdingId: mockHoldings[1].id,
+                portfolioId: mainPortfolioId,
+                holdingId: mainHoldings[1].id,
                 type: .buy,
                 assetType: "crypto",
                 symbol: "ETH",

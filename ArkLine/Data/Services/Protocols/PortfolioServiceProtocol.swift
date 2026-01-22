@@ -3,6 +3,11 @@ import Foundation
 // MARK: - Portfolio Service Protocol
 /// Protocol defining portfolio management operations.
 protocol PortfolioServiceProtocol {
+    /// Fetches all portfolios for a user
+    /// - Parameter userId: User identifier
+    /// - Returns: Array of Portfolio
+    func fetchPortfolios(userId: UUID) async throws -> [Portfolio]
+
     /// Fetches the user's portfolio
     /// - Parameter userId: User identifier
     /// - Returns: Portfolio if exists, nil otherwise

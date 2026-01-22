@@ -9,7 +9,7 @@ final class ServiceContainer {
 
     // MARK: - Configuration
     /// Set to `false` to use real API implementations
-    var useMockData: Bool = false
+    var useMockData: Bool = true
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()

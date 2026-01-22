@@ -15,6 +15,12 @@ final class APIPortfolioService: PortfolioServiceProtocol {
 
     // MARK: - PortfolioServiceProtocol
 
+    func fetchPortfolios(userId: UUID) async throws -> [Portfolio] {
+        // TODO: Implement with Supabase
+        // Query: select * from portfolios where user_id = userId
+        throw AppError.notImplemented
+    }
+
     func fetchPortfolio(userId: UUID) async throws -> Portfolio? {
         // TODO: Implement with Supabase
         // Query: select * from portfolios where user_id = userId limit 1

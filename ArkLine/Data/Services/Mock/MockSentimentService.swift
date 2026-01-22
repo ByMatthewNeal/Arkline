@@ -132,51 +132,65 @@ final class MockSentimentService: SentimentServiceProtocol {
         return AppStoreRanking(
             id: UUID(),
             appName: "Coinbase",
-            ranking: 243,
-            change: -12,
+            ranking: 30,
+            change: -5,
+            platform: .ios,
+            region: .us,
             recordedAt: Date()
         )
     }
 
     func fetchAppStoreRankings() async throws -> [AppStoreRanking] {
         try await simulateNetworkDelay()
-        return [
-            AppStoreRanking(
-                id: UUID(),
-                appName: "Coinbase",
-                ranking: 243,
-                change: -12,
-                recordedAt: Date()
-            ),
-            AppStoreRanking(
-                id: UUID(),
-                appName: "Binance",
-                ranking: 89,
-                change: 5,
-                recordedAt: Date()
-            ),
-            AppStoreRanking(
-                id: UUID(),
-                appName: "Kraken",
-                ranking: 412,
-                change: -28,
-                recordedAt: Date()
-            ),
-            AppStoreRanking(
-                id: UUID(),
-                appName: "Crypto.com",
-                ranking: 156,
-                change: 3,
-                recordedAt: Date()
-            ),
-            AppStoreRanking(
-                id: UUID(),
-                appName: "Robinhood",
-                ranking: 42,
-                change: -8,
-                recordedAt: Date()
-            )
-        ]
+        return generateComprehensiveRankings()
+    }
+
+    /// Generates comprehensive mock data for all apps, platforms, and regions
+    private func generateComprehensiveRankings() -> [AppStoreRanking] {
+        var rankings: [AppStoreRanking] = []
+        let now = Date()
+
+        // Coinbase - Available in US and Global, iOS and Android
+        rankings.append(contentsOf: [
+            AppStoreRanking(id: UUID(), appName: "Coinbase", ranking: 30, change: -5,
+                          platform: .ios, region: .us, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Coinbase", ranking: 45, change: -8,
+                          platform: .ios, region: .global, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Coinbase", ranking: 38, change: -3,
+                          platform: .android, region: .us, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Coinbase", ranking: 52, change: -12,
+                          platform: .android, region: .global, recordedAt: now)
+        ])
+
+        // Binance - NOT available in US App Store, only Global
+        rankings.append(contentsOf: [
+            AppStoreRanking(id: UUID(), appName: "Binance", ranking: 15, change: 2,
+                          platform: .ios, region: .global, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Binance", ranking: 8, change: -1,
+                          platform: .android, region: .global, recordedAt: now)
+        ])
+
+        // Kraken - Available in US and Global, iOS and Android
+        rankings.append(contentsOf: [
+            AppStoreRanking(id: UUID(), appName: "Kraken", ranking: 85, change: -15,
+                          platform: .ios, region: .us, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Kraken", ranking: 120, change: -22,
+                          platform: .ios, region: .global, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Kraken", ranking: 95, change: -8,
+                          platform: .android, region: .us, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Kraken", ranking: 135, change: -18,
+                          platform: .android, region: .global, recordedAt: now)
+        ])
+
+        // Additional apps for context (Crypto.com, Robinhood)
+        rankings.append(contentsOf: [
+            AppStoreRanking(id: UUID(), appName: "Crypto.com", ranking: 55, change: 3,
+                          platform: .ios, region: .us, recordedAt: now),
+            AppStoreRanking(id: UUID(), appName: "Robinhood", ranking: 12, change: -2,
+                          platform: .ios, region: .us, recordedAt: now)
+        ])
+
+        return rankings
     }
 
     func fetchArkLineRiskScore() async throws -> ArkLineRiskScore {
