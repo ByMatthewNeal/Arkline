@@ -10,6 +10,7 @@ class HomeViewModel {
     private let dcaService: DCAServiceProtocol
     private let newsService: NewsServiceProtocol
     private let portfolioService: PortfolioServiceProtocol
+    private let itcRiskService: ITCRiskServiceProtocol
 
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
@@ -201,6 +202,9 @@ class HomeViewModel {
     var compositeRiskScore: Int? = nil
     var arkLineRiskScore: ArkLineRiskScore? = nil
 
+    // ITC Risk Level (Into The Cryptoverse - powers ArkLine Risk Score card)
+    var btcRiskLevel: ITCRiskLevel?
+
     // Top Movers
     var topGainers: [CryptoAsset] = []
     var topLosers: [CryptoAsset] = []
@@ -241,13 +245,15 @@ class HomeViewModel {
         marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
         dcaService: DCAServiceProtocol = ServiceContainer.shared.dcaService,
         newsService: NewsServiceProtocol = ServiceContainer.shared.newsService,
-        portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService
+        portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
+        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
         self.dcaService = dcaService
         self.newsService = newsService
         self.portfolioService = portfolioService
+        self.itcRiskService = itcRiskService
         Task { await loadInitialData() }
         startAutoRefresh()
     }
@@ -303,10 +309,12 @@ class HomeViewModel {
             async let upcomingEventsTask = newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
             async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 5)
             async let fedWatchTask = fetchFedWatchMeetingsSafe()
+            async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
 
             let (fg, riskScore, crypto, reminders, events, upcoming) = try await (fgTask, riskScoreTask, cryptoTask, remindersTask, eventsTask, upcomingEventsTask)
             let news = try await newsTask
             let fedMeetings = await fedWatchTask
+            let btcRisk = await btcRiskTask
 
             logInfo("HomeViewModel: Fetched \(crypto.count) crypto assets", category: .data)
 
@@ -337,6 +345,8 @@ class HomeViewModel {
                 self.topLosers = losers
                 self.compositeRiskScore = riskScore.score
                 self.arkLineRiskScore = riskScore
+                // ITC Risk Level (powers ArkLine Risk Score card)
+                self.btcRiskLevel = btcRisk
                 // Market widget data
                 self.newsItems = news
                 self.fedWatchMeetings = fedMeetings ?? []
@@ -439,5 +449,9 @@ class HomeViewModel {
 
     private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
         try? await newsService.fetchFedWatchMeetings()
+    }
+
+    private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
+        try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
     }
 }

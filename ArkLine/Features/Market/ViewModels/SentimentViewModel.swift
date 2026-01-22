@@ -5,6 +5,7 @@ import SwiftUI
 class SentimentViewModel {
     // MARK: - Dependencies
     private let sentimentService: SentimentServiceProtocol
+    private let itcRiskService: ITCRiskServiceProtocol
 
     // MARK: - Properties
     var isLoading = false
@@ -33,6 +34,11 @@ class SentimentViewModel {
 
     // Legacy risk level (backwards compatibility)
     var riskLevel: RiskLevel?
+
+    // ITC Risk Levels (Into The Cryptoverse)
+    var btcRiskLevel: ITCRiskLevel?
+    var ethRiskLevel: ITCRiskLevel?
+    var btcRiskHistory: [ITCRiskLevel] = []
 
     // Market Overview Data
     var bitcoinSearchIndex: Int = 66
@@ -194,8 +200,12 @@ class SentimentViewModel {
     }
 
     // MARK: - Initialization
-    init(sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService) {
+    init(
+        sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
+        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService
+    ) {
         self.sentimentService = sentimentService
+        self.itcRiskService = itcRiskService
         Task { await loadInitialData() }
     }
 
@@ -219,8 +229,14 @@ class SentimentViewModel {
             async let arkLineScoreTask = fetchArkLineRiskScoreSafe()
             async let googleTrendsTask = fetchGoogleTrendsSafe()
 
+            // ITC Risk Levels
+            async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
+            async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
+            async let btcRiskHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
+
             let (fg, btc, etf, funding, liq, alt, risk) = try await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
             let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
+            let (btcRisk, ethRisk, btcHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask)
 
             await MainActor.run {
                 // Core indicators
@@ -237,6 +253,11 @@ class SentimentViewModel {
                 self.appStoreRanking = appRankings?.first // Legacy compatibility
                 self.arkLineRiskScore = arkLineScore
                 self.googleTrends = trends
+
+                // ITC Risk Levels
+                self.btcRiskLevel = btcRisk
+                self.ethRiskLevel = ethRisk
+                self.btcRiskHistory = btcHistory ?? []
 
                 // Update search index from Google Trends
                 if let trends = trends {
@@ -301,6 +322,14 @@ class SentimentViewModel {
 
     private func fetchGoogleTrendsSafe() async -> GoogleTrendsData? {
         try? await sentimentService.fetchGoogleTrends()
+    }
+
+    private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
+        try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+    }
+
+    private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel]? {
+        try? await itcRiskService.fetchRiskLevel(coin: coin)
     }
 }
 
