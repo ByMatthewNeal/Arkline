@@ -188,6 +188,7 @@ struct NewsItem: Identifiable {
     let sourceType: NewsSourceType
     let twitterHandle: String? // For Twitter sources
     let isVerified: Bool // Twitter verified badge
+    let description: String? // Full content/body of the news
 
     init(
         id: UUID,
@@ -198,7 +199,8 @@ struct NewsItem: Identifiable {
         url: String,
         sourceType: NewsSourceType = .traditional,
         twitterHandle: String? = nil,
-        isVerified: Bool = false
+        isVerified: Bool = false,
+        description: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -209,6 +211,7 @@ struct NewsItem: Identifiable {
         self.sourceType = sourceType
         self.twitterHandle = twitterHandle
         self.isVerified = isVerified
+        self.description = description
     }
 }
 
