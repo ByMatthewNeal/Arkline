@@ -76,12 +76,14 @@ enum Constants {
     enum UserDefaults {
         static let isOnboarded = "isOnboarded"
         static let userId = "userId"
+        static let currentUser = "currentUser"
         static let preferredCurrency = "preferredCurrency"
         static let darkModePreference = "darkModePreference"
         static let riskCoins = "riskCoins"
         static let notificationsEnabled = "notificationsEnabled"
         static let biometricEnabled = "biometricEnabled"
         static let lastSyncTimestamp = "lastSyncTimestamp"
+        static let widgetConfiguration = "widgetConfiguration"
     }
 
     // MARK: - Notification Names
