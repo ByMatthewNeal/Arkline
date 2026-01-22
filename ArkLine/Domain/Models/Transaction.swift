@@ -14,6 +14,7 @@ struct Transaction: Codable, Identifiable, Equatable {
     var totalValue: Double
     var transactionDate: Date
     var notes: String?
+    var emotionalState: EmotionalState?
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -29,6 +30,7 @@ struct Transaction: Codable, Identifiable, Equatable {
         case totalValue = "total_value"
         case transactionDate = "transaction_date"
         case notes
+        case emotionalState = "emotional_state"
         case createdAt = "created_at"
     }
 
@@ -44,6 +46,7 @@ struct Transaction: Codable, Identifiable, Equatable {
         gasFee: Double = 0,
         transactionDate: Date = Date(),
         notes: String? = nil,
+        emotionalState: EmotionalState? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -58,7 +61,59 @@ struct Transaction: Codable, Identifiable, Equatable {
         self.totalValue = (quantity * pricePerUnit) + gasFee
         self.transactionDate = transactionDate
         self.notes = notes
+        self.emotionalState = emotionalState
         self.createdAt = createdAt
+    }
+}
+
+// MARK: - Emotional State
+enum EmotionalState: String, Codable, CaseIterable {
+    case confident
+    case fearful
+    case excited
+    case anxious
+    case fomo
+    case calm
+    case uncertain
+    case greedy
+
+    var displayName: String {
+        switch self {
+        case .confident: return "Confident"
+        case .fearful: return "Fearful"
+        case .excited: return "Excited"
+        case .anxious: return "Anxious"
+        case .fomo: return "FOMO"
+        case .calm: return "Calm"
+        case .uncertain: return "Uncertain"
+        case .greedy: return "Greedy"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .confident: return "checkmark.shield.fill"
+        case .fearful: return "exclamationmark.triangle.fill"
+        case .excited: return "bolt.fill"
+        case .anxious: return "waveform.path"
+        case .fomo: return "clock.badge.exclamationmark.fill"
+        case .calm: return "leaf.fill"
+        case .uncertain: return "questionmark.circle.fill"
+        case .greedy: return "arrow.up.right.circle.fill"
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .confident: return "34C759" // Green
+        case .fearful: return "FF3B30" // Red
+        case .excited: return "FF9500" // Orange
+        case .anxious: return "FF6B6B" // Light red
+        case .fomo: return "AF52DE" // Purple
+        case .calm: return "5AC8FA" // Light blue
+        case .uncertain: return "8E8E93" // Gray
+        case .greedy: return "FFD60A" // Yellow
+        }
     }
 }
 
@@ -128,6 +183,7 @@ struct CreateTransactionRequest: Encodable {
     let totalValue: Double
     let transactionDate: Date
     let notes: String?
+    let emotionalState: String?
 
     enum CodingKeys: String, CodingKey {
         case portfolioId = "portfolio_id"
@@ -141,6 +197,7 @@ struct CreateTransactionRequest: Encodable {
         case totalValue = "total_value"
         case transactionDate = "transaction_date"
         case notes
+        case emotionalState = "emotional_state"
     }
 }
 

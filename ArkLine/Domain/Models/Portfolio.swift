@@ -1,5 +1,38 @@
 import Foundation
 
+// MARK: - Time Period Enum
+/// Represents time periods for portfolio charts and data views
+enum TimePeriod: String, CaseIterable, Identifiable {
+    case hour = "1H"
+    case day = "1D"
+    case week = "1W"
+    case month = "1M"
+    case ytd = "YTD"
+    case year = "1Y"
+    case all = "ALL"
+
+    var id: String { rawValue }
+
+    var displayName: String { rawValue }
+
+    /// Number of days for this period (for API calls)
+    var days: Int {
+        switch self {
+        case .hour: return 1
+        case .day: return 1
+        case .week: return 7
+        case .month: return 30
+        case .ytd:
+            let calendar = Calendar.current
+            let now = Date()
+            let startOfYear = calendar.date(from: calendar.dateComponents([.year], from: now)) ?? now
+            return calendar.dateComponents([.day], from: startOfYear, to: now).day ?? 365
+        case .year: return 365
+        case .all: return 365 * 5
+        }
+    }
+}
+
 // MARK: - Portfolio Model
 struct Portfolio: Codable, Identifiable, Equatable {
     let id: UUID

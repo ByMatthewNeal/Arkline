@@ -164,6 +164,14 @@ extension User {
         fullName ?? username
     }
 
+    /// First name extracted from fullName, or username as fallback
+    var firstName: String {
+        if let fullName = fullName, !fullName.isEmpty {
+            return fullName.components(separatedBy: " ").first ?? fullName
+        }
+        return username
+    }
+
     var initials: String {
         if let fullName = fullName, !fullName.isEmpty {
             return fullName.initials

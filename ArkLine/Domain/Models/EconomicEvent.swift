@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Economic Event
 struct EconomicEvent: Codable, Identifiable, Equatable {
@@ -13,6 +14,7 @@ struct EconomicEvent: Codable, Identifiable, Equatable {
     let actual: String?
     let currency: String?
     let description: String?
+    let countryFlag: String?
 
     var isHighImpact: Bool {
         impact == .high
@@ -32,6 +34,21 @@ struct EconomicEvent: Codable, Identifiable, Equatable {
 
     var timeFormatted: String? {
         time?.displayTime
+    }
+
+    /// Groups events by date in "Wed Jan 21" style format
+    var dateGroupKey: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE MMM d"
+        return formatter.string(from: date)
+    }
+
+    /// Time formatted as "1:30pm" style
+    var timeDisplayFormatted: String {
+        guard let time = time else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mma"
+        return formatter.string(from: time).lowercased()
     }
 }
 
@@ -72,6 +89,60 @@ struct FedWatchData: Codable, Equatable {
     var mostLikelyOutcome: RateProbability? {
         probabilities.max(by: { $0.probability < $1.probability })
     }
+
+    /// Sum of probabilities where rate change is negative (cut)
+    var cutProbability: Double {
+        probabilities.filter { $0.change < 0 }.reduce(0) { $0 + $1.probability } * 100
+    }
+
+    /// Probability where rate change is zero (hold)
+    var holdProbability: Double {
+        (probabilities.first { $0.change == 0 }?.probability ?? 0) * 100
+    }
+
+    /// Sum of probabilities where rate change is positive (hike)
+    var hikeProbability: Double {
+        probabilities.filter { $0.change > 0 }.reduce(0) { $0 + $1.probability } * 100
+    }
+
+    /// Market sentiment based on probabilities
+    var marketSentiment: String {
+        if cutProbability > 60 { return "Dovish" }
+        if hikeProbability > 60 { return "Hawkish" }
+        if holdProbability > 60 { return "Neutral" }
+        return "Mixed"
+    }
+
+    /// Color for the sentiment badge
+    var sentimentColor: Color {
+        switch marketSentiment {
+        case "Dovish": return AppColors.success
+        case "Hawkish": return AppColors.error
+        case "Neutral": return AppColors.warning
+        default: return AppColors.textSecondary
+        }
+    }
+
+    /// Dominant outcome string for compact display
+    var dominantOutcome: String {
+        let max = max(cutProbability, holdProbability, hikeProbability)
+        if max == cutProbability { return "Cut Expected" }
+        if max == hikeProbability { return "Hike Expected" }
+        return "Hold Expected"
+    }
+
+    /// Dominant probability value
+    var dominantProbability: Double {
+        max(cutProbability, holdProbability, hikeProbability)
+    }
+
+    /// Color for the dominant outcome
+    var dominantColor: Color {
+        let maxProb = dominantProbability
+        if maxProb == cutProbability { return AppColors.success }
+        if maxProb == hikeProbability { return AppColors.error }
+        return AppColors.warning
+    }
 }
 
 struct RateProbability: Codable, Identifiable, Equatable {
@@ -110,6 +181,7 @@ struct EconomicEventDTO: Codable {
     let previous: String?
     let actual: String?
     let currency: String?
+    let countryFlag: String?
 
     func toEconomicEvent() -> EconomicEvent? {
         let dateFormatter = ISO8601DateFormatter()
@@ -135,7 +207,8 @@ struct EconomicEventDTO: Codable {
             previous: previous,
             actual: actual,
             currency: currency,
-            description: nil
+            description: nil,
+            countryFlag: countryFlag
         )
     }
 }
