@@ -168,8 +168,8 @@ struct ITCRiskGauge: View {
         riskColor.opacity(0.6)
     }
 
-    private var displayPercentage: Int {
-        Int(riskLevel * 100)
+    private var displayValue: String {
+        String(format: "%.2f", riskLevel)
     }
 
     var body: some View {
@@ -204,9 +204,9 @@ struct ITCRiskGauge: View {
                 .blur(radius: size * 0.15)
                 .frame(width: size * 0.6, height: size * 0.6)
 
-            // Percentage text
-            Text("\(displayPercentage)")
-                .font(.system(size: size * 0.35, weight: .bold, design: .rounded))
+            // Risk level value (0.00 - 1.00 format)
+            Text(displayValue)
+                .font(.system(size: size * 0.28, weight: .bold, design: .rounded))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
         }
     }
@@ -278,9 +278,10 @@ struct ITCRiskDetailView: View {
                                 .fontWeight(.bold)
                                 .foregroundColor(ITCRiskColors.color(for: riskLevel.riskLevel, colorScheme: colorScheme))
 
-                            Text("\(Int(riskLevel.riskPercentage))% Risk Level")
-                                .font(.subheadline)
-                                .foregroundColor(textPrimary.opacity(0.7))
+                            Text(String(format: "%.3f", riskLevel.riskLevel))
+                                .font(.title)
+                                .fontWeight(.semibold)
+                                .foregroundColor(textPrimary)
 
                             Text("As of \(riskLevel.date)")
                                 .font(.caption)
@@ -319,21 +320,21 @@ struct ITCRiskDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
                 RiskLevelRow(
                     category: "Low Risk",
-                    range: "0-30%",
+                    range: "0.00 - 0.30",
                     description: "Historically good time to accumulate",
                     color: AppColors.success
                 )
 
                 RiskLevelRow(
                     category: "Medium Risk",
-                    range: "30-70%",
+                    range: "0.30 - 0.70",
                     description: "Neutral market conditions",
                     color: AppColors.warning
                 )
 
                 RiskLevelRow(
                     category: "High Risk",
-                    range: "70-100%",
+                    range: "0.70 - 1.00",
                     description: "Consider taking profits",
                     color: AppColors.error
                 )
@@ -442,7 +443,7 @@ struct ITCRiskCard: View {
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(Int(riskLevel.riskPercentage))")
+                    Text(String(format: "%.2f", riskLevel.riskLevel))
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(textPrimary)
 
