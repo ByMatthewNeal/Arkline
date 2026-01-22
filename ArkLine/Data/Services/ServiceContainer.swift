@@ -9,7 +9,7 @@ final class ServiceContainer {
 
     // MARK: - Configuration
     /// Set to `false` to use real API implementations
-    var useMockData: Bool = true
+    var useMockData: Bool = false
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
@@ -18,6 +18,7 @@ final class ServiceContainer {
     private lazy var _mockNewsService = MockNewsService()
     private lazy var _mockDCAService = MockDCAService()
     private lazy var _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
+    private lazy var _mockCoinglassService = MockCoinglassService()
 
     // MARK: - Lazy Services - API
     private lazy var _apiMarketService = APIMarketService()
@@ -26,6 +27,7 @@ final class ServiceContainer {
     private lazy var _apiNewsService = APINewsService()
     private lazy var _apiDCAService = APIDCAService()
     private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
+    private lazy var _apiCoinglassService = APICoinglassService()
 
     // MARK: - Service Accessors
     var marketService: MarketServiceProtocol {
@@ -52,6 +54,10 @@ final class ServiceContainer {
         useMockData ? _mockTechnicalAnalysisService : _apiTechnicalAnalysisService
     }
 
+    var coinglassService: CoinglassServiceProtocol {
+        useMockData ? _mockCoinglassService : _apiCoinglassService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -63,11 +69,13 @@ final class ServiceContainer {
         _mockNewsService = MockNewsService()
         _mockDCAService = MockDCAService()
         _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
+        _mockCoinglassService = MockCoinglassService()
         _apiMarketService = APIMarketService()
         _apiSentimentService = APISentimentService()
         _apiPortfolioService = APIPortfolioService()
         _apiNewsService = APINewsService()
         _apiDCAService = APIDCAService()
         _apiTechnicalAnalysisService = APITechnicalAnalysisService()
+        _apiCoinglassService = APICoinglassService()
     }
 }

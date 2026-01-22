@@ -34,13 +34,19 @@ struct MarketOverviewView: View {
                         // 2. Fed Watch Section
                         FedWatchSection(meetings: viewModel.fedWatchMeetings)
 
-                        // 3. Market Sentiment Section
+                        // 3. Derivatives Data Section (Coinglass)
+                        DerivativesDataSection(
+                            overview: viewModel.derivativesOverview,
+                            isLoading: viewModel.isDerivativesLoading
+                        )
+
+                        // 4. Market Sentiment Section
                         MarketSentimentSection(
                             viewModel: sentimentViewModel,
                             lastUpdated: Date()
                         )
 
-                        // 4. Market Assets Section
+                        // 5. Market Assets Section
                         MarketAssetsSection(viewModel: viewModel)
 
                         Spacer(minLength: 100)

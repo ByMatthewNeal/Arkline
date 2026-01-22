@@ -10,7 +10,13 @@ enum Constants {
         static let coinGeckoAPIKey = "CG-Ggho8wQf8mXQeyPUzcgTJc3B"
         static let alphaVantageAPIKey = "MBSPLHGZOUELTCOJ"
         static let metalsAPIKey = "your-metals-api-key"
-        static let taapiAPIKey = "your-taapi-api-key" // Get from https://taapi.io
+        static let taapiAPIKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjk3MjRmMzlhZWVjODgxNjBhNTkzNjE2IiwiaWF0IjoxNzY5MDk5MDY1LCJleHAiOjMzMjczNTYzMDY1fQ.zmhZHgsYk5fmYJVhvltS1WczaLejZqrisVmoG3vExaw"
+        static let coinglassAPIKey = "your-coinglass-api-key" // Get from https://www.coinglass.com/pricing
+    }
+
+    // MARK: - Coinglass API Key (accessed from root for convenience)
+    static var coinglassAPIKey: String {
+        API.coinglassAPIKey
     }
 
     // MARK: - API Endpoints
