@@ -6,6 +6,7 @@ enum PortfolioTab: String, CaseIterable {
     case overview = "Overview"
     case holdings = "Holdings"
     case allocation = "Allocation"
+    case dcaCalculator = "DCA"
     case performance = "Performance"
     case transactions = "History"
 }
