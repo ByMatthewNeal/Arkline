@@ -199,6 +199,7 @@ class HomeViewModel {
 
     // Composite Risk Score (0-100)
     var compositeRiskScore: Int? = nil
+    var arkLineRiskScore: ArkLineRiskScore? = nil
 
     // Top Movers
     var topGainers: [CryptoAsset] = []
@@ -295,6 +296,7 @@ class HomeViewModel {
 
             // Fetch all data concurrently
             async let fgTask = sentimentService.fetchFearGreedIndex()
+            async let riskScoreTask = sentimentService.fetchArkLineRiskScore()
             async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 20)
             async let remindersTask = dcaService.fetchReminders(userId: userId)
             async let eventsTask = newsService.fetchTodaysEvents()
@@ -302,7 +304,7 @@ class HomeViewModel {
             async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 5)
             async let fedWatchTask = fetchFedWatchMeetingsSafe()
 
-            let (fg, crypto, reminders, events, upcoming) = try await (fgTask, cryptoTask, remindersTask, eventsTask, upcomingEventsTask)
+            let (fg, riskScore, crypto, reminders, events, upcoming) = try await (fgTask, riskScoreTask, cryptoTask, remindersTask, eventsTask, upcomingEventsTask)
             let news = try await newsTask
             let fedMeetings = await fedWatchTask
 
@@ -333,7 +335,8 @@ class HomeViewModel {
                 self.ethChange24h = eth?.priceChangePercentage24h ?? 0
                 self.topGainers = gainers
                 self.topLosers = losers
-                self.compositeRiskScore = fg.value
+                self.compositeRiskScore = riskScore.score
+                self.arkLineRiskScore = riskScore
                 // Market widget data
                 self.newsItems = news
                 self.fedWatchMeetings = fedMeetings ?? []

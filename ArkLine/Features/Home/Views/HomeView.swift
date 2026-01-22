@@ -392,8 +392,12 @@ struct ReorderableWidgetStack: View {
             )
 
         case .riskScore:
-            if let riskScore = viewModel.compositeRiskScore {
-                RiskScoreCard(score: riskScore, size: appState.widgetSize(.riskScore))
+            if let score = viewModel.compositeRiskScore {
+                RiskScoreCard(
+                    score: score,
+                    riskScore: viewModel.arkLineRiskScore,
+                    size: appState.widgetSize(.riskScore)
+                )
             }
 
         case .fearGreedIndex:
@@ -801,8 +805,10 @@ struct GlassQuickActionButton: View {
 // MARK: - Risk Score Card
 struct RiskScoreCard: View {
     let score: Int
+    var riskScore: ArkLineRiskScore? = nil
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
+    @State private var showingDetail = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -810,10 +816,26 @@ struct RiskScoreCard: View {
 
     var riskLabel: String {
         switch score {
-        case 0..<30: return "High Risk"
-        case 30..<70: return "Moderate"
-        default: return "Low Risk"
+        case 0..<30: return "Low Risk"
+        case 30..<50: return "Moderate"
+        case 50..<70: return "Elevated"
+        default: return "High Risk"
         }
+    }
+
+    /// Dynamic blue color based on risk level
+    /// Higher score = more intense/saturated blue, lower score = lighter blue
+    private var riskColor: Color {
+        // Base blue hue with varying saturation and brightness
+        let normalizedScore = Double(score) / 100.0
+        // Low risk (0): Light sky blue, High risk (100): Deep vivid blue
+        let saturation = 0.4 + (normalizedScore * 0.5)  // 0.4 to 0.9
+        let brightness = 0.9 - (normalizedScore * 0.25) // 0.9 to 0.65
+        return Color(hue: 0.6, saturation: saturation, brightness: brightness)
+    }
+
+    private var riskColorLight: Color {
+        riskColor.opacity(0.6)
     }
 
     private var circleSize: CGFloat {
@@ -832,82 +854,373 @@ struct RiskScoreCard: View {
         }
     }
 
+    private var indicatorCount: Int {
+        riskScore?.components.count ?? 10
+    }
+
     var body: some View {
-        HStack(spacing: size == .compact ? 12 : 16) {
-            // Score circle - blue accent theme
-            ZStack {
-                // Background ring
-                Circle()
-                    .stroke(
-                        colorScheme == .dark
-                            ? Color.white.opacity(0.1)
-                            : Color.black.opacity(0.08),
-                        lineWidth: strokeWidth
-                    )
-                    .frame(width: circleSize, height: circleSize)
+        Button(action: { showingDetail = true }) {
+            HStack(spacing: size == .compact ? 12 : 16) {
+                // Score circle - dynamic blue based on risk
+                ZStack {
+                    // Background ring
+                    Circle()
+                        .stroke(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.1)
+                                : Color.black.opacity(0.08),
+                            lineWidth: strokeWidth
+                        )
+                        .frame(width: circleSize, height: circleSize)
 
-                // Progress ring - blue gradient
-                Circle()
-                    .trim(from: 0, to: CGFloat(score) / 100)
-                    .stroke(
-                        LinearGradient(
-                            colors: [AppColors.accent.opacity(0.6), AppColors.accent],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
-                    )
-                    .frame(width: circleSize, height: circleSize)
-                    .rotationEffect(.degrees(-90))
+                    // Progress ring - dynamic gradient
+                    Circle()
+                        .trim(from: 0, to: CGFloat(score) / 100)
+                        .stroke(
+                            LinearGradient(
+                                colors: [riskColorLight, riskColor],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
+                        )
+                        .frame(width: circleSize, height: circleSize)
+                        .rotationEffect(.degrees(-90))
 
-                // Subtle glow
-                Circle()
-                    .fill(AppColors.accent.opacity(0.2))
-                    .blur(radius: size == .compact ? 8 : 12)
-                    .frame(width: circleSize * 0.6, height: circleSize * 0.6)
+                    // Subtle glow
+                    Circle()
+                        .fill(riskColor.opacity(0.2))
+                        .blur(radius: size == .compact ? 8 : 12)
+                        .frame(width: circleSize * 0.6, height: circleSize * 0.6)
 
-                // Score text
-                Text("\(score)")
-                    .font(.system(size: size == .compact ? 18 : (size == .expanded ? 30 : 24), weight: .bold, design: .rounded))
-                    .foregroundColor(textPrimary)
+                    // Score text
+                    Text("\(score)")
+                        .font(.system(size: size == .compact ? 18 : (size == .expanded ? 30 : 24), weight: .bold, design: .rounded))
+                        .foregroundColor(textPrimary)
+                }
+
+                VStack(alignment: .leading, spacing: size == .compact ? 2 : 4) {
+                    Text("ArkLine Risk Score")
+                        .font(size == .compact ? .subheadline : .headline)
+                        .foregroundColor(textPrimary)
+
+                    // Neutral badge for risk level
+                    Text(riskLabel)
+                        .font(size == .compact ? .caption : .subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    if size != .compact {
+                        Text("Based on \(indicatorCount) indicators")
+                            .font(.caption)
+                            .foregroundColor(textPrimary.opacity(0.5))
+                    }
+
+                    if size == .expanded, let recommendation = riskScore?.recommendation {
+                        Text(recommendation)
+                            .font(.caption)
+                            .foregroundColor(textPrimary.opacity(0.6))
+                            .lineLimit(2)
+                            .padding(.top, 4)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: size == .compact ? 12 : 14, weight: .semibold))
+                    .foregroundColor(textPrimary.opacity(0.4))
             }
+            .padding(size == .compact ? 14 : 20)
+            .background(
+                RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
+                    .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            RiskScoreDetailView(riskScore: riskScore, score: score)
+        }
+    }
+}
 
-            VStack(alignment: .leading, spacing: size == .compact ? 2 : 4) {
-                Text("ArkLine Risk Score")
-                    .font(size == .compact ? .subheadline : .headline)
+// MARK: - Risk Score Detail View
+struct RiskScoreDetailView: View {
+    let riskScore: ArkLineRiskScore?
+    let score: Int
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    /// Dynamic blue color based on risk level
+    private func colorForScore(_ value: Double) -> Color {
+        let saturation = 0.4 + (value * 0.5)
+        let brightness = 0.9 - (value * 0.25)
+        return Color(hue: 0.6, saturation: saturation, brightness: brightness)
+    }
+
+    private var mainRiskColor: Color {
+        colorForScore(Double(score) / 100.0)
+    }
+
+    var riskLabel: String {
+        switch score {
+        case 0..<30: return "Low Risk"
+        case 30..<50: return "Moderate"
+        case 50..<70: return "Elevated"
+        default: return "High Risk"
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: ArkSpacing.xl) {
+                    // Main score display
+                    VStack(spacing: ArkSpacing.md) {
+                        ZStack {
+                            // Background ring
+                            Circle()
+                                .stroke(
+                                    colorScheme == .dark
+                                        ? Color.white.opacity(0.1)
+                                        : Color.black.opacity(0.08),
+                                    lineWidth: 12
+                                )
+                                .frame(width: 140, height: 140)
+
+                            // Progress ring
+                            Circle()
+                                .trim(from: 0, to: CGFloat(score) / 100)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [mainRiskColor.opacity(0.6), mainRiskColor],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                                )
+                                .frame(width: 140, height: 140)
+                                .rotationEffect(.degrees(-90))
+
+                            // Glow
+                            Circle()
+                                .fill(mainRiskColor.opacity(0.2))
+                                .blur(radius: 20)
+                                .frame(width: 80, height: 80)
+
+                            // Score
+                            VStack(spacing: 2) {
+                                Text("\(score)")
+                                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                                    .foregroundColor(textPrimary)
+                                Text("/ 100")
+                                    .font(.caption)
+                                    .foregroundColor(textPrimary.opacity(0.5))
+                            }
+                        }
+
+                        Text(riskLabel)
+                            .font(.title3.bold())
+                            .foregroundColor(mainRiskColor)
+
+                        if let recommendation = riskScore?.recommendation {
+                            Text(recommendation)
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                    }
+                    .padding(.top, ArkSpacing.xl)
+
+                    // Indicators section
+                    VStack(alignment: .leading, spacing: ArkSpacing.md) {
+                        Text("Risk Indicators")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+                            .padding(.horizontal)
+
+                        if let components = riskScore?.components {
+                            ForEach(Array(components.enumerated()), id: \.offset) { _, component in
+                                RiskIndicatorRow(component: component, colorScheme: colorScheme)
+                            }
+                        } else {
+                            // Placeholder when no data
+                            ForEach(0..<7, id: \.self) { index in
+                                RiskIndicatorPlaceholderRow(index: index, colorScheme: colorScheme)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    // Legend
+                    VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                        Text("How to Read")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        Text("The ArkLine Risk Score combines multiple market indicators to assess current market conditions. A lower score (0-30) suggests favorable buying conditions, while a higher score (70-100) indicates elevated risk and potential for correction.")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineSpacing(4)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
+                    )
+                    .padding(.horizontal)
+
+                    Spacer(minLength: ArkSpacing.xxl)
+                }
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Risk Score")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Risk Indicator Row
+struct RiskIndicatorRow: View {
+    let component: RiskScoreComponent
+    let colorScheme: ColorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var indicatorColor: Color {
+        let saturation = 0.4 + (component.value * 0.5)
+        let brightness = 0.9 - (component.value * 0.25)
+        return Color(hue: 0.6, saturation: saturation, brightness: brightness)
+    }
+
+    private var signalIcon: String {
+        component.signal.icon
+    }
+
+    private var signalColor: Color {
+        Color(hex: component.signal.color)
+    }
+
+    var body: some View {
+        HStack(spacing: ArkSpacing.md) {
+            // Signal icon
+            Image(systemName: signalIcon)
+                .font(.system(size: 16))
+                .foregroundColor(signalColor)
+                .frame(width: 28, height: 28)
+                .background(signalColor.opacity(0.15))
+                .clipShape(Circle())
+
+            // Name and weight
+            VStack(alignment: .leading, spacing: 2) {
+                Text(component.name)
+                    .font(.subheadline.weight(.medium))
                     .foregroundColor(textPrimary)
 
-                // Neutral badge for risk level
-                Text(riskLabel)
-                    .font(size == .compact ? .caption : .subheadline)
+                Text("\(Int(component.weight * 100))% weight")
+                    .font(.caption2)
                     .foregroundColor(AppColors.textSecondary)
-
-                if size != .compact {
-                    Text("Based on 10 indicators")
-                        .font(.caption)
-                        .foregroundColor(textPrimary.opacity(0.5))
-                }
-
-                if size == .expanded {
-                    Text("Market conditions favor cautious positioning")
-                        .font(.caption)
-                        .foregroundColor(textPrimary.opacity(0.6))
-                        .padding(.top, 4)
-                }
             }
 
             Spacer()
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: size == .compact ? 12 : 14, weight: .semibold))
-                .foregroundColor(textPrimary.opacity(0.4))
+            // Value bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    // Background
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.08))
+
+                    // Fill
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(indicatorColor)
+                        .frame(width: geo.size.width * component.value)
+                }
+            }
+            .frame(width: 80, height: 8)
+
+            // Score
+            Text("\(Int(component.value * 100))")
+                .font(.subheadline.weight(.semibold).monospacedDigit())
+                .foregroundColor(indicatorColor)
+                .frame(width: 32, alignment: .trailing)
         }
-        .padding(size == .compact ? 14 : 20)
+        .padding(.vertical, ArkSpacing.sm)
+        .padding(.horizontal)
         .background(
-            RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - Risk Indicator Placeholder Row
+struct RiskIndicatorPlaceholderRow: View {
+    let index: Int
+    let colorScheme: ColorScheme
+
+    private let placeholderNames = [
+        "Fear & Greed",
+        "App Store Sentiment",
+        "Funding Rates",
+        "ETF Flows",
+        "Liquidation Ratio",
+        "BTC Dominance",
+        "Google Trends"
+    ]
+
+    var body: some View {
+        HStack(spacing: ArkSpacing.md) {
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 28, height: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(placeholderNames[safe: index] ?? "Indicator \(index + 1)")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("--% weight")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
+
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 80, height: 8)
+
+            Text("--")
+                .font(.subheadline.weight(.semibold).monospacedDigit())
+                .foregroundColor(Color.gray)
+                .frame(width: 32, alignment: .trailing)
+        }
+        .padding(.vertical, ArkSpacing.sm)
+        .padding(.horizontal)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+// Safe array subscript
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 
