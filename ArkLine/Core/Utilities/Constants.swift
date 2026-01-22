@@ -10,6 +10,7 @@ enum Constants {
         static let coinGeckoAPIKey = "CG-Ggho8wQf8mXQeyPUzcgTJc3B"
         static let alphaVantageAPIKey = "MBSPLHGZOUELTCOJ"
         static let metalsAPIKey = "your-metals-api-key"
+        static let taapiAPIKey = "your-taapi-api-key" // Get from https://taapi.io
     }
 
     // MARK: - API Endpoints
@@ -18,6 +19,7 @@ enum Constants {
         static let alphaVantageBase = "https://www.alphavantage.co"
         static let metalsAPIBase = "https://metals-api.com/api"
         static let claudeBase = "https://api.anthropic.com/v1"
+        static let taapiBase = "https://api.taapi.io"
     }
 
     // MARK: - App Configuration

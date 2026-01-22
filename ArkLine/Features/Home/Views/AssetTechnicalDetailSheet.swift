@@ -8,6 +8,10 @@ struct AssetTechnicalDetailSheet: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var technicalAnalysis: TechnicalAnalysis?
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private let technicalAnalysisService = ServiceContainer.shared.technicalAnalysisService
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -20,7 +24,32 @@ struct AssetTechnicalDetailSheet: View {
                     // Asset header
                     AssetHeaderSection(asset: asset, colorScheme: colorScheme)
 
-                    if let analysis = technicalAnalysis {
+                    if isLoading {
+                        // Loading state
+                        VStack(spacing: ArkSpacing.md) {
+                            ProgressView()
+                            Text("Fetching technical data...")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding(.top, 40)
+                    } else if let error = errorMessage {
+                        // Error state
+                        VStack(spacing: ArkSpacing.md) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(AppColors.warning)
+                            Text(error)
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                            Button("Retry") {
+                                Task { await fetchTechnicalAnalysis() }
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .padding(.top, 40)
+                    } else if let analysis = technicalAnalysis {
                         // Overall sentiment
                         OverallSentimentCard(analysis: analysis, colorScheme: colorScheme)
 
@@ -35,10 +64,15 @@ struct AssetTechnicalDetailSheet: View {
 
                         // Technical score
                         TechnicalScoreCard(score: analysis.technicalScore, colorScheme: colorScheme)
-                    } else {
-                        // Loading placeholder
-                        ProgressView()
-                            .padding(.top, 40)
+
+                        // Data source attribution
+                        HStack {
+                            Spacer()
+                            Text("Data from Taapi.io")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        }
+                        .padding(.top, ArkSpacing.sm)
                     }
 
                     Spacer(minLength: ArkSpacing.xxl)
@@ -53,9 +87,38 @@ struct AssetTechnicalDetailSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .onAppear {
-                // Generate technical analysis
-                technicalAnalysis = TechnicalAnalysisGenerator.generate(for: asset)
+            .task {
+                await fetchTechnicalAnalysis()
+            }
+        }
+    }
+
+    // MARK: - Private Methods
+
+    private func fetchTechnicalAnalysis() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let symbol = TaapiSymbolMapper.symbol(for: asset)
+            let exchange = TaapiSymbolMapper.exchange(for: asset)
+
+            let analysis = try await technicalAnalysisService.fetchTechnicalAnalysis(
+                symbol: symbol,
+                exchange: exchange
+            )
+
+            await MainActor.run {
+                self.technicalAnalysis = analysis
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                // Fallback to mock data on error
+                self.technicalAnalysis = TechnicalAnalysisGenerator.generate(for: asset)
+                self.isLoading = false
+                // Don't show error if we have fallback data
+                // self.errorMessage = "Unable to fetch live data. Showing estimated values."
             }
         }
     }

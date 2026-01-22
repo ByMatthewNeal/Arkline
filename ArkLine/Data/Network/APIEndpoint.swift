@@ -306,3 +306,178 @@ enum CryptoCompareEndpoint: APIEndpoint {
         }
     }
 }
+
+// MARK: - Taapi.io Technical Analysis Endpoints
+enum TaapiEndpoint: APIEndpoint {
+    /// Simple Moving Average
+    case sma(exchange: String, symbol: String, interval: String, period: Int)
+    /// Bollinger Bands
+    case bbands(exchange: String, symbol: String, interval: String, period: Int)
+    /// Relative Strength Index
+    case rsi(exchange: String, symbol: String, interval: String, period: Int)
+    /// MACD
+    case macd(exchange: String, symbol: String, interval: String)
+    /// Bulk request for multiple indicators at once
+    case bulk(exchange: String, symbol: String, interval: String, indicators: [TaapiIndicator])
+    /// Current price
+    case price(exchange: String, symbol: String, interval: String)
+
+    var baseURL: String { Constants.Endpoints.taapiBase }
+
+    var path: String {
+        switch self {
+        case .sma:
+            return "/sma"
+        case .bbands:
+            return "/bbands"
+        case .rsi:
+            return "/rsi"
+        case .macd:
+            return "/macd"
+        case .bulk:
+            return "/bulk"
+        case .price:
+            return "/price"
+        }
+    }
+
+    var method: HTTPMethod {
+        switch self {
+        case .bulk:
+            return .post
+        default:
+            return .get
+        }
+    }
+
+    var queryParameters: [String: String]? {
+        switch self {
+        case .sma(let exchange, let symbol, let interval, let period):
+            return [
+                "secret": Constants.API.taapiAPIKey,
+                "exchange": exchange,
+                "symbol": symbol,
+                "interval": interval,
+                "period": "\(period)"
+            ]
+        case .bbands(let exchange, let symbol, let interval, let period):
+            return [
+                "secret": Constants.API.taapiAPIKey,
+                "exchange": exchange,
+                "symbol": symbol,
+                "interval": interval,
+                "period": "\(period)"
+            ]
+        case .rsi(let exchange, let symbol, let interval, let period):
+            return [
+                "secret": Constants.API.taapiAPIKey,
+                "exchange": exchange,
+                "symbol": symbol,
+                "interval": interval,
+                "period": "\(period)"
+            ]
+        case .macd(let exchange, let symbol, let interval):
+            return [
+                "secret": Constants.API.taapiAPIKey,
+                "exchange": exchange,
+                "symbol": symbol,
+                "interval": interval
+            ]
+        case .bulk:
+            return nil // Uses body instead
+        case .price(let exchange, let symbol, let interval):
+            return [
+                "secret": Constants.API.taapiAPIKey,
+                "exchange": exchange,
+                "symbol": symbol,
+                "interval": interval
+            ]
+        }
+    }
+
+    var body: Data? {
+        switch self {
+        case .bulk(let exchange, let symbol, let interval, let indicators):
+            let request = TaapiBulkRequest(
+                secret: Constants.API.taapiAPIKey,
+                construct: TaapiBulkConstruct(
+                    exchange: exchange,
+                    symbol: symbol,
+                    interval: interval,
+                    indicators: indicators
+                )
+            )
+            return try? JSONEncoder().encode(request)
+        default:
+            return nil
+        }
+    }
+}
+
+// MARK: - Taapi.io Request/Response Models
+struct TaapiIndicator: Codable {
+    let id: String
+    let indicator: String
+    var period: Int?
+    var stddev: Double?
+
+    init(id: String, indicator: String, period: Int? = nil, stddev: Double? = nil) {
+        self.id = id
+        self.indicator = indicator
+        self.period = period
+        self.stddev = stddev
+    }
+}
+
+struct TaapiBulkRequest: Codable {
+    let secret: String
+    let construct: TaapiBulkConstruct
+}
+
+struct TaapiBulkConstruct: Codable {
+    let exchange: String
+    let symbol: String
+    let interval: String
+    let indicators: [TaapiIndicator]
+}
+
+struct TaapiBulkResponse: Codable {
+    let data: [TaapiIndicatorResult]
+}
+
+struct TaapiIndicatorResult: Codable {
+    let id: String
+    let result: TaapiIndicatorValue
+}
+
+struct TaapiIndicatorValue: Codable {
+    // SMA result
+    let value: Double?
+    // Bollinger Bands results
+    let valueUpperBand: Double?
+    let valueMiddleBand: Double?
+    let valueLowerBand: Double?
+    // RSI result (uses value)
+    // MACD results
+    let valueMACD: Double?
+    let valueMACDSignal: Double?
+    let valueMACDHist: Double?
+}
+
+struct TaapiSMAResponse: Codable {
+    let value: Double
+}
+
+struct TaapiBBandsResponse: Codable {
+    let valueUpperBand: Double
+    let valueMiddleBand: Double
+    let valueLowerBand: Double
+}
+
+struct TaapiRSIResponse: Codable {
+    let value: Double
+}
+
+struct TaapiPriceResponse: Codable {
+    let value: Double
+}

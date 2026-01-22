@@ -17,6 +17,7 @@ final class ServiceContainer {
     private lazy var _mockPortfolioService = MockPortfolioService()
     private lazy var _mockNewsService = MockNewsService()
     private lazy var _mockDCAService = MockDCAService()
+    private lazy var _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
 
     // MARK: - Lazy Services - API
     private lazy var _apiMarketService = APIMarketService()
@@ -24,6 +25,7 @@ final class ServiceContainer {
     private lazy var _apiPortfolioService = APIPortfolioService()
     private lazy var _apiNewsService = APINewsService()
     private lazy var _apiDCAService = APIDCAService()
+    private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
 
     // MARK: - Service Accessors
     var marketService: MarketServiceProtocol {
@@ -46,6 +48,10 @@ final class ServiceContainer {
         useMockData ? _mockDCAService : _apiDCAService
     }
 
+    var technicalAnalysisService: TechnicalAnalysisServiceProtocol {
+        useMockData ? _mockTechnicalAnalysisService : _apiTechnicalAnalysisService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -56,10 +62,12 @@ final class ServiceContainer {
         _mockPortfolioService = MockPortfolioService()
         _mockNewsService = MockNewsService()
         _mockDCAService = MockDCAService()
+        _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
         _apiMarketService = APIMarketService()
         _apiSentimentService = APISentimentService()
         _apiPortfolioService = APIPortfolioService()
         _apiNewsService = APINewsService()
         _apiDCAService = APIDCAService()
+        _apiTechnicalAnalysisService = APITechnicalAnalysisService()
     }
 }
