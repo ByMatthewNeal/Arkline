@@ -22,14 +22,12 @@ class MarketViewModel {
     // MARK: - Dependencies
     private let marketService: MarketServiceProtocol
     private let newsService: NewsServiceProtocol
-    private let coinglassService: CoinglassServiceProtocol
 
     // MARK: - Properties
     var selectedTab: MarketTab = .overview
     var selectedCategory: AssetCategoryFilter = .all
     var searchText: String = ""
     var isLoading = false
-    var isDerivativesLoading = false
     var errorMessage: String?
 
     // Crypto Assets
@@ -57,9 +55,6 @@ class MarketViewModel {
     var fedWatchData: FedWatchData?
     var fedWatchMeetings: [FedWatchData] = []
 
-    // Derivatives Data (Coinglass)
-    var derivativesOverview: DerivativesOverview?
-
     // MARK: - Computed Properties
     var filteredAssets: [CryptoAsset] {
         var assets = cryptoAssets
@@ -77,12 +72,10 @@ class MarketViewModel {
     // MARK: - Initialization
     init(
         marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
-        newsService: NewsServiceProtocol = ServiceContainer.shared.newsService,
-        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService
+        newsService: NewsServiceProtocol = ServiceContainer.shared.newsService
     ) {
         self.marketService = marketService
         self.newsService = newsService
-        self.coinglassService = coinglassService
         Task { await loadInitialData() }
     }
 
@@ -90,9 +83,6 @@ class MarketViewModel {
     func refresh() async {
         isLoading = true
         errorMessage = nil
-
-        // Start derivatives fetch in parallel (non-blocking)
-        Task { await refreshDerivatives() }
 
         do {
             async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 50)
@@ -124,25 +114,6 @@ class MarketViewModel {
             await MainActor.run {
                 self.errorMessage = error.localizedDescription
                 self.isLoading = false
-            }
-        }
-    }
-
-    /// Fetches derivatives data from Coinglass (Open Interest, Liquidations, Funding, L/S Ratios)
-    func refreshDerivatives() async {
-        await MainActor.run { self.isDerivativesLoading = true }
-
-        do {
-            let overview = try await coinglassService.fetchDerivativesOverview()
-
-            await MainActor.run {
-                self.derivativesOverview = overview
-                self.isDerivativesLoading = false
-            }
-        } catch {
-            await MainActor.run {
-                self.isDerivativesLoading = false
-                // Don't set error message - derivatives is supplementary data
             }
         }
     }
