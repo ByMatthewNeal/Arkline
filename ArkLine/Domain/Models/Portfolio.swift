@@ -34,7 +34,10 @@ enum TimePeriod: String, CaseIterable, Identifiable {
 }
 
 // MARK: - Portfolio Model
-struct Portfolio: Codable, Identifiable, Equatable {
+struct Portfolio: Codable, Identifiable, Equatable, Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
     let id: UUID
     let userId: UUID
     var name: String
@@ -193,7 +196,7 @@ struct PortfolioAllocation: Identifiable, Equatable {
         guard totalValue > 0 else { return [] }
 
         let grouped = Dictionary(grouping: holdings) { $0.assetType }
-        let colors = ["crypto": "#6366F1", "stock": "#22C55E", "metal": "#F59E0B"]
+        let colors = ["crypto": "#6366F1", "stock": "#22C55E", "metal": "#F59E0B", "real_estate": "#3B82F6"]
 
         return grouped.map { type, items in
             let typeValue = items.reduce(0) { $0 + $1.currentValue }

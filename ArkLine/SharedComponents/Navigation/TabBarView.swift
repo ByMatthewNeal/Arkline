@@ -147,13 +147,12 @@ struct TabBarItem: View {
 struct MainTabView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab: AppTab = .home
 
     var body: some View {
         ZStack(alignment: .bottom) {
             // Content based on selected tab
             Group {
-                switch selectedTab {
+                switch appState.selectedTab {
                 case .home:
                     HomeView()
                 case .market:
@@ -169,7 +168,7 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Floating Tab Bar
-            CustomTabBar(selectedTab: $selectedTab)
+            CustomTabBar(selectedTab: $appState.selectedTab)
         }
         .ignoresSafeArea(.keyboard)
         .background(AppColors.background(colorScheme))

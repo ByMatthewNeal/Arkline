@@ -16,12 +16,14 @@ enum AssetCategory: String, Codable, CaseIterable {
     case crypto
     case stock
     case metal
+    case realEstate = "real_estate"
 
     var displayName: String {
         switch self {
         case .crypto: return "Crypto"
         case .stock: return "Stocks"
         case .metal: return "Metals"
+        case .realEstate: return "Real Estate"
         }
     }
 
@@ -30,6 +32,7 @@ enum AssetCategory: String, Codable, CaseIterable {
         case .crypto: return "bitcoinsign.circle.fill"
         case .stock: return "chart.line.uptrend.xyaxis"
         case .metal: return "cube.fill"
+        case .realEstate: return "house.fill"
         }
     }
 }

@@ -108,7 +108,15 @@ final class MockPortfolioService: PortfolioServiceProtocol {
 
         return holdings.map { holding in
             var updated = holding
-            if let priceData = mockPrices[holding.symbol.uppercased()] {
+
+            // Real estate uses manual valuation - keep existing price
+            if holding.assetType == Constants.AssetType.realEstate.rawValue {
+                // Keep existing currentPrice if set, otherwise use average buy price
+                if updated.currentPrice == nil {
+                    updated.currentPrice = holding.averageBuyPrice ?? 0
+                }
+                updated.priceChangePercentage24h = 0 // No daily changes for real estate
+            } else if let priceData = mockPrices[holding.symbol.uppercased()] {
                 updated.currentPrice = priceData.price
                 updated.priceChangePercentage24h = priceData.change
             }

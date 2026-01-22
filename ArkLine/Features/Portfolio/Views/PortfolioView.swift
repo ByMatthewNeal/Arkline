@@ -315,70 +315,49 @@ struct PortfolioHeader: View {
 struct PortfolioTabSelector: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: PortfolioTab
-    @State private var scrollOffset: CGFloat = 0
-    @State private var contentWidth: CGFloat = 0
-    @State private var containerWidth: CGFloat = 0
-
-    private var showTrailingIndicator: Bool {
-        contentWidth > containerWidth && scrollOffset < (contentWidth - containerWidth - 10)
-    }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 4) {
-                    ForEach(PortfolioTab.allCases, id: \.self) { tab in
-                        Button(action: { selectedTab = tab }) {
-                            Text(tab.rawValue)
-                                .font(AppFonts.caption12Medium)
-                                .foregroundColor(selectedTab == tab ? .white : AppColors.textSecondary)
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
-                                .background(selectedTab == tab ? AppColors.accent : Color.clear)
-                                .cornerRadius(20)
+        HStack(spacing: 0) {
+            // Left chevron hint
+            Image(systemName: "chevron.left")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                .padding(.leading, 8)
+                .padding(.trailing, 2)
+
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(PortfolioTab.allCases, id: \.self) { tab in
+                            Button(action: {
+                                selectedTab = tab
+                                withAnimation {
+                                    proxy.scrollTo(tab, anchor: .center)
+                                }
+                            }) {
+                                Text(tab.rawValue)
+                                    .font(AppFonts.caption12Medium)
+                                    .foregroundColor(selectedTab == tab ? .white : AppColors.textSecondary)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                                    .background(selectedTab == tab ? AppColors.accent : Color.clear)
+                                    .cornerRadius(20)
+                            }
+                            .id(tab)
                         }
                     }
+                    .padding(.vertical, 4)
                 }
-                .padding(4)
-                .background(
-                    GeometryReader { geo in
-                        Color.clear.onAppear {
-                            contentWidth = geo.size.width
-                        }
-                    }
-                )
             }
-            .background(
-                GeometryReader { geo in
-                    Color.clear.onAppear {
-                        containerWidth = geo.size.width
-                    }
-                }
-            )
 
-            // Scroll indicator - subtle chevron on right edge
-            if showTrailingIndicator {
-                HStack(spacing: 0) {
-                    LinearGradient(
-                        colors: [
-                            Color.clear,
-                            AppColors.cardBackground(colorScheme).opacity(0.9)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: 30)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(AppColors.textSecondary)
-                        .padding(.trailing, 8)
-                        .background(AppColors.cardBackground(colorScheme).opacity(0.9))
-                }
-                .allowsHitTesting(false)
-            }
+            // Right chevron hint
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                .padding(.leading, 2)
+                .padding(.trailing, 8)
         }
         .glassCard(cornerRadius: 24)
     }

@@ -123,12 +123,23 @@ enum Constants {
         case crypto = "crypto"
         case stock = "stock"
         case metal = "metal"
+        case realEstate = "real_estate"
 
         var displayName: String {
             switch self {
             case .crypto: return "Cryptocurrency"
             case .stock: return "Stock"
             case .metal: return "Precious Metal"
+            case .realEstate: return "Real Estate"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .crypto: return "bitcoinsign.circle.fill"
+            case .stock: return "chart.line.uptrend.xyaxis"
+            case .metal: return "cube.fill"
+            case .realEstate: return "house.fill"
             }
         }
     }

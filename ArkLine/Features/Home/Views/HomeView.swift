@@ -72,7 +72,11 @@ struct HomeView: View {
                                 viewModel.selectPortfolio(portfolio)
                             }
                         }
-                    )
+                    ),
+                    onCreatePortfolio: {
+                        appState.selectedTab = .portfolio
+                        appState.shouldShowPortfolioCreation = true
+                    }
                 )
             }
             .sheet(isPresented: $showCustomizeSheet) {
@@ -1733,6 +1737,7 @@ struct TimePeriodPill: View {
 struct PortfolioPickerSheet: View {
     let portfolios: [Portfolio]
     @Binding var selectedPortfolio: Portfolio?
+    var onCreatePortfolio: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
@@ -1768,7 +1773,10 @@ struct PortfolioPickerSheet: View {
                     .padding(.top, 16)
                 }
 
-                Button(action: {}) {
+                Button(action: {
+                    dismiss()
+                    onCreatePortfolio?()
+                }) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()

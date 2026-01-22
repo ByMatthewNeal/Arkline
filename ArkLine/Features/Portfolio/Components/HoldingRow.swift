@@ -5,20 +5,30 @@ struct HoldingRow: View {
     @Environment(\.colorScheme) var colorScheme
     let holding: PortfolioHolding
 
+    private var isRealEstate: Bool {
+        holding.assetType == Constants.AssetType.realEstate.rawValue
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             // Icon
-            CoinIconView(symbol: holding.symbol, size: 44)
+            if isRealEstate {
+                RealEstateIconView(size: 44)
+            } else {
+                CoinIconView(symbol: holding.symbol, size: 44)
+            }
 
             // Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(holding.symbol.uppercased())
+                Text(isRealEstate ? holding.symbol : holding.symbol.uppercased())
                     .font(AppFonts.body14Bold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(1)
 
                 Text(holding.name)
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(1)
             }
 
             Spacer()
@@ -29,14 +39,26 @@ struct HoldingRow: View {
                     .font(AppFonts.body14Bold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                HStack(spacing: 4) {
-                    Image(systemName: holding.isProfit ? "arrow.up.right" : "arrow.down.right")
-                        .font(.system(size: 10))
+                if isRealEstate {
+                    // Show total P/L for real estate instead of 24h change
+                    HStack(spacing: 4) {
+                        Image(systemName: holding.isProfit ? "arrow.up.right" : "arrow.down.right")
+                            .font(.system(size: 10))
 
-                    Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: "%.2f")%")
-                        .font(AppFonts.caption12)
+                        Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: "%.1f")%")
+                            .font(AppFonts.caption12)
+                    }
+                    .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+                } else {
+                    HStack(spacing: 4) {
+                        Image(systemName: holding.isProfit ? "arrow.up.right" : "arrow.down.right")
+                            .font(.system(size: 10))
+
+                        Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: "%.2f")%")
+                            .font(AppFonts.caption12)
+                    }
+                    .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
                 }
-                .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
             }
         }
         .padding(16)
@@ -49,18 +71,34 @@ struct HoldingRowCompact: View {
     @Environment(\.colorScheme) var colorScheme
     let holding: PortfolioHolding
 
+    private var isRealEstate: Bool {
+        holding.assetType == Constants.AssetType.realEstate.rawValue
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            CoinIconView(symbol: holding.symbol, size: 36)
+            if isRealEstate {
+                RealEstateIconView(size: 36)
+            } else {
+                CoinIconView(symbol: holding.symbol, size: 36)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(holding.symbol.uppercased())
+                Text(isRealEstate ? holding.symbol : holding.symbol.uppercased())
                     .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(1)
 
-                Text("\(holding.quantity, specifier: "%.4f") • \((holding.currentPrice ?? 0).asCurrency)")
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
+                if isRealEstate {
+                    Text(holding.name)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(1)
+                } else {
+                    Text("\(holding.quantity, specifier: "%.4f") • \((holding.currentPrice ?? 0).asCurrency)")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
             }
 
             Spacer()
@@ -70,7 +108,7 @@ struct HoldingRowCompact: View {
                     .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: "%.2f")%")
+                Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: isRealEstate ? "%.1f" : "%.2f")%")
                     .font(AppFonts.caption12)
                     .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
             }
@@ -112,6 +150,27 @@ struct CoinIconView: View {
         Text(symbol.prefix(2).uppercased())
             .font(.system(size: size * 0.35, weight: .semibold))
             .foregroundColor(AppColors.accent)
+    }
+}
+
+// MARK: - Real Estate Icon View
+struct RealEstateIconView: View {
+    @Environment(\.colorScheme) var colorScheme
+    let size: CGFloat
+
+    // Real estate blue color from allocation
+    private let realEstateColor = Color(hex: "3B82F6")
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(realEstateColor.opacity(0.15))
+
+            Image(systemName: "house.fill")
+                .font(.system(size: size * 0.45, weight: .medium))
+                .foregroundColor(realEstateColor)
+        }
+        .frame(width: size, height: size)
     }
 }
 

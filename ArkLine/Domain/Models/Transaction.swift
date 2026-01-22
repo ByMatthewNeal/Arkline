@@ -17,6 +17,14 @@ struct Transaction: Codable, Identifiable, Equatable {
     var emotionalState: EmotionalState?
     let createdAt: Date
 
+    // For sell transactions - P/L tracking
+    var costBasisPerUnit: Double?
+    var realizedProfitLoss: Double?
+
+    // For transfers between portfolios
+    var destinationPortfolioId: UUID?
+    var relatedTransactionId: UUID?  // Links transfer_out to transfer_in
+
     enum CodingKeys: String, CodingKey {
         case id
         case portfolioId = "portfolio_id"
@@ -32,6 +40,10 @@ struct Transaction: Codable, Identifiable, Equatable {
         case notes
         case emotionalState = "emotional_state"
         case createdAt = "created_at"
+        case costBasisPerUnit = "cost_basis_per_unit"
+        case realizedProfitLoss = "realized_profit_loss"
+        case destinationPortfolioId = "destination_portfolio_id"
+        case relatedTransactionId = "related_transaction_id"
     }
 
     init(
@@ -47,7 +59,11 @@ struct Transaction: Codable, Identifiable, Equatable {
         transactionDate: Date = Date(),
         notes: String? = nil,
         emotionalState: EmotionalState? = nil,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        costBasisPerUnit: Double? = nil,
+        realizedProfitLoss: Double? = nil,
+        destinationPortfolioId: UUID? = nil,
+        relatedTransactionId: UUID? = nil
     ) {
         self.id = id
         self.portfolioId = portfolioId
@@ -58,11 +74,15 @@ struct Transaction: Codable, Identifiable, Equatable {
         self.quantity = quantity
         self.pricePerUnit = pricePerUnit
         self.gasFee = gasFee
-        self.totalValue = (quantity * pricePerUnit) + gasFee
+        self.totalValue = (quantity * pricePerUnit) - gasFee
         self.transactionDate = transactionDate
         self.notes = notes
         self.emotionalState = emotionalState
         self.createdAt = createdAt
+        self.costBasisPerUnit = costBasisPerUnit
+        self.realizedProfitLoss = realizedProfitLoss
+        self.destinationPortfolioId = destinationPortfolioId
+        self.relatedTransactionId = relatedTransactionId
     }
 }
 

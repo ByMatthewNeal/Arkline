@@ -77,6 +77,10 @@ class AppState: ObservableObject {
     @Published var chatNavigationReset = UUID()
     @Published var profileNavigationReset = UUID()
 
+    // Tab navigation
+    @Published var selectedTab: AppTab = .home
+    @Published var shouldShowPortfolioCreation = false
+
     var colorScheme: ColorScheme? {
         switch darkModePreference {
         case .light: return .light
