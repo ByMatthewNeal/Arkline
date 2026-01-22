@@ -6,6 +6,7 @@ enum PortfolioTab: String, CaseIterable {
     case overview = "Overview"
     case holdings = "Holdings"
     case allocation = "Allocation"
+    case performance = "Performance"
     case transactions = "History"
 }
 
@@ -18,6 +19,8 @@ final class PortfolioViewModel {
 
     // MARK: - State
     var selectedTab: PortfolioTab = .overview
+    var portfolios: [Portfolio] = []
+    var selectedPortfolio: Portfolio?
     var holdings: [PortfolioHolding] = []
     var transactions: [Transaction] = []
     var allocations: [PortfolioAllocation] = []
@@ -102,6 +105,16 @@ final class PortfolioViewModel {
         holdings.sorted { $0.profitLossPercentage < $1.profitLossPercentage }.prefix(3).map { $0 }
     }
 
+    // MARK: - Performance Metrics
+    var performanceMetrics: PerformanceMetrics {
+        PerformanceMetricsCalculator.calculate(
+            transactions: transactions,
+            historyPoints: historyPoints,
+            totalReturn: totalProfitLoss,
+            totalReturnPercentage: totalProfitLossPercentage
+        )
+    }
+
     // MARK: - Initialization
     init(
         portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
@@ -121,8 +134,19 @@ final class PortfolioViewModel {
             // In a real app, get userId from auth service
             let userId = currentUserId ?? UUID()
 
-            // Fetch portfolio
-            if let portfolio = try await portfolioService.fetchPortfolio(userId: userId) {
+            // Fetch all portfolios
+            let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
+
+            await MainActor.run {
+                self.portfolios = fetchedPortfolios
+                // Select first portfolio if none selected
+                if self.selectedPortfolio == nil, let first = fetchedPortfolios.first {
+                    self.selectedPortfolio = first
+                }
+            }
+
+            // Load data for selected portfolio
+            if let portfolio = selectedPortfolio {
                 self.portfolioId = portfolio.id
 
                 // Fetch holdings and transactions concurrently
@@ -144,6 +168,10 @@ final class PortfolioViewModel {
                 }
             } else {
                 await MainActor.run {
+                    self.holdings = []
+                    self.transactions = []
+                    self.historyPoints = []
+                    self.allocations = []
                     self.isLoading = false
                 }
             }
@@ -175,6 +203,13 @@ final class PortfolioViewModel {
         selectedTab = tab
     }
 
+    func selectPortfolio(_ portfolio: Portfolio) {
+        selectedPortfolio = portfolio
+        portfolioId = portfolio.id
+        // Reload data for the new portfolio
+        Task { await refresh() }
+    }
+
     func selectAssetType(_ type: Constants.AssetType?) {
         selectedAssetType = type
     }
@@ -185,6 +220,224 @@ final class PortfolioViewModel {
 
     func dismissError() {
         error = nil
+    }
+
+    func createPortfolio(name: String, isPublic: Bool) async throws {
+        // In a real app, get userId from auth service
+        let userId = currentUserId ?? UUID()
+
+        let portfolio = Portfolio(
+            userId: userId,
+            name: name,
+            isPublic: isPublic
+        )
+
+        let createdPortfolio = try await portfolioService.createPortfolio(portfolio)
+
+        await MainActor.run {
+            self.portfolios.append(createdPortfolio)
+            self.selectedPortfolio = createdPortfolio
+            self.portfolioId = createdPortfolio.id
+            // Clear data for the new empty portfolio
+            self.holdings = []
+            self.transactions = []
+            self.historyPoints = []
+            self.allocations = []
+        }
+    }
+
+    func addRealEstateProperty(
+        propertyName: String,
+        address: String,
+        propertyType: PropertyType,
+        squareFootage: Double?,
+        purchasePrice: Double,
+        purchaseDate: Date,
+        currentEstimatedValue: Double,
+        monthlyRentalIncome: Double?,
+        monthlyExpenses: Double?,
+        notes: String?
+    ) async throws {
+        guard let portfolioId = portfolioId else {
+            throw AppError.unknown(message: "No portfolio selected")
+        }
+
+        // Create a holding for the real estate property
+        // Using property name as the "symbol" and address as identifier
+        let holding = PortfolioHolding(
+            portfolioId: portfolioId,
+            assetType: Constants.AssetType.realEstate.rawValue,
+            symbol: propertyName,
+            name: address,
+            quantity: 1, // Each property is 1 unit
+            averageBuyPrice: purchasePrice
+        )
+
+        let createdHolding = try await portfolioService.addHolding(holding)
+
+        // Update the holding with current estimated value (manual valuation)
+        var updatedHolding = createdHolding
+        updatedHolding.currentPrice = currentEstimatedValue
+
+        // Create a transaction for the purchase
+        let transaction = Transaction(
+            portfolioId: portfolioId,
+            holdingId: createdHolding.id,
+            type: .buy,
+            assetType: Constants.AssetType.realEstate.rawValue,
+            symbol: propertyName,
+            quantity: 1,
+            pricePerUnit: purchasePrice,
+            transactionDate: purchaseDate,
+            notes: notes
+        )
+
+        _ = try await portfolioService.addTransaction(transaction)
+
+        // Refresh to load the updated data
+        await refresh()
+    }
+
+    func sellAsset(
+        holding: PortfolioHolding,
+        quantity: Double,
+        pricePerUnit: Double,
+        fee: Double,
+        date: Date,
+        notes: String?,
+        emotionalState: EmotionalState?,
+        transferToPortfolio: Portfolio?,
+        convertToCash: Bool
+    ) async throws {
+        guard let portfolioId = portfolioId else {
+            throw AppError.unknown(message: "No portfolio selected")
+        }
+
+        // Calculate profit/loss using average cost basis
+        let costBasisPerUnit = holding.averageBuyPrice ?? 0
+        let totalProceeds = (quantity * pricePerUnit) - fee
+        let totalCostBasis = quantity * costBasisPerUnit
+        let realizedProfitLoss = totalProceeds - totalCostBasis
+
+        // 1. Create sell transaction in source portfolio
+        let sellTransaction = Transaction(
+            portfolioId: portfolioId,
+            holdingId: holding.id,
+            type: .sell,
+            assetType: holding.assetType,
+            symbol: holding.symbol,
+            quantity: quantity,
+            pricePerUnit: pricePerUnit,
+            gasFee: fee,
+            transactionDate: date,
+            notes: notes,
+            emotionalState: emotionalState,
+            costBasisPerUnit: costBasisPerUnit,
+            realizedProfitLoss: realizedProfitLoss,
+            destinationPortfolioId: transferToPortfolio?.id
+        )
+
+        _ = try await portfolioService.addTransaction(sellTransaction)
+
+        // 2. Update the holding quantity
+        let remainingQuantity = holding.quantity - quantity
+        if remainingQuantity <= 0.00000001 { // Effectively zero
+            // Remove the holding entirely
+            try await portfolioService.deleteHolding(holdingId: holding.id)
+        } else {
+            // Update the holding with reduced quantity
+            var updatedHolding = holding
+            updatedHolding.quantity = remainingQuantity
+            try await portfolioService.updateHolding(updatedHolding)
+        }
+
+        // 3. If transferring to another portfolio, create the buy transaction there
+        if let destinationPortfolio = transferToPortfolio {
+            if convertToCash {
+                // Add as cash/USDT in destination portfolio
+                // First check if there's an existing cash holding
+                let destHoldings = try await portfolioService.fetchHoldings(portfolioId: destinationPortfolio.id)
+                let existingCash = destHoldings.first { $0.symbol.uppercased() == "USDT" || $0.symbol.uppercased() == "USD" }
+
+                if let cashHolding = existingCash {
+                    // Update existing cash holding
+                    var updatedCash = cashHolding
+                    let newQuantity = cashHolding.quantity + totalProceeds
+                    // Recalculate average (for cash it's always 1:1)
+                    updatedCash.quantity = newQuantity
+                    updatedCash.averageBuyPrice = 1.0
+                    try await portfolioService.updateHolding(updatedCash)
+                } else {
+                    // Create new USDT holding
+                    let cashHolding = PortfolioHolding(
+                        portfolioId: destinationPortfolio.id,
+                        assetType: "crypto",
+                        symbol: "USDT",
+                        name: "Tether USD",
+                        quantity: totalProceeds,
+                        averageBuyPrice: 1.0
+                    )
+                    _ = try await portfolioService.addHolding(cashHolding)
+                }
+
+                // Create transfer-in transaction
+                let transferInTransaction = Transaction(
+                    portfolioId: destinationPortfolio.id,
+                    type: .transferIn,
+                    assetType: "crypto",
+                    symbol: "USDT",
+                    quantity: totalProceeds,
+                    pricePerUnit: 1.0,
+                    transactionDate: date,
+                    notes: "Transfer from \(selectedPortfolio?.name ?? "portfolio") - Sale of \(holding.symbol)",
+                    relatedTransactionId: sellTransaction.id
+                )
+                _ = try await portfolioService.addTransaction(transferInTransaction)
+            } else {
+                // Buy the same asset in destination portfolio
+                let destHoldings = try await portfolioService.fetchHoldings(portfolioId: destinationPortfolio.id)
+                let existingHolding = destHoldings.first { $0.symbol.uppercased() == holding.symbol.uppercased() }
+
+                if let existing = existingHolding {
+                    // Update existing holding with new weighted average
+                    var updated = existing
+                    let oldTotal = existing.quantity * (existing.averageBuyPrice ?? 0)
+                    let newTotal = quantity * pricePerUnit
+                    let newQuantity = existing.quantity + quantity
+                    updated.quantity = newQuantity
+                    updated.averageBuyPrice = (oldTotal + newTotal) / newQuantity
+                    try await portfolioService.updateHolding(updated)
+                } else {
+                    // Create new holding
+                    let newHolding = PortfolioHolding(
+                        portfolioId: destinationPortfolio.id,
+                        assetType: holding.assetType,
+                        symbol: holding.symbol,
+                        name: holding.name,
+                        quantity: quantity,
+                        averageBuyPrice: pricePerUnit
+                    )
+                    _ = try await portfolioService.addHolding(newHolding)
+                }
+
+                // Create transfer-in/buy transaction
+                let buyTransaction = Transaction(
+                    portfolioId: destinationPortfolio.id,
+                    type: .transferIn,
+                    assetType: holding.assetType,
+                    symbol: holding.symbol,
+                    quantity: quantity,
+                    pricePerUnit: pricePerUnit,
+                    transactionDate: date,
+                    notes: "Transfer from \(selectedPortfolio?.name ?? "portfolio")",
+                    relatedTransactionId: sellTransaction.id
+                )
+                _ = try await portfolioService.addTransaction(buyTransaction)
+            }
+        }
+
+        // Refresh to update the UI
+        await refresh()
     }
 
     func addTransaction(_ transaction: Transaction) async {

@@ -5,6 +5,8 @@ struct PortfolioView: View {
     @EnvironmentObject var appState: AppState
     @State private var viewModel = PortfolioViewModel()
     @State private var showAddTransaction = false
+    @State private var showCreatePortfolio = false
+    @State private var showPortfolioPicker = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -54,6 +56,8 @@ struct PortfolioView: View {
                             PortfolioHoldingsContent(viewModel: viewModel)
                         case .allocation:
                             PortfolioAllocationContent(viewModel: viewModel)
+                        case .performance:
+                            PerformanceView(viewModel: viewModel)
                         case .transactions:
                             PortfolioTransactionsContent(viewModel: viewModel)
                         }
@@ -71,10 +75,21 @@ struct PortfolioView: View {
                 }
                 }
             }
-            .navigationTitle("Portfolio")
+            .navigationTitle(viewModel.selectedPortfolio?.name ?? "Portfolio")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showPortfolioPicker = true }) {
+                        HStack(spacing: 4) {
+                            Text(viewModel.selectedPortfolio?.name ?? "Portfolio")
+                                .font(.system(size: 17, weight: .semibold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showAddTransaction = true }) {
                         Image(systemName: "plus")
@@ -84,8 +99,45 @@ struct PortfolioView: View {
                 }
             }
             #endif
+            .sheet(isPresented: $showPortfolioPicker) {
+                PortfolioSwitcherSheet(
+                    portfolios: viewModel.portfolios,
+                    selectedPortfolio: Binding(
+                        get: { viewModel.selectedPortfolio },
+                        set: { portfolio in
+                            if let portfolio = portfolio {
+                                viewModel.selectPortfolio(portfolio)
+                            }
+                        }
+                    ),
+                    onCreatePortfolio: {
+                        showCreatePortfolio = true
+                    }
+                )
+            }
             .sheet(isPresented: $showAddTransaction) {
                 AddTransactionView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showCreatePortfolio) {
+                CreatePortfolioView(viewModel: viewModel)
+            }
+            .onChange(of: appState.shouldShowPortfolioCreation) { _, shouldShow in
+                if shouldShow {
+                    // Small delay to allow view transition to complete
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showCreatePortfolio = true
+                        appState.shouldShowPortfolioCreation = false
+                    }
+                }
+            }
+            .onAppear {
+                // Also check on appear in case onChange missed it
+                if appState.shouldShowPortfolioCreation {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showCreatePortfolio = true
+                        appState.shouldShowPortfolioCreation = false
+                    }
+                }
             }
         }
     }
@@ -263,22 +315,71 @@ struct PortfolioHeader: View {
 struct PortfolioTabSelector: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: PortfolioTab
+    @State private var scrollOffset: CGFloat = 0
+    @State private var contentWidth: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
+
+    private var showTrailingIndicator: Bool {
+        contentWidth > containerWidth && scrollOffset < (contentWidth - containerWidth - 10)
+    }
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(PortfolioTab.allCases, id: \.self) { tab in
-                Button(action: { selectedTab = tab }) {
-                    Text(tab.rawValue)
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(selectedTab == tab ? .white : AppColors.textSecondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(selectedTab == tab ? AppColors.accent : Color.clear)
-                        .cornerRadius(20)
+        ZStack(alignment: .trailing) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(PortfolioTab.allCases, id: \.self) { tab in
+                        Button(action: { selectedTab = tab }) {
+                            Text(tab.rawValue)
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(selectedTab == tab ? .white : AppColors.textSecondary)
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(selectedTab == tab ? AppColors.accent : Color.clear)
+                                .cornerRadius(20)
+                        }
+                    }
                 }
+                .padding(4)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.onAppear {
+                            contentWidth = geo.size.width
+                        }
+                    }
+                )
+            }
+            .background(
+                GeometryReader { geo in
+                    Color.clear.onAppear {
+                        containerWidth = geo.size.width
+                    }
+                }
+            )
+
+            // Scroll indicator - subtle chevron on right edge
+            if showTrailingIndicator {
+                HStack(spacing: 0) {
+                    LinearGradient(
+                        colors: [
+                            Color.clear,
+                            AppColors.cardBackground(colorScheme).opacity(0.9)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 30)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                        .padding(.trailing, 8)
+                        .background(AppColors.cardBackground(colorScheme).opacity(0.9))
+                }
+                .allowsHitTesting(false)
             }
         }
-        .padding(4)
         .glassCard(cornerRadius: 24)
     }
 }
@@ -332,8 +433,11 @@ struct PortfolioOverviewContent: View {
 
                         VStack(spacing: 8) {
                             ForEach(viewModel.topPerformers) { holding in
-                                HoldingRowCompact(holding: holding)
-                                    .accessibilityLabel("\(holding.name), \(holding.profitLossPercentage >= 0 ? "up" : "down") \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
+                                NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel)) {
+                                    HoldingRowCompact(holding: holding)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(holding.name), \(holding.profitLossPercentage >= 0 ? "up" : "down") \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
                             }
                         }
                         .padding(.horizontal, 20)
@@ -350,8 +454,11 @@ struct PortfolioOverviewContent: View {
 
                         VStack(spacing: 8) {
                             ForEach(viewModel.worstPerformers) { holding in
-                                HoldingRowCompact(holding: holding)
-                                    .accessibilityLabel("\(holding.name), \(holding.profitLossPercentage >= 0 ? "up" : "down") \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
+                                NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel)) {
+                                    HoldingRowCompact(holding: holding)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(holding.name), \(holding.profitLossPercentage >= 0 ? "up" : "down") \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
                             }
                         }
                         .padding(.horizontal, 20)
@@ -480,6 +587,13 @@ struct PortfolioAllocationContent: View {
 struct PortfolioTransactionsContent: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: PortfolioViewModel
+    @State private var selectedTransaction: Transaction?
+    @State private var showTransactionDetail = false
+
+    private func destinationPortfolioName(for transaction: Transaction) -> String? {
+        guard let destId = transaction.destinationPortfolioId else { return nil }
+        return viewModel.portfolios.first { $0.id == destId }?.name
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -518,14 +632,29 @@ struct PortfolioTransactionsContent: View {
                 // Transaction List
                 LazyVStack(spacing: 8) {
                     ForEach(viewModel.filteredTransactions) { transaction in
-                        TransactionRow(transaction: transaction)
-                            .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
+                        Button(action: {
+                            selectedTransaction = transaction
+                            showTransactionDetail = true
+                        }) {
+                            TransactionRow(transaction: transaction)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
                     }
                 }
                 .padding(.horizontal, 20)
             }
         }
         .padding(.top, 16)
+        .sheet(isPresented: $showTransactionDetail) {
+            if let transaction = selectedTransaction {
+                TransactionDetailView(
+                    transaction: transaction,
+                    portfolioName: viewModel.selectedPortfolio?.name,
+                    destinationPortfolioName: destinationPortfolioName(for: transaction)
+                )
+            }
+        }
     }
 }
 
@@ -628,7 +757,9 @@ struct AddTransactionView: View {
     @State private var errorMessage = ""
 
     private var isFormValid: Bool {
-        !symbol.isEmpty &&
+        // Real estate uses its own form
+        if assetType == .realEstate { return false }
+        return !symbol.isEmpty &&
         !name.isEmpty &&
         Double(quantity) ?? 0 > 0 &&
         Double(pricePerUnit) ?? 0 > 0
@@ -659,14 +790,33 @@ struct AddTransactionView: View {
                         }
                     }
 
-                    TextField("Symbol (e.g., BTC)", text: $symbol)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
+                    if assetType == .realEstate {
+                        // Show link to real estate form
+                        NavigationLink {
+                            AddRealEstateView(viewModel: viewModel)
+                        } label: {
+                            HStack {
+                                Image(systemName: "house.fill")
+                                    .foregroundColor(AppColors.accent)
+                                Text("Add Property Details")
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                    } else {
+                        TextField("Symbol (e.g., BTC)", text: $symbol)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
 
-                    TextField("Name (e.g., Bitcoin)", text: $name)
-                        .autocorrectionDisabled()
+                        TextField("Name (e.g., Bitcoin)", text: $name)
+                            .autocorrectionDisabled()
+                    }
                 }
 
+                if assetType != .realEstate {
                 // Transaction Details
                 Section("Details") {
                     HStack {
@@ -721,6 +871,7 @@ struct AddTransactionView: View {
                     TextField("Add notes...", text: $notes, axis: .vertical)
                         .lineLimit(3...6)
                 }
+                } // End of if assetType != .realEstate
             }
             .scrollContentBackground(.hidden)
             .background(AppColors.background(colorScheme))
@@ -878,10 +1029,18 @@ struct HoldingDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     let holding: PortfolioHolding
     @Bindable var viewModel: PortfolioViewModel
+    @State private var showSellSheet = false
+    @State private var selectedTransaction: Transaction?
+    @State private var showTransactionDetail = false
 
     var holdingTransactions: [Transaction] {
         viewModel.transactions.filter { $0.symbol.uppercased() == holding.symbol.uppercased() }
             .sorted { $0.transactionDate > $1.transactionDate }
+    }
+
+    private func destinationPortfolioName(for transaction: Transaction) -> String? {
+        guard let destId = transaction.destinationPortfolioId else { return nil }
+        return viewModel.portfolios.first { $0.id == destId }?.name
     }
 
     var body: some View {
@@ -994,7 +1153,13 @@ struct HoldingDetailView: View {
                     } else {
                         VStack(spacing: 8) {
                             ForEach(holdingTransactions) { transaction in
-                                TransactionRow(transaction: transaction)
+                                Button(action: {
+                                    selectedTransaction = transaction
+                                    showTransactionDetail = true
+                                }) {
+                                    TransactionRow(transaction: transaction)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 20)
@@ -1008,7 +1173,28 @@ struct HoldingDetailView: View {
         .navigationTitle(holding.symbol.uppercased())
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showSellSheet = true }) {
+                    Text("Sell")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(AppColors.error)
+                }
+            }
+        }
         #endif
+        .sheet(isPresented: $showSellSheet) {
+            SellAssetView(viewModel: viewModel, holding: holding)
+        }
+        .sheet(isPresented: $showTransactionDetail) {
+            if let transaction = selectedTransaction {
+                TransactionDetailView(
+                    transaction: transaction,
+                    portfolioName: viewModel.selectedPortfolio?.name,
+                    destinationPortfolioName: destinationPortfolioName(for: transaction)
+                )
+            }
+        }
     }
 }
 
@@ -1066,6 +1252,170 @@ struct AllocationPieChart: View {
                     .frame(width: radius * 1.2, height: radius * 1.2)
             }
         }
+    }
+}
+
+// MARK: - Portfolio Switcher Sheet
+struct PortfolioSwitcherSheet: View {
+    let portfolios: [Portfolio]
+    @Binding var selectedPortfolio: Portfolio?
+    var onCreatePortfolio: (() -> Void)? = nil
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var sheetBackground: Color {
+        colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7")
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(portfolios) { portfolio in
+                            PortfolioSwitcherRow(
+                                portfolio: portfolio,
+                                isSelected: selectedPortfolio?.id == portfolio.id,
+                                onSelect: {
+                                    selectedPortfolio = portfolio
+                                    dismiss()
+                                }
+                            )
+                        }
+
+                        if portfolios.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "folder.badge.plus")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text("No portfolios yet")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(textPrimary)
+                                Text("Create your first portfolio to start tracking your assets")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, 40)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                }
+
+                Button(action: {
+                    dismiss()
+                    onCreatePortfolio?()
+                }) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(AppColors.accent.opacity(0.15))
+                                .frame(width: 44, height: 44)
+
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(AppColors.accent)
+                        }
+
+                        Text("Create New Portfolio")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(textPrimary)
+
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(cardBackground)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+            .background(sheetBackground)
+            .navigationTitle("Select Portfolio")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(textPrimary.opacity(0.4))
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+struct PortfolioSwitcherRow: View {
+    let portfolio: Portfolio
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(AppColors.accent.opacity(0.15))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: "wallet.pass.fill")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(portfolio.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Text(portfolio.isPublic ? "Public" : "Private")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isSelected ? AppColors.accent : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
