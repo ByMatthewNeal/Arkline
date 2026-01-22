@@ -79,14 +79,17 @@ struct MarketSentimentSection: View {
             SentimentCategorySection(
                 title: "Retail Sentiment",
                 icon: "person.3.fill",
-                iconColor: Color(hex: "8B5CF6")
+                iconColor: AppColors.accent
             ) {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // App Store Rankings (Multiple Apps)
                     if viewModel.appStoreRankings.isEmpty {
                         PlaceholderCard(title: "App Store Rankings", icon: "arrow.down.app")
                     } else {
-                        AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
+                        NavigationLink(destination: AppStoreRankingDetailView(viewModel: viewModel)) {
+                            AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
 
                     // Google Trends / Bitcoin Search
@@ -102,7 +105,7 @@ struct MarketSentimentSection: View {
             SentimentCategorySection(
                 title: "Institutional",
                 icon: "building.columns.fill",
-                iconColor: Color(hex: "F59E0B")
+                iconColor: AppColors.accent
             ) {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // BTC ETF Net Flow
@@ -162,6 +165,7 @@ struct SentimentHeader: View {
 
 // MARK: - Sentiment Tier Badge
 struct SentimentTierBadge: View {
+    @Environment(\.colorScheme) var colorScheme
     let tier: SentimentTier
 
     var body: some View {
@@ -173,10 +177,14 @@ struct SentimentTierBadge: View {
                 .font(.caption)
                 .fontWeight(.semibold)
         }
-        .foregroundColor(Color(hex: tier.color.replacingOccurrences(of: "#", with: "")))
+        .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.8))
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color(hex: tier.color.replacingOccurrences(of: "#", with: "")).opacity(0.15))
+        .background(
+            colorScheme == .dark
+                ? Color.white.opacity(0.1)
+                : Color.black.opacity(0.06)
+        )
         .cornerRadius(20)
     }
 }
@@ -275,7 +283,7 @@ struct ArkLineScoreCard: View {
 
                     Text(score.tier.rawValue)
                         .font(.caption2)
-                        .foregroundColor(Color(hex: score.tier.color.replacingOccurrences(of: "#", with: "")))
+                        .foregroundColor(AppColors.textSecondary)
                 }
 
                 Spacer()
@@ -292,25 +300,27 @@ struct ArkLineScoreCard: View {
 
 // MARK: - ArkLine Score Gauge
 struct ArkLineScoreGauge: View {
+    @Environment(\.colorScheme) var colorScheme
     let score: Int
 
     private var progress: Double {
         Double(score) / 100.0
     }
 
-    private var color: Color {
-        Color(hex: SentimentTier.from(score: score).color.replacingOccurrences(of: "#", with: ""))
-    }
-
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(hex: "2A2A2A"), lineWidth: 6)
+                .stroke(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.1)
+                        : Color.black.opacity(0.08),
+                    lineWidth: 6
+                )
                 .frame(width: 50, height: 50)
 
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .frame(width: 50, height: 50)
                 .rotationEffect(.degrees(-90))
         }
@@ -321,10 +331,6 @@ struct ArkLineScoreGauge: View {
 struct BitcoinSeasonCard: View {
     @Environment(\.colorScheme) var colorScheme
     let index: AltcoinSeasonIndex
-
-    var seasonColor: Color {
-        index.isBitcoinSeason ? Color(hex: "F7931A") : Color(hex: "8B5CF6")
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -338,7 +344,7 @@ struct BitcoinSeasonCard: View {
                 HStack {
                     Image(systemName: index.isBitcoinSeason ? "bitcoinsign.circle.fill" : "sparkles")
                         .font(.system(size: 20))
-                        .foregroundColor(seasonColor)
+                        .foregroundColor(AppColors.accent)
 
                     Text(index.isBitcoinSeason ? "Bitcoin" : "Altcoin")
                         .font(.system(size: 18, weight: .bold))
@@ -357,6 +363,7 @@ struct BitcoinSeasonCard: View {
 
 // MARK: - Season Progress Bar
 struct SeasonProgressBar: View {
+    @Environment(\.colorScheme) var colorScheme
     let value: Int
     let isBitcoinSeason: Bool
 
@@ -368,21 +375,34 @@ struct SeasonProgressBar: View {
         VStack(spacing: 4) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    // Background gradient
+                    // Background
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.1)
+                                : Color.black.opacity(0.08)
+                        )
+
+                    // Progress fill
                     RoundedRectangle(cornerRadius: 4)
                         .fill(
                             LinearGradient(
-                                colors: [Color(hex: "F7931A"), Color(hex: "8B5CF6")],
+                                colors: [AppColors.accent.opacity(0.5), AppColors.accent],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
-                        .opacity(0.3)
+                        .frame(width: geometry.size.width * progress)
 
                     // Indicator
                     Circle()
-                        .fill(isBitcoinSeason ? Color(hex: "F7931A") : Color(hex: "8B5CF6"))
+                        .fill(AppColors.accent)
                         .frame(width: 12, height: 12)
+                        .overlay(
+                            Circle()
+                                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                                .frame(width: 5, height: 5)
+                        )
                         .offset(x: geometry.size.width * progress - 6)
                 }
             }
@@ -391,7 +411,7 @@ struct SeasonProgressBar: View {
             HStack {
                 Text("BTC")
                     .font(.caption2)
-                    .foregroundColor(Color(hex: "F7931A"))
+                    .foregroundColor(AppColors.textSecondary)
                 Spacer()
                 Text("\(value)/100")
                     .font(.caption2)
@@ -399,7 +419,7 @@ struct SeasonProgressBar: View {
                 Spacer()
                 Text("ALT")
                     .font(.caption2)
-                    .foregroundColor(Color(hex: "8B5CF6"))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
     }
@@ -410,45 +430,74 @@ struct AppStoreRankingsCard: View {
     @Environment(\.colorScheme) var colorScheme
     let rankings: [AppStoreRanking]
 
+    // Calculate composite sentiment from the rankings
+    private var compositeSentiment: AppStoreCompositeSentiment {
+        let primaryRankings = rankings.filter { ranking in
+            ["Coinbase", "Binance", "Kraken"].contains(ranking.appName) &&
+            ranking.platform == .ios
+        }
+        return AppStoreRankingCalculator.calculateComposite(from: primaryRankings)
+    }
+
+    // Get primary ranking (Coinbase iOS US)
+    private var primaryRanking: AppStoreRanking? {
+        rankings.first { $0.appName == "Coinbase" && $0.platform == .ios && $0.region == .us }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("App Store Rankings")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+            HStack {
+                Text("Coinbase AppStore")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                // Chevron to indicate tappable
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+            }
 
             Spacer()
 
-            if rankings.isEmpty {
+            if let ranking = primaryRanking {
+                VStack(alignment: .leading, spacing: 6) {
+                    // Main ranking number
+                    Text("\(ranking.ranking)")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    // Change indicator
+                    HStack(spacing: 4) {
+                        Image(systemName: ranking.isImproving ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("\(abs(ranking.change)) positions")
+                            .font(.caption)
+                    }
+                    .foregroundColor(ranking.isImproving ? AppColors.success : AppColors.error)
+                }
+            } else if !rankings.isEmpty {
+                // Fallback to first available ranking
+                if let first = rankings.first {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("\(first.ranking)")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        HStack(spacing: 4) {
+                            Image(systemName: first.isImproving ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("\(abs(first.change)) positions")
+                                .font(.caption)
+                        }
+                        .foregroundColor(first.isImproving ? AppColors.success : AppColors.error)
+                    }
+                }
+            } else {
                 Text("Loading...")
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
-            } else {
-                VStack(spacing: 6) {
-                    ForEach(rankings.prefix(3)) { ranking in
-                        HStack {
-                            Text(ranking.appName)
-                                .font(.caption)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
-                                .lineLimit(1)
-
-                            Spacer()
-
-                            Text("#\(ranking.ranking)")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                            HStack(spacing: 2) {
-                                Image(systemName: ranking.isImproving ? "arrow.up" : "arrow.down")
-                                    .font(.system(size: 8, weight: .bold))
-                                Text("\(abs(ranking.change))")
-                                    .font(.caption2)
-                            }
-                            .foregroundColor(ranking.isImproving ? AppColors.success : AppColors.error)
-                            .frame(width: 36, alignment: .trailing)
-                        }
-                    }
-                }
             }
         }
         .padding(16)
@@ -462,8 +511,9 @@ struct GoogleTrendsCard: View {
     @Environment(\.colorScheme) var colorScheme
     let trends: GoogleTrendsData
 
+    // Use green/red for up/down trends only
     var trendColor: Color {
-        Color(hex: trends.trend.color.replacingOccurrences(of: "#", with: ""))
+        trends.changeFromLastWeek >= 0 ? AppColors.success : AppColors.error
     }
 
     var body: some View {
@@ -486,12 +536,10 @@ struct GoogleTrendsCard: View {
                 }
 
                 HStack(spacing: 4) {
-                    Image(systemName: trends.trend.icon)
+                    Image(systemName: trends.changeFromLastWeek >= 0 ? "arrow.up" : "arrow.down")
                         .font(.system(size: 10, weight: .bold))
-                    Text(trends.trend.rawValue)
-                        .font(.caption)
                     Text("(\(trends.changeFromLastWeek >= 0 ? "+" : "")\(trends.changeFromLastWeek))")
-                        .font(.caption2)
+                        .font(.caption)
                 }
                 .foregroundColor(trendColor)
             }
@@ -523,7 +571,7 @@ struct FearGreedSentimentCard: View {
 
                     Text(index.level.rawValue)
                         .font(.caption2)
-                        .foregroundColor(Color(hex: index.level.color.replacingOccurrences(of: "#", with: "")))
+                        .foregroundColor(AppColors.textSecondary)
                 }
 
                 Spacer()
@@ -566,7 +614,7 @@ struct RiskLevelCard: View {
                     Text("2.29%")
                         .font(.caption)
                 }
-                .foregroundColor(Color(hex: "22C55E"))
+                .foregroundColor(AppColors.success)
             }
         }
         .padding(16)
@@ -605,6 +653,7 @@ struct AltcoinSeasonCard: View {
 
 // MARK: - Altcoin Season Progress Bar
 struct AltcoinSeasonBar: View {
+    @Environment(\.colorScheme) var colorScheme
     let value: Int
 
     private var progress: Double {
@@ -617,13 +666,16 @@ struct AltcoinSeasonBar: View {
                 ZStack(alignment: .leading) {
                     // Background
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(hex: "2A2A2A"))
+                        .fill(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.1)
+                                : Color.black.opacity(0.08)
+                        )
 
                     // Progress
                     HStack(spacing: 0) {
-                        // Bitcoin side (orange)
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(hex: "F7931A"))
+                            .fill(AppColors.accent)
                             .frame(width: geometry.size.width * progress)
 
                         Spacer(minLength: 0)
@@ -635,11 +687,11 @@ struct AltcoinSeasonBar: View {
             HStack {
                 Text("Bitcoin")
                     .font(.caption2)
-                    .foregroundColor(Color(hex: "F7931A"))
+                    .foregroundColor(AppColors.textSecondary)
                 Spacer()
                 Text("Altcoin")
                     .font(.caption2)
-                    .foregroundColor(Color(hex: "8B5CF6"))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
     }
@@ -674,7 +726,7 @@ struct MarketCapCard: View {
                         Text("\(abs(change), specifier: "%.2f")%")
                             .font(.caption)
                     }
-                    .foregroundColor(isPositive ? Color(hex: "22C55E") : Color(hex: "EF4444"))
+                    .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                 }
 
                 Spacer()
@@ -715,7 +767,7 @@ struct AppStoreRankCard: View {
                     Text("\(abs(ranking.change))")
                         .font(.caption)
                 }
-                .foregroundColor(ranking.isImproving ? Color(hex: "22C55E") : Color(hex: "EF4444"))
+                .foregroundColor(ranking.isImproving ? AppColors.success : AppColors.error)
             }
         }
         .padding(16)
@@ -750,7 +802,7 @@ struct BTCDominanceCard: View {
                     Text("\(abs(dominance.change24h), specifier: "%.2f")%")
                         .font(.caption)
                 }
-                .foregroundColor(isPositive ? Color(hex: "22C55E") : Color(hex: "EF4444"))
+                .foregroundColor(isPositive ? AppColors.success : AppColors.error)
             }
         }
         .padding(16)

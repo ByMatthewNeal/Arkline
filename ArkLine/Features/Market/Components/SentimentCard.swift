@@ -2,16 +2,21 @@ import SwiftUI
 
 struct SentimentCard: View {
     let data: SentimentCardData
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header
+            // Header - simplified monochrome icon
             HStack {
                 Image(systemName: data.icon)
                     .font(.system(size: 16))
-                    .foregroundColor(data.color)
+                    .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.6))
                     .frame(width: 32, height: 32)
-                    .background(data.color.opacity(0.15))
+                    .background(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.08)
+                            : Color.black.opacity(0.05)
+                    )
                     .cornerRadius(8)
 
                 Spacer()
@@ -24,27 +29,31 @@ struct SentimentCard: View {
                         Text("\(abs(change), specifier: "%.1f")")
                             .font(.caption2)
                     }
-                    .foregroundColor(change >= 0 ? Color(hex: "22C55E") : Color(hex: "EF4444"))
+                    .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                 }
             }
 
             // Title
             Text(data.title)
                 .font(.caption)
-                .foregroundColor(Color(hex: "A1A1AA"))
+                .foregroundColor(AppColors.textSecondary)
 
             // Value
             Text(data.value)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            // Subtitle
+            // Subtitle - simplified neutral badge
             Text(data.subtitle)
                 .font(.caption2)
-                .foregroundColor(data.color)
+                .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(data.color.opacity(0.15))
+                .background(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.08)
+                        : Color.black.opacity(0.05)
+                )
                 .cornerRadius(4)
         }
         .padding(16)
@@ -55,6 +64,7 @@ struct SentimentCard: View {
 
 // MARK: - Large Sentiment Card
 struct LargeSentimentCard: View {
+    @Environment(\.colorScheme) var colorScheme
     let data: SentimentCardData
     let detail: String?
 
@@ -69,12 +79,12 @@ struct LargeSentimentCard: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(data.title)
                         .font(.subheadline)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                        .foregroundColor(AppColors.textSecondary)
 
                     HStack(spacing: 12) {
                         Text(data.value)
                             .font(.system(size: 36, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         if let change = data.change {
                             HStack(spacing: 4) {
@@ -85,16 +95,20 @@ struct LargeSentimentCard: View {
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                             }
-                            .foregroundColor(change >= 0 ? Color(hex: "22C55E") : Color(hex: "EF4444"))
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                         }
                     }
 
                     Text(data.subtitle)
                         .font(.caption)
-                        .foregroundColor(data.color)
+                        .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(data.color.opacity(0.15))
+                        .background(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.08)
+                                : Color.black.opacity(0.05)
+                        )
                         .cornerRadius(6)
                 }
 
@@ -102,13 +116,13 @@ struct LargeSentimentCard: View {
 
                 Image(systemName: data.icon)
                     .font(.system(size: 40))
-                    .foregroundColor(data.color.opacity(0.5))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
             }
 
             if let detail = detail {
                 Text(detail)
                     .font(.caption)
-                    .foregroundColor(Color(hex: "A1A1AA"))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
         .padding(20)
@@ -118,6 +132,7 @@ struct LargeSentimentCard: View {
 
 // MARK: - Sentiment Indicator
 struct SentimentIndicator: View {
+    @Environment(\.colorScheme) var colorScheme
     let value: Int
     let maxValue: Int
     let color: Color
@@ -130,11 +145,15 @@ struct SentimentIndicator: View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(hex: "2A2A2A"))
+                    .fill(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.1)
+                            : Color.black.opacity(0.08)
+                    )
                     .frame(height: 8)
 
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(color)
+                    .fill(AppColors.accent)
                     .frame(width: geometry.size.width * progress, height: 8)
             }
         }
@@ -146,32 +165,43 @@ struct SentimentIndicator: View {
 struct SentimentScale: View {
     let value: Int
     let labels: [String]
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 8) {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
-                    // Background gradient
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "EF4444"),
-                            Color(hex: "F97316"),
-                            Color(hex: "EAB308"),
-                            Color(hex: "84CC16"),
-                            Color(hex: "22C55E")
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(height: 8)
-                    .cornerRadius(4)
+                    // Background - simplified monochrome
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.1)
+                                : Color.black.opacity(0.08)
+                        )
+                        .frame(height: 8)
+
+                    // Progress fill - blue accent
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(
+                            LinearGradient(
+                                colors: [AppColors.accent.opacity(0.5), AppColors.accent],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geometry.size.width * Double(value) / 100, height: 8)
 
                     // Marker
                     Circle()
-                        .fill(.white)
-                        .frame(width: 16, height: 16)
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                        .offset(x: (geometry.size.width - 16) * Double(value) / 100)
+                        .fill(AppColors.accent)
+                        .frame(width: 14, height: 14)
+                        .overlay(
+                            Circle()
+                                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                                .frame(width: 6, height: 6)
+                        )
+                        .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
+                        .offset(x: (geometry.size.width - 14) * Double(value) / 100)
                 }
             }
             .frame(height: 16)
@@ -181,7 +211,7 @@ struct SentimentScale: View {
                 ForEach(labels, id: \.self) { label in
                     Text(label)
                         .font(.caption2)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                        .foregroundColor(AppColors.textSecondary)
                         .frame(maxWidth: .infinity)
                 }
             }

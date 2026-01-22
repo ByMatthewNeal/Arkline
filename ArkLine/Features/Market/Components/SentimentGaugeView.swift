@@ -3,6 +3,7 @@ import Foundation
 
 // MARK: - Sentiment Gauge View (Half Circle)
 struct SentimentGaugeView: View {
+    @Environment(\.colorScheme) var colorScheme
     let value: Int
     let maxValue: Int
     let label: String
@@ -17,50 +18,25 @@ struct SentimentGaugeView: View {
         Double(value) / Double(maxValue)
     }
 
-    private var gaugeColor: Color {
-        switch value {
-        case 0...24: return Color(hex: "EF4444") // Extreme Fear - Red
-        case 25...44: return Color(hex: "F97316") // Fear - Orange
-        case 45...55: return Color(hex: "EAB308") // Neutral - Yellow
-        case 56...75: return Color(hex: "84CC16") // Greed - Light Green
-        default: return Color(hex: "22C55E") // Extreme Greed - Green
-        }
-    }
-
     var body: some View {
         VStack(spacing: 4) {
             ZStack {
-                // Background Arc
+                // Background Arc - simplified monochrome
                 SemiCircleArc()
                     .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "EF4444"),
-                                Color(hex: "F97316"),
-                                Color(hex: "EAB308"),
-                                Color(hex: "84CC16"),
-                                Color(hex: "22C55E")
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.15)
+                            : Color.black.opacity(0.1),
                         style: StrokeStyle(lineWidth: 8, lineCap: .round)
                     )
                     .frame(width: 80, height: 40)
-                    .opacity(0.3)
 
-                // Value Arc
+                // Value Arc - blue gradient
                 SemiCircleArc()
                     .trim(from: 0, to: normalizedValue)
                     .stroke(
                         LinearGradient(
-                            colors: [
-                                Color(hex: "EF4444"),
-                                Color(hex: "F97316"),
-                                Color(hex: "EAB308"),
-                                Color(hex: "84CC16"),
-                                Color(hex: "22C55E")
-                            ],
+                            colors: [AppColors.accent.opacity(0.5), AppColors.accent],
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
@@ -75,7 +51,7 @@ struct SentimentGaugeView: View {
                 // Value Text
                 Text("\(value)")
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
                     .offset(y: 10)
             }
             .frame(height: 50)
@@ -84,7 +60,7 @@ struct SentimentGaugeView: View {
             if !label.isEmpty {
                 Text(label)
                     .font(.caption2)
-                    .foregroundColor(gaugeColor)
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
     }
@@ -111,11 +87,16 @@ struct SemiCircleArc: Shape {
 
 // MARK: - Needle Indicator
 struct NeedleIndicator: View {
+    @Environment(\.colorScheme) var colorScheme
     let normalizedValue: Double
 
     private var angle: Double {
         // Convert normalized value (0-1) to angle (-90 to 90 degrees)
         -90 + (normalizedValue * 180)
+    }
+
+    private var needleColor: Color {
+        AppColors.textPrimary(colorScheme)
     }
 
     var body: some View {
@@ -137,11 +118,11 @@ struct NeedleIndicator: View {
                     path.move(to: center)
                     path.addLine(to: endPoint)
                 }
-                .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .stroke(needleColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
 
                 // Center dot
                 Circle()
-                    .fill(Color.white)
+                    .fill(needleColor)
                     .frame(width: 6, height: 6)
                     .position(center)
             }
@@ -151,6 +132,7 @@ struct NeedleIndicator: View {
 
 // MARK: - Compact Gauge for Cards
 struct CompactSentimentGauge: View {
+    @Environment(\.colorScheme) var colorScheme
     let value: Int
 
     private var normalizedValue: Double {
@@ -159,37 +141,22 @@ struct CompactSentimentGauge: View {
 
     var body: some View {
         ZStack {
-            // Background
+            // Background - simplified monochrome
             SemiCircleArc()
                 .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "EF4444"),
-                            Color(hex: "F97316"),
-                            Color(hex: "EAB308"),
-                            Color(hex: "84CC16"),
-                            Color(hex: "22C55E")
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.15)
+                        : Color.black.opacity(0.1),
                     style: StrokeStyle(lineWidth: 6, lineCap: .round)
                 )
                 .frame(width: 60, height: 30)
-                .opacity(0.3)
 
-            // Value
+            // Value - blue gradient
             SemiCircleArc()
                 .trim(from: 0, to: normalizedValue)
                 .stroke(
                     LinearGradient(
-                        colors: [
-                            Color(hex: "EF4444"),
-                            Color(hex: "F97316"),
-                            Color(hex: "EAB308"),
-                            Color(hex: "84CC16"),
-                            Color(hex: "22C55E")
-                        ],
+                        colors: [AppColors.accent.opacity(0.5), AppColors.accent],
                         startPoint: .leading,
                         endPoint: .trailing
                     ),

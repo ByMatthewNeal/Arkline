@@ -31,13 +31,16 @@ struct MarketOverviewView: View {
                             onSeeAll: { /* Navigate to full news list */ }
                         )
 
-                        // 2. Market Sentiment Section
+                        // 2. Fed Watch Section
+                        FedWatchSection(meetings: viewModel.fedWatchMeetings)
+
+                        // 3. Market Sentiment Section
                         MarketSentimentSection(
                             viewModel: sentimentViewModel,
                             lastUpdated: Date()
                         )
 
-                        // 3. Market Assets Section
+                        // 4. Market Assets Section
                         MarketAssetsSection(viewModel: viewModel)
 
                         Spacer(minLength: 100)
@@ -131,12 +134,17 @@ struct CompactFearGreedCard: View {
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
+                    // Simplified: neutral badge, no color
                     Text(index.level.rawValue)
                         .font(.caption)
-                        .foregroundColor(Color(hex: index.level.color))
+                        .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(hex: index.level.color).opacity(0.2))
+                        .background(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.08)
+                                : Color.black.opacity(0.05)
+                        )
                         .cornerRadius(8)
                 }
             }

@@ -6,6 +6,19 @@ struct DailyNewsSection: View {
     let news: [NewsItem]
     var onSeeAll: (() -> Void)? = nil
 
+    // Group news by source type for filter tabs
+    private var twitterNews: [NewsItem] {
+        news.filter { $0.sourceType == .twitter }
+    }
+
+    private var googleNews: [NewsItem] {
+        news.filter { $0.sourceType == .googleNews }
+    }
+
+    private var traditionalNews: [NewsItem] {
+        news.filter { $0.sourceType == .traditional }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -24,9 +37,17 @@ struct DailyNewsSection: View {
                             Image(systemName: "chevron.right")
                                 .font(.caption2)
                         }
-                        .foregroundColor(Color(hex: "6366F1"))
+                        .foregroundColor(AppColors.accent)
                     }
                 }
+            }
+            .padding(.horizontal, 20)
+
+            // Source Type Indicators
+            HStack(spacing: 12) {
+                NewsSourceBadge(sourceType: .twitter, count: twitterNews.count)
+                NewsSourceBadge(sourceType: .googleNews, count: googleNews.count)
+                NewsSourceBadge(sourceType: .traditional, count: traditionalNews.count)
             }
             .padding(.horizontal, 20)
 
@@ -43,68 +64,104 @@ struct DailyNewsSection: View {
     }
 }
 
-// MARK: - Daily News Card (Gradient Style)
+// MARK: - News Source Badge
+struct NewsSourceBadge: View {
+    let sourceType: NewsSourceType
+    let count: Int
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: sourceType.icon)
+                .font(.system(size: 10))
+            Text("\(count)")
+                .font(.caption2)
+                .fontWeight(.semibold)
+        }
+        .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            colorScheme == .dark
+                ? Color.white.opacity(0.08)
+                : Color.black.opacity(0.05)
+        )
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - Daily News Card (Simplified Dark Style)
 struct DailyNewsCard: View {
     let news: NewsItem
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Category Badge
-            Text(news.category.uppercased())
+            // Source Type Badge with Icon - monochrome
+            HStack(spacing: 6) {
+                Image(systemName: news.sourceType.icon)
+                    .font(.system(size: 10, weight: .medium))
+
+                if news.sourceType == .twitter, let handle = news.twitterHandle {
+                    Text("@\(handle)")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+
+                    if news.isVerified {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.accent)
+                    }
+                } else {
+                    Text(news.source)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+            }
+            .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                colorScheme == .dark
+                    ? Color.white.opacity(0.08)
+                    : Color.black.opacity(0.05)
+            )
+            .cornerRadius(4)
+            .padding(.bottom, 8)
+
+            // Time ago
+            Text(news.timeAgo)
                 .font(.caption2)
-                .fontWeight(.semibold)
-                .foregroundColor(.white.opacity(0.9))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(Color.white.opacity(0.2))
-                .cornerRadius(4)
-                .padding(.bottom, 12)
+                .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.5))
+                .padding(.bottom, 8)
 
             Spacer()
 
-            // Headlines
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(news.headlines.prefix(2), id: \.self) { headline in
-                    HStack(alignment: .top, spacing: 8) {
-                        Circle()
-                            .fill(Color.white.opacity(0.6))
-                            .frame(width: 4, height: 4)
-                            .padding(.top, 6)
-
-                        Text(headline)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.white)
-                            .lineLimit(2)
-                    }
-                }
-            }
+            // Title/Headline
+            Text(news.title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .lineLimit(3)
+                .multilineTextAlignment(.leading)
         }
         .padding(16)
         .frame(width: 280, height: 160)
         .background(
-            LinearGradient(
-                colors: gradientColors(for: news.category),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            colorScheme == .dark
+                ? Color(hex: "1A1A1A")
+                : Color.white
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.06)
+                        : Color.black.opacity(0.06),
+                    lineWidth: 1
+                )
         )
         .cornerRadius(16)
-    }
-
-    private func gradientColors(for category: String) -> [Color] {
-        switch category.lowercased() {
-        case "macro news":
-            return [Color(hex: "1A4D3E"), Color(hex: "0D2B23")]
-        case "market news":
-            return [Color(hex: "2A1A4D"), Color(hex: "1A0D2B")]
-        case "crypto news":
-            return [Color(hex: "4D3A1A"), Color(hex: "2B1A0D")]
-        case "tech news":
-            return [Color(hex: "1A2A4D"), Color(hex: "0D1A2B")]
-        default:
-            return [Color(hex: "1F3D4D"), Color(hex: "0D1F2B")]
-        }
     }
 }
 
@@ -128,35 +185,61 @@ extension NewsItem {
         // Split long title into bullet points or return as single item
         [title]
     }
+
+    var timeAgo: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: publishedAt, relativeTo: Date())
+    }
 }
 
 #Preview {
     VStack {
         DailyNewsSection(
             news: [
+                // Twitter source
                 NewsItem(
                     id: UUID(),
-                    title: "China confirms US tariff exclusions amid trade tensions",
-                    source: "Reuters",
-                    publishedAt: Date(),
+                    title: "BREAKING: 🚨 Whale Alert - 1,500 BTC ($145M) transferred from unknown wallet to Coinbase",
+                    source: "Whale Alert",
+                    publishedAt: Date().addingTimeInterval(-300), // 5 min ago
                     imageUrl: nil,
-                    url: ""
+                    url: "",
+                    sourceType: .twitter,
+                    twitterHandle: "whale_alert",
+                    isVerified: true
                 ),
+                // Google News source
                 NewsItem(
                     id: UUID(),
-                    title: "Bitcoin nears ATH with huge volume spike",
-                    source: "CoinDesk",
-                    publishedAt: Date(),
+                    title: "Bitcoin ETF inflows hit record $1.2B as institutional adoption accelerates",
+                    source: "Google News",
+                    publishedAt: Date().addingTimeInterval(-1800), // 30 min ago
                     imageUrl: nil,
-                    url: ""
+                    url: "",
+                    sourceType: .googleNews
                 ),
+                // Traditional source
                 NewsItem(
                     id: UUID(),
-                    title: "Federal Reserve signals potential rate changes",
+                    title: "Federal Reserve signals potential rate changes in upcoming meeting",
                     source: "Bloomberg",
-                    publishedAt: Date(),
+                    publishedAt: Date().addingTimeInterval(-3600), // 1 hr ago
                     imageUrl: nil,
-                    url: ""
+                    url: "",
+                    sourceType: .traditional
+                ),
+                // Another Twitter source
+                NewsItem(
+                    id: UUID(),
+                    title: "*CHINA CONFIRMS US TARIFF EXCLUSIONS - SOURCES",
+                    source: "DeItaone",
+                    publishedAt: Date().addingTimeInterval(-600), // 10 min ago
+                    imageUrl: nil,
+                    url: "",
+                    sourceType: .twitter,
+                    twitterHandle: "DeItaone",
+                    isVerified: true
                 )
             ]
         )
