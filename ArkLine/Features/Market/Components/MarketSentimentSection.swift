@@ -1099,25 +1099,40 @@ struct ITCRiskSparkline: View {
             let stepX = width / CGFloat(max(dataPoints.count - 1, 1))
 
             ZStack {
-                // Risk zone backgrounds
+                // Risk zone backgrounds (6-tier system)
                 VStack(spacing: 0) {
-                    // High risk zone (top)
+                    // Extreme risk zone (0.90-1.0 = 10%)
                     Rectangle()
-                        .fill(AppColors.error.opacity(0.05))
-                        .frame(height: height * 0.3)
+                        .fill(ITCRiskColors.extremeRisk.opacity(0.08))
+                        .frame(height: height * 0.10)
 
-                    // Medium risk zone
+                    // High risk zone (0.70-0.90 = 20%)
                     Rectangle()
-                        .fill(AppColors.warning.opacity(0.05))
-                        .frame(height: height * 0.4)
+                        .fill(ITCRiskColors.highRisk.opacity(0.08))
+                        .frame(height: height * 0.20)
 
-                    // Low risk zone (bottom)
+                    // Elevated risk zone (0.55-0.70 = 15%)
                     Rectangle()
-                        .fill(AppColors.success.opacity(0.05))
-                        .frame(height: height * 0.3)
+                        .fill(ITCRiskColors.elevatedRisk.opacity(0.08))
+                        .frame(height: height * 0.15)
+
+                    // Neutral zone (0.40-0.55 = 15%)
+                    Rectangle()
+                        .fill(ITCRiskColors.neutral.opacity(0.08))
+                        .frame(height: height * 0.15)
+
+                    // Low risk zone (0.20-0.40 = 20%)
+                    Rectangle()
+                        .fill(ITCRiskColors.lowRisk.opacity(0.08))
+                        .frame(height: height * 0.20)
+
+                    // Very low risk zone (0.00-0.20 = 20%)
+                    Rectangle()
+                        .fill(ITCRiskColors.veryLowRisk.opacity(0.08))
+                        .frame(height: height * 0.20)
                 }
 
-                // Risk line
+                // Risk line (6-tier gradient)
                 Path { path in
                     guard dataPoints.count > 1 else { return }
 
@@ -1134,7 +1149,14 @@ struct ITCRiskSparkline: View {
                 }
                 .stroke(
                     LinearGradient(
-                        colors: [AppColors.success, AppColors.warning, AppColors.error],
+                        colors: [
+                            ITCRiskColors.veryLowRisk,
+                            ITCRiskColors.lowRisk,
+                            ITCRiskColors.neutral,
+                            ITCRiskColors.elevatedRisk,
+                            ITCRiskColors.highRisk,
+                            ITCRiskColors.extremeRisk
+                        ],
                         startPoint: .bottom,
                         endPoint: .top
                     ),

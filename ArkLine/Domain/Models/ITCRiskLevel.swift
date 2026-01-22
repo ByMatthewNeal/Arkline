@@ -7,11 +7,22 @@ struct ITCRiskLevel: Codable, Identifiable {
 
     var id: String { date }
 
-    /// Risk category based on risk level value (0.0 - 1.0)
+    /// Risk category based on risk level value (0.0 - 1.0) using 6-tier ITC system
     var riskCategory: String {
-        if riskLevel < 0.3 { return "Low" }
-        else if riskLevel < 0.7 { return "Medium" }
-        else { return "High" }
+        switch riskLevel {
+        case 0..<0.20:
+            return "Very Low Risk"
+        case 0.20..<0.40:
+            return "Low Risk"
+        case 0.40..<0.55:
+            return "Neutral"
+        case 0.55..<0.70:
+            return "Elevated Risk"
+        case 0.70..<0.90:
+            return "High Risk"
+        default:
+            return "Extreme Risk"
+        }
     }
 
     /// Risk level as percentage (0-100)

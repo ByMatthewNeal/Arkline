@@ -423,6 +423,203 @@ struct SentimentIndicatorRow: View {
 }
 
 
+// MARK: - Home Derivatives Widget
+/// Compact Derivatives widget for the Home screen
+struct HomeDerivativesWidget: View {
+    let overview: DerivativesOverview?
+    var size: WidgetSize = .standard
+    let isLoading: Bool
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+            // Header
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                        .font(.system(size: size == .compact ? 12 : 14))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("Derivatives")
+                        .font(size == .compact ? .subheadline : .headline)
+                        .foregroundColor(textPrimary)
+                }
+
+                Spacer()
+
+                if let overview = overview {
+                    Text(overview.lastUpdated.formatted(.relative(presentation: .numeric)))
+                        .font(.caption2)
+                        .foregroundColor(textPrimary.opacity(0.4))
+                }
+            }
+
+            if isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: AppColors.accent))
+                    Spacer()
+                }
+                .frame(height: size == .compact ? 40 : 60)
+            } else if let overview = overview {
+                VStack(spacing: size == .compact ? 6 : 10) {
+                    if size == .compact {
+                        // Compact: Show only liquidations summary
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("24h Liquidations")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(textPrimary.opacity(0.6))
+                                Text(overview.totalLiquidations24h.formattedTotal)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(textPrimary)
+                            }
+
+                            Spacer()
+
+                            // Long/Short mini indicator
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(AppColors.success)
+                                    .frame(width: 8, height: 8)
+                                Text("\(Int(overview.totalLiquidations24h.longPercentage))%")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(AppColors.success)
+
+                                Circle()
+                                    .fill(AppColors.error)
+                                    .frame(width: 8, height: 8)
+                                Text("\(Int(overview.totalLiquidations24h.shortPercentage))%")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(AppColors.error)
+                            }
+                        }
+                    } else {
+                        // Standard/Expanded: Show more details
+                        HStack(spacing: 12) {
+                            // Liquidations
+                            DerivativesMiniCard(
+                                title: "Liquidations",
+                                value: overview.totalLiquidations24h.formattedTotal,
+                                icon: "flame",
+                                iconColor: AppColors.error
+                            )
+
+                            // Open Interest Change
+                            DerivativesMiniCard(
+                                title: "BTC OI",
+                                value: overview.btcOpenInterest.formattedOI,
+                                subtitle: "\(overview.btcOpenInterest.isPositiveChange ? "+" : "")\(String(format: "%.1f", overview.btcOpenInterest.openInterestChangePercent24h))%",
+                                subtitleColor: overview.btcOpenInterest.isPositiveChange ? AppColors.success : AppColors.error,
+                                icon: "chart.pie",
+                                iconColor: AppColors.accent
+                            )
+                        }
+
+                        if size == .expanded {
+                            HStack(spacing: 12) {
+                                // Funding Rate
+                                DerivativesMiniCard(
+                                    title: "BTC Funding",
+                                    value: overview.btcFundingRate.formattedRate,
+                                    subtitle: overview.btcFundingRate.sentiment.rawValue,
+                                    subtitleColor: Color(hex: overview.btcFundingRate.sentiment.color.replacingOccurrences(of: "#", with: "")),
+                                    icon: "percent",
+                                    iconColor: AppColors.warning
+                                )
+
+                                // Long/Short Ratio
+                                DerivativesMiniCard(
+                                    title: "BTC L/S",
+                                    value: overview.btcLongShortRatio.formattedRatio,
+                                    subtitle: overview.btcLongShortRatio.sentiment.rawValue,
+                                    subtitleColor: Color(hex: overview.btcLongShortRatio.sentiment.color.replacingOccurrences(of: "#", with: "")),
+                                    icon: "arrow.left.arrow.right",
+                                    iconColor: AppColors.accent
+                                )
+                            }
+                        }
+                    }
+                }
+                .padding(size == .compact ? 10 : 14)
+                .background(
+                    RoundedRectangle(cornerRadius: size == .compact ? 10 : 12)
+                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F8F8F8"))
+                )
+            } else {
+                // Empty state
+                HStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        Image(systemName: "chart.bar.xaxis")
+                            .font(.system(size: 20))
+                            .foregroundColor(textPrimary.opacity(0.3))
+                        Text("No data available")
+                            .font(.caption)
+                            .foregroundColor(textPrimary.opacity(0.4))
+                    }
+                    Spacer()
+                }
+                .frame(height: size == .compact ? 40 : 60)
+            }
+        }
+        .padding(size == .compact ? 12 : 16)
+        .background(
+            RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
+                .fill(cardBackground)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - Derivatives Mini Card
+struct DerivativesMiniCard: View {
+    let title: String
+    let value: String
+    var subtitle: String? = nil
+    var subtitleColor: Color = AppColors.textSecondary
+    let icon: String
+    let iconColor: Color
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(iconColor)
+                Text(title)
+                    .font(.system(size: 10))
+                    .foregroundColor(textPrimary.opacity(0.6))
+            }
+
+            Text(value)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(textPrimary)
+
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(subtitleColor)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 // MARK: - Previews
 #Preview {
     ScrollView {
@@ -435,6 +632,12 @@ struct SentimentIndicatorRow: View {
             HomeDailyNewsWidget(
                 news: [],
                 size: .standard
+            )
+
+            HomeDerivativesWidget(
+                overview: nil,
+                size: .standard,
+                isLoading: false
             )
         }
         .padding()

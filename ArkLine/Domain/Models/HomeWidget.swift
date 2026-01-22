@@ -40,6 +40,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case fedWatch = "fed_watch"
     case dailyNews = "daily_news"
     case marketSentiment = "market_sentiment"
+    case derivativesData = "derivatives_data"
 
     var id: String { rawValue }
 
@@ -54,6 +55,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .fedWatch: return "Fed Watch"
         case .dailyNews: return "Daily News"
         case .marketSentiment: return "Market Sentiment"
+        case .derivativesData: return "Derivatives"
         }
     }
 
@@ -68,6 +70,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .fedWatch: return "Fed interest rate probability from CME"
         case .dailyNews: return "Latest crypto and market news"
         case .marketSentiment: return "Retail & institutional sentiment indicators"
+        case .derivativesData: return "Open interest, liquidations, funding rates"
         }
     }
 
@@ -82,6 +85,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .fedWatch: return "building.columns"
         case .dailyNews: return "newspaper"
         case .marketSentiment: return "waveform.path.ecg"
+        case .derivativesData: return "chart.bar.doc.horizontal"
         }
     }
 
@@ -92,7 +96,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .fedWatch, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .fedWatch, .derivativesData, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
     }
 
     /// Widgets enabled by default
