@@ -4,6 +4,7 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var showPortfolioPicker = false
     @State private var showCustomizeSheet = false
+    @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
@@ -13,7 +14,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 // Gradient background with subtle blue glow
                 MeshGradientBackground()
@@ -76,6 +77,10 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showCustomizeSheet) {
                 CustomizeHomeView()
+            }
+            .onChange(of: appState.homeNavigationReset) { _, _ in
+                // Pop to root when home tab is tapped while already on home
+                navigationPath = NavigationPath()
             }
         }
     }
@@ -804,14 +809,6 @@ struct RiskScoreCard: View {
         AppColors.textPrimary(colorScheme)
     }
 
-    var riskColor: Color {
-        switch score {
-        case 0..<30: return AppColors.error
-        case 30..<70: return AppColors.warning
-        default: return AppColors.success
-        }
-    }
-
     var riskLabel: String {
         switch score {
         case 0..<30: return "High Risk"
@@ -838,31 +835,37 @@ struct RiskScoreCard: View {
 
     var body: some View {
         HStack(spacing: size == .compact ? 12 : 16) {
-            // Score circle
+            // Score circle - blue accent theme
             ZStack {
                 // Background ring
                 Circle()
-                    .stroke(Color.white.opacity(0.1), lineWidth: strokeWidth)
+                    .stroke(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.1)
+                            : Color.black.opacity(0.08),
+                        lineWidth: strokeWidth
+                    )
                     .frame(width: circleSize, height: circleSize)
 
-                // Progress ring
+                // Progress ring - blue gradient
                 Circle()
                     .trim(from: 0, to: CGFloat(score) / 100)
                     .stroke(
-                        AngularGradient(
-                            colors: [riskColor, riskColor.opacity(0.5)],
-                            center: .center
+                        LinearGradient(
+                            colors: [AppColors.accent.opacity(0.6), AppColors.accent],
+                            startPoint: .leading,
+                            endPoint: .trailing
                         ),
                         style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
                     )
                     .frame(width: circleSize, height: circleSize)
                     .rotationEffect(.degrees(-90))
 
-                // Glow
+                // Subtle glow
                 Circle()
-                    .fill(riskColor.opacity(0.3))
-                    .blur(radius: size == .compact ? 10 : 15)
-                    .frame(width: circleSize * 0.7, height: circleSize * 0.7)
+                    .fill(AppColors.accent.opacity(0.2))
+                    .blur(radius: size == .compact ? 8 : 12)
+                    .frame(width: circleSize * 0.6, height: circleSize * 0.6)
 
                 // Score text
                 Text("\(score)")
@@ -875,9 +878,10 @@ struct RiskScoreCard: View {
                     .font(size == .compact ? .subheadline : .headline)
                     .foregroundColor(textPrimary)
 
+                // Neutral badge for risk level
                 Text(riskLabel)
                     .font(size == .compact ? .caption : .subheadline)
-                    .foregroundColor(riskColor)
+                    .foregroundColor(AppColors.textSecondary)
 
                 if size != .compact {
                     Text("Based on 10 indicators")

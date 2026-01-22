@@ -69,6 +69,13 @@ class AppState: ObservableObject {
     @Published var darkModePreference: Constants.DarkModePreference = .automatic
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
 
+    // Navigation reset triggers - increment to pop to root
+    @Published var homeNavigationReset = UUID()
+    @Published var marketNavigationReset = UUID()
+    @Published var portfolioNavigationReset = UUID()
+    @Published var chatNavigationReset = UUID()
+    @Published var profileNavigationReset = UUID()
+
     var colorScheme: ColorScheme? {
         switch darkModePreference {
         case .light: return .light

@@ -32,6 +32,7 @@ enum AppTab: String, CaseIterable {
 // MARK: - Custom Tab Bar (Floating Design - Slim)
 struct CustomTabBar: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Binding var selectedTab: AppTab
     var badges: [AppTab: Int] = [:]
 
@@ -43,8 +44,13 @@ struct CustomTabBar: View {
                     isSelected: selectedTab == tab,
                     badge: badges[tab]
                 ) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = tab
+                    if selectedTab == tab {
+                        // Already on this tab - trigger pop to root
+                        triggerNavigationReset(for: tab)
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = tab
+                        }
                     }
                 }
             }
@@ -76,6 +82,21 @@ struct CustomTabBar: View {
         )
         .padding(.horizontal, 40)
         .padding(.bottom, 0)
+    }
+
+    private func triggerNavigationReset(for tab: AppTab) {
+        switch tab {
+        case .home:
+            appState.homeNavigationReset = UUID()
+        case .market:
+            appState.marketNavigationReset = UUID()
+        case .portfolio:
+            appState.portfolioNavigationReset = UUID()
+        case .chat:
+            appState.chatNavigationReset = UUID()
+        case .profile:
+            appState.profileNavigationReset = UUID()
+        }
     }
 }
 
