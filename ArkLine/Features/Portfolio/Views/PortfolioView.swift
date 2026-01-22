@@ -623,6 +623,7 @@ struct AddTransactionView: View {
     @State private var pricePerUnit = ""
     @State private var transactionDate = Date()
     @State private var notes = ""
+    @State private var selectedEmotionalState: EmotionalState?
     @State private var showingError = false
     @State private var errorMessage = ""
 
@@ -699,6 +700,22 @@ struct AddTransactionView: View {
                     }
                 }
 
+                // Emotional State
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("How are you feeling?")
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        Text("Track your emotional state when making this decision")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        EmotionalStatePicker(selectedState: $selectedEmotionalState)
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 // Notes
                 Section("Notes (Optional)") {
                     TextField("Add notes...", text: $notes, axis: .vertical)
@@ -745,11 +762,114 @@ struct AddTransactionView: View {
             quantity: Double(quantity) ?? 0,
             pricePerUnit: Double(pricePerUnit) ?? 0,
             transactionDate: transactionDate,
-            notes: notes.isEmpty ? nil : notes
+            notes: notes.isEmpty ? nil : notes,
+            emotionalState: selectedEmotionalState
         )
 
         Task { await viewModel.addTransaction(transaction) }
         dismiss()
+    }
+}
+
+// MARK: - Emotional State Picker
+struct EmotionalStatePicker: View {
+    @Binding var selectedState: EmotionalState?
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(EmotionalState.allCases, id: \.self) { state in
+                EmotionalStateChip(
+                    state: state,
+                    isSelected: selectedState == state,
+                    onTap: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if selectedState == state {
+                                selectedState = nil
+                            } else {
+                                selectedState = state
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Flow Layout for Wrapping Chips
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = layout(in: proposal.width ?? 0, subviews: subviews)
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = layout(in: bounds.width, subviews: subviews)
+        for (index, position) in result.positions.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
+        }
+    }
+
+    private func layout(in width: CGFloat, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
+        var positions: [CGPoint] = []
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        var maxWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if currentX + size.width > width && currentX > 0 {
+                currentX = 0
+                currentY += lineHeight + spacing
+                lineHeight = 0
+            }
+            positions.append(CGPoint(x: currentX, y: currentY))
+            lineHeight = max(lineHeight, size.height)
+            currentX += size.width + spacing
+            maxWidth = max(maxWidth, currentX - spacing)
+        }
+
+        return (CGSize(width: maxWidth, height: currentY + lineHeight), positions)
+    }
+}
+
+// MARK: - Emotional State Chip
+struct EmotionalStateChip: View {
+    let state: EmotionalState
+    let isSelected: Bool
+    let onTap: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var stateColor: Color {
+        Color(hex: state.color)
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 6) {
+                Image(systemName: state.icon)
+                    .font(.system(size: 12, weight: .medium))
+
+                Text(state.displayName)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+            }
+            .foregroundColor(isSelected ? .white : AppColors.textPrimary(colorScheme))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(isSelected ? stateColor : AppColors.cardBackground(colorScheme))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? Color.clear : AppColors.textSecondary.opacity(0.15), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

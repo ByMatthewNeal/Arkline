@@ -62,6 +62,34 @@ class SentimentViewModel {
         return total / appStoreRankings.count
     }
 
+    /// Composite app store sentiment (calculated from Coinbase, Binance, Kraken)
+    var appStoreCompositeSentiment: AppStoreCompositeSentiment {
+        // Filter to primary apps and iOS US rankings for the composite
+        let primaryRankings = appStoreRankings.filter { ranking in
+            ["Coinbase", "Binance", "Kraken"].contains(ranking.appName) &&
+            ranking.platform == .ios &&
+            (ranking.region == .us || (ranking.appName == "Binance" && ranking.region == .global))
+        }
+        return AppStoreRankingCalculator.calculateComposite(from: primaryRankings)
+    }
+
+    /// Get rankings filtered by platform and region
+    func filteredRankings(platform: AppPlatform? = nil, region: AppRegion? = nil, apps: [String]? = nil) -> [AppStoreRanking] {
+        appStoreRankings.filter { ranking in
+            let platformMatch = platform == nil || ranking.platform == platform
+            let regionMatch = region == nil || ranking.region == region
+            let appMatch = apps == nil || apps!.contains(ranking.appName)
+            return platformMatch && regionMatch && appMatch
+        }
+    }
+
+    /// Get the best ranking for a specific app across all platforms/regions
+    func bestRanking(for appName: String) -> AppStoreRanking? {
+        appStoreRankings
+            .filter { $0.appName == appName }
+            .min(by: { $0.ranking < $1.ranking })
+    }
+
     /// Is it Bitcoin season based on altcoin index?
     var isBitcoinSeason: Bool {
         altcoinSeason?.isBitcoinSeason ?? true

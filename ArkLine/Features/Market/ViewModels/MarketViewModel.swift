@@ -51,6 +51,10 @@ class MarketViewModel {
     // News
     var newsItems: [NewsItem] = []
 
+    // Fed Watch
+    var fedWatchData: FedWatchData?
+    var fedWatchMeetings: [FedWatchData] = []
+
     // MARK: - Computed Properties
     var filteredAssets: [CryptoAsset] {
         var assets = cryptoAssets
@@ -85,9 +89,12 @@ class MarketViewModel {
             async let stocksTask = marketService.fetchStockAssets(symbols: ["AAPL", "MSFT", "NVDA", "TSLA", "NOK", "PLUG"])
             async let metalsTask = marketService.fetchMetalAssets(symbols: ["XAU", "XAG", "XPT", "XPD"])
             async let globalTask = marketService.fetchGlobalMarketData()
-            async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 10)
+            // Fetch combined news feed with Twitter and Google News sources
+            async let newsTask = newsService.fetchCombinedNewsFeed(limit: 15, includeTwitter: true, includeGoogleNews: true)
+            async let fedWatchMeetingsTask = fetchFedWatchMeetingsSafe()
 
             let (crypto, stocks, metals, global, news) = try await (cryptoTask, stocksTask, metalsTask, globalTask, newsTask)
+            let meetings = await fedWatchMeetingsTask
 
             await MainActor.run {
                 self.cryptoAssets = crypto
@@ -99,6 +106,8 @@ class MarketViewModel {
                 self.btcDominance = global.data.marketCapPercentage["btc"] ?? 0
                 self.marketCapChange24h = global.data.marketCapChangePercentage24hUsd
                 self.newsItems = news
+                self.fedWatchMeetings = meetings ?? []
+                self.fedWatchData = meetings?.first
                 self.isLoading = false
             }
         } catch {
@@ -107,6 +116,10 @@ class MarketViewModel {
                 self.isLoading = false
             }
         }
+    }
+
+    private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
+        try? await newsService.fetchFedWatchMeetings()
     }
 
     func selectCategory(_ category: AssetCategoryFilter) {
@@ -172,4 +185,131 @@ struct NewsItem: Identifiable {
     let publishedAt: Date
     let imageUrl: String?
     let url: String
+    let sourceType: NewsSourceType
+    let twitterHandle: String? // For Twitter sources
+    let isVerified: Bool // Twitter verified badge
+
+    init(
+        id: UUID,
+        title: String,
+        source: String,
+        publishedAt: Date,
+        imageUrl: String? = nil,
+        url: String,
+        sourceType: NewsSourceType = .traditional,
+        twitterHandle: String? = nil,
+        isVerified: Bool = false
+    ) {
+        self.id = id
+        self.title = title
+        self.source = source
+        self.publishedAt = publishedAt
+        self.imageUrl = imageUrl
+        self.url = url
+        self.sourceType = sourceType
+        self.twitterHandle = twitterHandle
+        self.isVerified = isVerified
+    }
+}
+
+// MARK: - News Source Type
+enum NewsSourceType: String, CaseIterable {
+    case twitter = "Twitter"
+    case googleNews = "Google News"
+    case traditional = "News"
+
+    var icon: String {
+        switch self {
+        case .twitter: return "bird" // X logo approximation
+        case .googleNews: return "g.circle.fill"
+        case .traditional: return "newspaper"
+        }
+    }
+
+    var accentColor: String {
+        switch self {
+        case .twitter: return "#1DA1F2" // Twitter blue
+        case .googleNews: return "#4285F4" // Google blue
+        case .traditional: return "#6366F1"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .twitter: return "X"
+        case .googleNews: return "Google"
+        case .traditional: return "News"
+        }
+    }
+}
+
+// MARK: - Tracked Twitter Accounts
+/// Key crypto Twitter accounts to monitor for news
+enum TrackedTwitterAccount: String, CaseIterable {
+    // Breaking News & Alerts
+    case watcherguru = "WatcherGuru"
+    case zerohedge = "zerohedge"
+    case deltaone = "DeItaone"
+    case whale_alert = "whale_alert"
+
+    // Market & Macro Analysis
+    case kobeissiletter = "KobeissiLetter"
+    case brics = "BRICSinfo"
+    case mikealfred = "mikealfred"
+    case unusual_whales = "unusual_whales"
+    case wallstjesus = "WallStJesus"
+
+    // Crypto News & Analysis
+    case documentingbtc = "DocumentingBTC"
+    case bitcoinmagazine = "BitcoinMagazine"
+    case lookonchain = "lookonchain"
+    case theblock__ = "TheBlock__"
+
+    var displayName: String {
+        switch self {
+        case .watcherguru: return "Watcher.Guru"
+        case .zerohedge: return "ZeroHedge"
+        case .deltaone: return "DeItaone"
+        case .whale_alert: return "Whale Alert"
+        case .kobeissiletter: return "The Kobeissi Letter"
+        case .brics: return "BRICS News"
+        case .mikealfred: return "Mike Alfred"
+        case .unusual_whales: return "Unusual Whales"
+        case .wallstjesus: return "Wall St Jesus"
+        case .documentingbtc: return "Documenting BTC"
+        case .bitcoinmagazine: return "Bitcoin Magazine"
+        case .lookonchain: return "Lookonchain"
+        case .theblock__: return "The Block"
+        }
+    }
+
+    var isVerified: Bool {
+        // Most major accounts are verified
+        true
+    }
+
+    var category: TwitterAccountCategory {
+        switch self {
+        case .watcherguru, .zerohedge, .deltaone, .whale_alert:
+            return .breakingNews
+        case .kobeissiletter, .brics, .mikealfred, .unusual_whales, .wallstjesus:
+            return .macro
+        case .documentingbtc, .bitcoinmagazine, .lookonchain, .theblock__:
+            return .crypto
+        }
+    }
+}
+
+enum TwitterAccountCategory: String {
+    case breakingNews = "Breaking"
+    case macro = "Macro"
+    case crypto = "Crypto"
+
+    var color: String {
+        switch self {
+        case .breakingNews: return "#EF4444" // Red for breaking news
+        case .macro: return "#22C55E"        // Green for macro
+        case .crypto: return "#F7931A"       // Orange for crypto
+        }
+    }
 }

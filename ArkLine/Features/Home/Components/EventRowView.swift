@@ -133,7 +133,8 @@ struct CompactEventRow: View {
                 previous: nil,
                 actual: nil,
                 currency: "USD",
-                description: "Federal Open Market Committee meeting minutes release"
+                description: "Federal Open Market Committee meeting minutes release",
+                countryFlag: "🇺🇸"
             )
         )
 

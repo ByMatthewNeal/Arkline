@@ -3,12 +3,25 @@ import SwiftUI
 struct PasscodeEntryView: View {
     @Bindable var viewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var shake = false
 
     var body: some View {
         ZStack {
-            Color(hex: "0F0F0F")
+            // Background
+            AppColors.background(colorScheme)
                 .ignoresSafeArea()
+
+            // Subtle gradient overlay
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    AppColors.surface(colorScheme),
+                    AppColors.background(colorScheme)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Header
@@ -16,10 +29,14 @@ struct PasscodeEntryView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
                             .frame(width: 40, height: 40)
-                            .background(Color(hex: "1F1F1F"))
+                            .background(AppColors.surface(colorScheme))
                             .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(AppColors.divider(colorScheme), lineWidth: 1)
+                            )
                     }
 
                     Spacer()
@@ -30,39 +47,39 @@ struct PasscodeEntryView: View {
                         }) {
                             Image(systemName: viewModel.biometricType == .faceID ? "faceid" : "touchid")
                                 .font(.system(size: 20))
-                                .foregroundColor(Color(hex: "6366F1"))
+                                .foregroundColor(AppColors.fillPrimary)
                                 .frame(width: 40, height: 40)
-                                .background(Color(hex: "6366F1").opacity(0.1))
+                                .background(AppColors.fillPrimary.opacity(0.1))
                                 .clipShape(Circle())
                         }
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
+                .padding(.horizontal, ArkSpacing.xl)
+                .padding(.top, ArkSpacing.md)
 
-                VStack(spacing: 32) {
-                    VStack(spacing: 12) {
+                VStack(spacing: ArkSpacing.xl) {
+                    VStack(spacing: ArkSpacing.sm) {
                         Image(systemName: "lock.circle.fill")
                             .font(.system(size: 60))
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                    colors: [AppColors.fillPrimary, AppColors.accentLight],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
 
                         Text("Enter Passcode")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
+                            .font(AppFonts.title24)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         if viewModel.isLocked {
                             Text("Try again in \(viewModel.lockoutTimeRemaining)")
-                                .font(.subheadline)
-                                .foregroundColor(Color(hex: "EF4444"))
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(AppColors.error)
                         }
                     }
-                    .padding(.top, 40)
+                    .padding(.top, ArkSpacing.xxl)
 
                     // Passcode Dots
                     PasscodeDots(
@@ -73,8 +90,8 @@ struct PasscodeEntryView: View {
 
                     if let error = viewModel.errorMessage, !viewModel.isLocked {
                         Text(error)
-                            .font(.caption)
-                            .foregroundColor(Color(hex: "EF4444"))
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.error)
                             .transition(.opacity)
                     }
 
@@ -118,12 +135,13 @@ struct PasscodeDots: View {
     let code: String
     let length: Int
     let shake: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 16) {
             ForEach(0..<length, id: \.self) { index in
                 Circle()
-                    .fill(index < code.count ? Color(hex: "6366F1") : Color(hex: "2A2A2A"))
+                    .fill(index < code.count ? AppColors.fillPrimary : AppColors.divider(colorScheme))
                     .frame(width: 16, height: 16)
                     .scaleEffect(index < code.count ? 1.1 : 1.0)
                     .animation(.spring(response: 0.2), value: code.count)
@@ -193,22 +211,27 @@ struct KeypadButton: View {
     var title: String? = nil
     var icon: String? = nil
     let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: "1F1F1F"))
+                    .fill(AppColors.surface(colorScheme))
                     .frame(width: 72, height: 72)
+                    .overlay(
+                        Circle()
+                            .stroke(AppColors.divider(colorScheme), lineWidth: 1)
+                    )
 
                 if let title = title {
                     Text(title)
                         .font(.system(size: 28, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
                 } else if let icon = icon {
                     Image(systemName: icon)
                         .font(.system(size: 20))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
                 }
             }
         }
@@ -228,4 +251,9 @@ struct KeypadButtonStyle: ButtonStyle {
 
 #Preview {
     PasscodeEntryView(viewModel: AuthViewModel())
+}
+
+#Preview("Light Mode") {
+    PasscodeEntryView(viewModel: AuthViewModel())
+        .preferredColorScheme(.light)
 }

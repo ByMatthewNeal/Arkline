@@ -7,6 +7,7 @@ struct ProfileView: View {
     @State private var showReferral = false
     @State private var showPortfolio = false
     @State private var showAlerts = false
+    @State private var showEditProfile = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -23,7 +24,7 @@ struct ProfileView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                     // Profile Header
-                    ProfileHeader(viewModel: viewModel)
+                    ProfileHeader(viewModel: viewModel, onEditTap: { showEditProfile = true })
 
                     // Quick Actions
                     ProfileQuickActions(
@@ -67,6 +68,18 @@ struct ProfileView: View {
             .sheet(isPresented: $showAlerts) {
                 AlertsSheetView()
             }
+            .sheet(isPresented: $showEditProfile) {
+                EditProfileView(user: viewModel.user) { updatedUser in
+                    viewModel.user = updatedUser
+                    appState.setAuthenticated(true, user: updatedUser)
+                }
+            }
+            .onAppear {
+                // Use the actual user from AppState if available
+                if let currentUser = appState.currentUser {
+                    viewModel.user = currentUser
+                }
+            }
         }
     }
 }
@@ -75,40 +88,60 @@ struct ProfileView: View {
 struct ProfileHeader: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: ProfileViewModel
+    var onEditTap: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 16) {
-            // Avatar
-            ZStack {
-                Circle()
-                    .fill(AppColors.accent.opacity(0.2))
-                    .frame(width: 100, height: 100)
+            // Avatar with edit button
+            ZStack(alignment: .bottomTrailing) {
+                ZStack {
+                    Circle()
+                        .fill(AppColors.accent.opacity(0.2))
+                        .frame(width: 100, height: 100)
 
-                if let avatarUrl = viewModel.user?.avatarUrl,
-                   let url = URL(string: avatarUrl) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } placeholder: {
+                    if let avatarUrl = viewModel.user?.avatarUrl,
+                       let url = URL(string: avatarUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Text(viewModel.initials)
+                                .font(AppFonts.title30)
+                                .foregroundColor(AppColors.accent)
+                        }
+                        .frame(width: 96, height: 96)
+                        .clipShape(Circle())
+                    } else {
                         Text(viewModel.initials)
                             .font(AppFonts.title30)
                             .foregroundColor(AppColors.accent)
                     }
-                    .frame(width: 96, height: 96)
-                    .clipShape(Circle())
-                } else {
-                    Text(viewModel.initials)
-                        .font(AppFonts.title30)
-                        .foregroundColor(AppColors.accent)
                 }
+
+                // Edit button
+                Button(action: onEditTap) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(AppColors.accent)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(AppColors.background(colorScheme), lineWidth: 2)
+                        )
+                }
+                .offset(x: 4, y: 4)
             }
 
             // Name & Username
             VStack(spacing: 4) {
-                Text(viewModel.displayName)
-                    .font(AppFonts.title24)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                HStack(spacing: 8) {
+                    Text(viewModel.displayName)
+                        .font(AppFonts.title24)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                }
 
                 if let username = viewModel.user?.username {
                     Text("@\(username)")
@@ -545,6 +578,148 @@ struct AlertsSheetView: View {
                 }
             }
             #endif
+        }
+    }
+}
+
+// MARK: - Edit Profile View
+struct EditProfileView: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    let user: User?
+    let onSave: (User) -> Void
+
+    @State private var fullName: String = ""
+    @State private var username: String = ""
+    @State private var email: String = ""
+
+    init(user: User?, onSave: @escaping (User) -> Void) {
+        self.user = user
+        self.onSave = onSave
+        _fullName = State(initialValue: user?.fullName ?? "")
+        _username = State(initialValue: user?.username ?? "")
+        _email = State(initialValue: user?.email ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(AppColors.accent.opacity(0.2))
+                        .frame(width: 100, height: 100)
+
+                    Text(initials)
+                        .font(AppFonts.title30)
+                        .foregroundColor(AppColors.accent)
+                }
+                .padding(.top, 20)
+
+                // Form fields
+                VStack(spacing: 16) {
+                    EditProfileField(
+                        label: "Full Name",
+                        text: $fullName,
+                        placeholder: "Enter your name"
+                    )
+
+                    EditProfileField(
+                        label: "Username",
+                        text: $username,
+                        placeholder: "Enter username"
+                    )
+
+                    EditProfileField(
+                        label: "Email",
+                        text: $email,
+                        placeholder: "Enter email",
+                        keyboardType: .emailAddress
+                    )
+                    .disabled(true)
+                    .opacity(0.6)
+                }
+                .padding(.horizontal, 20)
+
+                Spacer()
+
+                // Save button
+                Button(action: saveProfile) {
+                    Text("Save Changes")
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(AppColors.accent)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                .disabled(fullName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .opacity(fullName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Edit Profile")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            #endif
+        }
+    }
+
+    private var initials: String {
+        let name = fullName.isEmpty ? (user?.username ?? "U") : fullName
+        let components = name.components(separatedBy: " ")
+        if components.count >= 2 {
+            return String(components[0].prefix(1) + components[1].prefix(1)).uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+
+    private func saveProfile() {
+        guard var updatedUser = user else { return }
+        updatedUser.fullName = fullName.trimmingCharacters(in: .whitespaces)
+        updatedUser.username = username.trimmingCharacters(in: .whitespaces)
+        onSave(updatedUser)
+        dismiss()
+    }
+}
+
+// MARK: - Edit Profile Field
+struct EditProfileField: View {
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var keyboardType: UIKeyboardType = .default
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+
+            TextField(placeholder, text: $text)
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "F5F5F7"))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(AppColors.divider(colorScheme), lineWidth: 1)
+                )
+                #if os(iOS)
+                .keyboardType(keyboardType)
+                .autocapitalization(keyboardType == .emailAddress ? .none : .words)
+                #endif
         }
     }
 }

@@ -54,7 +54,8 @@ struct EconomicCalendarView: View {
                 previous: nil,
                 actual: nil,
                 currency: "USD",
-                description: "Federal Open Market Committee meeting minutes release"
+                description: "Federal Open Market Committee meeting minutes release",
+                countryFlag: "🇺🇸"
             ),
             EconomicEvent(
                 id: UUID(),
@@ -67,7 +68,8 @@ struct EconomicCalendarView: View {
                 previous: "215K",
                 actual: nil,
                 currency: "USD",
-                description: "Weekly unemployment claims"
+                description: "Weekly unemployment claims",
+                countryFlag: "🇺🇸"
             )
         ]
     )

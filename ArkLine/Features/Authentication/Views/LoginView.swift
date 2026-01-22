@@ -3,42 +3,78 @@ import SwiftUI
 struct LoginView: View {
     @Bindable var viewModel: AuthViewModel
     @State private var showPasscodeEntry = false
+    @State private var isAnimating = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
-            Color(hex: "0F0F0F")
+            // Background
+            AppColors.background(colorScheme)
                 .ignoresSafeArea()
+
+            // Subtle gradient overlay
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    AppColors.surface(colorScheme),
+                    AppColors.background(colorScheme)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()
 
                 // Logo and Welcome
-                VStack(spacing: 24) {
-                    Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                VStack(spacing: ArkSpacing.xl) {
+                    // Logo with glow
+                    ZStack {
+                        // Glow effect
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [
+                                        AppColors.fillPrimary.opacity(0.3),
+                                        Color.clear
+                                    ]),
+                                    center: .center,
+                                    startRadius: 20,
+                                    endRadius: 100
+                                )
                             )
-                        )
+                            .frame(width: 180, height: 180)
+                            .scaleEffect(isAnimating ? 1.1 : 1.0)
+                            .opacity(isAnimating ? 1 : 0.6)
 
-                    VStack(spacing: 8) {
+                        Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [AppColors.fillPrimary, AppColors.accentLight],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+
+                    VStack(spacing: ArkSpacing.xs) {
                         Text("Welcome back")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.white)
+                            .font(AppFonts.title32)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         Text("Sign in to continue")
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: "A1A1AA"))
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
 
                 Spacer()
 
                 // Authentication Options
-                VStack(spacing: 16) {
+                VStack(spacing: ArkSpacing.md) {
                     if viewModel.canUseBiometrics && viewModel.showFaceID {
                         FaceIDButton(viewModel: viewModel)
                     }
@@ -47,8 +83,8 @@ struct LoginView: View {
                         showPasscodeEntry = true
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 48)
+                .padding(.horizontal, ArkSpacing.xl)
+                .padding(.bottom, ArkSpacing.xxl)
             }
         }
         #if os(iOS)
@@ -61,6 +97,14 @@ struct LoginView: View {
         }
         #endif
         .onAppear {
+            // Start glow animation
+            withAnimation(
+                Animation.easeInOut(duration: 1.5)
+                    .repeatForever(autoreverses: true)
+            ) {
+                isAnimating = true
+            }
+
             // Auto-trigger Face ID if available and enabled
             if viewModel.canUseBiometrics && viewModel.showFaceID {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -84,19 +128,19 @@ struct FaceIDButton: View {
                     .font(.system(size: 24))
 
                 Text("Sign in with \(viewModel.biometricName)")
-                    .font(.headline)
+                    .font(AppFonts.title16)
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background(
                 LinearGradient(
-                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                    colors: [AppColors.fillPrimary, AppColors.accentLight],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
             )
-            .cornerRadius(14)
+            .cornerRadius(ArkSpacing.Radius.lg)
         }
         .disabled(viewModel.authState == .authenticating)
         .opacity(viewModel.authState == .authenticating ? 0.6 : 1)
@@ -106,6 +150,7 @@ struct FaceIDButton: View {
 // MARK: - Passcode Button
 struct PasscodeButton: View {
     let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button(action: action) {
@@ -114,16 +159,16 @@ struct PasscodeButton: View {
                     .font(.system(size: 20))
 
                 Text("Use Passcode")
-                    .font(.headline)
+                    .font(AppFonts.title16)
             }
-            .foregroundColor(.white)
+            .foregroundColor(AppColors.textPrimary(colorScheme))
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color(hex: "1F1F1F"))
-            .cornerRadius(14)
+            .background(AppColors.surface(colorScheme))
+            .cornerRadius(ArkSpacing.Radius.lg)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color(hex: "2A2A2A"), lineWidth: 1)
+                RoundedRectangle(cornerRadius: ArkSpacing.Radius.lg)
+                    .stroke(AppColors.divider(colorScheme), lineWidth: 1)
             )
         }
     }
@@ -131,4 +176,9 @@ struct PasscodeButton: View {
 
 #Preview {
     LoginView(viewModel: AuthViewModel())
+}
+
+#Preview("Light Mode") {
+    LoginView(viewModel: AuthViewModel())
+        .preferredColorScheme(.light)
 }
