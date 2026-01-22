@@ -2478,7 +2478,10 @@ struct AllEventsView: View {
                             // Events for this date
                             VStack(spacing: 0) {
                                 ForEach(group.events) { event in
-                                    EventDetailRow(event: event)
+                                    NavigationLink(destination: EventInfoView(event: event)) {
+                                        EventDetailRow(event: event)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
 
                                     if event.id != group.events.last?.id {
                                         Divider()
@@ -2571,6 +2574,233 @@ struct EventDetailRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+}
+
+// MARK: - Event Info View (Detail)
+struct EventInfoView: View {
+    let event: EconomicEvent
+    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var timeString: String {
+        guard let time = event.time else { return "TBD" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: time)
+    }
+
+    private var dateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d, yyyy"
+        return formatter.string(from: event.date)
+    }
+
+    var body: some View {
+        ZStack {
+            MeshGradientBackground()
+
+            if isDarkMode {
+                BrushEffectOverlay()
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header Card
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Country and Impact
+                        HStack {
+                            Text(event.countryFlag ?? "🌐")
+                                .font(.system(size: 32))
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(event.country ?? "Global")
+                                    .font(.headline)
+                                    .foregroundColor(textPrimary)
+
+                                HStack(spacing: 8) {
+                                    // Impact badge
+                                    HStack(spacing: 4) {
+                                        if event.impact == .high {
+                                            Image(systemName: "bolt.fill")
+                                                .font(.system(size: 10))
+                                        }
+                                        Text(event.impact.rawValue.capitalized)
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundColor(event.impact == .high ? AppColors.accent : AppColors.textSecondary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        (event.impact == .high ? AppColors.accent : AppColors.textSecondary).opacity(0.15)
+                                    )
+                                    .cornerRadius(6)
+
+                                    Text("Impact")
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+
+                            Spacer()
+                        }
+
+                        // Event Title
+                        Text(event.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(textPrimary)
+
+                        // Date & Time
+                        HStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Date")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text(dateString)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(textPrimary)
+                            }
+
+                            Spacer()
+
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("Time")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text(timeString)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(textPrimary)
+                            }
+                        }
+                    }
+                    .padding(20)
+                    .background(cardBackground)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .padding(.horizontal, 20)
+
+                    // Data Card (Forecast, Previous, Actual)
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Economic Data")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        HStack(spacing: 0) {
+                            EventDataColumn(
+                                label: "Previous",
+                                value: event.previous,
+                                highlight: false
+                            )
+
+                            Divider()
+                                .frame(height: 50)
+
+                            EventDataColumn(
+                                label: "Forecast",
+                                value: event.forecast,
+                                highlight: true
+                            )
+
+                            Divider()
+                                .frame(height: 50)
+
+                            EventDataColumn(
+                                label: "Actual",
+                                value: event.actual,
+                                highlight: false
+                            )
+                        }
+                    }
+                    .padding(20)
+                    .background(cardBackground)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .padding(.horizontal, 20)
+
+                    // Description Card
+                    if let description = event.description, !description.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("About This Event")
+                                .font(.headline)
+                                .foregroundColor(textPrimary)
+
+                            Text(description)
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.textSecondary)
+                                .lineSpacing(4)
+                        }
+                        .padding(20)
+                        .background(cardBackground)
+                        .cornerRadius(16)
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                        .padding(.horizontal, 20)
+                    }
+
+                    // Why It Matters Card
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Why It Matters")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        Text(whyItMatters)
+                            .font(.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineSpacing(4)
+                    }
+                    .padding(20)
+                    .background(cardBackground)
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .padding(.horizontal, 20)
+
+                    Spacer(minLength: 100)
+                }
+                .padding(.top, 16)
+            }
+        }
+        .navigationTitle("Event Details")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+
+    private var whyItMatters: String {
+        let title = event.title.lowercased()
+
+        if title.contains("cpi") || title.contains("inflation") {
+            return "Consumer Price Index (CPI) measures inflation by tracking changes in prices paid by consumers. Higher than expected readings can signal rising inflation, potentially leading to interest rate hikes and impacting risk assets like crypto negatively in the short term."
+        } else if title.contains("gdp") {
+            return "Gross Domestic Product (GDP) measures the total value of goods and services produced. Strong GDP growth typically signals a healthy economy, which can be positive for risk assets. However, very strong growth may lead to inflation concerns."
+        } else if title.contains("unemployment") || title.contains("employment") || title.contains("payroll") || title.contains("nfp") {
+            return "Employment data is a key indicator of economic health. Strong job numbers suggest economic growth but may also signal potential inflation, which could lead to tighter monetary policy. Weak numbers may indicate economic slowdown."
+        } else if title.contains("interest rate") || title.contains("policy rate") || title.contains("fed") || title.contains("fomc") {
+            return "Central bank interest rate decisions directly impact liquidity and borrowing costs across the economy. Rate hikes typically strengthen the local currency and can pressure risk assets, while rate cuts often boost risk appetite."
+        } else if title.contains("pce") {
+            return "Personal Consumption Expenditures (PCE) is the Federal Reserve's preferred inflation measure. It influences monetary policy decisions and can significantly impact market expectations for interest rates."
+        } else if title.contains("trade balance") {
+            return "Trade balance measures the difference between a country's exports and imports. A surplus can strengthen the currency, while a deficit may weaken it. Large imbalances can affect currency valuations and international capital flows."
+        } else if title.contains("pmi") || title.contains("manufacturing") {
+            return "Purchasing Managers' Index (PMI) is a leading indicator of economic health. Readings above 50 indicate expansion, while below 50 signals contraction. It often moves markets as it provides early insight into economic trends."
+        } else {
+            return "Economic events can significantly impact financial markets by influencing investor sentiment, currency valuations, and monetary policy expectations. High-impact events often lead to increased volatility."
+        }
     }
 }
 
