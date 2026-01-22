@@ -26,6 +26,7 @@ final class ServiceContainer {
     private lazy var _mockDCAService = MockDCAService()
     private lazy var _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
     private lazy var _mockCoinglassService = MockCoinglassService()
+    private lazy var _mockITCRiskService = MockITCRiskService()
 
     // MARK: - Lazy Services - API
     private lazy var _apiMarketService = APIMarketService()
@@ -35,6 +36,7 @@ final class ServiceContainer {
     private lazy var _apiDCAService = APIDCAService()
     private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
     private lazy var _apiCoinglassService = APICoinglassService()
+    private lazy var _apiITCRiskService = APIITCRiskService()
 
     // MARK: - Service Accessors
     var marketService: MarketServiceProtocol {
@@ -65,6 +67,10 @@ final class ServiceContainer {
         useRealCoinglass ? _apiCoinglassService : _mockCoinglassService
     }
 
+    var itcRiskService: ITCRiskServiceProtocol {
+        useMockData ? _mockITCRiskService : _apiITCRiskService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -84,5 +90,7 @@ final class ServiceContainer {
         _apiDCAService = APIDCAService()
         _apiTechnicalAnalysisService = APITechnicalAnalysisService()
         _apiCoinglassService = APICoinglassService()
+        _mockITCRiskService = MockITCRiskService()
+        _apiITCRiskService = APIITCRiskService()
     }
 }

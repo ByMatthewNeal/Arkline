@@ -26,6 +26,7 @@ enum Constants {
         static let metalsAPIBase = "https://metals-api.com/api"
         static let claudeBase = "https://api.anthropic.com/v1"
         static let taapiBase = "https://api.taapi.io"
+        static let arklineBackendBase = "https://web.arkline.io/api/v1"
     }
 
     // MARK: - App Configuration

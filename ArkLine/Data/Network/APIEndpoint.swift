@@ -481,3 +481,26 @@ struct TaapiRSIResponse: Codable {
 struct TaapiPriceResponse: Codable {
     let value: Double
 }
+
+// MARK: - ArkLine Backend Endpoints
+enum ArklineBackendEndpoint: APIEndpoint {
+    case itcRiskLevel(coin: String)
+
+    var baseURL: String { Constants.Endpoints.arklineBackendBase }
+
+    var path: String {
+        switch self {
+        case .itcRiskLevel:
+            return "/widgets/btc_risk_level"
+        }
+    }
+
+    var method: HTTPMethod { .get }
+
+    var queryParameters: [String: String]? {
+        switch self {
+        case .itcRiskLevel(let coin):
+            return ["coin": coin]
+        }
+    }
+}
