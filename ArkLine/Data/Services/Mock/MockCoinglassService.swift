@@ -26,14 +26,14 @@ final class MockCoinglassService: CoinglassServiceProtocol {
 
     // MARK: - Liquidations
 
-    func fetchLiquidations(symbol: String) async throws -> LiquidationData {
+    func fetchLiquidations(symbol: String) async throws -> CoinglassLiquidationData {
         try await simulateNetworkDelay()
         return generateMockLiquidations(symbol: symbol)
     }
 
-    func fetchTotalLiquidations() async throws -> LiquidationData {
+    func fetchTotalLiquidations() async throws -> CoinglassLiquidationData {
         try await simulateNetworkDelay()
-        return LiquidationData(
+        return CoinglassLiquidationData(
             id: UUID(),
             symbol: "ALL",
             longLiquidations24h: 145_000_000,
@@ -59,12 +59,12 @@ final class MockCoinglassService: CoinglassServiceProtocol {
 
     // MARK: - Funding Rates
 
-    func fetchFundingRate(symbol: String) async throws -> FundingRateData {
+    func fetchFundingRate(symbol: String) async throws -> CoinglassFundingRateData {
         try await simulateNetworkDelay()
         return generateMockFundingRate(symbol: symbol)
     }
 
-    func fetchFundingRatesMultiple(symbols: [String]) async throws -> [FundingRateData] {
+    func fetchFundingRatesMultiple(symbols: [String]) async throws -> [CoinglassFundingRateData] {
         try await simulateNetworkDelay()
         return symbols.map { generateMockFundingRate(symbol: $0) }
     }
@@ -107,7 +107,7 @@ final class MockCoinglassService: CoinglassServiceProtocol {
             btcOpenInterest: generateMockOpenInterest(symbol: "BTC"),
             ethOpenInterest: generateMockOpenInterest(symbol: "ETH"),
             totalMarketOI: 98_500_000_000,
-            totalLiquidations24h: LiquidationData(
+            totalLiquidations24h: CoinglassLiquidationData(
                 id: UUID(),
                 symbol: "ALL",
                 longLiquidations24h: 145_000_000,
@@ -176,7 +176,7 @@ final class MockCoinglassService: CoinglassServiceProtocol {
         )
     }
 
-    private func generateMockLiquidations(symbol: String) -> LiquidationData {
+    private func generateMockLiquidations(symbol: String) -> CoinglassLiquidationData {
         let totalLiqs: Double
         let longPct: Double
 
@@ -198,7 +198,7 @@ final class MockCoinglassService: CoinglassServiceProtocol {
         let longLiqs = totalLiqs * longPct
         let shortLiqs = totalLiqs * (1 - longPct)
 
-        return LiquidationData(
+        return CoinglassLiquidationData(
             id: UUID(),
             symbol: symbol.uppercased(),
             longLiquidations24h: longLiqs,
@@ -244,7 +244,7 @@ final class MockCoinglassService: CoinglassServiceProtocol {
         }
     }
 
-    private func generateMockFundingRate(symbol: String) -> FundingRateData {
+    private func generateMockFundingRate(symbol: String) -> CoinglassFundingRateData {
         let rate: Double
         let annualized: Double
 
@@ -268,7 +268,7 @@ final class MockCoinglassService: CoinglassServiceProtocol {
 
         let nextFunding = Calendar.current.date(byAdding: .hour, value: Int.random(in: 1...8), to: Date())
 
-        return FundingRateData(
+        return CoinglassFundingRateData(
             id: UUID(),
             symbol: symbol.uppercased(),
             fundingRate: rate,
@@ -277,11 +277,11 @@ final class MockCoinglassService: CoinglassServiceProtocol {
             annualizedRate: annualized,
             timestamp: Date(),
             exchangeRates: [
-                ExchangeFundingRate(exchange: "Binance", fundingRate: rate * 0.98, nextFundingTime: nextFunding),
-                ExchangeFundingRate(exchange: "Bybit", fundingRate: rate * 1.02, nextFundingTime: nextFunding),
-                ExchangeFundingRate(exchange: "OKX", fundingRate: rate * 0.95, nextFundingTime: nextFunding),
-                ExchangeFundingRate(exchange: "Bitget", fundingRate: rate * 1.05, nextFundingTime: nextFunding),
-                ExchangeFundingRate(exchange: "dYdX", fundingRate: rate * 0.92, nextFundingTime: nextFunding)
+                CoinglassExchangeFundingRate(exchange: "Binance", fundingRate: rate * 0.98, nextFundingTime: nextFunding),
+                CoinglassExchangeFundingRate(exchange: "Bybit", fundingRate: rate * 1.02, nextFundingTime: nextFunding),
+                CoinglassExchangeFundingRate(exchange: "OKX", fundingRate: rate * 0.95, nextFundingTime: nextFunding),
+                CoinglassExchangeFundingRate(exchange: "Bitget", fundingRate: rate * 1.05, nextFundingTime: nextFunding),
+                CoinglassExchangeFundingRate(exchange: "dYdX", fundingRate: rate * 0.92, nextFundingTime: nextFunding)
             ]
         )
     }

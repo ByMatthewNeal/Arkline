@@ -45,8 +45,8 @@ struct ExchangeOI: Codable, Identifiable {
     let percentage: Double
 }
 
-// MARK: - Liquidation Data
-struct LiquidationData: Codable, Identifiable {
+// MARK: - Coinglass Liquidation Data
+struct CoinglassLiquidationData: Codable, Identifiable {
     let id: UUID
     let symbol: String
     let longLiquidations24h: Double   // Long liquidations in USD
@@ -129,7 +129,7 @@ enum LiquidationSide: String, Codable {
 }
 
 // MARK: - Funding Rate Data
-struct FundingRateData: Codable, Identifiable {
+struct CoinglassFundingRateData: Codable, Identifiable {
     let id: UUID
     let symbol: String
     let fundingRate: Double           // Current funding rate (e.g., 0.01 = 0.01%)
@@ -139,7 +139,7 @@ struct FundingRateData: Codable, Identifiable {
     let timestamp: Date
 
     // Exchange breakdown
-    let exchangeRates: [ExchangeFundingRate]?
+    let exchangeRates: [CoinglassExchangeFundingRate]?
 
     var formattedRate: String {
         String(format: "%.4f%%", fundingRate * 100)
@@ -164,7 +164,7 @@ struct FundingRateData: Codable, Identifiable {
     }
 }
 
-struct ExchangeFundingRate: Codable, Identifiable {
+struct CoinglassExchangeFundingRate: Codable, Identifiable {
     var id: String { exchange }
     let exchange: String
     let fundingRate: Double
@@ -295,9 +295,9 @@ struct DerivativesOverview: Codable {
     let btcOpenInterest: OpenInterestData
     let ethOpenInterest: OpenInterestData
     let totalMarketOI: Double
-    let totalLiquidations24h: LiquidationData
-    let btcFundingRate: FundingRateData
-    let ethFundingRate: FundingRateData
+    let totalLiquidations24h: CoinglassLiquidationData
+    let btcFundingRate: CoinglassFundingRateData
+    let ethFundingRate: CoinglassFundingRateData
     let btcLongShortRatio: LongShortRatioData
     let ethLongShortRatio: LongShortRatioData
     let lastUpdated: Date

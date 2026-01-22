@@ -14,6 +14,10 @@ final class ServiceContainer {
     /// Use real Taapi.io API for technical analysis (separate from general mock data)
     var useRealTechnicalAnalysis: Bool = true
 
+    /// Use real Coinglass API for derivatives data (separate from general mock data)
+    /// Set to false until Coinglass API key is configured
+    var useRealCoinglass: Bool = false
+
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
     private lazy var _mockSentimentService = MockSentimentService()
@@ -21,6 +25,7 @@ final class ServiceContainer {
     private lazy var _mockNewsService = MockNewsService()
     private lazy var _mockDCAService = MockDCAService()
     private lazy var _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
+    private lazy var _mockCoinglassService = MockCoinglassService()
 
     // MARK: - Lazy Services - API
     private lazy var _apiMarketService = APIMarketService()
@@ -29,6 +34,7 @@ final class ServiceContainer {
     private lazy var _apiNewsService = APINewsService()
     private lazy var _apiDCAService = APIDCAService()
     private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
+    private lazy var _apiCoinglassService = APICoinglassService()
 
     // MARK: - Service Accessors
     var marketService: MarketServiceProtocol {
@@ -55,6 +61,10 @@ final class ServiceContainer {
         useRealTechnicalAnalysis ? _apiTechnicalAnalysisService : _mockTechnicalAnalysisService
     }
 
+    var coinglassService: CoinglassServiceProtocol {
+        useRealCoinglass ? _apiCoinglassService : _mockCoinglassService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -66,11 +76,13 @@ final class ServiceContainer {
         _mockNewsService = MockNewsService()
         _mockDCAService = MockDCAService()
         _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
+        _mockCoinglassService = MockCoinglassService()
         _apiMarketService = APIMarketService()
         _apiSentimentService = APISentimentService()
         _apiPortfolioService = APIPortfolioService()
         _apiNewsService = APINewsService()
         _apiDCAService = APIDCAService()
         _apiTechnicalAnalysisService = APITechnicalAnalysisService()
+        _apiCoinglassService = APICoinglassService()
     }
 }

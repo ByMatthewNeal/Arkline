@@ -156,7 +156,7 @@ struct OIRow: View {
 // MARK: - Liquidations Card
 struct LiquidationsCard: View {
     @Environment(\.colorScheme) var colorScheme
-    let liquidations: LiquidationData
+    let liquidations: CoinglassLiquidationData
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
@@ -255,8 +255,8 @@ struct LiquidationBar: View {
 // MARK: - Funding Rates Card
 struct FundingRatesCard: View {
     @Environment(\.colorScheme) var colorScheme
-    let btcFunding: FundingRateData
-    let ethFunding: FundingRateData
+    let btcFunding: CoinglassFundingRateData
+    let ethFunding: CoinglassFundingRateData
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
@@ -441,7 +441,7 @@ struct DerivativesLoadingView: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.gray.opacity(0.2))
                     .frame(width: 200, height: 160)
-                    .shimmer()
+                    .shimmer(isLoading: true)
             }
         }
     }
@@ -470,42 +470,6 @@ struct DerivativesEmptyView: View {
     }
 }
 
-// MARK: - Shimmer Effect
-struct ShimmerModifier: ViewModifier {
-    @State private var phase: CGFloat = 0
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                GeometryReader { geo in
-                    LinearGradient(
-                        colors: [
-                            Color.clear,
-                            Color.white.opacity(0.2),
-                            Color.clear
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: geo.size.width * 2)
-                    .offset(x: -geo.size.width + phase * geo.size.width * 2)
-                }
-            )
-            .clipped()
-            .onAppear {
-                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-                    phase = 1
-                }
-            }
-    }
-}
-
-extension View {
-    func shimmer() -> some View {
-        modifier(ShimmerModifier())
-    }
-}
-
 // MARK: - Preview
 #Preview {
     VStack {
@@ -530,7 +494,7 @@ extension View {
                     exchangeBreakdown: nil
                 ),
                 totalMarketOI: 98_500_000_000,
-                totalLiquidations24h: LiquidationData(
+                totalLiquidations24h: CoinglassLiquidationData(
                     id: UUID(),
                     symbol: "ALL",
                     longLiquidations24h: 145_000_000,
@@ -539,7 +503,7 @@ extension View {
                     largestLiquidation: nil,
                     timestamp: Date()
                 ),
-                btcFundingRate: FundingRateData(
+                btcFundingRate: CoinglassFundingRateData(
                     id: UUID(),
                     symbol: "BTC",
                     fundingRate: 0.0082,
@@ -549,7 +513,7 @@ extension View {
                     timestamp: Date(),
                     exchangeRates: nil
                 ),
-                ethFundingRate: FundingRateData(
+                ethFundingRate: CoinglassFundingRateData(
                     id: UUID(),
                     symbol: "ETH",
                     fundingRate: 0.0095,

@@ -21,7 +21,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
         let response: CoinglassAPIResponse<[CoinglassOIResponse]> = try await request(endpoint: endpoint, params: params)
 
         guard let data = response.data.first else {
-            throw AppError.noData
+            throw AppError.dataNotFound
         }
 
         return OpenInterestData(
@@ -68,7 +68,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
 
     // MARK: - Liquidations
 
-    func fetchLiquidations(symbol: String) async throws -> LiquidationData {
+    func fetchLiquidations(symbol: String) async throws -> CoinglassLiquidationData {
         let endpoint = "/futures/liquidation/aggregated-history"
         let params = ["symbol": symbol.uppercased(), "interval": "1h", "limit": "24"]
 
@@ -83,7 +83,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
             totalShort += item.shortLiquidationUsd
         }
 
-        return LiquidationData(
+        return CoinglassLiquidationData(
             id: UUID(),
             symbol: symbol.uppercased(),
             longLiquidations24h: totalLong,
@@ -94,7 +94,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
         )
     }
 
-    func fetchTotalLiquidations() async throws -> LiquidationData {
+    func fetchTotalLiquidations() async throws -> CoinglassLiquidationData {
         let endpoint = "/futures/liquidation/coin-list"
 
         let response: CoinglassAPIResponse<[CoinglassLiquidationResponse]> = try await request(endpoint: endpoint, params: [:])
@@ -107,7 +107,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
             totalShort += item.shortLiquidationUsd
         }
 
-        return LiquidationData(
+        return CoinglassLiquidationData(
             id: UUID(),
             symbol: "ALL",
             longLiquidations24h: totalLong,
@@ -131,7 +131,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
 
     // MARK: - Funding Rates
 
-    func fetchFundingRate(symbol: String) async throws -> FundingRateData {
+    func fetchFundingRate(symbol: String) async throws -> CoinglassFundingRateData {
         let endpoint = "/futures/fundingRate/exchange-list"
         let params = ["symbol": symbol.uppercased()]
 
@@ -141,7 +141,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
         let count = Double(response.data.uMarginList?.count ?? 1)
         let rate = avgRate / count
 
-        return FundingRateData(
+        return CoinglassFundingRateData(
             id: UUID(),
             symbol: response.data.symbol,
             fundingRate: rate,
@@ -150,7 +150,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
             annualizedRate: rate * 3 * 365 * 100, // Convert to percentage
             timestamp: Date(),
             exchangeRates: response.data.uMarginList?.map { exchange in
-                ExchangeFundingRate(
+                CoinglassExchangeFundingRate(
                     exchange: exchange.exchangeName,
                     fundingRate: exchange.rate,
                     nextFundingTime: exchange.nextFundingTime.map { Date(timeIntervalSince1970: TimeInterval($0 / 1000)) }
@@ -159,15 +159,15 @@ final class APICoinglassService: CoinglassServiceProtocol {
         )
     }
 
-    func fetchFundingRatesMultiple(symbols: [String]) async throws -> [FundingRateData] {
-        try await withThrowingTaskGroup(of: FundingRateData.self) { group in
+    func fetchFundingRatesMultiple(symbols: [String]) async throws -> [CoinglassFundingRateData] {
+        try await withThrowingTaskGroup(of: CoinglassFundingRateData.self) { group in
             for symbol in symbols {
                 group.addTask {
                     try await self.fetchFundingRate(symbol: symbol)
                 }
             }
 
-            var results: [FundingRateData] = []
+            var results: [CoinglassFundingRateData] = []
             for try await result in group {
                 results.append(result)
             }
@@ -192,7 +192,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
         let response: CoinglassAPIResponse<[CoinglassLongShortResponse]> = try await request(endpoint: endpoint, params: params)
 
         guard let data = response.data.first else {
-            throw AppError.noData
+            throw AppError.dataNotFound
         }
 
         return LongShortRatioData(
@@ -215,7 +215,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
         let response: CoinglassAPIResponse<[CoinglassLongShortResponse]> = try await request(endpoint: endpoint, params: params)
 
         guard let data = response.data.first else {
-            throw AppError.noData
+            throw AppError.dataNotFound
         }
 
         return LongShortRatioData(

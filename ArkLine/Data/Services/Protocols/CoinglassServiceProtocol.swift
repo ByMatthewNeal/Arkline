@@ -24,12 +24,12 @@ protocol CoinglassServiceProtocol {
 
     /// Fetches 24h liquidation data for a specific symbol
     /// - Parameter symbol: Coin symbol (e.g., "BTC", "ETH")
-    /// - Returns: LiquidationData with long/short breakdown
-    func fetchLiquidations(symbol: String) async throws -> LiquidationData
+    /// - Returns: CoinglassLiquidationData with long/short breakdown
+    func fetchLiquidations(symbol: String) async throws -> CoinglassLiquidationData
 
     /// Fetches aggregated 24h liquidation data across all coins
-    /// - Returns: LiquidationData with total market liquidations
-    func fetchTotalLiquidations() async throws -> LiquidationData
+    /// - Returns: CoinglassLiquidationData with total market liquidations
+    func fetchTotalLiquidations() async throws -> CoinglassLiquidationData
 
     /// Fetches recent large liquidation events
     /// - Parameters:
@@ -42,13 +42,13 @@ protocol CoinglassServiceProtocol {
 
     /// Fetches current funding rate for a specific symbol
     /// - Parameter symbol: Coin symbol (e.g., "BTC", "ETH")
-    /// - Returns: FundingRateData with current and predicted rates
-    func fetchFundingRate(symbol: String) async throws -> FundingRateData
+    /// - Returns: CoinglassFundingRateData with current and predicted rates
+    func fetchFundingRate(symbol: String) async throws -> CoinglassFundingRateData
 
     /// Fetches funding rates for multiple symbols
     /// - Parameter symbols: Array of coin symbols
-    /// - Returns: Array of FundingRateData
-    func fetchFundingRatesMultiple(symbols: [String]) async throws -> [FundingRateData]
+    /// - Returns: Array of CoinglassFundingRateData
+    func fetchFundingRatesMultiple(symbols: [String]) async throws -> [CoinglassFundingRateData]
 
     /// Fetches OI-weighted average funding rate across exchanges
     /// - Parameter symbol: Coin symbol
