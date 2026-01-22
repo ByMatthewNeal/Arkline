@@ -1940,32 +1940,26 @@ struct UpcomingEventsSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(AppColors.accent)
-
+        NavigationLink(destination: AllEventsView(events: events)) {
+            VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+                HStack {
                     Text("Upcoming Events")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)
-                }
 
-                Spacer()
+                    Spacer()
 
-                if lastUpdated != nil && size != .compact {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(AppColors.success)
-                            .frame(width: 6, height: 6)
-                        Text(lastUpdatedText)
-                            .font(.system(size: 10))
-                            .foregroundColor(textPrimary.opacity(0.5))
+                    if lastUpdated != nil && size != .compact {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(AppColors.success)
+                                .frame(width: 6, height: 6)
+                            Text(lastUpdatedText)
+                                .font(.system(size: 10))
+                                .foregroundColor(textPrimary.opacity(0.5))
+                        }
                     }
-                }
 
-                Button(action: {}) {
                     HStack(spacing: 4) {
                         Text("See all")
                             .font(.caption)
@@ -1974,24 +1968,25 @@ struct UpcomingEventsSection: View {
                     }
                     .foregroundColor(AppColors.accent)
                 }
-            }
 
-            VStack(alignment: .leading, spacing: size == .compact ? 8 : 16) {
-                ForEach(groupedEvents.prefix(maxGroups), id: \.key) { group in
-                    EventDateGroup(
-                        dateKey: group.key,
-                        events: Array(group.events.prefix(maxEventsPerGroup)),
-                        isCompact: size == .compact
-                    )
+                VStack(alignment: .leading, spacing: size == .compact ? 8 : 16) {
+                    ForEach(groupedEvents.prefix(maxGroups), id: \.key) { group in
+                        EventDateGroup(
+                            dateKey: group.key,
+                            events: Array(group.events.prefix(maxEventsPerGroup)),
+                            isCompact: size == .compact
+                        )
+                    }
                 }
+                .padding(size == .compact ? 12 : 16)
+                .background(
+                    RoundedRectangle(cornerRadius: size == .compact ? 12 : 16)
+                        .fill(cardBackground)
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
             }
-            .padding(size == .compact ? 12 : 16)
-            .background(
-                RoundedRectangle(cornerRadius: size == .compact ? 12 : 16)
-                    .fill(cardBackground)
-            )
-            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -2430,6 +2425,152 @@ struct EventDataColumn: View {
                 .foregroundColor(highlight && value != nil ? AppColors.accent : textPrimary)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - All Events View
+struct AllEventsView: View {
+    let events: [EconomicEvent]
+    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var groupedEvents: [(key: String, events: [EconomicEvent])] {
+        let grouped = Dictionary(grouping: events) { $0.dateGroupKey }
+        return grouped.sorted { first, second in
+            guard let firstDate = first.value.first?.date,
+                  let secondDate = second.value.first?.date else { return false }
+            return firstDate < secondDate
+        }.map { (key: $0.key, events: $0.value.sorted { ($0.time ?? Date()) < ($1.time ?? Date()) }) }
+    }
+
+    var body: some View {
+        ZStack {
+            MeshGradientBackground()
+
+            if isDarkMode {
+                BrushEffectOverlay()
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    ForEach(groupedEvents, id: \.key) { group in
+                        VStack(alignment: .leading, spacing: 12) {
+                            // Date header
+                            Text(group.key.uppercased())
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppColors.textSecondary)
+                                .padding(.horizontal, 20)
+
+                            // Events for this date
+                            VStack(spacing: 0) {
+                                ForEach(group.events) { event in
+                                    EventDetailRow(event: event)
+
+                                    if event.id != group.events.last?.id {
+                                        Divider()
+                                            .background(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.1))
+                                            .padding(.horizontal, 16)
+                                    }
+                                }
+                            }
+                            .background(cardBackground)
+                            .cornerRadius(16)
+                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                            .padding(.horizontal, 20)
+                        }
+                    }
+
+                    Spacer(minLength: 100)
+                }
+                .padding(.top, 16)
+            }
+        }
+        .navigationTitle("Upcoming Events")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.large)
+        #endif
+    }
+}
+
+// MARK: - Event Detail Row
+struct EventDetailRow: View {
+    let event: EconomicEvent
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var timeString: String {
+        guard let time = event.time else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mma"
+        return formatter.string(from: time).lowercased()
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Impact indicator
+            if event.impact == .high {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.accent)
+                    .frame(width: 20)
+            } else {
+                Circle()
+                    .fill(AppColors.textSecondary.opacity(0.3))
+                    .frame(width: 6, height: 6)
+                    .frame(width: 20)
+            }
+
+            // Time
+            if !timeString.isEmpty {
+                Text(timeString)
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(width: 60, alignment: .leading)
+            }
+
+            // Country flag
+            Text(event.countryFlag ?? "🌐")
+                .font(.system(size: 16))
+
+            // Event name
+            Text(event.title)
+                .font(.subheadline)
+                .foregroundColor(textPrimary)
+                .lineLimit(2)
+
+            Spacer()
+
+            // Previous/Forecast/Actual values if available
+            if let forecast = event.forecast {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Forecast")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary)
+                    Text(forecast)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(textPrimary)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
