@@ -10,8 +10,8 @@ This document defines boundaries, ownership, and coordination rules for parallel
 |-------|--------|---------------|
 | **Agent 1** | Portfolio & DCA | Investment tracking, holdings, DCA reminders |
 | **Agent 2** | Market & AI | Market data, sentiment, AI chat, community |
-| **Agent 3** | Core & Infrastructure | Design system, models, networking, shared components |
-| **Agent 4** | Design Reference | READ-ONLY branding advisor referencing Julia's admin panel |
+| **Agent 3** | Core & Infrastructure | Models, networking, services, app lifecycle |
+| **Agent 5** | Design & Branding | UI/UX, design system, visual polish, brand consistency |
 
 ---
 
@@ -73,12 +73,10 @@ This document defines boundaries, ownership, and coordination rules for parallel
 ```
 /Core/Extensions/
 /Core/Utilities/
-/Core/Theme/
 /Data/Network/
 /Data/Services/ServiceContainer.swift
 /Domain/Models/
-/SharedComponents/
-/Features/Home/
+/Features/Home/ViewModels/
 /Features/Settings/
 /Features/Profile/
 /Features/Onboarding/
@@ -86,36 +84,21 @@ This document defines boundaries, ownership, and coordination rules for parallel
 /App/
 ```
 
+**READ-ONLY (coordinate with Agent 5):**
+```
+/Core/Theme/
+/SharedComponents/
+```
+
 **COORDINATION DUTIES:**
 - Create new Models when requested by other agents
-- Create new SharedComponents when requested
 - Update ServiceContainer for new service registrations
-- Maintain design system consistency
+- Request UI components from Agent 5
+- Handle business logic, not visual styling
 
 ---
 
-### Agent 4: Design Reference (READ-ONLY)
-
-**PURPOSE:** Advisory agent that references Julia's admin panel (`/Users/matt/Downloads/arkline_admin-main`) to ensure branding consistency. This agent NEVER modifies code - only provides suggestions and identifies gaps.
-
-**CAN READ:**
-```
-/Users/matt/Downloads/arkline_admin-main/    (Julia's reference app)
-/Users/matt/Desktop/Arkline/                 (iOS app - for comparison only)
-```
-
-**CANNOT MODIFY:** Any files. This is a READ-ONLY advisory agent.
-
-**RESPONSIBILITIES:**
-- Compare iOS app styling against Julia's admin panel
-- Identify branding inconsistencies
-- Suggest design improvements
-- Fill gaps in the design system
-- Provide specific recommendations for Agent 3 to implement
-
----
-
-## Julia's Admin Panel Design Reference
+## Julia's Admin Panel Design Reference (For Agent 5)
 
 This is the authoritative design reference from `/Users/matt/Downloads/arkline_admin-main/`.
 
@@ -233,6 +216,65 @@ w-2 h-2 rounded-full bg-slate-400
 | Disabled | `disabled:opacity-50 disabled:cursor-not-allowed` |
 | Active Nav | `border-r-4 border-sky-600 bg-sky-50` |
 | Expanded | `rotate-180` on chevron icon |
+
+---
+
+### Agent 5: Design & Branding (UI/UX Lead)
+
+**ROLE:** Graphic designer and brand designer for ArkLine. Owns all visual aspects of the app including the design system, component styling, animations, and brand consistency.
+
+**OWNS (can modify):**
+```
+/Core/Theme/Colors.swift
+/Core/Theme/Typography.swift
+/Core/Theme/Spacing.swift
+/Core/Theme/Modifiers.swift
+/Core/Theme/Gradients.swift
+/Core/Theme/Shadows.swift
+/Core/Theme/Animations.swift
+/SharedComponents/
+/Features/*/Views/*.swift (visual styling only)
+```
+
+**READ ACCESS (for visual auditing):**
+```
+/Features/*/Views/          (all feature views)
+/Users/matt/Downloads/arkline_admin-main/  (Julia's reference)
+```
+
+**RESPONSIBILITIES:**
+
+| Area | Responsibility |
+|------|----------------|
+| **Design System** | Colors, typography, spacing, shadows, gradients |
+| **Components** | SharedComponents library, reusable UI elements |
+| **Visual Polish** | Animations, transitions, micro-interactions |
+| **Glassmorphism** | Glass card effects, blur, overlays |
+| **Brand Consistency** | Ensure all screens match ArkLine brand |
+| **Light/Dark Mode** | Adaptive theming across all components |
+| **Accessibility** | Color contrast, tap targets, VoiceOver labels |
+| **Icons & Assets** | Icon styling, image treatments |
+
+**DESIGN AUTHORITY:**
+- Agent 5 has FINAL SAY on all visual decisions
+- Other agents must use design tokens from `/Core/Theme/`
+- Other agents request new components via Agent 5
+- Agent 5 can modify View files for styling (not logic)
+
+**COORDINATION WITH OTHER AGENTS:**
+
+| Agent | Coordination |
+|-------|--------------|
+| Agent 1-3 | They handle logic, Agent 5 handles visuals |
+| All | Must use Agent 5's design tokens, no hardcoded values |
+
+**WORKFLOW:**
+1. Review Julia's admin panel for reference patterns
+2. Audit current iOS app styling
+3. Identify inconsistencies and gaps
+4. Update design system tokens
+5. Polish components and views
+6. Ensure brand consistency across all screens
 
 ---
 
@@ -488,21 +530,24 @@ git status
 
 | Need | Go To |
 |------|-------|
-| New color token | Agent 3 (Core/Theme) |
+| New color token | **Agent 5** (Core/Theme) |
+| New typography style | **Agent 5** (Core/Theme) |
+| New shared component | **Agent 5** (SharedComponents) |
+| Visual polish/animations | **Agent 5** |
+| Glassmorphism effects | **Agent 5** |
+| Brand consistency | **Agent 5** |
 | New model | Agent 3 (Domain/Models) |
-| New shared component | Agent 3 (SharedComponents) |
 | ServiceContainer update | Agent 3 |
-| Portfolio feature | Agent 1 |
-| DCA feature | Agent 1 |
+| Network/API changes | Agent 3 |
+| Portfolio feature logic | Agent 1 |
+| DCA feature logic | Agent 1 |
 | Market data feature | Agent 2 |
 | AI Chat feature | Agent 2 |
 | Community feature | Agent 2 |
-| Home dashboard | Agent 3 |
-| Settings/Profile | Agent 3 |
-| Authentication | Agent 3 |
-| Branding consistency check | Agent 4 |
-| Design gap analysis | Agent 4 |
-| Julia's design patterns | Agent 4 |
+| Home dashboard logic | Agent 3 |
+| Settings/Profile logic | Agent 3 |
+| Authentication logic | Agent 3 |
+| Julia's design reference | Agent 5 (has read access) |
 
 ---
 
