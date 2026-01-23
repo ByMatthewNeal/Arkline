@@ -40,6 +40,9 @@ class SentimentViewModel {
     var ethRiskLevel: ITCRiskLevel?
     var btcRiskHistory: [ITCRiskLevel] = []
 
+    // Enhanced Risk History (per-coin)
+    var riskHistoryCache: [String: [RiskHistoryPoint]] = [:]
+
     // Market Overview Data
     var bitcoinSearchIndex: Int = 66
     var totalMarketCap: Double = 3_320_000_000_000
@@ -330,6 +333,42 @@ class SentimentViewModel {
 
     private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel]? {
         try? await itcRiskService.fetchRiskLevel(coin: coin)
+    }
+
+    // MARK: - Enhanced Risk Methods
+
+    /// Fetch enhanced risk history for a specific coin
+    /// - Parameters:
+    ///   - coin: Coin symbol (BTC, ETH, etc.)
+    ///   - days: Number of days of history (nil for all available)
+    /// - Returns: Array of enhanced risk history points
+    func fetchEnhancedRiskHistory(coin: String, days: Int? = nil) async -> [RiskHistoryPoint] {
+        // Check cache first
+        let cacheKey = "\(coin)_\(days ?? 0)"
+        if let cached = riskHistoryCache[cacheKey] {
+            return cached
+        }
+
+        do {
+            let history = try await itcRiskService.fetchRiskHistory(coin: coin, days: days)
+            await MainActor.run {
+                self.riskHistoryCache[cacheKey] = history
+            }
+            return history
+        } catch {
+            return []
+        }
+    }
+
+    /// Get cached risk history for a coin (without fetching)
+    func getCachedRiskHistory(coin: String, days: Int? = nil) -> [RiskHistoryPoint]? {
+        let cacheKey = "\(coin)_\(days ?? 0)"
+        return riskHistoryCache[cacheKey]
+    }
+
+    /// Clear risk history cache
+    func clearRiskHistoryCache() {
+        riskHistoryCache.removeAll()
     }
 }
 

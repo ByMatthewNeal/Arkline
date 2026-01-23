@@ -105,7 +105,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .dcaReminders])
+        Set([.upcomingEvents, .fearGreedIndex, .marketMovers, .assetRiskLevel, .dcaReminders])
     }
 }
 

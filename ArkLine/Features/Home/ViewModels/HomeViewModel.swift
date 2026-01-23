@@ -91,8 +91,9 @@ class HomeViewModel {
     /// In production, this would fetch historical data from an API
     private func getChangeForTimePeriod(_ period: TimePeriod) -> (amount: Double, percent: Double) {
         // Use portfolio name as seed for consistent data
-        let seed = (selectedPortfolio?.name ?? "Main").hashValue
-        srand48(seed + period.hashValue)
+        // Use overflow addition (&+) to prevent arithmetic overflow crash
+        let seed = (selectedPortfolio?.name ?? "Main").hashValue &+ period.hashValue
+        srand48(seed)
 
         // Base the mock data on realistic scenarios
         switch period {
@@ -185,8 +186,9 @@ class HomeViewModel {
         var currentValue: CGFloat = 0.3  // Start point
 
         // Use portfolio name as seed for consistent data per portfolio
-        let seed = selectedPortfolio?.name.hashValue ?? 0
-        srand48(seed + period.hashValue)
+        // Use overflow addition (&+) to prevent arithmetic overflow crash
+        let seed = (selectedPortfolio?.name.hashValue ?? 0) &+ period.hashValue
+        srand48(seed)
 
         for i in 0..<dataPointCount {
             // Add trend direction
@@ -334,7 +336,7 @@ class HomeViewModel {
         errorMessage = nil
 
         do {
-            let userId = currentUserId ?? UUID()
+            let userId = currentUserId ?? Constants.Mock.userId
 
             // Fetch all data concurrently
             async let fgTask = sentimentService.fetchFearGreedIndex()
@@ -442,7 +444,7 @@ class HomeViewModel {
 
     func loadPortfolios() async {
         do {
-            let userId = currentUserId ?? UUID()
+            let userId = currentUserId ?? Constants.Mock.userId
             let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
 
             await MainActor.run {

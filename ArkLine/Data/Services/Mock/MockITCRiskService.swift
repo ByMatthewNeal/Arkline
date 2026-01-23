@@ -7,16 +7,35 @@ final class MockITCRiskService: ITCRiskServiceProtocol {
     /// Simulated network delay in nanoseconds
     var simulatedDelay: UInt64 = 300_000_000
 
-    // MARK: - ITCRiskServiceProtocol
+    // MARK: - ITCRiskServiceProtocol (Legacy)
 
     func fetchRiskLevel(coin: String) async throws -> [ITCRiskLevel] {
         try await simulateNetworkDelay()
-        return generateMockRiskHistory(for: coin)
+        return generateMockRiskHistory(for: coin).map { ITCRiskLevel(from: $0) }
     }
 
     func fetchLatestRiskLevel(coin: String) async throws -> ITCRiskLevel? {
         try await simulateNetworkDelay()
-        return generateMockRiskHistory(for: coin).last
+        guard let latest = generateMockRiskHistory(for: coin).last else { return nil }
+        return ITCRiskLevel(from: latest)
+    }
+
+    // MARK: - Enhanced Methods
+
+    func fetchRiskHistory(coin: String, days: Int?) async throws -> [RiskHistoryPoint] {
+        try await simulateNetworkDelay()
+        let fullHistory = generateMockRiskHistory(for: coin)
+
+        guard let days = days else { return fullHistory }
+        return Array(fullHistory.suffix(days))
+    }
+
+    func calculateCurrentRisk(coin: String) async throws -> RiskHistoryPoint {
+        try await simulateNetworkDelay()
+        guard let latest = generateMockRiskHistory(for: coin).last else {
+            throw RiskCalculationError.noDataAvailable(coin)
+        }
+        return latest
     }
 
     // MARK: - Private Helpers
@@ -25,35 +44,86 @@ final class MockITCRiskService: ITCRiskServiceProtocol {
         try await Task.sleep(nanoseconds: simulatedDelay)
     }
 
-    private func generateMockRiskHistory(for coin: String) -> [ITCRiskLevel] {
+    private func generateMockRiskHistory(for coin: String) -> [RiskHistoryPoint] {
         let calendar = Calendar.current
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
 
-        var history: [ITCRiskLevel] = []
+        var history: [RiskHistoryPoint] = []
 
-        // Generate 30 days of mock data
-        for i in (0..<30).reversed() {
+        // Base values per coin for variety
+        let (baseRisk, basePrice, baseFairValue): (Double, Double, Double)
+        switch coin.uppercased() {
+        case "BTC":
+            baseRisk = 0.45
+            basePrice = 95000
+            baseFairValue = 85000
+        case "ETH":
+            baseRisk = 0.52
+            basePrice = 3200
+            baseFairValue = 2800
+        case "SOL":
+            baseRisk = 0.58
+            basePrice = 180
+            baseFairValue = 150
+        case "XRP":
+            baseRisk = 0.42
+            basePrice = 2.50
+            baseFairValue = 2.20
+        case "DOGE":
+            baseRisk = 0.48
+            basePrice = 0.35
+            baseFairValue = 0.30
+        case "ADA":
+            baseRisk = 0.40
+            basePrice = 1.00
+            baseFairValue = 0.90
+        case "AVAX":
+            baseRisk = 0.55
+            basePrice = 35
+            baseFairValue = 30
+        case "LINK":
+            baseRisk = 0.50
+            basePrice = 22
+            baseFairValue = 20
+        case "DOT":
+            baseRisk = 0.44
+            basePrice = 8
+            baseFairValue = 7.5
+        case "MATIC":
+            baseRisk = 0.46
+            basePrice = 0.45
+            baseFairValue = 0.42
+        default:
+            baseRisk = 0.50
+            basePrice = 100
+            baseFairValue = 90
+        }
+
+        // Generate 365 days of mock data
+        for i in (0..<365).reversed() {
             guard let date = calendar.date(byAdding: .day, value: -i, to: Date()) else { continue }
             let dateString = dateFormatter.string(from: date)
 
-            // Generate a somewhat realistic risk level that varies over time
-            let baseRisk: Double
-            switch coin.uppercased() {
-            case "BTC":
-                baseRisk = 0.45
-            case "ETH":
-                baseRisk = 0.52
-            default:
-                baseRisk = 0.50
-            }
-
-            // Add some variation based on day
-            let variation = sin(Double(i) * 0.3) * 0.15
+            // Generate variation based on day
+            let variation = sin(Double(i) * 0.05) * 0.15
             let noise = Double.random(in: -0.05...0.05)
             let riskLevel = max(0.0, min(1.0, baseRisk + variation + noise))
 
-            history.append(ITCRiskLevel(date: dateString, riskLevel: riskLevel))
+            // Calculate price and fair value with corresponding variation
+            let priceVariation = 1.0 + (sin(Double(i) * 0.05) * 0.2)
+            let price = basePrice * priceVariation
+            let fairValue = baseFairValue * (1.0 + sin(Double(i) * 0.03) * 0.1)
+            let deviation = log10(price) - log10(fairValue)
+
+            history.append(RiskHistoryPoint(
+                dateString: dateString,
+                date: date,
+                riskLevel: riskLevel,
+                price: price,
+                fairValue: fairValue,
+                deviation: deviation
+            ))
         }
 
         return history

@@ -2,17 +2,25 @@ import Foundation
 
 // MARK: - App Constants
 enum Constants {
-    // MARK: - API Keys (to be replaced with actual keys or environment variables)
+    // MARK: - API Keys (loaded from Secrets.plist - gitignored)
+    private static let secrets: [String: Any] = {
+        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        else { return [:] }
+        return plist
+    }()
+
     enum API {
-        static let supabaseURL = "https://mprbbjgrshfbupheuscn.supabase.co"
-        static let supabaseAnonKey = "sb_publishable_OD56MqP74dT54PEDZNpcrQ_PPm5ug0P"
-        static let claudeAPIKey = "your-claude-api-key"
-        static let coinGeckoAPIKey = "CG-Ggho8wQf8mXQeyPUzcgTJc3B"
-        static let alphaVantageAPIKey = "MBSPLHGZOUELTCOJ"
-        static let metalsAPIKey = "your-metals-api-key"
-        static let taapiAPIKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjk3MjRmMzlhZWVjODgxNjBhNTkzNjE2IiwiaWF0IjoxNzY5MDk5MDY1LCJleHAiOjMzMjczNTYzMDY1fQ.zmhZHgsYk5fmYJVhvltS1WczaLejZqrisVmoG3vExaw"
-        static let coinglassAPIKey = "your-coinglass-api-key" // Get from https://www.coinglass.com/pricing
-        static let fredAPIKey = "your-fred-api-key" // Get free key from https://fred.stlouisfed.org/docs/api/api_key.html
+        static let supabaseURL = Constants.secrets["SUPABASE_URL"] as? String ?? ""
+        static let supabaseAnonKey = Constants.secrets["SUPABASE_ANON_KEY"] as? String ?? ""
+        static let claudeAPIKey = Constants.secrets["CLAUDE_API_KEY"] as? String ?? ""
+        static let coinGeckoAPIKey = Constants.secrets["COINGECKO_API_KEY"] as? String ?? ""
+        static let alphaVantageAPIKey = Constants.secrets["ALPHA_VANTAGE_API_KEY"] as? String ?? ""
+        static let metalsAPIKey = Constants.secrets["METALS_API_KEY"] as? String ?? ""
+        static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String ?? ""
+        static let coinglassAPIKey = Constants.secrets["COINGLASS_API_KEY"] as? String ?? ""
+        static let fredAPIKey = Constants.secrets["FRED_API_KEY"] as? String ?? ""
     }
 
     // MARK: - Coinglass API Key (accessed from root for convenience)
@@ -39,6 +47,13 @@ enum Constants {
         static let minimumIOSVersion = "17.0"
         static let defaultCurrency = "USD"
         static let defaultRiskCoins = ["BTC", "ETH"]
+    }
+
+    // MARK: - Mock Data (for development/testing)
+    enum Mock {
+        /// Consistent user ID for mock data during development
+        /// This ensures DCA reminders created in one view appear in others
+        static let userId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
     }
 
     // MARK: - Cache Configuration

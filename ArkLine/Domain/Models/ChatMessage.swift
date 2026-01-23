@@ -116,8 +116,8 @@ struct ClaudeMessageRequest: Encodable {
 
     static func create(
         messages: [AIChatMessage],
-        model: String = "claude-sonnet-4-20250514",
-        maxTokens: Int = 8192,
+        model: String = "claude-3-5-sonnet-20241022",
+        maxTokens: Int = 4096,
         systemPrompt: String? = nil
     ) -> ClaudeMessageRequest {
         let claudeMessages = messages.filter { $0.role != .system }.map { message in

@@ -78,6 +78,7 @@ extension APIEndpoint {
 enum CoinGeckoEndpoint: APIEndpoint {
     case simplePrice(ids: [String], currencies: [String])
     case coinMarkets(currency: String, page: Int, perPage: Int, sparkline: Bool)
+    case coinMarketsFiltered(currency: String, ids: [String], sparkline: Bool)
     case coinDetail(id: String)
     case coinMarketChart(id: String, currency: String, days: Int)
     case searchCoins(query: String)
@@ -91,7 +92,7 @@ enum CoinGeckoEndpoint: APIEndpoint {
         switch self {
         case .simplePrice:
             return "/simple/price"
-        case .coinMarkets:
+        case .coinMarkets, .coinMarketsFiltered:
             return "/coins/markets"
         case .coinDetail(let id):
             return "/coins/\(id)"
@@ -125,6 +126,13 @@ enum CoinGeckoEndpoint: APIEndpoint {
                 "order": "market_cap_desc",
                 "per_page": "\(perPage)",
                 "page": "\(page)",
+                "sparkline": "\(sparkline)"
+            ]
+        case .coinMarketsFiltered(let currency, let ids, let sparkline):
+            return [
+                "vs_currency": currency,
+                "ids": ids.joined(separator: ","),
+                "order": "market_cap_desc",
                 "sparkline": "\(sparkline)"
             ]
         case .coinDetail:
@@ -271,7 +279,7 @@ enum ClaudeEndpoint: APIEndpoint {
         switch self {
         case .messages(let request):
             let encoder = JSONEncoder()
-            encoder.keyEncodingStrategy = .convertToSnakeCase
+            // Don't use .convertToSnakeCase - CodingKeys already handles it
             return try? encoder.encode(request)
         }
     }

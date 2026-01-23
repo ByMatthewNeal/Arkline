@@ -382,6 +382,11 @@ struct RiskLevelChartView: View {
     @State private var selectedCoin: RiskCoin = .btc
     @State private var showCoinPicker = false
 
+    // Interactive chart state
+    @State private var selectedDate: Date?
+    @State private var enhancedRiskHistory: [RiskHistoryPoint] = []
+    @State private var isLoadingHistory = false
+
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
         (appState.darkModePreference == .automatic && colorScheme == .dark)
@@ -395,18 +400,25 @@ struct RiskLevelChartView: View {
         AppColors.textSecondary
     }
 
-    // Get current risk level based on selected coin
+    // Get current risk level based on enhanced history or legacy data
     private var currentRiskLevel: ITCRiskLevel? {
+        // First try enhanced history (most accurate)
+        if let latest = enhancedRiskHistory.last {
+            return ITCRiskLevel(from: latest)
+        }
+        // Fall back to legacy data
         switch selectedCoin {
         case .btc: return viewModel.btcRiskLevel
         case .eth: return viewModel.ethRiskLevel
-        default: return viewModel.btcRiskLevel // Fallback to BTC for now
+        default: return viewModel.btcRiskLevel
         }
     }
 
-    // Get history based on selected coin
+    // Get history based on selected coin (legacy format for compatibility)
     private var riskHistory: [ITCRiskLevel] {
-        // Currently only BTC history is available from the service
+        if !enhancedRiskHistory.isEmpty {
+            return enhancedRiskHistory.map { ITCRiskLevel(from: $0) }
+        }
         return viewModel.btcRiskHistory
     }
 
@@ -414,6 +426,20 @@ struct RiskLevelChartView: View {
     private var filteredHistory: [ITCRiskLevel] {
         guard let days = selectedTimeRange.days else { return riskHistory }
         return Array(riskHistory.suffix(days))
+    }
+
+    // Filter enhanced history based on time range
+    private var filteredEnhancedHistory: [RiskHistoryPoint] {
+        guard let days = selectedTimeRange.days else { return enhancedRiskHistory }
+        return Array(enhancedRiskHistory.suffix(days))
+    }
+
+    // Selected point from enhanced history
+    private var selectedPoint: RiskHistoryPoint? {
+        guard let selectedDate = selectedDate else { return nil }
+        return filteredEnhancedHistory.min(by: {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        })
     }
 
     // Format date as "January 23, 2026"
@@ -428,6 +454,21 @@ struct RiskLevelChartView: View {
             return outputFormatter.string(from: date)
         }
         return dateString
+    }
+
+    // Load enhanced risk history for selected coin
+    private func loadEnhancedHistory() {
+        isLoadingHistory = true
+        Task {
+            let history = await viewModel.fetchEnhancedRiskHistory(
+                coin: selectedCoin.rawValue,
+                days: selectedTimeRange.days
+            )
+            await MainActor.run {
+                self.enhancedRiskHistory = history
+                self.isLoadingHistory = false
+            }
+        }
     }
 
     var body: some View {
@@ -473,6 +514,17 @@ struct RiskLevelChartView: View {
                 }
             }
             #endif
+            .onAppear {
+                loadEnhancedHistory()
+            }
+            .onChange(of: selectedCoin) { _, _ in
+                selectedDate = nil
+                loadEnhancedHistory()
+            }
+            .onChange(of: selectedTimeRange) { _, _ in
+                selectedDate = nil
+                loadEnhancedHistory()
+            }
         }
     }
 
@@ -547,14 +599,27 @@ struct RiskLevelChartView: View {
     // MARK: - Chart Section
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
-            if filteredHistory.isEmpty {
+            if filteredHistory.isEmpty && !isLoadingHistory {
                 // Placeholder when no data
                 VStack(spacing: ArkSpacing.md) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 40))
                         .foregroundColor(textSecondary.opacity(0.5))
 
-                    Text(selectedCoin != .btc ? "\(selectedCoin.displayName) data coming soon" : "Loading chart data...")
+                    Text("Loading \(selectedCoin.displayName) data...")
+                        .font(.subheadline)
+                        .foregroundColor(textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 250)
+                .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+            } else if isLoadingHistory {
+                // Loading state
+                VStack(spacing: ArkSpacing.md) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+
+                    Text("Calculating \(selectedCoin.displayName) risk levels...")
                         .font(.subheadline)
                         .foregroundColor(textSecondary)
                 }
@@ -562,7 +627,7 @@ struct RiskLevelChartView: View {
                 .frame(height: 250)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
             } else {
-                // Chart with Swift Charts
+                // Chart with Swift Charts - Interactive
                 VStack(alignment: .leading, spacing: ArkSpacing.sm) {
                     HStack {
                         Text("\(selectedCoin.displayName) Risk Level")
@@ -571,17 +636,42 @@ struct RiskLevelChartView: View {
 
                         Spacer()
 
-                        Text(selectedTimeRange == .all ? "All Time" : "Last \(selectedTimeRange.rawValue)")
-                            .font(.caption)
-                            .foregroundColor(textSecondary)
+                        // Show "Tap to explore" hint or current selection
+                        if selectedDate == nil {
+                            Text("Tap chart to explore")
+                                .font(.caption)
+                                .foregroundColor(textSecondary)
+                        } else {
+                            Button(action: { selectedDate = nil }) {
+                                Text("Clear")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
                     }
 
+                    // Tooltip overlay (positioned above chart when point is selected)
+                    if let point = selectedPoint {
+                        RiskTooltipView(
+                            date: point.date,
+                            riskLevel: point.riskLevel,
+                            price: point.price,
+                            fairValue: point.fairValue
+                        )
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .animation(.easeOut(duration: 0.15), value: selectedDate)
+                    }
+
+                    // Interactive chart
                     RiskLevelChart(
                         history: filteredHistory,
                         timeRange: selectedTimeRange,
-                        colorScheme: colorScheme
+                        colorScheme: colorScheme,
+                        enhancedHistory: filteredEnhancedHistory,
+                        selectedDate: $selectedDate
                     )
                     .frame(height: 250)
+
                 }
                 .padding(ArkSpacing.md)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
@@ -615,6 +705,34 @@ struct RiskLevelChartView: View {
                             .foregroundColor(RiskColors.color(for: risk.riskLevel))
                     }
 
+                    // Price and fair value (when available)
+                    if let price = risk.price, price > 0 {
+                        HStack(spacing: ArkSpacing.lg) {
+                            VStack(spacing: 2) {
+                                Text("Price")
+                                    .font(.caption2)
+                                    .foregroundColor(textSecondary)
+                                Text(formatPrice(price))
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(textPrimary)
+                            }
+
+                            if let fairValue = risk.fairValue, fairValue > 0 {
+                                VStack(spacing: 2) {
+                                    Text("Fair Value")
+                                        .font(.caption2)
+                                        .foregroundColor(textSecondary)
+                                    Text(formatPrice(fairValue))
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(textSecondary)
+                                }
+                            }
+                        }
+                        .padding(.top, ArkSpacing.xs)
+                    }
+
                     // Date in new format
                     Text("As of \(formatDate(risk.date))")
                         .font(.caption)
@@ -629,6 +747,17 @@ struct RiskLevelChartView: View {
         .frame(maxWidth: .infinity)
         .padding(ArkSpacing.xl)
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+    }
+
+    // Format price with appropriate decimal places
+    private func formatPrice(_ price: Double) -> String {
+        if price >= 1000 {
+            return "$\(Int(price).formatted())"
+        } else if price >= 1 {
+            return String(format: "$%.2f", price)
+        } else {
+            return String(format: "$%.4f", price)
+        }
     }
 
     // MARK: - Risk Legend Section (6-tier)
@@ -689,15 +818,28 @@ struct RiskLevelChartView: View {
     // MARK: - Attribution Card (Subtle)
     private var attributionCard: some View {
         HStack(spacing: ArkSpacing.xs) {
-            Image(systemName: "link")
+            Image(systemName: "function")
                 .font(.system(size: 10))
                 .foregroundColor(textSecondary.opacity(0.5))
 
-            Text("Data: intothecryptoverse.com")
+            Text("Risk calculated via logarithmic regression")
                 .font(.system(size: 11))
                 .foregroundColor(textSecondary.opacity(0.5))
 
             Spacer()
+
+            // Confidence indicator
+            if let config = AssetRiskConfig.forCoin(selectedCoin.rawValue) {
+                HStack(spacing: 2) {
+                    ForEach(0..<9, id: \.self) { index in
+                        Circle()
+                            .fill(index < config.confidenceLevel
+                                ? AppColors.accent.opacity(0.7)
+                                : textSecondary.opacity(0.2))
+                            .frame(width: 4, height: 4)
+                    }
+                }
+            }
         }
         .padding(.horizontal, ArkSpacing.md)
         .padding(.vertical, ArkSpacing.sm)
@@ -750,21 +892,59 @@ struct RiskLevelLegendRow: View {
     }
 }
 
-// MARK: - Risk Level Chart (Swift Charts) - Dynamic based on time range
+// MARK: - Risk Level Chart (Swift Charts) - Interactive with touch selection
 struct RiskLevelChart: View {
     let history: [ITCRiskLevel]
     let timeRange: RiskTimeRange
     let colorScheme: ColorScheme
 
+    // Enhanced history with price data (optional)
+    var enhancedHistory: [RiskHistoryPoint]?
+
+    // Selection binding
+    @Binding var selectedDate: Date?
+
+    // Init without selection (backwards compatible)
+    init(history: [ITCRiskLevel], timeRange: RiskTimeRange, colorScheme: ColorScheme) {
+        self.history = history
+        self.timeRange = timeRange
+        self.colorScheme = colorScheme
+        self.enhancedHistory = nil
+        self._selectedDate = .constant(nil)
+    }
+
+    // Init with selection support
+    init(history: [ITCRiskLevel], timeRange: RiskTimeRange, colorScheme: ColorScheme, enhancedHistory: [RiskHistoryPoint]?, selectedDate: Binding<Date?>) {
+        self.history = history
+        self.timeRange = timeRange
+        self.colorScheme = colorScheme
+        self.enhancedHistory = enhancedHistory
+        self._selectedDate = selectedDate
+    }
+
     // Convert string dates to Date objects for proper charting
-    private var chartData: [(date: Date, risk: Double)] {
+    private var chartData: [(date: Date, risk: Double, price: Double?, fairValue: Double?)] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
 
+        // If we have enhanced history, use it
+        if let enhanced = enhancedHistory {
+            return enhanced.map { point in
+                (date: point.date, risk: point.riskLevel, price: point.price, fairValue: point.fairValue)
+            }
+        }
+
+        // Otherwise use legacy history
         return history.compactMap { level in
             guard let date = formatter.date(from: level.date) else { return nil }
-            return (date: date, risk: level.riskLevel)
+            return (date: date, risk: level.riskLevel, price: level.price, fairValue: level.fairValue)
         }
+    }
+
+    // Find closest point to selected date
+    private var selectedPoint: (date: Date, risk: Double, price: Double?, fairValue: Double?)? {
+        guard let selectedDate = selectedDate else { return nil }
+        return chartData.min(by: { abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate)) })
     }
 
     // Determine X-axis label count based on time range
@@ -815,6 +995,13 @@ struct RiskLevelChart: View {
             RectangleMark(yStart: .value("Start", 0.90), yEnd: .value("End", 1.0))
                 .foregroundStyle(RiskColors.extremeRisk.opacity(0.08))
 
+            // Selection rule mark (vertical line)
+            if let point = selectedPoint {
+                RuleMark(x: .value("Selected", point.date))
+                    .foregroundStyle(RiskColors.color(for: point.risk).opacity(0.5))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 2]))
+            }
+
             // Area under the line
             ForEach(chartData, id: \.date) { point in
                 AreaMark(
@@ -858,8 +1045,26 @@ struct RiskLevelChart: View {
                     .symbolSize(chartData.count > 15 ? 25 : 40)
                 }
             }
+
+            // Selected point marker (always visible when selected)
+            if let point = selectedPoint {
+                PointMark(
+                    x: .value("Date", point.date),
+                    y: .value("Risk", point.risk)
+                )
+                .foregroundStyle(RiskColors.color(for: point.risk))
+                .symbolSize(80)
+
+                PointMark(
+                    x: .value("Date", point.date),
+                    y: .value("Risk", point.risk)
+                )
+                .foregroundStyle(Color.white)
+                .symbolSize(20)
+            }
         }
         .chartYScale(domain: 0...1)
+        .chartXSelection(value: $selectedDate)
         .chartYAxis {
             AxisMarks(values: [0, 0.25, 0.5, 0.75, 1]) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 2]))

@@ -3,374 +3,353 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
+		0163AAB9E3115D7C8026A39F /* GlobalLiquidityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */; };
 		0344C4B0955D58DCD34C2EC8 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8185913CA90DB0567893C5 /* CommunityView.swift */; };
-		038199C02B3469B0BF3F6EDF /* DCACalculation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7764446F184B9D42DF21EA /* DCACalculation.swift */; };
 		05A89424EED50115096BA977 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8C52768AD67E7DEDCACB74 /* PrimaryButton.swift */; };
-		06E21D17D0B98FA6F2A91851 /* RainbowChartServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD02A4EB296564B4C0841239 /* RainbowChartServiceProtocol.swift */; };
+		0622105383FB4CA6C1E1D8AC /* PerformanceMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B763BEA23279F34CAFF78659 /* PerformanceMetrics.swift */; };
+		0623B4FCFD70266B815496D1 /* AssetRiskConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CD818131D183C8C17AD487F /* AssetRiskConfig.swift */; };
+		07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */; };
+		0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */; };
 		0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */; };
-		0D834A5912DD9387257B3035 /* PerformanceMetricsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C56B9433400F805DDB08F5E /* PerformanceMetricsCalculator.swift */; };
 		0F57D66C7B4F2E45760BFCF2 /* DCAReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608A536AA089EA6F8D512468 /* DCAReminder.swift */; };
+		0FE26D59F0B74D161E4019D3 /* SentimentServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED28F57A1AE475BCCE6387CE /* SentimentServiceProtocol.swift */; };
 		1028E8CBB796AA676788323E /* FaceIDSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */; };
 		11530E01A7E1E110918998B7 /* EconomicEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */; };
-		12182E5602FE19F1FE812D17 /* CustomizeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2E037815EF36C076DFB2A15 /* CustomizeHomeView.swift */; };
 		1229BB7C45A6A74F5082A32F /* AssetRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440FC32555A994CF7B6FD757 /* AssetRowView.swift */; };
+		124D9971E61229596EEB9C25 /* PerformanceMetricsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */; };
+		1255DA09E561168742D3B210 /* RiskHistoryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27C191CC461606E44DF972D /* RiskHistoryPoint.swift */; };
 		140BA6F215F30D04AE81C591 /* Asset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5A5C466F3FACF792A28F50 /* Asset.swift */; };
+		14D33F97F6618A1779952623 /* GlobalLiquidityData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54AD0098DA817A84CC84959 /* GlobalLiquidityData.swift */; };
 		1608B4BE39548C20111B77DF /* CommunityPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F9A053EE94F27B45371F78 /* CommunityPost.swift */; };
-		18FB93C3D0383C64B2312A34 /* DCACalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344E317BE929172E723E5E19 /* DCACalculatorView.swift */; };
-		1A57B1FE01AB51FDBE8EE47E /* OnboardingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45CE6E47EAFBC63D15EDAA /* OnboardingHeader.swift */; };
+		1652EDF9F5840922C777B78C /* MarketServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C529AFE6D31B15B880E64C1 /* MarketServiceProtocol.swift */; };
 		1CB7FECB27F55097111DA2C0 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D010FAE4110F01A75275BB /* TabBarView.swift */; };
-		1D1A65524BB83EFA9B46C69B /* APIITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CB7727466E18EB0FFE4B0 /* APIITCRiskService.swift */; };
-		1D83D8CAA0DA1475F580A598 /* APIDXYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B76523F5443D4A61E6006D2 /* APIDXYService.swift */; };
+		1F0833CA9F56648D541F75B2 /* APINewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3734A6788EEBE7830A322555 /* APINewsService.swift */; };
 		238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */; };
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
-		26713712968978F308B2C0AE /* MockITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B4B8494B1DD4A7EC5274E1 /* MockITCRiskService.swift */; };
+		268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */; };
+		2B22CF69504B08756CCC2A49 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E515D0E6990FFEF0DA3183 /* ServiceContainer.swift */; };
 		2C64471C1DA2261CE83B3164 /* FearGreedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */; };
+		2D705F6BFE7C3BF5DE8CBBF0 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B235140A3BEE72D20E513F81 /* APIEndpoint.swift */; };
 		2DFD1CE8B62B33F45CFAAC17 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0C3702BDFA6D77FCA3BD36 /* SettingsViewModel.swift */; };
-		2E0CDB3B4786FEBE2B5AB561 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E912EC56A0FA55BABDB7AEB /* ArkSystemPrompt.swift */; };
 		2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5323582A6D49F73210E861F /* CustomTextField.swift */; };
 		2EC5DA90B4B6556747D69F09 /* SentimentGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */; };
-		301D5C8341D6392B042E2D0E /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24693986FAAA5B2A0724CFF8 /* PerformanceView.swift */; };
+		2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */; };
 		320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */; };
-		335A7B377FAFD13F754D4F38 /* PerformanceMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263E2C8611C20096CE466BD5 /* PerformanceMetrics.swift */; };
+		333C25308702886CB558C573 /* APIDXYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1D381D5F6A6EFBA2FB7EA5 /* APIDXYService.swift */; };
 		335C702F0D9E1CFF7480EC8B /* SocialLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D7DB64239C464966F42017 /* SocialLinksView.swift */; };
-		33B5E8A08B1C211307A7ACB6 /* GlobalLiquidityData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3C5476611FBAE3EB6ED22A /* GlobalLiquidityData.swift */; };
-		3426E67D8790969AD98FE071 /* ITCRiskServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 283DD0A7268CBAE262B4AF48 /* ITCRiskServiceProtocol.swift */; };
-		35511E7B5B34180F8A9790DE /* HomeMarketWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DA280308C957B2C584BC859 /* HomeMarketWidgets.swift */; };
+		34F28A15245DD8CEAF8D0917 /* PerformanceCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA6D89396B94ACB0433199B /* PerformanceCards.swift */; };
+		3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */; };
 		386CF39874D6A2F1687A3828 /* EventRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD95D54C81F435AFABAE82A /* EventRowView.swift */; };
 		3912372E5D7BB736DB249146 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87CF0E5EC762D968DCBE4F7D /* Colors.swift */; };
-		3DA7343FCB9C6A1D49A351F8 /* PerformanceCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E61EA7805BCC179AAF313A9 /* PerformanceCards.swift */; };
-		3E6F2CD0130AA3CEA509A058 /* CreatePortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCBBE409DE3844C6D70709F /* CreatePortfolioView.swift */; };
+		3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCC24BCEBE385AEFCCAD355 /* DCACalculation.swift */; };
 		3ED20C98B679E1B39E700AEC /* DCAViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C17169C2A394081F66E2FF3 /* DCAViewModel.swift */; };
-		3ED6507C2BE7C510357AA4F2 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6487571E53B79C0EE0A4CCC6 /* MockVIXService.swift */; };
-		43250430D8E06DDD1733342B /* MockGlobalLiquidityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D67F219D3AD03DC2E4866034 /* MockGlobalLiquidityService.swift */; };
 		43A46C7A8D6ED6366495D642 /* ArkLineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872F085E24F150BFF85D1495 /* ArkLineApp.swift */; };
 		4466D13303012C9DC965441C /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F83C7068E9D94A46C50410C /* Spacing.swift */; };
 		44FCB7723114E4F1CF1D2988 /* PersonalInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF01AA7F99FF1B71AD4E243 /* PersonalInfoView.swift */; };
 		466D283EE26005651F716BD9 /* ProfilePictureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */; };
+		4732DC10C2E52D8A1C1016DE /* APIRainbowChartService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */; };
 		475CC79B25CE19D7A9A504AC /* ConfirmPasscodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3AFC2989FCE10A165354DA1 /* ConfirmPasscodeView.swift */; };
 		48727CBCFCE48D546CB33BEB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4670E22A47757A0E792C9687 /* SettingsView.swift */; };
-		4AFAA441A84FD62BB25D9C18 /* MockCoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29AF757A99C689771751269 /* MockCoinglassService.swift */; };
+		4A0014C464DAD4B555371050 /* APIDCAService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 974BF8238E3EC277ECEE5636 /* APIDCAService.swift */; };
 		4B72ED4396687C6142BCE540 /* MarketViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B455C1A7CD339880E0FD5B /* MarketViewModel.swift */; };
-		4D9955BCAF6D805224ED6554 /* GlobalLiquidityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4511DDC64A0E0974FCD71B /* GlobalLiquidityServiceProtocol.swift */; };
+		4C8160414F9E10ADFB569E1E /* DCACalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0542844A0A074789DB81103D /* DCACalculatorView.swift */; };
 		4E1CF3B74ABFF049BD3AA054 /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C020CF24D89DA500878B422B /* SearchBar.swift */; };
-		50428B2D51891056C8971817 /* DCACalculatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D902D7F7F7BC474A996FF9 /* DCACalculatorService.swift */; };
 		5179DE1219FBE8BB9CA2963D /* DCAReminderWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */; };
+		52E41BAE93DC49878799601B /* PortfolioSparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */; };
 		53DB2C4BBFAA8EBE46DFFD6D /* Fonts.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0B46525A08963F4CC80C639 /* Fonts.swift */; };
 		541DAD72CE174BCAA6CB8C31 /* DailyNewsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD0C37E21E4AD24118B5820 /* DailyNewsSection.swift */; };
 		545C051C03241BD5FFF79E29 /* StockAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E999CFE901A34DC1FADC4B9 /* StockAsset.swift */; };
+		5605DA56CF5EFF3F689E634B /* APIGlobalLiquidityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */; };
+		56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */; };
+		57CACD5F5AC3FA93AF2C8580 /* MockNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6E843529C78DE117880236 /* MockNewsService.swift */; };
 		58758A7C9170D7678030686C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C05960B8B6F9455FAE91A /* HomeView.swift */; };
+		58D6351162371B50FE504198 /* RiskTooltipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D6633C62AA788C16E0342E7 /* RiskTooltipView.swift */; };
+		5CF2A893794727B0769FA275 /* TechnicalAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 809EC62EBAD1E6B547403712 /* TechnicalAnalysis.swift */; };
 		5F4B99B5C4891DD601F0FF5B /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBD2F46C74ADE2DABD045242 /* AuthViewModel.swift */; };
 		6039354E9B24821430E1C7F4 /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0301CE05698CD3FFB7876E41 /* Date+Extensions.swift */; };
+		60A76BA862CB7DC22EA522F6 /* DXYServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09155A7D40A9D0C232F622A8 /* DXYServiceProtocol.swift */; };
 		60BB9BA45A9AAD209518F05A /* VerificationCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F22EBA12E1763457DF0D385 /* VerificationCodeView.swift */; };
+		60FA4D7B2F1A36A021F57DEA /* DXYData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B6A3AE118E45271FE32F447 /* DXYData.swift */; };
+		628B818C69781D7CF29F53E0 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4910EA95756EA732F81117A /* TransactionDetailView.swift */; };
 		6381F7DC80B6158842FC7AE2 /* PercentageChangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78845800D59A83C7C923898 /* PercentageChangeView.swift */; };
-		658BAF4E30C77E390A611250 /* RainbowChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4644CAC9B2D9E224EA4EA4E3 /* RainbowChartData.swift */; };
 		667A5DC45682FDB0777B1C5A /* SentimentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5831D493E668A00494BC0398 /* SentimentViewModel.swift */; };
 		6733AADDD937D8717CF46DFF /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7163E8A84CD6F7F613F75C /* AppError.swift */; };
-		6814DC8F502BD4D8609C3683 /* MockTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8B293A096627D14F059FD12 /* MockTechnicalAnalysisService.swift */; };
 		68B776510F6F799948F81E99 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676F589E22B9827D0CF8ECA3 /* SupabaseClient.swift */; };
-		69BD32BB4B13B760C5D62D09 /* MockDXYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744A09E89146EE0CA5AC19F9 /* MockDXYService.swift */; };
-		6BD4DCE14A30677FABC24DFB /* MockITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BF5D33EC87891E10D8B8A3 /* MockITCRiskService.swift */; };
+		690BC8C087FC477F1E63CE84 /* AddRealEstateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 319895490145710C89575633 /* AddRealEstateView.swift */; };
+		6B573B8A06D1D58E5B6E430C /* MockITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B4B1375E8CFAC9F01975F3 /* MockITCRiskService.swift */; };
 		6C5AAC0E3DF77DEDFC6D58E9 /* String+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90DF84B086A9E9DDB80DDC05 /* String+Extensions.swift */; };
 		6C73E90D8ECCADCDFBC108B8 /* AssetDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86AA2774D5757CF06C791EEC /* AssetDetailView.swift */; };
-		6D75A03DAD4222D5CEADB6C6 /* DerivativesDataSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F262801D0B1076AE822A22A /* DerivativesDataSection.swift */; };
+		6CE5BC8E504E9DBF01B7AF2D /* ITCRiskWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049CD12B81D2D7863DA67B24 /* ITCRiskWidget.swift */; };
 		6E882DC62BAECE881FB9CD01 /* CreatePasscodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */; };
-		6F72DA5BCCED963BDD2B1531 /* CoinglassData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E336A86382407C68FAAD195D /* CoinglassData.swift */; };
 		7315E035C2C0BFD44CEDC052 /* DCAListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F759895BAB16CAE9827A96 /* DCAListView.swift */; };
-		732FB330186DAEFA2BA82B64 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59C155259B75A7BBB82C8F07 /* VIXData.swift */; };
-		73398D35A5106CD145831A34 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DFC0FA9B7912C1336B61126 /* ITCRiskLevel.swift */; };
 		7383D460E1983C30AD7C1A4D /* FavoritesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */; };
 		74342987C2189339E31FAA64 /* FaceIDPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B715ECC590E3EEB1884878D5 /* FaceIDPromptView.swift */; };
+		7496022AFE7F51C4A859F208 /* RealEstateProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */; };
 		74B1626796F1D2E9ABB3D2DA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0F55647A0541536088E943 /* ContentView.swift */; };
-		75373C82302E8F4E4A669C85 /* APIRainbowChartService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0737B3948DB4652B0F3FEA4 /* APIRainbowChartService.swift */; };
 		761D9604237272971D9D83F4 /* QuickActionsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F899A618850ED4F1DCABE67 /* QuickActionsBar.swift */; };
 		76D05FD2A9D04E17CDA69F95 /* CryptoAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = E024112075ACF55F63004893 /* CryptoAsset.swift */; };
 		77273323CF240C251C222AAF /* BaseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11255E8D99752FF4FB569E1F /* BaseCard.swift */; };
 		78A6596EF62B380FAE602063 /* CommunityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE3A61DDFF8974642E22744D /* CommunityViewModel.swift */; };
-		78C83018B7360E797CA0740A /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B896074F4C51A50DF3292E /* WelcomeView.swift */; };
 		78F15E09D170B61BD4292FFF /* TodaysEventsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26876123F57B804A4A24DC97 /* TodaysEventsWidget.swift */; };
-		79816E21F63128F89A148BB1 /* APICoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE77E12CDE09A0BB1129990 /* APICoinglassService.swift */; };
-		7C2DF88DC88BA7CB82555E79 /* ITCRiskServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09FB2BABAD36B78AF7CA778B /* ITCRiskServiceProtocol.swift */; };
+		7997651354297A0F1994195C /* APIPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09632E6060BBE9A1576A3022 /* APIPortfolioService.swift */; };
 		7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */; };
+		80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */; };
 		81173E2E4A51178EFA18143F /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AAAF40361CD29C51A718DFC /* LoginView.swift */; };
+		81C072BFFD8B887035D2B021 /* RiskCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D98C62D2451E41B463D1AD /* RiskCalculator.swift */; };
 		82BFB0C29D476D49DE22C1A6 /* SupabaseDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B4BE3343EF57E36A6D3A2C8 /* SupabaseDatabase.swift */; };
 		8331DD57A5E7BAAC58068B76 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1932000FA607265666E09FA8 /* Transaction.swift */; };
+		8378398BE85A7A2DF1973F75 /* CoinglassServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFAE6203E090C957B000DF24 /* CoinglassServiceProtocol.swift */; };
+		85030D9B4F243212B135BC23 /* MockDCAService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D4FA1A5F9032170FCD48F8 /* MockDCAService.swift */; };
 		869FCACBD4C6668613E58066 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15B357FD7402C8C699282690 /* OnboardingViewModel.swift */; };
-		88789B2CFFF765FA41C761A9 /* APIVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D380617EC87CA05FA868535B /* APIVIXService.swift */; };
+		86A35FC4DE871DF32AFE316E /* DCAServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 546EB1AA744607463EE86B28 /* DCAServiceProtocol.swift */; };
+		87E5C72EC3033733C97B8A92 /* OnboardingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */; };
+		8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */; };
 		8BA5B455BC87E71356E74F27 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C06924AB1053BEBE96D201B /* TransactionRow.swift */; };
-		8CE97F1EB43B0EA1450E3595 /* DerivativesDataSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B401294BC031F771CC8076 /* DerivativesDataSection.swift */; };
+		8D35F7007280F5E80024585A /* CreatePortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5518A68482F92F03B8C61BD6 /* CreatePortfolioView.swift */; };
 		8E42B1CB3AAC8414C67C7303 /* Double+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA25ABAB56439A4FB4FCF93A /* Double+Extensions.swift */; };
-		901058F51414A72F9F1412B7 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDA904BB1C61D0695EBCC58 /* ExportService.swift */; };
 		91252ECC56160C486655563C /* CareerIndustryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */; };
 		943CEF0A4415440A57DF682C /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E7A67A1ED685BB0308464EB /* AIChatView.swift */; };
-		96B0A13DC9C447A2F386CEBC /* RealEstateProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A7C04CF52E579E88B8A8A2 /* RealEstateProperty.swift */; };
-		9D8E91E4CB7FB9D2430612EE /* DXYData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BA76741A3DE23585D385CD /* DXYData.swift */; };
+		98CEA03E857EB2C3B42432C2 /* APIITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */; };
+		9BD583B0D704BDA411DCC474 /* NewsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2435855BCB0DC6452F414E3A /* NewsServiceProtocol.swift */; };
+		9DBBCFAFDA17CB2DC3BF5071 /* APICoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB5324CFC48F1379600379DC /* APICoinglassService.swift */; };
 		9E7A64E55A8972C88698181C /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A868FA3A79EB1F208A91489 /* ChatMessage.swift */; };
 		9EEB23AEF162625BD06989D9 /* PortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C909B38D6272803B487236EF /* PortfolioView.swift */; };
-		A1C5EEA9D7A05B19352E6D53 /* APICoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFEB1928DCC3BF704CF5661D /* APICoinglassService.swift */; };
-		A31EF8C41C4BAFC23FD4B214 /* DXYServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E790544735C9EF8EBC60579 /* DXYServiceProtocol.swift */; };
-		A48C2DEC6895B41D6CDC4B1B /* DCACalculatorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 857459368B0C307EC0EE1D4E /* DCACalculatorComponents.swift */; };
+		A206DCEB00A900E4EA7FA1F3 /* CoinglassData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */; };
+		A2D7CC6E4E64921E64FB4270 /* MockTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267B802EB8458A0C8582EA6F /* MockTechnicalAnalysisService.swift */; };
 		A4E2A533164007A148D5BD1B /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = EA13A8FFF30057BEEE4AD8A3 /* Supabase */; };
 		A6ADF52AE83E1B4060375E01 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E0FC7CA101BBA281BE5F25 /* NetworkManager.swift */; };
+		A6D76F15B2AA199DB05DA481 /* SellAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D81358145D7861C61D27013 /* SellAssetView.swift */; };
 		A712337319DAB3F289605869 /* MarketOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FCD088B0831263C159A5269 /* MarketOverviewView.swift */; };
-		A7A2625C86FFC09CA0523D78 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F51202EFB27B6A7DE0D43B7 /* ITCRiskLevel.swift */; };
 		A7A3EAB5EA825A265A6C244C /* PasscodeKeypad.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B7BA7729A071261E84FB8A /* PasscodeKeypad.swift */; };
-		A8B653EF88E292C9FE5D4B62 /* APITechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBDB1AF02D51254C9A525C2D /* APITechnicalAnalysisService.swift */; };
-		A9BFD195577D2DC6E119FE82 /* VIXServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037969EE9474DF7BD202ECCB /* VIXServiceProtocol.swift */; };
+		A891AEE6810F28F71B65F2A2 /* MockSentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5FD717CBEAFF16D0F0E926C /* MockSentimentService.swift */; };
+		AAAADB3FD54B0AAB558FFD6F /* MockGlobalLiquidityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E08551BAC46315B29293E7 /* MockGlobalLiquidityService.swift */; };
 		AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE42B1F64D053FD667B857C /* AvatarView.swift */; };
 		B22E720C6866548132718379 /* AIChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E5DB1680A2D130CB1D3C6C0 /* AIChatViewModel.swift */; };
-		B519A4A9F6A3D408DE24FCE3 /* CoinglassData.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4C4994EE6E90BFD9DF9787 /* CoinglassData.swift */; };
-		B6E47A4FCC1D44FD55BFE46F /* SellAssetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569ABD5964D04DA6E86D42CA /* SellAssetView.swift */; };
-		B82FE6B48252B2759B6B00FD /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CC9CCB506A72585F2B58EF /* HomeWidget.swift */; };
+		B24FD06E35351A9ED1362F35 /* MockDXYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DD9D341A53E4E62D1D9C99E /* MockDXYService.swift */; };
+		B5B94550426F78EBD884FBCC /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1B8485392D8FDF725D94732 /* PerformanceView.swift */; };
+		B5C77358455AF608051D2BC5 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6F0CEE3D833B28336E0B66 /* ExportService.swift */; };
 		BA80C58197F5138E504E51A2 /* NewsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C9947884BDE4102F110274 /* NewsCard.swift */; };
+		BBE130BAEEC03DC1CCBD9060 /* APIVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE2B13F2F800622B70F1B720 /* APIVIXService.swift */; };
 		BC96D22F01376C054BC47DC2 /* MarketSentimentSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */; };
-		BFFB50E3D42830BB611D891B /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17C2E1F0B2EB54874759F2B /* APIEndpoint.swift */; };
+		BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */; };
+		BE89C92611163C89B015EF91 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CBCD28DAB9835627BA87F5 /* VIXData.swift */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
+		C23FD5B707CF3A05F96F3EE7 /* FedWatchSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */; };
+		C3CCEDC817E873A64AE0BE57 /* DCACalculatorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */; };
 		C515208CC5C1562E18F7B67F /* PasscodeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */; };
+		C55880EFEC7735E41C3B4912 /* MockCoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B3C7779A63C5B62E44CC9E /* MockCoinglassService.swift */; };
 		C604E45C43976A417C6023D0 /* SparklineChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FE43164BCBFA94F69EA31F /* SparklineChart.swift */; };
 		C79665282F2BC0C65D021C2C /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C61F540DDA869CAAFC93657 /* Constants.swift */; };
-		C951B6122F1FC19C0019A6D5 /* APISentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C951B6102F1FC19C0019A6D5 /* APISentimentService.swift */; };
-		C951B6132F1FC19C0019A6D5 /* APINewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C951B60E2F1FC19C0019A6D5 /* APINewsService.swift */; };
-		C951B6142F1FC19C0019A6D5 /* APIDCAService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C951B60C2F1FC19C0019A6D5 /* APIDCAService.swift */; };
-		C951B6152F1FC19C0019A6D5 /* APIPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C951B60F2F1FC19C0019A6D5 /* APIPortfolioService.swift */; };
-		C951B6162F1FC19C0019A6D5 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C951B60D2F1FC19C0019A6D5 /* APIMarketService.swift */; };
-		C9934C1D7C5460715331C99B /* APIITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465FCD02DB36F3D795BE6992 /* APIITCRiskService.swift */; };
+		C9D7CE383CD214EBDF8A1AE1 /* TechnicalAnalysisServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */; };
 		CA4D61324FBE9410E9EC4020 /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B004AFCE159ECE890C8AADC /* IconButton.swift */; };
+		CC42D9839EC4D597B66D8B18 /* PortfolioServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85ABD0735CD32A363701156A /* PortfolioServiceProtocol.swift */; };
 		CE28F43A1DF2E58083FCF816 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBEE2AB1904E9E24D7B1229D /* User.swift */; };
-		D094658304FC48B4DACB9CD6 /* MockCoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B6F3929C954C60E4602598 /* MockCoinglassService.swift */; };
 		D1AF8FDEFF881E70158A1A50 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26D4F0EA5E9FBFA77BBACD87 /* SecondaryButton.swift */; };
-		D1D5B90AA2606F0755D5646F /* MockRainbowChartService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BC8C649BF4BF724A727082 /* MockRainbowChartService.swift */; };
 		D228AC880FFF603048A50D81 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */; };
+		D2B53B6567B582423307EC2E /* RainbowChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99708F513364A5D80BA69774 /* RainbowChartData.swift */; };
 		D5874DED9CA0410B6DC862F3 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D247521DC8A835AF61FC8D60 /* View+Extensions.swift */; };
 		D753B579F81758E62F04E4B9 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153A4CDBB8CF61BA375BD929 /* ProfileView.swift */; };
+		D950DFBED705ACD245EF485F /* MockRainbowChartService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */; };
 		DA8CF466635746C18BE84FA6 /* PortfolioViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D30A48AF5A8E952C86ABB4 /* PortfolioViewModel.swift */; };
+		DB98C1E8CE156AF90EF6C97D /* RainbowChartServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D70639807A66EB3892917BEA /* RainbowChartServiceProtocol.swift */; };
 		DBB1162F512E7747351F3914 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCC10E6F99B60F66F36B21B /* ProfileViewModel.swift */; };
-		DD450C853122D72BB244149E /* FedWatchSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161AD4338E9A50375F26F9B5 /* FedWatchSection.swift */; };
+		DC56B48E4346BD6D97E4913C /* DerivativesDataSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F0DADEBAA9FA8124260B057 /* DerivativesDataSection.swift */; };
+		DC9EBED604DF5529D7DCC381 /* ITCRiskServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0507804216AF4B99B609E321 /* ITCRiskServiceProtocol.swift */; };
 		DEB18F951F4E9D8E064B2453 /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87133CEA340A437F8B91AEF /* LoadingView.swift */; };
-		DFAAE987876735F0CDF5E9A6 /* AddRealEstateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E2C2C9C43A1D1A90BA39B2D /* AddRealEstateView.swift */; };
-		E0B72411CEF96A49269A5EE6 /* CoinglassServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B6746A971F30F1BDAAC2A6 /* CoinglassServiceProtocol.swift */; };
-		E1E8AA0B3CA1915144C5D3A7 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FFD7DF1166F174ACA2EFFB5 /* TransactionDetailView.swift */; };
-		E30B833FB5968211146089AD /* CoinglassServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D7BCA2FFB59CDFF1A2F521 /* CoinglassServiceProtocol.swift */; };
+		E03213E38CE96103DB237763 /* VIXServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */; };
+		E44EDD8D9EA83E2822F9DF65 /* MockPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92D28E4D3A8673A58AC2262 /* MockPortfolioService.swift */; };
+		E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */; };
+		E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */; };
+		E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */; };
 		E8B61F5290537F3B5234979B /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0055D207871438FBAECAE1 /* Portfolio.swift */; };
-		EA51944C89E5AFC8C4678320 /* TechnicalAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C114A4C65CADC41B5B8BF6 /* TechnicalAnalysis.swift */; };
-		EAF7360AC62E0E3C7BA3337A /* AssetTechnicalDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E19E054569FE504692A0E2C /* AssetTechnicalDetailSheet.swift */; };
+		EC801D668BF7D2F4A9A01C56 /* MockMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F8DDEFBC250FC8181848AA /* MockMarketService.swift */; };
+		F01FE94D4879AC67E00D0369 /* APITechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */; };
 		F028D46763B28837C63AF7D4 /* SentimentCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9997D8052D5270DC5237E5E6 /* SentimentCard.swift */; };
-		F03E247520EBEF6EFC91F5CF /* APIGlobalLiquidityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24756984F512F07703D6DE5 /* APIGlobalLiquidityService.swift */; };
 		F127FC028818445B43404988 /* GradientCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC34A1FDFF566C6A0501418 /* GradientCard.swift */; };
+		F309CE4A58D0C80FC87CACF1 /* AssetTechnicalDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */; };
 		F374FD71053262F2670E0F46 /* MarketSentiment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C363BE93C1AF81DE643E762B /* MarketSentiment.swift */; };
-		FAF780115930E1FD64FE22E6 /* TechnicalAnalysisServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68A25868DA8C8FED9CACDF3A /* TechnicalAnalysisServiceProtocol.swift */; };
+		F7B78FAF7A8313BB21D7A569 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */; };
 		FB54B74554486F93282A5F64 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A3D4FB06E03FA228047903 /* SplashView.swift */; };
 		FC5266219EBEEC65406B533B /* SupabaseAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3882181D1C76831A5D00FA28 /* SupabaseAuth.swift */; };
-		FDDA2BF15263D6E7C5EAFD0F /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62C08D77AB19DD211EAC787A /* AppStoreRankingDetailView.swift */; };
-		ITC1RISK1WIDGET1BUILD1F01 /* ITCRiskWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = ITC1RISK1WIDGET1FILE1REF1 /* ITCRiskWidget.swift */; };
-		SPARKL1NE0002000200020002 /* PortfolioSparkline.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPARKL1NE0001000100010001 /* PortfolioSparkline.swift */; };
-		SVC001001001001001 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC001001001001002 /* ServiceContainer.swift */; };
-		SVC002001001001001 /* MarketServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC002001001001002 /* MarketServiceProtocol.swift */; };
-		SVC003001001001001 /* SentimentServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC003001001001002 /* SentimentServiceProtocol.swift */; };
-		SVC004001001001001 /* PortfolioServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC004001001001002 /* PortfolioServiceProtocol.swift */; };
-		SVC005001001001001 /* NewsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC005001001001002 /* NewsServiceProtocol.swift */; };
-		SVC006001001001001 /* DCAServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC006001001001002 /* DCAServiceProtocol.swift */; };
-		SVC007001001001001 /* MockMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC007001001001002 /* MockMarketService.swift */; };
-		SVC008001001001001 /* MockSentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC008001001001002 /* MockSentimentService.swift */; };
-		SVC009001001001001 /* MockPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC009001001001002 /* MockPortfolioService.swift */; };
-		SVC010001001001001 /* MockNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC010001001001002 /* MockNewsService.swift */; };
-		SVC011001001001001 /* MockDCAService.swift in Sources */ = {isa = PBXBuildFile; fileRef = SVC011001001001002 /* MockDCAService.swift */; };
+		FD8C19CD038F28845E0A54DA /* EconomicCalendarScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 702FD4F7C52A8914F7A26CFD /* EconomicCalendarScraper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDSetupView.swift; sourceTree = "<group>"; };
-		0156850ED879E54277D17DD0 /* MockPortfolioService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockPortfolioService.swift; path = Data/Services/Mock/MockPortfolioService.swift; sourceTree = "<group>"; };
 		0301CE05698CD3FFB7876E41 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
-		037969EE9474DF7BD202ECCB /* VIXServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VIXServiceProtocol.swift; path = Data/Services/Protocols/VIXServiceProtocol.swift; sourceTree = "<group>"; };
-		06077059E66D4476A4C70F20 /* HomeMarketWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketWidgets.swift; sourceTree = "<group>"; };
+		049CD12B81D2D7863DA67B24 /* ITCRiskWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskWidget.swift; sourceTree = "<group>"; };
+		0507804216AF4B99B609E321 /* ITCRiskServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskServiceProtocol.swift; sourceTree = "<group>"; };
+		0542844A0A074789DB81103D /* DCACalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCACalculatorView.swift; sourceTree = "<group>"; };
 		07A3D4FB06E03FA228047903 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
-		09BF5D33EC87891E10D8B8A3 /* MockITCRiskService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockITCRiskService.swift; path = Data/Services/Mock/MockITCRiskService.swift; sourceTree = "<group>"; };
-		09FB2BABAD36B78AF7CA778B /* ITCRiskServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ITCRiskServiceProtocol.swift; path = Data/Services/Protocols/ITCRiskServiceProtocol.swift; sourceTree = "<group>"; };
+		09155A7D40A9D0C232F622A8 /* DXYServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DXYServiceProtocol.swift; sourceTree = "<group>"; };
+		09632E6060BBE9A1576A3022 /* APIPortfolioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPortfolioService.swift; sourceTree = "<group>"; };
+		0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCACalculatorService.swift; sourceTree = "<group>"; };
 		0C8185913CA90DB0567893C5 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
-		0E19E054569FE504692A0E2C /* AssetTechnicalDetailSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssetTechnicalDetailSheet.swift; path = Features/Home/Views/AssetTechnicalDetailSheet.swift; sourceTree = "<group>"; };
 		0F899A618850ED4F1DCABE67 /* QuickActionsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsBar.swift; sourceTree = "<group>"; };
-		0FFD7DF1166F174ACA2EFFB5 /* TransactionDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
 		11255E8D99752FF4FB569E1F /* BaseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseCard.swift; sourceTree = "<group>"; };
 		113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalAsset.swift; sourceTree = "<group>"; };
+		1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITechnicalAnalysisService.swift; sourceTree = "<group>"; };
 		153A4CDBB8CF61BA375BD929 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		15B357FD7402C8C699282690 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
-		161AD4338E9A50375F26F9B5 /* FedWatchSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FedWatchSection.swift; sourceTree = "<group>"; };
 		1932000FA607265666E09FA8 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSentimentSection.swift; sourceTree = "<group>"; };
-		1B76523F5443D4A61E6006D2 /* APIDXYService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APIDXYService.swift; path = Data/Services/API/APIDXYService.swift; sourceTree = "<group>"; };
-		1C56B9433400F805DDB08F5E /* PerformanceMetricsCalculator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceMetricsCalculator.swift; sourceTree = "<group>"; };
 		1E999CFE901A34DC1FADC4B9 /* StockAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockAsset.swift; sourceTree = "<group>"; };
-		20C114A4C65CADC41B5B8BF6 /* TechnicalAnalysis.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TechnicalAnalysis.swift; path = Domain/Models/TechnicalAnalysis.swift; sourceTree = "<group>"; };
 		20FE43164BCBFA94F69EA31F /* SparklineChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparklineChart.swift; sourceTree = "<group>"; };
 		226992D4574D4FB6A57D1757 /* EnterEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterEmailView.swift; sourceTree = "<group>"; };
-		24693986FAAA5B2A0724CFF8 /* PerformanceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
-		25D7BCA2FFB59CDFF1A2F521 /* CoinglassServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CoinglassServiceProtocol.swift; path = Data/Services/Protocols/CoinglassServiceProtocol.swift; sourceTree = "<group>"; };
-		263E2C8611C20096CE466BD5 /* PerformanceMetrics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceMetrics.swift; sourceTree = "<group>"; };
+		2435855BCB0DC6452F414E3A /* NewsServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsServiceProtocol.swift; sourceTree = "<group>"; };
+		267B802EB8458A0C8582EA6F /* MockTechnicalAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTechnicalAnalysisService.swift; sourceTree = "<group>"; };
 		26876123F57B804A4A24DC97 /* TodaysEventsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysEventsWidget.swift; sourceTree = "<group>"; };
 		26D4F0EA5E9FBFA77BBACD87 /* SecondaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButton.swift; sourceTree = "<group>"; };
 		2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeEntryView.swift; sourceTree = "<group>"; };
-		283DD0A7268CBAE262B4AF48 /* ITCRiskServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ITCRiskServiceProtocol.swift; path = Data/Services/Protocols/ITCRiskServiceProtocol.swift; sourceTree = "<group>"; };
 		28D7DB64239C464966F42017 /* SocialLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialLinksView.swift; sourceTree = "<group>"; };
+		29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketWidgets.swift; sourceTree = "<group>"; };
 		2AD0C37E21E4AD24118B5820 /* DailyNewsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyNewsSection.swift; sourceTree = "<group>"; };
 		2B4BE3343EF57E36A6D3A2C8 /* SupabaseDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseDatabase.swift; sourceTree = "<group>"; };
-		2DFC0FA9B7912C1336B61126 /* ITCRiskLevel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ITCRiskLevel.swift; path = Domain/Models/ITCRiskLevel.swift; sourceTree = "<group>"; };
+		2C529AFE6D31B15B880E64C1 /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketServiceProtocol.swift; sourceTree = "<group>"; };
+		2D81358145D7861C61D27013 /* SellAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SellAssetView.swift; sourceTree = "<group>"; };
 		2EEF32D24CEC66662543D000 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
-		2EFDED7164F5EF449E4BE645 /* MockSentimentService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockSentimentService.swift; path = Data/Services/Mock/MockSentimentService.swift; sourceTree = "<group>"; };
-		31B5439DEA8A49DAA109FBE0 /* SentimentServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentimentServiceProtocol.swift; sourceTree = "<group>"; };
-		344E317BE929172E723E5E19 /* DCACalculatorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DCACalculatorView.swift; path = Features/Portfolio/Views/DCACalculatorView.swift; sourceTree = "<group>"; };
+		2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealEstateProperty.swift; sourceTree = "<group>"; };
+		319895490145710C89575633 /* AddRealEstateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRealEstateView.swift; sourceTree = "<group>"; };
 		36F9A053EE94F27B45371F78 /* CommunityPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPost.swift; sourceTree = "<group>"; };
+		3734A6788EEBE7830A322555 /* APINewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINewsService.swift; sourceTree = "<group>"; };
 		3882181D1C76831A5D00FA28 /* SupabaseAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuth.swift; sourceTree = "<group>"; };
 		3C17169C2A394081F66E2FF3 /* DCAViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAViewModel.swift; sourceTree = "<group>"; };
 		3C61F540DDA869CAAFC93657 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FearGreedWidget.swift; sourceTree = "<group>"; };
-		3E2C2C9C43A1D1A90BA39B2D /* AddRealEstateView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddRealEstateView.swift; sourceTree = "<group>"; };
+		3CD818131D183C8C17AD487F /* AssetRiskConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetRiskConfig.swift; sourceTree = "<group>"; };
 		3E5DB1680A2D130CB1D3C6C0 /* AIChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatViewModel.swift; sourceTree = "<group>"; };
+		3E6F0CEE3D833B28336E0B66 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		3E7A67A1ED685BB0308464EB /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
 		3F22EBA12E1763457DF0D385 /* VerificationCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerificationCodeView.swift; sourceTree = "<group>"; };
 		43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseUsernameView.swift; sourceTree = "<group>"; };
 		43F759895BAB16CAE9827A96 /* DCAListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAListView.swift; sourceTree = "<group>"; };
 		440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerInfoView.swift; sourceTree = "<group>"; };
 		440FC32555A994CF7B6FD757 /* AssetRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetRowView.swift; sourceTree = "<group>"; };
-		4644CAC9B2D9E224EA4EA4E3 /* RainbowChartData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RainbowChartData.swift; sourceTree = "<group>"; };
-		465FCD02DB36F3D795BE6992 /* APIITCRiskService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APIITCRiskService.swift; path = Data/Services/API/APIITCRiskService.swift; sourceTree = "<group>"; };
 		4670E22A47757A0E792C9687 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		49B401294BC031F771CC8076 /* DerivativesDataSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DerivativesDataSection.swift; path = Features/Market/Components/DerivativesDataSection.swift; sourceTree = "<group>"; };
-		49B6746A971F30F1BDAAC2A6 /* CoinglassServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CoinglassServiceProtocol.swift; path = Data/Services/Protocols/CoinglassServiceProtocol.swift; sourceTree = "<group>"; };
 		4A0C3702BDFA6D77FCA3BD36 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
-		4A58BFD4632D3BBD8016513C /* PortfolioServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PortfolioServiceProtocol.swift; sourceTree = "<group>"; };
 		4C7163E8A84CD6F7F613F75C /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
-		4CE77E12CDE09A0BB1129990 /* APICoinglassService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APICoinglassService.swift; path = Data/Services/API/APICoinglassService.swift; sourceTree = "<group>"; };
-		4D4511DDC64A0E0974FCD71B /* GlobalLiquidityServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalLiquidityServiceProtocol.swift; sourceTree = "<group>"; };
-		4DA280308C957B2C584BC859 /* HomeMarketWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeMarketWidgets.swift; sourceTree = "<group>"; };
-		4E61EA7805BCC179AAF313A9 /* PerformanceCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PerformanceCards.swift; sourceTree = "<group>"; };
-		4EE762BFE5AF0F22777C0DB6 /* MockDCAService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockDCAService.swift; sourceTree = "<group>"; };
+		4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetTechnicalDetailSheet.swift; sourceTree = "<group>"; };
+		4D6E843529C78DE117880236 /* MockNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockNewsService.swift; sourceTree = "<group>"; };
+		4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockRainbowChartService.swift; sourceTree = "<group>"; };
 		4F83C7068E9D94A46C50410C /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketAssetsSection.swift; sourceTree = "<group>"; };
-		51CC9CCB506A72585F2B58EF /* HomeWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWidget.swift; sourceTree = "<group>"; };
-		53FAA084BE7B4E7714482329 /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MarketServiceProtocol.swift; path = Data/Services/Protocols/MarketServiceProtocol.swift; sourceTree = "<group>"; };
+		51F8DDEFBC250FC8181848AA /* MockMarketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMarketService.swift; sourceTree = "<group>"; };
 		5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentGaugeView.swift; sourceTree = "<group>"; };
-		569ABD5964D04DA6E86D42CA /* SellAssetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SellAssetView.swift; sourceTree = "<group>"; };
+		546EB1AA744607463EE86B28 /* DCAServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAServiceProtocol.swift; sourceTree = "<group>"; };
+		5518A68482F92F03B8C61BD6 /* CreatePortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePortfolioView.swift; sourceTree = "<group>"; };
+		55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIGlobalLiquidityService.swift; sourceTree = "<group>"; };
+		55B3C7779A63C5B62E44CC9E /* MockCoinglassService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCoinglassService.swift; sourceTree = "<group>"; };
+		56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomizeHomeView.swift; sourceTree = "<group>"; };
 		5831D493E668A00494BC0398 /* SentimentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentViewModel.swift; sourceTree = "<group>"; };
-		59C155259B75A7BBB82C8F07 /* VIXData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = VIXData.swift; path = Domain/Models/VIXData.swift; sourceTree = "<group>"; };
 		5B004AFCE159ECE890C8AADC /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
-		5CBE47AFAAAF39CFCDF3722F /* SentimentServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SentimentServiceProtocol.swift; path = Data/Services/Protocols/SentimentServiceProtocol.swift; sourceTree = "<group>"; };
-		5CF7A2067345C7F520BDAFBD /* DCAServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DCAServiceProtocol.swift; sourceTree = "<group>"; };
+		5B6A3AE118E45271FE32F447 /* DXYData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DXYData.swift; sourceTree = "<group>"; };
 		5DCC10E6F99B60F66F36B21B /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
-		5DDA904BB1C61D0695EBCC58 /* ExportService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
-		5F262801D0B1076AE822A22A /* DerivativesDataSection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DerivativesDataSection.swift; path = Features/Market/Components/DerivativesDataSection.swift; sourceTree = "<group>"; };
-		5F51202EFB27B6A7DE0D43B7 /* ITCRiskLevel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ITCRiskLevel.swift; path = Domain/Models/ITCRiskLevel.swift; sourceTree = "<group>"; };
+		5DD9D341A53E4E62D1D9C99E /* MockDXYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDXYService.swift; sourceTree = "<group>"; };
+		5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHeader.swift; sourceTree = "<group>"; };
 		608A536AA089EA6F8D512468 /* DCAReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminder.swift; sourceTree = "<group>"; };
-		62C08D77AB19DD211EAC787A /* AppStoreRankingDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppStoreRankingDetailView.swift; sourceTree = "<group>"; };
-		6487571E53B79C0EE0A4CCC6 /* MockVIXService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockVIXService.swift; path = Data/Services/Mock/MockVIXService.swift; sourceTree = "<group>"; };
-		65B6F3929C954C60E4602598 /* MockCoinglassService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockCoinglassService.swift; path = Data/Services/Mock/MockCoinglassService.swift; sourceTree = "<group>"; };
-		65B896074F4C51A50DF3292E /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		676F589E22B9827D0CF8ECA3 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
-		68A25868DA8C8FED9CACDF3A /* TechnicalAnalysisServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = TechnicalAnalysisServiceProtocol.swift; path = Data/Services/Protocols/TechnicalAnalysisServiceProtocol.swift; sourceTree = "<group>"; };
+		69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreRankingDetailView.swift; sourceTree = "<group>"; };
 		6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminderWidget.swift; sourceTree = "<group>"; };
 		6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeView.swift; sourceTree = "<group>"; };
 		6BC34A1FDFF566C6A0501418 /* GradientCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientCard.swift; sourceTree = "<group>"; };
+		6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSparkline.swift; sourceTree = "<group>"; };
 		6C06924AB1053BEBE96D201B /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
+		6D6633C62AA788C16E0342E7 /* RiskTooltipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskTooltipView.swift; sourceTree = "<group>"; };
+		6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockVIXService.swift; sourceTree = "<group>"; };
+		702FD4F7C52A8914F7A26CFD /* EconomicCalendarScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EconomicCalendarScraper.swift; sourceTree = "<group>"; };
+		715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskLevel.swift; sourceTree = "<group>"; };
 		72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesWidget.swift; sourceTree = "<group>"; };
-		744A09E89146EE0CA5AC19F9 /* MockDXYService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockDXYService.swift; path = Data/Services/Mock/MockDXYService.swift; sourceTree = "<group>"; };
+		74B4B1375E8CFAC9F01975F3 /* MockITCRiskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockITCRiskService.swift; sourceTree = "<group>"; };
 		7A1C05960B8B6F9455FAE91A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		7D45CE6E47EAFBC63D15EDAA /* OnboardingHeader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingHeader.swift; sourceTree = "<group>"; };
+		7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIITCRiskService.swift; sourceTree = "<group>"; };
 		7D5A5C466F3FACF792A28F50 /* Asset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Asset.swift; sourceTree = "<group>"; };
-		7E912EC56A0FA55BABDB7AEB /* ArkSystemPrompt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ArkSystemPrompt.swift; path = Core/AI/ArkSystemPrompt.swift; sourceTree = "<group>"; };
 		7F0055D207871438FBAECAE1 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
+		809EC62EBAD1E6B547403712 /* TechnicalAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnicalAnalysis.swift; sourceTree = "<group>"; };
+		80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeWidget.swift; sourceTree = "<group>"; };
+		82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMetricsCalculator.swift; sourceTree = "<group>"; };
 		82D30A48AF5A8E952C86ABB4 /* PortfolioViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioViewModel.swift; sourceTree = "<group>"; };
-		857459368B0C307EC0EE1D4E /* DCACalculatorComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DCACalculatorComponents.swift; path = Features/Portfolio/Components/DCACalculatorComponents.swift; sourceTree = "<group>"; };
+		85ABD0735CD32A363701156A /* PortfolioServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioServiceProtocol.swift; sourceTree = "<group>"; };
+		85D98C62D2451E41B463D1AD /* RiskCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskCalculator.swift; sourceTree = "<group>"; };
+		85E08551BAC46315B29293E7 /* MockGlobalLiquidityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGlobalLiquidityService.swift; sourceTree = "<group>"; };
+		862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskDataCache.swift; sourceTree = "<group>"; };
 		86AA2774D5757CF06C791EEC /* AssetDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDetailView.swift; sourceTree = "<group>"; };
 		872F085E24F150BFF85D1495 /* ArkLineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineApp.swift; sourceTree = "<group>"; };
 		87CF0E5EC762D968DCBE4F7D /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
+		87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinglassData.swift; sourceTree = "<group>"; };
+		8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCACalculatorComponents.swift; sourceTree = "<group>"; };
 		8A868FA3A79EB1F208A91489 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		8AAAF40361CD29C51A718DFC /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		8AE42B1F64D053FD667B857C /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
-		8E7764446F184B9D42DF21EA /* DCACalculation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DCACalculation.swift; path = Domain/Models/DCACalculation.swift; sourceTree = "<group>"; };
+		8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		8FCD088B0831263C159A5269 /* MarketOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketOverviewView.swift; sourceTree = "<group>"; };
 		90DF84B086A9E9DDB80DDC05 /* String+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extensions.swift"; sourceTree = "<group>"; };
-		911781D5F037E0BFA421433F /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MarketServiceProtocol.swift; sourceTree = "<group>"; };
-		91BC8C649BF4BF724A727082 /* MockRainbowChartService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockRainbowChartService.swift; sourceTree = "<group>"; };
+		93E515D0E6990FFEF0DA3183 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
+		974BF8238E3EC277ECEE5636 /* APIDCAService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDCAService.swift; sourceTree = "<group>"; };
+		99708F513364A5D80BA69774 /* RainbowChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RainbowChartData.swift; sourceTree = "<group>"; };
 		9997D8052D5270DC5237E5E6 /* SentimentCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentCard.swift; sourceTree = "<group>"; };
-		9E3C5476611FBAE3EB6ED22A /* GlobalLiquidityData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalLiquidityData.swift; sourceTree = "<group>"; };
-		9E790544735C9EF8EBC60579 /* DXYServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DXYServiceProtocol.swift; path = Data/Services/Protocols/DXYServiceProtocol.swift; sourceTree = "<group>"; };
-		9ECFE9A8FBC78557822C355D /* MockMarketService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockMarketService.swift; sourceTree = "<group>"; };
-		A07CB7727466E18EB0FFE4B0 /* APIITCRiskService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APIITCRiskService.swift; path = Data/Services/API/APIITCRiskService.swift; sourceTree = "<group>"; };
-		A2A7C04CF52E579E88B8A8A2 /* RealEstateProperty.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealEstateProperty.swift; sourceTree = "<group>"; };
+		9F0DADEBAA9FA8124260B057 /* DerivativesDataSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DerivativesDataSection.swift; sourceTree = "<group>"; };
 		A3AFC2989FCE10A165354DA1 /* ConfirmPasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmPasscodeView.swift; sourceTree = "<group>"; };
+		A4910EA95756EA732F81117A /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
 		A5323582A6D49F73210E861F /* CustomTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTextField.swift; sourceTree = "<group>"; };
+		A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalLiquidityServiceProtocol.swift; sourceTree = "<group>"; };
+		A9CBCD28DAB9835627BA87F5 /* VIXData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VIXData.swift; sourceTree = "<group>"; };
 		AA0F55647A0541536088E943 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EconomicEvent.swift; sourceTree = "<group>"; };
+		ABCC24BCEBE385AEFCCAD355 /* DCACalculation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCACalculation.swift; sourceTree = "<group>"; };
 		ABF01AA7F99FF1B71AD4E243 /* PersonalInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalInfoView.swift; sourceTree = "<group>"; };
-		AD02A4EB296564B4C0841239 /* RainbowChartServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RainbowChartServiceProtocol.swift; sourceTree = "<group>"; };
-		B0D902D7F7F7BC474A996FF9 /* DCACalculatorService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DCACalculatorService.swift; path = Core/Utilities/DCACalculatorService.swift; sourceTree = "<group>"; };
 		B235140A3BEE72D20E513F81 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
-		B24756984F512F07703D6DE5 /* APIGlobalLiquidityService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIGlobalLiquidityService.swift; sourceTree = "<group>"; };
 		B4B455C1A7CD339880E0FD5B /* MarketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketViewModel.swift; sourceTree = "<group>"; };
-		B50AD33CD2F6E2A2EB05ECAB /* ServiceContainer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
+		B5D4FA1A5F9032170FCD48F8 /* MockDCAService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDCAService.swift; sourceTree = "<group>"; };
 		B715ECC590E3EEB1884878D5 /* FaceIDPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDPromptView.swift; sourceTree = "<group>"; };
+		B763BEA23279F34CAFF78659 /* PerformanceMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMetrics.swift; sourceTree = "<group>"; };
+		B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIRainbowChartService.swift; sourceTree = "<group>"; };
 		BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
-		BBDB1AF02D51254C9A525C2D /* APITechnicalAnalysisService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APITechnicalAnalysisService.swift; path = Data/Services/API/APITechnicalAnalysisService.swift; sourceTree = "<group>"; };
-		BFCBBE409DE3844C6D70709F /* CreatePortfolioView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CreatePortfolioView.swift; sourceTree = "<group>"; };
+		BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogarithmicRegression.swift; sourceTree = "<group>"; };
+		BE2B13F2F800622B70F1B720 /* APIVIXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIVIXService.swift; sourceTree = "<group>"; };
 		C020CF24D89DA500878B422B /* SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBar.swift; sourceTree = "<group>"; };
-		C0737B3948DB4652B0F3FEA4 /* APIRainbowChartService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIRainbowChartService.swift; sourceTree = "<group>"; };
-		C17C2E1F0B2EB54874759F2B /* APIEndpoint.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
+		C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FedWatchSection.swift; sourceTree = "<group>"; };
 		C1C9947884BDE4102F110274 /* NewsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsCard.swift; sourceTree = "<group>"; };
-		C2BA76741A3DE23585D385CD /* DXYData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DXYData.swift; path = Domain/Models/DXYData.swift; sourceTree = "<group>"; };
 		C363BE93C1AF81DE643E762B /* MarketSentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSentiment.swift; sourceTree = "<group>"; };
-		C3CB54BB219AB0D279B7AD8A /* MockSentimentService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockSentimentService.swift; sourceTree = "<group>"; };
 		C909B38D6272803B487236EF /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
-		C951B60C2F1FC19C0019A6D5 /* APIDCAService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDCAService.swift; sourceTree = "<group>"; };
-		C951B60D2F1FC19C0019A6D5 /* APIMarketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketService.swift; sourceTree = "<group>"; };
-		C951B60E2F1FC19C0019A6D5 /* APINewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINewsService.swift; sourceTree = "<group>"; };
-		C951B60F2F1FC19C0019A6D5 /* APIPortfolioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPortfolioService.swift; sourceTree = "<group>"; };
-		C951B6102F1FC19C0019A6D5 /* APISentimentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentimentService.swift; sourceTree = "<group>"; };
-		CE9175BDC16998C026FFE3E1 /* MockPortfolioService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockPortfolioService.swift; sourceTree = "<group>"; };
+		CB5324CFC48F1379600379DC /* APICoinglassService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICoinglassService.swift; sourceTree = "<group>"; };
+		CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketService.swift; sourceTree = "<group>"; };
+		CF1D381D5F6A6EFBA2FB7EA5 /* APIDXYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDXYService.swift; sourceTree = "<group>"; };
 		CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
 		CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		CF8C52768AD67E7DEDCACB74 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		D247521DC8A835AF61FC8D60 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
-		D29AF757A99C689771751269 /* MockCoinglassService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockCoinglassService.swift; path = Data/Services/Mock/MockCoinglassService.swift; sourceTree = "<group>"; };
-		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D27C191CC461606E44DF972D /* RiskHistoryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskHistoryPoint.swift; sourceTree = "<group>"; };
+		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerIndustryView.swift; sourceTree = "<group>"; };
-		D380617EC87CA05FA868535B /* APIVIXService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APIVIXService.swift; path = Data/Services/API/APIVIXService.swift; sourceTree = "<group>"; };
-		D56C766008F500382026AE4A /* NewsServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NewsServiceProtocol.swift; sourceTree = "<group>"; };
 		D5E0FC7CA101BBA281BE5F25 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
-		D67F219D3AD03DC2E4866034 /* MockGlobalLiquidityService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockGlobalLiquidityService.swift; sourceTree = "<group>"; };
+		D70639807A66EB3892917BEA /* RainbowChartServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RainbowChartServiceProtocol.swift; sourceTree = "<group>"; };
 		DAD95D54C81F435AFABAE82A /* EventRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRowView.swift; sourceTree = "<group>"; };
-		DB4C4994EE6E90BFD9DF9787 /* CoinglassData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CoinglassData.swift; path = Domain/Models/CoinglassData.swift; sourceTree = "<group>"; };
 		DBD2F46C74ADE2DABD045242 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
-		DFEB1928DCC3BF704CF5661D /* APICoinglassService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APICoinglassService.swift; path = Data/Services/API/APICoinglassService.swift; sourceTree = "<group>"; };
+		DFA6D89396B94ACB0433199B /* PerformanceCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceCards.swift; sourceTree = "<group>"; };
 		E024112075ACF55F63004893 /* CryptoAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoAsset.swift; sourceTree = "<group>"; };
 		E0B46525A08963F4CC80C639 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
-		E336A86382407C68FAAD195D /* CoinglassData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = CoinglassData.swift; path = Domain/Models/CoinglassData.swift; sourceTree = "<group>"; };
+		E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VIXServiceProtocol.swift; sourceTree = "<group>"; };
+		E5FD717CBEAFF16D0F0E926C /* MockSentimentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSentimentService.swift; sourceTree = "<group>"; };
 		E87133CEA340A437F8B91AEF /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
-		E8B293A096627D14F059FD12 /* MockTechnicalAnalysisService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockTechnicalAnalysisService.swift; path = Data/Services/Mock/MockTechnicalAnalysisService.swift; sourceTree = "<group>"; };
 		EA25ABAB56439A4FB4FCF93A /* Double+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Double+Extensions.swift"; sourceTree = "<group>"; };
-		F2E037815EF36C076DFB2A15 /* CustomizeHomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CustomizeHomeView.swift; sourceTree = "<group>"; };
-		F4B4B8494B1DD4A7EC5274E1 /* MockITCRiskService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockITCRiskService.swift; path = Data/Services/Mock/MockITCRiskService.swift; sourceTree = "<group>"; };
+		EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkSystemPrompt.swift; sourceTree = "<group>"; };
+		ED28F57A1AE475BCCE6387CE /* SentimentServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentServiceProtocol.swift; sourceTree = "<group>"; };
+		EFAE6203E090C957B000DF24 /* CoinglassServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinglassServiceProtocol.swift; sourceTree = "<group>"; };
+		F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentimentService.swift; sourceTree = "<group>"; };
+		F1B8485392D8FDF725D94732 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
 		F4D010FAE4110F01A75275BB /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		F54AD0098DA817A84CC84959 /* GlobalLiquidityData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalLiquidityData.swift; sourceTree = "<group>"; };
 		F78845800D59A83C7C923898 /* PercentageChangeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PercentageChangeView.swift; sourceTree = "<group>"; };
 		F7B7BA7729A071261E84FB8A /* PasscodeKeypad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeKeypad.swift; sourceTree = "<group>"; };
+		F92D28E4D3A8673A58AC2262 /* MockPortfolioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockPortfolioService.swift; sourceTree = "<group>"; };
 		FBEE2AB1904E9E24D7B1229D /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
-		FCE830C1FFD22CFD568D92F7 /* MockNewsService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MockNewsService.swift; sourceTree = "<group>"; };
+		FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnicalAnalysisServiceProtocol.swift; sourceTree = "<group>"; };
 		FE3A61DDFF8974642E22744D /* CommunityViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityViewModel.swift; sourceTree = "<group>"; };
-		ITC1RISK1WIDGET1FILE1REF1 /* ITCRiskWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskWidget.swift; sourceTree = "<group>"; };
-		SPARKL1NE0001000100010001 /* PortfolioSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSparkline.swift; sourceTree = "<group>"; };
-		SVC001001001001002 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
-		SVC002001001001002 /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketServiceProtocol.swift; sourceTree = "<group>"; };
-		SVC003001001001002 /* SentimentServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentServiceProtocol.swift; sourceTree = "<group>"; };
-		SVC004001001001002 /* PortfolioServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioServiceProtocol.swift; sourceTree = "<group>"; };
-		SVC005001001001002 /* NewsServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsServiceProtocol.swift; sourceTree = "<group>"; };
-		SVC006001001001002 /* DCAServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAServiceProtocol.swift; sourceTree = "<group>"; };
-		SVC007001001001002 /* MockMarketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockMarketService.swift; sourceTree = "<group>"; };
-		SVC008001001001002 /* MockSentimentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSentimentService.swift; sourceTree = "<group>"; };
-		SVC009001001001002 /* MockPortfolioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockPortfolioService.swift; sourceTree = "<group>"; };
-		SVC010001001001002 /* MockNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockNewsService.swift; sourceTree = "<group>"; };
-		SVC011001001001002 /* MockDCAService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDCAService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -385,45 +364,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		01B78FB04CC8BA445B1FA60B /* Economic */ = {
-			isa = PBXGroup;
-			children = (
-				380742E3A23F4F118D597171 /* Components */,
-				9464B5BC9074A9FC76644733 /* ViewModels */,
-				9968FD16E86A735B0D08863C /* Views */,
-			);
-			path = Economic;
-			sourceTree = "<group>";
-		};
-		0384C79942480308D671548B /* UseCases */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = UseCases;
-			sourceTree = "<group>";
-		};
-		03D7BDFC0B4159BB13B9852E /* API */ = {
-			isa = PBXGroup;
-			children = (
-				BBDB1AF02D51254C9A525C2D /* APITechnicalAnalysisService.swift */,
-				465FCD02DB36F3D795BE6992 /* APIITCRiskService.swift */,
-				D380617EC87CA05FA868535B /* APIVIXService.swift */,
-				1B76523F5443D4A61E6006D2 /* APIDXYService.swift */,
-			);
-			name = API;
-			sourceTree = "<group>";
-		};
 		06057145C8E09523859BED36 /* Features */ = {
 			isa = PBXGroup;
 			children = (
 				4B4B3C71F087E4B1AB261B31 /* AIChat */,
-				E8BD59C40BE9D40A22967F5C /* Altcoin */,
 				27E0ED5C3FDE9603C46034A6 /* Authentication */,
 				B970B0422F404D87970C0033 /* Community */,
 				0A6A7F4786432264FF0B524D /* DCAReminder */,
-				01B78FB04CC8BA445B1FA60B /* Economic */,
 				A5C54E3138907FA3845D2384 /* Home */,
-				101A4385582C0B033E7B4180 /* Liquidity */,
 				BC14B1C733028D4F3BD7E3AA /* Market */,
 				6CF3C5179C1C97F4EFE1A0EF /* Onboarding */,
 				2DF9AADFBCE3D314D6D2EBDF /* Portfolio */,
@@ -433,21 +381,21 @@
 			path = Features;
 			sourceTree = "<group>";
 		};
+		0A1791456BE0132B4D7DD7B3 /* Scrapers */ = {
+			isa = PBXGroup;
+			children = (
+				702FD4F7C52A8914F7A26CFD /* EconomicCalendarScraper.swift */,
+			);
+			path = Scrapers;
+			sourceTree = "<group>";
+		};
 		0A6A7F4786432264FF0B524D /* DCAReminder */ = {
 			isa = PBXGroup;
 			children = (
-				5088718CA1A2453BF3DA6935 /* Components */,
 				C088733377B6FA6C8108BB3C /* ViewModels */,
 				71351952FB4FBC298C9107EB /* Views */,
 			);
 			path = DCAReminder;
-			sourceTree = "<group>";
-		};
-		0B1E5240BEDE51A00494F09A /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
 			sourceTree = "<group>";
 		};
 		0B3232120C68509C6A086EDB /* Loading */ = {
@@ -469,37 +417,31 @@
 		0C68C90E6E920C32597B0D9E /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */,
 				F7B7BA7729A071261E84FB8A /* PasscodeKeypad.swift */,
-				7D45CE6E47EAFBC63D15EDAA /* OnboardingHeader.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
 		};
-		101A4385582C0B033E7B4180 /* Liquidity */ = {
+		11BA2E7D60A4A2B15512A08A /* RiskCalculation */ = {
 			isa = PBXGroup;
 			children = (
-				4A472C1775FBC7C265CD301B /* ViewModels */,
-				12AF9AAC897057D477A0BDAB /* Views */,
+				85D98C62D2451E41B463D1AD /* RiskCalculator.swift */,
+				862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */,
 			);
-			path = Liquidity;
-			sourceTree = "<group>";
-		};
-		12AF9AAC897057D477A0BDAB /* Views */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Views;
+			path = RiskCalculation;
 			sourceTree = "<group>";
 		};
 		1B3E551F0B7DFA458A80B1ED /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				319895490145710C89575633 /* AddRealEstateView.swift */,
+				5518A68482F92F03B8C61BD6 /* CreatePortfolioView.swift */,
+				0542844A0A074789DB81103D /* DCACalculatorView.swift */,
+				F1B8485392D8FDF725D94732 /* PerformanceView.swift */,
 				C909B38D6272803B487236EF /* PortfolioView.swift */,
-				BFCBBE409DE3844C6D70709F /* CreatePortfolioView.swift */,
-				3E2C2C9C43A1D1A90BA39B2D /* AddRealEstateView.swift */,
-				569ABD5964D04DA6E86D42CA /* SellAssetView.swift */,
-				24693986FAAA5B2A0724CFF8 /* PerformanceView.swift */,
-				0FFD7DF1166F174ACA2EFFB5 /* TransactionDetailView.swift */,
+				2D81358145D7861C61D27013 /* SellAssetView.swift */,
+				A4910EA95756EA732F81117A /* TransactionDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -512,24 +454,31 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		1D3991E0067F6677EC28D846 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				20C114A4C65CADC41B5B8BF6 /* TechnicalAnalysis.swift */,
-				2DFC0FA9B7912C1336B61126 /* ITCRiskLevel.swift */,
-				59C155259B75A7BBB82C8F07 /* VIXData.swift */,
-				C2BA76741A3DE23585D385CD /* DXYData.swift */,
-			);
-			name = Models;
-			sourceTree = "<group>";
-		};
 		1DD60057E7FA3D0CE660A2A8 /* Domain */ = {
 			isa = PBXGroup;
 			children = (
 				51BE6C4CE93729315F65F4E3 /* Models */,
-				0384C79942480308D671548B /* UseCases */,
 			);
 			path = Domain;
+			sourceTree = "<group>";
+		};
+		20F0471A82AC965A115A7998 /* API */ = {
+			isa = PBXGroup;
+			children = (
+				CB5324CFC48F1379600379DC /* APICoinglassService.swift */,
+				974BF8238E3EC277ECEE5636 /* APIDCAService.swift */,
+				CF1D381D5F6A6EFBA2FB7EA5 /* APIDXYService.swift */,
+				55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */,
+				7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */,
+				CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */,
+				3734A6788EEBE7830A322555 /* APINewsService.swift */,
+				09632E6060BBE9A1576A3022 /* APIPortfolioService.swift */,
+				B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */,
+				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
+				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
+				BE2B13F2F800622B70F1B720 /* APIVIXService.swift */,
+			);
+			path = API;
 			sourceTree = "<group>";
 		};
 		27E0ED5C3FDE9603C46034A6 /* Authentication */ = {
@@ -559,14 +508,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		3211DDAFA776A26CA3E98E4A /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				0E19E054569FE504692A0E2C /* AssetTechnicalDetailSheet.swift */,
-			);
-			name = Views;
-			sourceTree = "<group>";
-		};
 		35E2337C8AA09E78D6BB9C39 /* Supabase */ = {
 			isa = PBXGroup;
 			children = (
@@ -575,13 +516,6 @@
 				2B4BE3343EF57E36A6D3A2C8 /* SupabaseDatabase.swift */,
 			);
 			path = Supabase;
-			sourceTree = "<group>";
-		};
-		380742E3A23F4F118D597171 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
 			sourceTree = "<group>";
 		};
 		420A4C004ADF131BB8F1869B /* Components */ = {
@@ -601,82 +535,64 @@
 			path = Navigation;
 			sourceTree = "<group>";
 		};
-		4A472C1775FBC7C265CD301B /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
 		4B4B3C71F087E4B1AB261B31 /* AIChat */ = {
 			isa = PBXGroup;
 			children = (
-				0B1E5240BEDE51A00494F09A /* Components */,
 				C1EA4FB5E5FD30AE18E6C740 /* ViewModels */,
 				5A89784E34696A045BCC5CC8 /* Views */,
 			);
 			path = AIChat;
 			sourceTree = "<group>";
 		};
-		4C6B549D546DE5D51BE25D15 /* Domain */ = {
+		4CEA68EBF69AFF1DCB7298FD /* Protocols */ = {
 			isa = PBXGroup;
 			children = (
-				1D3991E0067F6677EC28D846 /* Models */,
+				EFAE6203E090C957B000DF24 /* CoinglassServiceProtocol.swift */,
+				546EB1AA744607463EE86B28 /* DCAServiceProtocol.swift */,
+				09155A7D40A9D0C232F622A8 /* DXYServiceProtocol.swift */,
+				A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */,
+				0507804216AF4B99B609E321 /* ITCRiskServiceProtocol.swift */,
+				2C529AFE6D31B15B880E64C1 /* MarketServiceProtocol.swift */,
+				2435855BCB0DC6452F414E3A /* NewsServiceProtocol.swift */,
+				85ABD0735CD32A363701156A /* PortfolioServiceProtocol.swift */,
+				D70639807A66EB3892917BEA /* RainbowChartServiceProtocol.swift */,
+				ED28F57A1AE475BCCE6387CE /* SentimentServiceProtocol.swift */,
+				FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */,
+				E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */,
 			);
-			name = Domain;
-			sourceTree = "<group>";
-		};
-		4E3830F5742031208417785E /* Data */ = {
-			isa = PBXGroup;
-			children = (
-				BE3FA1D48427E0358D577332 /* Services */,
-			);
-			name = Data;
-			sourceTree = "<group>";
-		};
-		5088718CA1A2453BF3DA6935 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		50DEEDB44BD0F16282AC0904 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Views;
+			path = Protocols;
 			sourceTree = "<group>";
 		};
 		51BE6C4CE93729315F65F4E3 /* Models */ = {
 			isa = PBXGroup;
 			children = (
 				7D5A5C466F3FACF792A28F50 /* Asset.swift */,
+				3CD818131D183C8C17AD487F /* AssetRiskConfig.swift */,
 				8A868FA3A79EB1F208A91489 /* ChatMessage.swift */,
+				87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */,
 				36F9A053EE94F27B45371F78 /* CommunityPost.swift */,
 				E024112075ACF55F63004893 /* CryptoAsset.swift */,
+				ABCC24BCEBE385AEFCCAD355 /* DCACalculation.swift */,
 				608A536AA089EA6F8D512468 /* DCAReminder.swift */,
+				5B6A3AE118E45271FE32F447 /* DXYData.swift */,
 				AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */,
+				F54AD0098DA817A84CC84959 /* GlobalLiquidityData.swift */,
+				80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */,
+				715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */,
 				C363BE93C1AF81DE643E762B /* MarketSentiment.swift */,
 				113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */,
+				B763BEA23279F34CAFF78659 /* PerformanceMetrics.swift */,
 				7F0055D207871438FBAECAE1 /* Portfolio.swift */,
+				99708F513364A5D80BA69774 /* RainbowChartData.swift */,
+				2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */,
+				D27C191CC461606E44DF972D /* RiskHistoryPoint.swift */,
 				1E999CFE901A34DC1FADC4B9 /* StockAsset.swift */,
+				809EC62EBAD1E6B547403712 /* TechnicalAnalysis.swift */,
 				1932000FA607265666E09FA8 /* Transaction.swift */,
 				FBEE2AB1904E9E24D7B1229D /* User.swift */,
-				51CC9CCB506A72585F2B58EF /* HomeWidget.swift */,
-				A2A7C04CF52E579E88B8A8A2 /* RealEstateProperty.swift */,
-				263E2C8611C20096CE466BD5 /* PerformanceMetrics.swift */,
-				4644CAC9B2D9E224EA4EA4E3 /* RainbowChartData.swift */,
-				9E3C5476611FBAE3EB6ED22A /* GlobalLiquidityData.swift */,
+				A9CBCD28DAB9835627BA87F5 /* VIXData.swift */,
 			);
 			path = Models;
-			sourceTree = "<group>";
-		};
-		546C9A665D571996A024941F /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Components;
 			sourceTree = "<group>";
 		};
 		549C4A95CC804970F08D223A /* ViewModels */ = {
@@ -687,13 +603,6 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		590752DD2E9692C621BC7792 /* Repositories */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Repositories;
-			sourceTree = "<group>";
-		};
 		5A89784E34696A045BCC5CC8 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -702,48 +611,12 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		5B0C8595DFAD81095728E921 /* ArkLine */ = {
-			isa = PBXGroup;
-			children = (
-				80CCB7753FD1C844CA0F54F8 /* Features */,
-				4C6B549D546DE5D51BE25D15 /* Domain */,
-				4E3830F5742031208417785E /* Data */,
-				25D7BCA2FFB59CDFF1A2F521 /* CoinglassServiceProtocol.swift */,
-				4CE77E12CDE09A0BB1129990 /* APICoinglassService.swift */,
-				D29AF757A99C689771751269 /* MockCoinglassService.swift */,
-				E336A86382407C68FAAD195D /* CoinglassData.swift */,
-				5F262801D0B1076AE822A22A /* DerivativesDataSection.swift */,
-				09FB2BABAD36B78AF7CA778B /* ITCRiskServiceProtocol.swift */,
-				A07CB7727466E18EB0FFE4B0 /* APIITCRiskService.swift */,
-				F4B4B8494B1DD4A7EC5274E1 /* MockITCRiskService.swift */,
-				5F51202EFB27B6A7DE0D43B7 /* ITCRiskLevel.swift */,
-				D2A4885061C360169ED365D7 /* Core */,
-			);
-			name = ArkLine;
-			sourceTree = "<group>";
-		};
-		5E7A23D88E9A41D3B8B5C6C7 /* Home */ = {
-			isa = PBXGroup;
-			children = (
-				3211DDAFA776A26CA3E98E4A /* Views */,
-			);
-			name = Home;
-			sourceTree = "<group>";
-		};
-		5F20A6695E28B64615EBE60B /* SentimentDetailViews */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = SentimentDetailViews;
-			sourceTree = "<group>";
-		};
 		605F9A6A564A7533DAC7DC50 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				5F20A6695E28B64615EBE60B /* SentimentDetailViews */,
+				69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */,
 				86AA2774D5757CF06C791EEC /* AssetDetailView.swift */,
 				8FCD088B0831263C159A5269 /* MarketOverviewView.swift */,
-				62C08D77AB19DD211EAC787A /* AppStoreRankingDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -777,9 +650,10 @@
 		6CBB6E14ADC94B34D5659880 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */,
 				BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */,
+				DFA6D89396B94ACB0433199B /* PerformanceCards.swift */,
 				6C06924AB1053BEBE96D201B /* TransactionRow.swift */,
-				4E61EA7805BCC179AAF313A9 /* PerformanceCards.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -797,6 +671,7 @@
 		6D3BAF55E2DA510400EA6852 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				8B6B678D16573E340A7BF8D1 /* AI */,
 				F4882AD5E8AFC0E2A2628534 /* Extensions */,
 				77B698403F732D86E8F1416C /* Theme */,
 				F0F31202DCA76A3AAF2F9AFB /* Utilities */,
@@ -816,8 +691,7 @@
 			isa = PBXGroup;
 			children = (
 				ED8F21FA94B65607E627173F /* Network */,
-				590752DD2E9692C621BC7792 /* Repositories */,
-				SVCGRP001001001001 /* Services */,
+				C2D6212575AA66228F98E3C5 /* Services */,
 				35E2337C8AA09E78D6BB9C39 /* Supabase */,
 			);
 			path = Data;
@@ -842,25 +716,12 @@
 			path = Profile;
 			sourceTree = "<group>";
 		};
-		80CCB7753FD1C844CA0F54F8 /* Features */ = {
+		8B6B678D16573E340A7BF8D1 /* AI */ = {
 			isa = PBXGroup;
 			children = (
-				F7173E3D272E4F2FE60D8903 /* Market */,
-				F86F71E7F5B5FD70625164B0 /* Portfolio */,
-				5E7A23D88E9A41D3B8B5C6C7 /* Home */,
+				EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */,
 			);
-			name = Features;
-			sourceTree = "<group>";
-		};
-		8D0126A38FE7DC200DA1DD54 /* Mock */ = {
-			isa = PBXGroup;
-			children = (
-				E8B293A096627D14F059FD12 /* MockTechnicalAnalysisService.swift */,
-				09BF5D33EC87891E10D8B8A3 /* MockITCRiskService.swift */,
-				6487571E53B79C0EE0A4CCC6 /* MockVIXService.swift */,
-				744A09E89146EE0CA5AC19F9 /* MockDXYService.swift */,
-			);
-			name = Mock;
+			path = AI;
 			sourceTree = "<group>";
 		};
 		90DA49D7CF31AE93D37997A6 /* Views */ = {
@@ -871,26 +732,12 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		9464B5BC9074A9FC76644733 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
 		9534B0AB667156E501F059E8 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
 				82D30A48AF5A8E952C86ABB4 /* PortfolioViewModel.swift */,
 			);
 			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		9968FD16E86A735B0D08863C /* Views */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Views;
 			sourceTree = "<group>";
 		};
 		9E084537816DC077F7D02B38 /* ViewModels */ = {
@@ -904,16 +751,17 @@
 		9F7BCB63AD396CF5B26149A7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */,
+				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
 				6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */,
 				72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */,
 				3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */,
+				29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */,
 				7A1C05960B8B6F9455FAE91A /* HomeView.swift */,
-				06077059E66D4476A4C70F20 /* HomeMarketWidgets.swift */,
-				ITC1RISK1WIDGET1FILE1REF1 /* ITCRiskWidget.swift */,
+				049CD12B81D2D7863DA67B24 /* ITCRiskWidget.swift */,
 				0F899A618850ED4F1DCABE67 /* QuickActionsBar.swift */,
+				6D6633C62AA788C16E0342E7 /* RiskTooltipView.swift */,
 				26876123F57B804A4A24DC97 /* TodaysEventsWidget.swift */,
-				F2E037815EF36C076DFB2A15 /* CustomizeHomeView.swift */,
-				4DA280308C957B2C584BC859 /* HomeMarketWidgets.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -925,13 +773,6 @@
 				5831D493E668A00494BC0398 /* SentimentViewModel.swift */,
 			);
 			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		A26C94D2E00F33765BE4211B /* APIs */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = APIs;
 			sourceTree = "<group>";
 		};
 		A5C54E3138907FA3845D2384 /* Home */ = {
@@ -952,25 +793,15 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		AAECF7EE4F3CED4271C1687E /* AI */ = {
-			isa = PBXGroup;
-			children = (
-				7E912EC56A0FA55BABDB7AEB /* ArkSystemPrompt.swift */,
-			);
-			name = AI;
-			sourceTree = "<group>";
-		};
 		AE9B616165DFB536A5EF5225 /* SharedComponents */ = {
 			isa = PBXGroup;
 			children = (
 				DBE9C48C4DBC83540E63EC50 /* Buttons */,
 				6CB27EFFF30500D8C22D7F28 /* Cards */,
-				CCCDC15E7009F4145431DCA4 /* Charts */,
 				C2D5CC01C430C419B36BD5CB /* Inputs */,
 				0B3232120C68509C6A086EDB /* Loading */,
 				D0E14F1F2D37C117302D315D /* Misc */,
 				4303F7BE033EE7B7B0E2950F /* Navigation */,
-				D40EFB4B8329E993A17B43FE /* Sheets */,
 			);
 			path = SharedComponents;
 			sourceTree = "<group>";
@@ -979,13 +810,14 @@
 			isa = PBXGroup;
 			children = (
 				2AD0C37E21E4AD24118B5820 /* DailyNewsSection.swift */,
+				9F0DADEBAA9FA8124260B057 /* DerivativesDataSection.swift */,
+				C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */,
 				508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */,
 				1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */,
 				C1C9947884BDE4102F110274 /* NewsCard.swift */,
 				9997D8052D5270DC5237E5E6 /* SentimentCard.swift */,
 				5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */,
 				20FE43164BCBFA94F69EA31F /* SparklineChart.swift */,
-				161AD4338E9A50375F26F9B5 /* FedWatchSection.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -993,7 +825,6 @@
 		B970B0422F404D87970C0033 /* Community */ = {
 			isa = PBXGroup;
 			children = (
-				D7511CF002FFD4D4A542E1E7 /* Components */,
 				F317B1B1DC430179119A2F1C /* ViewModels */,
 				2F004A9924F249DA1B5A1FA4 /* Views */,
 			);
@@ -1008,23 +839,6 @@
 				605F9A6A564A7533DAC7DC50 /* Views */,
 			);
 			path = Market;
-			sourceTree = "<group>";
-		};
-		BE3FA1D48427E0358D577332 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				E714412A5944EC28330F3DD0 /* Protocols */,
-				03D7BDFC0B4159BB13B9852E /* API */,
-				8D0126A38FE7DC200DA1DD54 /* Mock */,
-			);
-			name = Services;
-			sourceTree = "<group>";
-		};
-		BE7E1B59105ED4EC23B73340 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		C088733377B6FA6C8108BB3C /* ViewModels */ = {
@@ -1061,6 +875,20 @@
 			path = Inputs;
 			sourceTree = "<group>";
 		};
+		C2D6212575AA66228F98E3C5 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				20F0471A82AC965A115A7998 /* API */,
+				E0B3B0541460AFDEFB1B91B4 /* Mock */,
+				4CEA68EBF69AFF1DCB7298FD /* Protocols */,
+				11BA2E7D60A4A2B15512A08A /* RiskCalculation */,
+				0A1791456BE0132B4D7DD7B3 /* Scrapers */,
+				3E6F0CEE3D833B28336E0B66 /* ExportService.swift */,
+				93E515D0E6990FFEF0DA3183 /* ServiceContainer.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		C7ECCB77D7C3346C746120BF /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -1071,50 +899,14 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		C951B6112F1FC19C0019A6D5 /* API */ = {
-			isa = PBXGroup;
-			children = (
-				C951B60C2F1FC19C0019A6D5 /* APIDCAService.swift */,
-				C951B60D2F1FC19C0019A6D5 /* APIMarketService.swift */,
-				C951B60E2F1FC19C0019A6D5 /* APINewsService.swift */,
-				C951B60F2F1FC19C0019A6D5 /* APIPortfolioService.swift */,
-				C951B6102F1FC19C0019A6D5 /* APISentimentService.swift */,
-				C0737B3948DB4652B0F3FEA4 /* APIRainbowChartService.swift */,
-				B24756984F512F07703D6DE5 /* APIGlobalLiquidityService.swift */,
-			);
-			path = API;
-			sourceTree = "<group>";
-		};
-		CCCDC15E7009F4145431DCA4 /* Charts */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Charts;
-			sourceTree = "<group>";
-		};
 		D0E14F1F2D37C117302D315D /* Misc */ = {
 			isa = PBXGroup;
 			children = (
 				8AE42B1F64D053FD667B857C /* AvatarView.swift */,
 				F78845800D59A83C7C923898 /* PercentageChangeView.swift */,
-				SPARKL1NE0001000100010001 /* PortfolioSparkline.swift */,
+				6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */,
 			);
 			path = Misc;
-			sourceTree = "<group>";
-		};
-		D2A4885061C360169ED365D7 /* Core */ = {
-			isa = PBXGroup;
-			children = (
-				AAECF7EE4F3CED4271C1687E /* AI */,
-			);
-			name = Core;
-			sourceTree = "<group>";
-		};
-		D40EFB4B8329E993A17B43FE /* Sheets */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Sheets;
 			sourceTree = "<group>";
 		};
 		D4B90BA0BD165549D5E1D6B0 /* Views */ = {
@@ -1132,21 +924,7 @@
 				28D7DB64239C464966F42017 /* SocialLinksView.swift */,
 				07A3D4FB06E03FA228047903 /* SplashView.swift */,
 				3F22EBA12E1763457DF0D385 /* VerificationCodeView.swift */,
-				65B896074F4C51A50DF3292E /* WelcomeView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		D7511CF002FFD4D4A542E1E7 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		DABB557D3A5DF2FE5E2338DA /* Views */ = {
-			isa = PBXGroup;
-			children = (
+				8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1171,17 +949,26 @@
 				06057145C8E09523859BED36 /* Features */,
 				AE9B616165DFB536A5EF5225 /* SharedComponents */,
 				E2EB16D82448FC0BD72DB130 /* Products */,
-				5B0C8595DFAD81095728E921 /* ArkLine */,
-				8E7764446F184B9D42DF21EA /* DCACalculation.swift */,
-				B0D902D7F7F7BC474A996FF9 /* DCACalculatorService.swift */,
-				857459368B0C307EC0EE1D4E /* DCACalculatorComponents.swift */,
-				344E317BE929172E723E5E19 /* DCACalculatorView.swift */,
-				DFEB1928DCC3BF704CF5661D /* APICoinglassService.swift */,
-				49B6746A971F30F1BDAAC2A6 /* CoinglassServiceProtocol.swift */,
-				65B6F3929C954C60E4602598 /* MockCoinglassService.swift */,
-				DB4C4994EE6E90BFD9DF9787 /* CoinglassData.swift */,
-				49B401294BC031F771CC8076 /* DerivativesDataSection.swift */,
 			);
+			sourceTree = "<group>";
+		};
+		E0B3B0541460AFDEFB1B91B4 /* Mock */ = {
+			isa = PBXGroup;
+			children = (
+				55B3C7779A63C5B62E44CC9E /* MockCoinglassService.swift */,
+				B5D4FA1A5F9032170FCD48F8 /* MockDCAService.swift */,
+				5DD9D341A53E4E62D1D9C99E /* MockDXYService.swift */,
+				85E08551BAC46315B29293E7 /* MockGlobalLiquidityService.swift */,
+				74B4B1375E8CFAC9F01975F3 /* MockITCRiskService.swift */,
+				51F8DDEFBC250FC8181848AA /* MockMarketService.swift */,
+				4D6E843529C78DE117880236 /* MockNewsService.swift */,
+				F92D28E4D3A8673A58AC2262 /* MockPortfolioService.swift */,
+				4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */,
+				E5FD717CBEAFF16D0F0E926C /* MockSentimentService.swift */,
+				267B802EB8458A0C8582EA6F /* MockTechnicalAnalysisService.swift */,
+				6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */,
+			);
+			path = Mock;
 			sourceTree = "<group>";
 		};
 		E2EB16D82448FC0BD72DB130 /* Products */ = {
@@ -1192,33 +979,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		E714412A5944EC28330F3DD0 /* Protocols */ = {
-			isa = PBXGroup;
-			children = (
-				68A25868DA8C8FED9CACDF3A /* TechnicalAnalysisServiceProtocol.swift */,
-				283DD0A7268CBAE262B4AF48 /* ITCRiskServiceProtocol.swift */,
-				037969EE9474DF7BD202ECCB /* VIXServiceProtocol.swift */,
-				9E790544735C9EF8EBC60579 /* DXYServiceProtocol.swift */,
-			);
-			name = Protocols;
-			sourceTree = "<group>";
-		};
-		E8BD59C40BE9D40A22967F5C /* Altcoin */ = {
-			isa = PBXGroup;
-			children = (
-				BE7E1B59105ED4EC23B73340 /* ViewModels */,
-				DABB557D3A5DF2FE5E2338DA /* Views */,
-			);
-			path = Altcoin;
-			sourceTree = "<group>";
-		};
 		ED8F21FA94B65607E627173F /* Network */ = {
 			isa = PBXGroup;
 			children = (
-				A26C94D2E00F33765BE4211B /* APIs */,
 				B235140A3BEE72D20E513F81 /* APIEndpoint.swift */,
 				D5E0FC7CA101BBA281BE5F25 /* NetworkManager.swift */,
-				C17C2E1F0B2EB54874759F2B /* APIEndpoint.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -1228,8 +993,10 @@
 			children = (
 				4C7163E8A84CD6F7F613F75C /* AppError.swift */,
 				3C61F540DDA869CAAFC93657 /* Constants.swift */,
+				0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */,
+				BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */,
 				2EEF32D24CEC66662543D000 /* Logger.swift */,
-				1C56B9433400F805DDB08F5E /* PerformanceMetricsCalculator.swift */,
+				82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -1251,77 +1018,6 @@
 				D247521DC8A835AF61FC8D60 /* View+Extensions.swift */,
 			);
 			path = Extensions;
-			sourceTree = "<group>";
-		};
-		F7173E3D272E4F2FE60D8903 /* Market */ = {
-			isa = PBXGroup;
-			children = (
-				546C9A665D571996A024941F /* Components */,
-			);
-			name = Market;
-			sourceTree = "<group>";
-		};
-		F86F71E7F5B5FD70625164B0 /* Portfolio */ = {
-			isa = PBXGroup;
-			children = (
-				50DEEDB44BD0F16282AC0904 /* Views */,
-			);
-			name = Portfolio;
-			sourceTree = "<group>";
-		};
-		SVCGRP001001001001 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				C951B6112F1FC19C0019A6D5 /* API */,
-				SVCGRP003001001001 /* Mock */,
-				SVCGRP004001001001 /* Protocols */,
-				SVC001001001001002 /* ServiceContainer.swift */,
-				B50AD33CD2F6E2A2EB05ECAB /* ServiceContainer.swift */,
-				5DDA904BB1C61D0695EBCC58 /* ExportService.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		SVCGRP003001001001 /* Mock */ = {
-			isa = PBXGroup;
-			children = (
-				SVC011001001001002 /* MockDCAService.swift */,
-				SVC007001001001002 /* MockMarketService.swift */,
-				SVC010001001001002 /* MockNewsService.swift */,
-				SVC009001001001002 /* MockPortfolioService.swift */,
-				SVC008001001001002 /* MockSentimentService.swift */,
-				2EFDED7164F5EF449E4BE645 /* MockSentimentService.swift */,
-				0156850ED879E54277D17DD0 /* MockPortfolioService.swift */,
-				FCE830C1FFD22CFD568D92F7 /* MockNewsService.swift */,
-				C3CB54BB219AB0D279B7AD8A /* MockSentimentService.swift */,
-				4EE762BFE5AF0F22777C0DB6 /* MockDCAService.swift */,
-				CE9175BDC16998C026FFE3E1 /* MockPortfolioService.swift */,
-				9ECFE9A8FBC78557822C355D /* MockMarketService.swift */,
-				91BC8C649BF4BF724A727082 /* MockRainbowChartService.swift */,
-				D67F219D3AD03DC2E4866034 /* MockGlobalLiquidityService.swift */,
-			);
-			path = Mock;
-			sourceTree = "<group>";
-		};
-		SVCGRP004001001001 /* Protocols */ = {
-			isa = PBXGroup;
-			children = (
-				SVC006001001001002 /* DCAServiceProtocol.swift */,
-				SVC002001001001002 /* MarketServiceProtocol.swift */,
-				SVC005001001001002 /* NewsServiceProtocol.swift */,
-				SVC004001001001002 /* PortfolioServiceProtocol.swift */,
-				SVC003001001001002 /* SentimentServiceProtocol.swift */,
-				5CBE47AFAAAF39CFCDF3722F /* SentimentServiceProtocol.swift */,
-				53FAA084BE7B4E7714482329 /* MarketServiceProtocol.swift */,
-				5CF7A2067345C7F520BDAFBD /* DCAServiceProtocol.swift */,
-				31B5439DEA8A49DAA109FBE0 /* SentimentServiceProtocol.swift */,
-				D56C766008F500382026AE4A /* NewsServiceProtocol.swift */,
-				911781D5F037E0BFA421433F /* MarketServiceProtocol.swift */,
-				4A58BFD4632D3BBD8016513C /* PortfolioServiceProtocol.swift */,
-				AD02A4EB296564B4C0841239 /* RainbowChartServiceProtocol.swift */,
-				4D4511DDC64A0E0974FCD71B /* GlobalLiquidityServiceProtocol.swift */,
-			);
-			path = Protocols;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1353,7 +1049,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					A7ECDF5FA599356DF0251A76 = {
 						DevelopmentTeam = "";
@@ -1374,7 +1070,7 @@
 			packageReferences = (
 				32B905E01A0974D0EAAFBF1C /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
-			productRefGroup = E2EB16D82448FC0BD72DB130 /* Products */;
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1390,11 +1086,29 @@
 			files = (
 				943CEF0A4415440A57DF682C /* AIChatView.swift in Sources */,
 				B22E720C6866548132718379 /* AIChatViewModel.swift in Sources */,
+				9DBBCFAFDA17CB2DC3BF5071 /* APICoinglassService.swift in Sources */,
+				4A0014C464DAD4B555371050 /* APIDCAService.swift in Sources */,
+				333C25308702886CB558C573 /* APIDXYService.swift in Sources */,
+				2D705F6BFE7C3BF5DE8CBBF0 /* APIEndpoint.swift in Sources */,
+				5605DA56CF5EFF3F689E634B /* APIGlobalLiquidityService.swift in Sources */,
+				98CEA03E857EB2C3B42432C2 /* APIITCRiskService.swift in Sources */,
+				0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */,
+				1F0833CA9F56648D541F75B2 /* APINewsService.swift in Sources */,
+				7997651354297A0F1994195C /* APIPortfolioService.swift in Sources */,
+				4732DC10C2E52D8A1C1016DE /* APIRainbowChartService.swift in Sources */,
+				E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */,
+				F01FE94D4879AC67E00D0369 /* APITechnicalAnalysisService.swift in Sources */,
+				BBE130BAEEC03DC1CCBD9060 /* APIVIXService.swift in Sources */,
+				690BC8C087FC477F1E63CE84 /* AddRealEstateView.swift in Sources */,
 				6733AADDD937D8717CF46DFF /* AppError.swift in Sources */,
+				80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */,
 				43A46C7A8D6ED6366495D642 /* ArkLineApp.swift in Sources */,
+				E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */,
 				140BA6F215F30D04AE81C591 /* Asset.swift in Sources */,
 				6C73E90D8ECCADCDFBC108B8 /* AssetDetailView.swift in Sources */,
+				0623B4FCFD70266B815496D1 /* AssetRiskConfig.swift in Sources */,
 				1229BB7C45A6A74F5082A32F /* AssetRowView.swift in Sources */,
+				F309CE4A58D0C80FC87CACF1 /* AssetTechnicalDetailSheet.swift in Sources */,
 				5F4B99B5C4891DD601F0FF5B /* AuthViewModel.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
 				77273323CF240C251C222AAF /* BaseCard.swift in Sources */,
@@ -1402,6 +1116,8 @@
 				0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */,
 				9E7A64E55A8972C88698181C /* ChatMessage.swift in Sources */,
 				C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */,
+				A206DCEB00A900E4EA7FA1F3 /* CoinglassData.swift in Sources */,
+				8378398BE85A7A2DF1973F75 /* CoinglassServiceProtocol.swift in Sources */,
 				3912372E5D7BB736DB249146 /* Colors.swift in Sources */,
 				1608B4BE39548C20111B77DF /* CommunityPost.swift in Sources */,
 				0344C4B0955D58DCD34C2EC8 /* CommunityView.swift in Sources */,
@@ -1410,59 +1126,109 @@
 				C79665282F2BC0C65D021C2C /* Constants.swift in Sources */,
 				74B1626796F1D2E9ABB3D2DA /* ContentView.swift in Sources */,
 				6E882DC62BAECE881FB9CD01 /* CreatePasscodeView.swift in Sources */,
+				8D35F7007280F5E80024585A /* CreatePortfolioView.swift in Sources */,
 				76D05FD2A9D04E17CDA69F95 /* CryptoAsset.swift in Sources */,
 				2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */,
+				2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */,
+				3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */,
+				C3CCEDC817E873A64AE0BE57 /* DCACalculatorComponents.swift in Sources */,
+				56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */,
+				4C8160414F9E10ADFB569E1E /* DCACalculatorView.swift in Sources */,
 				7315E035C2C0BFD44CEDC052 /* DCAListView.swift in Sources */,
 				0F57D66C7B4F2E45760BFCF2 /* DCAReminder.swift in Sources */,
 				5179DE1219FBE8BB9CA2963D /* DCAReminderWidget.swift in Sources */,
+				86A35FC4DE871DF32AFE316E /* DCAServiceProtocol.swift in Sources */,
 				3ED20C98B679E1B39E700AEC /* DCAViewModel.swift in Sources */,
+				60FA4D7B2F1A36A021F57DEA /* DXYData.swift in Sources */,
+				60A76BA862CB7DC22EA522F6 /* DXYServiceProtocol.swift in Sources */,
 				541DAD72CE174BCAA6CB8C31 /* DailyNewsSection.swift in Sources */,
 				6039354E9B24821430E1C7F4 /* Date+Extensions.swift in Sources */,
+				DC56B48E4346BD6D97E4913C /* DerivativesDataSection.swift in Sources */,
 				8E42B1CB3AAC8414C67C7303 /* Double+Extensions.swift in Sources */,
+				FD8C19CD038F28845E0A54DA /* EconomicCalendarScraper.swift in Sources */,
 				11530E01A7E1E110918998B7 /* EconomicEvent.swift in Sources */,
 				248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */,
 				386CF39874D6A2F1687A3828 /* EventRowView.swift in Sources */,
+				B5C77358455AF608051D2BC5 /* ExportService.swift in Sources */,
 				74342987C2189339E31FAA64 /* FaceIDPromptView.swift in Sources */,
 				1028E8CBB796AA676788323E /* FaceIDSetupView.swift in Sources */,
 				7383D460E1983C30AD7C1A4D /* FavoritesWidget.swift in Sources */,
 				2C64471C1DA2261CE83B3164 /* FearGreedWidget.swift in Sources */,
+				C23FD5B707CF3A05F96F3EE7 /* FedWatchSection.swift in Sources */,
 				53DB2C4BBFAA8EBE46DFFD6D /* Fonts.swift in Sources */,
+				14D33F97F6618A1779952623 /* GlobalLiquidityData.swift in Sources */,
+				0163AAB9E3115D7C8026A39F /* GlobalLiquidityServiceProtocol.swift in Sources */,
 				F127FC028818445B43404988 /* GradientCard.swift in Sources */,
 				7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */,
+				3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */,
 				58758A7C9170D7678030686C /* HomeView.swift in Sources */,
 				D228AC880FFF603048A50D81 /* HomeViewModel.swift in Sources */,
-				ITC1RISK1WIDGET1BUILD1F01 /* ITCRiskWidget.swift in Sources */,
+				BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */,
+				E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */,
+				DC9EBED604DF5529D7DCC381 /* ITCRiskServiceProtocol.swift in Sources */,
+				6CE5BC8E504E9DBF01B7AF2D /* ITCRiskWidget.swift in Sources */,
 				CA4D61324FBE9410E9EC4020 /* IconButton.swift in Sources */,
 				DEB18F951F4E9D8E064B2453 /* LoadingView.swift in Sources */,
+				07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */,
 				0040B691123D65196663027A /* Logger.swift in Sources */,
 				81173E2E4A51178EFA18143F /* LoginView.swift in Sources */,
 				320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */,
 				A712337319DAB3F289605869 /* MarketOverviewView.swift in Sources */,
 				F374FD71053262F2670E0F46 /* MarketSentiment.swift in Sources */,
 				BC96D22F01376C054BC47DC2 /* MarketSentimentSection.swift in Sources */,
+				1652EDF9F5840922C777B78C /* MarketServiceProtocol.swift in Sources */,
 				4B72ED4396687C6142BCE540 /* MarketViewModel.swift in Sources */,
 				238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */,
+				C55880EFEC7735E41C3B4912 /* MockCoinglassService.swift in Sources */,
+				85030D9B4F243212B135BC23 /* MockDCAService.swift in Sources */,
+				B24FD06E35351A9ED1362F35 /* MockDXYService.swift in Sources */,
+				AAAADB3FD54B0AAB558FFD6F /* MockGlobalLiquidityService.swift in Sources */,
+				6B573B8A06D1D58E5B6E430C /* MockITCRiskService.swift in Sources */,
+				EC801D668BF7D2F4A9A01C56 /* MockMarketService.swift in Sources */,
+				57CACD5F5AC3FA93AF2C8580 /* MockNewsService.swift in Sources */,
+				E44EDD8D9EA83E2822F9DF65 /* MockPortfolioService.swift in Sources */,
+				D950DFBED705ACD245EF485F /* MockRainbowChartService.swift in Sources */,
+				A891AEE6810F28F71B65F2A2 /* MockSentimentService.swift in Sources */,
+				A2D7CC6E4E64921E64FB4270 /* MockTechnicalAnalysisService.swift in Sources */,
+				268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */,
 				A6ADF52AE83E1B4060375E01 /* NetworkManager.swift in Sources */,
 				BA80C58197F5138E504E51A2 /* NewsCard.swift in Sources */,
+				9BD583B0D704BDA411DCC474 /* NewsServiceProtocol.swift in Sources */,
+				87E5C72EC3033733C97B8A92 /* OnboardingHeader.swift in Sources */,
 				869FCACBD4C6668613E58066 /* OnboardingViewModel.swift in Sources */,
 				C515208CC5C1562E18F7B67F /* PasscodeEntryView.swift in Sources */,
 				A7A3EAB5EA825A265A6C244C /* PasscodeKeypad.swift in Sources */,
 				6381F7DC80B6158842FC7AE2 /* PercentageChangeView.swift in Sources */,
+				34F28A15245DD8CEAF8D0917 /* PerformanceCards.swift in Sources */,
+				0622105383FB4CA6C1E1D8AC /* PerformanceMetrics.swift in Sources */,
+				124D9971E61229596EEB9C25 /* PerformanceMetricsCalculator.swift in Sources */,
+				B5B94550426F78EBD884FBCC /* PerformanceView.swift in Sources */,
 				44FCB7723114E4F1CF1D2988 /* PersonalInfoView.swift in Sources */,
 				E8B61F5290537F3B5234979B /* Portfolio.swift in Sources */,
+				CC42D9839EC4D597B66D8B18 /* PortfolioServiceProtocol.swift in Sources */,
+				52E41BAE93DC49878799601B /* PortfolioSparkline.swift in Sources */,
 				9EEB23AEF162625BD06989D9 /* PortfolioView.swift in Sources */,
 				DA8CF466635746C18BE84FA6 /* PortfolioViewModel.swift in Sources */,
-				SPARKL1NE0002000200020002 /* PortfolioSparkline.swift in Sources */,
 				05A89424EED50115096BA977 /* PrimaryButton.swift in Sources */,
 				466D283EE26005651F716BD9 /* ProfilePictureView.swift in Sources */,
 				D753B579F81758E62F04E4B9 /* ProfileView.swift in Sources */,
 				DBB1162F512E7747351F3914 /* ProfileViewModel.swift in Sources */,
 				761D9604237272971D9D83F4 /* QuickActionsBar.swift in Sources */,
+				D2B53B6567B582423307EC2E /* RainbowChartData.swift in Sources */,
+				DB98C1E8CE156AF90EF6C97D /* RainbowChartServiceProtocol.swift in Sources */,
+				7496022AFE7F51C4A859F208 /* RealEstateProperty.swift in Sources */,
+				81C072BFFD8B887035D2B021 /* RiskCalculator.swift in Sources */,
+				8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */,
+				1255DA09E561168742D3B210 /* RiskHistoryPoint.swift in Sources */,
+				58D6351162371B50FE504198 /* RiskTooltipView.swift in Sources */,
 				4E1CF3B74ABFF049BD3AA054 /* SearchBar.swift in Sources */,
 				D1AF8FDEFF881E70158A1A50 /* SecondaryButton.swift in Sources */,
+				A6D76F15B2AA199DB05DA481 /* SellAssetView.swift in Sources */,
 				F028D46763B28837C63AF7D4 /* SentimentCard.swift in Sources */,
 				2EC5DA90B4B6556747D69F09 /* SentimentGaugeView.swift in Sources */,
+				0FE26D59F0B74D161E4019D3 /* SentimentServiceProtocol.swift in Sources */,
 				667A5DC45682FDB0777B1C5A /* SentimentViewModel.swift in Sources */,
+				2B22CF69504B08756CCC2A49 /* ServiceContainer.swift in Sources */,
 				48727CBCFCE48D546CB33BEB /* SettingsView.swift in Sources */,
 				2DFD1CE8B62B33F45CFAAC17 /* SettingsViewModel.swift in Sources */,
 				335C702F0D9E1CFF7480EC8B /* SocialLinksView.swift in Sources */,
@@ -1475,90 +1241,18 @@
 				68B776510F6F799948F81E99 /* SupabaseClient.swift in Sources */,
 				82BFB0C29D476D49DE22C1A6 /* SupabaseDatabase.swift in Sources */,
 				1CB7FECB27F55097111DA2C0 /* TabBarView.swift in Sources */,
+				5CF2A893794727B0769FA275 /* TechnicalAnalysis.swift in Sources */,
+				C9D7CE383CD214EBDF8A1AE1 /* TechnicalAnalysisServiceProtocol.swift in Sources */,
 				78F15E09D170B61BD4292FFF /* TodaysEventsWidget.swift in Sources */,
 				8331DD57A5E7BAAC58068B76 /* Transaction.swift in Sources */,
+				628B818C69781D7CF29F53E0 /* TransactionDetailView.swift in Sources */,
 				8BA5B455BC87E71356E74F27 /* TransactionRow.swift in Sources */,
 				CE28F43A1DF2E58083FCF816 /* User.swift in Sources */,
+				BE89C92611163C89B015EF91 /* VIXData.swift in Sources */,
+				E03213E38CE96103DB237763 /* VIXServiceProtocol.swift in Sources */,
 				60BB9BA45A9AAD209518F05A /* VerificationCodeView.swift in Sources */,
 				D5874DED9CA0410B6DC862F3 /* View+Extensions.swift in Sources */,
-				SVC001001001001001 /* ServiceContainer.swift in Sources */,
-				SVC002001001001001 /* MarketServiceProtocol.swift in Sources */,
-				SVC003001001001001 /* SentimentServiceProtocol.swift in Sources */,
-				SVC004001001001001 /* PortfolioServiceProtocol.swift in Sources */,
-				SVC005001001001001 /* NewsServiceProtocol.swift in Sources */,
-				SVC006001001001001 /* DCAServiceProtocol.swift in Sources */,
-				SVC007001001001001 /* MockMarketService.swift in Sources */,
-				SVC008001001001001 /* MockSentimentService.swift in Sources */,
-				SVC009001001001001 /* MockPortfolioService.swift in Sources */,
-				SVC010001001001001 /* MockNewsService.swift in Sources */,
-				SVC011001001001001 /* MockDCAService.swift in Sources */,
-				C951B6122F1FC19C0019A6D5 /* APISentimentService.swift in Sources */,
-				C951B6132F1FC19C0019A6D5 /* APINewsService.swift in Sources */,
-				C951B6142F1FC19C0019A6D5 /* APIDCAService.swift in Sources */,
-				C951B6152F1FC19C0019A6D5 /* APIPortfolioService.swift in Sources */,
-				C951B6162F1FC19C0019A6D5 /* APIMarketService.swift in Sources */,
-				BFFB50E3D42830BB611D891B /* APIEndpoint.swift in Sources */,
-				1A57B1FE01AB51FDBE8EE47E /* OnboardingHeader.swift in Sources */,
-				78C83018B7360E797CA0740A /* WelcomeView.swift in Sources */,
-				DD450C853122D72BB244149E /* FedWatchSection.swift in Sources */,
-				B82FE6B48252B2759B6B00FD /* HomeWidget.swift in Sources */,
-				12182E5602FE19F1FE812D17 /* CustomizeHomeView.swift in Sources */,
-				35511E7B5B34180F8A9790DE /* HomeMarketWidgets.swift in Sources */,
-				FDDA2BF15263D6E7C5EAFD0F /* AppStoreRankingDetailView.swift in Sources */,
-				96B0A13DC9C447A2F386CEBC /* RealEstateProperty.swift in Sources */,
-				3E6F2CD0130AA3CEA509A058 /* CreatePortfolioView.swift in Sources */,
-				DFAAE987876735F0CDF5E9A6 /* AddRealEstateView.swift in Sources */,
-				B6E47A4FCC1D44FD55BFE46F /* SellAssetView.swift in Sources */,
-				335A7B377FAFD13F754D4F38 /* PerformanceMetrics.swift in Sources */,
-				0D834A5912DD9387257B3035 /* PerformanceMetricsCalculator.swift in Sources */,
-				3DA7343FCB9C6A1D49A351F8 /* PerformanceCards.swift in Sources */,
-				901058F51414A72F9F1412B7 /* ExportService.swift in Sources */,
-				301D5C8341D6392B042E2D0E /* PerformanceView.swift in Sources */,
-				E1E8AA0B3CA1915144C5D3A7 /* TransactionDetailView.swift in Sources */,
-				EA51944C89E5AFC8C4678320 /* TechnicalAnalysis.swift in Sources */,
-				EAF7360AC62E0E3C7BA3337A /* AssetTechnicalDetailSheet.swift in Sources */,
-				FAF780115930E1FD64FE22E6 /* TechnicalAnalysisServiceProtocol.swift in Sources */,
-				A8B653EF88E292C9FE5D4B62 /* APITechnicalAnalysisService.swift in Sources */,
-				6814DC8F502BD4D8609C3683 /* MockTechnicalAnalysisService.swift in Sources */,
-				038199C02B3469B0BF3F6EDF /* DCACalculation.swift in Sources */,
-				50428B2D51891056C8971817 /* DCACalculatorService.swift in Sources */,
-				A48C2DEC6895B41D6CDC4B1B /* DCACalculatorComponents.swift in Sources */,
-				18FB93C3D0383C64B2312A34 /* DCACalculatorView.swift in Sources */,
-				A1C5EEA9D7A05B19352E6D53 /* APICoinglassService.swift in Sources */,
-				E0B72411CEF96A49269A5EE6 /* CoinglassServiceProtocol.swift in Sources */,
-				D094658304FC48B4DACB9CD6 /* MockCoinglassService.swift in Sources */,
-				B519A4A9F6A3D408DE24FCE3 /* CoinglassData.swift in Sources */,
-				8CE97F1EB43B0EA1450E3595 /* DerivativesDataSection.swift in Sources */,
-				E30B833FB5968211146089AD /* CoinglassServiceProtocol.swift in Sources */,
-				79816E21F63128F89A148BB1 /* APICoinglassService.swift in Sources */,
-				4AFAA441A84FD62BB25D9C18 /* MockCoinglassService.swift in Sources */,
-				6F72DA5BCCED963BDD2B1531 /* CoinglassData.swift in Sources */,
-				6D75A03DAD4222D5CEADB6C6 /* DerivativesDataSection.swift in Sources */,
-				73398D35A5106CD145831A34 /* ITCRiskLevel.swift in Sources */,
-				3426E67D8790969AD98FE071 /* ITCRiskServiceProtocol.swift in Sources */,
-				C9934C1D7C5460715331C99B /* APIITCRiskService.swift in Sources */,
-				6BD4DCE14A30677FABC24DFB /* MockITCRiskService.swift in Sources */,
-				7C2DF88DC88BA7CB82555E79 /* ITCRiskServiceProtocol.swift in Sources */,
-				1D1A65524BB83EFA9B46C69B /* APIITCRiskService.swift in Sources */,
-				26713712968978F308B2C0AE /* MockITCRiskService.swift in Sources */,
-				A7A2625C86FFC09CA0523D78 /* ITCRiskLevel.swift in Sources */,
-				732FB330186DAEFA2BA82B64 /* VIXData.swift in Sources */,
-				9D8E91E4CB7FB9D2430612EE /* DXYData.swift in Sources */,
-				A9BFD195577D2DC6E119FE82 /* VIXServiceProtocol.swift in Sources */,
-				A31EF8C41C4BAFC23FD4B214 /* DXYServiceProtocol.swift in Sources */,
-				88789B2CFFF765FA41C761A9 /* APIVIXService.swift in Sources */,
-				1D83D8CAA0DA1475F580A598 /* APIDXYService.swift in Sources */,
-				3ED6507C2BE7C510357AA4F2 /* MockVIXService.swift in Sources */,
-				69BD32BB4B13B760C5D62D09 /* MockDXYService.swift in Sources */,
-				06E21D17D0B98FA6F2A91851 /* RainbowChartServiceProtocol.swift in Sources */,
-				4D9955BCAF6D805224ED6554 /* GlobalLiquidityServiceProtocol.swift in Sources */,
-				75373C82302E8F4E4A669C85 /* APIRainbowChartService.swift in Sources */,
-				F03E247520EBEF6EFC91F5CF /* APIGlobalLiquidityService.swift in Sources */,
-				D1D5B90AA2606F0755D5646F /* MockRainbowChartService.swift in Sources */,
-				43250430D8E06DDD1733342B /* MockGlobalLiquidityService.swift in Sources */,
-				658BAF4E30C77E390A611250 /* RainbowChartData.swift in Sources */,
-				33B5E8A08B1C211307A7ACB6 /* GlobalLiquidityData.swift in Sources */,
-				2E0CDB3B4786FEBE2B5AB561 /* ArkSystemPrompt.swift in Sources */,
+				F7B78FAF7A8313BB21D7A569 /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1604,7 +1298,6 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -1628,7 +1321,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -1712,7 +1404,6 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -1729,7 +1420,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;

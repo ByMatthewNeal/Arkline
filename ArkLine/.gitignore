@@ -22,5 +22,6 @@ Packages/
 .env
 *.pem
 credentials.json
-build/
+Secrets.plist
+Resources/Secrets.plist
 build/
