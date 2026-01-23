@@ -75,10 +75,10 @@ struct MarketSentimentSection: View {
                 }
             }
 
-            // SECTION: ITC Risk Levels (Into The Cryptoverse)
+            // SECTION: Asset Risk Levels
             if viewModel.btcRiskLevel != nil || viewModel.ethRiskLevel != nil {
                 SentimentCategorySection(
-                    title: "ITC Risk Levels",
+                    title: "Asset Risk Levels",
                     icon: "chart.line.uptrend.xyaxis",
                     iconColor: AppColors.accent
                 ) {
@@ -87,18 +87,18 @@ struct MarketSentimentSection: View {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                             // BTC Risk Level
                             if let btcRisk = viewModel.btcRiskLevel {
-                                ITCRiskCard(riskLevel: btcRisk, coinSymbol: "BTC")
+                                RiskCard(riskLevel: btcRisk, coinSymbol: "BTC")
                             }
 
                             // ETH Risk Level
                             if let ethRisk = viewModel.ethRiskLevel {
-                                ITCRiskCard(riskLevel: ethRisk, coinSymbol: "ETH")
+                                RiskCard(riskLevel: ethRisk, coinSymbol: "ETH")
                             }
                         }
 
-                        // Historical trend chart (if expanded and data available)
+                        // Historical trend chart (tappable)
                         if !viewModel.btcRiskHistory.isEmpty {
-                            ITCRiskHistoryCard(history: viewModel.btcRiskHistory)
+                            RiskHistoryCard(history: viewModel.btcRiskHistory)
                         }
                     }
                 }
@@ -979,10 +979,11 @@ struct LiquidationLevelsCard: View {
     }
 }
 
-// MARK: - ITC Risk History Card
-struct ITCRiskHistoryCard: View {
+// MARK: - Risk History Card (Tappable)
+struct RiskHistoryCard: View {
     let history: [ITCRiskLevel]
     @Environment(\.colorScheme) var colorScheme
+    @State private var showingDetail = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -1008,58 +1009,70 @@ struct ITCRiskHistoryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("BTC Risk History")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(textPrimary)
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text("BTC Risk History")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(textPrimary)
 
-                    Text("30 Day Trend")
-                        .font(.caption)
-                        .foregroundColor(AppColors.textSecondary)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                        }
+
+                        Text("30 Day Trend")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    // Trend indicator
+                    HStack(spacing: 4) {
+                        Image(systemName: trendIcon)
+                            .font(.system(size: 12, weight: .bold))
+                        Text(trendLabel)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(trendColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(trendColor.opacity(0.15))
+                    )
                 }
 
-                Spacer()
+                // Mini chart
+                if !chartData.isEmpty {
+                    RiskSparkline(dataPoints: chartData, colorScheme: colorScheme)
+                        .frame(height: 60)
+                }
 
-                // Trend indicator
+                // Subtle attribution
                 HStack(spacing: 4) {
-                    Image(systemName: trendIcon)
-                        .font(.system(size: 12, weight: .bold))
-                    Text(trendLabel)
-                        .font(.caption)
-                        .fontWeight(.medium)
+                    Image(systemName: "link")
+                        .font(.system(size: 9))
+                        .foregroundColor(textPrimary.opacity(0.35))
+
+                    Text("intothecryptoverse.com")
+                        .font(.system(size: 9))
+                        .foregroundColor(textPrimary.opacity(0.35))
                 }
-                .foregroundColor(trendColor)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(trendColor.opacity(0.15))
-                )
             }
-
-            // Mini chart
-            if !chartData.isEmpty {
-                ITCRiskSparkline(dataPoints: chartData, colorScheme: colorScheme)
-                    .frame(height: 60)
-            }
-
-            // Attribution
-            HStack {
-                Image(systemName: "link")
-                    .font(.system(size: 10))
-                    .foregroundColor(AppColors.accent)
-
-                Text("Powered by Into The Cryptoverse")
-                    .font(.caption2)
-                    .foregroundColor(textPrimary.opacity(0.5))
-            }
+            .padding(16)
+            .glassCard(cornerRadius: 16)
         }
-        .padding(16)
-        .glassCard(cornerRadius: 16)
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            RiskLevelChartView()
+        }
     }
 
     private var trendIcon: String {
@@ -1087,8 +1100,11 @@ struct ITCRiskHistoryCard: View {
     }
 }
 
+// Legacy alias
+typealias ITCRiskHistoryCard = RiskHistoryCard
+
 // MARK: - ITC Risk Sparkline
-struct ITCRiskSparkline: View {
+struct RiskSparkline: View {
     let dataPoints: [CGFloat]
     let colorScheme: ColorScheme
 
@@ -1103,32 +1119,32 @@ struct ITCRiskSparkline: View {
                 VStack(spacing: 0) {
                     // Extreme risk zone (0.90-1.0 = 10%)
                     Rectangle()
-                        .fill(ITCRiskColors.extremeRisk.opacity(0.08))
+                        .fill(RiskColors.extremeRisk.opacity(0.08))
                         .frame(height: height * 0.10)
 
                     // High risk zone (0.70-0.90 = 20%)
                     Rectangle()
-                        .fill(ITCRiskColors.highRisk.opacity(0.08))
+                        .fill(RiskColors.highRisk.opacity(0.08))
                         .frame(height: height * 0.20)
 
                     // Elevated risk zone (0.55-0.70 = 15%)
                     Rectangle()
-                        .fill(ITCRiskColors.elevatedRisk.opacity(0.08))
+                        .fill(RiskColors.elevatedRisk.opacity(0.08))
                         .frame(height: height * 0.15)
 
                     // Neutral zone (0.40-0.55 = 15%)
                     Rectangle()
-                        .fill(ITCRiskColors.neutral.opacity(0.08))
+                        .fill(RiskColors.neutral.opacity(0.08))
                         .frame(height: height * 0.15)
 
                     // Low risk zone (0.20-0.40 = 20%)
                     Rectangle()
-                        .fill(ITCRiskColors.lowRisk.opacity(0.08))
+                        .fill(RiskColors.lowRisk.opacity(0.08))
                         .frame(height: height * 0.20)
 
                     // Very low risk zone (0.00-0.20 = 20%)
                     Rectangle()
-                        .fill(ITCRiskColors.veryLowRisk.opacity(0.08))
+                        .fill(RiskColors.veryLowRisk.opacity(0.08))
                         .frame(height: height * 0.20)
                 }
 
@@ -1150,12 +1166,12 @@ struct ITCRiskSparkline: View {
                 .stroke(
                     LinearGradient(
                         colors: [
-                            ITCRiskColors.veryLowRisk,
-                            ITCRiskColors.lowRisk,
-                            ITCRiskColors.neutral,
-                            ITCRiskColors.elevatedRisk,
-                            ITCRiskColors.highRisk,
-                            ITCRiskColors.extremeRisk
+                            RiskColors.veryLowRisk,
+                            RiskColors.lowRisk,
+                            RiskColors.neutral,
+                            RiskColors.elevatedRisk,
+                            RiskColors.highRisk,
+                            RiskColors.extremeRisk
                         ],
                         startPoint: .bottom,
                         endPoint: .top
@@ -1169,13 +1185,13 @@ struct ITCRiskSparkline: View {
                     let lastY = height - (lastPoint * height)
 
                     Circle()
-                        .fill(ITCRiskColors.color(for: Double(lastPoint), colorScheme: colorScheme))
+                        .fill(RiskColors.color(for: Double(lastPoint), colorScheme: colorScheme))
                         .frame(width: 8, height: 8)
                         .position(x: lastX, y: lastY)
 
                     // Glow effect
                     Circle()
-                        .fill(ITCRiskColors.color(for: Double(lastPoint), colorScheme: colorScheme).opacity(0.3))
+                        .fill(RiskColors.color(for: Double(lastPoint), colorScheme: colorScheme).opacity(0.3))
                         .frame(width: 16, height: 16)
                         .blur(radius: 4)
                         .position(x: lastX, y: lastY)

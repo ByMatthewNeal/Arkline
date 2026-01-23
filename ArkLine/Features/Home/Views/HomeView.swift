@@ -379,6 +379,8 @@ struct ReorderableWidgetStack: View {
             return viewModel.sentimentViewModel != nil
         case .derivativesData:
             return true // Always show - has loading/empty state handling
+        case .assetRiskLevel:
+            return viewModel.selectedRiskLevel != nil
         }
     }
 
@@ -459,6 +461,13 @@ struct ReorderableWidgetStack: View {
                 overview: viewModel.derivativesOverview,
                 size: appState.widgetSize(.derivativesData),
                 isLoading: viewModel.isDerivativesLoading
+            )
+
+        case .assetRiskLevel:
+            RiskLevelWidget(
+                riskLevel: viewModel.selectedRiskLevel,
+                coinSymbol: viewModel.selectedRiskCoin,
+                size: appState.widgetSize(.assetRiskLevel)
             )
         }
     }
@@ -822,8 +831,8 @@ struct RiskScoreCard: View {
     var riskScore: ArkLineRiskScore? = nil
     var itcRiskLevel: ITCRiskLevel? = nil
     var size: WidgetSize = .standard
-    var selectedCoin: ITCCoin = .btc
-    var onCoinChanged: ((ITCCoin) -> Void)? = nil
+    var selectedCoin: String = "BTC"
+    var onCoinChanged: ((String) -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -953,13 +962,13 @@ struct RiskScoreCard: View {
                             .foregroundColor(textPrimary)
 
                         if itcRiskLevel != nil && onCoinChanged != nil {
-                            // Coin selector toggle
+                            // Coin selector toggle (BTC/ETH for now)
                             HStack(spacing: 0) {
-                                ForEach(ITCCoin.allCases, id: \.self) { coin in
+                                ForEach(["BTC", "ETH"], id: \.self) { coin in
                                     Button(action: {
                                         onCoinChanged?(coin)
                                     }) {
-                                        Text(coin.rawValue)
+                                        Text(coin)
                                             .font(.system(size: size == .compact ? 9 : 10, weight: .semibold))
                                             .foregroundColor(
                                                 selectedCoin == coin

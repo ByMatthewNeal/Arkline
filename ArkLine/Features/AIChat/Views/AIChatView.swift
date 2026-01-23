@@ -77,6 +77,12 @@ struct AIChatView: View {
             }
             #endif
         }
+        .onAppear {
+            // Set user's first name for personalized Ark responses
+            if let user = appState.currentUser {
+                viewModel.userName = user.firstName
+            }
+        }
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {

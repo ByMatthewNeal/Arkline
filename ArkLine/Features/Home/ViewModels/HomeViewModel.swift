@@ -217,16 +217,17 @@ class HomeViewModel {
     var compositeRiskScore: Int? = nil
     var arkLineRiskScore: ArkLineRiskScore? = nil
 
-    // ITC Risk Level (Into The Cryptoverse - powers ArkLine Risk Score card)
+    // Risk Level (powers ArkLine Risk Score card)
     var btcRiskLevel: ITCRiskLevel?
     var ethRiskLevel: ITCRiskLevel?
-    var selectedRiskCoin: ITCCoin = .btc
+    var selectedRiskCoin: String = "BTC"
 
     // Computed property to get risk level for selected coin
     var selectedRiskLevel: ITCRiskLevel? {
         switch selectedRiskCoin {
-        case .btc: return btcRiskLevel
-        case .eth: return ethRiskLevel
+        case "BTC": return btcRiskLevel
+        case "ETH": return ethRiskLevel
+        default: return btcRiskLevel // Fallback to BTC for other coins
         }
     }
 
@@ -462,7 +463,7 @@ class HomeViewModel {
         updatePortfolioValues(for: portfolio)
     }
 
-    func selectRiskCoin(_ coin: ITCCoin) {
+    func selectRiskCoin(_ coin: String) {
         selectedRiskCoin = coin
     }
 

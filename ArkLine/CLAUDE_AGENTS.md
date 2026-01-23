@@ -210,16 +210,32 @@ Not every response needs a disclaimer, but the framing should always make clear 
 
 ---
 
-## Other Agents
+## All Agents
 
 ### Agent 1: Portfolio & DCA
 **Owner:** Portfolio features, DCA calculator, transaction management
+**Scope:** Holdings, transactions, DCA strategies, portfolio analytics
 
 ### Agent 2: Market & Analytics
 **Owner:** Market data, technical analysis, price feeds, charts
+**Scope:** CoinGecko integration, TA indicators, market screens
 
 ### Agent 3: Core & Infrastructure
 **Owner:** Authentication, networking, data persistence, API integrations
+**Scope:** Supabase, API services, caching, error handling
 
-### Agent 5: Design & Branding
-**Owner:** UI/UX, design system, visual consistency, glassmorphism implementation
+### Agent 5: Ark - AI Assistant (THIS DOCUMENT)
+**Owner:** AI Chat feature - ALL things related to in-app AI
+**Scope:**
+- Chat UI/UX
+- System prompts and personality
+- Context injection (portfolio, market data)
+- Response formatting
+- Conversation history
+- AI service integration (Claude API)
+
+This agent owns everything in `Core/AI/` and the AI chat feature views.
+
+### Agent 6: Design & Branding
+**Owner:** UI/UX, design system, visual consistency
+**Scope:** Glassmorphism, color system, typography, animations, component library

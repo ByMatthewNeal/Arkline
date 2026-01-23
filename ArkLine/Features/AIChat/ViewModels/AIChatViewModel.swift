@@ -4,6 +4,19 @@ import Foundation
 // MARK: - AI Chat View Model
 @Observable
 final class AIChatViewModel {
+    // MARK: - Dependencies
+    private let portfolioService: PortfolioServiceProtocol
+    private let marketService: MarketServiceProtocol
+    private let sentimentService: SentimentServiceProtocol
+    private let vixService: VIXServiceProtocol
+    private let dxyService: DXYServiceProtocol
+    private let rainbowChartService: RainbowChartServiceProtocol
+    private let globalLiquidityService: GlobalLiquidityServiceProtocol
+    private let itcRiskService: ITCRiskServiceProtocol
+
+    // MARK: - User Context
+    var userName: String = "there"
+
     // MARK: - State
     var sessions: [AIChatSession] = []
     var currentSession: AIChatSession?
@@ -29,7 +42,24 @@ final class AIChatViewModel {
     }
 
     // MARK: - Initialization
-    init() {
+    init(
+        portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
+        marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
+        sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
+        vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
+        dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
+        rainbowChartService: RainbowChartServiceProtocol = ServiceContainer.shared.rainbowChartService,
+        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
+        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService
+    ) {
+        self.portfolioService = portfolioService
+        self.marketService = marketService
+        self.sentimentService = sentimentService
+        self.vixService = vixService
+        self.dxyService = dxyService
+        self.rainbowChartService = rainbowChartService
+        self.globalLiquidityService = globalLiquidityService
+        self.itcRiskService = itcRiskService
         loadMockData()
     }
 
@@ -232,8 +262,14 @@ final class AIChatViewModel {
     }
 
     private func sendToClaudeAPI() async throws -> String {
-        // Build the request with conversation history
-        let request = ClaudeMessageRequest.create(messages: messages)
+        // Build personalized system prompt with current context
+        let systemPrompt = await buildSystemPrompt()
+
+        // Build the request with conversation history and Ark personality
+        let request = ClaudeMessageRequest.create(
+            messages: messages,
+            systemPrompt: systemPrompt
+        )
         let endpoint = ClaudeEndpoint.messages(request: request)
 
         let response: ClaudeMessageResponse = try await NetworkManager.shared.request(
@@ -242,6 +278,131 @@ final class AIChatViewModel {
         )
 
         return response.textContent
+    }
+
+    // MARK: - Context Building
+
+    private func buildSystemPrompt() async -> String {
+        // Gather context in parallel
+        async let portfolioContext = gatherPortfolioContext()
+        async let marketContext = gatherMarketContext()
+
+        let (portfolio, market) = await (portfolioContext, marketContext)
+
+        return ArkSystemPrompt.generate(
+            userName: userName,
+            portfolioContext: portfolio,
+            marketContext: market
+        )
+    }
+
+    private func gatherPortfolioContext() async -> String? {
+        do {
+            let portfolios = try await portfolioService.fetchPortfolios(userId: UUID())
+            guard let mainPortfolio = portfolios.first,
+                  let holdings = mainPortfolio.holdings,
+                  !holdings.isEmpty else {
+                return nil
+            }
+
+            let totalValue = holdings.reduce(0.0) { $0 + $1.currentValue }
+            let totalCost = holdings.reduce(0.0) { $0 + $1.totalCost }
+            let dayChange = totalValue - totalCost
+            let dayChangePercent = totalCost > 0 ? (dayChange / totalCost) * 100 : 0
+
+            let holdingsData: [(symbol: String, allocation: Double, pnlPercent: Double)] = holdings.map { holding in
+                let allocation = totalValue > 0 ? (holding.currentValue / totalValue) * 100 : 0
+                let pnl = holding.totalCost > 0 ? ((holding.currentValue - holding.totalCost) / holding.totalCost) * 100 : 0
+                return (symbol: holding.symbol, allocation: allocation, pnlPercent: pnl)
+            }
+
+            return ArkSystemPrompt.portfolioContext(
+                totalValue: totalValue,
+                dayChange: dayChange,
+                dayChangePercent: dayChangePercent,
+                holdings: holdingsData
+            )
+        } catch {
+            return nil
+        }
+    }
+
+    private func gatherMarketContext() async -> String? {
+        // Fetch all indicators in parallel
+        async let fearGreedTask = fetchFearGreedSafe()
+        async let btcDominanceTask = fetchBTCDominanceSafe()
+        async let btcRiskTask = fetchITCRiskSafe(coin: "BTC")
+        async let ethRiskTask = fetchITCRiskSafe(coin: "ETH")
+        async let vixTask = fetchVIXSafe()
+        async let dxyTask = fetchDXYSafe()
+        async let liquidityTask = fetchLiquiditySafe()
+        async let fundingTask = fetchFundingRateSafe()
+        async let etfTask = fetchETFFlowSafe()
+        async let rainbowTask = fetchRainbowBandSafe()
+
+        let (fearGreed, btcDominance, btcRisk, ethRisk, vix, dxy, liquidity, funding, etf, rainbow) = await (
+            fearGreedTask, btcDominanceTask, btcRiskTask, ethRiskTask,
+            vixTask, dxyTask, liquidityTask, fundingTask, etfTask, rainbowTask
+        )
+
+        return ArkSystemPrompt.marketContext(
+            fearGreedIndex: fearGreed?.value,
+            fearGreedClassification: fearGreed?.classification,
+            btcDominance: btcDominance?.value,
+            btcRiskLevel: btcRisk?.riskLevel,
+            ethRiskLevel: ethRisk?.riskLevel,
+            rainbowBand: rainbow,
+            vixValue: vix?.value,
+            vixSignal: vix?.signal.rawValue,
+            dxyChange: dxy?.changePercent,
+            dxySignal: dxy?.signal.rawValue,
+            liquidityChangeYoY: liquidity?.yearlyChange,
+            fundingRate: funding?.averageRate,
+            etfNetFlow: etf?.dailyNetFlow
+        )
+    }
+
+    // MARK: - Safe Fetch Helpers
+
+    private func fetchFearGreedSafe() async -> FearGreedIndex? {
+        try? await sentimentService.fetchFearGreedIndex()
+    }
+
+    private func fetchBTCDominanceSafe() async -> BTCDominance? {
+        try? await sentimentService.fetchBTCDominance()
+    }
+
+    private func fetchITCRiskSafe(coin: String) async -> ITCRiskLevel? {
+        try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+    }
+
+    private func fetchVIXSafe() async -> VIXData? {
+        try? await vixService.fetchLatestVIX()
+    }
+
+    private func fetchDXYSafe() async -> DXYData? {
+        try? await dxyService.fetchLatestDXY()
+    }
+
+    private func fetchLiquiditySafe() async -> GlobalLiquidityChanges? {
+        try? await globalLiquidityService.fetchLiquidityChanges()
+    }
+
+    private func fetchFundingRateSafe() async -> FundingRate? {
+        try? await sentimentService.fetchFundingRate()
+    }
+
+    private func fetchETFFlowSafe() async -> ETFNetFlow? {
+        try? await sentimentService.fetchETFNetFlow()
+    }
+
+    private func fetchRainbowBandSafe() async -> String? {
+        // Get current BTC price first
+        guard let btcPrice = try? await marketService.fetchCryptoAssets(page: 1, perPage: 1).first?.currentPrice,
+              let rainbowData = try? await rainbowChartService.fetchCurrentRainbowData(btcPrice: btcPrice) else {
+            return nil
+        }
+        return rainbowData.currentBand.rawValue
     }
 
     func clearChat() {

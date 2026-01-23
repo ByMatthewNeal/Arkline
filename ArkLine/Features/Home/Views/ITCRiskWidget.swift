@@ -1,10 +1,11 @@
 import SwiftUI
 import Charts
 
-// MARK: - ITC Risk Level Widget (Home Screen)
-/// Compact widget for displaying Into The Cryptoverse Risk Level on the Home screen
-struct ITCRiskWidget: View {
+// MARK: - Risk Level Widget (Home Screen)
+/// Compact widget for displaying Asset Risk Level on the Home screen
+struct RiskLevelWidget: View {
     let riskLevel: ITCRiskLevel?
+    var coinSymbol: String = "BTC"
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -46,7 +47,7 @@ struct ITCRiskWidget: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            ITCRiskChartView()
+            RiskLevelChartView()
         }
     }
 
@@ -54,10 +55,10 @@ struct ITCRiskWidget: View {
     @ViewBuilder
     private func contentView(risk: ITCRiskLevel) -> some View {
         HStack(spacing: size == .compact ? 12 : 16) {
-            // Latest Value Display (ITC Style)
+            // Latest Value Display
             VStack(alignment: .leading, spacing: size == .compact ? 4 : 8) {
                 HStack(spacing: 6) {
-                    Text("ITC Risk Level")
+                    Text("\(coinSymbol) Risk Level")
                         .font(size == .compact ? .subheadline : .headline)
                         .foregroundColor(textPrimary)
 
@@ -66,34 +67,34 @@ struct ITCRiskWidget: View {
                         .foregroundColor(AppColors.accent)
                 }
 
-                // Large colored risk value (ITC style)
+                // Large colored risk value
                 Text(String(format: "%.3f", risk.riskLevel))
                     .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .rounded))
-                    .foregroundColor(ITCRiskColors.color(for: risk.riskLevel))
+                    .foregroundColor(RiskColors.color(for: risk.riskLevel))
 
                 // Risk category badge with colored dot
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(ITCRiskColors.color(for: risk.riskLevel))
+                        .fill(RiskColors.color(for: risk.riskLevel))
                         .frame(width: 8, height: 8)
 
-                    Text(ITCRiskColors.category(for: risk.riskLevel))
+                    Text(RiskColors.category(for: risk.riskLevel))
                         .font(size == .compact ? .caption : .subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(ITCRiskColors.color(for: risk.riskLevel))
+                        .foregroundColor(RiskColors.color(for: risk.riskLevel))
                 }
 
-                if size != .compact {
-                    Text("Powered by Into The Cryptoverse")
-                        .font(.caption2)
-                        .foregroundColor(textPrimary.opacity(0.5))
+                if size == .expanded {
+                    Text("intothecryptoverse.com")
+                        .font(.system(size: 9))
+                        .foregroundColor(textPrimary.opacity(0.35))
                 }
             }
 
             Spacer()
 
             // Mini gauge
-            ITCRiskGauge(
+            RiskGauge(
                 riskLevel: risk.riskLevel,
                 size: gaugeSize,
                 strokeWidth: strokeWidth,
@@ -112,7 +113,7 @@ struct ITCRiskWidget: View {
     private var placeholderView: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("ITC Risk Level")
+                Text("\(coinSymbol) Risk Level")
                     .font(size == .compact ? .subheadline : .headline)
                     .foregroundColor(textPrimary)
 
@@ -148,9 +149,12 @@ struct ITCRiskWidget: View {
     }
 }
 
-// MARK: - ITC Risk Gauge
+// MARK: - Legacy Alias for backward compatibility
+typealias ITCRiskWidget = RiskLevelWidget
+
+// MARK: - Risk Gauge
 /// Circular gauge showing the risk level with gradient coloring
-struct ITCRiskGauge: View {
+struct RiskGauge: View {
     let riskLevel: Double
     let size: CGFloat
     let strokeWidth: CGFloat
@@ -161,7 +165,7 @@ struct ITCRiskGauge: View {
     }
 
     private var riskColor: Color {
-        ITCRiskColors.color(for: riskLevel)
+        RiskColors.color(for: riskLevel)
     }
 
     private var riskColorLight: Color {
@@ -212,9 +216,12 @@ struct ITCRiskGauge: View {
     }
 }
 
-// MARK: - ITC Risk Colors (6-Tier System)
-/// Provides colors based on Into The Cryptoverse 6-tier risk level thresholds
-struct ITCRiskColors {
+// Legacy alias
+typealias ITCRiskGauge = RiskGauge
+
+// MARK: - Risk Colors (6-Tier System)
+/// Provides colors based on 6-tier risk level thresholds
+struct RiskColors {
     // 6-tier color palette matching ITC app
     static let veryLowRisk = Color(hex: "3B82F6")   // Blue
     static let lowRisk = Color(hex: "22C55E")       // Green
@@ -293,13 +300,16 @@ struct ITCRiskColors {
     }
 }
 
+// Legacy alias for backward compatibility
+typealias ITCRiskColors = RiskColors
+
 // MARK: - Time Range for Chart
-enum ITCTimeRange: String, CaseIterable {
+enum RiskTimeRange: String, CaseIterable {
     case all = "All"
-    case oneYear = "1y"
-    case ninetyDays = "90d"
-    case thirtyDays = "30d"
-    case sevenDays = "7d"
+    case oneYear = "1Y"
+    case ninetyDays = "90D"
+    case thirtyDays = "30D"
+    case sevenDays = "7D"
 
     var days: Int? {
         switch self {
@@ -312,27 +322,65 @@ enum ITCTimeRange: String, CaseIterable {
     }
 }
 
-// MARK: - Supported Coins
-enum ITCCoin: String, CaseIterable {
+// Legacy alias
+typealias ITCTimeRange = RiskTimeRange
+
+// MARK: - Supported Coins for Risk Level
+enum RiskCoin: String, CaseIterable {
     case btc = "BTC"
     case eth = "ETH"
+    case sol = "SOL"
+    case xrp = "XRP"
+    case doge = "DOGE"
+    case ada = "ADA"
+    case avax = "AVAX"
+    case link = "LINK"
+    case dot = "DOT"
+    case matic = "MATIC"
 
     var displayName: String {
         switch self {
         case .btc: return "Bitcoin"
         case .eth: return "Ethereum"
+        case .sol: return "Solana"
+        case .xrp: return "XRP"
+        case .doge: return "Dogecoin"
+        case .ada: return "Cardano"
+        case .avax: return "Avalanche"
+        case .link: return "Chainlink"
+        case .dot: return "Polkadot"
+        case .matic: return "Polygon"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .btc: return "bitcoinsign.circle.fill"
+        case .eth: return "e.circle.fill"
+        case .sol: return "s.circle.fill"
+        case .xrp: return "x.circle.fill"
+        case .doge: return "d.circle.fill"
+        case .ada: return "a.circle.fill"
+        case .avax: return "a.circle.fill"
+        case .link: return "link.circle.fill"
+        case .dot: return "circle.circle.fill"
+        case .matic: return "m.circle.fill"
         }
     }
 }
 
-// MARK: - ITC Risk Chart View (Full Screen Detail)
-struct ITCRiskChartView: View {
+// Legacy alias
+typealias ITCCoin = RiskCoin
+
+// MARK: - Risk Level Chart View (Full Screen Detail)
+struct RiskLevelChartView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
     @State private var viewModel = SentimentViewModel()
-    @State private var selectedTimeRange: ITCTimeRange = .all
-    @State private var selectedCoin: ITCCoin = .btc
+    @State private var selectedTimeRange: RiskTimeRange = .thirtyDays
+    @State private var selectedCoin: RiskCoin = .btc
+    @State private var showCoinPicker = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -352,21 +400,34 @@ struct ITCRiskChartView: View {
         switch selectedCoin {
         case .btc: return viewModel.btcRiskLevel
         case .eth: return viewModel.ethRiskLevel
+        default: return viewModel.btcRiskLevel // Fallback to BTC for now
         }
     }
 
-    // Get history based on selected coin (currently only BTC history is available)
+    // Get history based on selected coin
     private var riskHistory: [ITCRiskLevel] {
-        switch selectedCoin {
-        case .btc: return viewModel.btcRiskHistory
-        case .eth: return [] // ETH history not available yet
-        }
+        // Currently only BTC history is available from the service
+        return viewModel.btcRiskHistory
     }
 
     // Filter history based on time range
     private var filteredHistory: [ITCRiskLevel] {
         guard let days = selectedTimeRange.days else { return riskHistory }
         return Array(riskHistory.suffix(days))
+    }
+
+    // Format date as "January 23, 2026"
+    private func formatDate(_ dateString: String) -> String {
+        let inputFormatter = DateFormatter()
+        inputFormatter.dateFormat = "yyyy-MM-dd"
+
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateFormat = "MMMM d, yyyy"
+
+        if let date = inputFormatter.date(from: dateString) {
+            return outputFormatter.string(from: date)
+        }
+        return dateString
     }
 
     var body: some View {
@@ -378,12 +439,12 @@ struct ITCRiskChartView: View {
 
                 ScrollView {
                     VStack(spacing: ArkSpacing.xl) {
-                        // Time Range Picker
-                        timeRangePicker
+                        // Coin Selector (Dropdown style)
+                        coinDropdown
                             .padding(.top, ArkSpacing.md)
 
-                        // Coin Selector
-                        coinSelector
+                        // Time Range Picker
+                        timeRangePicker
 
                         // Chart Area
                         chartSection
@@ -394,7 +455,7 @@ struct ITCRiskChartView: View {
                         // Risk Legend (6-tier)
                         riskLegendSection
 
-                        // Attribution
+                        // Attribution (smaller)
                         attributionCard
 
                         Spacer(minLength: 40)
@@ -402,7 +463,7 @@ struct ITCRiskChartView: View {
                     .padding(.horizontal, ArkSpacing.lg)
                 }
             }
-            .navigationTitle("Risk Level")
+            .navigationTitle("\(selectedCoin.rawValue) Risk Level")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -415,67 +476,71 @@ struct ITCRiskChartView: View {
         }
     }
 
-    // MARK: - Time Range Picker
-    private var timeRangePicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: ArkSpacing.xs) {
-                ForEach(ITCTimeRange.allCases, id: \.self) { range in
-                    Button(action: { selectedTimeRange = range }) {
-                        Text(range.rawValue)
-                            .font(.subheadline)
-                            .fontWeight(selectedTimeRange == range ? .semibold : .regular)
-                            .foregroundColor(
-                                selectedTimeRange == range
-                                    ? (colorScheme == .dark ? .white : .white)
-                                    : textPrimary
-                            )
-                            .padding(.horizontal, ArkSpacing.md)
-                            .padding(.vertical, ArkSpacing.sm)
-                            .background(
-                                selectedTimeRange == range
-                                    ? AppColors.accent
-                                    : (colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
-                            )
-                            .cornerRadius(ArkSpacing.Radius.sm)
+    // MARK: - Coin Dropdown
+    private var coinDropdown: some View {
+        Menu {
+            ForEach(RiskCoin.allCases, id: \.self) { coin in
+                Button(action: { selectedCoin = coin }) {
+                    HStack {
+                        Text(coin.displayName)
+                        Text("(\(coin.rawValue))")
+                            .foregroundColor(.secondary)
+                        if selectedCoin == coin {
+                            Image(systemName: "checkmark")
+                        }
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, ArkSpacing.xxs)
+        } label: {
+            HStack(spacing: ArkSpacing.sm) {
+                Image(systemName: selectedCoin.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.accent)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(selectedCoin.displayName)
+                        .font(.headline)
+                        .foregroundColor(textPrimary)
+                    Text("Tap to change asset")
+                        .font(.caption)
+                        .foregroundColor(textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(textSecondary)
+            }
+            .padding(ArkSpacing.md)
+            .glassCard(cornerRadius: ArkSpacing.Radius.md)
         }
     }
 
-    // MARK: - Coin Selector
-    private var coinSelector: some View {
-        HStack(spacing: ArkSpacing.sm) {
-            ForEach(ITCCoin.allCases, id: \.self) { coin in
-                Button(action: { selectedCoin = coin }) {
-                    HStack(spacing: ArkSpacing.xs) {
-                        Image(systemName: coin == .btc ? "bitcoinsign.circle.fill" : "e.circle.fill")
-                            .font(.system(size: 16))
-
-                        Text(coin.rawValue)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                    .foregroundColor(
-                        selectedCoin == coin
-                            ? (colorScheme == .dark ? .white : .white)
-                            : textPrimary
-                    )
-                    .padding(.horizontal, ArkSpacing.md)
-                    .padding(.vertical, ArkSpacing.sm)
-                    .background(
-                        selectedCoin == coin
-                            ? AppColors.accent
-                            : (colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
-                    )
-                    .cornerRadius(ArkSpacing.Radius.sm)
+    // MARK: - Time Range Picker
+    private var timeRangePicker: some View {
+        HStack(spacing: ArkSpacing.xs) {
+            ForEach(RiskTimeRange.allCases, id: \.self) { range in
+                Button(action: { selectedTimeRange = range }) {
+                    Text(range.rawValue)
+                        .font(.subheadline)
+                        .fontWeight(selectedTimeRange == range ? .semibold : .regular)
+                        .foregroundColor(
+                            selectedTimeRange == range
+                                ? (colorScheme == .dark ? .white : .white)
+                                : textPrimary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ArkSpacing.sm)
+                        .background(
+                            selectedTimeRange == range
+                                ? AppColors.accent
+                                : (colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
+                        )
+                        .cornerRadius(ArkSpacing.Radius.sm)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-
-            Spacer()
         }
     }
 
@@ -489,7 +554,7 @@ struct ITCRiskChartView: View {
                         .font(.system(size: 40))
                         .foregroundColor(textSecondary.opacity(0.5))
 
-                    Text(selectedCoin == .eth ? "ETH history coming soon" : "Loading chart data...")
+                    Text(selectedCoin != .btc ? "\(selectedCoin.displayName) data coming soon" : "Loading chart data...")
                         .font(.subheadline)
                         .foregroundColor(textSecondary)
                 }
@@ -499,12 +564,24 @@ struct ITCRiskChartView: View {
             } else {
                 // Chart with Swift Charts
                 VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-                    Text("\(selectedCoin.displayName) Risk Level")
-                        .font(.headline)
-                        .foregroundColor(textPrimary)
+                    HStack {
+                        Text("\(selectedCoin.displayName) Risk Level")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
 
-                    ITCRiskChart(history: filteredHistory, colorScheme: colorScheme)
-                        .frame(height: 250)
+                        Spacer()
+
+                        Text(selectedTimeRange == .all ? "All Time" : "Last \(selectedTimeRange.rawValue)")
+                            .font(.caption)
+                            .foregroundColor(textSecondary)
+                    }
+
+                    RiskLevelChart(
+                        history: filteredHistory,
+                        timeRange: selectedTimeRange,
+                        colorScheme: colorScheme
+                    )
+                    .frame(height: 250)
                 }
                 .padding(ArkSpacing.md)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
@@ -515,7 +592,7 @@ struct ITCRiskChartView: View {
     // MARK: - Latest Value Section
     private var latestValueSection: some View {
         VStack(spacing: ArkSpacing.md) {
-            Text("Latest Value")
+            Text("Current \(selectedCoin.rawValue) Risk")
                 .font(.subheadline)
                 .foregroundColor(textSecondary)
 
@@ -524,22 +601,22 @@ struct ITCRiskChartView: View {
                     // Large colored value
                     Text(String(format: "%.3f", risk.riskLevel))
                         .font(.system(size: 56, weight: .bold, design: .rounded))
-                        .foregroundColor(ITCRiskColors.color(for: risk.riskLevel))
+                        .foregroundColor(RiskColors.color(for: risk.riskLevel))
 
                     // Category with dot
                     HStack(spacing: ArkSpacing.xs) {
                         Circle()
-                            .fill(ITCRiskColors.color(for: risk.riskLevel))
+                            .fill(RiskColors.color(for: risk.riskLevel))
                             .frame(width: 12, height: 12)
 
-                        Text(ITCRiskColors.category(for: risk.riskLevel))
+                        Text(RiskColors.category(for: risk.riskLevel))
                             .font(.title3)
                             .fontWeight(.semibold)
-                            .foregroundColor(ITCRiskColors.color(for: risk.riskLevel))
+                            .foregroundColor(RiskColors.color(for: risk.riskLevel))
                     }
 
-                    // Date
-                    Text("As of \(risk.date)")
+                    // Date in new format
+                    Text("As of \(formatDate(risk.date))")
                         .font(.caption)
                         .foregroundColor(textSecondary)
                 }
@@ -566,42 +643,42 @@ struct ITCRiskChartView: View {
                     range: "0.00 - 0.20",
                     category: "Very Low Risk",
                     description: "Deep value range, historically excellent accumulation zone",
-                    color: ITCRiskColors.veryLowRisk
+                    color: RiskColors.veryLowRisk
                 )
 
                 RiskLevelLegendRow(
                     range: "0.20 - 0.40",
                     category: "Low Risk",
                     description: "Still favorable accumulation, attractive for multi-year investors",
-                    color: ITCRiskColors.lowRisk
+                    color: RiskColors.lowRisk
                 )
 
                 RiskLevelLegendRow(
                     range: "0.40 - 0.55",
                     category: "Neutral",
                     description: "Mid-cycle territory, neither strong buy nor sell",
-                    color: ITCRiskColors.neutral
+                    color: RiskColors.neutral
                 )
 
                 RiskLevelLegendRow(
                     range: "0.55 - 0.70",
                     category: "Elevated Risk",
                     description: "Late-cycle behavior, higher probability of corrections",
-                    color: ITCRiskColors.elevatedRisk
+                    color: RiskColors.elevatedRisk
                 )
 
                 RiskLevelLegendRow(
                     range: "0.70 - 0.90",
                     category: "High Risk",
                     description: "Historically blow-off-top region, major cycle tops occur here",
-                    color: ITCRiskColors.highRisk
+                    color: RiskColors.highRisk
                 )
 
                 RiskLevelLegendRow(
                     range: "0.90 - 1.00",
                     category: "Extreme Risk",
                     description: "Historically where macro tops happen, smart-money distribution",
-                    color: ITCRiskColors.extremeRisk
+                    color: RiskColors.extremeRisk
                 )
             }
         }
@@ -609,29 +686,26 @@ struct ITCRiskChartView: View {
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
     }
 
-    // MARK: - Attribution Card
+    // MARK: - Attribution Card (Subtle)
     private var attributionCard: some View {
-        HStack {
+        HStack(spacing: ArkSpacing.xs) {
             Image(systemName: "link")
-                .foregroundColor(AppColors.accent)
+                .font(.system(size: 10))
+                .foregroundColor(textSecondary.opacity(0.5))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Powered by Into The Cryptoverse")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(textPrimary)
-
-                Text("intothecryptoverse.com")
-                    .font(.caption)
-                    .foregroundColor(AppColors.accent)
-            }
+            Text("Data: intothecryptoverse.com")
+                .font(.system(size: 11))
+                .foregroundColor(textSecondary.opacity(0.5))
 
             Spacer()
         }
-        .padding(ArkSpacing.md)
-        .glassCard(cornerRadius: ArkSpacing.Radius.md)
+        .padding(.horizontal, ArkSpacing.md)
+        .padding(.vertical, ArkSpacing.sm)
     }
 }
+
+// Legacy alias
+typealias ITCRiskChartView = RiskLevelChartView
 
 // MARK: - Risk Level Legend Row
 struct RiskLevelLegendRow: View {
@@ -676,100 +750,113 @@ struct RiskLevelLegendRow: View {
     }
 }
 
-// MARK: - ITC Risk Chart (Swift Charts)
-struct ITCRiskChart: View {
+// MARK: - Risk Level Chart (Swift Charts) - Dynamic based on time range
+struct RiskLevelChart: View {
     let history: [ITCRiskLevel]
+    let timeRange: RiskTimeRange
     let colorScheme: ColorScheme
 
-    // Reference lines at standard Y-axis values
-    private let referenceLines: [Double] = [0.25, 0.5, 0.75]
+    // Convert string dates to Date objects for proper charting
+    private var chartData: [(date: Date, risk: Double)] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        return history.compactMap { level in
+            guard let date = formatter.date(from: level.date) else { return nil }
+            return (date: date, risk: level.riskLevel)
+        }
+    }
+
+    // Determine X-axis label count based on time range
+    private var xAxisLabelCount: Int {
+        switch timeRange {
+        case .sevenDays: return 4
+        case .thirtyDays: return 5
+        case .ninetyDays: return 4
+        case .oneYear: return 6
+        case .all: return 5
+        }
+    }
+
+    // Format label based on time range
+    private func formatLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        switch timeRange {
+        case .sevenDays:
+            formatter.dateFormat = "EEE" // Mon, Tue, etc.
+        case .thirtyDays:
+            formatter.dateFormat = "MMM d" // Jan 15
+        case .ninetyDays, .oneYear:
+            formatter.dateFormat = "MMM" // Jan, Feb, etc.
+        case .all:
+            formatter.dateFormat = "MMM yy" // Jan 25
+        }
+        return formatter.string(from: date)
+    }
 
     var body: some View {
         Chart {
-            // Horizontal reference lines (dashed)
-            ForEach(referenceLines, id: \.self) { value in
-                RuleMark(y: .value("Reference", value))
-                    .foregroundStyle(
-                        colorScheme == .dark
-                            ? Color.white.opacity(0.15)
-                            : Color.black.opacity(0.1)
-                    )
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
-            }
-
             // Risk zone backgrounds
-            RectangleMark(
-                xStart: nil,
-                xEnd: nil,
-                yStart: .value("Start", 0),
-                yEnd: .value("End", 0.20)
-            )
-            .foregroundStyle(ITCRiskColors.veryLowRisk.opacity(0.08))
+            RectangleMark(yStart: .value("Start", 0), yEnd: .value("End", 0.20))
+                .foregroundStyle(RiskColors.veryLowRisk.opacity(0.08))
 
-            RectangleMark(
-                xStart: nil,
-                xEnd: nil,
-                yStart: .value("Start", 0.20),
-                yEnd: .value("End", 0.40)
-            )
-            .foregroundStyle(ITCRiskColors.lowRisk.opacity(0.08))
+            RectangleMark(yStart: .value("Start", 0.20), yEnd: .value("End", 0.40))
+                .foregroundStyle(RiskColors.lowRisk.opacity(0.08))
 
-            RectangleMark(
-                xStart: nil,
-                xEnd: nil,
-                yStart: .value("Start", 0.40),
-                yEnd: .value("End", 0.55)
-            )
-            .foregroundStyle(ITCRiskColors.neutral.opacity(0.08))
+            RectangleMark(yStart: .value("Start", 0.40), yEnd: .value("End", 0.55))
+                .foregroundStyle(RiskColors.neutral.opacity(0.08))
 
-            RectangleMark(
-                xStart: nil,
-                xEnd: nil,
-                yStart: .value("Start", 0.55),
-                yEnd: .value("End", 0.70)
-            )
-            .foregroundStyle(ITCRiskColors.elevatedRisk.opacity(0.08))
+            RectangleMark(yStart: .value("Start", 0.55), yEnd: .value("End", 0.70))
+                .foregroundStyle(RiskColors.elevatedRisk.opacity(0.08))
 
-            RectangleMark(
-                xStart: nil,
-                xEnd: nil,
-                yStart: .value("Start", 0.70),
-                yEnd: .value("End", 0.90)
-            )
-            .foregroundStyle(ITCRiskColors.highRisk.opacity(0.08))
+            RectangleMark(yStart: .value("Start", 0.70), yEnd: .value("End", 0.90))
+                .foregroundStyle(RiskColors.highRisk.opacity(0.08))
 
-            RectangleMark(
-                xStart: nil,
-                xEnd: nil,
-                yStart: .value("Start", 0.90),
-                yEnd: .value("End", 1.0)
-            )
-            .foregroundStyle(ITCRiskColors.extremeRisk.opacity(0.08))
+            RectangleMark(yStart: .value("Start", 0.90), yEnd: .value("End", 1.0))
+                .foregroundStyle(RiskColors.extremeRisk.opacity(0.08))
+
+            // Area under the line
+            ForEach(chartData, id: \.date) { point in
+                AreaMark(
+                    x: .value("Date", point.date),
+                    y: .value("Risk", point.risk)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            RiskColors.color(for: point.risk).opacity(0.3),
+                            RiskColors.color(for: point.risk).opacity(0.05)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
 
             // Line connecting data points
-            ForEach(Array(history.enumerated()), id: \.element.id) { index, dataPoint in
-                if index > 0 {
-                    LineMark(
-                        x: .value("Date", dataPoint.date),
-                        y: .value("Risk", dataPoint.riskLevel)
-                    )
-                    .foregroundStyle(
-                        colorScheme == .dark
-                            ? Color.white.opacity(0.3)
-                            : Color.black.opacity(0.2)
-                    )
-                    .lineStyle(StrokeStyle(lineWidth: 1.5))
-                }
+            ForEach(chartData, id: \.date) { point in
+                LineMark(
+                    x: .value("Date", point.date),
+                    y: .value("Risk", point.risk)
+                )
+                .foregroundStyle(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.6)
+                        : Color.black.opacity(0.4)
+                )
+                .lineStyle(StrokeStyle(lineWidth: 2))
             }
 
-            // Data points colored by risk level
-            ForEach(history) { dataPoint in
-                PointMark(
-                    x: .value("Date", dataPoint.date),
-                    y: .value("Risk", dataPoint.riskLevel)
-                )
-                .foregroundStyle(ITCRiskColors.color(for: dataPoint.riskLevel))
-                .symbolSize(history.count > 90 ? 20 : 40)
+            // Show points only for smaller datasets
+            if chartData.count <= 30 {
+                ForEach(chartData, id: \.date) { point in
+                    PointMark(
+                        x: .value("Date", point.date),
+                        y: .value("Risk", point.risk)
+                    )
+                    .foregroundStyle(RiskColors.color(for: point.risk))
+                    .symbolSize(chartData.count > 15 ? 25 : 40)
+                }
             }
         }
         .chartYScale(domain: 0...1)
@@ -784,38 +871,33 @@ struct ITCRiskChart: View {
                 AxisValueLabel {
                     if let doubleValue = value.as(Double.self) {
                         Text(String(format: "%.2f", doubleValue))
-                            .font(.caption2)
+                            .font(.system(size: 10))
                             .foregroundColor(AppColors.textSecondary)
                     }
                 }
             }
         }
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 5)) { value in
+            AxisMarks(values: .automatic(desiredCount: xAxisLabelCount)) { value in
                 AxisValueLabel {
-                    if let dateString = value.as(String.self) {
-                        Text(formatDateLabel(dateString))
-                            .font(.caption2)
+                    if let date = value.as(Date.self) {
+                        Text(formatLabel(for: date))
+                            .font(.system(size: 10))
                             .foregroundColor(AppColors.textSecondary)
                     }
                 }
             }
         }
     }
+}
 
-    private func formatDateLabel(_ dateString: String) -> String {
-        // Format: "2025-01-15" -> "Jan 15"
-        let components = dateString.split(separator: "-")
-        guard components.count >= 3 else { return dateString }
+// Legacy chart alias
+struct ITCRiskChart: View {
+    let history: [ITCRiskLevel]
+    let colorScheme: ColorScheme
 
-        let monthNum = Int(components[1]) ?? 1
-        let day = components[2]
-
-        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        let monthName = months[safe: monthNum - 1] ?? "Jan"
-
-        return "\(monthName) \(day)"
+    var body: some View {
+        RiskLevelChart(history: history, timeRange: .thirtyDays, colorScheme: colorScheme)
     }
 }
 
@@ -838,8 +920,8 @@ struct ITCRiskDetailView: View {
     }
 }
 
-// MARK: - Compact ITC Risk Card (for Market Sentiment Grid)
-struct ITCRiskCard: View {
+// MARK: - Compact Risk Card (for Market Sentiment Grid)
+struct RiskCard: View {
     let riskLevel: ITCRiskLevel
     let coinSymbol: String
     @Environment(\.colorScheme) var colorScheme
@@ -853,7 +935,7 @@ struct ITCRiskCard: View {
         Button(action: { showingDetail = true }) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("\(coinSymbol) Risk (ITC)")
+                    Text("\(coinSymbol) Risk Level")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
 
@@ -868,27 +950,27 @@ struct ITCRiskCard: View {
 
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        // Value in ITC style (3 decimal places)
+                        // Value (3 decimal places)
                         Text(String(format: "%.3f", riskLevel.riskLevel))
                             .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(ITCRiskColors.color(for: riskLevel.riskLevel))
+                            .foregroundColor(RiskColors.color(for: riskLevel.riskLevel))
 
                         // Category with dot
                         HStack(spacing: 4) {
                             Circle()
-                                .fill(ITCRiskColors.color(for: riskLevel.riskLevel))
+                                .fill(RiskColors.color(for: riskLevel.riskLevel))
                                 .frame(width: 6, height: 6)
 
-                            Text(ITCRiskColors.category(for: riskLevel.riskLevel))
+                            Text(RiskColors.category(for: riskLevel.riskLevel))
                                 .font(.caption2)
-                                .foregroundColor(ITCRiskColors.color(for: riskLevel.riskLevel))
+                                .foregroundColor(RiskColors.color(for: riskLevel.riskLevel))
                         }
                     }
 
                     Spacer()
 
                     // Mini gauge
-                    CompactITCGauge(riskLevel: riskLevel.riskLevel, colorScheme: colorScheme)
+                    CompactRiskGauge(riskLevel: riskLevel.riskLevel, colorScheme: colorScheme)
                 }
             }
             .padding(16)
@@ -897,13 +979,16 @@ struct ITCRiskCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            ITCRiskChartView()
+            RiskLevelChartView()
         }
     }
 }
 
-// MARK: - Compact ITC Gauge
-struct CompactITCGauge: View {
+// Legacy alias
+typealias ITCRiskCard = RiskCard
+
+// MARK: - Compact Risk Gauge
+struct CompactRiskGauge: View {
     let riskLevel: Double
     let colorScheme: ColorScheme
 
@@ -912,7 +997,7 @@ struct CompactITCGauge: View {
     }
 
     private var riskColor: Color {
-        ITCRiskColors.color(for: riskLevel)
+        RiskColors.color(for: riskLevel)
     }
 
     var body: some View {
@@ -934,6 +1019,9 @@ struct CompactITCGauge: View {
         }
     }
 }
+
+// Legacy alias
+typealias CompactITCGauge = CompactRiskGauge
 
 // MARK: - Previews
 #Preview("ITC Risk Widget - Standard") {
