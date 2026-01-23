@@ -31,6 +31,7 @@
 		26713712968978F308B2C0AE /* MockITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B4B8494B1DD4A7EC5274E1 /* MockITCRiskService.swift */; };
 		2C64471C1DA2261CE83B3164 /* FearGreedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */; };
 		2DFD1CE8B62B33F45CFAAC17 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0C3702BDFA6D77FCA3BD36 /* SettingsViewModel.swift */; };
+		2E0CDB3B4786FEBE2B5AB561 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E912EC56A0FA55BABDB7AEB /* ArkSystemPrompt.swift */; };
 		2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5323582A6D49F73210E861F /* CustomTextField.swift */; };
 		2EC5DA90B4B6556747D69F09 /* SentimentGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */; };
 		301D5C8341D6392B042E2D0E /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24693986FAAA5B2A0724CFF8 /* PerformanceView.swift */; };
@@ -278,6 +279,7 @@
 		7A1C05960B8B6F9455FAE91A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7D45CE6E47EAFBC63D15EDAA /* OnboardingHeader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingHeader.swift; sourceTree = "<group>"; };
 		7D5A5C466F3FACF792A28F50 /* Asset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Asset.swift; sourceTree = "<group>"; };
+		7E912EC56A0FA55BABDB7AEB /* ArkSystemPrompt.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ArkSystemPrompt.swift; path = Core/AI/ArkSystemPrompt.swift; sourceTree = "<group>"; };
 		7F0055D207871438FBAECAE1 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 		82D30A48AF5A8E952C86ABB4 /* PortfolioViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioViewModel.swift; sourceTree = "<group>"; };
 		857459368B0C307EC0EE1D4E /* DCACalculatorComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DCACalculatorComponents.swift; path = Features/Portfolio/Components/DCACalculatorComponents.swift; sourceTree = "<group>"; };
@@ -715,6 +717,7 @@
 				A07CB7727466E18EB0FFE4B0 /* APIITCRiskService.swift */,
 				F4B4B8494B1DD4A7EC5274E1 /* MockITCRiskService.swift */,
 				5F51202EFB27B6A7DE0D43B7 /* ITCRiskLevel.swift */,
+				D2A4885061C360169ED365D7 /* Core */,
 			);
 			name = ArkLine;
 			sourceTree = "<group>";
@@ -949,6 +952,14 @@
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
+		AAECF7EE4F3CED4271C1687E /* AI */ = {
+			isa = PBXGroup;
+			children = (
+				7E912EC56A0FA55BABDB7AEB /* ArkSystemPrompt.swift */,
+			);
+			name = AI;
+			sourceTree = "<group>";
+		};
 		AE9B616165DFB536A5EF5225 /* SharedComponents */ = {
 			isa = PBXGroup;
 			children = (
@@ -1089,6 +1100,14 @@
 				SPARKL1NE0001000100010001 /* PortfolioSparkline.swift */,
 			);
 			path = Misc;
+			sourceTree = "<group>";
+		};
+		D2A4885061C360169ED365D7 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				AAECF7EE4F3CED4271C1687E /* AI */,
+			);
+			name = Core;
 			sourceTree = "<group>";
 		};
 		D40EFB4B8329E993A17B43FE /* Sheets */ = {
@@ -1539,6 +1558,7 @@
 				43250430D8E06DDD1733342B /* MockGlobalLiquidityService.swift in Sources */,
 				658BAF4E30C77E390A611250 /* RainbowChartData.swift in Sources */,
 				33B5E8A08B1C211307A7ACB6 /* GlobalLiquidityData.swift in Sources */,
+				2E0CDB3B4786FEBE2B5AB561 /* ArkSystemPrompt.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

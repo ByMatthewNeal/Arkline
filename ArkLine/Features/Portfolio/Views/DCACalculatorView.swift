@@ -5,11 +5,16 @@ struct DCACalculatorView: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: PortfolioViewModel
     @State private var calculatorState = DCACalculatorState()
-    @State private var showCreateReminderConfirmation = false
     @State private var reminderCreated = false
+    @State private var errorMessage: String?
+    @State private var showError = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
+    }
+
+    private var totalSteps: Int {
+        calculatorState.strategyType == .timeBased ? 6 : 5
     }
 
     var body: some View {
@@ -19,7 +24,7 @@ struct DCACalculatorView: View {
                     // Step indicator
                     DCAStepIndicator(
                         currentStep: calculatorState.currentStep,
-                        totalSteps: 5
+                        totalSteps: totalSteps
                     )
                     .padding(.horizontal, 20)
 
@@ -44,12 +49,28 @@ struct DCACalculatorView: View {
         .animation(.easeInOut(duration: 0.3), value: calculatorState.currentStep)
         .alert("DCA Reminder Created", isPresented: $reminderCreated) {
             Button("OK") {
-                // Reset the calculator
                 calculatorState = DCACalculatorState()
             }
         } message: {
             if let calc = calculatorState.calculation {
-                Text("Your DCA reminder for \(calc.asset.symbol) has been created. You'll invest \(calc.formattedAmountPerPurchase) per purchase.")
+                if calc.strategyType == .timeBased {
+                    Text("Your DCA reminder for \(calc.asset.symbol) has been created. You'll invest \(calc.formattedAmountPerPurchase) per purchase to \(calc.targetPortfolioName ?? "your portfolio").")
+                } else {
+                    Text("Your risk-based DCA for \(calc.asset.symbol) has been created. You'll be notified when BTC risk reaches \(calc.riskBandDescription) levels.")
+                }
+            }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage ?? "Something went wrong")
+        }
+        .onAppear {
+            // Load portfolios for selection
+            calculatorState.availablePortfolios = viewModel.portfolios
+            if let selected = viewModel.selectedPortfolio {
+                calculatorState.selectedPortfolioId = selected.id
+                calculatorState.selectedPortfolioName = selected.name
             }
         }
     }
@@ -60,30 +81,70 @@ struct DCACalculatorView: View {
     private var currentStepContent: some View {
         switch calculatorState.currentStep {
         case 1:
-            DCAAmountInputCard(
-                amount: $calculatorState.amountString
+            // Step 1: Amount
+            DCAAmountInputCard(amount: $calculatorState.amountString)
+                .padding(.horizontal, 20)
+
+        case 2:
+            // Step 2: Strategy Type
+            DCAStrategyTypeCard(
+                selectedStrategy: $calculatorState.strategyType
             )
             .padding(.horizontal, 20)
 
-        case 2:
+        case 3:
+            // Step 3: Asset Selection
             DCAAssetPickerCard(
                 selectedAsset: $calculatorState.selectedAsset,
                 selectedType: $calculatorState.selectedAssetType
             )
             .padding(.horizontal, 20)
 
-        case 3:
-            DCAFrequencyCard(
-                selectedFrequency: $calculatorState.selectedFrequency,
-                selectedDays: $calculatorState.selectedDays
-            )
-            .padding(.horizontal, 20)
-
         case 4:
-            DCADurationCard(selectedDuration: $calculatorState.selectedDuration)
+            // Step 4: Frequency (time-based) or Risk Bands (risk-based)
+            if calculatorState.strategyType == .timeBased {
+                DCAFrequencyCard(
+                    selectedFrequency: $calculatorState.selectedFrequency,
+                    selectedDays: $calculatorState.selectedDays
+                )
                 .padding(.horizontal, 20)
+            } else {
+                DCARiskBandCard(
+                    selectedBands: $calculatorState.selectedRiskBands
+                )
+                .padding(.horizontal, 20)
+            }
 
         case 5:
+            // Step 5: Duration (time-based) or Portfolio (risk-based)
+            if calculatorState.strategyType == .timeBased {
+                DCADurationCard(selectedDuration: $calculatorState.selectedDuration)
+                    .padding(.horizontal, 20)
+            } else {
+                DCAPortfolioPickerCard(
+                    selectedPortfolioId: $calculatorState.selectedPortfolioId,
+                    selectedPortfolioName: $calculatorState.selectedPortfolioName,
+                    availablePortfolios: calculatorState.availablePortfolios
+                )
+                .padding(.horizontal, 20)
+            }
+
+        case 6:
+            // Step 6: Portfolio (time-based only) or Summary (risk-based)
+            if calculatorState.strategyType == .timeBased {
+                DCAPortfolioPickerCard(
+                    selectedPortfolioId: $calculatorState.selectedPortfolioId,
+                    selectedPortfolioName: $calculatorState.selectedPortfolioName,
+                    availablePortfolios: calculatorState.availablePortfolios
+                )
+                .padding(.horizontal, 20)
+            } else if let calculation = calculatorState.calculation {
+                DCACalculationSummaryCard(calculation: calculation)
+                    .padding(.horizontal, 20)
+            }
+
+        case 7:
+            // Step 7: Summary (time-based only)
             if let calculation = calculatorState.calculation {
                 DCACalculationSummaryCard(calculation: calculation)
                     .padding(.horizontal, 20)
@@ -120,9 +181,9 @@ struct DCACalculatorView: View {
             // Continue / Create Reminder button
             Button(action: goForward) {
                 HStack(spacing: 8) {
-                    Text(calculatorState.currentStep == 5 ? "Create Reminder" : "Continue")
+                    Text(isLastStep ? "Create Reminder" : "Continue")
                         .font(AppFonts.body14Bold)
-                    if calculatorState.currentStep < 5 {
+                    if !isLastStep {
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14, weight: .semibold))
                     } else {
@@ -144,6 +205,14 @@ struct DCACalculatorView: View {
         .padding(.bottom, 95)
     }
 
+    private var isLastStep: Bool {
+        if calculatorState.strategyType == .timeBased {
+            return calculatorState.currentStep == 7
+        } else {
+            return calculatorState.currentStep == 6
+        }
+    }
+
     // MARK: - Validation
 
     private var canProceed: Bool {
@@ -152,19 +221,36 @@ struct DCACalculatorView: View {
             return calculatorState.amount > 0
 
         case 2:
-            return calculatorState.selectedAsset != nil
+            return true // Strategy type always has a default
 
         case 3:
-            // For weekly, must have at least one day selected
-            if calculatorState.selectedFrequency == .weekly {
-                return !calculatorState.selectedDays.isEmpty
-            }
-            return true
+            return calculatorState.selectedAsset != nil
 
         case 4:
-            return calculatorState.selectedDuration != nil
+            if calculatorState.strategyType == .timeBased {
+                if calculatorState.selectedFrequency == .weekly {
+                    return !calculatorState.selectedDays.isEmpty
+                }
+                return true
+            } else {
+                return !calculatorState.selectedRiskBands.isEmpty
+            }
 
         case 5:
+            if calculatorState.strategyType == .timeBased {
+                return calculatorState.selectedDuration != nil
+            } else {
+                return calculatorState.selectedPortfolioId != nil
+            }
+
+        case 6:
+            if calculatorState.strategyType == .timeBased {
+                return calculatorState.selectedPortfolioId != nil
+            } else {
+                return calculatorState.calculation != nil
+            }
+
+        case 7:
             return calculatorState.calculation != nil
 
         default:
@@ -181,7 +267,7 @@ struct DCACalculatorView: View {
     }
 
     private func goForward() {
-        if calculatorState.currentStep == 5 {
+        if isLastStep {
             createReminder()
         } else {
             withAnimation {
@@ -193,45 +279,63 @@ struct DCACalculatorView: View {
     private func createReminder() {
         guard let calculation = calculatorState.calculation else { return }
 
-        // Create DCA reminder using existing DCA system
-        let reminder = DCAReminder(
-            userId: UUID(), // In real app, get from auth service
-            symbol: calculation.asset.symbol,
-            name: calculation.asset.name,
-            amount: calculation.amountPerPurchase,
-            frequency: calculation.frequency,
-            totalPurchases: calculation.numberOfPurchases,
-            completedPurchases: 0,
-            notificationTime: Date(),
-            startDate: calculation.startDate,
-            isActive: true
-        )
-
-        // Create via the DCA service
         Task {
-            let dcaService = ServiceContainer.shared.dcaService
-            let request = CreateDCARequest(
-                userId: reminder.userId,
-                symbol: reminder.symbol,
-                name: reminder.name,
-                amount: reminder.amount,
-                frequency: reminder.frequency.rawValue,
-                totalPurchases: reminder.totalPurchases,
-                notificationTime: reminder.notificationTime,
-                startDate: reminder.startDate,
-                nextReminderDate: reminder.nextReminderDate ?? Date()
-            )
-
             do {
-                _ = try await dcaService.createReminder(request)
+                if calculation.strategyType == .timeBased {
+                    try await createTimeBasedReminder(calculation)
+                } else {
+                    try await createRiskBasedReminder(calculation)
+                }
+
                 await MainActor.run {
                     reminderCreated = true
                 }
             } catch {
-                // Handle error - could show an alert
-                print("Failed to create DCA reminder: \(error)")
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
             }
         }
+    }
+
+    private func createTimeBasedReminder(_ calculation: DCACalculation) async throws {
+        let dcaService = ServiceContainer.shared.dcaService
+
+        let request = CreateDCARequest(
+            userId: UUID(), // In real app, get from auth service
+            symbol: calculation.asset.symbol,
+            name: calculation.asset.name,
+            amount: calculation.amountPerPurchase,
+            frequency: calculation.frequency.rawValue,
+            totalPurchases: calculation.numberOfPurchases,
+            notificationTime: Date(),
+            startDate: calculation.startDate,
+            nextReminderDate: calculation.purchaseDates.first ?? Date(),
+            portfolioId: calculation.targetPortfolioId
+        )
+
+        _ = try await dcaService.createReminder(request)
+    }
+
+    private func createRiskBasedReminder(_ calculation: DCACalculation) async throws {
+        let dcaService = ServiceContainer.shared.dcaService
+
+        // Get the risk threshold from selected bands
+        let sortedBands = calculation.riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
+        let riskThreshold = sortedBands.first?.riskRange.upperBound ?? 40
+
+        let request = CreateRiskBasedDCARequest(
+            userId: UUID(), // In real app, get from auth service
+            symbol: calculation.asset.symbol,
+            name: calculation.asset.name,
+            amount: calculation.totalAmount,
+            riskThreshold: riskThreshold,
+            riskCondition: RiskCondition.below.rawValue,
+            portfolioId: calculation.targetPortfolioId
+        )
+
+        _ = try await dcaService.createRiskBasedReminder(request)
     }
 }
 
@@ -247,33 +351,56 @@ class DCACalculatorState {
         Double(amountString.replacingOccurrences(of: ",", with: "")) ?? 0
     }
 
-    // Step 2: Asset
+    // Step 2: Strategy Type
+    var strategyType: DCAStrategyType = .timeBased
+
+    // Step 3: Asset
     var selectedAsset: DCAAsset?
     var selectedAssetType: DCAAssetType = .crypto
 
-    // Step 3: Frequency
+    // Step 4 (time-based): Frequency
     var selectedFrequency: DCAFrequency = .weekly
     var selectedDays: Set<Weekday> = [.friday]
 
-    // Step 4: Duration
+    // Step 4 (risk-based): Risk Bands
+    var selectedRiskBands: Set<DCABTCRiskBand> = []
+
+    // Step 5 (time-based): Duration
     var selectedDuration: DCADuration?
+
+    // Portfolio Selection
+    var selectedPortfolioId: UUID?
+    var selectedPortfolioName: String?
+    var availablePortfolios: [Portfolio] = []
 
     // Computed calculation
     var calculation: DCACalculation? {
-        guard amount > 0,
-              let asset = selectedAsset,
-              let duration = selectedDuration else {
-            return nil
-        }
+        guard amount > 0, let asset = selectedAsset else { return nil }
 
-        return DCACalculatorService.calculate(
-            totalAmount: amount,
-            asset: asset,
-            frequency: selectedFrequency,
-            duration: duration,
-            startDate: Date(),
-            selectedDays: selectedDays
-        )
+        if strategyType == .timeBased {
+            guard let duration = selectedDuration else { return nil }
+
+            return DCACalculatorService.calculateTimeBased(
+                totalAmount: amount,
+                asset: asset,
+                frequency: selectedFrequency,
+                duration: duration,
+                startDate: Date(),
+                selectedDays: selectedDays,
+                targetPortfolioId: selectedPortfolioId,
+                targetPortfolioName: selectedPortfolioName
+            )
+        } else {
+            guard !selectedRiskBands.isEmpty else { return nil }
+
+            return DCACalculatorService.calculateRiskBased(
+                totalAmount: amount,
+                asset: asset,
+                riskBands: selectedRiskBands,
+                targetPortfolioId: selectedPortfolioId,
+                targetPortfolioName: selectedPortfolioName
+            )
+        }
     }
 }
 

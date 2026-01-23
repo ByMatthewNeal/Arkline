@@ -129,22 +129,50 @@ struct DCACalculatorService {
 
     // MARK: - Calculation Builder
 
-    /// Creates a DCACalculation with all computed values
-    static func calculate(
+    /// Creates a time-based DCACalculation
+    static func calculateTimeBased(
         totalAmount: Double,
         asset: DCAAsset,
         frequency: DCAFrequency,
         duration: DCADuration,
         startDate: Date,
-        selectedDays: Set<Weekday>
+        selectedDays: Set<Weekday>,
+        targetPortfolioId: UUID?,
+        targetPortfolioName: String?
     ) -> DCACalculation {
         return DCACalculation(
             totalAmount: totalAmount,
             asset: asset,
+            strategyType: .timeBased,
+            targetPortfolioId: targetPortfolioId,
+            targetPortfolioName: targetPortfolioName,
             frequency: frequency,
             duration: duration,
             startDate: startDate,
-            selectedDays: selectedDays
+            selectedDays: selectedDays,
+            riskBands: []
+        )
+    }
+
+    /// Creates a risk-based DCACalculation
+    static func calculateRiskBased(
+        totalAmount: Double,
+        asset: DCAAsset,
+        riskBands: Set<DCABTCRiskBand>,
+        targetPortfolioId: UUID?,
+        targetPortfolioName: String?
+    ) -> DCACalculation {
+        return DCACalculation(
+            totalAmount: totalAmount,
+            asset: asset,
+            strategyType: .riskBased,
+            targetPortfolioId: targetPortfolioId,
+            targetPortfolioName: targetPortfolioName,
+            frequency: .weekly, // Not used for risk-based
+            duration: .oneYear, // Not used for risk-based
+            startDate: Date(),
+            selectedDays: [],
+            riskBands: riskBands
         )
     }
 

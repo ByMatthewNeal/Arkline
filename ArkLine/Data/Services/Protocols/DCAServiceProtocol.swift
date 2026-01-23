@@ -169,6 +169,7 @@ struct CreateRiskBasedDCARequest: Encodable {
     let amount: Double
     let riskThreshold: Double
     let riskCondition: String
+    let portfolioId: UUID?
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
@@ -177,6 +178,17 @@ struct CreateRiskBasedDCARequest: Encodable {
         case amount
         case riskThreshold = "risk_threshold"
         case riskCondition = "risk_condition"
+        case portfolioId = "portfolio_id"
+    }
+
+    init(userId: UUID, symbol: String, name: String, amount: Double, riskThreshold: Double, riskCondition: String, portfolioId: UUID? = nil) {
+        self.userId = userId
+        self.symbol = symbol
+        self.name = name
+        self.amount = amount
+        self.riskThreshold = riskThreshold
+        self.riskCondition = riskCondition
+        self.portfolioId = portfolioId
     }
 }
 

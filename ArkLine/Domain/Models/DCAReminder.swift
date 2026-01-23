@@ -190,6 +190,7 @@ struct CreateDCARequest: Encodable {
     let notificationTime: Date
     let startDate: Date
     let nextReminderDate: Date
+    let portfolioId: UUID?
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
@@ -201,5 +202,6 @@ struct CreateDCARequest: Encodable {
         case notificationTime = "notification_time"
         case startDate = "start_date"
         case nextReminderDate = "next_reminder_date"
+        case portfolioId = "portfolio_id"
     }
 }

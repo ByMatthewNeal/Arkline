@@ -1,17 +1,94 @@
 import Foundation
 
+// MARK: - DCA Strategy Type
+enum DCAStrategyType: String, CaseIterable, Identifiable {
+    case timeBased = "Time-Based"
+    case riskBased = "Risk-Based"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .timeBased: return "calendar"
+        case .riskBased: return "gauge.with.dots.needle.50percent"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .timeBased: return "Invest on a regular schedule"
+        case .riskBased: return "Invest when BTC risk hits target levels"
+        }
+    }
+}
+
+// MARK: - Risk Band for DCA
+enum DCABTCRiskBand: String, CaseIterable, Identifiable {
+    case veryLow = "Very Low"
+    case low = "Low"
+    case neutral = "Neutral"
+    case high = "High"
+    case veryHigh = "Very High"
+
+    var id: String { rawValue }
+
+    var riskRange: ClosedRange<Double> {
+        switch self {
+        case .veryLow: return 0...20
+        case .low: return 20...40
+        case .neutral: return 40...60
+        case .high: return 60...80
+        case .veryHigh: return 80...100
+        }
+    }
+
+    var color: String {
+        switch self {
+        case .veryLow: return "00C853"   // Green
+        case .low: return "64DD17"       // Light green
+        case .neutral: return "FFD600"   // Yellow
+        case .high: return "FF9100"      // Orange
+        case .veryHigh: return "FF1744"  // Red
+        }
+    }
+
+    var investmentAdvice: String {
+        switch self {
+        case .veryLow: return "Excellent time to accumulate"
+        case .low: return "Good buying opportunity"
+        case .neutral: return "Consider dollar cost averaging"
+        case .high: return "Be cautious, consider taking profits"
+        case .veryHigh: return "High risk, avoid large purchases"
+        }
+    }
+
+    /// Returns bands recommended for DCA (typically lower risk)
+    static var recommendedForDCA: [DCABTCRiskBand] {
+        [.veryLow, .low, .neutral]
+    }
+}
+
 // MARK: - DCA Calculation Result
 struct DCACalculation: Equatable {
     let totalAmount: Double
     let asset: DCAAsset
+    let strategyType: DCAStrategyType
+    let targetPortfolioId: UUID?
+    let targetPortfolioName: String?
+
+    // Time-based fields
     let frequency: DCAFrequency
     let duration: DCADuration
     let startDate: Date
     let selectedDays: Set<Weekday>
 
-    // Computed properties
+    // Risk-based fields
+    let riskBands: Set<DCABTCRiskBand>
+
+    // Computed properties for time-based DCA
     var numberOfPurchases: Int {
-        DCACalculatorService.purchaseCount(
+        guard strategyType == .timeBased else { return 0 }
+        return DCACalculatorService.purchaseCount(
             frequency: frequency,
             duration: duration,
             selectedDays: selectedDays
@@ -19,12 +96,14 @@ struct DCACalculation: Equatable {
     }
 
     var amountPerPurchase: Double {
+        guard strategyType == .timeBased else { return totalAmount }
         guard numberOfPurchases > 0 else { return 0 }
         return totalAmount / Double(numberOfPurchases)
     }
 
     var purchaseDates: [Date] {
-        DCACalculatorService.generatePurchaseDates(
+        guard strategyType == .timeBased else { return [] }
+        return DCACalculatorService.generatePurchaseDates(
             frequency: frequency,
             duration: duration,
             startDate: startDate,
@@ -42,6 +121,21 @@ struct DCACalculation: Equatable {
 
     var formattedTotalAmount: String {
         totalAmount.asCurrency
+    }
+
+    // Risk-based helpers
+    var riskBandDescription: String {
+        guard strategyType == .riskBased else { return "" }
+        let sortedBands = riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
+        return sortedBands.map { $0.rawValue }.joined(separator: ", ")
+    }
+
+    var riskRangeDescription: String {
+        guard strategyType == .riskBased, !riskBands.isEmpty else { return "" }
+        let sortedBands = riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
+        let minRisk = Int(sortedBands.first!.riskRange.lowerBound)
+        let maxRisk = Int(sortedBands.last!.riskRange.upperBound)
+        return "\(minRisk) - \(maxRisk)"
     }
 }
 

@@ -167,35 +167,43 @@ struct DCAAssetRowView: View {
     }
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 14) {
-                // Icon
-                DCAAssetIconView(asset: asset, size: 40)
+        VStack(spacing: 0) {
+            Button(action: onSelect) {
+                HStack(spacing: 14) {
+                    // Icon
+                    DCAAssetIconView(asset: asset, size: 40)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(asset.symbol)
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(textPrimary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(asset.symbol)
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(textPrimary)
 
-                    Text(asset.name)
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
+                        Text(asset.name)
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(AppColors.accent)
+                    } else {
+                        Circle()
+                            .stroke(AppColors.textSecondary.opacity(0.3), lineWidth: 1.5)
+                            .frame(width: 20, height: 20)
+                    }
                 }
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(AppColors.accent)
-                }
+                .padding(.vertical, 12)
+                .padding(.horizontal, 4)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 4)
-        }
+            .buttonStyle(.plain)
 
-        Divider()
-            .padding(.leading, 58)
+            Divider()
+                .padding(.leading, 58)
+        }
     }
 }
 
@@ -536,6 +544,21 @@ struct DCACalculationSummaryCard: View {
                     .font(AppFonts.title24)
                     .foregroundColor(textPrimary)
 
+                // Strategy badge
+                HStack(spacing: 6) {
+                    Image(systemName: calculation.strategyType.icon)
+                        .font(.system(size: 12))
+                    Text(calculation.strategyType.rawValue)
+                        .font(AppFonts.caption12Medium)
+                }
+                .foregroundColor(AppColors.accent)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(AppColors.accent.opacity(0.15))
+                )
+
                 // Asset info
                 HStack(spacing: 8) {
                     DCAAssetIconView(asset: calculation.asset, size: 24)
@@ -547,96 +570,236 @@ struct DCACalculationSummaryCard: View {
 
             Divider()
 
-            // Plan details
-            VStack(spacing: 12) {
-                SummaryRow(label: "Total Investment", value: calculation.formattedTotalAmount)
-                SummaryRow(label: "Frequency", value: DCACalculatorService.frequencyDescription(
-                    frequency: calculation.frequency,
-                    selectedDays: calculation.selectedDays
-                ))
-                SummaryRow(label: "Duration", value: calculation.duration.displayName)
+            if calculation.strategyType == .timeBased {
+                timeBasedSummary
+            } else {
+                riskBasedSummary
             }
 
-            Divider()
-
-            // Key metrics
-            VStack(spacing: 16) {
-                // Per purchase amount - highlighted
-                VStack(spacing: 4) {
-                    Text("Per Purchase")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text(calculation.formattedAmountPerPurchase)
-                        .font(AppFonts.number36)
-                        .foregroundColor(AppColors.accent)
-                }
-
-                HStack(spacing: 20) {
-                    MetricItem(
-                        icon: "calendar",
-                        value: "\(calculation.numberOfPurchases)",
-                        label: "Purchases"
-                    )
-
-                    MetricItem(
-                        icon: "play.circle",
-                        value: dateFormatter.string(from: calculation.startDate),
-                        label: "First"
-                    )
-
-                    if let endDate = calculation.endDate {
-                        MetricItem(
-                            icon: "flag.checkered",
-                            value: dateFormatter.string(from: endDate),
-                            label: "Last"
-                        )
-                    }
-                }
-            }
-
-            // Upcoming schedule preview
-            if !calculation.purchaseDates.isEmpty {
+            // Portfolio info
+            if let portfolioName = calculation.targetPortfolioName {
                 Divider()
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Upcoming Schedule")
+                HStack {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("Target Portfolio")
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Spacer()
+
+                    Text(portfolioName)
                         .font(AppFonts.body14Bold)
                         .foregroundColor(textPrimary)
-
-                    VStack(spacing: 8) {
-                        ForEach(Array(calculation.purchaseDates.prefix(5).enumerated()), id: \.offset) { _, date in
-                            HStack {
-                                Text(shortDateFormatter.string(from: date))
-                                    .font(AppFonts.body14)
-                                    .foregroundColor(AppColors.textSecondary)
-
-                                Spacer()
-
-                                Text(calculation.formattedAmountPerPurchase)
-                                    .font(AppFonts.body14Medium)
-                                    .foregroundColor(textPrimary)
-                            }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
-                            )
-                        }
-
-                        if calculation.purchaseDates.count > 5 {
-                            Text("+ \(calculation.purchaseDates.count - 5) more purchases")
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.textSecondary)
-                                .padding(.top, 4)
-                        }
-                    }
                 }
             }
         }
         .padding(20)
         .glassCard(cornerRadius: 16)
+    }
+
+    // MARK: - Time-Based Summary
+
+    @ViewBuilder
+    private var timeBasedSummary: some View {
+        // Plan details
+        VStack(spacing: 12) {
+            SummaryRow(label: "Total Investment", value: calculation.formattedTotalAmount)
+            SummaryRow(label: "Frequency", value: DCACalculatorService.frequencyDescription(
+                frequency: calculation.frequency,
+                selectedDays: calculation.selectedDays
+            ))
+            SummaryRow(label: "Duration", value: calculation.duration.displayName)
+        }
+
+        Divider()
+
+        // Key metrics
+        VStack(spacing: 16) {
+            // Per purchase amount - highlighted
+            VStack(spacing: 4) {
+                Text("Per Purchase")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Text(calculation.formattedAmountPerPurchase)
+                    .font(AppFonts.number36)
+                    .foregroundColor(AppColors.accent)
+            }
+
+            HStack(spacing: 20) {
+                MetricItem(
+                    icon: "calendar",
+                    value: "\(calculation.numberOfPurchases)",
+                    label: "Purchases"
+                )
+
+                MetricItem(
+                    icon: "play.circle",
+                    value: dateFormatter.string(from: calculation.startDate),
+                    label: "First"
+                )
+
+                if let endDate = calculation.endDate {
+                    MetricItem(
+                        icon: "flag.checkered",
+                        value: dateFormatter.string(from: endDate),
+                        label: "Last"
+                    )
+                }
+            }
+        }
+
+        // Upcoming schedule preview
+        if !calculation.purchaseDates.isEmpty {
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Upcoming Schedule")
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(textPrimary)
+
+                VStack(spacing: 8) {
+                    ForEach(Array(calculation.purchaseDates.prefix(5).enumerated()), id: \.offset) { _, date in
+                        HStack {
+                            Text(shortDateFormatter.string(from: date))
+                                .font(AppFonts.body14)
+                                .foregroundColor(AppColors.textSecondary)
+
+                            Spacer()
+
+                            Text(calculation.formattedAmountPerPurchase)
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(textPrimary)
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                        )
+                    }
+
+                    if calculation.purchaseDates.count > 5 {
+                        Text("+ \(calculation.purchaseDates.count - 5) more purchases")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.top, 4)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Risk-Based Summary
+
+    @ViewBuilder
+    private var riskBasedSummary: some View {
+        // Plan details
+        VStack(spacing: 12) {
+            SummaryRow(label: "Total Investment", value: calculation.formattedTotalAmount)
+            SummaryRow(label: "Risk Levels", value: calculation.riskBandDescription)
+            SummaryRow(label: "Risk Range", value: calculation.riskRangeDescription)
+        }
+
+        Divider()
+
+        // Risk meter visualization
+        VStack(spacing: 16) {
+            Text("Active Risk Zones")
+                .font(AppFonts.body14Bold)
+                .foregroundColor(textPrimary)
+
+            DCABTCRiskMeter(selectedBands: calculation.riskBands)
+
+            // Investment explanation
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "bell.badge")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("You'll receive a notification when BTC risk enters your selected zones")
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                // List selected bands with investment amounts
+                VStack(spacing: 6) {
+                    let sortedBands = calculation.riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
+                    let amountPerBand = calculation.totalAmount / Double(sortedBands.count)
+
+                    ForEach(sortedBands) { band in
+                        HStack {
+                            Circle()
+                                .fill(Color(hex: band.color))
+                                .frame(width: 8, height: 8)
+
+                            Text(band.rawValue)
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(textPrimary)
+
+                            Text("(\(Int(band.riskRange.lowerBound))-\(Int(band.riskRange.upperBound)))")
+                                .font(AppFonts.footnote10)
+                                .foregroundColor(AppColors.textSecondary)
+
+                            Spacer()
+
+                            Text(amountPerBand.asCurrency)
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(AppColors.accent)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                )
+            }
+        }
+
+        // How it works
+        Divider()
+
+        VStack(alignment: .leading, spacing: 10) {
+            Text("How It Works")
+                .font(AppFonts.body14Bold)
+                .foregroundColor(textPrimary)
+
+            VStack(alignment: .leading, spacing: 8) {
+                RiskBasedStepRow(number: 1, text: "BTC risk indicator updates based on market conditions")
+                RiskBasedStepRow(number: 2, text: "When risk enters your selected zone, you get notified")
+                RiskBasedStepRow(number: 3, text: "Execute your DCA purchase at optimal risk levels")
+            }
+        }
+    }
+}
+
+struct RiskBasedStepRow: View {
+    let number: Int
+    let text: String
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(AppColors.accent.opacity(0.15))
+                    .frame(width: 20, height: 20)
+
+                Text("\(number)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(AppColors.accent)
+            }
+
+            Text(text)
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+        }
     }
 }
 
@@ -708,5 +871,419 @@ struct DCAStepIndicator: View {
                     .frame(height: 4)
             }
         }
+    }
+}
+
+// MARK: - Strategy Type Card
+struct DCAStrategyTypeCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Binding var selectedStrategy: DCAStrategyType
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Choose your DCA strategy")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            Text("Select how you want to trigger your investments")
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textSecondary)
+
+            VStack(spacing: 12) {
+                ForEach(DCAStrategyType.allCases) { strategy in
+                    DCAStrategyOptionCard(
+                        strategy: strategy,
+                        isSelected: selectedStrategy == strategy,
+                        onSelect: { selectedStrategy = strategy }
+                    )
+                }
+            }
+        }
+        .padding(20)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
+struct DCAStrategyOptionCard: View {
+    let strategy: DCAStrategyType
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 16) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? AppColors.accent.opacity(0.15) : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: strategy.icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(isSelected ? AppColors.accent : AppColors.textSecondary)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(strategy.rawValue)
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(textPrimary)
+
+                    Text(strategy.description)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+
+                    if isSelected {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? AppColors.accent.opacity(0.08) : (colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? AppColors.accent : Color.clear, lineWidth: 1.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Risk Band Card
+struct DCARiskBandCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Binding var selectedBands: Set<DCABTCRiskBand>
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("When should you buy?")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            Text("Select the BTC risk levels that will trigger your DCA purchases. Lower risk levels are typically better for accumulation.")
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textSecondary)
+
+            // Risk meter visualization
+            DCABTCRiskMeter(selectedBands: selectedBands)
+                .padding(.vertical, 8)
+
+            // Risk band options
+            VStack(spacing: 10) {
+                ForEach(DCABTCRiskBand.allCases) { band in
+                    DCARiskBandOptionRow(
+                        band: band,
+                        isSelected: selectedBands.contains(band),
+                        isRecommended: DCABTCRiskBand.recommendedForDCA.contains(band),
+                        onToggle: { toggleBand(band) }
+                    )
+                }
+            }
+
+            // Selected bands summary
+            if !selectedBands.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("You'll be notified when BTC risk is:")
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    let sortedBands = selectedBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
+                    let rangeText = "\(Int(sortedBands.first!.riskRange.lowerBound)) - \(Int(sortedBands.last!.riskRange.upperBound))"
+
+                    Text("\(sortedBands.map { $0.rawValue }.joined(separator: ", ")) (\(rangeText))")
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(AppColors.accent)
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding(20)
+        .glassCard(cornerRadius: 16)
+    }
+
+    private func toggleBand(_ band: DCABTCRiskBand) {
+        if selectedBands.contains(band) {
+            selectedBands.remove(band)
+        } else {
+            selectedBands.insert(band)
+        }
+    }
+}
+
+struct DCABTCRiskMeter: View {
+    let selectedBands: Set<DCABTCRiskBand>
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Risk meter bar
+            GeometryReader { geometry in
+                HStack(spacing: 2) {
+                    ForEach(DCABTCRiskBand.allCases) { band in
+                        Rectangle()
+                            .fill(Color(hex: band.color).opacity(selectedBands.contains(band) ? 1.0 : 0.3))
+                            .frame(width: (geometry.size.width - CGFloat(DCABTCRiskBand.allCases.count - 1) * 2) / CGFloat(DCABTCRiskBand.allCases.count))
+                    }
+                }
+            }
+            .frame(height: 12)
+            .clipShape(Capsule())
+
+            // Labels
+            HStack {
+                Text("Low Risk")
+                    .font(AppFonts.footnote10)
+                    .foregroundColor(Color(hex: DCABTCRiskBand.veryLow.color))
+
+                Spacer()
+
+                Text("High Risk")
+                    .font(AppFonts.footnote10)
+                    .foregroundColor(Color(hex: DCABTCRiskBand.veryHigh.color))
+            }
+        }
+    }
+}
+
+struct DCARiskBandOptionRow: View {
+    let band: DCABTCRiskBand
+    let isSelected: Bool
+    let isRecommended: Bool
+    let onToggle: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 14) {
+                // Color indicator
+                Circle()
+                    .fill(Color(hex: band.color))
+                    .frame(width: 12, height: 12)
+
+                // Band info
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(band.rawValue)
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(textPrimary)
+
+                        if isRecommended {
+                            Text("Recommended")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule()
+                                        .fill(Color(hex: "00C853"))
+                                )
+                        }
+                    }
+
+                    Text("\(Int(band.riskRange.lowerBound))-\(Int(band.riskRange.upperBound))% • \(band.investmentAdvice)")
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Checkbox
+                ZStack {
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(AppColors.accent)
+                            .frame(width: 22, height: 22)
+
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? AppColors.accent.opacity(0.08) : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7")))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Portfolio Picker Card
+struct DCAPortfolioPickerCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Binding var selectedPortfolioId: UUID?
+    @Binding var selectedPortfolioName: String?
+    let availablePortfolios: [Portfolio]
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Which portfolio?")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            Text("Select the portfolio where DCA transactions will be added")
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textSecondary)
+
+            if availablePortfolios.isEmpty {
+                // Empty state
+                VStack(spacing: 12) {
+                    Image(systemName: "folder.badge.plus")
+                        .font(.system(size: 32))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+
+                    Text("No portfolios available")
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text("Create a portfolio first to link your DCA plan")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+            } else {
+                // Portfolio list
+                VStack(spacing: 10) {
+                    ForEach(availablePortfolios) { portfolio in
+                        DCAPortfolioOptionRow(
+                            portfolio: portfolio,
+                            isSelected: selectedPortfolioId == portfolio.id,
+                            onSelect: {
+                                selectedPortfolioId = portfolio.id
+                                selectedPortfolioName = portfolio.name
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Info note
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+
+                Text("DCA transactions will be automatically added to this portfolio when you complete each purchase.")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(AppColors.accent.opacity(0.08))
+            )
+        }
+        .padding(20)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
+struct DCAPortfolioOptionRow: View {
+    let portfolio: Portfolio
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 14) {
+                // Portfolio icon
+                ZStack {
+                    Circle()
+                        .fill(AppColors.accent.opacity(0.15))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(AppColors.accent)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(portfolio.name)
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(textPrimary)
+
+                    Text("\(portfolio.holdings?.count ?? 0) holdings • \((portfolio.totalValue ?? 0).asCurrency)")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                // Selection indicator
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+
+                    if isSelected {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? AppColors.accent.opacity(0.08) : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7")))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? AppColors.accent : Color.clear, lineWidth: 1.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
