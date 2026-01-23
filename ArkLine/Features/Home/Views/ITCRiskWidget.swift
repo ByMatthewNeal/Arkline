@@ -337,6 +337,8 @@ enum RiskCoin: String, CaseIterable {
     case link = "LINK"
     case dot = "DOT"
     case matic = "MATIC"
+    case render = "RENDER"
+    case ondo = "ONDO"
 
     var displayName: String {
         switch self {
@@ -350,6 +352,8 @@ enum RiskCoin: String, CaseIterable {
         case .link: return "Chainlink"
         case .dot: return "Polkadot"
         case .matic: return "Polygon"
+        case .render: return "Render"
+        case .ondo: return "Ondo"
         }
     }
 
@@ -365,6 +369,8 @@ enum RiskCoin: String, CaseIterable {
         case .link: return "link.circle.fill"
         case .dot: return "circle.circle.fill"
         case .matic: return "m.circle.fill"
+        case .render: return "r.circle.fill"
+        case .ondo: return "o.circle.fill"
         }
     }
 }

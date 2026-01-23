@@ -126,11 +126,31 @@ struct AssetRiskConfig {
         displayName: "Avalanche"
     )
 
+    /// Render Network
+    static let render = AssetRiskConfig(
+        assetId: "RENDER",
+        geckoId: "render-token",
+        originDate: DateComponents(calendar: .current, year: 2020, month: 4, day: 27).date!,
+        deviationBounds: (low: -0.6, high: 0.6),
+        confidenceLevel: 6,
+        displayName: "Render"
+    )
+
+    /// Ondo Finance
+    static let ondo = AssetRiskConfig(
+        assetId: "ONDO",
+        geckoId: "ondo-finance",
+        originDate: DateComponents(calendar: .current, year: 2024, month: 1, day: 18).date!,
+        deviationBounds: (low: -0.4, high: 0.4),
+        confidenceLevel: 3,
+        displayName: "Ondo"
+    )
+
     // MARK: - All Configs
 
     /// All pre-configured assets
     static let allConfigs: [AssetRiskConfig] = [
-        .btc, .eth, .sol, .ada, .link, .dot, .matic, .xrp, .doge, .avax
+        .btc, .eth, .sol, .ada, .link, .dot, .matic, .xrp, .doge, .avax, .render, .ondo
     ]
 
     /// Dictionary for quick lookup by symbol
@@ -174,6 +194,8 @@ extension AssetRiskConfig {
         "MATIC": "matic-network",
         "XRP": "ripple",
         "DOGE": "dogecoin",
-        "AVAX": "avalanche-2"
+        "AVAX": "avalanche-2",
+        "RENDER": "render-token",
+        "ONDO": "ondo-finance"
     ]
 }
