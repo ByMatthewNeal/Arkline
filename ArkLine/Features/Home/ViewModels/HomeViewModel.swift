@@ -12,6 +12,10 @@ class HomeViewModel {
     private let portfolioService: PortfolioServiceProtocol
     private let itcRiskService: ITCRiskServiceProtocol
     private let coinglassService: CoinglassServiceProtocol
+    private let vixService: VIXServiceProtocol
+    private let dxyService: DXYServiceProtocol
+    private let rainbowChartService: RainbowChartServiceProtocol
+    private let globalLiquidityService: GlobalLiquidityServiceProtocol
 
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
@@ -46,6 +50,12 @@ class HomeViewModel {
     // Derivatives Data (from Market tab)
     var derivativesOverview: DerivativesOverview?
     var isDerivativesLoading = false
+
+    // Market Indicators (VIX, DXY, Rainbow, Liquidity)
+    var vixData: VIXData?
+    var dxyData: DXYData?
+    var rainbowChartData: RainbowChartData?
+    var globalLiquidityChanges: GlobalLiquidityChanges?
 
     // Market Summary
     var btcPrice: Double = 0
@@ -262,7 +272,11 @@ class HomeViewModel {
         newsService: NewsServiceProtocol = ServiceContainer.shared.newsService,
         portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
         itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService,
-        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService
+        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService,
+        vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
+        dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
+        rainbowChartService: RainbowChartServiceProtocol = ServiceContainer.shared.rainbowChartService,
+        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -271,6 +285,10 @@ class HomeViewModel {
         self.portfolioService = portfolioService
         self.itcRiskService = itcRiskService
         self.coinglassService = coinglassService
+        self.vixService = vixService
+        self.dxyService = dxyService
+        self.rainbowChartService = rainbowChartService
+        self.globalLiquidityService = globalLiquidityService
         Task { await loadInitialData() }
         startAutoRefresh()
     }
@@ -328,12 +346,18 @@ class HomeViewModel {
             async let fedWatchTask = fetchFedWatchMeetingsSafe()
             async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
             async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
+            async let vixTask = fetchVIXSafe()
+            async let dxyTask = fetchDXYSafe()
+            async let liquidityTask = fetchGlobalLiquiditySafe()
 
             let (fg, riskScore, crypto, reminders, events, upcoming) = try await (fgTask, riskScoreTask, cryptoTask, remindersTask, eventsTask, upcomingEventsTask)
             let news = try await newsTask
             let fedMeetings = await fedWatchTask
             let btcRisk = await btcRiskTask
             let ethRisk = await ethRiskTask
+            let vix = await vixTask
+            let dxy = await dxyTask
+            let liquidity = await liquidityTask
 
             logInfo("HomeViewModel: Fetched \(crypto.count) crypto assets", category: .data)
 
@@ -370,10 +394,21 @@ class HomeViewModel {
                 // Market widget data
                 self.newsItems = news
                 self.fedWatchMeetings = fedMeetings ?? []
+
+                // Market indicators
+                self.vixData = vix
+                self.dxyData = dxy
+                self.globalLiquidityChanges = liquidity
+
                 self.isLoading = false
 
-                // Refresh derivatives data in background (non-blocking)
-                Task { await self.refreshDerivatives() }
+                // Fetch Rainbow Chart data (needs BTC price) and derivatives in background
+                Task {
+                    if self.btcPrice > 0 {
+                        self.rainbowChartData = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
+                    }
+                    await self.refreshDerivatives()
+                }
                 logInfo("HomeViewModel: Set btcPrice=\(self.btcPrice), ethPrice=\(self.ethPrice)", category: .data)
             }
         } catch {
@@ -480,6 +515,22 @@ class HomeViewModel {
 
     private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
         try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+    }
+
+    private func fetchVIXSafe() async -> VIXData? {
+        try? await vixService.fetchLatestVIX()
+    }
+
+    private func fetchDXYSafe() async -> DXYData? {
+        try? await dxyService.fetchLatestDXY()
+    }
+
+    private func fetchRainbowChartSafe(btcPrice: Double) async -> RainbowChartData? {
+        try? await rainbowChartService.fetchCurrentRainbowData(btcPrice: btcPrice)
+    }
+
+    private func fetchGlobalLiquiditySafe() async -> GlobalLiquidityChanges? {
+        try? await globalLiquidityService.fetchLiquidityChanges()
     }
 
     /// Fetches derivatives data from Coinglass (Open Interest, Liquidations, Funding, L/S Ratios)

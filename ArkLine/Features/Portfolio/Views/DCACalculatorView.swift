@@ -141,7 +141,7 @@ struct DCACalculatorView: View {
             .disabled(!canProceed)
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 90)
+        .padding(.bottom, 95)
     }
 
     // MARK: - Validation
