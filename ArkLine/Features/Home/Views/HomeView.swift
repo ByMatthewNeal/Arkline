@@ -377,6 +377,8 @@ struct ReorderableWidgetStack: View {
             return !viewModel.newsItems.isEmpty
         case .marketSentiment:
             return viewModel.sentimentViewModel != nil
+        case .derivativesData:
+            return true // Always show - has loading/empty state handling
         }
     }
 
@@ -446,6 +448,13 @@ struct ReorderableWidgetStack: View {
             FavoritesSection(
                 assets: viewModel.favoriteAssets,
                 size: appState.widgetSize(.favorites)
+            )
+
+        case .derivativesData:
+            HomeDerivativesWidget(
+                overview: viewModel.derivativesOverview,
+                size: appState.widgetSize(.derivativesData),
+                isLoading: viewModel.isDerivativesLoading
             )
         }
     }

@@ -11,6 +11,7 @@ class HomeViewModel {
     private let newsService: NewsServiceProtocol
     private let portfolioService: PortfolioServiceProtocol
     private let itcRiskService: ITCRiskServiceProtocol
+    private let coinglassService: CoinglassServiceProtocol
 
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
@@ -41,6 +42,10 @@ class HomeViewModel {
     var fedWatchMeetings: [FedWatchData] = []
     var newsItems: [NewsItem] = []
     var sentimentViewModel: SentimentViewModel?
+
+    // Derivatives Data (from Market tab)
+    var derivativesOverview: DerivativesOverview?
+    var isDerivativesLoading = false
 
     // Market Summary
     var btcPrice: Double = 0
@@ -246,7 +251,8 @@ class HomeViewModel {
         dcaService: DCAServiceProtocol = ServiceContainer.shared.dcaService,
         newsService: NewsServiceProtocol = ServiceContainer.shared.newsService,
         portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
-        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService
+        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService,
+        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -254,6 +260,7 @@ class HomeViewModel {
         self.newsService = newsService
         self.portfolioService = portfolioService
         self.itcRiskService = itcRiskService
+        self.coinglassService = coinglassService
         Task { await loadInitialData() }
         startAutoRefresh()
     }
@@ -351,6 +358,9 @@ class HomeViewModel {
                 self.newsItems = news
                 self.fedWatchMeetings = fedMeetings ?? []
                 self.isLoading = false
+
+                // Refresh derivatives data in background (non-blocking)
+                Task { await self.refreshDerivatives() }
                 logInfo("HomeViewModel: Set btcPrice=\(self.btcPrice), ethPrice=\(self.ethPrice)", category: .data)
             }
         } catch {
@@ -453,5 +463,24 @@ class HomeViewModel {
 
     private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
         try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+    }
+
+    /// Fetches derivatives data from Coinglass (Open Interest, Liquidations, Funding, L/S Ratios)
+    func refreshDerivatives() async {
+        await MainActor.run { self.isDerivativesLoading = true }
+
+        do {
+            let overview = try await coinglassService.fetchDerivativesOverview()
+
+            await MainActor.run {
+                self.derivativesOverview = overview
+                self.isDerivativesLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.isDerivativesLoading = false
+                // Don't set error message - derivatives is supplementary data
+            }
+        }
     }
 }
