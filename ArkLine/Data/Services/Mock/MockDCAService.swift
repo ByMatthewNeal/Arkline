@@ -133,7 +133,7 @@ final class MockDCAService: DCAServiceProtocol {
     }
 
     private func setupMockData() {
-        let userId = UUID()
+        let userId = Constants.Mock.userId
 
         mockReminders = [
             DCAReminder(
@@ -233,7 +233,7 @@ final class MockDCAService: DCAServiceProtocol {
     // MARK: - Risk-Based Mock Data Setup
 
     private func setupRiskBasedMockData() {
-        let userId = UUID()
+        let userId = Constants.Mock.userId
 
         // Setup mock risk levels for various assets
         mockRiskLevels = [
@@ -440,26 +440,27 @@ final class MockDCAService: DCAServiceProtocol {
     func fetchRiskLevel(symbol: String) async throws -> AssetRiskLevel {
         try await simulateNetworkDelay()
 
-        // Add some randomness to simulate live risk updates
-        if var level = mockRiskLevels[symbol.uppercased()] {
+        let upperSymbol = symbol.uppercased()
+
+        // Read existing level (if any) without modification
+        if let existingLevel = mockRiskLevels[upperSymbol] {
+            // Create a new level with variance (don't mutate the dictionary in async context)
             let variance = Double.random(in: -5...5)
-            let newScore = max(0, min(100, level.riskScore + variance))
-            level = AssetRiskLevel(
-                assetId: level.assetId,
-                symbol: level.symbol,
+            let newScore = max(0, min(100, existingLevel.riskScore + variance))
+            return AssetRiskLevel(
+                assetId: existingLevel.assetId,
+                symbol: existingLevel.symbol,
                 riskScore: newScore,
                 riskCategory: RiskCategory.from(score: newScore),
                 lastUpdated: Date()
             )
-            mockRiskLevels[symbol.uppercased()] = level
-            return level
         }
 
         // Generate a random risk level for unknown assets
         let randomScore = Double.random(in: 20...80)
         return AssetRiskLevel(
             assetId: symbol.lowercased(),
-            symbol: symbol.uppercased(),
+            symbol: upperSymbol,
             riskScore: randomScore,
             riskCategory: RiskCategory.from(score: randomScore),
             lastUpdated: Date()

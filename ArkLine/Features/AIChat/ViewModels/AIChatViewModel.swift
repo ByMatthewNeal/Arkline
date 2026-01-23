@@ -262,6 +262,11 @@ final class AIChatViewModel {
     }
 
     private func sendToClaudeAPI() async throws -> String {
+        // Use mock responses for now (API credits needed for real responses)
+        return await generateMockResponse()
+
+        // TODO: Uncomment below when API credits are available
+        /*
         // Build personalized system prompt with current context
         let systemPrompt = await buildSystemPrompt()
 
@@ -278,6 +283,46 @@ final class AIChatViewModel {
         )
 
         return response.textContent
+        */
+    }
+
+    private func generateMockResponse() async -> String {
+        // Simulate network delay
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+
+        let lastMessage = messages.last?.content.lowercased() ?? ""
+
+        // Context-aware mock responses using Ark personality
+        if lastMessage.contains("sentiment") || lastMessage.contains("fear") || lastMessage.contains("greed") {
+            return "\(userName), the current market sentiment is showing cautious optimism. The Fear & Greed Index sits at 62 (Greed), up from 54 last week. Historically, readings above 75 have preceded short-term pullbacks, while readings below 25 have often marked accumulation zones. We're in neutral-to-greedy territory—not extreme either way."
+        }
+
+        if lastMessage.contains("bitcoin") || lastMessage.contains("btc") {
+            return "\(userName), Bitcoin is currently trading around $97,400. The ITC Risk Level indicator shows we're in the 'Mid Risk' zone at 0.62. Looking at historical cycles, this level has typically preceded continued upward momentum, though past performance isn't predictive. Key levels to watch: $95K support, $100K psychological resistance."
+        }
+
+        if lastMessage.contains("ethereum") || lastMessage.contains("eth") {
+            return "\(userName), Ethereum is at approximately $3,180. The ETH/BTC ratio has been consolidating around 0.033, which historically is on the lower end of its range. Network activity remains strong with gas fees moderate. The upcoming protocol upgrades could be catalysts, but as always, markets can move independently of fundamentals."
+        }
+
+        if lastMessage.contains("portfolio") || lastMessage.contains("holding") {
+            return "\(userName), based on your current allocation, you're weighted roughly 55% BTC, 30% ETH, and 15% in altcoins. This is a relatively conservative crypto portfolio. Your overall P&L shows +12.4% since inception. Consider whether this allocation still matches your risk tolerance and investment timeline."
+        }
+
+        if lastMessage.contains("dca") || lastMessage.contains("dollar cost") {
+            return "\(userName), DCA remains one of the most effective strategies for long-term accumulation. It removes the emotional component of trying to time the market. Historical data shows that consistent DCA into BTC over any 4-year period has been profitable. The key is consistency and only investing what you can afford to hold long-term."
+        }
+
+        if lastMessage.contains("risk") {
+            return "\(userName), let me break down the current risk landscape:\n\n• **BTC Risk Level**: Mid (0.62) - Not overheated, not a bargain\n• **VIX**: 18.2 - Low volatility in traditional markets\n• **DXY**: Slight weakness, historically supportive for crypto\n• **Funding Rates**: Neutral - No excessive leverage\n\nOverall, risk indicators suggest a balanced environment. No extreme signals either way."
+        }
+
+        if lastMessage.contains("news") || lastMessage.contains("happening") {
+            return "\(userName), here's what's relevant today:\n\n• Fed maintaining current rates, next meeting in 3 weeks\n• ETF inflows continue positive trend (+$127M yesterday)\n• On-chain data shows accumulation by long-term holders\n• No major regulatory announcements this week\n\nThe macro backdrop remains constructive for risk assets."
+        }
+
+        // Default response
+        return "\(userName), I'm here to help you navigate the markets with data and context—not hype. Ask me about market sentiment, specific assets, your portfolio allocation, risk levels, or DCA strategies. I'll give you the facts and historical context to help inform your decisions."
     }
 
     // MARK: - Context Building

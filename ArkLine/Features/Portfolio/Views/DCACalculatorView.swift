@@ -303,7 +303,7 @@ struct DCACalculatorView: View {
         let dcaService = ServiceContainer.shared.dcaService
 
         let request = CreateDCARequest(
-            userId: UUID(), // In real app, get from auth service
+            userId: Constants.Mock.userId, // Use consistent mock user ID
             symbol: calculation.asset.symbol,
             name: calculation.asset.name,
             amount: calculation.amountPerPurchase,
@@ -326,7 +326,7 @@ struct DCACalculatorView: View {
         let riskThreshold = sortedBands.first?.riskRange.upperBound ?? 40
 
         let request = CreateRiskBasedDCARequest(
-            userId: UUID(), // In real app, get from auth service
+            userId: Constants.Mock.userId, // Use consistent mock user ID
             symbol: calculation.asset.symbol,
             name: calculation.asset.name,
             amount: calculation.totalAmount,

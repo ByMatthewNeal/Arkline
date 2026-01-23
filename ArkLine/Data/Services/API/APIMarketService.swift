@@ -101,10 +101,18 @@ final class APIMarketService: MarketServiceProtocol {
         let endpoint = CoinGeckoEndpoint.searchCoins(query: query)
         let response: CoinGeckoSearchResponse = try await networkManager.request(endpoint)
 
-        // Search endpoint returns minimal data, fetch full data for top results
-        let topIds = response.coins.prefix(10).map { $0.id }
+        // Search endpoint returns minimal data, fetch full market data for top results
+        let topIds = response.coins.prefix(20).map { $0.id }
+
+        guard !topIds.isEmpty else { return [] }
 
         return try await fetchCryptoAssets(ids: Array(topIds))
+    }
+
+    func searchStocks(query: String) async throws -> [AlphaVantageSearchMatch] {
+        let endpoint = AlphaVantageEndpoint.searchSymbol(keywords: query)
+        let response: AlphaVantageSearchResponse = try await networkManager.request(endpoint)
+        return response.bestMatches
     }
 
     func fetchCoinMarketChart(id: String, currency: String, days: Int) async throws -> CoinGeckoMarketChart {
@@ -115,13 +123,11 @@ final class APIMarketService: MarketServiceProtocol {
     // MARK: - Private Helpers
 
     private func fetchCryptoAssets(ids: [String]) async throws -> [CryptoAsset] {
-        let endpoint = CoinGeckoEndpoint.coinMarkets(
+        let endpoint = CoinGeckoEndpoint.coinMarketsFiltered(
             currency: "usd",
-            page: 1,
-            perPage: ids.count,
-            sparkline: true
+            ids: ids,
+            sparkline: false
         )
-        // TODO: Filter by IDs or use simplePrice endpoint
         return try await networkManager.request(endpoint)
     }
 

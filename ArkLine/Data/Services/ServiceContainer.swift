@@ -57,9 +57,9 @@ final class ServiceContainer {
         useRealMarketData ? _apiMarketService : _mockMarketService
     }
 
-    /// Sentiment service - mock until real API is implemented
+    /// Sentiment service - uses real APIs for Fear & Greed, BTC Dominance
     var sentimentService: SentimentServiceProtocol {
-        useMockForUnimplementedServices ? _mockSentimentService : _apiSentimentService
+        useRealMarketData ? _apiSentimentService : _mockSentimentService
     }
 
     /// Portfolio service - mock until Supabase integration is complete

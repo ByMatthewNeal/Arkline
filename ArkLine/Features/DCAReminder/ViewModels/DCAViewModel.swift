@@ -79,7 +79,7 @@ final class DCAViewModel {
         error = nil
 
         do {
-            let userId = currentUserId ?? UUID()
+            let userId = currentUserId ?? Constants.Mock.userId
 
             // Fetch time-based and risk-based reminders concurrently
             async let timeBasedTask = dcaService.fetchReminders(userId: userId)
@@ -125,7 +125,7 @@ final class DCAViewModel {
 
     /// Checks all risk-based reminders and triggers those that meet conditions
     func checkAndTriggerReminders() async {
-        let userId = currentUserId ?? UUID()
+        let userId = currentUserId ?? Constants.Mock.userId
 
         do {
             let triggered = try await dcaService.checkAndTriggerReminders(userId: userId)
@@ -292,7 +292,7 @@ final class DCAViewModel {
     ) async {
         do {
             let request = CreateRiskBasedDCARequest(
-                userId: currentUserId ?? UUID(),
+                userId: currentUserId ?? Constants.Mock.userId,
                 symbol: symbol.uppercased(),
                 name: name,
                 amount: amount,

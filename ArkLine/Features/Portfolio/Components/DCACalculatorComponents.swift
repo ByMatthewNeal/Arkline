@@ -14,6 +14,36 @@ struct DCAAmountInputCard: View {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
     }
 
+    // Number formatter for comma display
+    private static let numberFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = ","
+        formatter.maximumFractionDigits = 0
+        return formatter
+    }()
+
+    // Get numeric value from string (removing commas)
+    private var numericValue: Double {
+        Double(amount.replacingOccurrences(of: ",", with: "")) ?? 0
+    }
+
+    // Check if a preset matches current amount
+    private func isPresetSelected(_ preset: Double) -> Bool {
+        return numericValue == preset
+    }
+
+    // Format amount with commas
+    private func formatWithCommas(_ value: String) -> String {
+        // Remove existing commas and non-numeric characters
+        let cleanedString = value.replacingOccurrences(of: ",", with: "")
+            .filter { $0.isNumber }
+
+        // Convert to number and format
+        guard let number = Double(cleanedString) else { return cleanedString }
+        return Self.numberFormatter.string(from: NSNumber(value: number)) ?? cleanedString
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("How much do you want to invest?")
@@ -37,6 +67,12 @@ struct DCAAmountInputCard: View {
                     .keyboardType(.numberPad)
                     #endif
                     .focused($isFocused)
+                    .onChange(of: amount) { oldValue, newValue in
+                        let formatted = formatWithCommas(newValue)
+                        if formatted != newValue {
+                            amount = formatted
+                        }
+                    }
             }
             .padding(20)
             .background(
@@ -52,17 +88,17 @@ struct DCAAmountInputCard: View {
             HStack(spacing: 8) {
                 ForEach(DCACalculatorService.quickAmountPresets, id: \.self) { preset in
                     Button(action: {
-                        amount = String(Int(preset))
+                        amount = formatWithCommas(String(Int(preset)))
                         isFocused = false
                     }) {
                         Text(DCACalculatorService.formatQuickAmount(preset))
                             .font(AppFonts.body14Medium)
-                            .foregroundColor(amount == String(Int(preset)) ? .white : textPrimary)
+                            .foregroundColor(isPresetSelected(preset) ? .white : textPrimary)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(amount == String(Int(preset)) ? AppColors.accent : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                                    .fill(isPresetSelected(preset) ? AppColors.accent : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
                             )
                     }
                 }
@@ -79,12 +115,31 @@ struct DCAAssetPickerCard: View {
     @Binding var selectedAsset: DCAAsset?
     @Binding var selectedType: DCAAssetType
     @State private var searchText = ""
+    @State private var searchedAssets: [DCAAsset] = []
+    @State private var topCryptoAssets: [DCAAsset] = []
+    @State private var searchedStockAssets: [DCAAsset] = []
+    @State private var isSearching = false
+    @State private var isLoadingTopCrypto = false
+    @State private var searchTask: Task<Void, Never>?
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
 
-    private var filteredAssets: [DCAAsset] {
+    private var displayAssets: [DCAAsset] {
+        // If we have search results, show them
+        if !searchText.isEmpty && !searchedAssets.isEmpty {
+            return searchedAssets
+        }
+
+        // For crypto, show top 100 if loaded, otherwise fallback to local list
+        if selectedType == .crypto {
+            if !topCryptoAssets.isEmpty && searchText.isEmpty {
+                return topCryptoAssets
+            }
+        }
+
+        // Fallback to local list with filtering
         let assets = DCAAsset.assets(for: selectedType)
         if searchText.isEmpty {
             return assets
@@ -104,7 +159,11 @@ struct DCAAssetPickerCard: View {
             // Category tabs
             HStack(spacing: 8) {
                 ForEach(DCAAssetType.allCases) { type in
-                    Button(action: { selectedType = type }) {
+                    Button(action: {
+                        selectedType = type
+                        searchText = ""
+                        searchedAssets = []
+                    }) {
                         Text(type.displayName)
                             .font(AppFonts.body14Medium)
                             .foregroundColor(selectedType == type ? .white : textPrimary)
@@ -130,6 +189,14 @@ struct DCAAssetPickerCard: View {
                 TextField("Search \(selectedType.displayName.lowercased())...", text: $searchText)
                     .font(AppFonts.body14)
                     .foregroundColor(textPrimary)
+                    .onChange(of: searchText) { _, newValue in
+                        performSearch(query: newValue)
+                    }
+
+                if isSearching || isLoadingTopCrypto {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
             }
             .padding(12)
             .background(
@@ -140,10 +207,10 @@ struct DCAAssetPickerCard: View {
             // Asset list
             ScrollView {
                 VStack(spacing: 0) {
-                    ForEach(filteredAssets) { asset in
+                    ForEach(displayAssets) { asset in
                         DCAAssetRowView(
                             asset: asset,
-                            isSelected: selectedAsset?.id == asset.id,
+                            isSelected: selectedAsset?.symbol == asset.symbol,
                             onSelect: { selectedAsset = asset }
                         )
                     }
@@ -153,6 +220,102 @@ struct DCAAssetPickerCard: View {
         }
         .padding(20)
         .glassCard(cornerRadius: 16)
+        .onAppear {
+            loadTopCryptoAssets()
+        }
+    }
+
+    private func loadTopCryptoAssets() {
+        guard topCryptoAssets.isEmpty else { return }
+        isLoadingTopCrypto = true
+
+        Task {
+            do {
+                let marketService = ServiceContainer.shared.marketService
+                let cryptoAssets = try await marketService.fetchCryptoAssets(page: 1, perPage: 100)
+
+                await MainActor.run {
+                    topCryptoAssets = cryptoAssets.map { crypto in
+                        DCAAsset(
+                            symbol: crypto.symbol.uppercased(),
+                            name: crypto.name,
+                            type: .crypto
+                        )
+                    }
+                    isLoadingTopCrypto = false
+                }
+            } catch {
+                await MainActor.run {
+                    isLoadingTopCrypto = false
+                }
+            }
+        }
+    }
+
+    private func performSearch(query: String) {
+        // Cancel previous search
+        searchTask?.cancel()
+
+        guard query.count >= 2 else {
+            searchedAssets = []
+            isSearching = false
+            return
+        }
+
+        isSearching = true
+
+        searchTask = Task {
+            // Debounce
+            try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+
+            guard !Task.isCancelled else { return }
+
+            do {
+                let marketService = ServiceContainer.shared.marketService
+
+                switch selectedType {
+                case .crypto:
+                    let results = try await marketService.searchCrypto(query: query)
+                    await MainActor.run {
+                        if !Task.isCancelled {
+                            searchedAssets = results.map { crypto in
+                                DCAAsset(
+                                    symbol: crypto.symbol.uppercased(),
+                                    name: crypto.name,
+                                    type: .crypto
+                                )
+                            }
+                            isSearching = false
+                        }
+                    }
+
+                case .stock:
+                    let results = try await marketService.searchStocks(query: query)
+                    await MainActor.run {
+                        if !Task.isCancelled {
+                            searchedAssets = results.map { stock in
+                                DCAAsset(
+                                    symbol: stock.symbol,
+                                    name: stock.name,
+                                    type: .stock
+                                )
+                            }
+                            isSearching = false
+                        }
+                    }
+
+                case .commodity:
+                    // Commodities use local filtering only
+                    await MainActor.run {
+                        isSearching = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isSearching = false
+                }
+            }
+        }
     }
 }
 

@@ -231,13 +231,13 @@ enum Weekday: Int, CaseIterable, Identifiable, Hashable {
 
 // MARK: - DCA Asset
 struct DCAAsset: Equatable, Identifiable, Hashable {
-    let id: UUID
+    let id: String  // Use symbol as stable ID
     let symbol: String
     let name: String
     let type: DCAAssetType
 
-    init(id: UUID = UUID(), symbol: String, name: String, type: DCAAssetType) {
-        self.id = id
+    init(symbol: String, name: String, type: DCAAssetType) {
+        self.id = symbol  // Stable ID based on symbol
         self.symbol = symbol
         self.name = name
         self.type = type
