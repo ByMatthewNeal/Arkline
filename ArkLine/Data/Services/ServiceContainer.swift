@@ -31,6 +31,10 @@ final class ServiceContainer {
     private lazy var _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
     private lazy var _mockCoinglassService = MockCoinglassService()
     private lazy var _mockITCRiskService = MockITCRiskService()
+    private lazy var _mockVIXService = MockVIXService()
+    private lazy var _mockDXYService = MockDXYService()
+    private lazy var _mockRainbowChartService = MockRainbowChartService()
+    private lazy var _mockGlobalLiquidityService = MockGlobalLiquidityService()
 
     // MARK: - Lazy Services - API
     private lazy var _apiMarketService = APIMarketService()
@@ -41,6 +45,10 @@ final class ServiceContainer {
     private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
     private lazy var _apiCoinglassService = APICoinglassService()
     private lazy var _apiITCRiskService = APIITCRiskService()
+    private lazy var _apiVIXService = APIVIXService()
+    private lazy var _apiDXYService = APIDXYService()
+    private lazy var _apiRainbowChartService = APIRainbowChartService()
+    private lazy var _apiGlobalLiquidityService = APIGlobalLiquidityService()
 
     // MARK: - Service Accessors
 
@@ -84,6 +92,27 @@ final class ServiceContainer {
         useMockForUnimplementedServices ? _mockITCRiskService : _apiITCRiskService
     }
 
+    /// VIX service - uses real Alpha Vantage API when useRealMarketData is true
+    var vixService: VIXServiceProtocol {
+        useRealMarketData ? _apiVIXService : _mockVIXService
+    }
+
+    /// DXY service - uses real Alpha Vantage API when useRealMarketData is true
+    var dxyService: DXYServiceProtocol {
+        useRealMarketData ? _apiDXYService : _mockDXYService
+    }
+
+    /// Rainbow Chart service - calculation-based (uses market service for BTC price)
+    var rainbowChartService: RainbowChartServiceProtocol {
+        useRealMarketData ? _apiRainbowChartService : _mockRainbowChartService
+    }
+
+    /// Global Liquidity service - uses FRED API when configured, otherwise mock
+    var globalLiquidityService: GlobalLiquidityServiceProtocol {
+        // Use mock until FRED API key is configured
+        useMockForUnimplementedServices ? _mockGlobalLiquidityService : _apiGlobalLiquidityService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -96,6 +125,11 @@ final class ServiceContainer {
         _mockDCAService = MockDCAService()
         _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
         _mockCoinglassService = MockCoinglassService()
+        _mockITCRiskService = MockITCRiskService()
+        _mockVIXService = MockVIXService()
+        _mockDXYService = MockDXYService()
+        _mockRainbowChartService = MockRainbowChartService()
+        _mockGlobalLiquidityService = MockGlobalLiquidityService()
         _apiMarketService = APIMarketService()
         _apiSentimentService = APISentimentService()
         _apiPortfolioService = APIPortfolioService()
@@ -103,7 +137,10 @@ final class ServiceContainer {
         _apiDCAService = APIDCAService()
         _apiTechnicalAnalysisService = APITechnicalAnalysisService()
         _apiCoinglassService = APICoinglassService()
-        _mockITCRiskService = MockITCRiskService()
         _apiITCRiskService = APIITCRiskService()
+        _apiVIXService = APIVIXService()
+        _apiDXYService = APIDXYService()
+        _apiRainbowChartService = APIRainbowChartService()
+        _apiGlobalLiquidityService = APIGlobalLiquidityService()
     }
 }

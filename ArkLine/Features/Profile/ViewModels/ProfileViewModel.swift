@@ -111,13 +111,13 @@ final class ProfileViewModel {
     private func createMockUser() -> User {
         User(
             id: UUID(),
-            username: "cryptotrader",
-            email: "trader@example.com",
-            fullName: "John Doe",
+            username: "matt",
+            email: "matt@arkline.app",
+            fullName: "Matt",
             avatarUrl: nil,
             dateOfBirth: Calendar.current.date(byAdding: .year, value: -30, to: Date()),
             careerIndustry: "Technology",
-            experienceLevel: "intermediate",
+            experienceLevel: "advanced",
             socialLinks: SocialLinks(
                 twitter: "cryptotrader",
                 linkedin: nil,

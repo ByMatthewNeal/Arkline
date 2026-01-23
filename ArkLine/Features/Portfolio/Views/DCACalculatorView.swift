@@ -30,7 +30,7 @@ struct DCACalculatorView: View {
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
 
-                    Spacer(minLength: 120)
+                    Spacer(minLength: 160)
                 }
                 .padding(.top, 16)
             }
@@ -141,13 +141,7 @@ struct DCACalculatorView: View {
             .disabled(!canProceed)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(
-            Rectangle()
-                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: -5)
-                .ignoresSafeArea()
-        )
+        .padding(.bottom, 90)
     }
 
     // MARK: - Validation

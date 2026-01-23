@@ -12,6 +12,7 @@ enum Constants {
         static let metalsAPIKey = "your-metals-api-key"
         static let taapiAPIKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjk3MjRmMzlhZWVjODgxNjBhNTkzNjE2IiwiaWF0IjoxNzY5MDk5MDY1LCJleHAiOjMzMjczNTYzMDY1fQ.zmhZHgsYk5fmYJVhvltS1WczaLejZqrisVmoG3vExaw"
         static let coinglassAPIKey = "your-coinglass-api-key" // Get from https://www.coinglass.com/pricing
+        static let fredAPIKey = "your-fred-api-key" // Get free key from https://fred.stlouisfed.org/docs/api/api_key.html
     }
 
     // MARK: - Coinglass API Key (accessed from root for convenience)
@@ -27,6 +28,7 @@ enum Constants {
         static let claudeBase = "https://api.anthropic.com/v1"
         static let taapiBase = "https://api.taapi.io"
         static let arklineBackendBase = "https://web.arkline.io/api/v1"
+        static let fredBase = "https://api.stlouisfed.org/fred"
     }
 
     // MARK: - App Configuration

@@ -54,12 +54,12 @@ struct ContentView: View {
         // Create a mock user for development
         let mockUser = User(
             id: UUID(),
-            username: "devuser",
-            email: "dev@arkline.app",
-            fullName: "Dev User",
+            username: "matt",
+            email: "matt@arkline.app",
+            fullName: "Matt",
             dateOfBirth: nil,
-            careerIndustry: nil,
-            experienceLevel: nil,
+            careerIndustry: "Technology",
+            experienceLevel: "advanced",
             socialLinks: nil,
             passcodeHash: nil,
             faceIdEnabled: false
