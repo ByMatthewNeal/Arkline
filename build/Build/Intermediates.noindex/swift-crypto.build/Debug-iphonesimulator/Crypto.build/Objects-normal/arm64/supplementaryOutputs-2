@@ -1,0 +1,58 @@
+{
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Any.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Any.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Any.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Any.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Any.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Any.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1BitString.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1BitString.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1BitString.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1BitString.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1BitString.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1BitString.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Boolean.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Boolean.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Boolean.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Boolean.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Boolean.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Boolean.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Identifier.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Identifier.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Identifier.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Identifier.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Identifier.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Identifier.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Integer.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Integer.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Integer.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Integer.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Integer.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Integer.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Null.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Null.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Null.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Null.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Null.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Null.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1OctetString.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1OctetString.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1OctetString.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1OctetString.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1OctetString.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1OctetString.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/swift-crypto/Sources/Crypto/ASN1/Basic ASN1 Types/ASN1Strings.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Strings.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Strings.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Strings.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Strings.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/swift-crypto.build/Debug-iphonesimulator/Crypto.build/Objects-normal/arm64/ASN1Strings.swiftdeps"
+  }
+}

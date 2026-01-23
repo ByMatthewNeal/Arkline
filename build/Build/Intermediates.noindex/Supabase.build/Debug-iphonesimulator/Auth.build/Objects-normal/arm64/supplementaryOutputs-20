@@ -1,0 +1,23 @@
+{
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/supabase-swift/Sources/Auth/Exports.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/Exports.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/Exports.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/Exports.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/Exports.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/Exports.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/APIClient.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/APIClient.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/APIClient.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/APIClient.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/APIClient.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/APIClient.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/supabase-swift/Sources/Auth/Internal/CodeVerifierStorage.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/CodeVerifierStorage.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/CodeVerifierStorage.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/CodeVerifierStorage.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/CodeVerifierStorage.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/Supabase.build/Debug-iphonesimulator/Auth.build/Objects-normal/arm64/CodeVerifierStorage.swiftdeps"
+  }
+}

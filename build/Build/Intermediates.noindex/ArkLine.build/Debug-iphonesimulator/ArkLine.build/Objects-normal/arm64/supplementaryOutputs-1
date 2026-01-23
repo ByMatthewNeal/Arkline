@@ -1,0 +1,86 @@
+{
+  "/Users/matt/Desktop/Arkline/ArkLine/App/ArkLineApp.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ArkLineApp.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ArkLineApp.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ArkLineApp.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ArkLineApp.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ArkLineApp.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Core/Utilities/AppError.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AppError.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AppError.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AppError.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AppError.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AppError.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Domain/Models/Asset.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Asset.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Asset.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Asset.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Asset.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Asset.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/AIChat/ViewModels/AIChatViewModel.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatViewModel.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatViewModel.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatViewModel.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatViewModel.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatViewModel.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/AIChat/Views/AIChatView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AIChatView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Authentication/ViewModels/AuthViewModel.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AuthViewModel.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AuthViewModel.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AuthViewModel.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AuthViewModel.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AuthViewModel.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Home/Components/AssetRowView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetRowView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetRowView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetRowView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetRowView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetRowView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Market/Views/AssetDetailView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetDetailView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetDetailView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetDetailView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetDetailView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AssetDetailView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Onboarding/Views/CareerIndustryView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerIndustryView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerIndustryView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerIndustryView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerIndustryView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerIndustryView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Onboarding/Views/CareerInfoView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerInfoView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerInfoView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerInfoView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerInfoView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CareerInfoView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/SharedComponents/Cards/BaseCard.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/BaseCard.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/BaseCard.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/BaseCard.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/BaseCard.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/BaseCard.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/SharedComponents/Misc/AvatarView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AvatarView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AvatarView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AvatarView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AvatarView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/AvatarView.swiftdeps"
+  }
+}

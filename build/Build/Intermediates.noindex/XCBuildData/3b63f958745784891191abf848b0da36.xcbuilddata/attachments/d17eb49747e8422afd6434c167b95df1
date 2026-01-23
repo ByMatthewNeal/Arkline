@@ -1,0 +1,19 @@
+{
+  "" : {
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/IssueReportingPackageSupport-primary.dia",
+    "emit-module-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/IssueReportingPackageSupport-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/IssueReportingPackageSupport-primary-emit-module.dia",
+    "pch" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/IssueReportingPackageSupport-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/IssueReportingPackageSupport-primary.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/build/SourcePackages/checkouts/xctest-dynamic-overlay/Sources/IssueReportingPackageSupport/_Test.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.dia",
+    "index-unit-output-path" : "/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.o",
+    "llvm-bc" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.bc",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test.swiftdeps",
+    "swiftmodule" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/xctest-dynamic-overlay.build/Debug-iphonesimulator/IssueReportingPackageSupport.build/Objects-normal/arm64/_Test~partial.swiftmodule"
+  }
+}

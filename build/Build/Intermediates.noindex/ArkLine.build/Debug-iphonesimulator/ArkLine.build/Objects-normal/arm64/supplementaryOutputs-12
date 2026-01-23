@@ -1,0 +1,79 @@
+{
+  "/Users/matt/Desktop/Arkline/ArkLine/Core/Utilities/DCACalculatorService.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorService.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorService.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorService.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorService.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorService.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Data/Services/API/APICoinglassService.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APICoinglassService-b7ca21e475d5adf52d88fb39c7cfdc0e.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APICoinglassService-b7ca21e475d5adf52d88fb39c7cfdc0e.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APICoinglassService-b7ca21e475d5adf52d88fb39c7cfdc0e.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APICoinglassService-b7ca21e475d5adf52d88fb39c7cfdc0e.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APICoinglassService-b7ca21e475d5adf52d88fb39c7cfdc0e.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Data/Services/API/APITechnicalAnalysisService.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APITechnicalAnalysisService.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APITechnicalAnalysisService.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APITechnicalAnalysisService.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APITechnicalAnalysisService.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/APITechnicalAnalysisService.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Data/Services/Mock/MockCoinglassService.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockCoinglassService-629c427b9c5ce04c3eb2d9bfdf0f5ead.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockCoinglassService-629c427b9c5ce04c3eb2d9bfdf0f5ead.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockCoinglassService-629c427b9c5ce04c3eb2d9bfdf0f5ead.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockCoinglassService-629c427b9c5ce04c3eb2d9bfdf0f5ead.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockCoinglassService-629c427b9c5ce04c3eb2d9bfdf0f5ead.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Data/Services/Mock/MockTechnicalAnalysisService.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockTechnicalAnalysisService.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockTechnicalAnalysisService.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockTechnicalAnalysisService.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockTechnicalAnalysisService.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/MockTechnicalAnalysisService.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Data/Services/Protocols/CoinglassServiceProtocol.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassServiceProtocol-7f79596bdae8a40ee58c0e5810376ac7.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassServiceProtocol-7f79596bdae8a40ee58c0e5810376ac7.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassServiceProtocol-7f79596bdae8a40ee58c0e5810376ac7.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassServiceProtocol-7f79596bdae8a40ee58c0e5810376ac7.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassServiceProtocol-7f79596bdae8a40ee58c0e5810376ac7.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Domain/Models/CoinglassData.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassData-fd755083aad5889b600d2da46231c5b1.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassData-fd755083aad5889b600d2da46231c5b1.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassData-fd755083aad5889b600d2da46231c5b1.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassData-fd755083aad5889b600d2da46231c5b1.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CoinglassData-fd755083aad5889b600d2da46231c5b1.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Domain/Models/DCACalculation.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculation.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculation.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculation.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculation.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculation.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Market/Components/DerivativesDataSection.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DerivativesDataSection-82b9e602fc45ca58bfd277542951fe22.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DerivativesDataSection-82b9e602fc45ca58bfd277542951fe22.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DerivativesDataSection-82b9e602fc45ca58bfd277542951fe22.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DerivativesDataSection-82b9e602fc45ca58bfd277542951fe22.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DerivativesDataSection-82b9e602fc45ca58bfd277542951fe22.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Portfolio/Components/DCACalculatorComponents.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorComponents.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorComponents.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorComponents.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorComponents.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorComponents.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Portfolio/Views/DCACalculatorView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/DCACalculatorView.swiftdeps"
+  }
+}

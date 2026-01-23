@@ -1,0 +1,86 @@
+{
+  "/Users/matt/Desktop/Arkline/ArkLine/App/ContentView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ContentView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ContentView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Core/Theme/Colors.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Colors.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Colors.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Colors.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Colors.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Colors.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Core/Utilities/Constants.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Constants.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Constants.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Constants.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Constants.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/Constants.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Domain/Models/ChatMessage.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChatMessage.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChatMessage.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChatMessage.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChatMessage.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChatMessage.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Domain/Models/CommunityPost.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityPost.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityPost.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityPost.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityPost.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityPost.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Domain/Models/CryptoAsset.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CryptoAsset.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CryptoAsset.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CryptoAsset.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CryptoAsset.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CryptoAsset.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Community/ViewModels/CommunityViewModel.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityViewModel.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityViewModel.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityViewModel.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityViewModel.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityViewModel.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Community/Views/CommunityView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CommunityView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Onboarding/Views/ChooseUsernameView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChooseUsernameView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChooseUsernameView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChooseUsernameView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChooseUsernameView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ChooseUsernameView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Onboarding/Views/ConfirmPasscodeView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ConfirmPasscodeView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ConfirmPasscodeView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ConfirmPasscodeView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ConfirmPasscodeView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/ConfirmPasscodeView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/Features/Onboarding/Views/CreatePasscodeView.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CreatePasscodeView.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CreatePasscodeView.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CreatePasscodeView.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CreatePasscodeView.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CreatePasscodeView.swiftdeps"
+  },
+  "/Users/matt/Desktop/Arkline/ArkLine/SharedComponents/Inputs/CustomTextField.swift" : {
+    "const-values" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CustomTextField.swiftconstvalues",
+    "dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CustomTextField.d",
+    "diagnostics" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CustomTextField.dia",
+    "object" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CustomTextField.o",
+    "swift-dependencies" : "/Users/matt/Desktop/Arkline/build/Build/Intermediates.noindex/ArkLine.build/Debug-iphonesimulator/ArkLine.build/Objects-normal/arm64/CustomTextField.swiftdeps"
+  }
+}
