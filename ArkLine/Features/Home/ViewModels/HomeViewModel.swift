@@ -209,6 +209,16 @@ class HomeViewModel {
 
     // ITC Risk Level (Into The Cryptoverse - powers ArkLine Risk Score card)
     var btcRiskLevel: ITCRiskLevel?
+    var ethRiskLevel: ITCRiskLevel?
+    var selectedRiskCoin: ITCCoin = .btc
+
+    // Computed property to get risk level for selected coin
+    var selectedRiskLevel: ITCRiskLevel? {
+        switch selectedRiskCoin {
+        case .btc: return btcRiskLevel
+        case .eth: return ethRiskLevel
+        }
+    }
 
     // Top Movers
     var topGainers: [CryptoAsset] = []
@@ -317,11 +327,13 @@ class HomeViewModel {
             async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 5)
             async let fedWatchTask = fetchFedWatchMeetingsSafe()
             async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
+            async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
 
             let (fg, riskScore, crypto, reminders, events, upcoming) = try await (fgTask, riskScoreTask, cryptoTask, remindersTask, eventsTask, upcomingEventsTask)
             let news = try await newsTask
             let fedMeetings = await fedWatchTask
             let btcRisk = await btcRiskTask
+            let ethRisk = await ethRiskTask
 
             logInfo("HomeViewModel: Fetched \(crypto.count) crypto assets", category: .data)
 
@@ -354,6 +366,7 @@ class HomeViewModel {
                 self.arkLineRiskScore = riskScore
                 // ITC Risk Level (powers ArkLine Risk Score card)
                 self.btcRiskLevel = btcRisk
+                self.ethRiskLevel = ethRisk
                 // Market widget data
                 self.newsItems = news
                 self.fedWatchMeetings = fedMeetings ?? []
@@ -412,6 +425,10 @@ class HomeViewModel {
     func selectPortfolio(_ portfolio: Portfolio) {
         selectedPortfolio = portfolio
         updatePortfolioValues(for: portfolio)
+    }
+
+    func selectRiskCoin(_ coin: ITCCoin) {
+        selectedRiskCoin = coin
     }
 
     // MARK: - Private Methods

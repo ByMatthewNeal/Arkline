@@ -8,15 +8,19 @@ final class ServiceContainer {
     static let shared = ServiceContainer()
 
     // MARK: - Configuration
-    /// Set to `false` to use real API implementations for general services
-    var useMockData: Bool = true
+    /// Use real CoinGecko API for market data (crypto prices, trending, etc.)
+    var useRealMarketData: Bool = true
 
-    /// Use real Taapi.io API for technical analysis (separate from general mock data)
+    /// Use real Taapi.io API for technical analysis
     var useRealTechnicalAnalysis: Bool = true
 
-    /// Use real Coinglass API for derivatives data (separate from general mock data)
+    /// Use real Coinglass API for derivatives data
     /// Set to false until Coinglass API key is configured
     var useRealCoinglass: Bool = false
+
+    /// Use mock data for services that aren't fully implemented yet
+    /// (portfolio, sentiment, news, DCA, ITC Risk)
+    private let useMockForUnimplementedServices: Bool = true
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
@@ -39,36 +43,45 @@ final class ServiceContainer {
     private lazy var _apiITCRiskService = APIITCRiskService()
 
     // MARK: - Service Accessors
+
+    /// Market service uses real CoinGecko API for live crypto prices
     var marketService: MarketServiceProtocol {
-        useMockData ? _mockMarketService : _apiMarketService
+        useRealMarketData ? _apiMarketService : _mockMarketService
     }
 
+    /// Sentiment service - mock until real API is implemented
     var sentimentService: SentimentServiceProtocol {
-        useMockData ? _mockSentimentService : _apiSentimentService
+        useMockForUnimplementedServices ? _mockSentimentService : _apiSentimentService
     }
 
+    /// Portfolio service - mock until Supabase integration is complete
     var portfolioService: PortfolioServiceProtocol {
-        useMockData ? _mockPortfolioService : _apiPortfolioService
+        useMockForUnimplementedServices ? _mockPortfolioService : _apiPortfolioService
     }
 
+    /// News service - mock until real API is implemented
     var newsService: NewsServiceProtocol {
-        useMockData ? _mockNewsService : _apiNewsService
+        useMockForUnimplementedServices ? _mockNewsService : _apiNewsService
     }
 
+    /// DCA service - mock until real API is implemented
     var dcaService: DCAServiceProtocol {
-        useMockData ? _mockDCAService : _apiDCAService
+        useMockForUnimplementedServices ? _mockDCAService : _apiDCAService
     }
 
+    /// Technical Analysis service uses real Taapi.io API
     var technicalAnalysisService: TechnicalAnalysisServiceProtocol {
         useRealTechnicalAnalysis ? _apiTechnicalAnalysisService : _mockTechnicalAnalysisService
     }
 
+    /// Coinglass service for derivatives data
     var coinglassService: CoinglassServiceProtocol {
         useRealCoinglass ? _apiCoinglassService : _mockCoinglassService
     }
 
+    /// ITC Risk service - mock until real API is implemented
     var itcRiskService: ITCRiskServiceProtocol {
-        useMockData ? _mockITCRiskService : _apiITCRiskService
+        useMockForUnimplementedServices ? _mockITCRiskService : _apiITCRiskService
     }
 
     // MARK: - Initialization

@@ -398,8 +398,12 @@ struct ReorderableWidgetStack: View {
                 RiskScoreCard(
                     score: score,
                     riskScore: viewModel.arkLineRiskScore,
-                    itcRiskLevel: viewModel.btcRiskLevel,
-                    size: appState.widgetSize(.riskScore)
+                    itcRiskLevel: viewModel.selectedRiskLevel,
+                    size: appState.widgetSize(.riskScore),
+                    selectedCoin: viewModel.selectedRiskCoin,
+                    onCoinChanged: { coin in
+                        viewModel.selectRiskCoin(coin)
+                    }
                 )
             }
 
@@ -818,6 +822,8 @@ struct RiskScoreCard: View {
     var riskScore: ArkLineRiskScore? = nil
     var itcRiskLevel: ITCRiskLevel? = nil
     var size: WidgetSize = .standard
+    var selectedCoin: ITCCoin = .btc
+    var onCoinChanged: ((ITCCoin) -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -885,7 +891,7 @@ struct RiskScoreCard: View {
     // Title changes based on data source
     private var cardTitle: String {
         if itcRiskLevel != nil {
-            return "ITC Risk Level"
+            return "\(selectedCoin.rawValue) Risk Level"
         }
         return "ArkLine Risk Score"
     }
@@ -940,9 +946,45 @@ struct RiskScoreCard: View {
                 }
 
                 VStack(alignment: .leading, spacing: size == .compact ? 2 : 4) {
-                    Text(cardTitle)
-                        .font(size == .compact ? .subheadline : .headline)
-                        .foregroundColor(textPrimary)
+                    // Title with coin selector
+                    HStack(spacing: 8) {
+                        Text(cardTitle)
+                            .font(size == .compact ? .subheadline : .headline)
+                            .foregroundColor(textPrimary)
+
+                        if itcRiskLevel != nil && onCoinChanged != nil {
+                            // Coin selector toggle
+                            HStack(spacing: 0) {
+                                ForEach(ITCCoin.allCases, id: \.self) { coin in
+                                    Button(action: {
+                                        onCoinChanged?(coin)
+                                    }) {
+                                        Text(coin.rawValue)
+                                            .font(.system(size: size == .compact ? 9 : 10, weight: .semibold))
+                                            .foregroundColor(
+                                                selectedCoin == coin
+                                                    ? .white
+                                                    : textPrimary.opacity(0.6)
+                                            )
+                                            .padding(.horizontal, size == .compact ? 6 : 8)
+                                            .padding(.vertical, size == .compact ? 3 : 4)
+                                            .background(
+                                                selectedCoin == coin
+                                                    ? AppColors.accent
+                                                    : Color.clear
+                                            )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                            .background(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.1)
+                                    : Color.black.opacity(0.05)
+                            )
+                            .cornerRadius(6)
+                        }
+                    }
 
                     // Risk level badge with color indicator
                     HStack(spacing: 6) {
