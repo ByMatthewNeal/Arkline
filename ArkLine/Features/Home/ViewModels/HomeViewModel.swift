@@ -332,16 +332,39 @@ class HomeViewModel {
 
     // MARK: - Public Methods
     func refresh() async {
+        print("🔵 HomeViewModel.refresh() called")
         isLoading = true
         errorMessage = nil
 
-        do {
-            let userId = currentUserId ?? Constants.Mock.userId
+        let userId = currentUserId ?? Constants.Mock.userId
 
-            // Fetch all data concurrently
+        // Fetch crypto prices first (critical for Core widget) - independent of other fetches
+        let crypto = await fetchCryptoAssetsSafe()
+
+        // Extract BTC and ETH prices immediately
+        let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
+        let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
+
+        print("🟢 HomeViewModel: Fetched \(crypto.count) assets, BTC = \(btc?.currentPrice ?? -1), ETH = \(eth?.currentPrice ?? -1)")
+
+        // Set prices on main actor immediately
+        await MainActor.run {
+            self.btcPrice = btc?.currentPrice ?? 0
+            self.ethPrice = eth?.currentPrice ?? 0
+            self.btcChange24h = btc?.priceChangePercentage24h ?? 0
+            self.ethChange24h = eth?.priceChangePercentage24h ?? 0
+            self.favoriteAssets = Array(crypto.prefix(3))
+
+            // Calculate top gainers and losers
+            let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
+            self.topGainers = Array(sortedByGain.prefix(3))
+            self.topLosers = Array(sortedByGain.suffix(3).reversed())
+        }
+
+        // Now fetch other data concurrently
+        do {
             async let fgTask = sentimentService.fetchFearGreedIndex()
             async let riskScoreTask = sentimentService.fetchArkLineRiskScore()
-            async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 20)
             async let remindersTask = dcaService.fetchReminders(userId: userId)
             async let eventsTask = newsService.fetchTodaysEvents()
             async let upcomingEventsTask = newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
@@ -353,7 +376,7 @@ class HomeViewModel {
             async let dxyTask = fetchDXYSafe()
             async let liquidityTask = fetchGlobalLiquiditySafe()
 
-            let (fg, riskScore, crypto, reminders, events, upcoming) = try await (fgTask, riskScoreTask, cryptoTask, remindersTask, eventsTask, upcomingEventsTask)
+            let (fg, riskScore, reminders, events, upcoming) = try await (fgTask, riskScoreTask, remindersTask, eventsTask, upcomingEventsTask)
             let news = try await newsTask
             let fedMeetings = await fedWatchTask
             let btcRisk = await btcRiskTask
@@ -362,33 +385,13 @@ class HomeViewModel {
             let dxy = await dxyTask
             let liquidity = await liquidityTask
 
-            logInfo("HomeViewModel: Fetched \(crypto.count) crypto assets", category: .data)
-
-            // Extract BTC and ETH prices from crypto data
-            let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
-            let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
-
-            logInfo("HomeViewModel: BTC = \(btc?.currentPrice ?? -1), ETH = \(eth?.currentPrice ?? -1)", category: .data)
-
-            // Calculate top gainers and losers
-            let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
-            let gainers = Array(sortedByGain.prefix(3))
-            let losers = Array(sortedByGain.suffix(3).reversed())
-
             await MainActor.run {
                 self.fearGreedIndex = fg
-                self.favoriteAssets = Array(crypto.prefix(3))
                 self.activeReminders = reminders.filter { $0.isActive }
                 self.todayReminders = reminders.filter { $0.isDueToday }
                 self.todaysEvents = events
                 self.upcomingEvents = upcoming
                 self.eventsLastUpdated = Date()
-                self.btcPrice = btc?.currentPrice ?? 0
-                self.ethPrice = eth?.currentPrice ?? 0
-                self.btcChange24h = btc?.priceChangePercentage24h ?? 0
-                self.ethChange24h = eth?.priceChangePercentage24h ?? 0
-                self.topGainers = gainers
-                self.topLosers = losers
                 self.compositeRiskScore = riskScore.score
                 self.arkLineRiskScore = riskScore
                 // ITC Risk Level (powers ArkLine Risk Score card)
@@ -412,12 +415,12 @@ class HomeViewModel {
                     }
                     await self.refreshDerivatives()
                 }
-                logInfo("HomeViewModel: Set btcPrice=\(self.btcPrice), ethPrice=\(self.ethPrice)", category: .data)
             }
         } catch {
-            logError("HomeViewModel refresh failed: \(error)", category: .data)
+            print("🔴 HomeViewModel other data fetch failed: \(error)")
+            logError("HomeViewModel other data fetch failed: \(error)", category: .data)
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                // Don't overwrite price data on error - prices are already set
                 self.isLoading = false
             }
         }
@@ -518,6 +521,17 @@ class HomeViewModel {
 
     private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
         try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+    }
+
+    private func fetchCryptoAssetsSafe() async -> [CryptoAsset] {
+        do {
+            let assets = try await marketService.fetchCryptoAssets(page: 1, perPage: 20)
+            print("🟢 fetchCryptoAssetsSafe: Got \(assets.count) assets")
+            return assets
+        } catch {
+            print("🔴 fetchCryptoAssetsSafe failed: \(error)")
+            return []
+        }
     }
 
     private func fetchVIXSafe() async -> VIXData? {

@@ -91,6 +91,10 @@ struct HomeView: View {
                 // Pop to root when home tab is tapped while already on home
                 navigationPath = NavigationPath()
             }
+            .task {
+                await viewModel.loadPortfolios()
+                await viewModel.refresh()
+            }
         }
     }
 }
@@ -265,7 +269,7 @@ struct NotificationIndicator: View {
 
 // MARK: - Reorderable Widget Stack (Drag & Drop)
 struct ReorderableWidgetStack: View {
-    var viewModel: HomeViewModel
+    @Bindable var viewModel: HomeViewModel
     @ObservedObject var appState: AppState
     @State private var isEditMode: Bool = false
     @State private var draggingWidget: HomeWidgetType?
@@ -389,6 +393,12 @@ struct ReorderableWidgetStack: View {
             return true // Always show - has loading/empty state handling
         case .assetRiskLevel:
             return viewModel.selectedRiskLevel != nil
+        case .vixIndicator:
+            return true
+        case .dxyIndicator:
+            return true
+        case .globalLiquidity:
+            return true
         }
     }
 
@@ -476,6 +486,24 @@ struct ReorderableWidgetStack: View {
                 riskLevel: viewModel.selectedRiskLevel,
                 coinSymbol: viewModel.selectedRiskCoin,
                 size: appState.widgetSize(.assetRiskLevel)
+            )
+
+        case .vixIndicator:
+            VIXWidget(
+                vixData: viewModel.vixData,
+                size: appState.widgetSize(.vixIndicator)
+            )
+
+        case .dxyIndicator:
+            DXYWidget(
+                dxyData: viewModel.dxyData,
+                size: appState.widgetSize(.dxyIndicator)
+            )
+
+        case .globalLiquidity:
+            GlobalLiquidityWidget(
+                liquidityChanges: viewModel.globalLiquidityChanges,
+                size: appState.widgetSize(.globalLiquidity)
             )
         }
     }
@@ -1484,7 +1512,7 @@ struct HomeMarketMoversWidget: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
-            Text("Market Movers")
+            Text("Core")
                 .font(size == .compact ? .subheadline : .headline)
                 .foregroundColor(textPrimary)
 
@@ -3539,6 +3567,287 @@ struct HomeNotificationRow: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(notification.isRead ? Color.clear : AppColors.accent.opacity(0.2), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Trend Signal (shared)
+enum MacroTrendSignal: String {
+    case bullish = "Bullish"
+    case bearish = "Bearish"
+    case neutral = "Neutral"
+
+    var color: Color {
+        switch self {
+        case .bullish: return AppColors.success
+        case .bearish: return AppColors.error
+        case .neutral: return AppColors.warning
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .bullish: return "arrow.up.right.circle.fill"
+        case .bearish: return "arrow.down.right.circle.fill"
+        case .neutral: return "minus.circle.fill"
+        }
+    }
+}
+
+// MARK: - VIX Widget
+struct VIXWidget: View {
+    let vixData: VIXData?
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var signal: MacroTrendSignal {
+        guard let vix = vixData?.value else { return .neutral }
+        if vix < 18 { return .bullish }
+        if vix > 25 { return .bearish }
+        return .neutral
+    }
+
+    private var description: String {
+        guard let vix = vixData?.value else { return "Market fear gauge" }
+        if vix < 15 { return "Low fear - Risk on" }
+        if vix < 20 { return "Normal volatility" }
+        if vix < 25 { return "Elevated fear" }
+        return "High fear - Risk off"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+            // Header
+            HStack {
+                Image(systemName: "waveform.path.ecg")
+                    .foregroundColor(AppColors.accent)
+                Text("VIX")
+                    .font(size == .compact ? .subheadline : .headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                // Trend Badge
+                HStack(spacing: 4) {
+                    Image(systemName: signal.icon)
+                        .font(.system(size: 12, weight: .bold))
+                    Text(signal.rawValue)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(signal.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(signal.color.opacity(0.15))
+                .cornerRadius(8)
+            }
+
+            // Value
+            HStack(alignment: .bottom, spacing: 8) {
+                Text(vixData.map { String(format: "%.2f", $0.value) } ?? "--")
+                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .rounded))
+                    .foregroundColor(textPrimary)
+
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.bottom, 4)
+
+                Spacer()
+            }
+
+            // Subtitle
+            Text("CBOE Volatility Index")
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding(size == .compact ? 12 : 16)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
+// MARK: - DXY Widget
+struct DXYWidget: View {
+    let dxyData: DXYData?
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var signal: MacroTrendSignal {
+        guard let change = dxyData?.changePercent else { return .neutral }
+        // Falling DXY = Bullish for crypto, Rising DXY = Bearish
+        if change < -0.3 { return .bullish }
+        if change > 0.3 { return .bearish }
+        return .neutral
+    }
+
+    private var description: String {
+        guard let change = dxyData?.changePercent else { return "Dollar strength" }
+        if change < -0.5 { return "Weakening - Risk on" }
+        if change > 0.5 { return "Strengthening - Risk off" }
+        return "Stable"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+            // Header
+            HStack {
+                Image(systemName: "dollarsign.circle")
+                    .foregroundColor(AppColors.accent)
+                Text("DXY")
+                    .font(size == .compact ? .subheadline : .headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                // Trend Badge
+                HStack(spacing: 4) {
+                    Image(systemName: signal.icon)
+                        .font(.system(size: 12, weight: .bold))
+                    Text(signal.rawValue)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(signal.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(signal.color.opacity(0.15))
+                .cornerRadius(8)
+            }
+
+            // Value with change
+            HStack(alignment: .bottom, spacing: 8) {
+                Text(dxyData.map { String(format: "%.2f", $0.value) } ?? "--")
+                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .rounded))
+                    .foregroundColor(textPrimary)
+
+                if let change = dxyData?.changePercent {
+                    Text(String(format: "%+.2f%%", change))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(change >= 0 ? AppColors.error : AppColors.success)
+                        .padding(.bottom, 4)
+                }
+
+                Spacer()
+            }
+
+            // Subtitle
+            HStack {
+                Text("US Dollar Index")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                Text(description)
+                    .font(.caption2)
+                    .foregroundColor(signal.color)
+            }
+        }
+        .padding(size == .compact ? 12 : 16)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
+// MARK: - Global Liquidity Widget
+struct GlobalLiquidityWidget: View {
+    let liquidityChanges: GlobalLiquidityChanges?
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var signal: MacroTrendSignal {
+        guard let liquidity = liquidityChanges else { return .neutral }
+        if liquidity.monthlyChange > 1.0 { return .bullish }
+        if liquidity.monthlyChange < -1.0 { return .bearish }
+        return .neutral
+    }
+
+    private var description: String {
+        guard let liquidity = liquidityChanges else { return "Global money supply" }
+        if liquidity.monthlyChange > 2.0 { return "Expanding fast" }
+        if liquidity.monthlyChange > 0 { return "Expanding" }
+        if liquidity.monthlyChange > -2.0 { return "Contracting" }
+        return "Contracting fast"
+    }
+
+    private func formatLiquidity(_ value: Double) -> String {
+        if value >= 1_000_000_000_000 {
+            return String(format: "$%.1fT", value / 1_000_000_000_000)
+        } else if value >= 1_000_000_000 {
+            return String(format: "$%.1fB", value / 1_000_000_000)
+        }
+        return String(format: "$%.0f", value)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+            // Header
+            HStack {
+                Image(systemName: "banknote")
+                    .foregroundColor(AppColors.accent)
+                Text("Global M2")
+                    .font(size == .compact ? .subheadline : .headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                // Trend Badge
+                HStack(spacing: 4) {
+                    Image(systemName: signal.icon)
+                        .font(.system(size: 12, weight: .bold))
+                    Text(signal.rawValue)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(signal.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(signal.color.opacity(0.15))
+                .cornerRadius(8)
+            }
+
+            // Value with change
+            HStack(alignment: .bottom, spacing: 8) {
+                Text(liquidityChanges.map { formatLiquidity($0.current) } ?? "--")
+                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .rounded))
+                    .foregroundColor(textPrimary)
+
+                if let change = liquidityChanges?.monthlyChange {
+                    Text(String(format: "%+.2f%% MoM", change))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                        .padding(.bottom, 4)
+                }
+
+                Spacer()
+            }
+
+            // Subtitle
+            HStack {
+                Text("Global Money Supply")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                Text(description)
+                    .font(.caption2)
+                    .foregroundColor(signal.color)
+            }
+        }
+        .padding(size == .compact ? 12 : 16)
+        .glassCard(cornerRadius: 16)
     }
 }
 

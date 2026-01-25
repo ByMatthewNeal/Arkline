@@ -79,7 +79,7 @@ struct AssetTechnicalDetailSheet: View {
                 }
                 .padding(.horizontal)
             }
-            .background(AppColors.background(colorScheme))
+            .background(AppColors.background(colorScheme).ignoresSafeArea())
             .navigationTitle(asset.symbol.uppercased())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

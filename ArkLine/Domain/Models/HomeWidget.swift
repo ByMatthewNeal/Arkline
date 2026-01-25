@@ -42,6 +42,9 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case marketSentiment = "market_sentiment"
     case derivativesData = "derivatives_data"
     case assetRiskLevel = "asset_risk_level"
+    case vixIndicator = "vix_indicator"
+    case dxyIndicator = "dxy_indicator"
+    case globalLiquidity = "global_liquidity"
 
     var id: String { rawValue }
 
@@ -58,6 +61,9 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .marketSentiment: return "Market Sentiment"
         case .derivativesData: return "Derivatives"
         case .assetRiskLevel: return "Asset Risk Level"
+        case .vixIndicator: return "VIX"
+        case .dxyIndicator: return "DXY"
+        case .globalLiquidity: return "Global M2"
         }
     }
 
@@ -74,6 +80,9 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .marketSentiment: return "Retail & institutional sentiment indicators"
         case .derivativesData: return "Open interest, liquidations, funding rates"
         case .assetRiskLevel: return "BTC risk level based on cycle analysis"
+        case .vixIndicator: return "CBOE Volatility Index - Market fear gauge"
+        case .dxyIndicator: return "US Dollar Index - Dollar strength"
+        case .globalLiquidity: return "Global M2 money supply trends"
         }
     }
 
@@ -90,6 +99,9 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .marketSentiment: return "waveform.path.ecg"
         case .derivativesData: return "chart.bar.doc.horizontal"
         case .assetRiskLevel: return "gauge.with.needle"
+        case .vixIndicator: return "waveform.path.ecg"
+        case .dxyIndicator: return "dollarsign.circle"
+        case .globalLiquidity: return "banknote"
         }
     }
 
@@ -100,12 +112,12 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .assetRiskLevel, .fedWatch, .derivativesData, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .vixIndicator, .dxyIndicator, .globalLiquidity, .assetRiskLevel, .fedWatch, .derivativesData, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
     }
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.upcomingEvents, .fearGreedIndex, .marketMovers, .assetRiskLevel, .dcaReminders])
+        Set([.upcomingEvents, .fearGreedIndex, .marketMovers, .vixIndicator, .dxyIndicator, .globalLiquidity, .assetRiskLevel, .dcaReminders])
     }
 }
 

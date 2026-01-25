@@ -109,8 +109,26 @@ class AppState: ObservableObject {
 
         // Load widget configuration
         if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.widgetConfiguration),
-           let config = try? JSONDecoder().decode(WidgetConfiguration.self, from: data) {
+           var config = try? JSONDecoder().decode(WidgetConfiguration.self, from: data) {
+            // Migration: Add any new widget types that aren't in the saved order
+            let savedWidgetSet = Set(config.widgetOrder)
+            for widgetType in HomeWidgetType.allCases {
+                if !savedWidgetSet.contains(widgetType) {
+                    // Insert new widgets after marketMovers (Core) if it exists, otherwise at position 4
+                    if let marketMoversIndex = config.widgetOrder.firstIndex(of: .marketMovers) {
+                        config.widgetOrder.insert(widgetType, at: marketMoversIndex + 1)
+                    } else {
+                        config.widgetOrder.insert(widgetType, at: min(4, config.widgetOrder.count))
+                    }
+                    // Enable new widgets by default if they're in the default enabled set
+                    if HomeWidgetType.defaultEnabled.contains(widgetType) {
+                        config.enabledWidgets.insert(widgetType)
+                    }
+                }
+            }
             widgetConfiguration = config
+            // Save migrated config
+            setWidgetConfiguration(config)
         }
 
         // Load current user
