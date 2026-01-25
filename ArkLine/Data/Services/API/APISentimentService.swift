@@ -6,34 +6,20 @@ import Foundation
 final class APISentimentService: SentimentServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
+    private let cache = APICache.shared
 
     // MARK: - SentimentServiceProtocol
 
     func fetchFearGreedIndex() async throws -> FearGreedIndex {
-        // TODO: Implement with Alternative.me API
-        // Endpoint: https://api.alternative.me/fng/
-        let endpoint = FearGreedEndpoint.current
-        let response: FearGreedAPIResponse = try await networkManager.request(endpoint)
+        return try await cache.getOrFetch(CacheKey.fearGreedIndex, ttl: APICache.TTL.medium) {
+            let endpoint = FearGreedEndpoint.current
+            let response: FearGreedAPIResponse = try await networkManager.request(endpoint)
 
-        guard let data = response.data.first else {
-            throw AppError.invalidResponse
-        }
+            guard let data = response.data.first else {
+                throw AppError.invalidResponse
+            }
 
-        return FearGreedIndex(
-            value: Int(data.value) ?? 50,
-            classification: data.valueClassification,
-            timestamp: Date(timeIntervalSince1970: TimeInterval(data.timestamp) ?? Date().timeIntervalSince1970)
-        )
-    }
-
-    func fetchFearGreedHistory(days: Int) async throws -> [FearGreedIndex] {
-        // TODO: Implement with Alternative.me API
-        // Endpoint: https://api.alternative.me/fng/?limit=\(days)
-        let endpoint = FearGreedEndpoint.historical(days: days)
-        let response: FearGreedAPIResponse = try await networkManager.request(endpoint)
-
-        return response.data.map { data in
-            FearGreedIndex(
+            return FearGreedIndex(
                 value: Int(data.value) ?? 50,
                 classification: data.valueClassification,
                 timestamp: Date(timeIntervalSince1970: TimeInterval(data.timestamp) ?? Date().timeIntervalSince1970)
@@ -41,44 +27,168 @@ final class APISentimentService: SentimentServiceProtocol {
         }
     }
 
+    func fetchFearGreedHistory(days: Int) async throws -> [FearGreedIndex] {
+        let cacheKey = "fear_greed_history_\(days)"
+        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
+            let endpoint = FearGreedEndpoint.historical(days: days)
+            let response: FearGreedAPIResponse = try await networkManager.request(endpoint)
+
+            return response.data.map { data in
+                FearGreedIndex(
+                    value: Int(data.value) ?? 50,
+                    classification: data.valueClassification,
+                    timestamp: Date(timeIntervalSince1970: TimeInterval(data.timestamp) ?? Date().timeIntervalSince1970)
+                )
+            }
+        }
+    }
+
     func fetchBTCDominance() async throws -> BTCDominance {
-        // Use CoinGecko global data for BTC dominance
-        let endpoint = CoinGeckoEndpoint.globalData
-        let response: CoinGeckoGlobalData = try await networkManager.request(endpoint)
+        return try await cache.getOrFetch(CacheKey.btcDominance, ttl: APICache.TTL.medium) {
+            // Use CoinGecko global data for BTC dominance
+            let endpoint = CoinGeckoEndpoint.globalData
+            let response: CoinGeckoGlobalData = try await networkManager.request(endpoint)
 
-        let dominance = response.data.marketCapPercentage["btc"] ?? 0
+            let dominance = response.data.marketCapPercentage["btc"] ?? 0
 
-        return BTCDominance(
-            value: dominance,
-            change24h: 0, // Would need historical data to calculate
+            return BTCDominance(
+                value: dominance,
+                change24h: 0, // Would need historical data to calculate
+                timestamp: Date()
+            )
+        }
+    }
+
+    func fetchETFNetFlow() async throws -> ETFNetFlow {
+        // Scrape ETF net flow data from Farside Investors
+        let scraper = FarsideETFScraper()
+        return try await scraper.fetchETFNetFlow()
+    }
+
+    func fetchFundingRate() async throws -> FundingRate {
+        // Use Binance Futures API for funding rate (free, no API key needed)
+        let binanceService = APIBinanceFundingService()
+
+        // Fetch BTC and ETH funding rates
+        async let btcRate = binanceService.fetchPremiumIndex(symbol: "BTC")
+        async let ethRate = binanceService.fetchPremiumIndex(symbol: "ETH")
+
+        let (btc, eth) = try await (btcRate, ethRate)
+
+        // Average rate across BTC and ETH
+        let avgRate = (btc.lastFundingRate + eth.lastFundingRate) / 2
+        print("💰 Funding Rate: BTC=\(btc.lastFundingRate), ETH=\(eth.lastFundingRate), Avg=\(avgRate)")
+
+        return FundingRate(
+            averageRate: avgRate,
+            exchanges: [
+                ExchangeFundingRate(
+                    exchange: "BTC",
+                    rate: btc.lastFundingRate,
+                    nextFundingTime: btc.nextFundingTime
+                ),
+                ExchangeFundingRate(
+                    exchange: "ETH",
+                    rate: eth.lastFundingRate,
+                    nextFundingTime: eth.nextFundingTime
+                )
+            ],
             timestamp: Date()
         )
     }
 
-    func fetchETFNetFlow() async throws -> ETFNetFlow {
-        // TODO: Implement with appropriate ETF data API
-        // This data typically comes from paid APIs or scraped sources
-        // For now, throw not implemented
-        throw AppError.notImplemented
-    }
-
-    func fetchFundingRate() async throws -> FundingRate {
-        // TODO: Implement with exchange APIs
-        // Could use Binance Futures API, Bybit API, etc.
-        // Example: https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT
-        throw AppError.notImplemented
-    }
-
     func fetchLiquidations() async throws -> LiquidationData {
-        // TODO: Implement with liquidation data API
-        // Could use CoinGlass API or similar
+        // Liquidation data requires paid Coinglass subscription
+        // No free API available for aggregated liquidation data
         throw AppError.notImplemented
     }
 
     func fetchAltcoinSeason() async throws -> AltcoinSeasonIndex {
-        // TODO: Implement with appropriate API
-        // Blockchaincenter.net provides this data
-        throw AppError.notImplemented
+        return try await cache.getOrFetch(CacheKey.altcoinSeason, ttl: APICache.TTL.medium) {
+            // Fetch top 150 coins with 30-day price change from CoinGecko
+            let endpoint = CoinGeckoEndpoint.coinMarketsWithPriceChange(
+                currency: "usd",
+                perPage: 150,
+                priceChangePeriods: ["30d"]
+            )
+
+            let coins: [CoinGeckoMarketCoin] = try await networkManager.request(endpoint)
+
+            // Stablecoins and wrapped tokens to exclude
+            let excludedCoins: Set<String> = [
+                // Stablecoins
+                "tether", "usd-coin", "dai", "binance-usd", "trueusd",
+                "pax-dollar", "frax", "usdd", "gemini-dollar", "paypal-usd",
+                "first-digital-usd", "ethena-usde", "usds", "ondo-us-dollar-yield",
+                "usdc", "busd", "tusd", "gusd", "husd", "susd", "lusd", "musd",
+                // Wrapped tokens
+                "wrapped-bitcoin", "staked-ether", "lido-staked-ether",
+                "rocket-pool-eth", "wrapped-steth", "coinbase-wrapped-staked-eth",
+                "wrapped-eeth", "mantle-staked-ether", "wrapped-liquid-staked-ether",
+                "weth", "wbtc", "steth", "reth", "cbeth"
+            ]
+
+            // Filter out stablecoins and wrapped tokens, take top 100
+            let validCoins = coins.filter { !excludedCoins.contains($0.id) }.prefix(100)
+
+            // Find Bitcoin's 30-day change
+            guard let btcCoin = coins.first(where: { $0.id == "bitcoin" }) else {
+                // Fallback to dominance-based calculation
+                return try await calculateAltcoinSeasonFromDominance()
+            }
+
+            let btcChange30d = btcCoin.priceChangePercentage30dInCurrency ?? 0
+
+            // Count altcoins outperforming BTC
+            var outperformers = 0
+            var totalAltcoins = 0
+
+            for coin in validCoins {
+                if coin.id == "bitcoin" { continue }
+                totalAltcoins += 1
+
+                let coinChange = coin.priceChangePercentage30dInCurrency ?? 0
+                if coinChange > btcChange30d {
+                    outperformers += 1
+                }
+            }
+
+            guard totalAltcoins > 0 else {
+                return try await calculateAltcoinSeasonFromDominance()
+            }
+
+            // Calculate index (0-100)
+            let index = Int((Double(outperformers) / Double(totalAltcoins)) * 100)
+            let isBitcoinSeason = index < 50
+
+            print("📊 Altcoin Season Index: \(index) (\(outperformers)/\(totalAltcoins) outperforming BTC's \(String(format: "%.1f", btcChange30d))%)")
+
+            return AltcoinSeasonIndex(
+                value: index,
+                isBitcoinSeason: isBitcoinSeason,
+                timestamp: Date()
+            )
+        }
+    }
+
+    /// Fallback calculation using BTC dominance
+    private func calculateAltcoinSeasonFromDominance() async throws -> AltcoinSeasonIndex {
+        let btcDominance = try await fetchBTCDominance()
+
+        // Map dominance to index:
+        // BTC dom 65% -> index ~20 (Bitcoin Season)
+        // BTC dom 55% -> index ~50 (Neutral)
+        // BTC dom 45% -> index ~80 (Altcoin Season)
+        let index = Int(max(0, min(100, (65 - btcDominance.value) * 3)))
+        let isBitcoinSeason = index < 50
+
+        print("📊 Altcoin Season Index (from dominance): \(index) (BTC dom: \(String(format: "%.1f", btcDominance.value))%)")
+
+        return AltcoinSeasonIndex(
+            value: index,
+            isBitcoinSeason: isBitcoinSeason,
+            timestamp: Date()
+        )
     }
 
     func fetchRiskLevel() async throws -> RiskLevel {
@@ -112,14 +222,81 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchAppStoreRanking() async throws -> AppStoreRanking {
-        // TODO: Implement with App Store Connect API or scraping
-        throw AppError.notImplemented
+        let rankings = try await fetchAppStoreRankings()
+        guard let first = rankings.first else {
+            throw AppError.dataNotFound
+        }
+        return first
     }
 
     func fetchAppStoreRankings() async throws -> [AppStoreRanking] {
-        // TODO: Implement with App Store Connect API or scraping service
-        // This would fetch rankings for Coinbase, Binance, Kraken, etc.
-        throw AppError.notImplemented
+        // Use Apple's iTunes RSS feed to get Coinbase ranking (US All Free Apps)
+        let appStoreService = APIAppStoreRankingService()
+        let result = try await appStoreService.fetchCoinbaseRanking()
+
+        // Return ranking (0 means >200 / not ranked)
+        let rank = result.ranking ?? 0
+
+        if rank > 0 {
+            print("🏆 Coinbase US App Store ranking: #\(rank)")
+        } else {
+            print("⚠️ Coinbase not in top 200 - showing >200")
+        }
+
+        // Save to Supabase for historical tracking (with BTC price)
+        Task {
+            await saveRankingToSupabase(ranking: rank > 0 ? rank : nil)
+        }
+
+        return [
+            AppStoreRanking(
+                id: UUID(),
+                appName: "Coinbase",
+                ranking: rank,
+                change: 0,
+                platform: .ios,
+                region: .us,
+                category: "All Free Apps",
+                recordedAt: Date()
+            )
+        ]
+    }
+
+    /// Save current ranking to Supabase with BTC price
+    private func saveRankingToSupabase(ranking: Int?) async {
+        do {
+            // Fetch current BTC price
+            let btcPrice = await fetchCurrentBTCPrice()
+
+            // Create ranking DTO
+            let rankingDTO = AppStoreRankingDTO(
+                appName: "Coinbase",
+                ranking: ranking,
+                btcPrice: btcPrice
+            )
+
+            // Save to Supabase
+            try await SupabaseDatabase.shared.saveAppStoreRanking(rankingDTO)
+        } catch {
+            print("⚠️ Failed to save App Store ranking to Supabase: \(error.localizedDescription)")
+        }
+    }
+
+    /// Fetch current BTC price from CoinGecko
+    private func fetchCurrentBTCPrice() async -> Double? {
+        do {
+            let endpoint = CoinGeckoEndpoint.simplePrice(ids: ["bitcoin"], currencies: ["usd"])
+            let response: [String: [String: Double]] = try await networkManager.request(endpoint)
+            return response["bitcoin"]?["usd"]
+        } catch {
+            print("⚠️ Failed to fetch BTC price: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Fetch historical App Store rankings from Supabase
+    func fetchAppStoreRankingHistory(limit: Int = 30) async throws -> [AppStoreRankingDTO] {
+        return try await SupabaseDatabase.shared.getAppStoreRankings(appName: "Coinbase", limit: limit)
     }
 
     func fetchArkLineRiskScore() async throws -> ArkLineRiskScore {

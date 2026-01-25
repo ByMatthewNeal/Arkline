@@ -6,53 +6,52 @@ import Foundation
 final class APIMarketService: MarketServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
+    private let cache = APICache.shared
 
     // MARK: - MarketServiceProtocol
 
     func fetchCryptoAssets(page: Int, perPage: Int) async throws -> [CryptoAsset] {
-        let endpoint = CoinGeckoEndpoint.coinMarkets(
-            currency: "usd",
-            page: page,
-            perPage: perPage,
-            sparkline: true
-        )
-        do {
+        let cacheKey = CacheKey.cryptoAssets(page: page, perPage: perPage)
+
+        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.medium) {
+            let endpoint = CoinGeckoEndpoint.coinMarkets(
+                currency: "usd",
+                page: page,
+                perPage: perPage,
+                sparkline: true
+            )
             let assets: [CryptoAsset] = try await networkManager.request(endpoint)
-            print("DEBUG: Successfully fetched \(assets.count) crypto assets")
-            if let btc = assets.first(where: { $0.symbol.uppercased() == "BTC" }) {
-                print("DEBUG: BTC price = \(btc.currentPrice)")
-            }
             return assets
-        } catch {
-            print("DEBUG: Failed to fetch crypto assets: \(error)")
-            throw error
         }
     }
 
     func fetchStockAssets(symbols: [String]) async throws -> [StockAsset] {
-        // TODO: Implement with Alpha Vantage API
-        // Alpha Vantage has rate limits, consider batch requests or caching
-        var assets: [StockAsset] = []
+        let cacheKey = CacheKey.stockAssets(symbols: symbols)
 
-        for symbol in symbols {
-            let endpoint = AlphaVantageEndpoint.globalQuote(symbol: symbol)
-            do {
-                let response: AlphaVantageGlobalQuoteResponse = try await networkManager.request(endpoint)
-                assets.append(response.globalQuote.toStockAsset())
-            } catch {
-                // Log error but continue with other symbols
-                logError("Failed to fetch stock \(symbol): \(error)")
+        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
+            var assets: [StockAsset] = []
+
+            for symbol in symbols {
+                let endpoint = AlphaVantageEndpoint.globalQuote(symbol: symbol)
+                do {
+                    let response: AlphaVantageGlobalQuoteResponse = try await networkManager.request(endpoint)
+                    assets.append(response.globalQuote.toStockAsset())
+                } catch {
+                    // Log error but continue with other symbols
+                    logError("Failed to fetch stock \(symbol): \(error)")
+                }
             }
-        }
 
-        return assets
+            return assets
+        }
     }
 
     func fetchMetalAssets(symbols: [String]) async throws -> [MetalAsset] {
-        // TODO: Implement with Metals API
-        let endpoint = MetalsAPIEndpoint.latest(base: "USD", symbols: symbols)
+        let cacheKey = CacheKey.metalAssets(symbols: symbols)
 
-        do {
+        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
+            let endpoint = MetalsAPIEndpoint.latest(base: "USD", symbols: symbols)
+
             let response: MetalsAPIResponse = try await networkManager.request(endpoint)
 
             return symbols.compactMap { symbol -> MetalAsset? in
@@ -64,7 +63,7 @@ final class APIMarketService: MarketServiceProtocol {
                 return MetalAsset(
                     id: symbol.lowercased(),
                     symbol: symbol,
-                    name: metalName(for: symbol),
+                    name: self.metalName(for: symbol),
                     currentPrice: price,
                     priceChange24h: 0, // Would need historical data
                     priceChangePercentage24h: 0,
@@ -74,27 +73,28 @@ final class APIMarketService: MarketServiceProtocol {
                     timestamp: Date()
                 )
             }
-        } catch {
-            logError("Failed to fetch metals: \(error)")
-            throw error
         }
     }
 
     func fetchGlobalMarketData() async throws -> CoinGeckoGlobalData {
-        let endpoint = CoinGeckoEndpoint.globalData
-        return try await networkManager.request(endpoint)
+        return try await cache.getOrFetch(CacheKey.globalMarketData, ttl: APICache.TTL.medium) {
+            let endpoint = CoinGeckoEndpoint.globalData
+            return try await networkManager.request(endpoint)
+        }
     }
 
     func fetchTrendingCrypto() async throws -> [CryptoAsset] {
-        let endpoint = CoinGeckoEndpoint.trendingCoins
-        let response: CoinGeckoTrendingResponse = try await networkManager.request(endpoint)
+        return try await cache.getOrFetch(CacheKey.trendingCoins, ttl: APICache.TTL.long) {
+            let endpoint = CoinGeckoEndpoint.trendingCoins
+            let response: CoinGeckoTrendingResponse = try await self.networkManager.request(endpoint)
 
-        // Convert trending coins to CryptoAsset
-        // Note: Trending endpoint doesn't include price data, would need additional calls
-        let coinIds = response.coins.map { $0.item.id }
+            // Convert trending coins to CryptoAsset
+            // Note: Trending endpoint doesn't include price data, would need additional calls
+            let coinIds = response.coins.map { $0.item.id }
 
-        // Fetch price data for trending coins
-        return try await fetchCryptoAssets(ids: coinIds)
+            // Fetch price data for trending coins
+            return try await self.fetchCryptoAssets(ids: coinIds)
+        }
     }
 
     func searchCrypto(query: String) async throws -> [CryptoAsset] {

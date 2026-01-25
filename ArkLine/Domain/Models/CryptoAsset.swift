@@ -250,3 +250,29 @@ struct CoinGeckoTrendingResponse: Codable {
         }
     }
 }
+
+// MARK: - CoinGecko Market Coin (for Altcoin Season calculation)
+/// Model for coins/markets endpoint with price change percentages
+struct CoinGeckoMarketCoin: Codable, Identifiable {
+    let id: String
+    let symbol: String
+    let name: String
+    let currentPrice: Double?
+    let marketCap: Double?
+    let marketCapRank: Int?
+    let priceChangePercentage24h: Double?
+    let priceChangePercentage7dInCurrency: Double?
+    let priceChangePercentage30dInCurrency: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case symbol
+        case name
+        case currentPrice = "current_price"
+        case marketCap = "market_cap"
+        case marketCapRank = "market_cap_rank"
+        case priceChangePercentage24h = "price_change_percentage_24h"
+        case priceChangePercentage7dInCurrency = "price_change_percentage_7d_in_currency"
+        case priceChangePercentage30dInCurrency = "price_change_percentage_30d_in_currency"
+    }
+}

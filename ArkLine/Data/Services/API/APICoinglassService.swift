@@ -8,19 +8,27 @@ final class APICoinglassService: CoinglassServiceProtocol {
     // MARK: - Configuration
     private let baseURL = "https://open-api-v4.coinglass.com/api"
     private var apiKey: String {
-        // TODO: Move to secure storage / environment variable
-        Constants.coinglassAPIKey
+        let key = Constants.coinglassAPIKey
+        // Debug: Print masked key to verify it's loaded
+        if key.isEmpty {
+            print("🔴 Coinglass API key is EMPTY!")
+        } else {
+            print("🟢 Coinglass API key loaded: \(key.prefix(4))****\(key.suffix(4))")
+        }
+        return key
     }
 
     // MARK: - Open Interest
 
     func fetchOpenInterest(symbol: String) async throws -> OpenInterestData {
-        let endpoint = "/futures/openInterest/exchange-list"
-        let params = ["symbol": symbol.uppercased()]
+        // Use coin-list endpoint which is available on free tier
+        let endpoint = "/futures/open-interest/coin-list"
+        let params: [String: String] = [:]
 
-        let response: CoinglassAPIResponse<[CoinglassOIResponse]> = try await request(endpoint: endpoint, params: params)
+        let response: CoinglassAPIResponse<[CoinglassOICoinResponse]> = try await request(endpoint: endpoint, params: params)
 
-        guard let data = response.data.first else {
+        // Find the requested symbol in the list
+        guard let data = response.data.first(where: { $0.symbol.uppercased() == symbol.uppercased() }) else {
             throw AppError.dataNotFound
         }
 
@@ -31,13 +39,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
             openInterestChange24h: data.h24Change ?? 0,
             openInterestChangePercent24h: data.h24ChangePercent ?? 0,
             timestamp: Date(),
-            exchangeBreakdown: data.exchangeList?.map { exchange in
-                ExchangeOI(
-                    exchange: exchange.exchangeName,
-                    openInterest: exchange.openInterest,
-                    percentage: exchange.rate ?? 0
-                )
-            }
+            exchangeBreakdown: nil
         )
     }
 
@@ -132,30 +134,26 @@ final class APICoinglassService: CoinglassServiceProtocol {
     // MARK: - Funding Rates
 
     func fetchFundingRate(symbol: String) async throws -> CoinglassFundingRateData {
-        let endpoint = "/futures/fundingRate/exchange-list"
-        let params = ["symbol": symbol.uppercased()]
+        // Try the coin-list endpoint which is available on free tier
+        let endpoint = "/futures/funding-rate/coin-list"
+        let params: [String: String] = [:]
 
-        let response: CoinglassAPIResponse<CoinglassFundingRateResponse> = try await request(endpoint: endpoint, params: params)
+        let response: CoinglassAPIResponse<[CoinglassFundingCoinResponse]> = try await request(endpoint: endpoint, params: params)
 
-        let avgRate = response.data.uMarginList?.reduce(0.0) { $0 + $1.rate } ?? 0
-        let count = Double(response.data.uMarginList?.count ?? 1)
-        let rate = avgRate / count
+        // Find the requested symbol in the list
+        guard let coinData = response.data.first(where: { $0.symbol.uppercased() == symbol.uppercased() }) else {
+            throw AppError.dataNotFound
+        }
 
         return CoinglassFundingRateData(
             id: UUID(),
-            symbol: response.data.symbol,
-            fundingRate: rate,
+            symbol: coinData.symbol,
+            fundingRate: coinData.rate,
             predictedRate: nil,
-            nextFundingTime: response.data.uMarginList?.first?.nextFundingTime.map { Date(timeIntervalSince1970: TimeInterval($0 / 1000)) },
-            annualizedRate: rate * 3 * 365 * 100, // Convert to percentage
+            nextFundingTime: nil,
+            annualizedRate: coinData.rate * 3 * 365 * 100,
             timestamp: Date(),
-            exchangeRates: response.data.uMarginList?.map { exchange in
-                CoinglassExchangeFundingRate(
-                    exchange: exchange.exchangeName,
-                    fundingRate: exchange.rate,
-                    nextFundingTime: exchange.nextFundingTime.map { Date(timeIntervalSince1970: TimeInterval($0 / 1000)) }
-                )
-            }
+            exchangeRates: nil
         )
     }
 
@@ -234,29 +232,131 @@ final class APICoinglassService: CoinglassServiceProtocol {
     // MARK: - Aggregated Overview
 
     func fetchDerivativesOverview() async throws -> DerivativesOverview {
-        async let btcOI = fetchOpenInterest(symbol: "BTC")
-        async let ethOI = fetchOpenInterest(symbol: "ETH")
-        async let totalLiqs = fetchTotalLiquidations()
-        async let btcFunding = fetchFundingRate(symbol: "BTC")
-        async let ethFunding = fetchFundingRate(symbol: "ETH")
-        async let btcLS = fetchLongShortRatio(symbol: "BTC")
-        async let ethLS = fetchLongShortRatio(symbol: "ETH")
+        // Fetch all data with graceful failure handling
+        // Some endpoints may not be available on all tiers
 
-        let (btcOpenInterest, ethOpenInterest, liquidations, btcFundingRate, ethFundingRate, btcLongShort, ethLongShort) = try await (btcOI, ethOI, totalLiqs, btcFunding, ethFunding, btcLS, ethLS)
+        // Required data - these must succeed
+        async let btcOI = fetchOpenInterestSafe(symbol: "BTC")
+        async let ethOI = fetchOpenInterestSafe(symbol: "ETH")
+        async let btcFunding = fetchFundingRateSafe(symbol: "BTC")
+        async let ethFunding = fetchFundingRateSafe(symbol: "ETH")
+        async let btcLS = fetchLongShortRatioSafe(symbol: "BTC")
+        async let ethLS = fetchLongShortRatioSafe(symbol: "ETH")
 
-        let totalOI = btcOpenInterest.openInterest + ethOpenInterest.openInterest
+        // Optional data - may fail on lower tiers
+        async let totalLiqs = fetchTotalLiquidationsSafe()
+
+        let (btcOpenInterest, ethOpenInterest, btcFundingRate, ethFundingRate, btcLongShort, ethLongShort, liquidations) = await (btcOI, ethOI, btcFunding, ethFunding, btcLS, ethLS, totalLiqs)
+
+        // Check if we have any usable data
+        let hasOI = btcOpenInterest != nil || ethOpenInterest != nil
+        let hasFunding = btcFundingRate != nil || ethFundingRate != nil
+        let hasLS = btcLongShort != nil || ethLongShort != nil
+
+        guard hasOI || hasFunding || hasLS else {
+            print("🔴 Coinglass: No derivatives data available from any endpoint")
+            throw AppError.dataNotFound
+        }
+
+        if !hasOI {
+            print("⚠️ Coinglass: OI endpoints failed, using defaults")
+        }
+
+        let totalOI = (btcOpenInterest?.openInterest ?? 0) + (ethOpenInterest?.openInterest ?? 0)
+
+        // Create default values for missing data
+        let defaultOI = OpenInterestData(
+            id: UUID(),
+            symbol: "N/A",
+            openInterest: 0,
+            openInterestChange24h: 0,
+            openInterestChangePercent24h: 0,
+            timestamp: Date(),
+            exchangeBreakdown: nil
+        )
+
+        let defaultFunding = CoinglassFundingRateData(
+            id: UUID(),
+            symbol: "N/A",
+            fundingRate: 0,
+            predictedRate: nil,
+            nextFundingTime: nil,
+            annualizedRate: 0,
+            timestamp: Date(),
+            exchangeRates: nil
+        )
+
+        let defaultLS = LongShortRatioData(
+            id: UUID(),
+            symbol: "N/A",
+            longRatio: 0.5,
+            shortRatio: 0.5,
+            longShortRatio: 1.0,
+            topTraderLongRatio: nil,
+            topTraderShortRatio: nil,
+            timestamp: Date(),
+            exchangeRatios: nil
+        )
+
+        let defaultLiquidations = CoinglassLiquidationData(
+            id: UUID(),
+            symbol: "ALL",
+            longLiquidations24h: 0,
+            shortLiquidations24h: 0,
+            totalLiquidations24h: 0,
+            largestLiquidation: nil,
+            timestamp: Date()
+        )
 
         return DerivativesOverview(
-            btcOpenInterest: btcOpenInterest,
-            ethOpenInterest: ethOpenInterest,
+            btcOpenInterest: btcOpenInterest ?? defaultOI,
+            ethOpenInterest: ethOpenInterest ?? defaultOI,
             totalMarketOI: totalOI,
-            totalLiquidations24h: liquidations,
-            btcFundingRate: btcFundingRate,
-            ethFundingRate: ethFundingRate,
-            btcLongShortRatio: btcLongShort,
-            ethLongShortRatio: ethLongShort,
+            totalLiquidations24h: liquidations ?? defaultLiquidations,
+            btcFundingRate: btcFundingRate ?? defaultFunding,
+            ethFundingRate: ethFundingRate ?? defaultFunding,
+            btcLongShortRatio: btcLongShort ?? defaultLS,
+            ethLongShortRatio: ethLongShort ?? defaultLS,
             lastUpdated: Date()
         )
+    }
+
+    // MARK: - Safe Fetch Helpers (return nil on error)
+
+    private func fetchOpenInterestSafe(symbol: String) async -> OpenInterestData? {
+        do {
+            return try await fetchOpenInterest(symbol: symbol)
+        } catch {
+            print("⚠️ Coinglass OI fetch failed for \(symbol): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func fetchFundingRateSafe(symbol: String) async -> CoinglassFundingRateData? {
+        do {
+            return try await fetchFundingRate(symbol: symbol)
+        } catch {
+            print("⚠️ Coinglass Funding fetch failed for \(symbol): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func fetchLongShortRatioSafe(symbol: String) async -> LongShortRatioData? {
+        do {
+            return try await fetchLongShortRatio(symbol: symbol)
+        } catch {
+            print("⚠️ Coinglass L/S ratio fetch failed for \(symbol): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func fetchTotalLiquidationsSafe() async -> CoinglassLiquidationData? {
+        do {
+            return try await fetchTotalLiquidations()
+        } catch {
+            print("⚠️ Coinglass Liquidations fetch failed (may require higher tier): \(error.localizedDescription)")
+            return nil
+        }
     }
 
     // MARK: - Private Networking
@@ -271,14 +371,23 @@ final class APICoinglassService: CoinglassServiceProtocol {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        // Coinglass API v4 uses "CG-API-KEY" header (not "coinglassSecret")
         request.setValue(apiKey, forHTTPHeaderField: "CG-API-KEY")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 15
+
+        print("🔑 Coinglass request to \(endpoint) with key: \(apiKey.isEmpty ? "EMPTY" : "\(apiKey.prefix(8))...")")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AppError.invalidResponse
+        }
+
+        // Debug: Always log response for troubleshooting
+        if let responseStr = String(data: data, encoding: .utf8) {
+            print("🔵 Coinglass API Response (\(httpResponse.statusCode)) for \(endpoint):")
+            print("   \(responseStr.prefix(500))")
         }
 
         guard httpResponse.statusCode == 200 else {
@@ -291,7 +400,14 @@ final class APICoinglassService: CoinglassServiceProtocol {
         }
 
         let decoder = JSONDecoder()
-        return try decoder.decode(T.self, from: data)
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            if let responseStr = String(data: data, encoding: .utf8) {
+                print("🔴 Coinglass decode error. Response: \(responseStr)")
+            }
+            throw error
+        }
     }
 }
 

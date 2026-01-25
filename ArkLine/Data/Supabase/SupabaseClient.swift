@@ -8,13 +8,30 @@ final class SupabaseManager {
 
     // MARK: - Properties
     let client: SupabaseClient
+    let isConfigured: Bool
 
     // MARK: - Init
     private init() {
-        client = SupabaseClient(
-            supabaseURL: URL(string: Constants.API.supabaseURL)!,
-            supabaseKey: Constants.API.supabaseAnonKey
-        )
+        let urlString = Constants.API.supabaseURL
+        let key = Constants.API.supabaseAnonKey
+
+        // Check if Supabase is properly configured
+        if urlString.isEmpty || key.isEmpty {
+            print("⚠️ Supabase credentials not configured - using placeholder")
+            // Use a placeholder that won't crash but won't work either
+            client = SupabaseClient(
+                supabaseURL: URL(string: "https://placeholder.supabase.co")!,
+                supabaseKey: "placeholder_key"
+            )
+            isConfigured = false
+        } else {
+            client = SupabaseClient(
+                supabaseURL: URL(string: urlString)!,
+                supabaseKey: key
+            )
+            isConfigured = true
+            print("✅ Supabase configured: \(urlString)")
+        }
     }
 
     // MARK: - Database Reference

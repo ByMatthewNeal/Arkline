@@ -119,6 +119,62 @@ extension SupabaseDatabase {
             value: userId.uuidString
         )
     }
+
+    // MARK: - App Store Rankings
+
+    /// Save today's ranking (upsert - update if exists, insert if not)
+    func saveAppStoreRanking(_ ranking: AppStoreRankingDTO) async throws {
+        guard SupabaseManager.shared.isConfigured else {
+            print("⚠️ Supabase not configured - skipping save")
+            return
+        }
+        let client = SupabaseManager.shared.client
+
+        // Check if we already have a record for this date and app
+        let existing: [AppStoreRankingDTO] = try await client
+            .from(SupabaseTable.appStoreRankings.rawValue)
+            .select("*")
+            .eq("app_name", value: ranking.appName)
+            .eq("recorded_date", value: ranking.recordedDate)
+            .execute()
+            .value
+
+        if existing.isEmpty {
+            // Insert new record
+            try await client
+                .from(SupabaseTable.appStoreRankings.rawValue)
+                .insert(ranking)
+                .execute()
+            print("📊 Saved new App Store ranking for \(ranking.recordedDate): \(ranking.rankDisplay)")
+        } else {
+            print("📊 App Store ranking already exists for \(ranking.recordedDate)")
+        }
+    }
+
+    /// Get historical rankings for an app (sorted by date descending)
+    func getAppStoreRankings(appName: String, limit: Int = 30) async throws -> [AppStoreRankingDTO] {
+        let client = SupabaseManager.shared.client
+        return try await client
+            .from(SupabaseTable.appStoreRankings.rawValue)
+            .select("*")
+            .eq("app_name", value: appName)
+            .order("recorded_date", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
+    /// Get all historical rankings (sorted by date descending)
+    func getAllAppStoreRankings(limit: Int = 90) async throws -> [AppStoreRankingDTO] {
+        let client = SupabaseManager.shared.client
+        return try await client
+            .from(SupabaseTable.appStoreRankings.rawValue)
+            .select("*")
+            .order("recorded_date", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
 }
 
 // MARK: - DTO Types for Database
@@ -161,5 +217,85 @@ struct ChatSessionDTO: Codable {
         case userId = "user_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+}
+
+// MARK: - App Store Ranking DTO
+struct AppStoreRankingDTO: Codable {
+    let id: UUID
+    let appName: String
+    let ranking: Int? // nil means not in top 200
+    let btcPrice: Double?
+    let recordedDate: String // YYYY-MM-DD format
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case appName = "app_name"
+        case ranking
+        case btcPrice = "btc_price"
+        case recordedDate = "recorded_date"
+        case createdAt = "created_at"
+    }
+
+    // Create from current ranking data
+    init(appName: String, ranking: Int?, btcPrice: Double?, date: Date = Date()) {
+        self.id = UUID()
+        self.appName = appName
+        self.ranking = ranking
+        self.btcPrice = btcPrice
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        self.recordedDate = formatter.string(from: date)
+        self.createdAt = Date()
+    }
+
+    // For decoding from database
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        appName = try container.decode(String.self, forKey: .appName)
+        ranking = try container.decodeIfPresent(Int.self, forKey: .ranking)
+        btcPrice = try container.decodeIfPresent(Double.self, forKey: .btcPrice)
+        recordedDate = try container.decode(String.self, forKey: .recordedDate)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+    }
+
+    // Computed properties for display
+    var date: Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: recordedDate) ?? Date()
+    }
+
+    var rankDisplay: String {
+        if let rank = ranking, rank > 0 {
+            return "#\(rank)"
+        }
+        return ">200"
+    }
+
+    var btcPriceDisplay: String {
+        if let price = btcPrice {
+            return "$\(Int(price).formatted())"
+        }
+        return "--"
+    }
+
+    var dateDisplay: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: recordedDate) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, yyyy"
+            return displayFormatter.string(from: date)
+        }
+        return recordedDate
+    }
+
+    var isRanked: Bool {
+        guard let rank = ranking else { return false }
+        return rank > 0
     }
 }

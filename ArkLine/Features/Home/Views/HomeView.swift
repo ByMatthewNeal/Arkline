@@ -4,6 +4,7 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var showPortfolioPicker = false
     @State private var showCustomizeSheet = false
+    @State private var showNotificationsSheet = false
     @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
@@ -28,7 +29,8 @@ struct HomeView: View {
                             userName: appState.currentUser?.firstName ?? "User",
                             avatarUrl: appState.currentUser?.avatarUrl.flatMap { URL(string: $0) },
                             appState: appState,
-                            onCustomizeTap: { showCustomizeSheet = true }
+                            onCustomizeTap: { showCustomizeSheet = true },
+                            onNotificationsTap: { showNotificationsSheet = true }
                         )
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
@@ -82,6 +84,9 @@ struct HomeView: View {
             .sheet(isPresented: $showCustomizeSheet) {
                 CustomizeHomeView()
             }
+            .sheet(isPresented: $showNotificationsSheet) {
+                NotificationsSheet()
+            }
             .onChange(of: appState.homeNavigationReset) { _, _ in
                 // Pop to root when home tab is tapped while already on home
                 navigationPath = NavigationPath()
@@ -97,6 +102,7 @@ struct GlassHeader: View {
     let avatarUrl: URL?
     @ObservedObject var appState: AppState
     var onCustomizeTap: (() -> Void)? = nil
+    var onNotificationsTap: (() -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -136,7 +142,9 @@ struct GlassHeader: View {
                     HeaderIconButton(icon: "slider.horizontal.3", action: onCustomizeTap)
                 }
 
-                HeaderIconButton(icon: "bell", hasNotification: true, action: {})
+                HeaderIconButton(icon: "bell", hasNotification: true, action: {
+                    onNotificationsTap?()
+                })
             }
         }
     }
@@ -415,7 +423,7 @@ struct ReorderableWidgetStack: View {
             }
 
         case .marketMovers:
-            MarketMoversSection(
+            HomeMarketMoversWidget(
                 btcPrice: viewModel.btcPrice,
                 ethPrice: viewModel.ethPrice,
                 btcChange: viewModel.btcChange24h,
@@ -1430,8 +1438,8 @@ struct GlassFearGreedCard: View {
     }
 }
 
-// MARK: - Market Movers Section
-struct MarketMoversSection: View {
+// MARK: - Home Market Movers Widget
+struct HomeMarketMoversWidget: View {
     let btcPrice: Double
     let ethPrice: Double
     let btcChange: Double
@@ -2547,70 +2555,82 @@ struct UpcomingEventRow: View {
         AppColors.textPrimary(colorScheme)
     }
 
-    private var impactIcon: String {
-        switch event.impact {
-        case .high, .medium:
-            return "bolt.fill"
-        case .low:
-            return "circle.fill"
-        }
+    private var textSecondary: Color {
+        textPrimary.opacity(0.5)
     }
 
     private var hasDataValues: Bool {
         event.actual != nil || event.forecast != nil || event.previous != nil
     }
 
+    /// Country code extracted from country string (e.g., "US", "JP", "EU")
+    private var countryCode: String {
+        event.country.uppercased()
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: isCompact ? 4 : 6) {
-            HStack(spacing: isCompact ? 6 : 10) {
-                Image(systemName: impactIcon)
-                    .font(.system(size: isCompact ? 10 : 12, weight: .semibold))
-                    .foregroundColor(event.impact.color)
-                    .frame(width: isCompact ? 14 : 18)
+        HStack(spacing: 0) {
+            // Vertical impact indicator bar
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(event.impact.color)
+                .frame(width: 3, height: isCompact ? 32 : 44)
+                .padding(.trailing, isCompact ? 8 : 12)
 
-                Text(event.timeDisplayFormatted)
-                    .font(.system(size: isCompact ? 10 : 12, weight: .medium, design: .monospaced))
-                    .foregroundColor(textPrimary.opacity(0.6))
-                    .frame(width: isCompact ? 45 : 55, alignment: .leading)
+            VStack(alignment: .leading, spacing: isCompact ? 2 : 4) {
+                HStack(spacing: isCompact ? 6 : 10) {
+                    // Time
+                    Text(event.timeDisplayFormatted)
+                        .font(.system(size: isCompact ? 10 : 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(textSecondary)
+                        .frame(width: isCompact ? 48 : 58, alignment: .leading)
 
-                if let flag = event.countryFlag {
-                    Text(flag)
-                        .font(.system(size: isCompact ? 11 : 13))
-                }
+                    // Country code badge
+                    Text(countryCode)
+                        .font(.system(size: isCompact ? 9 : 10, weight: .semibold))
+                        .foregroundColor(textSecondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(textPrimary.opacity(0.08))
+                        )
 
-                Text(event.title)
-                    .font(.system(size: isCompact ? 11 : 13, weight: .medium))
-                    .foregroundColor(textPrimary)
-                    .lineLimit(1)
-
-                Spacer()
-
-                if !isCompact {
-                    Button(action: { showEventInfo = true }) {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 14))
-                            .foregroundColor(textPrimary.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            if hasDataValues && !isCompact {
-                HStack(spacing: 12) {
-                    Spacer()
-                        .frame(width: 83)
-
-                    if let actual = event.actual, !actual.isEmpty {
-                        EventDataPill(label: "Act", value: actual, isActual: true)
-                    }
-                    if let forecast = event.forecast, !forecast.isEmpty {
-                        EventDataPill(label: "Fcst", value: forecast, isActual: false)
-                    }
-                    if let previous = event.previous, !previous.isEmpty {
-                        EventDataPill(label: "Prev", value: previous, isActual: false)
-                    }
+                    // Event title
+                    Text(event.title)
+                        .font(.system(size: isCompact ? 11 : 13, weight: .medium))
+                        .foregroundColor(textPrimary)
+                        .lineLimit(1)
 
                     Spacer()
+
+                    if !isCompact {
+                        Button(action: { showEventInfo = true }) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(textPrimary.opacity(0.3))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                // Data values row
+                if hasDataValues && !isCompact {
+                    HStack(spacing: 12) {
+                        Spacer()
+                            .frame(width: 58)
+
+                        if let actual = event.actual, !actual.isEmpty {
+                            EventDataPill(label: "Act", value: actual, isActual: true)
+                        }
+                        if let forecast = event.forecast, !forecast.isEmpty {
+                            EventDataPill(label: "Fcst", value: forecast, isActual: false)
+                        }
+                        if let previous = event.previous, !previous.isEmpty {
+                            EventDataPill(label: "Prev", value: previous, isActual: false)
+                        }
+
+                        Spacer()
+                    }
                 }
             }
         }
@@ -2673,11 +2693,16 @@ struct EventInfoSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 10) {
-                            if let flag = event.countryFlag {
-                                Text(flag)
-                                    .font(.system(size: 32))
-                            }
+                        HStack(spacing: 12) {
+                            // Country code badge
+                            Text(event.country.uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(textPrimary)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(textPrimary.opacity(0.08))
+                                )
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(event.title)
                                     .font(.system(size: 20, weight: .bold))
@@ -2877,9 +2902,10 @@ struct EventImpactTag: View {
     let impact: EventImpact
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 10))
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(impact.color)
+                .frame(width: 3, height: 14)
             Text(impact.displayName + " Impact")
                 .font(.system(size: 12, weight: .semibold))
         }
@@ -3007,6 +3033,10 @@ struct EventDetailRow: View {
         AppColors.textPrimary(colorScheme)
     }
 
+    private var textSecondary: Color {
+        AppColors.textSecondary
+    }
+
     private var timeString: String {
         guard let time = event.time else { return "" }
         let formatter = DateFormatter()
@@ -3014,32 +3044,38 @@ struct EventDetailRow: View {
         return formatter.string(from: time).lowercased()
     }
 
+    /// Country code extracted from country string
+    private var countryCode: String {
+        event.country.uppercased()
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            // Impact indicator
-            if event.impact == .high {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.accent)
-                    .frame(width: 20)
-            } else {
-                Circle()
-                    .fill(AppColors.textSecondary.opacity(0.3))
-                    .frame(width: 6, height: 6)
-                    .frame(width: 20)
-            }
+        HStack(spacing: 0) {
+            // Vertical impact indicator bar
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(event.impact.color)
+                .frame(width: 3, height: 44)
+                .padding(.trailing, 12)
 
             // Time
             if !timeString.isEmpty {
                 Text(timeString)
                     .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    .foregroundColor(AppColors.textSecondary)
+                    .foregroundColor(textSecondary)
                     .frame(width: 60, alignment: .leading)
             }
 
-            // Country flag
-            Text(event.countryFlag ?? "🌐")
-                .font(.system(size: 16))
+            // Country code badge
+            Text(countryCode)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(textSecondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(textPrimary.opacity(0.08))
+                )
+                .padding(.trailing, 10)
 
             // Event name
             Text(event.title)
@@ -3054,14 +3090,15 @@ struct EventDetailRow: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Forecast")
                         .font(.system(size: 9))
-                        .foregroundColor(AppColors.textSecondary)
+                        .foregroundColor(textSecondary)
                     Text(forecast)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(textPrimary)
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.leading, 16)
+        .padding(.trailing, 16)
         .padding(.vertical, 12)
     }
 }
@@ -3111,31 +3148,37 @@ struct EventInfoView: View {
                     // Header Card
                     VStack(alignment: .leading, spacing: 16) {
                         // Country and Impact
-                        HStack {
-                            Text(event.countryFlag ?? "🌐")
-                                .font(.system(size: 32))
+                        HStack(spacing: 16) {
+                            // Country code in a professional badge
+                            Text(event.country.uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(textPrimary)
+                                .frame(width: 44, height: 44)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(textPrimary.opacity(0.08))
+                                )
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(event.country ?? "Global")
+                                Text(event.country)
                                     .font(.headline)
                                     .foregroundColor(textPrimary)
 
                                 HStack(spacing: 8) {
-                                    // Impact badge
-                                    HStack(spacing: 4) {
-                                        if event.impact == .high {
-                                            Image(systemName: "bolt.fill")
-                                                .font(.system(size: 10))
-                                        }
+                                    // Impact badge with colored indicator
+                                    HStack(spacing: 6) {
+                                        RoundedRectangle(cornerRadius: 1.5)
+                                            .fill(event.impact.color)
+                                            .frame(width: 3, height: 14)
                                         Text(event.impact.rawValue.capitalized)
                                             .font(.caption)
                                             .fontWeight(.medium)
                                     }
-                                    .foregroundColor(event.impact == .high ? AppColors.accent : AppColors.textSecondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .foregroundColor(event.impact.color)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
                                     .background(
-                                        (event.impact == .high ? AppColors.accent : AppColors.textSecondary).opacity(0.15)
+                                        event.impact.color.opacity(0.12)
                                     )
                                     .cornerRadius(6)
 
@@ -3290,6 +3333,212 @@ struct EventInfoView: View {
         } else {
             return "Economic events can significantly impact financial markets by influencing investor sentiment, currency valuations, and monetary policy expectations. High-impact events often lead to increased volatility."
         }
+    }
+}
+
+// MARK: - Notifications Sheet
+struct NotificationsSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var sheetBackground: Color {
+        colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7")
+    }
+
+    // Mock notifications data
+    private let mockNotifications: [MockNotification] = [
+        MockNotification(
+            icon: "chart.line.uptrend.xyaxis",
+            iconColor: AppColors.success,
+            title: "BTC up 5.2% today",
+            subtitle: "Bitcoin is showing strong momentum",
+            time: "2m ago",
+            isRead: false
+        ),
+        MockNotification(
+            icon: "exclamationmark.triangle.fill",
+            iconColor: AppColors.warning,
+            title: "High volatility alert",
+            subtitle: "Market volatility index above 70",
+            time: "15m ago",
+            isRead: false
+        ),
+        MockNotification(
+            icon: "bell.badge.fill",
+            iconColor: AppColors.accent,
+            title: "DCA reminder",
+            subtitle: "Weekly Bitcoin purchase scheduled",
+            time: "1h ago",
+            isRead: true
+        ),
+        MockNotification(
+            icon: "calendar.badge.exclamationmark",
+            iconColor: AppColors.error,
+            title: "FOMC meeting tomorrow",
+            subtitle: "High impact event at 2:00 PM EST",
+            time: "3h ago",
+            isRead: true
+        ),
+        MockNotification(
+            icon: "arrow.up.circle.fill",
+            iconColor: AppColors.success,
+            title: "Fear & Greed at 72",
+            subtitle: "Market sentiment shifted to Greed",
+            time: "5h ago",
+            isRead: true
+        )
+    ]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Unread section
+                    let unreadNotifications = mockNotifications.filter { !$0.isRead }
+                    if !unreadNotifications.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("New")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(textPrimary.opacity(0.5))
+                                .textCase(.uppercase)
+                                .tracking(0.8)
+                                .padding(.horizontal, 4)
+
+                            ForEach(unreadNotifications) { notification in
+                                HomeNotificationRow(notification: notification)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+
+                    // Read section
+                    let readNotifications = mockNotifications.filter { $0.isRead }
+                    if !readNotifications.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Earlier")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(textPrimary.opacity(0.5))
+                                .textCase(.uppercase)
+                                .tracking(0.8)
+                                .padding(.horizontal, 4)
+
+                            ForEach(readNotifications) { notification in
+                                HomeNotificationRow(notification: notification)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+
+                    Spacer(minLength: 40)
+                }
+                .padding(.top, 16)
+            }
+            .background(sheetBackground)
+            .navigationTitle("Notifications")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        // Mark all as read
+                    }) {
+                        Text("Clear All")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Mock Notification Model
+struct MockNotification: Identifiable {
+    let id = UUID()
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    let time: String
+    let isRead: Bool
+}
+
+// MARK: - Home Notification Row
+struct HomeNotificationRow: View {
+    let notification: MockNotification
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(notification.iconColor.opacity(0.15))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: notification.icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(notification.iconColor)
+            }
+
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(notification.title)
+                        .font(.system(size: 15, weight: notification.isRead ? .regular : .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Spacer()
+
+                    Text(notification.time)
+                        .font(.system(size: 12))
+                        .foregroundColor(textPrimary.opacity(0.4))
+                }
+
+                Text(notification.subtitle)
+                    .font(.system(size: 13))
+                    .foregroundColor(textPrimary.opacity(0.6))
+                    .lineLimit(1)
+            }
+
+            // Unread indicator
+            if !notification.isRead {
+                Circle()
+                    .fill(AppColors.accent)
+                    .frame(width: 8, height: 8)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(cardBackground)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(notification.isRead ? Color.clear : AppColors.accent.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

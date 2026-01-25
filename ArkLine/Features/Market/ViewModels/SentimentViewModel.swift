@@ -217,63 +217,58 @@ class SentimentViewModel {
         isLoading = true
         errorMessage = nil
 
-        do {
-            // Core sentiment indicators
-            async let fgTask = sentimentService.fetchFearGreedIndex()
-            async let btcTask = sentimentService.fetchBTCDominance()
-            async let etfTask = fetchETFSafe()
-            async let fundingTask = fetchFundingSafe()
-            async let liqTask = fetchLiquidationsSafe()
-            async let altTask = fetchAltcoinSeasonSafe()
-            async let riskTask = fetchRiskLevelSafe()
+        // Fetch all indicators independently using safe wrappers
+        // This ensures one failure doesn't block others
+        async let fgTask = fetchFearGreedSafe()
+        async let btcTask = fetchBTCDominanceSafe()
+        async let etfTask = fetchETFSafe()
+        async let fundingTask = fetchFundingSafe()
+        async let liqTask = fetchLiquidationsSafe()
+        async let altTask = fetchAltcoinSeasonSafe()
+        async let riskTask = fetchRiskLevelSafe()
 
-            // NEW: Enhanced indicators
-            async let appRankingsTask = fetchAppStoreRankingsSafe()
-            async let arkLineScoreTask = fetchArkLineRiskScoreSafe()
-            async let googleTrendsTask = fetchGoogleTrendsSafe()
+        // NEW: Enhanced indicators
+        async let appRankingsTask = fetchAppStoreRankingsSafe()
+        async let arkLineScoreTask = fetchArkLineRiskScoreSafe()
+        async let googleTrendsTask = fetchGoogleTrendsSafe()
+
+        // ITC Risk Levels
+        async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
+        async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
+        async let btcRiskHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
+
+        // Await all results (none will throw since they use safe wrappers)
+        let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
+        let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
+        let (btcRisk, ethRisk, btcHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask)
+
+        await MainActor.run {
+            // Core indicators (only update if we got data)
+            if let fg = fg { self.fearGreedIndex = fg }
+            if let btc = btc { self.btcDominance = btc }
+            self.etfNetFlow = etf
+            self.fundingRate = funding
+            self.liquidations = liq
+            self.altcoinSeason = alt
+            self.riskLevel = risk
+
+            // Enhanced indicators
+            self.appStoreRankings = appRankings ?? []
+            self.appStoreRanking = appRankings?.first // Legacy compatibility
+            self.arkLineRiskScore = arkLineScore
+            self.googleTrends = trends
 
             // ITC Risk Levels
-            async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
-            async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
-            async let btcRiskHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
+            self.btcRiskLevel = btcRisk
+            self.ethRiskLevel = ethRisk
+            self.btcRiskHistory = btcHistory ?? []
 
-            let (fg, btc, etf, funding, liq, alt, risk) = try await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
-            let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
-            let (btcRisk, ethRisk, btcHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask)
-
-            await MainActor.run {
-                // Core indicators
-                self.fearGreedIndex = fg
-                self.btcDominance = btc
-                self.etfNetFlow = etf
-                self.fundingRate = funding
-                self.liquidations = liq
-                self.altcoinSeason = alt
-                self.riskLevel = risk
-
-                // Enhanced indicators
-                self.appStoreRankings = appRankings ?? []
-                self.appStoreRanking = appRankings?.first // Legacy compatibility
-                self.arkLineRiskScore = arkLineScore
-                self.googleTrends = trends
-
-                // ITC Risk Levels
-                self.btcRiskLevel = btcRisk
-                self.ethRiskLevel = ethRisk
-                self.btcRiskHistory = btcHistory ?? []
-
-                // Update search index from Google Trends
-                if let trends = trends {
-                    self.bitcoinSearchIndex = trends.currentIndex
-                }
-
-                self.isLoading = false
+            // Update search index from Google Trends
+            if let trends = trends {
+                self.bitcoinSearchIndex = trends.currentIndex
             }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+
+            self.isLoading = false
         }
     }
 
@@ -295,6 +290,14 @@ class SentimentViewModel {
     }
 
     // Safe fetch methods that return nil on error (for non-critical data)
+    private func fetchFearGreedSafe() async -> FearGreedIndex? {
+        try? await sentimentService.fetchFearGreedIndex()
+    }
+
+    private func fetchBTCDominanceSafe() async -> BTCDominance? {
+        try? await sentimentService.fetchBTCDominance()
+    }
+
     private func fetchETFSafe() async -> ETFNetFlow? {
         try? await sentimentService.fetchETFNetFlow()
     }

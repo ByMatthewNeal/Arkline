@@ -3,12 +3,31 @@ import Foundation
 // MARK: - App Constants
 enum Constants {
     // MARK: - API Keys (loaded from Secrets.plist - gitignored)
+    // TEMPORARY: Hardcoded keys until plist bundle issue is resolved
     private static let secrets: [String: Any] = {
-        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
-              let data = try? Data(contentsOf: url),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-        else { return [:] }
-        return plist
+        // Try loading from bundle first
+        if let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+           let data = try? Data(contentsOf: url),
+           let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] {
+            print("✅ Secrets.plist loaded from bundle with \(plist.count) keys")
+            return plist
+        }
+
+        // Fallback: hardcoded keys (TEMPORARY - remove after fixing plist)
+        print("⚠️ Using hardcoded API keys (Secrets.plist not in bundle)")
+        return [
+            "ALPHA_VANTAGE_API_KEY": "MBSPLHGZOUELTCOJ",
+            "COINGECKO_API_KEY": "CG-Ggho8wQf8mXQeyPUzcgTJc3B",
+            "COINGLASS_API_KEY": "1164e763b82f474e87b4e0276feef926",
+            "TAAPI_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjk3MjRmMzlhZWVjODgxNjBhNTkzNjE2IiwiaWF0IjoxNzY5MDk5MDY1LCJleHAiOjMzMjczNTYzMDY1fQ.zmhZHgsYk5fmYJVhvltS1WczaLejZqrisVmoG3vExaw",
+            "METALS_API_KEY": "",
+            "CLAUDE_API_KEY": "",
+            "FRED_API_KEY": "",
+            "FINNHUB_API_KEY": "d5qo0r9r01qhn30gst1gd5qo0r9r01qhn30gst20",
+            "FMP_API_KEY": "paZFjsoaxMRSmSR82AbYHskweit7aCd8",
+            "SUPABASE_URL": "https://mprbbjgrshfbupheuscn.supabase.co",
+            "SUPABASE_ANON_KEY": "sb_publishable_OD56MqP74dT54PEDZNpcrQ_PPm5ug0P"
+        ]
     }()
 
     enum API {
@@ -21,6 +40,8 @@ enum Constants {
         static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String ?? ""
         static let coinglassAPIKey = Constants.secrets["COINGLASS_API_KEY"] as? String ?? ""
         static let fredAPIKey = Constants.secrets["FRED_API_KEY"] as? String ?? ""
+        static let finnhubAPIKey = Constants.secrets["FINNHUB_API_KEY"] as? String ?? ""
+        static let fmpAPIKey = Constants.secrets["FMP_API_KEY"] as? String ?? ""
     }
 
     // MARK: - Coinglass API Key (accessed from root for convenience)

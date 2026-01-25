@@ -316,6 +316,28 @@ struct CoinglassAPIResponse<T: Codable>: Codable {
     let msg: String
     let data: T
     let success: Bool
+
+    // Handle code being either String or Int from API
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Try String first, then Int
+        if let codeString = try? container.decode(String.self, forKey: .code) {
+            code = codeString
+        } else if let codeInt = try? container.decode(Int.self, forKey: .code) {
+            code = String(codeInt)
+        } else {
+            code = "0"
+        }
+
+        msg = try container.decode(String.self, forKey: .msg)
+        data = try container.decode(T.self, forKey: .data)
+        success = try container.decodeIfPresent(Bool.self, forKey: .success) ?? true
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case code, msg, data, success
+    }
 }
 
 struct CoinglassOIResponse: Codable {
@@ -355,4 +377,33 @@ struct CoinglassLongShortResponse: Codable {
     let longRate: Double
     let shortRate: Double
     let longShortRatio: Double
+}
+
+// MARK: - Coin List Response Models (Free Tier)
+struct CoinglassFundingCoinResponse: Codable {
+    let symbol: String
+    let rate: Double
+    let uRate: Double?
+    let cRate: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case rate
+        case uRate = "u_rate"
+        case cRate = "c_rate"
+    }
+}
+
+struct CoinglassOICoinResponse: Codable {
+    let symbol: String
+    let openInterest: Double
+    let h24Change: Double?
+    let h24ChangePercent: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case openInterest = "open_interest"
+        case h24Change = "h24_change"
+        case h24ChangePercent = "h24_change_percent"
+    }
 }

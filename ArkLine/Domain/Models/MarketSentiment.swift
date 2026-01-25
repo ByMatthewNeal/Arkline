@@ -123,14 +123,28 @@ struct FundingRate: Codable, Equatable {
     let exchanges: [ExchangeFundingRate]
     let timestamp: Date
 
+    /// Display rate as percentage with 4 decimal places (e.g., "0.0058%")
     var displayRate: String {
-        (averageRate * 100).formattedWithDecimals + "%"
+        String(format: "%.4f%%", averageRate * 100)
     }
 
+    /// Sentiment based on funding rate
+    /// - > 0.0005 (0.05%) = Bullish (longs paying shorts)
+    /// - < -0.0005 (-0.05%) = Bearish (shorts paying longs)
+    /// - Otherwise = Neutral
     var sentiment: String {
-        if averageRate > 0.01 { return "Bullish" }
-        if averageRate < -0.01 { return "Bearish" }
+        if averageRate > 0.0005 { return "Bullish" }
+        if averageRate < -0.0005 { return "Bearish" }
         return "Neutral"
+    }
+
+    /// Annualized funding rate (3 funding periods per day * 365 days)
+    var annualizedRate: Double {
+        averageRate * 3 * 365 * 100
+    }
+
+    var annualizedDisplay: String {
+        String(format: "%.1f%% APR", annualizedRate)
     }
 }
 

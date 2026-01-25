@@ -63,15 +63,7 @@ struct MarketSentimentSection: View {
                         PlaceholderCard(title: "BTC Dominance", icon: "chart.pie")
                     }
 
-                    // Liquidation Levels
-                    if let liquidation = viewModel.liquidations {
-                        NavigationLink(destination: LiquidationDetailView()) {
-                            LiquidationLevelsCard(liquidation: liquidation)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    } else {
-                        PlaceholderCard(title: "Liquidations", icon: "flame")
-                    }
+                    // Liquidations hidden - requires paid Coinglass subscription
                 }
             }
 
@@ -454,35 +446,30 @@ struct SeasonProgressBar: View {
     }
 }
 
-// MARK: - App Store Rankings Card (Multiple Apps)
-struct AppStoreRankingsCard: View {
+// MARK: - Coinbase iOS Ranking Card (Simplified)
+struct CoinbaseRankingCard: View {
     @Environment(\.colorScheme) var colorScheme
     let rankings: [AppStoreRanking]
 
-    // Calculate composite sentiment from the rankings
-    private var compositeSentiment: AppStoreCompositeSentiment {
-        let primaryRankings = rankings.filter { ranking in
-            ["Coinbase", "Binance", "Kraken"].contains(ranking.appName) &&
-            ranking.platform == .ios
-        }
-        return AppStoreRankingCalculator.calculateComposite(from: primaryRankings)
+    // Get Coinbase ranking (iOS US) - ranking of 0 means >200
+    private var coinbaseRanking: AppStoreRanking? {
+        rankings.first { $0.appName == "Coinbase" }
     }
 
-    // Get primary ranking (Coinbase iOS US)
-    private var primaryRanking: AppStoreRanking? {
-        rankings.first { $0.appName == "Coinbase" && $0.platform == .ios && $0.region == .us }
+    private var isRanked: Bool {
+        guard let ranking = coinbaseRanking else { return false }
+        return ranking.ranking > 0
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Coinbase AppStore")
+                Text("Coinbase iOS")
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
 
                 Spacer()
 
-                // Chevron to indicate tappable
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(AppColors.textSecondary.opacity(0.5))
@@ -490,43 +477,48 @@ struct AppStoreRankingsCard: View {
 
             Spacer()
 
-            if let ranking = primaryRanking {
-                VStack(alignment: .leading, spacing: 6) {
-                    // Main ranking number
-                    Text("\(ranking.ranking)")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    // Change indicator
-                    HStack(spacing: 4) {
-                        Image(systemName: ranking.isImproving ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("\(abs(ranking.change)) positions")
-                            .font(.caption)
-                    }
-                    .foregroundColor(ranking.isImproving ? AppColors.success : AppColors.error)
-                }
-            } else if !rankings.isEmpty {
-                // Fallback to first available ranking
-                if let first = rankings.first {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("\(first.ranking)")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                        HStack(spacing: 4) {
-                            Image(systemName: first.isImproving ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 10, weight: .bold))
-                            Text("\(abs(first.change)) positions")
-                                .font(.caption)
+            if let ranking = coinbaseRanking, isRanked {
+                // Ranked in top 200
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text("#")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(AppColors.textSecondary)
+                            Text("\(ranking.ranking)")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
                         }
-                        .foregroundColor(first.isImproving ? AppColors.success : AppColors.error)
+
+                        Text("US App Store")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    if ranking.change != 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: ranking.isImproving ? "arrow.up" : "arrow.down")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("\(abs(ranking.change))")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(ranking.isImproving ? AppColors.success : AppColors.error)
                     }
                 }
             } else {
-                Text("Loading...")
-                    .font(.caption)
-                    .foregroundColor(AppColors.textSecondary)
+                // Not in top 200
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(">200")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text("US App Store")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                }
             }
         }
         .padding(16)
@@ -534,6 +526,9 @@ struct AppStoreRankingsCard: View {
         .glassCard(cornerRadius: 16)
     }
 }
+
+// Legacy alias for backward compatibility
+typealias AppStoreRankingsCard = CoinbaseRankingCard
 
 // MARK: - Google Trends Card
 struct GoogleTrendsCard: View {
@@ -904,9 +899,10 @@ struct FundingRateCard: View {
     let fundingRate: FundingRate
 
     var rateColor: Color {
-        if fundingRate.averageRate > 0.01 {
+        // Thresholds: > 0.05% bullish, < -0.05% bearish
+        if fundingRate.averageRate > 0.0005 {
             return AppColors.success
-        } else if fundingRate.averageRate < -0.01 {
+        } else if fundingRate.averageRate < -0.0005 {
             return AppColors.error
         }
         return AppColors.warning
@@ -914,9 +910,18 @@ struct FundingRateCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Funding Rate")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+            HStack {
+                Text("Funding Rate")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                // Source indicator
+                Text("Binance")
+                    .font(.system(size: 9))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+            }
 
             Spacer()
 
@@ -925,9 +930,19 @@ struct FundingRateCard: View {
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(rateColor)
 
-                Text(fundingRate.sentiment)
-                    .font(.caption2)
-                    .foregroundColor(AppColors.textSecondary)
+                HStack(spacing: 4) {
+                    Text(fundingRate.sentiment)
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text("•")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+
+                    Text(fundingRate.annualizedDisplay)
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                }
             }
         }
         .padding(16)

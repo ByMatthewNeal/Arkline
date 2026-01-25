@@ -15,8 +15,11 @@ final class ServiceContainer {
     var useRealTechnicalAnalysis: Bool = true
 
     /// Use real Coinglass API for derivatives data
-    /// Set to false until Coinglass API key is configured
+    /// Note: Free tier doesn't include most endpoints - set to false until upgraded
     var useRealCoinglass: Bool = false
+
+    /// Use real Google News RSS feeds for news
+    var useRealNews: Bool = true
 
     /// Use mock data for services that aren't fully implemented yet
     /// (portfolio, sentiment, news, DCA, ITC Risk)
@@ -67,9 +70,9 @@ final class ServiceContainer {
         useMockForUnimplementedServices ? _mockPortfolioService : _apiPortfolioService
     }
 
-    /// News service - mock until real API is implemented
+    /// News service - uses real Google News RSS when enabled
     var newsService: NewsServiceProtocol {
-        useMockForUnimplementedServices ? _mockNewsService : _apiNewsService
+        useRealNews ? _apiNewsService : _mockNewsService
     }
 
     /// DCA service - mock until real API is implemented

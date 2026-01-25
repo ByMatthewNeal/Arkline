@@ -91,20 +91,25 @@ class MarketViewModel {
         isLoading = true
         errorMessage = nil
 
-        // Start derivatives fetch in parallel (non-blocking)
-        Task { await refreshDerivatives() }
+        // Derivatives disabled - requires paid Coinglass subscription
+        // Task { await refreshDerivatives() }
+
+        // Fetch Fed Watch independently (doesn't depend on other APIs)
+        let meetings = await fetchFedWatchMeetingsSafe()
+        await MainActor.run {
+            self.fedWatchMeetings = meetings ?? []
+            self.fedWatchData = meetings?.first
+        }
 
         do {
             async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 50)
-            async let stocksTask = marketService.fetchStockAssets(symbols: ["AAPL", "MSFT", "NVDA", "TSLA", "NOK", "PLUG"])
+            async let stocksTask = marketService.fetchStockAssets(symbols: ["AAPL", "NVDA"])
             async let metalsTask = marketService.fetchMetalAssets(symbols: ["XAU", "XAG", "XPT", "XPD"])
             async let globalTask = marketService.fetchGlobalMarketData()
             // Fetch combined news feed with Twitter and Google News sources
             async let newsTask = newsService.fetchCombinedNewsFeed(limit: 15, includeTwitter: true, includeGoogleNews: true)
-            async let fedWatchMeetingsTask = fetchFedWatchMeetingsSafe()
 
             let (crypto, stocks, metals, global, news) = try await (cryptoTask, stocksTask, metalsTask, globalTask, newsTask)
-            let meetings = await fedWatchMeetingsTask
 
             await MainActor.run {
                 self.cryptoAssets = crypto
@@ -116,8 +121,6 @@ class MarketViewModel {
                 self.btcDominance = global.data.marketCapPercentage["btc"] ?? 0
                 self.marketCapChange24h = global.data.marketCapChangePercentage24hUsd
                 self.newsItems = news
-                self.fedWatchMeetings = meetings ?? []
-                self.fedWatchData = meetings?.first
                 self.isLoading = false
             }
         } catch {
@@ -148,7 +151,15 @@ class MarketViewModel {
     }
 
     private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
-        try? await newsService.fetchFedWatchMeetings()
+        print("🏛️ MarketVM: Fetching Fed Watch meetings...")
+        do {
+            let meetings = try await newsService.fetchFedWatchMeetings()
+            print("🏛️ MarketVM: Got \(meetings.count) meetings")
+            return meetings
+        } catch {
+            print("🏛️ MarketVM: Error fetching Fed Watch: \(error)")
+            return nil
+        }
     }
 
     func selectCategory(_ category: AssetCategoryFilter) {

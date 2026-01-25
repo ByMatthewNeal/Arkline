@@ -6,49 +6,46 @@ import Foundation
 final class APINewsService: NewsServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
-    private let calendarScraper = InvestingComScraper()
+    private let finnhubService = FinnhubEconomicCalendarService()
+    private let calendarScraper = InvestingComScraper() // Fallback
+    private let fedWatchScraper = CMEFedWatchScraper()
 
     // MARK: - NewsServiceProtocol
 
     func fetchNews(category: String?, page: Int, perPage: Int) async throws -> [NewsItem] {
-        // TODO: Implement with news API
-        // Options: CryptoCompare News API, NewsAPI.org, CryptoPanic API
-        // Example endpoint: https://min-api.cryptocompare.com/data/v2/news/?lang=EN
-        throw AppError.notImplemented
+        // Use Google News RSS for crypto news
+        let rssService = GoogleNewsRSSService()
+        return try await rssService.fetchCryptoNews(limit: perPage)
     }
 
     func fetchNewsForCurrencies(_ currencies: [String], page: Int) async throws -> [NewsItem] {
-        // TODO: Implement with news API filtered by currencies
-        // Example: https://min-api.cryptocompare.com/data/v2/news/?categories=BTC,ETH
-        throw AppError.notImplemented
+        // Build query from currencies
+        let query = currencies.joined(separator: " OR ")
+        let rssService = GoogleNewsRSSService()
+        return try await rssService.fetchNews(query: query, limit: 20)
     }
 
     func searchNews(query: String) async throws -> [NewsItem] {
-        // TODO: Implement with news search API
-        throw AppError.notImplemented
+        let rssService = GoogleNewsRSSService()
+        return try await rssService.fetchNews(query: query, limit: 20)
     }
 
     func fetchTodaysEvents() async throws -> [EconomicEvent] {
-        // TODO: Implement with economic calendar API
-        // Options: Forex Factory, Investing.com API, TradingEconomics
-        return []
+        // Use Finnhub API for today's events
+        return try await finnhubService.fetchTodaysEvents()
     }
 
     func fetchEconomicEvents(from startDate: Date, to endDate: Date) async throws -> [EconomicEvent] {
-        // TODO: Implement with economic calendar API
-        throw AppError.notImplemented
+        // Use Finnhub API for date range
+        return try await finnhubService.fetchEvents(from: startDate, to: endDate)
     }
 
     func fetchFedWatchData() async throws -> FedWatchData {
-        // TODO: Implement with CME FedWatch data
-        // This typically requires scraping or paid API access
-        throw AppError.notImplemented
+        return try await fedWatchScraper.fetchFedWatchData()
     }
 
     func fetchFedWatchMeetings() async throws -> [FedWatchData] {
-        // TODO: Implement with CME FedWatch data for multiple meetings
-        // Requires scraping CME FedWatch tool or paid API access
-        throw AppError.notImplemented
+        return try await fedWatchScraper.fetchFedWatchMeetings()
     }
 
     func fetchUpcomingFedMeetings() async throws -> [FedMeeting] {
@@ -59,7 +56,7 @@ final class APINewsService: NewsServiceProtocol {
     }
 
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
-        // Scrape from Investing.com economic calendar
+        // Use Investing.com scraper with US market holidays as reliable backup
         return try await calendarScraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
     }
 
@@ -72,21 +69,48 @@ final class APINewsService: NewsServiceProtocol {
         throw AppError.notImplemented
     }
 
-    // MARK: - Google News
+    // MARK: - Google News RSS
 
     func fetchGoogleNews(query: String, limit: Int) async throws -> [NewsItem] {
-        // TODO: Implement with Google News RSS or SerpAPI
-        // Google News RSS: https://news.google.com/rss/search?q=cryptocurrency
-        // Alternative: SerpAPI Google News endpoint
-        throw AppError.notImplemented
+        let rssService = GoogleNewsRSSService()
+        return try await rssService.fetchNews(query: query, limit: limit)
+    }
+
+    /// Fetch crypto news from Google News RSS
+    func fetchCryptoNews(limit: Int = 20) async throws -> [NewsItem] {
+        let rssService = GoogleNewsRSSService()
+        return try await rssService.fetchCryptoNews(limit: limit)
+    }
+
+    /// Fetch geopolitical/world news from Google News RSS
+    func fetchGeopoliticalNews(limit: Int = 20) async throws -> [NewsItem] {
+        let rssService = GoogleNewsRSSService()
+        return try await rssService.fetchGeopoliticalNews(limit: limit)
     }
 
     // MARK: - Combined News Feed
 
     func fetchCombinedNewsFeed(limit: Int, includeTwitter: Bool, includeGoogleNews: Bool) async throws -> [NewsItem] {
-        // TODO: Aggregate from all sources and sort by publishedAt
-        // For now, fall back to traditional news only
-        return try await fetchNews(category: nil, page: 1, perPage: limit)
+        var allNews: [NewsItem] = []
+
+        // Fetch Google News (crypto + geopolitical)
+        if includeGoogleNews {
+            async let cryptoNews = fetchCryptoNews(limit: limit / 2)
+            async let geoNews = fetchGeopoliticalNews(limit: limit / 2)
+
+            do {
+                let (crypto, geo) = try await (cryptoNews, geoNews)
+                allNews.append(contentsOf: crypto)
+                allNews.append(contentsOf: geo)
+                print("📰 Fetched \(crypto.count) crypto + \(geo.count) geopolitical news items")
+            } catch {
+                print("⚠️ Failed to fetch Google News: \(error.localizedDescription)")
+            }
+        }
+
+        // Sort by date (newest first) and limit
+        allNews.sort { $0.publishedAt > $1.publishedAt }
+        return Array(allNews.prefix(limit))
     }
 
     // MARK: - Private Helpers
@@ -164,8 +188,366 @@ struct CryptoCompareNewsItem: Codable {
     }
 }
 
+// MARK: - Finnhub Economic Calendar Service
+/// Fetches economic calendar data from Finnhub API
+/// Free tier: 60 API calls/minute
+/// Docs: https://finnhub.io/docs/api/economic-calendar
+final class FinnhubEconomicCalendarService {
+
+    private let baseURL = "https://finnhub.io/api/v1"
+
+    private var apiKey: String {
+        Constants.API.finnhubAPIKey
+    }
+
+    private var isConfigured: Bool {
+        !apiKey.isEmpty
+    }
+
+    // Country code to currency mapping
+    private let countryCurrencyMap: [String: String] = [
+        "US": "USD", "EU": "EUR", "GB": "GBP", "JP": "JPY",
+        "AU": "AUD", "CA": "CAD", "CH": "CHF", "CN": "CNY",
+        "NZ": "NZD", "SE": "SEK", "NO": "NOK", "MX": "MXN"
+    ]
+
+    // Country code to flag mapping
+    private let countryFlags: [String: String] = [
+        "US": "🇺🇸", "EU": "🇪🇺", "GB": "🇬🇧", "JP": "🇯🇵",
+        "AU": "🇦🇺", "CA": "🇨🇦", "CH": "🇨🇭", "CN": "🇨🇳",
+        "NZ": "🇳🇿", "SE": "🇸🇪", "NO": "🇳🇴", "MX": "🇲🇽",
+        "DE": "🇩🇪", "FR": "🇫🇷", "IT": "🇮🇹", "ES": "🇪🇸"
+    ]
+
+    // Countries to show (USA and Japan for market-moving events)
+    private let allowedCountries: Set<String> = ["US", "JP"]
+
+    // MARK: - Public Methods
+
+    /// Fetch today's economic events
+    func fetchTodaysEvents() async throws -> [EconomicEvent] {
+        let calendar = Calendar.current
+        let today = Date()
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today
+        return try await fetchEvents(from: today, to: tomorrow)
+    }
+
+    /// Fetch upcoming events for a number of days
+    func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
+        guard isConfigured else {
+            print("⚠️ Finnhub API key not configured - using fallback")
+            return try await fallbackToInvestingCom(days: days, impactFilter: impactFilter)
+        }
+
+        let calendar = Calendar.current
+        let today = Date()
+        let endDate = calendar.date(byAdding: .day, value: days, to: today) ?? today
+
+        do {
+            var events = try await fetchEvents(from: today, to: endDate)
+
+            // Filter by country and impact
+            events = events.filter { event in
+                let countryMatch = allowedCountries.contains(event.country)
+                let impactMatch = impactFilter.contains(event.impact)
+                return countryMatch && impactMatch
+            }
+
+            // Add US market holidays
+            let holidays = getUSMarketHolidays(days: days)
+            events.append(contentsOf: holidays)
+
+            // Sort by date
+            events.sort { $0.date < $1.date }
+
+            print("📅 Finnhub: Fetched \(events.count) economic events")
+            return events
+        } catch {
+            print("⚠️ Finnhub API failed: \(error.localizedDescription) - using fallback")
+            return try await fallbackToInvestingCom(days: days, impactFilter: impactFilter)
+        }
+    }
+
+    /// Fetch events for a date range
+    func fetchEvents(from startDate: Date, to endDate: Date) async throws -> [EconomicEvent] {
+        guard isConfigured else {
+            throw AppError.notImplemented
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let fromStr = formatter.string(from: startDate)
+        let toStr = formatter.string(from: endDate)
+
+        guard let url = URL(string: "\(baseURL)/calendar/economic?from=\(fromStr)&to=\(toStr)&token=\(apiKey)") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 15
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            print("⚠️ Finnhub returned status \(httpResponse.statusCode)")
+            throw URLError(.badServerResponse)
+        }
+
+        // Parse response
+        let finnhubResponse = try JSONDecoder().decode(FinnhubEconomicCalendarResponse.self, from: data)
+
+        // Convert to EconomicEvent
+        return finnhubResponse.economicCalendar.compactMap { item -> EconomicEvent? in
+            convertToEconomicEvent(item)
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func convertToEconomicEvent(_ item: FinnhubEconomicEvent) -> EconomicEvent? {
+        // Parse the timestamp
+        guard let eventDate = parseEventTime(item.time) else {
+            return nil
+        }
+
+        // Map impact string to EventImpact
+        let impact = mapImpact(item.impact)
+
+        // Get currency from country
+        let currency = countryCurrencyMap[item.country] ?? "USD"
+        let flag = countryFlags[item.country]
+
+        // Format values
+        let actualStr = item.actual != nil ? formatValue(item.actual!, unit: item.unit) : nil
+        let forecastStr = item.estimate != nil ? formatValue(item.estimate!, unit: item.unit) : nil
+        let previousStr = item.prev != nil ? formatValue(item.prev!, unit: item.unit) : nil
+
+        return EconomicEvent(
+            id: UUID(),
+            title: item.event,
+            country: item.country,
+            date: eventDate,
+            time: eventDate,
+            impact: impact,
+            forecast: forecastStr,
+            previous: previousStr,
+            actual: actualStr,
+            currency: currency,
+            description: nil,
+            countryFlag: flag
+        )
+    }
+
+    private func parseEventTime(_ timeString: String) -> Date? {
+        // Finnhub uses ISO 8601 format: "2026-01-27 13:30:00"
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        let formats = [
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd"
+        ]
+
+        for format in formats {
+            formatter.dateFormat = format
+            if let date = formatter.date(from: timeString) {
+                return date
+            }
+        }
+
+        return nil
+    }
+
+    private func mapImpact(_ impactString: String?) -> EventImpact {
+        guard let impact = impactString?.lowercased() else {
+            return .low
+        }
+
+        switch impact {
+        case "high", "3":
+            return .high
+        case "medium", "2":
+            return .medium
+        default:
+            return .low
+        }
+    }
+
+    private func formatValue(_ value: Double, unit: String?) -> String {
+        if let unit = unit, !unit.isEmpty {
+            if unit == "%" {
+                return String(format: "%.2f%%", value)
+            }
+            return "\(value) \(unit)"
+        }
+        return String(format: "%.2f", value)
+    }
+
+    private func fallbackToInvestingCom(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
+        let scraper = InvestingComScraper()
+        return try await scraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
+    }
+
+    // MARK: - US Market Holidays
+    private func getUSMarketHolidays(days: Int) -> [EconomicEvent] {
+        let calendar = Calendar.current
+        let today = Date()
+        let endDate = calendar.date(byAdding: .day, value: days, to: today) ?? today
+
+        let currentYear = calendar.component(.year, from: today)
+        var holidays: [EconomicEvent] = []
+
+        for year in [currentYear, currentYear + 1] {
+            holidays.append(contentsOf: generateHolidaysForYear(year))
+        }
+
+        return holidays.filter { $0.date >= today && $0.date <= endDate }
+    }
+
+    private func generateHolidaysForYear(_ year: Int) -> [EconomicEvent] {
+        var holidays: [EconomicEvent] = []
+        let calendar = Calendar.current
+
+        func makeHoliday(title: String, date: Date) -> EconomicEvent {
+            EconomicEvent(
+                id: UUID(),
+                title: "\(title) - Markets Closed",
+                country: "US",
+                date: date,
+                time: nil,
+                impact: .high,
+                forecast: nil,
+                previous: nil,
+                actual: nil,
+                currency: "USD",
+                description: "US stock and bond markets are closed",
+                countryFlag: "🇺🇸"
+            )
+        }
+
+        // Presidents' Day - 3rd Monday of February
+        if let presidentsDay = nthWeekday(nth: 3, weekday: 2, month: 2, year: year) {
+            holidays.append(makeHoliday(title: "Presidents' Day", date: presidentsDay))
+        }
+
+        // Good Friday
+        if let goodFriday = calculateGoodFriday(year: year) {
+            holidays.append(makeHoliday(title: "Good Friday", date: goodFriday))
+        }
+
+        // Memorial Day - Last Monday of May
+        if let memorialDay = lastWeekday(weekday: 2, month: 5, year: year) {
+            holidays.append(makeHoliday(title: "Memorial Day", date: memorialDay))
+        }
+
+        // Juneteenth - June 19
+        if let juneteenth = observedDate(month: 6, day: 19, year: year) {
+            holidays.append(makeHoliday(title: "Juneteenth", date: juneteenth))
+        }
+
+        // Independence Day - July 4
+        if let july4 = observedDate(month: 7, day: 4, year: year) {
+            holidays.append(makeHoliday(title: "Independence Day", date: july4))
+        }
+
+        // Labor Day - 1st Monday of September
+        if let laborDay = nthWeekday(nth: 1, weekday: 2, month: 9, year: year) {
+            holidays.append(makeHoliday(title: "Labor Day", date: laborDay))
+        }
+
+        // Thanksgiving - 4th Thursday of November
+        if let thanksgiving = nthWeekday(nth: 4, weekday: 5, month: 11, year: year) {
+            holidays.append(makeHoliday(title: "Thanksgiving", date: thanksgiving))
+        }
+
+        // Christmas - December 25
+        if let christmas = observedDate(month: 12, day: 25, year: year) {
+            holidays.append(makeHoliday(title: "Christmas Day", date: christmas))
+        }
+
+        // New Year's Day - January 1
+        if let newYears = observedDate(month: 1, day: 1, year: year) {
+            holidays.append(makeHoliday(title: "New Year's Day", date: newYears))
+        }
+
+        return holidays
+    }
+
+    private func nthWeekday(nth: Int, weekday: Int, month: Int, year: Int) -> Date? {
+        let calendar = Calendar.current
+        var components = DateComponents(year: year, month: month, weekday: weekday, weekdayOrdinal: nth)
+        return calendar.date(from: components)
+    }
+
+    private func lastWeekday(weekday: Int, month: Int, year: Int) -> Date? {
+        let calendar = Calendar.current
+        var components = DateComponents(year: year, month: month, weekday: weekday, weekdayOrdinal: -1)
+        return calendar.date(from: components)
+    }
+
+    private func observedDate(month: Int, day: Int, year: Int) -> Date? {
+        let calendar = Calendar.current
+        guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
+            return nil
+        }
+        let weekday = calendar.component(.weekday, from: date)
+        switch weekday {
+        case 1: return calendar.date(byAdding: .day, value: 1, to: date) // Sunday -> Monday
+        case 7: return calendar.date(byAdding: .day, value: -1, to: date) // Saturday -> Friday
+        default: return date
+        }
+    }
+
+    private func calculateGoodFriday(year: Int) -> Date? {
+        // Easter calculation (Anonymous Gregorian algorithm)
+        let a = year % 19
+        let b = year / 100
+        let c = year % 100
+        let d = b / 4
+        let e = b % 4
+        let f = (b + 8) / 25
+        let g = (b - f + 1) / 3
+        let h = (19 * a + b - d - g + 15) % 30
+        let i = c / 4
+        let k = c % 4
+        let l = (32 + 2 * e + 2 * i - h - k) % 7
+        let m = (a + 11 * h + 22 * l) / 451
+        let month = (h + l - 7 * m + 114) / 31
+        let day = ((h + l - 7 * m + 114) % 31) + 1
+
+        let calendar = Calendar.current
+        guard let easter = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
+            return nil
+        }
+        return calendar.date(byAdding: .day, value: -2, to: easter)
+    }
+}
+
+// MARK: - Finnhub API Response Models
+struct FinnhubEconomicCalendarResponse: Codable {
+    let economicCalendar: [FinnhubEconomicEvent]
+}
+
+struct FinnhubEconomicEvent: Codable {
+    let country: String
+    let event: String
+    let impact: String?
+    let time: String
+    let actual: Double?
+    let estimate: Double?
+    let prev: Double?
+    let unit: String?
+}
+
 // MARK: - Investing.com Economic Calendar Scraper
-/// Scrapes economic calendar data from Investing.com
+/// Scrapes economic calendar data from Investing.com (fallback)
 final class InvestingComScraper {
 
     private let baseURL = "https://www.investing.com/economic-calendar/"
@@ -187,35 +569,41 @@ final class InvestingComScraper {
     private let allowedCurrencies: Set<String> = ["USD", "JPY"]
 
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
+        var allEvents: [EconomicEvent] = []
+
+        // Always add real US market holidays (these are calculated, not scraped)
+        let holidays = getUSMarketHolidays(days: days)
+        allEvents.append(contentsOf: holidays)
+
+        // Try to scrape Investing.com for economic events
         do {
             let html = try await fetchCalendarHTML()
-            var events = parseEvents(from: html)
+            let events = parseEvents(from: html)
 
             let calendar = Calendar.current
             let endDate = calendar.date(byAdding: .day, value: days, to: Date()) ?? Date()
 
-            var filtered = events.filter { event in
+            let filtered = events.filter { event in
                 event.date <= endDate &&
                 impactFilter.contains(event.impact) &&
                 allowedCurrencies.contains(event.currency ?? "")
             }
 
-            // Add US market holidays
-            let holidays = getUSMarketHolidays(days: days)
-            filtered.append(contentsOf: holidays)
-
-            // Sort by date
-            filtered.sort { $0.date < $1.date }
-
-            return filtered.isEmpty ? fallbackMockEvents(impactFilter: impactFilter) : filtered
+            if !filtered.isEmpty {
+                allEvents.append(contentsOf: filtered)
+                print("📅 Scraped \(filtered.count) economic events from Investing.com")
+            } else {
+                print("📅 No economic events found from Investing.com (may be weekend/holiday)")
+            }
         } catch {
-            // Return fallback events on any error (including holidays)
-            var fallback = fallbackMockEvents(impactFilter: impactFilter)
-            let holidays = getUSMarketHolidays(days: days)
-            fallback.append(contentsOf: holidays)
-            fallback.sort { $0.date < $1.date }
-            return fallback
+            print("⚠️ Investing.com scraper failed: \(error.localizedDescription)")
+            // Don't add fake mock events - only show real holidays
         }
+
+        // Sort by date
+        allEvents.sort { $0.date < $1.date }
+
+        return allEvents
     }
 
     // MARK: - US Market Holidays
@@ -728,4 +1116,248 @@ final class InvestingComScraper {
 
         return allEvents.filter { impactFilter.contains($0.impact) }
     }
+}
+
+// MARK: - Google News RSS Service
+/// Fetches and parses Google News RSS feeds for crypto and geopolitical news
+final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
+
+    // MARK: - RSS Feed URLs
+    private enum FeedURL {
+        static let crypto = "https://news.google.com/rss/search?q=cryptocurrency+OR+bitcoin+OR+ethereum+OR+crypto&hl=en-US&gl=US&ceid=US:en"
+        static let geopolitics = "https://news.google.com/rss/search?q=geopolitics+OR+world+news+OR+international+relations+OR+global+politics&hl=en-US&gl=US&ceid=US:en"
+        static let world = "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
+
+        static func search(_ query: String) -> String {
+            let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+            return "https://news.google.com/rss/search?q=\(encoded)&hl=en-US&gl=US&ceid=US:en"
+        }
+    }
+
+    // MARK: - Parser State
+    private var currentElement = ""
+    private var currentTitle = ""
+    private var currentLink = ""
+    private var currentPubDate = ""
+    private var currentSource = ""
+    private var currentDescription = ""
+    private var newsItems: [GoogleNewsRSSItem] = []
+    private var isInItem = false
+
+    // MARK: - Public Methods
+
+    /// Fetch crypto news from Google News RSS
+    func fetchCryptoNews(limit: Int = 20) async throws -> [NewsItem] {
+        return try await fetchFromURL(FeedURL.crypto, category: "Crypto", limit: limit)
+    }
+
+    /// Fetch geopolitical/world news from Google News RSS
+    func fetchGeopoliticalNews(limit: Int = 20) async throws -> [NewsItem] {
+        // Combine world topic feed with geopolitics search for broader coverage
+        async let worldNews = fetchFromURL(FeedURL.world, category: "World", limit: limit)
+        async let geoNews = fetchFromURL(FeedURL.geopolitics, category: "Geopolitics", limit: limit)
+
+        let (world, geo) = try await (worldNews, geoNews)
+
+        // Combine and deduplicate by title
+        var seen = Set<String>()
+        var combined: [NewsItem] = []
+
+        for item in (world + geo) {
+            let normalizedTitle = item.title.lowercased()
+            if !seen.contains(normalizedTitle) {
+                seen.insert(normalizedTitle)
+                combined.append(item)
+            }
+        }
+
+        // Sort by date and limit
+        combined.sort { $0.publishedAt > $1.publishedAt }
+        return Array(combined.prefix(limit))
+    }
+
+    /// Fetch news for a custom search query
+    func fetchNews(query: String, limit: Int = 20) async throws -> [NewsItem] {
+        return try await fetchFromURL(FeedURL.search(query), category: "Search", limit: limit)
+    }
+
+    // MARK: - Private Methods
+
+    private func fetchFromURL(_ urlString: String, category: String, limit: Int) async throws -> [NewsItem] {
+        guard let url = URL(string: urlString) else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/rss+xml, application/xml, text/xml", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 15
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            print("⚠️ Google News RSS returned status \(httpResponse.statusCode)")
+            throw URLError(.badServerResponse)
+        }
+
+        // Parse RSS XML
+        let items = parseRSS(data: data)
+
+        // Convert to NewsItem
+        let newsItems = items.prefix(limit).map { item -> NewsItem in
+            NewsItem(
+                id: UUID(),
+                title: cleanTitle(item.title),
+                source: item.source.isEmpty ? "Google News" : item.source,
+                publishedAt: parseRSSDate(item.pubDate) ?? Date(),
+                imageUrl: nil, // Google News RSS doesn't include images
+                url: item.link,
+                sourceType: .googleNews,
+                twitterHandle: nil,
+                isVerified: false,
+                description: cleanDescription(item.description)
+            )
+        }
+
+        print("📰 [\(category)] Fetched \(newsItems.count) items from Google News RSS")
+        return Array(newsItems)
+    }
+
+    private func parseRSS(data: Data) -> [GoogleNewsRSSItem] {
+        // Reset state
+        newsItems = []
+        currentElement = ""
+        currentTitle = ""
+        currentLink = ""
+        currentPubDate = ""
+        currentSource = ""
+        currentDescription = ""
+        isInItem = false
+
+        let parser = XMLParser(data: data)
+        parser.delegate = self
+        parser.parse()
+
+        return newsItems
+    }
+
+    private func cleanTitle(_ title: String) -> String {
+        // Remove " - Source Name" suffix that Google News adds
+        if let dashRange = title.range(of: " - ", options: .backwards) {
+            return String(title[..<dashRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return title.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func cleanDescription(_ description: String) -> String {
+        // Remove HTML tags
+        let cleaned = description
+            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "&nbsp;", with: " ")
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;", with: "'")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleaned
+    }
+
+    private func parseRSSDate(_ dateString: String) -> Date? {
+        // Google News uses RFC 822 date format: "Fri, 24 Jan 2026 12:30:00 GMT"
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+
+        // Try multiple formats
+        let formats = [
+            "EEE, dd MMM yyyy HH:mm:ss zzz",
+            "EEE, dd MMM yyyy HH:mm:ss Z",
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        ]
+
+        for format in formats {
+            formatter.dateFormat = format
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
+        }
+
+        return nil
+    }
+
+    // MARK: - XMLParserDelegate
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
+        currentElement = elementName
+
+        if elementName == "item" {
+            isInItem = true
+            currentTitle = ""
+            currentLink = ""
+            currentPubDate = ""
+            currentSource = ""
+            currentDescription = ""
+        }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        guard isInItem else { return }
+
+        switch currentElement {
+        case "title":
+            currentTitle += string
+        case "link":
+            currentLink += string
+        case "pubDate":
+            currentPubDate += string
+        case "source":
+            currentSource += string
+        case "description":
+            currentDescription += string
+        default:
+            break
+        }
+    }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        if elementName == "item" {
+            isInItem = false
+
+            // Extract source from title if not in source element
+            var source = currentSource.trimmingCharacters(in: .whitespacesAndNewlines)
+            if source.isEmpty {
+                // Google News format: "Title - Source Name"
+                if let dashRange = currentTitle.range(of: " - ", options: .backwards) {
+                    source = String(currentTitle[dashRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+
+            let item = GoogleNewsRSSItem(
+                title: currentTitle.trimmingCharacters(in: .whitespacesAndNewlines),
+                link: currentLink.trimmingCharacters(in: .whitespacesAndNewlines),
+                pubDate: currentPubDate.trimmingCharacters(in: .whitespacesAndNewlines),
+                source: source,
+                description: currentDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+
+            // Only add if we have a title and link
+            if !item.title.isEmpty && !item.link.isEmpty {
+                newsItems.append(item)
+            }
+        }
+    }
+}
+
+// MARK: - Google News RSS Item
+private struct GoogleNewsRSSItem {
+    let title: String
+    let link: String
+    let pubDate: String
+    let source: String
+    let description: String
 }

@@ -79,6 +79,7 @@ enum CoinGeckoEndpoint: APIEndpoint {
     case simplePrice(ids: [String], currencies: [String])
     case coinMarkets(currency: String, page: Int, perPage: Int, sparkline: Bool)
     case coinMarketsFiltered(currency: String, ids: [String], sparkline: Bool)
+    case coinMarketsWithPriceChange(currency: String, perPage: Int, priceChangePeriods: [String])
     case coinDetail(id: String)
     case coinMarketChart(id: String, currency: String, days: Int)
     case searchCoins(query: String)
@@ -92,7 +93,7 @@ enum CoinGeckoEndpoint: APIEndpoint {
         switch self {
         case .simplePrice:
             return "/simple/price"
-        case .coinMarkets, .coinMarketsFiltered:
+        case .coinMarkets, .coinMarketsFiltered, .coinMarketsWithPriceChange:
             return "/coins/markets"
         case .coinDetail(let id):
             return "/coins/\(id)"
@@ -134,6 +135,15 @@ enum CoinGeckoEndpoint: APIEndpoint {
                 "ids": ids.joined(separator: ","),
                 "order": "market_cap_desc",
                 "sparkline": "\(sparkline)"
+            ]
+        case .coinMarketsWithPriceChange(let currency, let perPage, let priceChangePeriods):
+            return [
+                "vs_currency": currency,
+                "order": "market_cap_desc",
+                "per_page": "\(perPage)",
+                "page": "1",
+                "sparkline": "false",
+                "price_change_percentage": priceChangePeriods.joined(separator: ",")
             ]
         case .coinDetail:
             return [
