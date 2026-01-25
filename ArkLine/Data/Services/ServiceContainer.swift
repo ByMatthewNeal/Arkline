@@ -14,10 +14,6 @@ final class ServiceContainer {
     /// Use real Taapi.io API for technical analysis
     var useRealTechnicalAnalysis: Bool = true
 
-    /// Use real Coinglass API for derivatives data
-    /// Note: Free tier doesn't include most endpoints - set to false until upgraded
-    var useRealCoinglass: Bool = false
-
     /// Use real Google News RSS feeds for news
     var useRealNews: Bool = true
 
@@ -32,7 +28,6 @@ final class ServiceContainer {
     private lazy var _mockNewsService = MockNewsService()
     private lazy var _mockDCAService = MockDCAService()
     private lazy var _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
-    private lazy var _mockCoinglassService = MockCoinglassService()
     private lazy var _mockITCRiskService = MockITCRiskService()
     private lazy var _mockVIXService = MockVIXService()
     private lazy var _mockDXYService = MockDXYService()
@@ -46,7 +41,6 @@ final class ServiceContainer {
     private lazy var _apiNewsService = APINewsService()
     private lazy var _apiDCAService = APIDCAService()
     private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
-    private lazy var _apiCoinglassService = APICoinglassService()
     private lazy var _apiITCRiskService = APIITCRiskService()
     private lazy var _apiVIXService = APIVIXService()
     private lazy var _apiDXYService = APIDXYService()
@@ -85,24 +79,21 @@ final class ServiceContainer {
         useRealTechnicalAnalysis ? _apiTechnicalAnalysisService : _mockTechnicalAnalysisService
     }
 
-    /// Coinglass service for derivatives data
-    var coinglassService: CoinglassServiceProtocol {
-        useRealCoinglass ? _apiCoinglassService : _mockCoinglassService
-    }
-
     /// ITC Risk service - mock until real API is implemented
     var itcRiskService: ITCRiskServiceProtocol {
         useMockForUnimplementedServices ? _mockITCRiskService : _apiITCRiskService
     }
 
-    /// VIX service - uses real Alpha Vantage API when useRealMarketData is true
+    /// VIX service - uses mock until Alpha Vantage API is reliable
     var vixService: VIXServiceProtocol {
-        useRealMarketData ? _apiVIXService : _mockVIXService
+        // Using mock for now - Alpha Vantage free tier has strict rate limits (25/day)
+        useMockForUnimplementedServices ? _mockVIXService : _apiVIXService
     }
 
-    /// DXY service - uses real Alpha Vantage API when useRealMarketData is true
+    /// DXY service - uses mock until Alpha Vantage API is reliable
     var dxyService: DXYServiceProtocol {
-        useRealMarketData ? _apiDXYService : _mockDXYService
+        // Using mock for now - Alpha Vantage free tier has strict rate limits (25/day)
+        useMockForUnimplementedServices ? _mockDXYService : _apiDXYService
     }
 
     /// Rainbow Chart service - calculation-based (uses market service for BTC price)
@@ -127,7 +118,6 @@ final class ServiceContainer {
         _mockNewsService = MockNewsService()
         _mockDCAService = MockDCAService()
         _mockTechnicalAnalysisService = MockTechnicalAnalysisService()
-        _mockCoinglassService = MockCoinglassService()
         _mockITCRiskService = MockITCRiskService()
         _mockVIXService = MockVIXService()
         _mockDXYService = MockDXYService()
@@ -139,7 +129,6 @@ final class ServiceContainer {
         _apiNewsService = APINewsService()
         _apiDCAService = APIDCAService()
         _apiTechnicalAnalysisService = APITechnicalAnalysisService()
-        _apiCoinglassService = APICoinglassService()
         _apiITCRiskService = APIITCRiskService()
         _apiVIXService = APIVIXService()
         _apiDXYService = APIDXYService()

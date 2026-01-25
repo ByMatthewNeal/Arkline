@@ -31,32 +31,33 @@ struct AppStoreRankingDetailView: View {
     }
 
     var body: some View {
-        ZStack {
-            // Background
-            MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
+        ScrollView {
+            VStack(spacing: 24) {
+                // Current Ranking Header
+                currentRankingHeader
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Current Ranking Header
-                    currentRankingHeader
+                // Daily Rankings List (collapsible)
+                DailyRankingsCard(
+                    rankingHistory: rankingHistory,
+                    isLoading: isLoading
+                )
 
-                    // Daily Rankings List (collapsible)
-                    DailyRankingsCard(
-                        rankingHistory: rankingHistory,
-                        isLoading: isLoading
-                    )
+                // Historical Milestones (collapsible)
+                HistoricalMilestonesCard()
 
-                    // Historical Milestones (collapsible)
-                    HistoricalMilestonesCard()
+                // Interpretation Guide
+                InterpretationGuideCard()
 
-                    // Interpretation Guide
-                    InterpretationGuideCard()
-
-                    Spacer(minLength: 100)
-                }
-                .padding(.top, 16)
+                Spacer(minLength: 100)
             }
+            .padding(.top, 16)
+        }
+        .background {
+            ZStack {
+                MeshGradientBackground()
+                if isDarkMode { BrushEffectOverlay() }
+            }
+            .ignoresSafeArea()
         }
         .navigationTitle("Coinbase Ranking")
         #if os(iOS)

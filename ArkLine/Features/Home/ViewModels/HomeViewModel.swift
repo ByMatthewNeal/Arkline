@@ -11,7 +11,6 @@ class HomeViewModel {
     private let newsService: NewsServiceProtocol
     private let portfolioService: PortfolioServiceProtocol
     private let itcRiskService: ITCRiskServiceProtocol
-    private let coinglassService: CoinglassServiceProtocol
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
     private let rainbowChartService: RainbowChartServiceProtocol
@@ -46,10 +45,6 @@ class HomeViewModel {
     var fedWatchMeetings: [FedWatchData] = []
     var newsItems: [NewsItem] = []
     var sentimentViewModel: SentimentViewModel?
-
-    // Derivatives Data (from Market tab)
-    var derivativesOverview: DerivativesOverview?
-    var isDerivativesLoading = false
 
     // Market Indicators (VIX, DXY, Rainbow, Liquidity)
     var vixData: VIXData?
@@ -275,7 +270,6 @@ class HomeViewModel {
         newsService: NewsServiceProtocol = ServiceContainer.shared.newsService,
         portfolioService: PortfolioServiceProtocol = ServiceContainer.shared.portfolioService,
         itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService,
-        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService,
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         rainbowChartService: RainbowChartServiceProtocol = ServiceContainer.shared.rainbowChartService,
@@ -287,7 +281,6 @@ class HomeViewModel {
         self.newsService = newsService
         self.portfolioService = portfolioService
         self.itcRiskService = itcRiskService
-        self.coinglassService = coinglassService
         self.vixService = vixService
         self.dxyService = dxyService
         self.rainbowChartService = rainbowChartService
@@ -361,7 +354,33 @@ class HomeViewModel {
             self.topLosers = Array(sortedByGain.suffix(3).reversed())
         }
 
-        // Now fetch other data concurrently
+        // Fetch macro indicators independently (these should always succeed with mock data)
+        async let vixTask = fetchVIXSafe()
+        async let dxyTask = fetchDXYSafe()
+        async let liquidityTask = fetchGlobalLiquiditySafe()
+        async let fedWatchTask = fetchFedWatchMeetingsSafe()
+        async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
+        async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
+
+        // Await macro indicators first (these use safe wrappers, won't throw)
+        let vix = await vixTask
+        let dxy = await dxyTask
+        let liquidity = await liquidityTask
+        let fedMeetings = await fedWatchTask
+        let btcRisk = await btcRiskTask
+        let ethRisk = await ethRiskTask
+
+        // Update macro indicators immediately
+        await MainActor.run {
+            self.vixData = vix
+            self.dxyData = dxy
+            self.globalLiquidityChanges = liquidity
+            self.fedWatchMeetings = fedMeetings ?? []
+            self.btcRiskLevel = btcRisk
+            self.ethRiskLevel = ethRisk
+        }
+
+        // Now fetch other data that might fail
         do {
             async let fgTask = sentimentService.fetchFearGreedIndex()
             async let riskScoreTask = sentimentService.fetchArkLineRiskScore()
@@ -369,21 +388,9 @@ class HomeViewModel {
             async let eventsTask = newsService.fetchTodaysEvents()
             async let upcomingEventsTask = newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
             async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 5)
-            async let fedWatchTask = fetchFedWatchMeetingsSafe()
-            async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
-            async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
-            async let vixTask = fetchVIXSafe()
-            async let dxyTask = fetchDXYSafe()
-            async let liquidityTask = fetchGlobalLiquiditySafe()
 
             let (fg, riskScore, reminders, events, upcoming) = try await (fgTask, riskScoreTask, remindersTask, eventsTask, upcomingEventsTask)
             let news = try await newsTask
-            let fedMeetings = await fedWatchTask
-            let btcRisk = await btcRiskTask
-            let ethRisk = await ethRiskTask
-            let vix = await vixTask
-            let dxy = await dxyTask
-            let liquidity = await liquidityTask
 
             await MainActor.run {
                 self.fearGreedIndex = fg
@@ -394,26 +401,15 @@ class HomeViewModel {
                 self.eventsLastUpdated = Date()
                 self.compositeRiskScore = riskScore.score
                 self.arkLineRiskScore = riskScore
-                // ITC Risk Level (powers ArkLine Risk Score card)
-                self.btcRiskLevel = btcRisk
-                self.ethRiskLevel = ethRisk
-                // Market widget data
                 self.newsItems = news
-                self.fedWatchMeetings = fedMeetings ?? []
-
-                // Market indicators
-                self.vixData = vix
-                self.dxyData = dxy
-                self.globalLiquidityChanges = liquidity
 
                 self.isLoading = false
 
-                // Fetch Rainbow Chart data (needs BTC price) and derivatives in background
+                // Fetch Rainbow Chart data (needs BTC price) in background
                 Task {
                     if self.btcPrice > 0 {
                         self.rainbowChartData = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
                     }
-                    await self.refreshDerivatives()
                 }
             }
         } catch {
@@ -548,24 +544,5 @@ class HomeViewModel {
 
     private func fetchGlobalLiquiditySafe() async -> GlobalLiquidityChanges? {
         try? await globalLiquidityService.fetchLiquidityChanges()
-    }
-
-    /// Fetches derivatives data from Coinglass (Open Interest, Liquidations, Funding, L/S Ratios)
-    func refreshDerivatives() async {
-        await MainActor.run { self.isDerivativesLoading = true }
-
-        do {
-            let overview = try await coinglassService.fetchDerivativesOverview()
-
-            await MainActor.run {
-                self.derivativesOverview = overview
-                self.isDerivativesLoading = false
-            }
-        } catch {
-            await MainActor.run {
-                self.isDerivativesLoading = false
-                // Don't set error message - derivatives is supplementary data
-            }
-        }
     }
 }

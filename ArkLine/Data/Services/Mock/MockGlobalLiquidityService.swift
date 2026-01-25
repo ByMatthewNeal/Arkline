@@ -12,10 +12,10 @@ final class MockGlobalLiquidityService: GlobalLiquidityServiceProtocol {
 
         return GlobalLiquidityChanges(
             current: currentM2,
-            dailyChange: 0.02,      // ~0.02% daily increase
-            weeklyChange: 0.15,      // ~0.15% weekly increase
-            monthlyChange: 0.45,     // ~0.45% monthly increase
-            yearlyChange: 3.2,       // ~3.2% YoY increase
+            dailyChange: 0.018,      // ~0.018% daily increase (~$3.9B)
+            weeklyChange: 0.15,      // ~0.15% weekly increase (~$32B)
+            monthlyChange: 0.45,     // ~0.45% monthly increase (~$97B)
+            yearlyChange: 3.2,       // ~3.2% YoY increase (~$688B)
             history: history
         )
     }

@@ -128,26 +128,11 @@ struct MarketSentimentSection: View {
                 icon: "building.columns.fill",
                 iconColor: AppColors.accent
             ) {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    // BTC ETF Net Flow
-                    if let etf = viewModel.etfNetFlow {
-                        NavigationLink(destination: ETFNetFlowDetailView()) {
-                            ETFNetFlowCard(etfFlow: etf)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    } else {
-                        PlaceholderCard(title: "ETF Net Flow", icon: "building.2")
-                    }
-
-                    // Funding Rate
-                    if let funding = viewModel.fundingRate {
-                        NavigationLink(destination: FundingRateDetailView()) {
-                            FundingRateCard(fundingRate: funding)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    } else {
-                        PlaceholderCard(title: "Funding Rate", icon: "percent")
-                    }
+                // Funding Rate
+                if let funding = viewModel.fundingRate {
+                    FundingRateCard(fundingRate: funding)
+                } else {
+                    PlaceholderCard(title: "Funding Rate", icon: "percent")
                 }
             }
         }
@@ -534,6 +519,7 @@ typealias AppStoreRankingsCard = CoinbaseRankingCard
 struct GoogleTrendsCard: View {
     @Environment(\.colorScheme) var colorScheme
     let trends: GoogleTrendsData
+    @State private var showingDetail = false
 
     // Use green/red for up/down trends only
     var trendColor: Color {
@@ -541,36 +527,42 @@ struct GoogleTrendsCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Bitcoin Search")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Bitcoin Search")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
 
-            Spacer()
+                Spacer()
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(trends.currentIndex)")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(trends.currentIndex)")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text("/100")
-                        .font(.caption)
-                        .foregroundColor(AppColors.textSecondary)
+                        Text("/100")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    HStack(spacing: 4) {
+                        Image(systemName: trends.changeFromLastWeek >= 0 ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("(\(trends.changeFromLastWeek >= 0 ? "+" : "")\(trends.changeFromLastWeek))")
+                            .font(.caption)
+                    }
+                    .foregroundColor(trendColor)
                 }
-
-                HStack(spacing: 4) {
-                    Image(systemName: trends.changeFromLastWeek >= 0 ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("(\(trends.changeFromLastWeek >= 0 ? "+" : "")\(trends.changeFromLastWeek))")
-                        .font(.caption)
-                }
-                .foregroundColor(trendColor)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 120)
+            .glassCard(cornerRadius: 16)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .glassCard(cornerRadius: 16)
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            GoogleTrendsDetailView(trends: trends)
+        }
     }
 }
 
@@ -839,57 +831,244 @@ struct BTCDominanceCard: View {
 struct BitcoinSearchCard: View {
     @Environment(\.colorScheme) var colorScheme
     let searchIndex: Int
+    @State private var showingDetail = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Bitcoin Search")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
-
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(searchIndex)")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                Text("Google Trends")
-                    .font(.caption2)
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Bitcoin Search")
+                    .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(searchIndex)")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    Text("Google Trends")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                }
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 120)
+            .glassCard(cornerRadius: 16)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .glassCard(cornerRadius: 16)
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            GoogleTrendsDetailView(trends: nil, searchIndex: searchIndex)
+        }
     }
 }
 
-// MARK: - ETF Net Flow Card
-struct ETFNetFlowCard: View {
+// MARK: - Google Trends Detail View
+struct GoogleTrendsDetailView: View {
+    let trends: GoogleTrendsData?
+    var searchIndex: Int? = nil
+    @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
-    let etfFlow: ETFNetFlow
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    private var currentIndex: Int {
+        trends?.currentIndex ?? searchIndex ?? 0
+    }
+
+    // Historical events with search interest and BTC price
+    private var historicalEvents: [(date: String, event: String, searchIndex: Int, btcPrice: String)] {
+        [
+            ("Jan 2025", "New ATH", 88, "$109,000"),
+            ("Dec 2024", "BTC Breaks $100K", 95, "$100,000"),
+            ("Nov 2024", "Trump Election Rally", 82, "$93,000"),
+            ("Apr 2024", "Bitcoin Halving", 68, "$64,000"),
+            ("Mar 2024", "Pre-Halving ATH", 75, "$73,000"),
+            ("Jan 2024", "Spot ETF Approved", 85, "$46,000"),
+            ("Nov 2021", "Previous Cycle ATH", 100, "$69,000"),
+            ("May 2021", "China Mining Ban", 85, "$37,000"),
+            ("Apr 2021", "Coinbase IPO", 78, "$64,000"),
+            ("Jan 2021", "Tesla Buys BTC", 72, "$40,000"),
+            ("Dec 2017", "2017 Bull Run Peak", 100, "$20,000"),
+            ("Current", "Today", currentIndex, "--")
+        ]
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("BTC ETF Net Flow")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Current Index
+                    VStack(spacing: 12) {
+                        Text("\(currentIndex)")
+                            .font(.system(size: 64, weight: .bold, design: .default))
+                            .foregroundColor(textPrimary)
+                            .monospacedDigit()
+
+                        Text("of 100")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+
+                        if let change = trends?.changeFromLastWeek {
+                            HStack(spacing: 4) {
+                                Image(systemName: change >= 0 ? "arrow.up" : "arrow.down")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("\(change >= 0 ? "+" : "")\(change) from last week")
+                                    .font(.subheadline)
+                            }
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                        }
+                    }
+                    .padding(.top, 20)
+
+                    // What is Google Trends
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("What is Google Trends?")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+                        Text("Google Trends measures relative search interest for \"Bitcoin\" on a scale of 0-100. A value of 100 represents peak popularity, while 50 means half as popular. It's a useful gauge of retail interest and potential market tops/bottoms.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+
+                    // Historical Events
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Historical Events")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        ForEach(historicalEvents, id: \.date) { event in
+                            SearchEventRow(
+                                date: event.date,
+                                event: event.event,
+                                searchIndex: event.searchIndex,
+                                btcPrice: event.btcPrice,
+                                isHighlight: event.searchIndex >= 80
+                            )
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+
+                    // Interpretation
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("How to Interpret")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        SearchLevelRow(range: "80-100", label: "Extreme Interest", description: "Often signals market tops, FOMO peak", color: AppColors.error)
+                        SearchLevelRow(range: "50-80", label: "High Interest", description: "Strong retail participation", color: AppColors.warning)
+                        SearchLevelRow(range: "20-50", label: "Moderate Interest", description: "Healthy market, accumulation phase", color: AppColors.success)
+                        SearchLevelRow(range: "0-20", label: "Low Interest", description: "Potential bottom, smart money accumulates", color: AppColors.accent)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+
+                    // Trading Insight
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Trading Insight")
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+                        Text("""
+- Peak search interest often coincides with local/global tops
+- Low search interest during bear markets can signal accumulation zones
+- Sudden spikes may indicate news-driven volatility
+- Divergence between price and search interest can signal trend changes
+""")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(16)
+                }
+                .padding()
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Bitcoin Search Interest")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+struct SearchEventRow: View {
+    let date: String
+    let event: String
+    let searchIndex: Int
+    let btcPrice: String
+    let isHighlight: Bool
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(date)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
 
             Spacer()
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(etfFlow.dailyFormatted)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(etfFlow.isPositive ? AppColors.success : AppColors.error)
-
-                Text(etfFlow.isPositive ? "Inflow" : "Outflow")
-                    .font(.caption2)
-                    .foregroundColor(AppColors.textSecondary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(searchIndex)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isHighlight ? AppColors.error : .primary)
+                    .monospacedDigit()
+                Text(btcPrice)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
             }
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .glassCard(cornerRadius: 16)
+        .padding(.vertical, 6)
+    }
+}
+
+struct SearchLevelRow: View {
+    let range: String
+    let label: String
+    let description: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(range)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .monospacedDigit()
+                    Text("-")
+                        .foregroundColor(.secondary)
+                    Text(label)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -897,6 +1076,7 @@ struct ETFNetFlowCard: View {
 struct FundingRateCard: View {
     @Environment(\.colorScheme) var colorScheme
     let fundingRate: FundingRate
+    @State private var showingDetail = false
 
     var rateColor: Color {
         // Thresholds: > 0.05% bullish, < -0.05% bearish
@@ -909,45 +1089,51 @@ struct FundingRateCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Funding Rate")
-                    .font(.caption)
-                    .foregroundColor(AppColors.textSecondary)
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Funding Rate")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Spacer()
+
+                    // Source indicator
+                    Text("Binance")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
 
                 Spacer()
 
-                // Source indicator
-                Text("Binance")
-                    .font(.system(size: 9))
-                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
-            }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(fundingRate.displayRate)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(rateColor)
 
-            Spacer()
+                    HStack(spacing: 4) {
+                        Text(fundingRate.sentiment)
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(fundingRate.displayRate)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(rateColor)
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
 
-                HStack(spacing: 4) {
-                    Text(fundingRate.sentiment)
-                        .font(.caption2)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text("•")
-                        .font(.caption2)
-                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
-
-                    Text(fundingRate.annualizedDisplay)
-                        .font(.caption2)
-                        .foregroundColor(AppColors.textSecondary)
+                        Text(fundingRate.annualizedDisplay)
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
                 }
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 120)
+            .glassCard(cornerRadius: 16)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .glassCard(cornerRadius: 16)
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            FundingRateDetailView(fundingRate: fundingRate)
+        }
     }
 }
 

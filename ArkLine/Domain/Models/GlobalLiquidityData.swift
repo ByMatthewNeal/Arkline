@@ -59,6 +59,41 @@ struct GlobalLiquidityChanges: Codable {
     let yearlyChange: Double             // 365-day change %
     let history: [GlobalLiquidityData]   // Historical data points
 
+    // MARK: - Dollar Change Amounts
+    /// Daily change in dollars
+    var dailyChangeDollars: Double? {
+        guard let daily = dailyChange else { return nil }
+        return current * (daily / 100)
+    }
+
+    /// Weekly change in dollars
+    var weeklyChangeDollars: Double {
+        current * (weeklyChange / 100)
+    }
+
+    /// Monthly change in dollars
+    var monthlyChangeDollars: Double {
+        current * (monthlyChange / 100)
+    }
+
+    /// Yearly change in dollars
+    var yearlyChangeDollars: Double {
+        current * (yearlyChange / 100)
+    }
+
+    /// Format dollar amount in billions
+    func formatDollars(_ amount: Double) -> String {
+        let absAmount = abs(amount)
+        let prefix = amount >= 0 ? "+" : "-"
+        if absAmount >= 1_000_000_000_000 {
+            return "\(prefix)$\(String(format: "%.2f", absAmount / 1_000_000_000_000))T"
+        } else if absAmount >= 1_000_000_000 {
+            return "\(prefix)$\(String(format: "%.1f", absAmount / 1_000_000_000))B"
+        } else {
+            return "\(prefix)$\(String(format: "%.0f", absAmount / 1_000_000))M"
+        }
+    }
+
     /// Overall trend signal
     var overallSignal: MarketSignal {
         // Weight longer-term trends more heavily

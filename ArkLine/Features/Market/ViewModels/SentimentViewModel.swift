@@ -6,6 +6,9 @@ class SentimentViewModel {
     // MARK: - Dependencies
     private let sentimentService: SentimentServiceProtocol
     private let itcRiskService: ITCRiskServiceProtocol
+    private let vixService: VIXServiceProtocol
+    private let dxyService: DXYServiceProtocol
+    private let globalLiquidityService: GlobalLiquidityServiceProtocol
 
     // MARK: - Properties
     var isLoading = false
@@ -19,6 +22,11 @@ class SentimentViewModel {
     var liquidations: LiquidationData?
     var altcoinSeason: AltcoinSeasonIndex?
     var globalLiquidity: GlobalLiquidity?
+
+    // Macro Indicators (VIX, DXY, Global M2)
+    var vixData: VIXData?
+    var dxyData: DXYData?
+    var globalM2Data: GlobalLiquidityChanges?
 
     // Legacy single app ranking (backwards compatibility)
     var appStoreRanking: AppStoreRanking?
@@ -205,10 +213,16 @@ class SentimentViewModel {
     // MARK: - Initialization
     init(
         sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
-        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService
+        itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService,
+        vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
+        dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
+        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService
     ) {
         self.sentimentService = sentimentService
         self.itcRiskService = itcRiskService
+        self.vixService = vixService
+        self.dxyService = dxyService
+        self.globalLiquidityService = globalLiquidityService
         Task { await loadInitialData() }
     }
 
@@ -237,10 +251,16 @@ class SentimentViewModel {
         async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
         async let btcRiskHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
 
+        // Macro Indicators (VIX, DXY, Global M2)
+        async let vixTask = fetchVIXSafe()
+        async let dxyTask = fetchDXYSafe()
+        async let globalM2Task = fetchGlobalM2Safe()
+
         // Await all results (none will throw since they use safe wrappers)
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
         let (btcRisk, ethRisk, btcHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask)
+        let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
 
         await MainActor.run {
             // Core indicators (only update if we got data)
@@ -262,6 +282,11 @@ class SentimentViewModel {
             self.btcRiskLevel = btcRisk
             self.ethRiskLevel = ethRisk
             self.btcRiskHistory = btcHistory ?? []
+
+            // Macro Indicators
+            self.vixData = vix
+            self.dxyData = dxy
+            self.globalM2Data = globalM2
 
             // Update search index from Google Trends
             if let trends = trends {
@@ -336,6 +361,18 @@ class SentimentViewModel {
 
     private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel]? {
         try? await itcRiskService.fetchRiskLevel(coin: coin)
+    }
+
+    private func fetchVIXSafe() async -> VIXData? {
+        try? await vixService.fetchLatestVIX()
+    }
+
+    private func fetchDXYSafe() async -> DXYData? {
+        try? await dxyService.fetchLatestDXY()
+    }
+
+    private func fetchGlobalM2Safe() async -> GlobalLiquidityChanges? {
+        try? await globalLiquidityService.fetchLiquidityChanges()
     }
 
     // MARK: - Enhanced Risk Methods
