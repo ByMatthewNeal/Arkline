@@ -132,6 +132,8 @@ enum Constants {
         static let biometricEnabled = "biometricEnabled"
         static let lastSyncTimestamp = "lastSyncTimestamp"
         static let widgetConfiguration = "widgetConfiguration"
+        static let selectedNewsTopics = "selectedNewsTopics"
+        static let customNewsTopics = "customNewsTopics"
     }
 
     // MARK: - Notification Names
@@ -302,6 +304,57 @@ enum Constants {
             case .news: return "News"
             case .analysis: return "Analysis"
             case .discussion: return "Discussion"
+            }
+        }
+    }
+
+    // MARK: - News Topics (for personalized news feed)
+    enum NewsTopic: String, CaseIterable, Codable {
+        case crypto = "crypto"
+        case macroEconomy = "macro"
+        case stocks = "stocks"
+        case techAI = "tech_ai"
+        case geopolitics = "geopolitics"
+        case defi = "defi"
+        case nfts = "nfts"
+        case regulation = "regulation"
+
+        var displayName: String {
+            switch self {
+            case .crypto: return "Crypto"
+            case .macroEconomy: return "Macro/Economy"
+            case .stocks: return "Stocks"
+            case .techAI: return "Tech/AI"
+            case .geopolitics: return "Geopolitics"
+            case .defi: return "DeFi"
+            case .nfts: return "NFTs"
+            case .regulation: return "Regulation"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .crypto: return "bitcoinsign.circle"
+            case .macroEconomy: return "chart.bar"
+            case .stocks: return "chart.line.uptrend.xyaxis"
+            case .techAI: return "cpu"
+            case .geopolitics: return "globe"
+            case .defi: return "lock.shield"
+            case .nfts: return "photo.artframe"
+            case .regulation: return "building.columns"
+            }
+        }
+
+        var searchQuery: String {
+            switch self {
+            case .crypto: return "cryptocurrency OR bitcoin OR ethereum OR crypto"
+            case .macroEconomy: return "federal reserve OR interest rates OR inflation OR economy"
+            case .stocks: return "stock market OR S&P 500 OR nasdaq OR equities"
+            case .techAI: return "artificial intelligence OR AI OR tech stocks OR nvidia"
+            case .geopolitics: return "geopolitics OR world news OR international relations"
+            case .defi: return "DeFi OR decentralized finance OR yield farming"
+            case .nfts: return "NFT OR non-fungible token OR digital collectibles"
+            case .regulation: return "crypto regulation OR SEC OR cryptocurrency law"
             }
         }
     }

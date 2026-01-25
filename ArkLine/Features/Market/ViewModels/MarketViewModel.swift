@@ -101,15 +101,19 @@ class MarketViewModel {
             self.fedWatchData = meetings?.first
         }
 
+        // Fetch news independently (doesn't depend on other APIs)
+        let news = await fetchNewsSafe()
+        await MainActor.run {
+            self.newsItems = news
+        }
+
         do {
             async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 50)
             async let stocksTask = marketService.fetchStockAssets(symbols: ["AAPL", "NVDA"])
             async let metalsTask = marketService.fetchMetalAssets(symbols: ["XAU", "XAG", "XPT", "XPD"])
             async let globalTask = marketService.fetchGlobalMarketData()
-            // Fetch combined news feed with Twitter and Google News sources
-            async let newsTask = newsService.fetchCombinedNewsFeed(limit: 15, includeTwitter: true, includeGoogleNews: true)
 
-            let (crypto, stocks, metals, global, news) = try await (cryptoTask, stocksTask, metalsTask, globalTask, newsTask)
+            let (crypto, stocks, metals, global) = try await (cryptoTask, stocksTask, metalsTask, globalTask)
 
             await MainActor.run {
                 self.cryptoAssets = crypto
@@ -120,7 +124,6 @@ class MarketViewModel {
                 self.total24hVolume = global.data.totalVolume["usd"] ?? 0
                 self.btcDominance = global.data.marketCapPercentage["btc"] ?? 0
                 self.marketCapChange24h = global.data.marketCapChangePercentage24hUsd
-                self.newsItems = news
                 self.isLoading = false
             }
         } catch {
@@ -128,6 +131,42 @@ class MarketViewModel {
                 self.errorMessage = error.localizedDescription
                 self.isLoading = false
             }
+        }
+    }
+
+    /// Safely fetches news without throwing errors
+    /// Uses user's topic preferences from Settings if available
+    private func fetchNewsSafe() async -> [NewsItem] {
+        // Load user's news topic preferences from UserDefaults
+        var selectedTopics: Set<Constants.NewsTopic>? = nil
+        var customKeywords: [String]? = nil
+
+        if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.selectedNewsTopics),
+           let topics = try? JSONDecoder().decode(Set<Constants.NewsTopic>.self, from: data),
+           !topics.isEmpty {
+            selectedTopics = topics
+        }
+
+        if let custom = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.customNewsTopics),
+           !custom.isEmpty {
+            customKeywords = custom
+        }
+
+        // Increase limit when user has custom keywords to ensure coverage
+        let hasCustomization = selectedTopics != nil || customKeywords != nil
+        let fetchLimit = hasCustomization ? 30 : 15
+
+        do {
+            return try await newsService.fetchCombinedNewsFeed(
+                limit: fetchLimit,
+                includeTwitter: true,
+                includeGoogleNews: true,
+                topics: selectedTopics,
+                customKeywords: customKeywords
+            )
+        } catch {
+            print("⚠️ News fetch failed: \(error)")
+            return []
         }
     }
 

@@ -13,6 +13,10 @@ final class SettingsViewModel {
     var biometricEnabled = true
     var riskCoins: [String] = ["BTC", "ETH"]
 
+    // MARK: - News Topics
+    var selectedNewsTopics: Set<Constants.NewsTopic> = [.crypto, .geopolitics]
+    var customNewsTopics: [String] = []
+
     // MARK: - State
     var isLoading = false
     var showSignOutAlert = false
@@ -47,6 +51,62 @@ final class SettingsViewModel {
 
         notificationsEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.notificationsEnabled)
         biometricEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.biometricEnabled)
+
+        // Load news topic preferences
+        loadNewsTopicSettings()
+    }
+
+    // MARK: - News Topics Management
+    private func loadNewsTopicSettings() {
+        // Load selected topics
+        if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.selectedNewsTopics),
+           let topics = try? JSONDecoder().decode(Set<Constants.NewsTopic>.self, from: data) {
+            selectedNewsTopics = topics
+            print("📰 Loaded \(topics.count) saved news topics: \(topics.map { $0.displayName })")
+        } else {
+            print("📰 No saved news topics found, using defaults")
+        }
+
+        // Load custom keywords
+        if let custom = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.customNewsTopics) {
+            customNewsTopics = custom
+            print("📰 Loaded \(custom.count) custom keywords: \(custom)")
+        } else {
+            print("📰 No custom keywords found")
+        }
+    }
+
+    func toggleNewsTopic(_ topic: Constants.NewsTopic) {
+        if selectedNewsTopics.contains(topic) {
+            selectedNewsTopics.remove(topic)
+        } else {
+            selectedNewsTopics.insert(topic)
+        }
+        saveNewsTopics()
+    }
+
+    func addCustomTopic(_ keyword: String) {
+        let trimmed = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !customNewsTopics.contains(trimmed) else { return }
+        customNewsTopics.append(trimmed)
+        saveCustomTopics()
+    }
+
+    func removeCustomTopic(_ keyword: String) {
+        customNewsTopics.removeAll { $0 == keyword }
+        saveCustomTopics()
+    }
+
+    private func saveNewsTopics() {
+        if let data = try? JSONEncoder().encode(selectedNewsTopics) {
+            UserDefaults.standard.set(data, forKey: Constants.UserDefaults.selectedNewsTopics)
+            print("📰 Saved \(selectedNewsTopics.count) news topics: \(selectedNewsTopics.map { $0.displayName })")
+        }
+    }
+
+    private func saveCustomTopics() {
+        UserDefaults.standard.set(customNewsTopics, forKey: Constants.UserDefaults.customNewsTopics)
+        print("📰 Saved \(customNewsTopics.count) custom keywords: \(customNewsTopics)")
     }
 
     func saveCurrency(_ currency: String) {

@@ -224,7 +224,13 @@ final class MockNewsService: NewsServiceProtocol {
 
     // MARK: - Combined News Feed
 
-    func fetchCombinedNewsFeed(limit: Int, includeTwitter: Bool, includeGoogleNews: Bool) async throws -> [NewsItem] {
+    func fetchCombinedNewsFeed(
+        limit: Int,
+        includeTwitter: Bool,
+        includeGoogleNews: Bool,
+        topics: Set<Constants.NewsTopic>? = nil,
+        customKeywords: [String]? = nil
+    ) async throws -> [NewsItem] {
         try await simulateNetworkDelay()
 
         var allNews: [NewsItem] = generateMockNews()
@@ -235,6 +241,15 @@ final class MockNewsService: NewsServiceProtocol {
 
         if includeGoogleNews {
             allNews.append(contentsOf: generateMockGoogleNews(query: "crypto"))
+        }
+
+        // If user has specific topics, we could filter here in a real implementation
+        // For mock data, we just return the standard mix
+        if let topics = topics, !topics.isEmpty {
+            print("📰 [Mock] Using personalized topics: \(topics.map { $0.displayName }.joined(separator: ", "))")
+            if let keywords = customKeywords, !keywords.isEmpty {
+                print("📰 [Mock] With custom keywords: \(keywords.joined(separator: ", "))")
+            }
         }
 
         // Sort by published date and return limited results

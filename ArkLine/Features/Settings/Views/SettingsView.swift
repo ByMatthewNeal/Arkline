@@ -63,6 +63,15 @@ struct SettingsView: View {
                             value: viewModel.riskCoins.joined(separator: ", ")
                         )
                     }
+
+                    NavigationLink(destination: NewsTopicsSettingsView(viewModel: viewModel)) {
+                        SettingsRow(
+                            icon: "newspaper.fill",
+                            iconColor: AppColors.info,
+                            title: "News Topics",
+                            value: "\(viewModel.selectedNewsTopics.count) topics" + (viewModel.customNewsTopics.isEmpty ? "" : " + \(viewModel.customNewsTopics.count) custom")
+                        )
+                    }
                 } header: {
                     Text("General")
                 }

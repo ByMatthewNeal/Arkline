@@ -78,6 +78,14 @@ protocol NewsServiceProtocol {
     ///   - limit: Maximum total items to return
     ///   - includeTwitter: Whether to include Twitter sources
     ///   - includeGoogleNews: Whether to include Google News
+    ///   - topics: Optional set of pre-defined topics to filter by
+    ///   - customKeywords: Optional array of custom keywords to include
     /// - Returns: Array of NewsItem sorted by publishedAt
-    func fetchCombinedNewsFeed(limit: Int, includeTwitter: Bool, includeGoogleNews: Bool) async throws -> [NewsItem]
+    func fetchCombinedNewsFeed(
+        limit: Int,
+        includeTwitter: Bool,
+        includeGoogleNews: Bool,
+        topics: Set<Constants.NewsTopic>?,
+        customKeywords: [String]?
+    ) async throws -> [NewsItem]
 }

@@ -90,21 +90,41 @@ final class APINewsService: NewsServiceProtocol {
 
     // MARK: - Combined News Feed
 
-    func fetchCombinedNewsFeed(limit: Int, includeTwitter: Bool, includeGoogleNews: Bool) async throws -> [NewsItem] {
+    func fetchCombinedNewsFeed(
+        limit: Int,
+        includeTwitter: Bool,
+        includeGoogleNews: Bool,
+        topics: Set<Constants.NewsTopic>? = nil,
+        customKeywords: [String]? = nil
+    ) async throws -> [NewsItem] {
         var allNews: [NewsItem] = []
 
-        // Fetch Google News (crypto + geopolitical)
+        // Fetch Google News based on user preferences
         if includeGoogleNews {
-            async let cryptoNews = fetchCryptoNews(limit: limit / 2)
-            async let geoNews = fetchGeopoliticalNews(limit: limit / 2)
+            let rssService = GoogleNewsRSSService()
 
-            do {
-                let (crypto, geo) = try await (cryptoNews, geoNews)
-                allNews.append(contentsOf: crypto)
-                allNews.append(contentsOf: geo)
-                print("📰 Fetched \(crypto.count) crypto + \(geo.count) geopolitical news items")
-            } catch {
-                print("⚠️ Failed to fetch Google News: \(error.localizedDescription)")
+            // If user has selected specific topics, use those
+            if let topics = topics, !topics.isEmpty {
+                let personalizedNews = try await rssService.fetchPersonalizedNews(
+                    topics: topics,
+                    customKeywords: customKeywords ?? [],
+                    limit: limit
+                )
+                allNews.append(contentsOf: personalizedNews)
+                print("📰 Fetched \(personalizedNews.count) personalized news items")
+            } else {
+                // Default behavior: crypto + geopolitical
+                async let cryptoNews = fetchCryptoNews(limit: limit / 2)
+                async let geoNews = fetchGeopoliticalNews(limit: limit / 2)
+
+                do {
+                    let (crypto, geo) = try await (cryptoNews, geoNews)
+                    allNews.append(contentsOf: crypto)
+                    allNews.append(contentsOf: geo)
+                    print("📰 Fetched \(crypto.count) crypto + \(geo.count) geopolitical news items")
+                } catch {
+                    print("⚠️ Failed to fetch Google News: \(error.localizedDescription)")
+                }
             }
         }
 
@@ -1132,6 +1152,29 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
             let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
             return "https://news.google.com/rss/search?q=\(encoded)&hl=en-US&gl=US&ceid=US:en"
         }
+
+        /// Build a combined query URL from user-selected topics and custom keywords
+        static func fromTopics(_ topics: Set<Constants.NewsTopic>, customKeywords: [String]) -> String {
+            var queryParts: [String] = []
+
+            // Add search queries for each selected topic
+            for topic in topics {
+                queryParts.append("(\(topic.searchQuery))")
+            }
+
+            // Add custom keywords
+            for keyword in customKeywords {
+                let cleaned = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !cleaned.isEmpty {
+                    queryParts.append("\"\(cleaned)\"")
+                }
+            }
+
+            // Join with OR and encode
+            let combinedQuery = queryParts.joined(separator: " OR ")
+            let encoded = combinedQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? combinedQuery
+            return "https://news.google.com/rss/search?q=\(encoded)&hl=en-US&gl=US&ceid=US:en"
+        }
     }
 
     // MARK: - Parser State
@@ -1179,6 +1222,70 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
     /// Fetch news for a custom search query
     func fetchNews(query: String, limit: Int = 20) async throws -> [NewsItem] {
         return try await fetchFromURL(FeedURL.search(query), category: "Search", limit: limit)
+    }
+
+    /// Fetch personalized news based on user-selected topics and custom keywords
+    func fetchPersonalizedNews(
+        topics: Set<Constants.NewsTopic>,
+        customKeywords: [String],
+        limit: Int = 20
+    ) async throws -> [NewsItem] {
+        var allNews: [NewsItem] = []
+
+        // Calculate how to distribute the limit
+        let hasCustomKeywords = !customKeywords.isEmpty
+        let topicsLimit = hasCustomKeywords ? (limit * 2 / 3) : limit  // 2/3 for topics
+        let keywordsLimit = hasCustomKeywords ? (limit / 3) : 0        // 1/3 for custom keywords
+
+        // Fetch news for pre-defined topics
+        if !topics.isEmpty {
+            do {
+                let topicNews = try await fetchFromURL(
+                    FeedURL.fromTopics(topics, customKeywords: []),
+                    category: "Topics",
+                    limit: topicsLimit
+                )
+                allNews.append(contentsOf: topicNews)
+                print("📰 Fetched \(topicNews.count) items for topics")
+            } catch {
+                print("⚠️ Failed to fetch topic news: \(error)")
+            }
+        }
+
+        // Fetch news for EACH custom keyword separately to ensure representation
+        if hasCustomKeywords {
+            let perKeywordLimit = max(3, keywordsLimit / customKeywords.count)
+
+            for keyword in customKeywords {
+                do {
+                    let keywordNews = try await fetchFromURL(
+                        FeedURL.search(keyword),
+                        category: "Keyword:\(keyword)",
+                        limit: perKeywordLimit
+                    )
+                    allNews.append(contentsOf: keywordNews)
+                    print("📰 Fetched \(keywordNews.count) items for keyword '\(keyword)'")
+                } catch {
+                    print("⚠️ Failed to fetch news for keyword '\(keyword)': \(error)")
+                }
+            }
+        }
+
+        // Deduplicate by title
+        var seen = Set<String>()
+        var deduplicated: [NewsItem] = []
+
+        for item in allNews {
+            let normalizedTitle = item.title.lowercased()
+            if !seen.contains(normalizedTitle) {
+                seen.insert(normalizedTitle)
+                deduplicated.append(item)
+            }
+        }
+
+        // Sort by date and limit
+        deduplicated.sort { $0.publishedAt > $1.publishedAt }
+        return Array(deduplicated.prefix(limit))
     }
 
     // MARK: - Private Methods
