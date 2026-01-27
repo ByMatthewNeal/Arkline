@@ -1,13 +1,32 @@
 import Foundation
 
 // MARK: - Economic Calendar Scraper
-/// Scrapes economic calendar data from Investing.com
-/// Note: Web scraping can be fragile - the site structure may change
+/// Provides economic calendar data from hardcoded source
+/// No longer relies on web scraping - uses EconomicEventsData instead
 final class EconomicCalendarScraper {
 
-    // MARK: - Constants
+    // MARK: - Legacy Properties (kept for compatibility with unused scraping code)
     private let baseURL = "https://www.investing.com/economic-calendar/"
-    private let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    private let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+
+    // MARK: - Public Methods
+
+    /// Fetches upcoming economic events from hardcoded data
+    /// - Parameters:
+    ///   - days: Number of days ahead to fetch
+    ///   - impactFilter: Filter by impact levels
+    /// - Returns: Array of EconomicEvent
+    func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
+        // Use hardcoded data instead of scraping
+        return EconomicEventsData.getUpcomingEvents(days: days, impactFilter: impactFilter)
+    }
+
+    /// Fetches today's events
+    func fetchTodaysEvents(impactFilter: [EventImpact] = [.high, .medium]) async throws -> [EconomicEvent] {
+        return EconomicEventsData.getTodaysEvents(impactFilter: impactFilter)
+    }
+
+    // MARK: - Legacy Methods (kept for compatibility but no longer used)
 
     // Country code to flag emoji mapping
     private let countryFlags: [String: String] = [
@@ -21,27 +40,6 @@ final class EconomicCalendarScraper {
         "COP": "🇨🇴", "SAR": "🇸🇦", "MYR": "🇲🇾", "RON": "🇷🇴",
         "HUF": "🇭🇺", "ALL": "🌍"
     ]
-
-    // MARK: - Public Methods
-
-    /// Fetches upcoming economic events
-    /// - Parameters:
-    ///   - days: Number of days ahead to fetch
-    ///   - impactFilter: Filter by impact levels
-    /// - Returns: Array of EconomicEvent
-    func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
-        let html = try await fetchCalendarHTML()
-        let events = parseEvents(from: html)
-
-        let calendar = Calendar.current
-        let endDate = calendar.date(byAdding: .day, value: days, to: Date()) ?? Date()
-
-        return events
-            .filter { event in
-                event.date <= endDate && impactFilter.contains(event.impact)
-            }
-            .sorted { $0.date < $1.date }
-    }
 
     // MARK: - Private Methods
 

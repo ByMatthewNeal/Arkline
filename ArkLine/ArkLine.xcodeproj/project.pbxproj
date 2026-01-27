@@ -180,6 +180,7 @@
 		E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */; };
 		E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */; };
 		E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */; };
+		E70454130B489EBE154FE736 /* EconomicEventsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B208810C8DD981E42D48E91 /* EconomicEventsData.swift */; };
 		E8B61F5290537F3B5234979B /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0055D207871438FBAECAE1 /* Portfolio.swift */; };
 		E94401772FE34BE9B93DACA0 /* MultiFactorRisk.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC73CFDFB027E944D3D8798 /* MultiFactorRisk.swift */; };
 		EC801D668BF7D2F4A9A01C56 /* MockMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F8DDEFBC250FC8181848AA /* MockMarketService.swift */; };
@@ -291,6 +292,7 @@
 		74B4B1375E8CFAC9F01975F3 /* MockITCRiskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockITCRiskService.swift; sourceTree = "<group>"; };
 		7595D2044FCFDCA031195CAA /* YahooDXYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooDXYService.swift; sourceTree = "<group>"; };
 		7A1C05960B8B6F9455FAE91A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		7B208810C8DD981E42D48E91 /* EconomicEventsData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EconomicEventsData.swift; sourceTree = "<group>"; };
 		7C36C75D83F3A8445A56B3F5 /* APIBinanceFundingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIBinanceFundingService.swift; sourceTree = "<group>"; };
 		7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIITCRiskService.swift; sourceTree = "<group>"; };
 		7D5A5C466F3FACF792A28F50 /* Asset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Asset.swift; sourceTree = "<group>"; };
@@ -929,6 +931,7 @@
 				0A1791456BE0132B4D7DD7B3 /* Scrapers */,
 				3E6F0CEE3D833B28336E0B66 /* ExportService.swift */,
 				93E515D0E6990FFEF0DA3183 /* ServiceContainer.swift */,
+				7B208810C8DD981E42D48E91 /* EconomicEventsData.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -1116,6 +1119,7 @@
 				32B905E01A0974D0EAAFBF1C /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = E2EB16D82448FC0BD72DB130 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1313,6 +1317,7 @@
 				A854D41D995843DF457AFF21 /* YahooDXYService.swift in Sources */,
 				1A1D17A6E0379D73A6F45738 /* YahooFinanceService.swift in Sources */,
 				8DD30594AE32B9D1BE06917D /* YahooVIXService.swift in Sources */,
+				E70454130B489EBE154FE736 /* EconomicEventsData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
