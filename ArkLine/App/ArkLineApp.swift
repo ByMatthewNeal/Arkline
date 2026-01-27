@@ -126,6 +126,19 @@ class AppState: ObservableObject {
                     }
                 }
             }
+
+            // Ensure upcomingEvents is always enabled and first (key feature)
+            config.enabledWidgets.insert(.upcomingEvents)
+            // Move to top of order
+            if let index = config.widgetOrder.firstIndex(of: .upcomingEvents) {
+                if index > 0 {
+                    config.widgetOrder.remove(at: index)
+                    config.widgetOrder.insert(.upcomingEvents, at: 0)
+                }
+            } else {
+                config.widgetOrder.insert(.upcomingEvents, at: 0)
+            }
+
             widgetConfiguration = config
             // Save migrated config
             setWidgetConfiguration(config)

@@ -372,7 +372,8 @@ struct ReorderableWidgetStack: View {
     private func shouldShowWidget(_ type: HomeWidgetType) -> Bool {
         switch type {
         case .upcomingEvents:
-            return !viewModel.upcomingEvents.isEmpty
+            // Always show - displays loading state if empty
+            return true
         case .riskScore:
             return viewModel.compositeRiskScore != nil
         case .fearGreedIndex:
@@ -2493,12 +2494,25 @@ struct UpcomingEventsSection: View {
                 }
 
                 VStack(alignment: .leading, spacing: size == .compact ? 8 : 16) {
-                    ForEach(groupedEvents.prefix(maxGroups), id: \.key) { group in
-                        EventDateGroup(
-                            dateKey: group.key,
-                            events: Array(group.events.prefix(maxEventsPerGroup)),
-                            isCompact: size == .compact
-                        )
+                    if events.isEmpty {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Loading events...")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 20)
+                    } else {
+                        ForEach(groupedEvents.prefix(maxGroups), id: \.key) { group in
+                            EventDateGroup(
+                                dateKey: group.key,
+                                events: Array(group.events.prefix(maxEventsPerGroup)),
+                                isCompact: size == .compact
+                            )
+                        }
                     }
                 }
                 .padding(size == .compact ? 12 : 16)
