@@ -1480,7 +1480,6 @@ struct HomeMarketMoversWidget: View {
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
     @State private var selectedAsset: CryptoAsset?
-    @State private var showTechnicalDetail = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -1526,7 +1525,6 @@ struct HomeMarketMoversWidget: View {
                 HStack(spacing: 8) {
                     Button {
                         selectedAsset = btcAsset
-                        showTechnicalDetail = true
                     } label: {
                         CompactCoinCard(symbol: "BTC", price: btcPrice, change: btcChange, accentColor: AppColors.accent)
                     }
@@ -1534,7 +1532,6 @@ struct HomeMarketMoversWidget: View {
 
                     Button {
                         selectedAsset = ethAsset
-                        showTechnicalDetail = true
                     } label: {
                         CompactCoinCard(symbol: "ETH", price: ethPrice, change: ethChange, accentColor: AppColors.accent)
                     }
@@ -1544,7 +1541,6 @@ struct HomeMarketMoversWidget: View {
                 HStack(spacing: 12) {
                     Button {
                         selectedAsset = btcAsset
-                        showTechnicalDetail = true
                     } label: {
                         GlassCoinCard(
                             symbol: "BTC",
@@ -1560,7 +1556,6 @@ struct HomeMarketMoversWidget: View {
 
                     Button {
                         selectedAsset = ethAsset
-                        showTechnicalDetail = true
                     } label: {
                         GlassCoinCard(
                             symbol: "ETH",
@@ -1576,10 +1571,8 @@ struct HomeMarketMoversWidget: View {
                 }
             }
         }
-        .sheet(isPresented: $showTechnicalDetail) {
-            if let asset = selectedAsset {
-                AssetTechnicalDetailSheet(asset: asset)
-            }
+        .sheet(item: $selectedAsset) { asset in
+            AssetTechnicalDetailSheet(asset: asset)
         }
     }
 }

@@ -6,7 +6,7 @@ struct SparklineData: Codable, Hashable {
 }
 
 // MARK: - Crypto Asset
-struct CryptoAsset: Asset, Hashable, Codable {
+struct CryptoAsset: Asset, Hashable, Codable, Identifiable {
     let id: String
     let symbol: String
     let name: String
