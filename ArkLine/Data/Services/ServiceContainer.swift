@@ -18,8 +18,8 @@ final class ServiceContainer {
     var useRealNews: Bool = true
 
     /// Use mock data for services that aren't fully implemented yet
-    /// (portfolio, sentiment, news, DCA, ITC Risk)
-    private let useMockForUnimplementedServices: Bool = false
+    /// (portfolio, DCA)
+    private let useMockForUnimplementedServices: Bool = true
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
