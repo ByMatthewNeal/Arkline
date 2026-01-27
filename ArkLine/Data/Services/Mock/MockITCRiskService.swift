@@ -38,7 +38,85 @@ final class MockITCRiskService: ITCRiskServiceProtocol {
         return latest
     }
 
+    // MARK: - Multi-Factor Risk Methods
+
+    func calculateMultiFactorRisk(
+        coin: String,
+        weights: RiskFactorWeights = .default
+    ) async throws -> MultiFactorRiskPoint {
+        try await simulateNetworkDelay()
+
+        guard let baseRisk = generateMockRiskHistory(for: coin).last else {
+            throw RiskCalculationError.noDataAvailable(coin)
+        }
+
+        // Generate mock factor data
+        let mockFactors = generateMockFactors(baseRisk: baseRisk.riskLevel, weights: weights)
+
+        return MultiFactorRiskPoint(
+            date: baseRisk.date,
+            riskLevel: baseRisk.riskLevel,
+            price: baseRisk.price,
+            fairValue: baseRisk.fairValue,
+            deviation: baseRisk.deviation,
+            factors: mockFactors,
+            weights: weights
+        )
+    }
+
+    func calculateEnhancedCurrentRisk(coin: String) async throws -> RiskHistoryPoint {
+        let multiFactorRisk = try await calculateMultiFactorRisk(coin: coin)
+        return multiFactorRisk.toRiskHistoryPoint()
+    }
+
     // MARK: - Private Helpers
+
+    private func generateMockFactors(baseRisk: Double, weights: RiskFactorWeights) -> [RiskFactor] {
+        // Generate mock factors that approximately average to the base risk
+        let rsiRaw = 30.0 + (baseRisk * 40.0) // 30-70 range
+        let fundingRaw = -0.001 + (baseRisk * 0.002) // -0.001 to 0.001
+        let fearGreedRaw = baseRisk * 100.0 // 0-100
+        let macroRaw = 15.0 + (baseRisk * 25.0) // VIX-like, 15-40
+
+        return [
+            RiskFactor(
+                type: .logRegression,
+                rawValue: log10(baseRisk + 0.5) - 0.2,
+                normalizedValue: baseRisk,
+                weight: weights.logRegression
+            ),
+            RiskFactor(
+                type: .rsi,
+                rawValue: rsiRaw,
+                normalizedValue: RiskFactorNormalizer.normalizeRSI(rsiRaw),
+                weight: weights.rsi
+            ),
+            RiskFactor(
+                type: .smaPosition,
+                rawValue: baseRisk > 0.5 ? 0.7 : 0.3,
+                normalizedValue: baseRisk > 0.5 ? 0.7 : 0.3,
+                weight: weights.smaPosition
+            ),
+            RiskFactor(
+                type: .fundingRate,
+                rawValue: fundingRaw,
+                normalizedValue: RiskFactorNormalizer.normalizeFundingRate(fundingRaw),
+                weight: weights.fundingRate
+            ),
+            RiskFactor(
+                type: .fearGreed,
+                rawValue: fearGreedRaw,
+                normalizedValue: RiskFactorNormalizer.normalizeFearGreed(fearGreedRaw),
+                weight: weights.fearGreed
+            ),
+            RiskFactor(
+                type: .macroRisk,
+                rawValue: macroRaw,
+                normalizedValue: RiskFactorNormalizer.normalizeVIX(macroRaw),
+                weight: weights.macroRisk
+            )
+        ]
+    }
 
     private func simulateNetworkDelay() async throws {
         try await Task.sleep(nanoseconds: simulatedDelay)

@@ -397,6 +397,12 @@ struct ReorderableWidgetStack: View {
             return true
         case .globalLiquidity:
             return true
+        case .macroDashboard:
+            // Show if we have at least 2 of the 3 indicators
+            let hasVix = viewModel.vixData != nil
+            let hasDxy = viewModel.dxyData != nil
+            let hasM2 = viewModel.globalLiquidityChanges != nil
+            return [hasVix, hasDxy, hasM2].filter { $0 }.count >= 2
         }
     }
 
@@ -495,6 +501,14 @@ struct ReorderableWidgetStack: View {
             GlobalLiquidityWidget(
                 liquidityChanges: viewModel.globalLiquidityChanges,
                 size: appState.widgetSize(.globalLiquidity)
+            )
+
+        case .macroDashboard:
+            MacroDashboardWidget(
+                vixData: viewModel.vixData,
+                dxyData: viewModel.dxyData,
+                liquidityData: viewModel.globalLiquidityChanges,
+                size: appState.widgetSize(.macroDashboard)
             )
         }
     }

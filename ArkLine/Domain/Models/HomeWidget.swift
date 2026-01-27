@@ -44,6 +44,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case vixIndicator = "vix_indicator"
     case dxyIndicator = "dxy_indicator"
     case globalLiquidity = "global_liquidity"
+    case macroDashboard = "macro_dashboard"
 
     var id: String { rawValue }
 
@@ -62,6 +63,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .vixIndicator: return "VIX"
         case .dxyIndicator: return "DXY"
         case .globalLiquidity: return "Global M2"
+        case .macroDashboard: return "Macro Dashboard"
         }
     }
 
@@ -80,6 +82,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .vixIndicator: return "CBOE Volatility Index - Market fear gauge"
         case .dxyIndicator: return "US Dollar Index - Dollar strength"
         case .globalLiquidity: return "Global M2 money supply trends"
+        case .macroDashboard: return "Combined macro indicators with market regime analysis"
         }
     }
 
@@ -98,6 +101,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .vixIndicator: return "waveform.path.ecg"
         case .dxyIndicator: return "dollarsign.circle"
         case .globalLiquidity: return "banknote"
+        case .macroDashboard: return "chart.bar.xaxis"
         }
     }
 
@@ -108,12 +112,12 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .vixIndicator, .dxyIndicator, .globalLiquidity, .assetRiskLevel, .fedWatch, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .assetRiskLevel, .fedWatch, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
     }
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.upcomingEvents, .fearGreedIndex, .marketMovers, .vixIndicator, .dxyIndicator, .globalLiquidity, .assetRiskLevel, .dcaReminders])
+        Set([.upcomingEvents, .fearGreedIndex, .marketMovers, .macroDashboard, .assetRiskLevel, .dcaReminders])
     }
 }
 

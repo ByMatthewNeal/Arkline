@@ -19,7 +19,7 @@ final class ServiceContainer {
 
     /// Use mock data for services that aren't fully implemented yet
     /// (portfolio, sentiment, news, DCA, ITC Risk)
-    private let useMockForUnimplementedServices: Bool = true
+    private let useMockForUnimplementedServices: Bool = false
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
@@ -46,6 +46,10 @@ final class ServiceContainer {
     private lazy var _apiDXYService = APIDXYService()
     private lazy var _apiRainbowChartService = APIRainbowChartService()
     private lazy var _apiGlobalLiquidityService = APIGlobalLiquidityService()
+
+    // MARK: - Lazy Services - Yahoo Finance (better rate limits than Alpha Vantage)
+    private lazy var _yahooVIXService = YahooVIXService()
+    private lazy var _yahooDXYService = YahooDXYService()
 
     // MARK: - Service Accessors
 
@@ -84,16 +88,16 @@ final class ServiceContainer {
         useMockForUnimplementedServices ? _mockITCRiskService : _apiITCRiskService
     }
 
-    /// VIX service - uses mock until Alpha Vantage API is reliable
+    /// VIX service - uses Yahoo Finance (no rate limits)
     var vixService: VIXServiceProtocol {
-        // Using mock for now - Alpha Vantage free tier has strict rate limits (25/day)
-        useMockForUnimplementedServices ? _mockVIXService : _apiVIXService
+        // Yahoo Finance has no strict rate limits unlike Alpha Vantage (25/day)
+        useMockForUnimplementedServices ? _mockVIXService : _yahooVIXService
     }
 
-    /// DXY service - uses mock until Alpha Vantage API is reliable
+    /// DXY service - uses Yahoo Finance (no rate limits)
     var dxyService: DXYServiceProtocol {
-        // Using mock for now - Alpha Vantage free tier has strict rate limits (25/day)
-        useMockForUnimplementedServices ? _mockDXYService : _apiDXYService
+        // Yahoo Finance has no strict rate limits unlike Alpha Vantage (25/day)
+        useMockForUnimplementedServices ? _mockDXYService : _yahooDXYService
     }
 
     /// Rainbow Chart service - calculation-based (uses market service for BTC price)

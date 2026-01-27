@@ -325,35 +325,17 @@ enum RiskTimeRange: String, CaseIterable {
 // Legacy alias
 typealias ITCTimeRange = RiskTimeRange
 
-// MARK: - Supported Coins for Risk Level
+// MARK: - Supported Coins for Risk Level (BTC, ETH, SOL only)
 enum RiskCoin: String, CaseIterable {
     case btc = "BTC"
     case eth = "ETH"
     case sol = "SOL"
-    case xrp = "XRP"
-    case doge = "DOGE"
-    case ada = "ADA"
-    case avax = "AVAX"
-    case link = "LINK"
-    case dot = "DOT"
-    case matic = "MATIC"
-    case render = "RENDER"
-    case ondo = "ONDO"
 
     var displayName: String {
         switch self {
         case .btc: return "Bitcoin"
         case .eth: return "Ethereum"
         case .sol: return "Solana"
-        case .xrp: return "XRP"
-        case .doge: return "Dogecoin"
-        case .ada: return "Cardano"
-        case .avax: return "Avalanche"
-        case .link: return "Chainlink"
-        case .dot: return "Polkadot"
-        case .matic: return "Polygon"
-        case .render: return "Render"
-        case .ondo: return "Ondo"
         }
     }
 
@@ -362,15 +344,6 @@ enum RiskCoin: String, CaseIterable {
         case .btc: return "bitcoinsign.circle.fill"
         case .eth: return "e.circle.fill"
         case .sol: return "s.circle.fill"
-        case .xrp: return "x.circle.fill"
-        case .doge: return "d.circle.fill"
-        case .ada: return "a.circle.fill"
-        case .avax: return "a.circle.fill"
-        case .link: return "link.circle.fill"
-        case .dot: return "circle.circle.fill"
-        case .matic: return "m.circle.fill"
-        case .render: return "r.circle.fill"
-        case .ondo: return "o.circle.fill"
         }
     }
 }
@@ -393,6 +366,11 @@ struct RiskLevelChartView: View {
     @State private var enhancedRiskHistory: [RiskHistoryPoint] = []
     @State private var isLoadingHistory = false
 
+    // Multi-factor risk state
+    @State private var multiFactorRisk: MultiFactorRiskPoint?
+    @State private var isLoadingMultiFactor = false
+    @State private var showFactorBreakdown = true
+
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
         (appState.darkModePreference == .automatic && colorScheme == .dark)
@@ -412,11 +390,11 @@ struct RiskLevelChartView: View {
         if let latest = enhancedRiskHistory.last {
             return ITCRiskLevel(from: latest)
         }
-        // Fall back to legacy data
+        // Fall back to legacy data (BTC, ETH, SOL only)
         switch selectedCoin {
         case .btc: return viewModel.btcRiskLevel
         case .eth: return viewModel.ethRiskLevel
-        default: return viewModel.btcRiskLevel
+        case .sol: return viewModel.btcRiskLevel // SOL uses enhanced history primarily
         }
     }
 
@@ -477,6 +455,18 @@ struct RiskLevelChartView: View {
         }
     }
 
+    // Load multi-factor risk for selected coin
+    private func loadMultiFactorRisk() {
+        isLoadingMultiFactor = true
+        Task {
+            let risk = await viewModel.fetchMultiFactorRisk(coin: selectedCoin.rawValue)
+            await MainActor.run {
+                self.multiFactorRisk = risk
+                self.isLoadingMultiFactor = false
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -498,6 +488,9 @@ struct RiskLevelChartView: View {
 
                         // Latest Value Section
                         latestValueSection
+
+                        // Multi-Factor Breakdown Section
+                        factorBreakdownSection
 
                         // Risk Legend (6-tier)
                         riskLegendSection
@@ -522,10 +515,12 @@ struct RiskLevelChartView: View {
             #endif
             .onAppear {
                 loadEnhancedHistory()
+                loadMultiFactorRisk()
             }
             .onChange(of: selectedCoin) { _, _ in
                 selectedDate = nil
                 loadEnhancedHistory()
+                loadMultiFactorRisk()
             }
             .onChange(of: selectedTimeRange) { _, _ in
                 selectedDate = nil
@@ -764,6 +759,83 @@ struct RiskLevelChartView: View {
         } else {
             return String(format: "$%.4f", price)
         }
+    }
+
+    // MARK: - Factor Breakdown Section
+    @ViewBuilder
+    private var factorBreakdownSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            // Toggle header
+            Button(action: { withAnimation { showFactorBreakdown.toggle() } }) {
+                HStack {
+                    Image(systemName: "chart.bar.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("Multi-Factor Analysis")
+                        .font(.headline)
+                        .foregroundColor(textPrimary)
+
+                    Spacer()
+
+                    if isLoadingMultiFactor {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    } else if let risk = multiFactorRisk {
+                        HStack(spacing: 4) {
+                            Text("\(risk.availableFactorCount)/6")
+                                .font(.caption)
+                                .foregroundColor(textSecondary)
+
+                            Image(systemName: showFactorBreakdown ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 12))
+                                .foregroundColor(textSecondary)
+                        }
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            if showFactorBreakdown {
+                if isLoadingMultiFactor {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: ArkSpacing.sm) {
+                            ProgressView()
+                            Text("Loading factor data...")
+                                .font(.caption)
+                                .foregroundColor(textSecondary)
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, ArkSpacing.lg)
+                } else if let risk = multiFactorRisk {
+                    // Factor breakdown content
+                    RiskFactorBreakdownView(multiFactorRisk: risk)
+                } else {
+                    // Error state
+                    VStack(spacing: ArkSpacing.sm) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.title2)
+                            .foregroundColor(textSecondary.opacity(0.5))
+
+                        Text("Unable to load factor data")
+                            .font(.caption)
+                            .foregroundColor(textSecondary)
+
+                        Button("Retry") {
+                            loadMultiFactorRisk()
+                        }
+                        .font(.caption)
+                        .foregroundColor(AppColors.accent)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, ArkSpacing.lg)
+                }
+            }
+        }
+        .padding(ArkSpacing.md)
+        .glassCard(cornerRadius: ArkSpacing.Radius.lg)
     }
 
     // MARK: - Risk Legend Section (6-tier)

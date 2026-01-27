@@ -143,6 +143,152 @@ final class RiskCalculator {
         return sampled
     }
 
+    // MARK: - Multi-Factor Risk Calculation
+
+    /// Calculate multi-factor risk for a single price point.
+    /// Combines logarithmic regression with 5 supplementary factors.
+    /// - Parameters:
+    ///   - price: Current price of the asset
+    ///   - date: Date of the price point
+    ///   - config: Asset-specific configuration
+    ///   - factorData: Supplementary factor data (RSI, SMA, funding, etc.)
+    ///   - weights: Weight configuration (defaults to standard weights)
+    ///   - regression: Pre-calculated regression (optional)
+    ///   - priceHistory: Historical prices for fitting regression (if regression not provided)
+    /// - Returns: Multi-factor risk point with full breakdown, nil if base regression fails
+    func calculateMultiFactorRisk(
+        price: Double,
+        date: Date,
+        config: AssetRiskConfig,
+        factorData: RiskFactorData,
+        weights: RiskFactorWeights = .default,
+        regression: LogarithmicRegression.Result? = nil,
+        priceHistory: [(date: Date, price: Double)]? = nil
+    ) -> MultiFactorRiskPoint? {
+        // Step 1: Calculate base regression risk (required)
+        guard let baseRisk = calculateRisk(
+            price: price,
+            date: date,
+            config: config,
+            regression: regression,
+            priceHistory: priceHistory
+        ) else {
+            return nil // Base regression is critical dependency
+        }
+
+        // Step 2: Build factor array with normalized values
+        var factors: [RiskFactor] = []
+
+        // Factor 1: Log Regression (always available if we got here)
+        factors.append(RiskFactor(
+            type: .logRegression,
+            rawValue: baseRisk.deviation,
+            normalizedValue: baseRisk.riskLevel,
+            weight: weights.logRegression
+        ))
+
+        // Factor 2: RSI
+        if let rsi = factorData.rsi {
+            factors.append(RiskFactor(
+                type: .rsi,
+                rawValue: rsi,
+                normalizedValue: RiskFactorNormalizer.normalizeRSI(rsi),
+                weight: weights.rsi
+            ))
+        } else {
+            factors.append(.unavailable(.rsi, weight: weights.rsi))
+        }
+
+        // Factor 3: SMA Position
+        if let sma200 = factorData.sma200, let currentPrice = factorData.currentPrice ?? Optional(price) {
+            let normalizedSMA = RiskFactorNormalizer.normalizeSMAPosition(price: currentPrice, sma200: sma200)
+            factors.append(RiskFactor(
+                type: .smaPosition,
+                rawValue: currentPrice > sma200 ? 0.3 : 0.7, // Store binary state as raw
+                normalizedValue: normalizedSMA,
+                weight: weights.smaPosition
+            ))
+        } else {
+            factors.append(.unavailable(.smaPosition, weight: weights.smaPosition))
+        }
+
+        // Factor 4: Funding Rate
+        if let fundingRate = factorData.fundingRate {
+            factors.append(RiskFactor(
+                type: .fundingRate,
+                rawValue: fundingRate,
+                normalizedValue: RiskFactorNormalizer.normalizeFundingRate(fundingRate),
+                weight: weights.fundingRate
+            ))
+        } else {
+            factors.append(.unavailable(.fundingRate, weight: weights.fundingRate))
+        }
+
+        // Factor 5: Fear & Greed
+        if let fearGreed = factorData.fearGreedValue {
+            factors.append(RiskFactor(
+                type: .fearGreed,
+                rawValue: fearGreed,
+                normalizedValue: RiskFactorNormalizer.normalizeFearGreed(fearGreed),
+                weight: weights.fearGreed
+            ))
+        } else {
+            factors.append(.unavailable(.fearGreed, weight: weights.fearGreed))
+        }
+
+        // Factor 6: Macro Risk (VIX + DXY average)
+        if let macroNormalized = RiskFactorNormalizer.normalizeMacroRisk(
+            vix: factorData.vixValue,
+            dxy: factorData.dxyValue
+        ) {
+            // Calculate raw value as simple average for display
+            let rawMacro: Double
+            switch (factorData.vixValue, factorData.dxyValue) {
+            case let (.some(v), .some(d)):
+                rawMacro = (v + d) / 2.0
+            case let (.some(v), .none):
+                rawMacro = v
+            case let (.none, .some(d)):
+                rawMacro = d
+            default:
+                rawMacro = 0
+            }
+
+            factors.append(RiskFactor(
+                type: .macroRisk,
+                rawValue: rawMacro,
+                normalizedValue: macroNormalized,
+                weight: weights.macroRisk
+            ))
+        } else {
+            factors.append(.unavailable(.macroRisk, weight: weights.macroRisk))
+        }
+
+        // Step 3: Renormalize weights based on available factors
+        let renormalizedFactors = RiskFactorNormalizer.renormalizeWeights(
+            factors: factors,
+            originalWeights: weights
+        )
+
+        // Step 4: Calculate composite risk level
+        let compositeRisk = renormalizedFactors
+            .compactMap { $0.weightedContribution }
+            .reduce(0.0, +)
+
+        // Clamp to valid range
+        let finalRisk = max(0.0, min(1.0, compositeRisk))
+
+        return MultiFactorRiskPoint(
+            date: date,
+            riskLevel: finalRisk,
+            price: price,
+            fairValue: baseRisk.fairValue,
+            deviation: baseRisk.deviation,
+            factors: renormalizedFactors,
+            weights: weights
+        )
+    }
+
     // MARK: - Clear Cache
 
     /// Clear the regression cache

@@ -51,6 +51,11 @@ class SentimentViewModel {
     // Enhanced Risk History (per-coin)
     var riskHistoryCache: [String: [RiskHistoryPoint]] = [:]
 
+    // Multi-Factor Risk (enhanced model)
+    var multiFactorRisk: MultiFactorRiskPoint?
+    var multiFactorRiskCache: [String: MultiFactorRiskPoint] = [:]
+    var isLoadingMultiFactorRisk = false
+
     // Market Overview Data
     var bitcoinSearchIndex: Int = 66
     var totalMarketCap: Double = 3_320_000_000_000
@@ -409,6 +414,54 @@ class SentimentViewModel {
     /// Clear risk history cache
     func clearRiskHistoryCache() {
         riskHistoryCache.removeAll()
+    }
+
+    // MARK: - Multi-Factor Risk Methods
+
+    /// Fetch multi-factor risk combining 6 data sources
+    /// - Parameter coin: Coin symbol (BTC, ETH)
+    /// - Returns: Multi-factor risk point with full breakdown
+    func fetchMultiFactorRisk(coin: String) async -> MultiFactorRiskPoint? {
+        // Check cache first
+        if let cached = multiFactorRiskCache[coin] {
+            return cached
+        }
+
+        await MainActor.run {
+            self.isLoadingMultiFactorRisk = true
+        }
+
+        do {
+            let riskPoint = try await itcRiskService.calculateMultiFactorRisk(coin: coin, weights: .default)
+            await MainActor.run {
+                self.multiFactorRisk = riskPoint
+                self.multiFactorRiskCache[coin] = riskPoint
+                self.isLoadingMultiFactorRisk = false
+            }
+            return riskPoint
+        } catch {
+            await MainActor.run {
+                self.isLoadingMultiFactorRisk = false
+            }
+            return nil
+        }
+    }
+
+    /// Get cached multi-factor risk
+    func getCachedMultiFactorRisk(coin: String) -> MultiFactorRiskPoint? {
+        multiFactorRiskCache[coin]
+    }
+
+    /// Clear multi-factor risk cache
+    func clearMultiFactorRiskCache() {
+        multiFactorRiskCache.removeAll()
+        multiFactorRisk = nil
+    }
+
+    /// Refresh multi-factor risk (force fetch)
+    func refreshMultiFactorRisk(coin: String) async -> MultiFactorRiskPoint? {
+        multiFactorRiskCache.removeValue(forKey: coin)
+        return await fetchMultiFactorRisk(coin: coin)
     }
 }
 
