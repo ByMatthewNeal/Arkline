@@ -370,6 +370,7 @@ struct RiskLevelChartView: View {
     @State private var multiFactorRisk: MultiFactorRiskPoint?
     @State private var isLoadingMultiFactor = false
     @State private var showFactorBreakdown = true
+    @State private var showConfidenceInfo = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -390,11 +391,11 @@ struct RiskLevelChartView: View {
         if let latest = enhancedRiskHistory.last {
             return ITCRiskLevel(from: latest)
         }
-        // Fall back to legacy data (BTC, ETH, SOL only)
+        // Fall back to legacy data (BTC, ETH only - SOL has no legacy fallback)
         switch selectedCoin {
         case .btc: return viewModel.btcRiskLevel
         case .eth: return viewModel.ethRiskLevel
-        case .sol: return viewModel.btcRiskLevel // SOL uses enhanced history primarily
+        case .sol: return nil // SOL uses enhanced history only, no legacy fallback
         }
     }
 
@@ -403,7 +404,12 @@ struct RiskLevelChartView: View {
         if !enhancedRiskHistory.isEmpty {
             return enhancedRiskHistory.map { ITCRiskLevel(from: $0) }
         }
-        return viewModel.btcRiskHistory
+        // Fall back to legacy BTC history only for BTC coin
+        // ETH and SOL should rely on enhanced history
+        if selectedCoin == .btc {
+            return viewModel.btcRiskHistory
+        }
+        return []
     }
 
     // Filter history based on time range
@@ -551,10 +557,19 @@ struct RiskLevelChartView: View {
                     .foregroundColor(AppColors.accent)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(selectedCoin.displayName)
-                        .font(.headline)
-                        .foregroundColor(textPrimary)
-                    Text("Tap to change asset")
+                    HStack(spacing: 6) {
+                        Text(selectedCoin.displayName)
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        // Loading indicator when switching coins
+                        if isLoadingHistory || isLoadingMultiFactor {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                                .frame(width: 14, height: 14)
+                        }
+                    }
+                    Text(isLoadingHistory ? "Loading data..." : "Tap to change asset")
                         .font(.caption)
                         .foregroundColor(textSecondary)
                 }
@@ -906,21 +921,155 @@ struct RiskLevelChartView: View {
 
             Spacer()
 
-            // Confidence indicator
+            // Confidence indicator with tooltip
             if let config = AssetRiskConfig.forCoin(selectedCoin.rawValue) {
-                HStack(spacing: 2) {
-                    ForEach(0..<9, id: \.self) { index in
-                        Circle()
-                            .fill(index < config.confidenceLevel
-                                ? AppColors.accent.opacity(0.7)
-                                : textSecondary.opacity(0.2))
-                            .frame(width: 4, height: 4)
+                Button(action: { showConfidenceInfo.toggle() }) {
+                    HStack(spacing: 4) {
+                        HStack(spacing: 2) {
+                            ForEach(0..<9, id: \.self) { index in
+                                Circle()
+                                    .fill(index < config.confidenceLevel
+                                        ? AppColors.accent.opacity(0.7)
+                                        : textSecondary.opacity(0.2))
+                                    .frame(width: 4, height: 4)
+                            }
+                        }
+
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 10))
+                            .foregroundColor(textSecondary.opacity(0.4))
                     }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .popover(isPresented: $showConfidenceInfo, arrowEdge: .bottom) {
+                    ConfidenceInfoPopover(
+                        config: config,
+                        colorScheme: colorScheme
+                    )
                 }
             }
         }
         .padding(.horizontal, ArkSpacing.md)
         .padding(.vertical, ArkSpacing.sm)
+    }
+}
+
+// MARK: - Confidence Info Popover
+/// Explains the data confidence indicator
+struct ConfidenceInfoPopover: View {
+    let config: AssetRiskConfig
+    let colorScheme: ColorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var textSecondary: Color {
+        AppColors.textSecondary
+    }
+
+    private var confidenceDescription: String {
+        switch config.confidenceLevel {
+        case 9:
+            return "Highest confidence. Over 15 years of price data provides excellent regression accuracy."
+        case 8:
+            return "Very high confidence. Nearly a decade of data ensures reliable fair value estimates."
+        case 7:
+            return "High confidence. Multiple market cycles covered for solid regression modeling."
+        case 6:
+            return "Good confidence. Several years of data, though fewer complete cycles than BTC/ETH."
+        case 5:
+            return "Moderate confidence. Limited historical data may affect accuracy during unusual conditions."
+        default:
+            return "Lower confidence. Newer asset with limited price history for regression analysis."
+        }
+    }
+
+    private var yearsOfData: String {
+        let days = Calendar.current.dateComponents([.day], from: config.originDate, to: Date()).day ?? 0
+        let years = Double(days) / 365.25
+        return String(format: "%.1f", years)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack {
+                Image(systemName: "chart.bar.doc.horizontal")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Data Confidence")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+            }
+
+            Divider()
+
+            // Confidence level visual
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("\(config.displayName) Confidence:")
+                        .font(.subheadline)
+                        .foregroundColor(textSecondary)
+
+                    Spacer()
+
+                    Text("\(config.confidenceLevel)/9")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.accent)
+                }
+
+                // Confidence bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.08))
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(AppColors.accent)
+                            .frame(width: geometry.size.width * (Double(config.confidenceLevel) / 9.0))
+                    }
+                }
+                .frame(height: 6)
+            }
+
+            // Description
+            Text(confidenceDescription)
+                .font(.caption)
+                .foregroundColor(textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Stats
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Data since:")
+                        .font(.caption)
+                        .foregroundColor(textSecondary)
+                    Spacer()
+                    Text(config.originDate.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(textPrimary)
+                }
+
+                HStack {
+                    Text("Years of data:")
+                        .font(.caption)
+                        .foregroundColor(textSecondary)
+                    Spacer()
+                    Text("\(yearsOfData) years")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(textPrimary)
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(16)
+        .frame(width: 280)
+        .background(colorScheme == .dark ? Color(hex: "1C1C1E") : Color.white)
     }
 }
 

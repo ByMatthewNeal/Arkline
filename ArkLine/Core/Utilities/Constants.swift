@@ -22,7 +22,7 @@ enum Constants {
             "TAAPI_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjk3MjRmMzlhZWVjODgxNjBhNTkzNjE2IiwiaWF0IjoxNzY5MDk5MDY1LCJleHAiOjMzMjczNTYzMDY1fQ.zmhZHgsYk5fmYJVhvltS1WczaLejZqrisVmoG3vExaw",
             "METALS_API_KEY": "",
             "CLAUDE_API_KEY": "",
-            "FRED_API_KEY": "",
+            "FRED_API_KEY": "b29015d02e2962b4077cb839c879a348",
             "FINNHUB_API_KEY": "d5qo0r9r01qhn30gst1gd5qo0r9r01qhn30gst20",
             "FMP_API_KEY": "paZFjsoaxMRSmSR82AbYHskweit7aCd8",
             "SUPABASE_URL": "https://mprbbjgrshfbupheuscn.supabase.co",
