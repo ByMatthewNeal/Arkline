@@ -721,34 +721,6 @@ struct RiskLevelChartView: View {
                             .foregroundColor(RiskColors.color(for: risk.riskLevel))
                     }
 
-                    // Price and fair value (when available)
-                    if let price = risk.price, price > 0 {
-                        HStack(spacing: ArkSpacing.lg) {
-                            VStack(spacing: 2) {
-                                Text("Price")
-                                    .font(.caption2)
-                                    .foregroundColor(textSecondary)
-                                Text(formatPrice(price))
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(textPrimary)
-                            }
-
-                            if let fairValue = risk.fairValue, fairValue > 0 {
-                                VStack(spacing: 2) {
-                                    Text("Fair Value")
-                                        .font(.caption2)
-                                        .foregroundColor(textSecondary)
-                                    Text(formatPrice(fairValue))
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(textSecondary)
-                                }
-                            }
-                        }
-                        .padding(.top, ArkSpacing.xs)
-                    }
-
                     // Date in new format
                     Text("As of \(formatDate(risk.date))")
                         .font(.caption)
@@ -763,17 +735,6 @@ struct RiskLevelChartView: View {
         .frame(maxWidth: .infinity)
         .padding(ArkSpacing.xl)
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
-    }
-
-    // Format price with appropriate decimal places
-    private func formatPrice(_ price: Double) -> String {
-        if price >= 1000 {
-            return "$\(Int(price).formatted())"
-        } else if price >= 1 {
-            return String(format: "$%.2f", price)
-        } else {
-            return String(format: "$%.4f", price)
-        }
     }
 
     // MARK: - Factor Breakdown Section
