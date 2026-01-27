@@ -16,7 +16,6 @@ enum Constants {
         // Fallback: hardcoded keys (TEMPORARY - remove after fixing plist)
         print("⚠️ Using hardcoded API keys (Secrets.plist not in bundle)")
         return [
-            "ALPHA_VANTAGE_API_KEY": "MBSPLHGZOUELTCOJ",
             "COINGECKO_API_KEY": "CG-Ggho8wQf8mXQeyPUzcgTJc3B",
             "COINGLASS_API_KEY": "1164e763b82f474e87b4e0276feef926",
             "TAAPI_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbHVlIjoiNjk3MjRmMzlhZWVjODgxNjBhNTkzNjE2IiwiaWF0IjoxNzY5MDk5MDY1LCJleHAiOjMzMjczNTYzMDY1fQ.zmhZHgsYk5fmYJVhvltS1WczaLejZqrisVmoG3vExaw",
@@ -35,7 +34,6 @@ enum Constants {
         static let supabaseAnonKey = Constants.secrets["SUPABASE_ANON_KEY"] as? String ?? ""
         static let claudeAPIKey = Constants.secrets["CLAUDE_API_KEY"] as? String ?? ""
         static let coinGeckoAPIKey = Constants.secrets["COINGECKO_API_KEY"] as? String ?? ""
-        static let alphaVantageAPIKey = Constants.secrets["ALPHA_VANTAGE_API_KEY"] as? String ?? ""
         static let metalsAPIKey = Constants.secrets["METALS_API_KEY"] as? String ?? ""
         static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String ?? ""
         static let coinglassAPIKey = Constants.secrets["COINGLASS_API_KEY"] as? String ?? ""
@@ -52,7 +50,6 @@ enum Constants {
     // MARK: - API Endpoints
     enum Endpoints {
         static let coinGeckoBase = "https://api.coingecko.com/api/v3"
-        static let alphaVantageBase = "https://www.alphavantage.co"
         static let metalsAPIBase = "https://metals-api.com/api"
         static let claudeBase = "https://api.anthropic.com/v1"
         static let taapiBase = "https://api.taapi.io"

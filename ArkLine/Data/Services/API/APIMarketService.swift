@@ -2,11 +2,12 @@ import Foundation
 
 // MARK: - API Market Service
 /// Real API implementation of MarketServiceProtocol.
-/// Uses CoinGecko, Alpha Vantage, and Metals API for data.
+/// Uses CoinGecko, FMP, and Metals API for data.
 final class APIMarketService: MarketServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
     private let cache = APICache.shared
+    private let fmpService = FMPService.shared
 
     // MARK: - MarketServiceProtocol
 
@@ -29,20 +30,13 @@ final class APIMarketService: MarketServiceProtocol {
         let cacheKey = CacheKey.stockAssets(symbols: symbols)
 
         return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
-            var assets: [StockAsset] = []
-
-            for symbol in symbols {
-                let endpoint = AlphaVantageEndpoint.globalQuote(symbol: symbol)
-                do {
-                    let response: AlphaVantageGlobalQuoteResponse = try await networkManager.request(endpoint)
-                    assets.append(response.globalQuote.toStockAsset())
-                } catch {
-                    // Log error but continue with other symbols
-                    logError("Failed to fetch stock \(symbol): \(error)")
-                }
+            do {
+                let quotes = try await fmpService.fetchStockQuotes(symbols: symbols)
+                return quotes.map { $0.toStockAsset() }
+            } catch {
+                logError("Failed to fetch stocks via FMP: \(error)")
+                throw error
             }
-
-            return assets
         }
     }
 
@@ -109,10 +103,8 @@ final class APIMarketService: MarketServiceProtocol {
         return try await fetchCryptoAssets(ids: Array(topIds))
     }
 
-    func searchStocks(query: String) async throws -> [AlphaVantageSearchMatch] {
-        let endpoint = AlphaVantageEndpoint.searchSymbol(keywords: query)
-        let response: AlphaVantageSearchResponse = try await networkManager.request(endpoint)
-        return response.bestMatches
+    func searchStocks(query: String) async throws -> [StockSearchResult] {
+        return try await fmpService.searchStocks(query: query)
     }
 
     func fetchCoinMarketChart(id: String, currency: String, days: Int) async throws -> CoinGeckoMarketChart {

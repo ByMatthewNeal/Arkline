@@ -44,15 +44,15 @@ final class MockMarketService: MarketServiceProtocol {
         }
     }
 
-    func searchStocks(query: String) async throws -> [AlphaVantageSearchMatch] {
+    func searchStocks(query: String) async throws -> [StockSearchResult] {
         try await simulateNetworkDelay()
         // Return mock stock search results
         let mockStocks = [
-            AlphaVantageSearchMatch(symbol: "AAPL", name: "Apple Inc", type: "Equity", region: "United States", marketOpen: "09:30", marketClose: "16:00", timezone: "UTC-04", currency: "USD", matchScore: "1.0"),
-            AlphaVantageSearchMatch(symbol: "NVDA", name: "NVIDIA Corporation", type: "Equity", region: "United States", marketOpen: "09:30", marketClose: "16:00", timezone: "UTC-04", currency: "USD", matchScore: "1.0"),
-            AlphaVantageSearchMatch(symbol: "MSFT", name: "Microsoft Corporation", type: "Equity", region: "United States", marketOpen: "09:30", marketClose: "16:00", timezone: "UTC-04", currency: "USD", matchScore: "1.0"),
-            AlphaVantageSearchMatch(symbol: "GOOGL", name: "Alphabet Inc", type: "Equity", region: "United States", marketOpen: "09:30", marketClose: "16:00", timezone: "UTC-04", currency: "USD", matchScore: "1.0"),
-            AlphaVantageSearchMatch(symbol: "AMZN", name: "Amazon.com Inc", type: "Equity", region: "United States", marketOpen: "09:30", marketClose: "16:00", timezone: "UTC-04", currency: "USD", matchScore: "1.0"),
+            StockSearchResult(symbol: "AAPL", name: "Apple Inc", exchange: "NASDAQ", type: "Equity", currency: "USD"),
+            StockSearchResult(symbol: "NVDA", name: "NVIDIA Corporation", exchange: "NASDAQ", type: "Equity", currency: "USD"),
+            StockSearchResult(symbol: "MSFT", name: "Microsoft Corporation", exchange: "NASDAQ", type: "Equity", currency: "USD"),
+            StockSearchResult(symbol: "GOOGL", name: "Alphabet Inc", exchange: "NASDAQ", type: "Equity", currency: "USD"),
+            StockSearchResult(symbol: "AMZN", name: "Amazon.com Inc", exchange: "NASDAQ", type: "Equity", currency: "USD"),
         ]
         guard !query.isEmpty else { return mockStocks }
         return mockStocks.filter {

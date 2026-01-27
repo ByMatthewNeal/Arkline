@@ -176,63 +176,6 @@ enum CoinGeckoEndpoint: APIEndpoint {
     }
 }
 
-// MARK: - Alpha Vantage Endpoints
-enum AlphaVantageEndpoint: APIEndpoint {
-    case globalQuote(symbol: String)
-    case dailyTimeSeries(symbol: String)
-    case dailyTimeSeriesExtended(symbol: String, outputSize: String)
-    case searchSymbol(keywords: String)
-    /// VIX - CBOE Volatility Index
-    case vixDaily
-    case vixGlobalQuote
-    /// DXY - US Dollar Index (using UUP ETF as proxy)
-    case dxyDaily
-    case dxyGlobalQuote
-
-    var baseURL: String { Constants.Endpoints.alphaVantageBase }
-
-    var path: String { "/query" }
-
-    var method: HTTPMethod { .get }
-
-    var queryParameters: [String: String]? {
-        var params: [String: String] = ["apikey": Constants.API.alphaVantageAPIKey]
-
-        switch self {
-        case .globalQuote(let symbol):
-            params["function"] = "GLOBAL_QUOTE"
-            params["symbol"] = symbol
-        case .dailyTimeSeries(let symbol):
-            params["function"] = "TIME_SERIES_DAILY"
-            params["symbol"] = symbol
-            params["outputsize"] = "compact"
-        case .dailyTimeSeriesExtended(let symbol, let outputSize):
-            params["function"] = "TIME_SERIES_DAILY"
-            params["symbol"] = symbol
-            params["outputsize"] = outputSize
-        case .searchSymbol(let keywords):
-            params["function"] = "SYMBOL_SEARCH"
-            params["keywords"] = keywords
-        case .vixDaily:
-            params["function"] = "TIME_SERIES_DAILY"
-            params["symbol"] = "VIXY"  // VIX ETF proxy (ProShares VIX Short-Term Futures)
-            params["outputsize"] = "compact"
-        case .vixGlobalQuote:
-            params["function"] = "GLOBAL_QUOTE"
-            params["symbol"] = "VIXY"
-        case .dxyDaily:
-            params["function"] = "TIME_SERIES_DAILY"
-            params["symbol"] = "UUP"  // Invesco DB US Dollar Index Bullish Fund
-            params["outputsize"] = "compact"
-        case .dxyGlobalQuote:
-            params["function"] = "GLOBAL_QUOTE"
-            params["symbol"] = "UUP"
-        }
-
-        return params
-    }
-}
-
 // MARK: - Metals API Endpoints
 enum MetalsAPIEndpoint: APIEndpoint {
     case latest(base: String, symbols: [String])

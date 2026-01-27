@@ -33,10 +33,10 @@ protocol MarketServiceProtocol {
     /// - Returns: Array of matching CryptoAsset
     func searchCrypto(query: String) async throws -> [CryptoAsset]
 
-    /// Searches for stocks by query using Alpha Vantage
+    /// Searches for stocks by query
     /// - Parameter query: Search query string
     /// - Returns: Array of matching stock search results
-    func searchStocks(query: String) async throws -> [AlphaVantageSearchMatch]
+    func searchStocks(query: String) async throws -> [StockSearchResult]
 
     /// Fetches price history for a cryptocurrency
     /// - Parameters:

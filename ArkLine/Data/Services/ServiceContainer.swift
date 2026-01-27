@@ -42,8 +42,6 @@ final class ServiceContainer {
     private lazy var _apiDCAService = APIDCAService()
     private lazy var _apiTechnicalAnalysisService = APITechnicalAnalysisService()
     private lazy var _apiITCRiskService = APIITCRiskService()
-    private lazy var _apiVIXService = APIVIXService()
-    private lazy var _apiDXYService = APIDXYService()
     private lazy var _apiRainbowChartService = APIRainbowChartService()
     private lazy var _apiGlobalLiquidityService = APIGlobalLiquidityService()
 
@@ -134,8 +132,6 @@ final class ServiceContainer {
         _apiDCAService = APIDCAService()
         _apiTechnicalAnalysisService = APITechnicalAnalysisService()
         _apiITCRiskService = APIITCRiskService()
-        _apiVIXService = APIVIXService()
-        _apiDXYService = APIDXYService()
         _apiRainbowChartService = APIRainbowChartService()
         _apiGlobalLiquidityService = APIGlobalLiquidityService()
     }

@@ -43,7 +43,6 @@
 		2EC5DA90B4B6556747D69F09 /* SentimentGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */; };
 		2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */; };
 		320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */; };
-		333C25308702886CB558C573 /* APIDXYService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF1D381D5F6A6EFBA2FB7EA5 /* APIDXYService.swift */; };
 		335C702F0D9E1CFF7480EC8B /* SocialLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D7DB64239C464966F42017 /* SocialLinksView.swift */; };
 		34F28A15245DD8CEAF8D0917 /* PerformanceCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA6D89396B94ACB0433199B /* PerformanceCards.swift */; };
 		3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */; };
@@ -147,7 +146,6 @@
 		B5C77358455AF608051D2BC5 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E6F0CEE3D833B28336E0B66 /* ExportService.swift */; };
 		B8294A44B6A4109C2975C726 /* RiskFactorBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 542156911269CE786C8CB4A4 /* RiskFactorBreakdownView.swift */; };
 		BA80C58197F5138E504E51A2 /* NewsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C9947884BDE4102F110274 /* NewsCard.swift */; };
-		BBE130BAEEC03DC1CCBD9060 /* APIVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE2B13F2F800622B70F1B720 /* APIVIXService.swift */; };
 		BC96D22F01376C054BC47DC2 /* MarketSentimentSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */; };
 		BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */; };
 		BE89C92611163C89B015EF91 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CBCD28DAB9835627BA87F5 /* VIXData.swift */; };
@@ -342,7 +340,6 @@
 		BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
 		BBC73CFDFB027E944D3D8798 /* MultiFactorRisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiFactorRisk.swift; sourceTree = "<group>"; };
 		BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogarithmicRegression.swift; sourceTree = "<group>"; };
-		BE2B13F2F800622B70F1B720 /* APIVIXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIVIXService.swift; sourceTree = "<group>"; };
 		C020CF24D89DA500878B422B /* SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBar.swift; sourceTree = "<group>"; };
 		C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FedWatchSection.swift; sourceTree = "<group>"; };
 		C1C9947884BDE4102F110274 /* NewsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsCard.swift; sourceTree = "<group>"; };
@@ -350,7 +347,6 @@
 		C909B38D6272803B487236EF /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
 		CB5324CFC48F1379600379DC /* APICoinglassService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICoinglassService.swift; sourceTree = "<group>"; };
 		CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketService.swift; sourceTree = "<group>"; };
-		CF1D381D5F6A6EFBA2FB7EA5 /* APIDXYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDXYService.swift; sourceTree = "<group>"; };
 		CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
 		CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		CF8C52768AD67E7DEDCACB74 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
@@ -508,7 +504,6 @@
 				7C36C75D83F3A8445A56B3F5 /* APIBinanceFundingService.swift */,
 				CB5324CFC48F1379600379DC /* APICoinglassService.swift */,
 				974BF8238E3EC277ECEE5636 /* APIDCAService.swift */,
-				CF1D381D5F6A6EFBA2FB7EA5 /* APIDXYService.swift */,
 				55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */,
 				7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */,
 				CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */,
@@ -517,7 +512,6 @@
 				B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */,
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
 				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
-				BE2B13F2F800622B70F1B720 /* APIVIXService.swift */,
 				03A2248CF31FBE81B04E09E5 /* FMPService.swift */,
 				7595D2044FCFDCA031195CAA /* YahooDXYService.swift */,
 				BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */,
@@ -1142,7 +1136,6 @@
 				ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */,
 				9DBBCFAFDA17CB2DC3BF5071 /* APICoinglassService.swift in Sources */,
 				4A0014C464DAD4B555371050 /* APIDCAService.swift in Sources */,
-				333C25308702886CB558C573 /* APIDXYService.swift in Sources */,
 				2D705F6BFE7C3BF5DE8CBBF0 /* APIEndpoint.swift in Sources */,
 				5605DA56CF5EFF3F689E634B /* APIGlobalLiquidityService.swift in Sources */,
 				98CEA03E857EB2C3B42432C2 /* APIITCRiskService.swift in Sources */,
@@ -1152,7 +1145,6 @@
 				4732DC10C2E52D8A1C1016DE /* APIRainbowChartService.swift in Sources */,
 				E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */,
 				F01FE94D4879AC67E00D0369 /* APITechnicalAnalysisService.swift in Sources */,
-				BBE130BAEEC03DC1CCBD9060 /* APIVIXService.swift in Sources */,
 				690BC8C087FC477F1E63CE84 /* AddRealEstateView.swift in Sources */,
 				6733AADDD937D8717CF46DFF /* AppError.swift in Sources */,
 				80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */,

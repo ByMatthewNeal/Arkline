@@ -115,6 +115,27 @@ final class FMPService {
         return Array(movers.prefix(limit))
     }
 
+    // MARK: - Stock Search
+
+    /// Search for stocks by query
+    func searchStocks(query: String, limit: Int = 10) async throws -> [StockSearchResult] {
+        guard isConfigured else {
+            throw FMPError.notConfigured
+        }
+
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        guard let url = URL(string: "\(baseURL)/search?query=\(encodedQuery)&limit=\(limit)&apikey=\(apiKey)") else {
+            throw FMPError.invalidURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        try validateResponse(response, data: data)
+
+        let results = try JSONDecoder().decode([FMPSearchResult].self, from: data)
+        return results.map { $0.toStockSearchResult() }
+    }
+
     // MARK: - Company Profile
 
     /// Fetch company profile/info
@@ -294,6 +315,32 @@ struct FMPQuote: Codable, Identifiable {
     var isPositive: Bool {
         changePercentage >= 0
     }
+
+    /// Convert to StockAsset
+    func toStockAsset() -> StockAsset {
+        StockAsset(
+            id: symbol,
+            symbol: symbol,
+            name: name,
+            currentPrice: price,
+            priceChange24h: change,
+            priceChangePercentage24h: changePercentage,
+            iconUrl: nil,
+            open: open,
+            high: dayHigh,
+            low: dayLow,
+            previousClose: previousClose,
+            volume: volume,
+            latestTradingDay: Date(timeIntervalSince1970: TimeInterval(timestamp)),
+            exchange: exchange,
+            currency: nil,
+            marketCap: marketCap,
+            peRatio: nil,
+            dividendYield: nil,
+            week52High: yearHigh,
+            week52Low: yearLow
+        )
+    }
 }
 
 /// Historical Price Data
@@ -339,6 +386,25 @@ struct FMPMover: Codable, Identifiable {
     var changePercentFormatted: String {
         let sign = changesPercentage >= 0 ? "+" : ""
         return "\(sign)\(String(format: "%.2f", changesPercentage))%"
+    }
+}
+
+/// Stock Search Result from FMP
+struct FMPSearchResult: Codable {
+    let symbol: String
+    let name: String
+    let currency: String?
+    let stockExchange: String?
+    let exchangeShortName: String?
+
+    func toStockSearchResult() -> StockSearchResult {
+        StockSearchResult(
+            symbol: symbol,
+            name: name,
+            exchange: exchangeShortName ?? stockExchange,
+            type: "Equity",
+            currency: currency
+        )
     }
 }
 
