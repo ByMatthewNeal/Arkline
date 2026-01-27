@@ -124,16 +124,23 @@ final class FMPService {
         }
 
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        guard let url = URL(string: "\(baseURL)/search?query=\(encodedQuery)&limit=\(limit)&apikey=\(apiKey)") else {
+        guard let url = URL(string: "\(baseURL)/search-symbol?query=\(encodedQuery)") else {
             throw FMPError.invalidURL
         }
 
-        let (data, response) = try await URLSession.shared.data(from: url)
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "apikey")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         try validateResponse(response, data: data)
 
         let results = try JSONDecoder().decode([FMPSearchResult].self, from: data)
-        return results.map { $0.toStockSearchResult() }
+        // Limit results and filter to primary exchanges
+        let filteredResults = results
+            .filter { !$0.symbol.contains(".") } // Filter out non-US exchanges (AAPL.L, AAPL.DE, etc.)
+            .prefix(limit)
+        return filteredResults.map { $0.toStockSearchResult() }
     }
 
     // MARK: - Company Profile
@@ -394,14 +401,14 @@ struct FMPSearchResult: Codable {
     let symbol: String
     let name: String
     let currency: String?
-    let stockExchange: String?
-    let exchangeShortName: String?
+    let exchange: String?
+    let exchangeFullName: String?
 
     func toStockSearchResult() -> StockSearchResult {
         StockSearchResult(
             symbol: symbol,
             name: name,
-            exchange: exchangeShortName ?? stockExchange,
+            exchange: exchange ?? exchangeFullName,
             type: "Equity",
             currency: currency
         )
