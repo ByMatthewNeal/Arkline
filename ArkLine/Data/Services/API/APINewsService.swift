@@ -57,7 +57,10 @@ final class APINewsService: NewsServiceProtocol {
 
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
         // Use Investing.com scraper with US market holidays as reliable backup
-        return try await calendarScraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
+        print("📅 APINewsService.fetchUpcomingEvents called - days: \(days)")
+        let events = try await calendarScraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
+        print("📅 APINewsService: Got \(events.count) upcoming events")
+        return events
     }
 
     // MARK: - Twitter/X News
@@ -256,7 +259,7 @@ final class FinnhubEconomicCalendarService {
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
         guard isConfigured else {
             print("⚠️ Finnhub API key not configured - using fallback")
-            return try await fallbackToInvestingCom(days: days, impactFilter: impactFilter)
+            return try await fallbackToHardcodedData(days: days, impactFilter: impactFilter)
         }
 
         let calendar = Calendar.current
@@ -284,7 +287,7 @@ final class FinnhubEconomicCalendarService {
             return events
         } catch {
             print("⚠️ Finnhub API failed: \(error.localizedDescription) - using fallback")
-            return try await fallbackToInvestingCom(days: days, impactFilter: impactFilter)
+            return try await fallbackToHardcodedData(days: days, impactFilter: impactFilter)
         }
     }
 
@@ -410,9 +413,9 @@ final class FinnhubEconomicCalendarService {
         return String(format: "%.2f", value)
     }
 
-    private func fallbackToInvestingCom(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
-        let scraper = InvestingComScraper()
-        return try await scraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
+    private func fallbackToHardcodedData(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
+        // Use hardcoded data instead of scraping
+        return EconomicEventsData.getUpcomingEvents(days: days, impactFilter: impactFilter)
     }
 
     // MARK: - US Market Holidays
@@ -589,40 +592,17 @@ final class InvestingComScraper {
     private let allowedCurrencies: Set<String> = ["USD", "JPY"]
 
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
-        var allEvents: [EconomicEvent] = []
+        // Use hardcoded data instead of scraping Investing.com
+        var allEvents = EconomicEventsData.getUpcomingEvents(days: days, impactFilter: impactFilter)
 
-        // Always add real US market holidays (these are calculated, not scraped)
+        // Add US market holidays
         let holidays = getUSMarketHolidays(days: days)
         allEvents.append(contentsOf: holidays)
-
-        // Try to scrape Investing.com for economic events
-        do {
-            let html = try await fetchCalendarHTML()
-            let events = parseEvents(from: html)
-
-            let calendar = Calendar.current
-            let endDate = calendar.date(byAdding: .day, value: days, to: Date()) ?? Date()
-
-            let filtered = events.filter { event in
-                event.date <= endDate &&
-                impactFilter.contains(event.impact) &&
-                allowedCurrencies.contains(event.currency ?? "")
-            }
-
-            if !filtered.isEmpty {
-                allEvents.append(contentsOf: filtered)
-                print("📅 Scraped \(filtered.count) economic events from Investing.com")
-            } else {
-                print("📅 No economic events found from Investing.com (may be weekend/holiday)")
-            }
-        } catch {
-            print("⚠️ Investing.com scraper failed: \(error.localizedDescription)")
-            // Don't add fake mock events - only show real holidays
-        }
 
         // Sort by date
         allEvents.sort { $0.date < $1.date }
 
+        print("📅 Loaded \(allEvents.count) economic events from hardcoded data")
         return allEvents
     }
 
