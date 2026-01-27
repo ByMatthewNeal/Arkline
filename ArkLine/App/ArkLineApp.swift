@@ -48,11 +48,12 @@ struct ArkLineApp: App {
     private func setupAppearance() {
         #if canImport(UIKit)
         // Configure UIKit appearance for components that need it
+        // Use label color which adapts to light/dark mode automatically
         UINavigationBar.appearance().largeTitleTextAttributes = [
-            .foregroundColor: UIColor.white
+            .foregroundColor: UIColor.label
         ]
         UINavigationBar.appearance().titleTextAttributes = [
-            .foregroundColor: UIColor.white
+            .foregroundColor: UIColor.label
         ]
         UITableView.appearance().backgroundColor = .clear
         UITableViewCell.appearance().backgroundColor = .clear
