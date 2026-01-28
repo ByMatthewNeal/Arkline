@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -6,6 +7,7 @@ import UIKit
 @main
 struct ArkLineApp: App {
     @StateObject private var appState = AppState()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +16,7 @@ struct ArkLineApp: App {
                 .preferredColorScheme(appState.colorScheme)
                 .onAppear {
                     setupAppearance()
+                    setupNotifications()
                 }
                 .onOpenURL { url in
                     Task {
@@ -21,6 +24,14 @@ struct ArkLineApp: App {
                     }
                 }
         }
+    }
+
+    private func setupNotifications() {
+        // Register notification categories
+        BroadcastNotificationService.shared.registerNotificationCategories()
+
+        // Set notification delegate
+        UNUserNotificationCenter.current().delegate = appDelegate
     }
 
     private func handleDeepLink(_ url: URL) async {
@@ -75,7 +86,7 @@ class AppState: ObservableObject {
     @Published var homeNavigationReset = UUID()
     @Published var marketNavigationReset = UUID()
     @Published var portfolioNavigationReset = UUID()
-    @Published var chatNavigationReset = UUID()
+    @Published var insightsNavigationReset = UUID()
     @Published var profileNavigationReset = UUID()
 
     // Tab navigation
@@ -223,3 +234,64 @@ class AppState: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
     }
 }
+
+// MARK: - App Delegate
+
+#if canImport(UIKit)
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+
+    // MARK: - Push Notification Registration
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        BroadcastNotificationService.shared.handleDeviceToken(deviceToken)
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        BroadcastNotificationService.shared.handleDeviceTokenError(error)
+    }
+
+    // MARK: - UNUserNotificationCenterDelegate
+
+    /// Handle notification when app is in foreground
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        // Show notification even when app is in foreground
+        completionHandler([.banner, .badge, .sound])
+    }
+
+    /// Handle notification tap
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        // Handle notification response
+        if let result = BroadcastNotificationService.shared.handleNotificationResponse(response) {
+            // Post notification for navigation
+            NotificationCenter.default.post(
+                name: Notification.Name("BroadcastNotificationTapped"),
+                object: nil,
+                userInfo: ["type": result.type, "id": result.id]
+            )
+        }
+
+        // Clear badge
+        BroadcastNotificationService.shared.clearBadge()
+
+        completionHandler()
+    }
+}
+#else
+class AppDelegate: NSObject {
+    // macOS stub
+}
+#endif

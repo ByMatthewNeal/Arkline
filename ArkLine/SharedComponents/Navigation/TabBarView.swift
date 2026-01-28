@@ -5,7 +5,7 @@ enum AppTab: String, CaseIterable {
     case home = "Home"
     case market = "Market"
     case portfolio = "Portfolio"
-    case chat = "Chat"
+    case insights = "Insights"
     case profile = "Profile"
 
     var icon: String {
@@ -13,7 +13,7 @@ enum AppTab: String, CaseIterable {
         case .home: return "house.fill"
         case .market: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "wallet.pass.fill"
-        case .chat: return "message.fill"
+        case .insights: return "antenna.radiowaves.left.and.right"
         case .profile: return "person.fill"
         }
     }
@@ -23,7 +23,7 @@ enum AppTab: String, CaseIterable {
         case .home: return "house"
         case .market: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "wallet.pass"
-        case .chat: return "message"
+        case .insights: return "antenna.radiowaves.left.and.right"
         case .profile: return "person"
         }
     }
@@ -92,8 +92,8 @@ struct CustomTabBar: View {
             appState.marketNavigationReset = UUID()
         case .portfolio:
             appState.portfolioNavigationReset = UUID()
-        case .chat:
-            appState.chatNavigationReset = UUID()
+        case .insights:
+            appState.insightsNavigationReset = UUID()
         case .profile:
             appState.profileNavigationReset = UUID()
         }
@@ -159,8 +159,8 @@ struct MainTabView: View {
                     MarketOverviewView()
                 case .portfolio:
                     PortfolioView()
-                case .chat:
-                    AIChatView()
+                case .insights:
+                    BroadcastTabView()
                 case .profile:
                     ProfileView()
                 }

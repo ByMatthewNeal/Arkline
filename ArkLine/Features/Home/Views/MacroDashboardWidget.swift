@@ -876,6 +876,45 @@ struct MacroDashboardDetailView: View {
                             .fill(cardBackground)
                     )
 
+                    // Signal Key Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("SIGNAL KEY")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .tracking(1.5)
+
+                        VStack(spacing: 0) {
+                            SignalKeyRow(
+                                signal: "RISK-ON",
+                                color: AppColors.success,
+                                meaning: "Favorable for crypto",
+                                description: "Low volatility, weak dollar, expanding liquidity. Historically positive for Bitcoin."
+                            )
+
+                            Divider().background(textPrimary.opacity(0.08))
+
+                            SignalKeyRow(
+                                signal: "MIXED",
+                                color: AppColors.warning,
+                                meaning: "Conflicting signals",
+                                description: "Indicators disagree. Consider smaller positions until clarity emerges."
+                            )
+
+                            Divider().background(textPrimary.opacity(0.08))
+
+                            SignalKeyRow(
+                                signal: "RISK-OFF",
+                                color: AppColors.error,
+                                meaning: "Caution advised",
+                                description: "High volatility, strong dollar, or tightening liquidity. Defensive positioning recommended."
+                            )
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(cardBackground)
+                        )
+                    }
+
                     // Notification Toggle
                     VStack(alignment: .leading, spacing: 12) {
                         Text("ALERTS")
@@ -1331,6 +1370,48 @@ struct MacroDashboardDetailView: View {
     }
 }
 
+// MARK: - Signal Key Row
+struct SignalKeyRow: View {
+    let signal: String
+    let color: Color
+    let meaning: String
+    let description: String
+
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text(signal)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(color)
+
+                    Text(meaning)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+
+                Text(description)
+                    .font(.system(size: 12))
+                    .foregroundColor(textPrimary.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+        }
+        .padding(16)
+    }
+}
+
 // MARK: - Correlation Detail Row
 struct CorrelationDetailRow: View {
     let indicator: String
@@ -1531,10 +1612,10 @@ struct ZScoreAnalysisRow: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with indicator and z-score badge
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
                         Text(zScoreData.indicator.displayName)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(textPrimary)
 
                         ZScoreIndicator(zScore: zScoreData.zScore.zScore, size: .medium)
@@ -1544,9 +1625,14 @@ struct ZScoreAnalysisRow: View {
                         }
                     }
 
-                    Text(zScoreData.interpretation)
-                        .font(.system(size: 12))
-                        .foregroundColor(textPrimary.opacity(0.6))
+                    // Market implication inline
+                    HStack(spacing: 4) {
+                        Image(systemName: zScoreData.marketImplication.iconName)
+                            .font(.system(size: 10))
+                        Text(zScoreData.marketImplication.description)
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(zScoreData.marketImplication.color)
                 }
 
                 Spacer()
@@ -1554,7 +1640,7 @@ struct ZScoreAnalysisRow: View {
                 // Current value
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(formattedValue)
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .font(.system(size: 20, weight: .bold, design: .monospaced))
                         .foregroundColor(textPrimary)
 
                     Text("Current")
@@ -1563,44 +1649,69 @@ struct ZScoreAnalysisRow: View {
                 }
             }
 
-            // Stats row
-            HStack(spacing: 0) {
-                StatBox(label: "Mean", value: String(format: "%.2f", zScoreData.zScore.mean))
-                Divider().frame(height: 30).background(textPrimary.opacity(0.1))
-                StatBox(label: "Std Dev", value: String(format: "%.2f", zScoreData.zScore.standardDeviation))
-                Divider().frame(height: 30).background(textPrimary.opacity(0.1))
-                StatBox(label: "+2σ", value: String(format: "%.1f", zScoreData.sdBands.plus2SD))
-                Divider().frame(height: 30).background(textPrimary.opacity(0.1))
-                StatBox(label: "-2σ", value: String(format: "%.1f", zScoreData.sdBands.minus2SD))
+            // Simplified stats - 2 columns for cleaner look
+            HStack(spacing: 12) {
+                // Mean & Std Dev
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Mean:")
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                        Spacer()
+                        Text(formatStatValue(zScoreData.zScore.mean))
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(textPrimary.opacity(0.8))
+                    }
+                    HStack {
+                        Text("Std Dev:")
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                        Spacer()
+                        Text(formatStatValue(zScoreData.zScore.standardDeviation))
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(textPrimary.opacity(0.8))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider().frame(height: 40).background(textPrimary.opacity(0.1))
+
+                // SD Bands
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("+2σ:")
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                        Spacer()
+                        Text(formatStatValue(zScoreData.sdBands.plus2SD))
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(textPrimary.opacity(0.8))
+                    }
+                    HStack {
+                        Text("-2σ:")
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                        Spacer()
+                        Text(formatStatValue(zScoreData.sdBands.minus2SD))
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(textPrimary.opacity(0.8))
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
-            .padding(.vertical, 8)
+            .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(textPrimary.opacity(0.04))
             )
 
-            // Market implication
-            HStack(spacing: 6) {
-                Image(systemName: zScoreData.marketImplication.iconName)
-                    .font(.system(size: 12))
-                    .foregroundColor(zScoreData.marketImplication.color)
-
-                Text(zScoreData.marketImplication.description)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(zScoreData.marketImplication.color)
-
-                Spacer()
-
-                if let rarity = zScoreData.zScore.rarity {
-                    Text("1 in \(rarity)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+            // Only show rarity for significant moves (|z| >= 2)
+            if zScoreData.isSignificant, let rarity = zScoreData.zScore.rarity, rarity > 1 {
+                HStack {
+                    Spacer()
+                    Text("Occurs ~1 in \(rarity) observations")
+                        .font(.system(size: 10))
                         .foregroundColor(textPrimary.opacity(0.5))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule()
-                                .fill(textPrimary.opacity(0.08))
-                        )
                 }
             }
         }
@@ -1608,17 +1719,36 @@ struct ZScoreAnalysisRow: View {
     }
 
     private var formattedValue: String {
+        formatForIndicator(zScoreData.currentValue)
+    }
+
+    /// Format a value appropriately for this indicator type
+    private func formatStatValue(_ value: Double) -> String {
+        formatForIndicator(value)
+    }
+
+    /// Format value based on indicator type
+    private func formatForIndicator(_ value: Double) -> String {
         switch zScoreData.indicator {
         case .vix:
-            return String(format: "%.2f", zScoreData.currentValue)
+            return String(format: "%.2f", value)
         case .dxy:
-            return String(format: "%.2f", zScoreData.currentValue)
+            return String(format: "%.2f", value)
         case .m2:
-            if zScoreData.currentValue >= 1_000_000_000_000 {
-                return String(format: "%.1fT", zScoreData.currentValue / 1_000_000_000_000)
-            }
-            return String(format: "%.0fB", zScoreData.currentValue / 1_000_000_000)
+            return formatLargeNumber(value)
         }
+    }
+
+    /// Format large numbers (trillions/billions) for M2
+    private func formatLargeNumber(_ value: Double) -> String {
+        if value >= 1_000_000_000_000 {
+            return String(format: "%.2fT", value / 1_000_000_000_000)
+        } else if value >= 1_000_000_000 {
+            return String(format: "%.1fB", value / 1_000_000_000)
+        } else if value >= 1_000_000 {
+            return String(format: "%.1fM", value / 1_000_000)
+        }
+        return String(format: "%.2f", value)
     }
 }
 

@@ -55,6 +55,10 @@
     <string>ArkLine needs camera access to take profile photos.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>ArkLine needs photo library access to select profile photos.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>ArkLine needs microphone access to record voice notes for broadcasts.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>ArkLine uses speech recognition to transcribe your voice recordings to text.</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>CFBundleURLTypes</key>

@@ -72,6 +72,9 @@ enum SupabaseTable: String {
     case userDevices = "user_devices"
     case appStoreRankings = "app_store_rankings"
     case sentimentHistory = "sentiment_history"
+    case broadcasts
+    case broadcastReads = "broadcast_reads"
+    case broadcastReactions = "broadcast_reactions"
 }
 
 // MARK: - Storage Buckets
@@ -79,4 +82,5 @@ enum SupabaseBucket: String {
     case avatars
     case postImages = "post-images"
     case attachments
+    case broadcastMedia = "broadcast-media"
 }

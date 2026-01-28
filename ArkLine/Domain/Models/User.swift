@@ -1,5 +1,22 @@
 import Foundation
 
+// MARK: - User Role
+
+/// User access level for the app
+enum UserRole: String, Codable, CaseIterable {
+    case user           // Regular user - can view broadcasts
+    case premium        // Premium subscriber - gets notifications for broadcasts
+    case admin          // App creator - can create and publish broadcasts
+
+    var displayName: String {
+        switch self {
+        case .user: return "User"
+        case .premium: return "Premium"
+        case .admin: return "Admin"
+        }
+    }
+}
+
 // MARK: - User Model
 struct User: Codable, Identifiable, Equatable {
     let id: UUID
@@ -17,6 +34,7 @@ struct User: Codable, Identifiable, Equatable {
     var notifications: NotificationSettings?
     var passcodeHash: String?
     var faceIdEnabled: Bool
+    var role: UserRole
     var createdAt: Date
     var updatedAt: Date
 
@@ -37,6 +55,7 @@ struct User: Codable, Identifiable, Equatable {
         case notifications
         case passcodeHash = "passcode_hash"
         case faceIdEnabled = "face_id_enabled"
+        case role
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -58,6 +77,7 @@ struct User: Codable, Identifiable, Equatable {
         notifications: NotificationSettings? = nil,
         passcodeHash: String? = nil,
         faceIdEnabled: Bool = false,
+        role: UserRole = .user,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -76,6 +96,7 @@ struct User: Codable, Identifiable, Equatable {
         self.notifications = notifications
         self.passcodeHash = passcodeHash
         self.faceIdEnabled = faceIdEnabled
+        self.role = role
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -158,6 +179,18 @@ enum CareerIndustry: String, Codable, CaseIterable {
     }
 }
 
+// MARK: - Admin Configuration
+
+/// Admin user IDs - these users always have admin access regardless of role
+private let adminUserIds: Set<UUID> = [
+    UUID(uuidString: "5269677e-cc2c-4ea8-9246-1e6574f35b0b")! // Matt (Supabase auth)
+]
+
+/// Admin emails - fallback check for admin access
+private let adminEmails: Set<String> = [
+    "mneal.jw@gmail.com"
+]
+
 // MARK: - User Extensions
 extension User {
     var displayName: String {
@@ -185,6 +218,16 @@ extension User {
 
     var hasSetupSecurity: Bool {
         passcodeHash != nil || faceIdEnabled
+    }
+
+    /// Whether the user has admin privileges (can create broadcasts)
+    var isAdmin: Bool {
+        adminUserIds.contains(id) || adminEmails.contains(email.lowercased()) || role == .admin
+    }
+
+    /// Whether the user has premium access
+    var isPremium: Bool {
+        role == .premium || role == .admin
     }
 }
 
@@ -228,6 +271,7 @@ struct UpdateUserRequest: Encodable {
     var notifications: NotificationSettings?
     var passcodeHash: String?
     var faceIdEnabled: Bool?
+    var role: UserRole?
 
     enum CodingKeys: String, CodingKey {
         case username
@@ -243,5 +287,6 @@ struct UpdateUserRequest: Encodable {
         case notifications
         case passcodeHash = "passcode_hash"
         case faceIdEnabled = "face_id_enabled"
+        case role
     }
 }

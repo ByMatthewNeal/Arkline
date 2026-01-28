@@ -64,6 +64,9 @@ struct AppColors {
     /// Secondary text color
     static let textSecondary = Color(hex: "475569")  // slate-600
 
+    /// Tertiary text color (lighter than secondary)
+    static let textTertiary = Color(hex: "64748B")  // slate-500
+
     /// Disabled text color
     static func textDisabled(_ colorScheme: ColorScheme) -> Color {
         colorScheme == .dark ? Color(hex: "4A4A5A") : Color(hex: "CCCCCC")
@@ -132,6 +135,7 @@ final class ColorProvider {
     var fillPrimary: Color { AppColors.fillPrimary }
     var accent: Color { AppColors.accent }
     var textSecondary: Color { AppColors.textSecondary }
+    var textTertiary: Color { AppColors.textTertiary }
     var success: Color { AppColors.success }
     var warning: Color { AppColors.warning }
     var error: Color { AppColors.error }
