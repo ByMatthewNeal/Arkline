@@ -354,23 +354,27 @@ class HomeViewModel {
             self.topLosers = Array(sortedByGain.suffix(3).reversed())
         }
 
-        // Fetch macro indicators independently (these should always succeed with mock data)
+        // Fetch macro indicators and hardcoded events independently (these should always succeed quickly)
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
         async let liquidityTask = fetchGlobalLiquiditySafe()
         async let fedWatchTask = fetchFedWatchMeetingsSafe()
         async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
         async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
+        async let upcomingEventsTask = fetchUpcomingEventsSafe()
+        async let todaysEventsTask = fetchTodaysEventsSafe()
 
-        // Await macro indicators first (these use safe wrappers, won't throw)
+        // Await macro indicators and events first (these use safe wrappers, won't throw)
         let vix = await vixTask
         let dxy = await dxyTask
         let liquidity = await liquidityTask
         let fedMeetings = await fedWatchTask
         let btcRisk = await btcRiskTask
         let ethRisk = await ethRiskTask
+        let upcoming = await upcomingEventsTask
+        let todaysEvts = await todaysEventsTask
 
-        // Update macro indicators immediately
+        // Update macro indicators and events immediately (before slow network calls)
         await MainActor.run {
             self.vixData = vix
             self.dxyData = dxy
@@ -378,27 +382,25 @@ class HomeViewModel {
             self.fedWatchMeetings = fedMeetings ?? []
             self.btcRiskLevel = btcRisk
             self.ethRiskLevel = ethRisk
+            self.upcomingEvents = upcoming
+            self.todaysEvents = todaysEvts
+            self.eventsLastUpdated = Date()
         }
 
-        // Now fetch other data that might fail
+        // Now fetch other data that might fail (network-dependent)
         do {
             async let fgTask = sentimentService.fetchFearGreedIndex()
             async let riskScoreTask = sentimentService.fetchArkLineRiskScore()
             async let remindersTask = dcaService.fetchReminders(userId: userId)
-            async let eventsTask = newsService.fetchTodaysEvents()
-            async let upcomingEventsTask = newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
             async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 5)
 
-            let (fg, riskScore, reminders, events, upcoming) = try await (fgTask, riskScoreTask, remindersTask, eventsTask, upcomingEventsTask)
+            let (fg, riskScore, reminders) = try await (fgTask, riskScoreTask, remindersTask)
             let news = try await newsTask
 
             await MainActor.run {
                 self.fearGreedIndex = fg
                 self.activeReminders = reminders.filter { $0.isActive }
                 self.todayReminders = reminders.filter { $0.isDueToday }
-                self.todaysEvents = events
-                self.upcomingEvents = upcoming
-                self.eventsLastUpdated = Date()
                 self.compositeRiskScore = riskScore.score
                 self.arkLineRiskScore = riskScore
                 self.newsItems = news
@@ -544,5 +546,13 @@ class HomeViewModel {
 
     private func fetchGlobalLiquiditySafe() async -> GlobalLiquidityChanges? {
         try? await globalLiquidityService.fetchLiquidityChanges()
+    }
+
+    private func fetchUpcomingEventsSafe() async -> [EconomicEvent] {
+        (try? await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])) ?? []
+    }
+
+    private func fetchTodaysEventsSafe() async -> [EconomicEvent] {
+        (try? await newsService.fetchTodaysEvents()) ?? []
     }
 }
