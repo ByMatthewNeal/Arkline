@@ -49,6 +49,10 @@ final class ServiceContainer {
     private lazy var _yahooVIXService = YahooVIXService()
     private lazy var _yahooDXYService = YahooDXYService()
 
+    // MARK: - Lazy Services - Statistics
+    private lazy var _macroStatisticsService = MacroStatisticsService()
+    private lazy var _historicalContextService = HistoricalContextService()
+
     // MARK: - Service Accessors
 
     /// Market service uses real CoinGecko API for live crypto prices
@@ -107,6 +111,16 @@ final class ServiceContainer {
     var globalLiquidityService: GlobalLiquidityServiceProtocol {
         // Use mock until FRED API key is configured
         useMockForUnimplementedServices ? _mockGlobalLiquidityService : _apiGlobalLiquidityService
+    }
+
+    /// Macro Statistics service - calculates z-scores for VIX, DXY, M2
+    var macroStatisticsService: MacroStatisticsServiceProtocol {
+        _macroStatisticsService
+    }
+
+    /// Historical Context service - finds similar historical occurrences
+    var historicalContextService: HistoricalContextService {
+        _historicalContextService
     }
 
     // MARK: - Initialization

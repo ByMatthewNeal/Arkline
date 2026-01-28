@@ -9,6 +9,7 @@ class SentimentViewModel {
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
+    private let macroStatisticsService: MacroStatisticsServiceProtocol
 
     // MARK: - Properties
     var isLoading = false
@@ -27,6 +28,14 @@ class SentimentViewModel {
     var vixData: VIXData?
     var dxyData: DXYData?
     var globalM2Data: GlobalLiquidityChanges?
+
+    // Macro Z-Scores (statistical analysis)
+    var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
+
+    /// Whether any macro indicator has an extreme z-score
+    var hasExtremeMacroMove: Bool {
+        macroZScores.values.contains { $0.isExtreme }
+    }
 
     // Legacy single app ranking (backwards compatibility)
     var appStoreRanking: AppStoreRanking?
@@ -221,13 +230,15 @@ class SentimentViewModel {
         itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService,
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
-        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService
+        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
+        macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService
     ) {
         self.sentimentService = sentimentService
         self.itcRiskService = itcRiskService
         self.vixService = vixService
         self.dxyService = dxyService
         self.globalLiquidityService = globalLiquidityService
+        self.macroStatisticsService = macroStatisticsService
         Task { await loadInitialData() }
     }
 
@@ -261,11 +272,15 @@ class SentimentViewModel {
         async let dxyTask = fetchDXYSafe()
         async let globalM2Task = fetchGlobalM2Safe()
 
+        // Macro Z-Scores (statistical analysis)
+        async let zScoresTask = fetchMacroZScoresSafe()
+
         // Await all results (none will throw since they use safe wrappers)
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
         let (btcRisk, ethRisk, btcHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask)
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
+        let zScores = await zScoresTask
 
         await MainActor.run {
             // Core indicators (only update if we got data)
@@ -292,6 +307,12 @@ class SentimentViewModel {
             self.vixData = vix
             self.dxyData = dxy
             self.globalM2Data = globalM2
+
+            // Macro Z-Scores
+            self.macroZScores = zScores
+
+            // Check for extreme moves and trigger alerts
+            ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
 
             // Update search index from Google Trends
             if let trends = trends {
@@ -378,6 +399,10 @@ class SentimentViewModel {
 
     private func fetchGlobalM2Safe() async -> GlobalLiquidityChanges? {
         try? await globalLiquidityService.fetchLiquidityChanges()
+    }
+
+    private func fetchMacroZScoresSafe() async -> [MacroIndicatorType: MacroZScoreData] {
+        (try? await macroStatisticsService.fetchAllZScores()) ?? [:]
     }
 
     // MARK: - Enhanced Risk Methods

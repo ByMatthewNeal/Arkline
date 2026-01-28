@@ -38,7 +38,8 @@ struct MarketOverviewView: View {
                         MacroIndicatorsSection(
                             vixData: sentimentViewModel.vixData,
                             dxyData: sentimentViewModel.dxyData,
-                            globalM2Data: sentimentViewModel.globalM2Data
+                            globalM2Data: sentimentViewModel.globalM2Data,
+                            macroZScores: sentimentViewModel.macroZScores
                         )
 
                         // 4. Market Sentiment Section
@@ -499,9 +500,15 @@ struct MacroIndicatorsSection: View {
     let vixData: VIXData?
     let dxyData: DXYData?
     let globalM2Data: GlobalLiquidityChanges?
+    var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    /// Whether any indicator has an extreme z-score
+    private var hasExtremeMove: Bool {
+        macroZScores.values.contains { $0.isExtreme }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -512,6 +519,12 @@ struct MacroIndicatorsSection: View {
                 Text("Macro Indicators")
                     .font(.headline)
                     .foregroundColor(textPrimary)
+
+                // Extreme move indicator
+                if hasExtremeMove {
+                    PulsingExtremeIndicator(isActive: true, color: AppColors.error)
+                }
+
                 Spacer()
             }
             .padding(.horizontal)
@@ -524,9 +537,10 @@ struct MacroIndicatorsSection: View {
                     subtitle: "Volatility Index",
                     value: vixData.map { String(format: "%.2f", $0.value) } ?? "--",
                     signal: vixSignal,
-                    description: vixDescription,
+                    description: vixZScoreDescription,
                     icon: "waveform.path.ecg",
-                    vixData: vixData
+                    vixData: vixData,
+                    zScoreData: macroZScores[.vix]
                 )
 
                 // DXY Card
@@ -535,9 +549,10 @@ struct MacroIndicatorsSection: View {
                     subtitle: "US Dollar Index",
                     value: dxyData.map { String(format: "%.2f", $0.value) } ?? "--",
                     signal: dxySignal,
-                    description: dxyDescription,
+                    description: dxyZScoreDescription,
                     icon: "dollarsign.circle",
-                    dxyData: dxyData
+                    dxyData: dxyData,
+                    zScoreData: macroZScores[.dxy]
                 )
 
                 // Global M2 Card
@@ -546,9 +561,10 @@ struct MacroIndicatorsSection: View {
                     subtitle: "Money Supply",
                     value: globalM2Data.map { formatM2($0.current) } ?? "--",
                     signal: m2Signal,
-                    description: m2Description,
+                    description: m2ZScoreDescription,
                     icon: "banknote",
-                    liquidityData: globalM2Data
+                    liquidityData: globalM2Data,
+                    zScoreData: macroZScores[.m2]
                 )
             }
             .padding(.horizontal)
@@ -571,6 +587,17 @@ struct MacroIndicatorsSection: View {
         return "High fear"
     }
 
+    private var vixZScoreDescription: String {
+        if let zScore = macroZScores[.vix] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Extreme fear (\(zScore.zScore.formatted))" : "Extreme calm (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
+            }
+        }
+        return vixDescription
+    }
+
     // DXY helpers
     private var dxySignal: MacroTrendSignal {
         guard let change = dxyData?.changePercent else { return .neutral }
@@ -584,6 +611,17 @@ struct MacroIndicatorsSection: View {
         if change < -0.5 { return "Weakening" }
         if change > 0.5 { return "Strengthening" }
         return "Stable"
+    }
+
+    private var dxyZScoreDescription: String {
+        if let zScore = macroZScores[.dxy] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Extreme strength (\(zScore.zScore.formatted))" : "Extreme weakness (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Strong (\(zScore.zScore.formatted))" : "Weak (\(zScore.zScore.formatted))"
+            }
+        }
+        return dxyDescription
     }
 
     // M2 helpers
@@ -602,6 +640,17 @@ struct MacroIndicatorsSection: View {
         return "Contracting fast"
     }
 
+    private var m2ZScoreDescription: String {
+        if let zScore = macroZScores[.m2] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Rapid expansion (\(zScore.zScore.formatted))" : "Severe contraction (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Expanding (\(zScore.zScore.formatted))" : "Contracting (\(zScore.zScore.formatted))"
+            }
+        }
+        return m2Description
+    }
+
     private func formatM2(_ value: Double) -> String {
         String(format: "$%.1fT", value / 1_000_000_000_000)
     }
@@ -618,6 +667,7 @@ struct MacroIndicatorCard: View {
     var vixData: VIXData? = nil
     var dxyData: DXYData? = nil
     var liquidityData: GlobalLiquidityChanges? = nil
+    var zScoreData: MacroZScoreData? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -626,19 +676,36 @@ struct MacroIndicatorCard: View {
     var body: some View {
         Button(action: { showingDetail = true }) {
             HStack(spacing: 16) {
-                // Icon
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(AppColors.accent)
-                    .frame(width: 44, height: 44)
-                    .background(AppColors.accent.opacity(0.15))
-                    .cornerRadius(12)
+                // Icon with extreme indicator
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(AppColors.accent)
+                        .frame(width: 44, height: 44)
+                        .background(AppColors.accent.opacity(0.15))
+                        .cornerRadius(12)
 
-                // Title & Subtitle
+                    // Extreme move indicator
+                    if let zScore = zScoreData, zScore.isExtreme {
+                        Circle()
+                            .fill(AppColors.error)
+                            .frame(width: 10, height: 10)
+                            .offset(x: 2, y: -2)
+                    }
+                }
+
+                // Title & Subtitle with z-score badge
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundColor(textPrimary)
+                    HStack(spacing: 6) {
+                        Text(title)
+                            .font(.headline)
+                            .foregroundColor(textPrimary)
+
+                        // Z-Score badge
+                        if let zScore = zScoreData {
+                            ZScoreIndicator(zScore: zScore.zScore.zScore, size: .small)
+                        }
+                    }
                     Text(subtitle)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -659,6 +726,7 @@ struct MacroIndicatorCard: View {
                         Text(description)
                             .font(.caption)
                             .fontWeight(.medium)
+                            .lineLimit(1)
                     }
                     .foregroundColor(signal.color)
                 }

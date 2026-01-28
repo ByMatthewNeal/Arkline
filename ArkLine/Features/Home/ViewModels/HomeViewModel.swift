@@ -15,6 +15,7 @@ class HomeViewModel {
     private let dxyService: DXYServiceProtocol
     private let rainbowChartService: RainbowChartServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
+    private let macroStatisticsService: MacroStatisticsServiceProtocol
 
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
@@ -51,6 +52,19 @@ class HomeViewModel {
     var dxyData: DXYData?
     var rainbowChartData: RainbowChartData?
     var globalLiquidityChanges: GlobalLiquidityChanges?
+
+    // Macro Z-Scores (statistical analysis)
+    var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
+
+    /// Whether any macro indicator has an extreme z-score
+    var hasExtremeMacroMove: Bool {
+        macroZScores.values.contains { $0.isExtreme }
+    }
+
+    /// Get z-score for a specific indicator
+    func zScore(for indicator: MacroIndicatorType) -> MacroZScoreData? {
+        macroZScores[indicator]
+    }
 
     // Market Summary
     var btcPrice: Double = 0
@@ -273,7 +287,8 @@ class HomeViewModel {
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         rainbowChartService: RainbowChartServiceProtocol = ServiceContainer.shared.rainbowChartService,
-        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService
+        globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
+        macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -285,6 +300,7 @@ class HomeViewModel {
         self.dxyService = dxyService
         self.rainbowChartService = rainbowChartService
         self.globalLiquidityService = globalLiquidityService
+        self.macroStatisticsService = macroStatisticsService
         Task { await loadInitialData() }
         startAutoRefresh()
     }
@@ -385,6 +401,16 @@ class HomeViewModel {
             self.upcomingEvents = upcoming
             self.todaysEvents = todaysEvts
             self.eventsLastUpdated = Date()
+        }
+
+        // Fetch z-scores in background (doesn't block main UI)
+        Task {
+            let zScores = await fetchMacroZScoresSafe()
+            await MainActor.run {
+                self.macroZScores = zScores
+                // Check for extreme moves and trigger alerts
+                ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
+            }
         }
 
         // Now fetch other data that might fail (network-dependent)
@@ -554,5 +580,9 @@ class HomeViewModel {
 
     private func fetchTodaysEventsSafe() async -> [EconomicEvent] {
         (try? await newsService.fetchTodaysEvents()) ?? []
+    }
+
+    private func fetchMacroZScoresSafe() async -> [MacroIndicatorType: MacroZScoreData] {
+        (try? await macroStatisticsService.fetchAllZScores()) ?? [:]
     }
 }

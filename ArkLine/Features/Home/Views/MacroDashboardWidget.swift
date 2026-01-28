@@ -204,12 +204,19 @@ struct MacroDashboardWidget: View {
     let vixData: VIXData?
     let dxyData: DXYData?
     let liquidityData: GlobalLiquidityChanges?
+    var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     var size: WidgetSize = .standard
 
     @Environment(\.colorScheme) var colorScheme
     @StateObject private var regimeManager = RegimeChangeManager.shared
+    @StateObject private var alertManager = ExtremeMoveAlertManager.shared
     @State private var showingDetail = false
     @State private var isPulsing = false
+
+    /// Whether any indicator has an extreme z-score
+    private var hasExtremeMove: Bool {
+        macroZScores.values.contains { $0.isExtreme }
+    }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -371,7 +378,8 @@ struct MacroDashboardWidget: View {
                         signal: vixSignal,
                         correlation: vixCorrelation,
                         sparklineData: vixSparkline,
-                        size: size
+                        size: size,
+                        zScoreData: macroZScores[.vix]
                     )
 
                     Rectangle()
@@ -386,7 +394,8 @@ struct MacroDashboardWidget: View {
                         signal: dxySignal,
                         correlation: dxyCorrelation,
                         sparklineData: dxySparkline,
-                        size: size
+                        size: size,
+                        zScoreData: macroZScores[.dxy]
                     )
 
                     Rectangle()
@@ -401,7 +410,8 @@ struct MacroDashboardWidget: View {
                         signal: m2Signal,
                         correlation: m2Correlation,
                         sparklineData: m2Sparkline,
-                        size: size
+                        size: size,
+                        zScoreData: macroZScores[.m2]
                     )
                 }
                 .padding(.vertical, size == .compact ? 8 : 12)
@@ -488,7 +498,8 @@ struct MacroDashboardWidget: View {
                 regime: marketRegime,
                 vixCorrelation: vixCorrelation,
                 dxyCorrelation: dxyCorrelation,
-                m2Correlation: m2Correlation
+                m2Correlation: m2Correlation,
+                macroZScores: macroZScores
             )
         }
         .alert("Market Regime Changed", isPresented: $regimeManager.showRegimeChangeAlert) {
@@ -542,6 +553,7 @@ struct MacroIndicatorColumn: View {
     let correlation: CorrelationStrength
     let sparklineData: [CGFloat]
     let size: WidgetSize
+    var zScoreData: MacroZScoreData?
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -564,7 +576,7 @@ struct MacroIndicatorColumn: View {
 
     var body: some View {
         VStack(spacing: size == .compact ? 4 : 6) {
-            // Label with correlation bars
+            // Label with correlation bars and extreme indicator
             HStack(spacing: 4) {
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
@@ -573,16 +585,23 @@ struct MacroIndicatorColumn: View {
                 if size != .compact {
                     CorrelationBars(strength: correlation)
                 }
+
+                // Pulsing indicator for extreme moves
+                if let zScore = zScoreData, zScore.isExtreme {
+                    PulsingExtremeIndicator(isActive: true, color: AppColors.error)
+                }
             }
 
-            // Value with change
+            // Value with z-score badge
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(value)
                     .font(.system(size: valueFontSize, weight: .semibold, design: .default))
                     .foregroundColor(textPrimary)
                     .monospacedDigit()
 
-                if let change = change, size != .compact {
+                if let zScore = zScoreData, size != .compact {
+                    ZScoreIndicator(zScore: zScore.zScore.zScore, size: .small)
+                } else if let change = change, size != .compact {
                     Text(String(format: "%+.1f%%", change))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
@@ -804,10 +823,12 @@ struct MacroDashboardDetailView: View {
     let vixCorrelation: CorrelationStrength
     let dxyCorrelation: CorrelationStrength
     let m2Correlation: CorrelationStrength
+    var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     @StateObject private var regimeManager = RegimeChangeManager.shared
+    @StateObject private var alertManager = ExtremeMoveAlertManager.shared
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -862,36 +883,105 @@ struct MacroDashboardDetailView: View {
                             .foregroundColor(textPrimary.opacity(0.5))
                             .tracking(1.5)
 
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Regime Change Notifications")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(textPrimary)
+                        VStack(spacing: 0) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Regime Change Notifications")
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(textPrimary)
 
-                                Text("Get notified when market conditions shift")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(textPrimary.opacity(0.5))
-                            }
-
-                            Spacer()
-
-                            Toggle("", isOn: Binding(
-                                get: { regimeManager.notificationsEnabled },
-                                set: { newValue in
-                                    regimeManager.notificationsEnabled = newValue
-                                    if newValue {
-                                        regimeManager.requestNotificationPermissions()
-                                    }
+                                    Text("Get notified when market conditions shift")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(textPrimary.opacity(0.5))
                                 }
-                            ))
-                            .labelsHidden()
-                            .tint(AppColors.accent)
+
+                                Spacer()
+
+                                Toggle("", isOn: Binding(
+                                    get: { regimeManager.notificationsEnabled },
+                                    set: { newValue in
+                                        regimeManager.notificationsEnabled = newValue
+                                        if newValue {
+                                            regimeManager.requestNotificationPermissions()
+                                        }
+                                    }
+                                ))
+                                .labelsHidden()
+                                .tint(AppColors.accent)
+                            }
+                            .padding(16)
+
+                            Divider().background(textPrimary.opacity(0.08))
+
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 6) {
+                                        Text("Extreme Move Alerts")
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundColor(textPrimary)
+
+                                        Text("±3σ")
+                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Capsule().fill(AppColors.error))
+                                    }
+
+                                    Text("Alert when indicators hit statistical extremes")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(textPrimary.opacity(0.5))
+                                }
+
+                                Spacer()
+
+                                Toggle("", isOn: Binding(
+                                    get: { alertManager.extremeAlertsEnabled },
+                                    set: { newValue in
+                                        alertManager.extremeAlertsEnabled = newValue
+                                        if newValue {
+                                            alertManager.requestNotificationPermissions()
+                                        }
+                                    }
+                                ))
+                                .labelsHidden()
+                                .tint(AppColors.accent)
+                            }
+                            .padding(16)
                         }
-                        .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(cardBackground)
                         )
+                    }
+
+                    // Z-Score Analysis Section (only show if we have z-scores)
+                    if !macroZScores.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("STATISTICAL ANALYSIS")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(textPrimary.opacity(0.5))
+                                .tracking(1.5)
+
+                            VStack(spacing: 0) {
+                                ForEach(Array(macroZScores.values.sorted { $0.indicator.rawValue < $1.indicator.rawValue })) { zScore in
+                                    ZScoreAnalysisRow(zScoreData: zScore)
+
+                                    if zScore.indicator != .m2 {
+                                        Divider().background(textPrimary.opacity(0.08))
+                                    }
+                                }
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(cardBackground)
+                            )
+
+                            Text("Z-scores measure how many standard deviations the current value is from the historical mean (90-day rolling window).")
+                                .font(.system(size: 10))
+                                .foregroundColor(textPrimary.opacity(0.4))
+                                .padding(.top, 4)
+                        }
                     }
 
                     // Correlation Strength Section
@@ -946,8 +1036,9 @@ struct MacroDashboardDetailView: View {
                             subtitle: "Volatility Index",
                             value: vixData.map { String(format: "%.2f", $0.value) } ?? "--",
                             change: nil,
-                            interpretation: vixInterpretation,
-                            correlation: vixCorrelation
+                            interpretation: vixZScoreInterpretation,
+                            correlation: vixCorrelation,
+                            zScoreData: macroZScores[.vix]
                         )
 
                         MacroDetailRow(
@@ -956,8 +1047,9 @@ struct MacroDashboardDetailView: View {
                             subtitle: "US Dollar Index",
                             value: dxyData.map { String(format: "%.2f", $0.value) } ?? "--",
                             change: dxyData?.changePercent,
-                            interpretation: dxyInterpretation,
-                            correlation: dxyCorrelation
+                            interpretation: dxyZScoreInterpretation,
+                            correlation: dxyCorrelation,
+                            zScoreData: macroZScores[.dxy]
                         )
 
                         MacroDetailRow(
@@ -966,8 +1058,9 @@ struct MacroDashboardDetailView: View {
                             subtitle: "Money Supply",
                             value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
                             change: liquidityData?.monthlyChange,
-                            interpretation: m2Interpretation,
-                            correlation: m2Correlation
+                            interpretation: m2ZScoreInterpretation,
+                            correlation: m2Correlation,
+                            zScoreData: macroZScores[.m2]
                         )
                     }
 
@@ -1080,6 +1173,53 @@ struct MacroDashboardDetailView: View {
         if m2.monthlyChange > 0 { return "Gradual liquidity growth" }
         if m2.monthlyChange > -1.0 { return "Liquidity flat to declining" }
         return "Liquidity contracting"
+    }
+
+    // MARK: - Z-Score Enhanced Interpretations
+
+    private var vixZScoreInterpretation: String {
+        if let zScore = macroZScores[.vix] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0
+                    ? "Extreme fear (\(zScore.zScore.formatted)) - potential capitulation"
+                    : "Extreme complacency (\(zScore.zScore.formatted)) - caution advised"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0
+                    ? "Elevated uncertainty (\(zScore.zScore.formatted))"
+                    : "Low volatility (\(zScore.zScore.formatted)) - risk-on"
+            }
+        }
+        return vixInterpretation
+    }
+
+    private var dxyZScoreInterpretation: String {
+        if let zScore = macroZScores[.dxy] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0
+                    ? "Extreme dollar strength (\(zScore.zScore.formatted)) - headwind"
+                    : "Extreme dollar weakness (\(zScore.zScore.formatted)) - bullish"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0
+                    ? "Dollar strengthening (\(zScore.zScore.formatted))"
+                    : "Dollar weakening (\(zScore.zScore.formatted)) - favorable"
+            }
+        }
+        return dxyInterpretation
+    }
+
+    private var m2ZScoreInterpretation: String {
+        if let zScore = macroZScores[.m2] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0
+                    ? "Rapid expansion (\(zScore.zScore.formatted)) - bullish lag"
+                    : "Severe contraction (\(zScore.zScore.formatted)) - headwind"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0
+                    ? "Above-average growth (\(zScore.zScore.formatted))"
+                    : "Below-average growth (\(zScore.zScore.formatted))"
+            }
+        }
+        return m2Interpretation
     }
 
     // MARK: - Asset Impact Interpretations
@@ -1251,6 +1391,7 @@ struct MacroDetailRow: View {
     let change: Double?
     let interpretation: String
     let correlation: CorrelationStrength
+    var zScoreData: MacroZScoreData?
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -1272,6 +1413,14 @@ struct MacroDetailRow: View {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(AppColors.accent)
+
+                // Pulsing indicator for extreme moves
+                if let zScore = zScoreData, zScore.isExtreme {
+                    Circle()
+                        .fill(AppColors.error)
+                        .frame(width: 10, height: 10)
+                        .offset(x: 16, y: -16)
+                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1281,11 +1430,17 @@ struct MacroDetailRow: View {
                         .foregroundColor(textPrimary)
 
                     CorrelationBars(strength: correlation)
+
+                    // Z-Score badge
+                    if let zScore = zScoreData {
+                        ZScoreIndicator(zScore: zScore.zScore.zScore, size: .small)
+                    }
                 }
 
                 Text(interpretation)
                     .font(.system(size: 12))
                     .foregroundColor(textPrimary.opacity(0.6))
+                    .lineLimit(2)
             }
 
             Spacer()
@@ -1302,6 +1457,10 @@ struct MacroDetailRow: View {
                         .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                 }
             }
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(textPrimary.opacity(0.3))
         }
         .padding(14)
         .background(
@@ -1354,6 +1513,138 @@ struct ThresholdRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+}
+
+// MARK: - Z-Score Analysis Row
+/// Detailed z-score breakdown for statistical analysis section
+struct ZScoreAnalysisRow: View {
+    let zScoreData: MacroZScoreData
+
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with indicator and z-score badge
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(zScoreData.indicator.displayName)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(textPrimary)
+
+                        ZScoreIndicator(zScore: zScoreData.zScore.zScore, size: .medium)
+
+                        if zScoreData.isExtreme {
+                            PulsingExtremeIndicator(isActive: true, color: AppColors.error)
+                        }
+                    }
+
+                    Text(zScoreData.interpretation)
+                        .font(.system(size: 12))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+
+                Spacer()
+
+                // Current value
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(formattedValue)
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundColor(textPrimary)
+
+                    Text("Current")
+                        .font(.system(size: 10))
+                        .foregroundColor(textPrimary.opacity(0.4))
+                }
+            }
+
+            // Stats row
+            HStack(spacing: 0) {
+                StatBox(label: "Mean", value: String(format: "%.2f", zScoreData.zScore.mean))
+                Divider().frame(height: 30).background(textPrimary.opacity(0.1))
+                StatBox(label: "Std Dev", value: String(format: "%.2f", zScoreData.zScore.standardDeviation))
+                Divider().frame(height: 30).background(textPrimary.opacity(0.1))
+                StatBox(label: "+2σ", value: String(format: "%.1f", zScoreData.sdBands.plus2SD))
+                Divider().frame(height: 30).background(textPrimary.opacity(0.1))
+                StatBox(label: "-2σ", value: String(format: "%.1f", zScoreData.sdBands.minus2SD))
+            }
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(textPrimary.opacity(0.04))
+            )
+
+            // Market implication
+            HStack(spacing: 6) {
+                Image(systemName: zScoreData.marketImplication.iconName)
+                    .font(.system(size: 12))
+                    .foregroundColor(zScoreData.marketImplication.color)
+
+                Text(zScoreData.marketImplication.description)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(zScoreData.marketImplication.color)
+
+                Spacer()
+
+                if let rarity = zScoreData.zScore.rarity {
+                    Text("1 in \(rarity)")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(textPrimary.opacity(0.5))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(textPrimary.opacity(0.08))
+                        )
+                }
+            }
+        }
+        .padding(14)
+    }
+
+    private var formattedValue: String {
+        switch zScoreData.indicator {
+        case .vix:
+            return String(format: "%.2f", zScoreData.currentValue)
+        case .dxy:
+            return String(format: "%.2f", zScoreData.currentValue)
+        case .m2:
+            if zScoreData.currentValue >= 1_000_000_000_000 {
+                return String(format: "%.1fT", zScoreData.currentValue / 1_000_000_000_000)
+            }
+            return String(format: "%.0fB", zScoreData.currentValue / 1_000_000_000)
+        }
+    }
+}
+
+// MARK: - Stat Box
+/// Small stat display box for z-score analysis
+struct StatBox: View {
+    let label: String
+    let value: String
+
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .foregroundColor(textPrimary)
+
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(textPrimary.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
