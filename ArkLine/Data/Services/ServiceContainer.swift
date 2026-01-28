@@ -17,9 +17,9 @@ final class ServiceContainer {
     /// Use real Google News RSS feeds for news
     var useRealNews: Bool = true
 
-    /// Use mock data for services that aren't fully implemented yet
-    /// (portfolio, DCA)
-    private let useMockForUnimplementedServices: Bool = true
+    /// Use mock data for macro services (VIX, DXY, liquidity, ITC risk)
+    /// Portfolio and DCA are always mock until Supabase integration is complete
+    private let useMockMacroServices: Bool = false
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
@@ -53,6 +53,9 @@ final class ServiceContainer {
     private lazy var _macroStatisticsService = MacroStatisticsService()
     private lazy var _historicalContextService = HistoricalContextService()
 
+    // MARK: - Lazy Services - Broadcast
+    private lazy var _broadcastService = BroadcastService()
+
     // MARK: - Service Accessors
 
     /// Market service uses real CoinGecko API for live crypto prices
@@ -67,7 +70,8 @@ final class ServiceContainer {
 
     /// Portfolio service - mock until Supabase integration is complete
     var portfolioService: PortfolioServiceProtocol {
-        useMockForUnimplementedServices ? _mockPortfolioService : _apiPortfolioService
+        // Always use mock until Supabase integration is implemented
+        _mockPortfolioService
     }
 
     /// News service - uses real Google News RSS when enabled
@@ -77,7 +81,8 @@ final class ServiceContainer {
 
     /// DCA service - mock until real API is implemented
     var dcaService: DCAServiceProtocol {
-        useMockForUnimplementedServices ? _mockDCAService : _apiDCAService
+        // Always use mock until Supabase integration is implemented
+        _mockDCAService
     }
 
     /// Technical Analysis service uses real Taapi.io API
@@ -85,21 +90,21 @@ final class ServiceContainer {
         useRealTechnicalAnalysis ? _apiTechnicalAnalysisService : _mockTechnicalAnalysisService
     }
 
-    /// ITC Risk service - mock until real API is implemented
+    /// ITC Risk service - uses CoinGecko data with logarithmic regression
     var itcRiskService: ITCRiskServiceProtocol {
-        useMockForUnimplementedServices ? _mockITCRiskService : _apiITCRiskService
+        useMockMacroServices ? _mockITCRiskService : _apiITCRiskService
     }
 
     /// VIX service - uses Yahoo Finance (no rate limits)
     var vixService: VIXServiceProtocol {
         // Yahoo Finance has no strict rate limits unlike Alpha Vantage (25/day)
-        useMockForUnimplementedServices ? _mockVIXService : _yahooVIXService
+        useMockMacroServices ? _mockVIXService : _yahooVIXService
     }
 
     /// DXY service - uses Yahoo Finance (no rate limits)
     var dxyService: DXYServiceProtocol {
         // Yahoo Finance has no strict rate limits unlike Alpha Vantage (25/day)
-        useMockForUnimplementedServices ? _mockDXYService : _yahooDXYService
+        useMockMacroServices ? _mockDXYService : _yahooDXYService
     }
 
     /// Rainbow Chart service - calculation-based (uses market service for BTC price)
@@ -107,10 +112,9 @@ final class ServiceContainer {
         useRealMarketData ? _apiRainbowChartService : _mockRainbowChartService
     }
 
-    /// Global Liquidity service - uses FRED API when configured, otherwise mock
+    /// Global Liquidity service - uses FRED API for M2 money supply data
     var globalLiquidityService: GlobalLiquidityServiceProtocol {
-        // Use mock until FRED API key is configured
-        useMockForUnimplementedServices ? _mockGlobalLiquidityService : _apiGlobalLiquidityService
+        useMockMacroServices ? _mockGlobalLiquidityService : _apiGlobalLiquidityService
     }
 
     /// Macro Statistics service - calculates z-scores for VIX, DXY, M2
@@ -121,6 +125,11 @@ final class ServiceContainer {
     /// Historical Context service - finds similar historical occurrences
     var historicalContextService: HistoricalContextService {
         _historicalContextService
+    }
+
+    /// Broadcast service - manages broadcasts for the Broadcast Studio
+    var broadcastService: BroadcastServiceProtocol {
+        _broadcastService
     }
 
     // MARK: - Initialization
