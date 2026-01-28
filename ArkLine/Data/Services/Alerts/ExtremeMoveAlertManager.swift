@@ -110,7 +110,7 @@ class ExtremeMoveAlertManager: ObservableObject {
         // Schedule push notification
         scheduleLocalNotification(for: move)
 
-        logInfo("Extreme move alert triggered for \(move.indicator.rawValue): \(move.zScore.formatted)", category: .data)
+        logInfo("Extreme move alert triggered for \(move.indicator.rawValue): \(move.formattedZScore)", category: .data)
     }
 
     /// Check all z-score data for extreme moves
