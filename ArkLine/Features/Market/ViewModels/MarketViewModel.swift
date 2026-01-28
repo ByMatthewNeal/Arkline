@@ -23,6 +23,10 @@ class MarketViewModel {
     private let marketService: MarketServiceProtocol
     private let newsService: NewsServiceProtocol
 
+    // MARK: - Search Debouncing
+    private var searchTask: Task<Void, Never>?
+    private let searchDebounceInterval: UInt64 = 500_000_000 // 500ms in nanoseconds
+
     // MARK: - Properties
     var selectedTab: MarketTab = .overview
     var selectedCategory: AssetCategoryFilter = .all
@@ -194,23 +198,36 @@ class MarketViewModel {
         }
     }
 
-    func searchAssets(query: String) async {
+    func searchAssets(query: String) {
+        // Cancel any pending search
+        searchTask?.cancel()
+
         guard !query.isEmpty else {
-            await MainActor.run {
-                self.searchText = ""
-            }
+            searchText = ""
             return
         }
 
-        do {
-            let results = try await marketService.searchCrypto(query: query)
+        // Debounce: wait before executing search
+        searchTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: searchDebounceInterval)
 
-            await MainActor.run {
-                self.cryptoAssets = results
-            }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                // Check if cancelled during sleep
+                guard !Task.isCancelled else { return }
+
+                let results = try await marketService.searchCrypto(query: query)
+
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.cryptoAssets = results
+                }
+            } catch is CancellationError {
+                // Search was cancelled, ignore
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                }
             }
         }
     }
