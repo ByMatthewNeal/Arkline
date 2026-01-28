@@ -63,6 +63,8 @@ struct EmbeddedWidgetView: View {
             rainbowChartWidget
         case .technicalAnalysis:
             technicalAnalysisWidget
+        case .portfolioShowcase:
+            portfolioShowcaseWidget
         }
     }
 
@@ -381,6 +383,28 @@ struct EmbeddedWidgetView: View {
             Text("Coming Soon")
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textTertiary)
+        }
+    }
+
+    // MARK: - Portfolio Showcase Widget
+
+    private var portfolioShowcaseWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Portfolio Showcase")
+                    .font(ArkFonts.body)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("Compare portfolios side-by-side")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "square.split.2x1")
+                .font(.title2)
+                .foregroundColor(AppColors.accent)
         }
     }
 

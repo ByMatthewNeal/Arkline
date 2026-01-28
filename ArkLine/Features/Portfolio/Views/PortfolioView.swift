@@ -7,6 +7,7 @@ struct PortfolioView: View {
     @State private var showAddTransaction = false
     @State private var showCreatePortfolio = false
     @State private var showPortfolioPicker = false
+    @State private var showShowcase = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -93,11 +94,21 @@ struct PortfolioView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showAddTransaction = true }) {
-                        Image(systemName: "plus")
-                            .foregroundColor(AppColors.accent)
+                    HStack(spacing: ArkSpacing.sm) {
+                        // Showcase button
+                        Button(action: { showShowcase = true }) {
+                            Image(systemName: "square.split.2x1")
+                                .foregroundColor(AppColors.accent)
+                        }
+                        .accessibilityLabel("Portfolio showcase")
+
+                        // Add transaction button
+                        Button(action: { showAddTransaction = true }) {
+                            Image(systemName: "plus")
+                                .foregroundColor(AppColors.accent)
+                        }
+                        .accessibilityLabel("Add transaction")
                     }
-                    .accessibilityLabel("Add transaction")
                 }
             }
             #endif
@@ -122,6 +133,9 @@ struct PortfolioView: View {
             }
             .sheet(isPresented: $showCreatePortfolio) {
                 CreatePortfolioView(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showShowcase) {
+                PortfolioShowcaseView()
             }
             .onChange(of: appState.shouldShowPortfolioCreation) { _, shouldShow in
                 if shouldShow {

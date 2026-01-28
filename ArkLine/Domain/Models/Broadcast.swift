@@ -225,6 +225,7 @@ enum AppSection: String, Codable, CaseIterable {
     case sentiment
     case rainbowChart = "rainbow_chart"
     case technicalAnalysis = "technical_analysis"
+    case portfolioShowcase = "portfolio_showcase"
 
     var displayName: String {
         switch self {
@@ -237,6 +238,7 @@ enum AppSection: String, Codable, CaseIterable {
         case .sentiment: return "Market Sentiment"
         case .rainbowChart: return "Rainbow Chart"
         case .technicalAnalysis: return "Technical Analysis"
+        case .portfolioShowcase: return "Portfolio Showcase"
         }
     }
 
@@ -251,6 +253,7 @@ enum AppSection: String, Codable, CaseIterable {
         case .sentiment: return "chart.bar"
         case .rainbowChart: return "rainbow"
         case .technicalAnalysis: return "chart.xyaxis.line"
+        case .portfolioShowcase: return "square.split.2x1"
         }
     }
 
