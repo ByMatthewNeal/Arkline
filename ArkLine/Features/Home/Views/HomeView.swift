@@ -2589,7 +2589,6 @@ struct EventDateGroup: View {
 struct UpcomingEventRow: View {
     let event: EconomicEvent
     var isCompact: Bool = false
-    @State private var showEventInfo = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -2598,10 +2597,6 @@ struct UpcomingEventRow: View {
 
     private var textSecondary: Color {
         textPrimary.opacity(0.5)
-    }
-
-    private var hasDataValues: Bool {
-        event.actual != nil || event.forecast != nil || event.previous != nil
     }
 
     /// Country code extracted from country string (e.g., "US", "JP", "EU")
@@ -2614,71 +2609,42 @@ struct UpcomingEventRow: View {
             // Vertical impact indicator bar
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(event.impact.color)
-                .frame(width: 3, height: isCompact ? 32 : 44)
-                .padding(.trailing, isCompact ? 8 : 12)
+                .frame(width: 3, height: isCompact ? 32 : 40)
+                .padding(.trailing, isCompact ? 8 : 10)
 
-            VStack(alignment: .leading, spacing: isCompact ? 2 : 4) {
-                HStack(spacing: isCompact ? 6 : 10) {
-                    // Time
-                    Text(event.timeDisplayFormatted)
-                        .font(.system(size: isCompact ? 10 : 12, weight: .medium, design: .monospaced))
+            // Country code badge
+            Text(countryCode)
+                .font(.system(size: isCompact ? 9 : 10, weight: .semibold))
+                .foregroundColor(textSecondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(textPrimary.opacity(0.08))
+                )
+                .padding(.trailing, 8)
+
+            // Event title
+            Text(event.title)
+                .font(.system(size: isCompact ? 11 : 13, weight: .medium))
+                .foregroundColor(textPrimary)
+                .lineLimit(1)
+
+            Spacer()
+
+            // Forecast value on the right
+            if let forecast = event.forecast, !forecast.isEmpty {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("Forecast")
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(textSecondary)
-                        .frame(width: isCompact ? 48 : 58, alignment: .leading)
-
-                    // Country code badge
-                    Text(countryCode)
-                        .font(.system(size: isCompact ? 9 : 10, weight: .semibold))
-                        .foregroundColor(textSecondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(textPrimary.opacity(0.08))
-                        )
-
-                    // Event title
-                    Text(event.title)
-                        .font(.system(size: isCompact ? 11 : 13, weight: .medium))
+                    Text(forecast)
+                        .font(.system(size: isCompact ? 12 : 13, weight: .semibold))
                         .foregroundColor(textPrimary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    if !isCompact {
-                        Button(action: { showEventInfo = true }) {
-                            Image(systemName: "info.circle")
-                                .font(.system(size: 14))
-                                .foregroundColor(textPrimary.opacity(0.3))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                // Data values row
-                if hasDataValues && !isCompact {
-                    HStack(spacing: 12) {
-                        Spacer()
-                            .frame(width: 58)
-
-                        if let actual = event.actual, !actual.isEmpty {
-                            EventDataPill(label: "Act", value: actual, isActual: true)
-                        }
-                        if let forecast = event.forecast, !forecast.isEmpty {
-                            EventDataPill(label: "Fcst", value: forecast, isActual: false)
-                        }
-                        if let previous = event.previous, !previous.isEmpty {
-                            EventDataPill(label: "Prev", value: previous, isActual: false)
-                        }
-
-                        Spacer()
-                    }
                 }
             }
         }
         .padding(.vertical, isCompact ? 4 : 8)
-        .sheet(isPresented: $showEventInfo) {
-            EventInfoSheet(event: event)
-        }
     }
 }
 
