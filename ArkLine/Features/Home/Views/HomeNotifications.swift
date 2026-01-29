@@ -5,6 +5,9 @@ struct NotificationsSheet: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
+    // TODO: Replace with real notifications from a NotificationService
+    @State private var notifications: [AppNotification] = []
+
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
@@ -17,107 +20,19 @@ struct NotificationsSheet: View {
         colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7")
     }
 
-    // Mock notifications data
-    private let mockNotifications: [MockNotification] = [
-        MockNotification(
-            icon: "chart.line.uptrend.xyaxis",
-            iconColor: AppColors.success,
-            title: "BTC up 5.2% today",
-            subtitle: "Bitcoin is showing strong momentum",
-            time: "2m ago",
-            isRead: false
-        ),
-        MockNotification(
-            icon: "exclamationmark.triangle.fill",
-            iconColor: AppColors.warning,
-            title: "High volatility alert",
-            subtitle: "Market volatility index above 70",
-            time: "15m ago",
-            isRead: false
-        ),
-        MockNotification(
-            icon: "bell.badge.fill",
-            iconColor: AppColors.accent,
-            title: "DCA reminder",
-            subtitle: "Weekly Bitcoin purchase scheduled",
-            time: "1h ago",
-            isRead: true
-        ),
-        MockNotification(
-            icon: "calendar.badge.exclamationmark",
-            iconColor: AppColors.error,
-            title: "FOMC meeting tomorrow",
-            subtitle: "High impact event at 2:00 PM EST",
-            time: "3h ago",
-            isRead: true
-        ),
-        MockNotification(
-            icon: "arrow.up.circle.fill",
-            iconColor: AppColors.success,
-            title: "Fear & Greed at 72",
-            subtitle: "Market sentiment shifted to Greed",
-            time: "5h ago",
-            isRead: true
-        )
-    ]
-
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Unread section
-                    let unreadNotifications = mockNotifications.filter { !$0.isRead }
-                    if !unreadNotifications.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("New")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(textPrimary.opacity(0.5))
-                                .textCase(.uppercase)
-                                .tracking(0.8)
-                                .padding(.horizontal, 4)
-
-                            ForEach(unreadNotifications) { notification in
-                                HomeNotificationRow(notification: notification)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                    }
-
-                    // Read section
-                    let readNotifications = mockNotifications.filter { $0.isRead }
-                    if !readNotifications.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Earlier")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(textPrimary.opacity(0.5))
-                                .textCase(.uppercase)
-                                .tracking(0.8)
-                                .padding(.horizontal, 4)
-
-                            ForEach(readNotifications) { notification in
-                                HomeNotificationRow(notification: notification)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                    }
-
-                    Spacer(minLength: 40)
+            Group {
+                if notifications.isEmpty {
+                    emptyState
+                } else {
+                    notificationsList
                 }
-                .padding(.top, 16)
             }
             .background(sheetBackground)
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        // Mark all as read
-                    }) {
-                        Text("Clear All")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(AppColors.accent)
-                    }
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -128,22 +43,100 @@ struct NotificationsSheet: View {
             }
         }
     }
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(textPrimary.opacity(0.05))
+                    .frame(width: 80, height: 80)
+
+                Image(systemName: "bell.slash")
+                    .font(.system(size: 32, weight: .light))
+                    .foregroundColor(textPrimary.opacity(0.3))
+            }
+
+            VStack(spacing: 8) {
+                Text("No Notifications")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(textPrimary)
+
+                Text("You're all caught up")
+                    .font(.system(size: 14))
+                    .foregroundColor(textPrimary.opacity(0.5))
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var notificationsList: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                let unreadNotifications = notifications.filter { !$0.isRead }
+                if !unreadNotifications.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("New")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.8)
+                            .padding(.horizontal, 4)
+
+                        ForEach(unreadNotifications) { notification in
+                            NotificationRow(notification: notification)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                let readNotifications = notifications.filter { $0.isRead }
+                if !readNotifications.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Earlier")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.8)
+                            .padding(.horizontal, 4)
+
+                        ForEach(readNotifications) { notification in
+                            NotificationRow(notification: notification)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                Spacer(minLength: 40)
+            }
+            .padding(.top, 16)
+        }
+    }
 }
 
-// MARK: - Mock Notification Model
-struct MockNotification: Identifiable {
+// MARK: - App Notification Model
+struct AppNotification: Identifiable {
     let id = UUID()
     let icon: String
     let iconColor: Color
     let title: String
     let subtitle: String
-    let time: String
+    let time: Date
     let isRead: Bool
+
+    var timeFormatted: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: time, relativeTo: Date())
+    }
 }
 
-// MARK: - Home Notification Row
-struct HomeNotificationRow: View {
-    let notification: MockNotification
+// MARK: - Notification Row
+struct NotificationRow: View {
+    let notification: AppNotification
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -176,7 +169,7 @@ struct HomeNotificationRow: View {
 
                     Spacer()
 
-                    Text(notification.time)
+                    Text(notification.timeFormatted)
                         .font(.system(size: 12))
                         .foregroundColor(textPrimary.opacity(0.4))
                 }

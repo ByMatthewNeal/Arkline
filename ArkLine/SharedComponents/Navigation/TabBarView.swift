@@ -12,8 +12,8 @@ enum AppTab: String, CaseIterable {
         switch self {
         case .home: return "house.fill"
         case .market: return "chart.line.uptrend.xyaxis"
-        case .portfolio: return "wallet.pass.fill"
-        case .insights: return "antenna.radiowaves.left.and.right"
+        case .portfolio: return "chart.pie.fill"
+        case .insights: return "text.bubble.fill"
         case .profile: return "person.fill"
         }
     }
@@ -22,8 +22,8 @@ enum AppTab: String, CaseIterable {
         switch self {
         case .home: return "house"
         case .market: return "chart.line.uptrend.xyaxis"
-        case .portfolio: return "wallet.pass"
-        case .insights: return "antenna.radiowaves.left.and.right"
+        case .portfolio: return "chart.pie"
+        case .insights: return "text.bubble"
         case .profile: return "person"
         }
     }
