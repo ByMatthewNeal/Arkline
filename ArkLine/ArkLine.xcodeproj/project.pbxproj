@@ -244,10 +244,12 @@ D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */ = {isa = PB
 		FE0000000000000000000004 /* FeatureRequestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000014 /* FeatureRequestViewModel.swift */; };
 		FE0000000000000000000005 /* FeatureBacklogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000015 /* FeatureBacklogView.swift */; };
 		FE0000000000000000000006 /* FeatureRequestDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000016 /* FeatureRequestDetailView.swift */; };
+		BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDSetupView.swift; sourceTree = "<group>"; };
+		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
 		0301CE05698CD3FFB7876E41 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
 		03A2248CF31FBE81B04E09E5 /* FMPService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FMPService.swift; sourceTree = "<group>"; };
 		04628B553AF47C260C3AF994 /* AppReferencePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppReferencePickerView.swift; sourceTree = "<group>"; };
@@ -1308,6 +1310,7 @@ E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */ = {isa = PBXFileRefere
 		DC3F4E083A6B14DF59D19605 = {
 			isa = PBXGroup;
 			children = (
+				SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */,
 				612868F922F3072B6799F1D1 /* App */,
 				6D3BAF55E2DA510400EA6852 /* Core */,
 				74E4854668EA735E30E3E016 /* Data */,
@@ -1399,6 +1402,7 @@ E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */ = {isa = PBXFileRefere
 			buildConfigurationList = 77CF7E342B2699FC99A88A58 /* Build configuration list for PBXNativeTarget "ArkLine" */;
 			buildPhases = (
 				DC3F720D512FB69043D8DDEA /* Sources */,
+				RESKWUXBAVXSCPHVQKACGCQR /* Resources */,
 				7E32FCAEE24573A438B1FB8D /* Frameworks */,
 			);
 			buildRules = (
@@ -1449,6 +1453,17 @@ E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */ = {isa = PBXFileRefere
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		RESKWUXBAVXSCPHVQKACGCQR /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		DC3F720D512FB69043D8DDEA /* Sources */ = {
