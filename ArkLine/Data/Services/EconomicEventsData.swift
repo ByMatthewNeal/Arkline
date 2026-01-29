@@ -59,6 +59,7 @@ enum EconomicEventsData {
     ) -> EconomicEvent {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         dateFormatter.timeZone = TimeZone(identifier: "America/New_York")
 
         let fullDateString = "\(dateString) \(timeString)"
@@ -66,6 +67,7 @@ enum EconomicEventsData {
 
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH:mm"
+        timeFormatter.locale = Locale(identifier: "en_US_POSIX")
         let time = timeFormatter.date(from: timeString)
 
         let countryFlags: [String: String] = [
