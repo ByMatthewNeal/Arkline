@@ -103,12 +103,18 @@ struct EventDateGroupView: View {
 
     private var isToday: Bool {
         guard let firstEvent = events.first else { return false }
-        return Calendar.current.isDateInToday(firstEvent.date)
+        // Use NY timezone to match how events are stored
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
+        return calendar.isDateInToday(firstEvent.date)
     }
 
     private var isTomorrow: Bool {
         guard let firstEvent = events.first else { return false }
-        return Calendar.current.isDateInTomorrow(firstEvent.date)
+        // Use NY timezone to match how events are stored
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
+        return calendar.isDateInTomorrow(firstEvent.date)
     }
 
     private var displayDateKey: String {
