@@ -173,6 +173,24 @@ final class PortfolioViewModel {
                     self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
                     self.isLoading = false
                 }
+
+                // Record daily portfolio snapshot for history charts
+                let snapshotValue = holdingsWithPrices.reduce(0) { $0 + $1.currentValue }
+                let snapshotCost = holdingsWithPrices.reduce(0) { $0 + $1.totalCost }
+                let snapshotDayChange = holdingsWithPrices.reduce(0.0) { total, holding in
+                    guard let change = holding.priceChangePercentage24h else { return total }
+                    return total + holding.currentValue * (change / 100)
+                }
+                let previousValue = snapshotValue - snapshotDayChange
+                let snapshotDayChangePercentage = previousValue > 0 ? (snapshotDayChange / previousValue) * 100 : 0
+
+                try await portfolioService.recordPortfolioSnapshot(
+                    portfolioId: portfolio.id,
+                    totalValue: snapshotValue,
+                    totalCost: snapshotCost > 0 ? snapshotCost : nil,
+                    dayChange: snapshotDayChange,
+                    dayChangePercentage: snapshotDayChangePercentage
+                )
             } else {
                 await MainActor.run {
                     self.holdings = []

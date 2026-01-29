@@ -124,6 +124,18 @@ final class MockPortfolioService: PortfolioServiceProtocol {
         }
     }
 
+    func recordPortfolioSnapshot(
+        portfolioId: UUID,
+        totalValue: Double,
+        totalCost: Double?,
+        dayChange: Double?,
+        dayChangePercentage: Double?
+    ) async throws {
+        // Mock implementation - no-op for testing
+        try await simulateNetworkDelay()
+        logInfo("Mock: Recorded portfolio snapshot: \(totalValue.asCurrency)", category: .data)
+    }
+
     // MARK: - Private Helpers
 
     private func simulateNetworkDelay() async throws {

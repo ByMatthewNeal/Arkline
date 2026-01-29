@@ -69,4 +69,19 @@ protocol PortfolioServiceProtocol {
     /// - Parameter holdings: Holdings to get prices for
     /// - Returns: Holdings with updated current prices
     func refreshHoldingPrices(holdings: [PortfolioHolding]) async throws -> [PortfolioHolding]
+
+    /// Records a daily portfolio value snapshot for history tracking
+    /// - Parameters:
+    ///   - portfolioId: Portfolio identifier
+    ///   - totalValue: Current total portfolio value
+    ///   - totalCost: Total cost basis
+    ///   - dayChange: Change in value from previous day
+    ///   - dayChangePercentage: Percentage change from previous day
+    func recordPortfolioSnapshot(
+        portfolioId: UUID,
+        totalValue: Double,
+        totalCost: Double?,
+        dayChange: Double?,
+        dayChangePercentage: Double?
+    ) async throws
 }

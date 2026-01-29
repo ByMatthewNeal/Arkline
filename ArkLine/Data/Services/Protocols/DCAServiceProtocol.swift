@@ -113,6 +113,21 @@ struct RiskBasedDCAReminder: Codable, Identifiable, Equatable {
     var isActive: Bool
     let createdAt: Date
 
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case symbol
+        case name
+        case amount
+        case dcaType = "dca_type"
+        case riskThreshold = "risk_threshold"
+        case riskCondition = "risk_condition"
+        case isTriggered = "is_triggered"
+        case lastTriggeredRiskLevel = "last_triggered_risk_level"
+        case isActive = "is_active"
+        case createdAt = "created_at"
+    }
+
     init(
         id: UUID = UUID(),
         userId: UUID,

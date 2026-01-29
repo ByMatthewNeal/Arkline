@@ -114,10 +114,80 @@ final class APIPortfolioService: PortfolioServiceProtocol {
     // MARK: - Fetch Portfolio History
 
     func fetchPortfolioHistory(portfolioId: UUID, days: Int) async throws -> [PortfolioHistoryPoint] {
-        // Portfolio history tracking requires a separate table or can be computed
-        // For now, return empty array - can be implemented with a portfolio_history table later
-        logInfo("Portfolio history not yet implemented - returning empty", category: .data)
-        return []
+        guard supabase.isConfigured else {
+            logWarning("Supabase not configured", category: .network)
+            return []
+        }
+
+        do {
+            let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withFullDate]
+
+            let records: [PortfolioHistoryRecord] = try await supabase.database
+                .from(SupabaseTable.portfolioHistory.rawValue)
+                .select()
+                .eq("portfolio_id", value: portfolioId.uuidString)
+                .gte("recorded_date", value: dateFormatter.string(from: cutoffDate))
+                .order("recorded_date", ascending: true)
+                .execute()
+                .value
+
+            logInfo("Fetched \(records.count) history points for portfolio", category: .data)
+
+            // Convert to PortfolioHistoryPoint for UI
+            return records.map { record in
+                PortfolioHistoryPoint(date: record.recordedDate, value: record.totalValue)
+            }
+        } catch {
+            logError(error, context: "Fetch portfolio history", category: .data)
+            throw AppError.networkError(underlying: error)
+        }
+    }
+
+    // MARK: - Record Portfolio Snapshot
+
+    /// Records a daily portfolio value snapshot for history tracking
+    /// - Parameters:
+    ///   - portfolioId: Portfolio identifier
+    ///   - totalValue: Current total portfolio value
+    ///   - totalCost: Total cost basis
+    ///   - dayChange: Change in value from previous day
+    ///   - dayChangePercentage: Percentage change from previous day
+    func recordPortfolioSnapshot(
+        portfolioId: UUID,
+        totalValue: Double,
+        totalCost: Double?,
+        dayChange: Double?,
+        dayChangePercentage: Double?
+    ) async throws {
+        guard supabase.isConfigured else {
+            logWarning("Supabase not configured - skipping history snapshot", category: .network)
+            return
+        }
+
+        do {
+            let today = Calendar.current.startOfDay(for: Date())
+            let record = CreatePortfolioHistoryRequest(
+                portfolioId: portfolioId,
+                recordedDate: today,
+                totalValue: totalValue,
+                totalCost: totalCost,
+                dayChange: dayChange,
+                dayChangePercentage: dayChangePercentage
+            )
+
+            // Use upsert to handle duplicate dates (update if exists)
+            try await supabase.database
+                .from(SupabaseTable.portfolioHistory.rawValue)
+                .upsert(record, onConflict: "portfolio_id,recorded_date")
+                .execute()
+
+            logInfo("Recorded portfolio snapshot: \(totalValue.asCurrency)", category: .data)
+        } catch {
+            logError(error, context: "Record portfolio snapshot", category: .data)
+            // Don't throw - history recording failure shouldn't block main operations
+        }
     }
 
     // MARK: - Create Portfolio
@@ -400,5 +470,49 @@ final class APIPortfolioService: PortfolioServiceProtocol {
         }
 
         return prices
+    }
+}
+
+// MARK: - Portfolio History Database Models
+
+/// Internal struct for reading from portfolio_history table
+private struct PortfolioHistoryRecord: Codable {
+    let id: UUID
+    let portfolioId: UUID
+    let recordedDate: Date
+    let totalValue: Double
+    let totalCost: Double?
+    let dayChange: Double?
+    let dayChangePercentage: Double?
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case portfolioId = "portfolio_id"
+        case recordedDate = "recorded_date"
+        case totalValue = "total_value"
+        case totalCost = "total_cost"
+        case dayChange = "day_change"
+        case dayChangePercentage = "day_change_percentage"
+        case createdAt = "created_at"
+    }
+}
+
+/// Internal struct for inserting into portfolio_history table
+private struct CreatePortfolioHistoryRequest: Encodable {
+    let portfolioId: UUID
+    let recordedDate: Date
+    let totalValue: Double
+    let totalCost: Double?
+    let dayChange: Double?
+    let dayChangePercentage: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case portfolioId = "portfolio_id"
+        case recordedDate = "recorded_date"
+        case totalValue = "total_value"
+        case totalCost = "total_cost"
+        case dayChange = "day_change"
+        case dayChangePercentage = "day_change_percentage"
     }
 }

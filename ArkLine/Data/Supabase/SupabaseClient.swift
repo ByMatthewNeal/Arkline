@@ -76,6 +76,9 @@ enum SupabaseTable: String {
     case broadcastReads = "broadcast_reads"
     case broadcastReactions = "broadcast_reactions"
     case featureRequests = "feature_requests"
+    case riskBasedDcaReminders = "risk_based_dca_reminders"
+    case riskDcaInvestments = "risk_dca_investments"
+    case portfolioHistory = "portfolio_history"
 }
 
 // MARK: - Storage Buckets
