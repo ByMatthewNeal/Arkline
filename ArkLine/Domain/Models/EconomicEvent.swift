@@ -25,7 +25,9 @@ struct EconomicEvent: Codable, Identifiable, Equatable {
     }
 
     var isToday: Bool {
-        Calendar.current.isDateInToday(date)
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
+        return calendar.isDateInToday(date)
     }
 
     var dateFormatted: String {
@@ -40,6 +42,7 @@ struct EconomicEvent: Codable, Identifiable, Equatable {
     var dateGroupKey: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE MMM d"
+        formatter.timeZone = TimeZone(identifier: "America/New_York") // Match source data timezone
         return formatter.string(from: date)
     }
 
