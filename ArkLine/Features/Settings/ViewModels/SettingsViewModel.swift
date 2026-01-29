@@ -52,6 +52,11 @@ final class SettingsViewModel {
         notificationsEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.notificationsEnabled)
         biometricEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.biometricEnabled)
 
+        // Load risk coins
+        if let savedCoins = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) {
+            riskCoins = savedCoins
+        }
+
         // Load news topic preferences
         loadNewsTopicSettings()
     }
@@ -127,6 +132,15 @@ final class SettingsViewModel {
     func toggleBiometric(_ enabled: Bool) {
         biometricEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: Constants.UserDefaults.biometricEnabled)
+    }
+
+    func toggleRiskCoin(_ coin: String) {
+        if riskCoins.contains(coin) {
+            riskCoins.removeAll { $0 == coin }
+        } else {
+            riskCoins.append(coin)
+        }
+        UserDefaults.standard.set(riskCoins, forKey: Constants.UserDefaults.riskCoins)
     }
 
     func signOut() async {

@@ -231,14 +231,33 @@ class HomeViewModel {
     // Risk Level (powers ArkLine Risk Score card)
     var btcRiskLevel: ITCRiskLevel?
     var ethRiskLevel: ITCRiskLevel?
+    var solRiskLevel: ITCRiskLevel?
     var selectedRiskCoin: String = "BTC"
+
+    // User-selected risk coins from settings
+    var userRiskCoins: [String] {
+        UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) ?? ["BTC", "ETH"]
+    }
 
     // Computed property to get risk level for selected coin
     var selectedRiskLevel: ITCRiskLevel? {
         switch selectedRiskCoin {
         case "BTC": return btcRiskLevel
         case "ETH": return ethRiskLevel
+        case "SOL": return solRiskLevel
         default: return btcRiskLevel // Fallback to BTC for other coins
+        }
+    }
+
+    // Get all risk levels for user's selected coins
+    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?)] {
+        userRiskCoins.map { coin in
+            switch coin {
+            case "BTC": return (coin, btcRiskLevel)
+            case "ETH": return (coin, ethRiskLevel)
+            case "SOL": return (coin, solRiskLevel)
+            default: return (coin, nil)
+            }
         }
     }
 
@@ -377,6 +396,7 @@ class HomeViewModel {
         async let fedWatchTask = fetchFedWatchMeetingsSafe()
         async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
         async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
+        async let solRiskTask = fetchITCRiskLevelSafe(coin: "SOL")
         async let upcomingEventsTask = fetchUpcomingEventsSafe()
         async let todaysEventsTask = fetchTodaysEventsSafe()
 
@@ -387,6 +407,7 @@ class HomeViewModel {
         let fedMeetings = await fedWatchTask
         let btcRisk = await btcRiskTask
         let ethRisk = await ethRiskTask
+        let solRisk = await solRiskTask
         let upcoming = await upcomingEventsTask
         let todaysEvts = await todaysEventsTask
 
@@ -398,6 +419,7 @@ class HomeViewModel {
             self.fedWatchMeetings = fedMeetings ?? []
             self.btcRiskLevel = btcRisk
             self.ethRiskLevel = ethRisk
+            self.solRiskLevel = solRisk
             self.upcomingEvents = upcoming
             self.todaysEvents = todaysEvts
             self.eventsLastUpdated = Date()

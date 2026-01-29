@@ -391,7 +391,8 @@ struct ReorderableWidgetStack: View {
         case .marketSentiment:
             return viewModel.sentimentViewModel != nil
         case .assetRiskLevel:
-            return viewModel.selectedRiskLevel != nil
+            // Show if any user-selected coin has risk data
+            return !viewModel.userSelectedRiskLevels.filter { $0.riskLevel != nil }.isEmpty
         case .vixIndicator:
             return true
         case .dxyIndicator:
@@ -480,9 +481,8 @@ struct ReorderableWidgetStack: View {
             )
 
         case .assetRiskLevel:
-            RiskLevelWidget(
-                riskLevel: viewModel.selectedRiskLevel,
-                coinSymbol: viewModel.selectedRiskCoin,
+            MultiCoinRiskSection(
+                riskLevels: viewModel.userSelectedRiskLevels,
                 size: appState.widgetSize(.assetRiskLevel)
             )
 
@@ -4220,6 +4220,145 @@ struct MacroInfoSection: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(16)
+    }
+}
+
+// MARK: - Multi-Coin Risk Section
+/// Displays risk level widgets for all user-selected coins
+struct MultiCoinRiskSection: View {
+    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?)]
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            // Section header
+            HStack {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Asset Risk Levels")
+                    .font(ArkFonts.subheadline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Spacer()
+
+                Text("\(riskLevels.count) selected")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, ArkSpacing.xs)
+
+            // Risk cards grid/scroll
+            if riskLevels.count == 1, let first = riskLevels.first {
+                // Single coin - full width
+                RiskLevelWidget(
+                    riskLevel: first.riskLevel,
+                    coinSymbol: first.coin,
+                    size: size
+                )
+            } else if riskLevels.count == 2 {
+                // Two coins - side by side
+                HStack(spacing: ArkSpacing.sm) {
+                    ForEach(riskLevels, id: \.coin) { item in
+                        CompactRiskCard(
+                            riskLevel: item.riskLevel,
+                            coinSymbol: item.coin
+                        )
+                    }
+                }
+            } else {
+                // Three or more - horizontal scroll
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: ArkSpacing.sm) {
+                        ForEach(riskLevels, id: \.coin) { item in
+                            CompactRiskCard(
+                                riskLevel: item.riskLevel,
+                                coinSymbol: item.coin
+                            )
+                            .frame(width: 160)
+                        }
+                    }
+                    .padding(.horizontal, ArkSpacing.xs)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Compact Risk Card (for Multi-Coin Display)
+/// Smaller risk card for displaying multiple coins
+struct CompactRiskCard: View {
+    let riskLevel: ITCRiskLevel?
+    let coinSymbol: String
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingDetail = false
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                // Header
+                HStack {
+                    Text(coinSymbol)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Spacer()
+
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                }
+
+                if let risk = riskLevel {
+                    // Risk value
+                    Text(String(format: "%.3f", risk.riskLevel))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(RiskColors.color(for: risk.riskLevel))
+
+                    // Category badge
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(RiskColors.color(for: risk.riskLevel))
+                            .frame(width: 6, height: 6)
+
+                        Text(RiskColors.category(for: risk.riskLevel))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(RiskColors.color(for: risk.riskLevel))
+                            .lineLimit(1)
+                    }
+                } else {
+                    // Loading state
+                    Text("--")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(textPrimary.opacity(0.3))
+
+                    Text("Loading...")
+                        .font(.system(size: 10))
+                        .foregroundColor(textPrimary.opacity(0.5))
+                }
+            }
+            .padding(ArkSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(cardBackground)
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            RiskLevelChartView()
+        }
     }
 }
 

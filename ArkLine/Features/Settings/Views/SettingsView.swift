@@ -725,7 +725,7 @@ struct RiskLevelSelectView: View {
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: SettingsViewModel
 
-    let availableCoins = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"]
+    let availableCoins = ["BTC", "ETH", "SOL"]
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -778,11 +778,7 @@ struct RiskLevelSelectView: View {
     }
 
     private func toggleCoin(_ coin: String) {
-        if viewModel.riskCoins.contains(coin) {
-            viewModel.riskCoins.removeAll { $0 == coin }
-        } else {
-            viewModel.riskCoins.append(coin)
-        }
+        viewModel.toggleRiskCoin(coin)
     }
 }
 

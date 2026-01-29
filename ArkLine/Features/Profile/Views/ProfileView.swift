@@ -482,6 +482,7 @@ struct ReferFriendView: View {
 struct PortfolioSheetView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         NavigationStack {
@@ -504,7 +505,13 @@ struct PortfolioSheetView: View {
 
                 Spacer()
 
-                NavigationLink(destination: Text("Portfolio Detail")) {
+                Button {
+                    dismiss()
+                    // Navigate to Portfolio tab
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        appState.selectedTab = .portfolio
+                    }
+                } label: {
                     Text("View Portfolio")
                         .font(AppFonts.body14Bold)
                         .foregroundColor(.white)
@@ -554,10 +561,25 @@ struct AlertsSheetView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
 
+                // Coming Soon Badge
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 14))
+                    Text("Coming Soon")
+                        .font(AppFonts.body14Medium)
+                }
+                .foregroundColor(AppColors.warning)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(AppColors.warning.opacity(0.15))
+                .cornerRadius(20)
+
                 Spacer()
 
-                NavigationLink(destination: Text("Alerts Detail")) {
-                    Text("Manage Alerts")
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Got It")
                         .font(AppFonts.body14Bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

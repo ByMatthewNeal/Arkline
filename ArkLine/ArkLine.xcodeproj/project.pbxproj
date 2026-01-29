@@ -19,6 +19,7 @@
 		0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */; };
 		0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */; };
 		0E896256033DF759ECCCC6D2 /* Broadcast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5938799B40563800647E30C4 /* Broadcast.swift */; };
+		0E896256033DF759ECCCC6D3 /* PortfolioShowcase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5938799B40563800647E30C5 /* PortfolioShowcase.swift */; };
 		0EB5EDD953AC620C0E99C4B3 /* AudiencePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B87FB3B595DB0038D990592 /* AudiencePickerView.swift */; };
 		0F4CC45089337035918EB194 /* FarsideETFScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1730741E831B9E651F52956B /* FarsideETFScraper.swift */; };
 		0F57D66C7B4F2E45760BFCF2 /* DCAReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608A536AA089EA6F8D512468 /* DCAReminder.swift */; };
@@ -137,6 +138,7 @@
 		933D2871520E6D18D9470079 /* FMPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A2248CF31FBE81B04E09E5 /* FMPService.swift */; };
 		943CEF0A4415440A57DF682C /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E7A67A1ED685BB0308464EB /* AIChatView.swift */; };
 		988EB2790776DAFBE8325BE6 /* EmbeddedWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F9C3C06B9A6670869424CC /* EmbeddedWidgetView.swift */; };
+		988EB2790776DAFBE8325BE7 /* EmbeddedPortfolioWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F9C3C06B9A6670869424CD /* EmbeddedPortfolioWidget.swift */; };
 		98CEA03E857EB2C3B42432C2 /* APIITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */; };
 		9917FA19D9A6EA6D8736BDAC /* ExtremeMoveAlertManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F34DF542B4C3DC9CD299F2 /* ExtremeMoveAlertManager.swift */; };
 		9AE4238F8FF6E912DC75A36D /* BroadcastTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509FFD3817DDAF75AAA5B555 /* BroadcastTabView.swift */; };
@@ -177,7 +179,6 @@
 		C604E45C43976A417C6023D0 /* SparklineChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FE43164BCBFA94F69EA31F /* SparklineChart.swift */; };
 		C6D58AAA96B8FBB851F1D0F0 /* CMEFedWatchScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0659CA02D3A55140C6B3897 /* CMEFedWatchScraper.swift */; };
 		C79665282F2BC0C65D021C2C /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C61F540DDA869CAAFC93657 /* Constants.swift */; };
-		C9245E362F2A8FA7000D2A08 /* PortfolioShowcase.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E352F2A8FA7000D2A08 /* PortfolioShowcase.swift */; };
 		C9245E402F2A8FCC000D2A08 /* PrivacyFilterSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E3D2F2A8FCC000D2A08 /* PrivacyFilterSelector.swift */; };
 		C9245E412F2A8FCC000D2A08 /* DualPortfolioComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E392F2A8FCC000D2A08 /* DualPortfolioComparisonView.swift */; };
 		C9245E422F2A8FCC000D2A08 /* PortfolioPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E3A2F2A8FCC000D2A08 /* PortfolioPickerSheet.swift */; };
@@ -185,7 +186,6 @@
 		C9245E442F2A8FCC000D2A08 /* PortfolioSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E3C2F2A8FCC000D2A08 /* PortfolioSnapshotCardView.swift */; };
 		C9245E452F2A8FCC000D2A08 /* PortfolioShowcaseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E372F2A8FCC000D2A08 /* PortfolioShowcaseViewModel.swift */; };
 		C9245E462F2A8FCC000D2A08 /* ShowcaseExportPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E3E2F2A8FCC000D2A08 /* ShowcaseExportPreview.swift */; };
-		C9245E482F2A9003000D2A08 /* EmbeddedPortfolioWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E472F2A9003000D2A08 /* EmbeddedPortfolioWidget.swift */; };
 		C9245E522F2AA649000D2A08 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E512F2AA649000D2A08 /* TemplatePickerView.swift */; };
 		C9245E532F2AA649000D2A08 /* BroadcastAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E4F2F2AA649000D2A08 /* BroadcastAnalyticsView.swift */; };
 		C9245E542F2AA649000D2A08 /* BroadcastPortfolioPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9245E502F2AA649000D2A08 /* BroadcastPortfolioPicker.swift */; };
@@ -313,7 +313,9 @@
 		56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomizeHomeView.swift; sourceTree = "<group>"; };
 		5831D493E668A00494BC0398 /* SentimentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentViewModel.swift; sourceTree = "<group>"; };
 		58F9C3C06B9A6670869424CC /* EmbeddedWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedWidgetView.swift; sourceTree = "<group>"; };
+		58F9C3C06B9A6670869424CD /* EmbeddedPortfolioWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedPortfolioWidget.swift; sourceTree = "<group>"; };
 		5938799B40563800647E30C4 /* Broadcast.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Broadcast.swift; sourceTree = "<group>"; };
+		5938799B40563800647E30C5 /* PortfolioShowcase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioShowcase.swift; sourceTree = "<group>"; };
 		5B004AFCE159ECE890C8AADC /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
 		5B6A3AE118E45271FE32F447 /* DXYData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DXYData.swift; sourceTree = "<group>"; };
 		5B87FB3B595DB0038D990592 /* AudiencePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AudiencePickerView.swift; sourceTree = "<group>"; };
@@ -396,7 +398,6 @@
 		C1C9947884BDE4102F110274 /* NewsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsCard.swift; sourceTree = "<group>"; };
 		C363BE93C1AF81DE643E762B /* MarketSentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSentiment.swift; sourceTree = "<group>"; };
 		C909B38D6272803B487236EF /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
-		C9245E352F2A8FA7000D2A08 /* PortfolioShowcase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioShowcase.swift; sourceTree = "<group>"; };
 		C9245E372F2A8FCC000D2A08 /* PortfolioShowcaseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioShowcaseViewModel.swift; sourceTree = "<group>"; };
 		C9245E392F2A8FCC000D2A08 /* DualPortfolioComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DualPortfolioComparisonView.swift; sourceTree = "<group>"; };
 		C9245E3A2F2A8FCC000D2A08 /* PortfolioPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioPickerSheet.swift; sourceTree = "<group>"; };
@@ -404,7 +405,6 @@
 		C9245E3C2F2A8FCC000D2A08 /* PortfolioSnapshotCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSnapshotCardView.swift; sourceTree = "<group>"; };
 		C9245E3D2F2A8FCC000D2A08 /* PrivacyFilterSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyFilterSelector.swift; sourceTree = "<group>"; };
 		C9245E3E2F2A8FCC000D2A08 /* ShowcaseExportPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowcaseExportPreview.swift; sourceTree = "<group>"; };
-		C9245E472F2A9003000D2A08 /* EmbeddedPortfolioWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbeddedPortfolioWidget.swift; sourceTree = "<group>"; };
 		C9245E4F2F2AA649000D2A08 /* BroadcastAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastAnalyticsView.swift; sourceTree = "<group>"; };
 		C9245E502F2AA649000D2A08 /* BroadcastPortfolioPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastPortfolioPicker.swift; sourceTree = "<group>"; };
 		C9245E512F2AA649000D2A08 /* TemplatePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatePickerView.swift; sourceTree = "<group>"; };
@@ -542,6 +542,9 @@
 				04628B553AF47C260C3AF994 /* AppReferencePickerView.swift */,
 				A1F96E9F31319C54A3F5158D /* ImageAnnotationView.swift */,
 				5B87FB3B595DB0038D990592 /* AudiencePickerView.swift */,
+				C9245E4F2F2AA649000D2A08 /* BroadcastAnalyticsView.swift */,
+				C9245E502F2AA649000D2A08 /* BroadcastPortfolioPicker.swift */,
+				C9245E512F2AA649000D2A08 /* TemplatePickerView.swift */,
 			);
 			path = Admin;
 			sourceTree = "<group>";
@@ -763,6 +766,7 @@
 				FBEE2AB1904E9E24D7B1229D /* User.swift */,
 				A9CBCD28DAB9835627BA87F5 /* VIXData.swift */,
 				5938799B40563800647E30C4 /* Broadcast.swift */,
+				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -786,9 +790,6 @@
 		5D81C4798BAA818A61F025D4 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				C9245E4F2F2AA649000D2A08 /* BroadcastAnalyticsView.swift */,
-				C9245E502F2AA649000D2A08 /* BroadcastPortfolioPicker.swift */,
-				C9245E512F2AA649000D2A08 /* TemplatePickerView.swift */,
 				509FFD3817DDAF75AAA5B555 /* BroadcastTabView.swift */,
 				0F0626B4B5F72DB62DB4031C /* Admin */,
 				765EFE5839092C9BA9AF505F /* User */,
@@ -902,6 +903,7 @@
 			children = (
 				2B441A5BF9F6E02BFEAD3BB8 /* BroadcastFeedView.swift */,
 				58F9C3C06B9A6670869424CC /* EmbeddedWidgetView.swift */,
+				58F9C3C06B9A6670869424CD /* EmbeddedPortfolioWidget.swift */,
 			);
 			path = User;
 			sourceTree = "<group>";
@@ -1241,8 +1243,6 @@
 				AE9B616165DFB536A5EF5225 /* SharedComponents */,
 				E2EB16D82448FC0BD72DB130 /* Products */,
 				4FCF24201AAEB905976D6835 /* ArkLine */,
-				C9245E352F2A8FA7000D2A08 /* PortfolioShowcase.swift */,
-				C9245E472F2A9003000D2A08 /* EmbeddedPortfolioWidget.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1441,7 +1441,6 @@
 				60A76BA862CB7DC22EA522F6 /* DXYServiceProtocol.swift in Sources */,
 				541DAD72CE174BCAA6CB8C31 /* DailyNewsSection.swift in Sources */,
 				6039354E9B24821430E1C7F4 /* Date+Extensions.swift in Sources */,
-				C9245E362F2A8FA7000D2A08 /* PortfolioShowcase.swift in Sources */,
 				DC56B48E4346BD6D97E4913C /* DerivativesDataSection.swift in Sources */,
 				8E42B1CB3AAC8414C67C7303 /* Double+Extensions.swift in Sources */,
 				FD8C19CD038F28845E0A54DA /* EconomicCalendarScraper.swift in Sources */,
@@ -1472,7 +1471,6 @@
 				E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */,
 				DC9EBED604DF5529D7DCC381 /* ITCRiskServiceProtocol.swift in Sources */,
 				6CE5BC8E504E9DBF01B7AF2D /* ITCRiskWidget.swift in Sources */,
-				C9245E482F2A9003000D2A08 /* EmbeddedPortfolioWidget.swift in Sources */,
 				CA4D61324FBE9410E9EC4020 /* IconButton.swift in Sources */,
 				DEB18F951F4E9D8E064B2453 /* LoadingView.swift in Sources */,
 				07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */,
@@ -1585,6 +1583,7 @@
 				8DD30594AE32B9D1BE06917D /* YahooVIXService.swift in Sources */,
 				7A9C2B0E2516699150C161D4 /* ZScoreIndicator.swift in Sources */,
 				0E896256033DF759ECCCC6D2 /* Broadcast.swift in Sources */,
+				0E896256033DF759ECCCC6D3 /* PortfolioShowcase.swift in Sources */,
 				31E474080A77E1549EA84032 /* BroadcastServiceProtocol.swift in Sources */,
 				DD0AF2DAE7F44D769CA184A3 /* BroadcastService.swift in Sources */,
 				9AE4238F8FF6E912DC75A36D /* BroadcastTabView.swift in Sources */,
@@ -1596,6 +1595,7 @@
 				F5876AA8450E1CE9E40F9428 /* VoiceRecorderView.swift in Sources */,
 				B7657276E1C25A1FADD29B93 /* AppReferencePickerView.swift in Sources */,
 				988EB2790776DAFBE8325BE6 /* EmbeddedWidgetView.swift in Sources */,
+				988EB2790776DAFBE8325BE7 /* EmbeddedPortfolioWidget.swift in Sources */,
 				87EB17BC735BE9A7C9D61450 /* ImageAnnotationView.swift in Sources */,
 				0EB5EDD953AC620C0E99C4B3 /* AudiencePickerView.swift in Sources */,
 				DAF1635DE24B007DACBDF40A /* BroadcastNotificationService.swift in Sources */,
