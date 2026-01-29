@@ -69,8 +69,10 @@ class HomeViewModel {
     // Market Summary
     var btcPrice: Double = 0
     var ethPrice: Double = 0
+    var solPrice: Double = 0
     var btcChange24h: Double = 0
     var ethChange24h: Double = 0
+    var solChange24h: Double = 0
 
     // Multiple Portfolios
     var portfolios: [Portfolio] = []
@@ -369,18 +371,21 @@ class HomeViewModel {
         // Fetch crypto prices first (critical for Core widget) - independent of other fetches
         let crypto = await fetchCryptoAssetsSafe()
 
-        // Extract BTC and ETH prices immediately
+        // Extract BTC, ETH, and SOL prices immediately
         let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
         let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
+        let sol = crypto.first { $0.symbol.uppercased() == "SOL" }
 
-        print("🟢 HomeViewModel: Fetched \(crypto.count) assets, BTC = \(btc?.currentPrice ?? -1), ETH = \(eth?.currentPrice ?? -1)")
+        print("🟢 HomeViewModel: Fetched \(crypto.count) assets, BTC = \(btc?.currentPrice ?? -1), ETH = \(eth?.currentPrice ?? -1), SOL = \(sol?.currentPrice ?? -1)")
 
         // Set prices on main actor immediately
         await MainActor.run {
             self.btcPrice = btc?.currentPrice ?? 0
             self.ethPrice = eth?.currentPrice ?? 0
+            self.solPrice = sol?.currentPrice ?? 0
             self.btcChange24h = btc?.priceChangePercentage24h ?? 0
             self.ethChange24h = eth?.priceChangePercentage24h ?? 0
+            self.solChange24h = sol?.priceChangePercentage24h ?? 0
             self.favoriteAssets = Array(crypto.prefix(3))
 
             // Calculate top gainers and losers

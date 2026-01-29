@@ -275,8 +275,11 @@ struct ReorderableWidgetStack: View {
             HomeMarketMoversWidget(
                 btcPrice: viewModel.btcPrice,
                 ethPrice: viewModel.ethPrice,
+                solPrice: viewModel.solPrice,
                 btcChange: viewModel.btcChange24h,
                 ethChange: viewModel.ethChange24h,
+                solChange: viewModel.solChange24h,
+                enabledAssets: appState.enabledCoreAssets,
                 size: appState.widgetSize(.marketMovers)
             )
 

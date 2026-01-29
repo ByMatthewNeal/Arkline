@@ -16,15 +16,15 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
 
     // MARK: - TechnicalAnalysisServiceProtocol
 
-    func fetchTechnicalAnalysis(symbol: String, exchange: String) async throws -> TechnicalAnalysis {
+    func fetchTechnicalAnalysis(symbol: String, exchange: String, interval: AnalysisTimeframe = .daily) async throws -> TechnicalAnalysis {
         // Fetch all data concurrently using bulk endpoint for efficiency
         let indicators: [TaapiIndicator] = [
             // SMAs
             TaapiIndicator(id: "sma21", indicator: "sma", period: 21),
             TaapiIndicator(id: "sma50", indicator: "sma", period: 50),
             TaapiIndicator(id: "sma200", indicator: "sma", period: 200),
-            // Bollinger Bands (daily)
-            TaapiIndicator(id: "bbands_daily", indicator: "bbands", period: 20, stddev: 2),
+            // Bollinger Bands
+            TaapiIndicator(id: "bbands", indicator: "bbands", period: 20, stddev: 2),
             // RSI
             TaapiIndicator(id: "rsi", indicator: "rsi", period: 14),
             // Price
@@ -34,7 +34,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
         let endpoint = TaapiEndpoint.bulk(
             exchange: exchange,
             symbol: symbol,
-            interval: "1d",
+            interval: interval.rawValue,
             indicators: indicators
         )
 
@@ -75,33 +75,32 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             )
         )
 
-        // Build Bollinger Bands for daily (we'll fetch weekly/monthly separately or use daily as approximation)
-        let dailyBB = buildBollingerData(
-            from: results["bbands_daily"],
-            timeframe: .daily,
+        // Build Bollinger Bands for the selected timeframe
+        let primaryBB = buildBollingerData(
+            from: results["bbands"],
+            timeframe: interval.bollingerTimeframe,
             currentPrice: currentPrice
         )
 
-        // For weekly and monthly, we need separate calls or estimate from daily
-        // Using concurrent fetching for better performance
-        async let weeklyBBTask = fetchBollingerBands(symbol: symbol, exchange: exchange, interval: "1w")
-        async let monthlyBBTask = fetchBollingerBands(symbol: symbol, exchange: exchange, interval: "1M")
-
+        // For the BollingerBandAnalysis structure, we set the selected timeframe's data
+        // and estimate the others based on the primary
+        let dailyBB: BollingerBandData
         let weeklyBB: BollingerBandData
         let monthlyBB: BollingerBandData
 
-        do {
-            weeklyBB = try await weeklyBBTask
-        } catch {
-            // Fallback to estimated weekly BB
-            weeklyBB = estimateBollingerData(from: dailyBB, timeframe: .weekly, currentPrice: currentPrice)
-        }
-
-        do {
-            monthlyBB = try await monthlyBBTask
-        } catch {
-            // Fallback to estimated monthly BB
-            monthlyBB = estimateBollingerData(from: dailyBB, timeframe: .monthly, currentPrice: currentPrice)
+        switch interval {
+        case .daily:
+            dailyBB = primaryBB
+            weeklyBB = estimateBollingerData(from: primaryBB, timeframe: .weekly, currentPrice: currentPrice)
+            monthlyBB = estimateBollingerData(from: primaryBB, timeframe: .monthly, currentPrice: currentPrice)
+        case .weekly:
+            dailyBB = estimateBollingerData(from: primaryBB, timeframe: .daily, currentPrice: currentPrice)
+            weeklyBB = primaryBB
+            monthlyBB = estimateBollingerData(from: primaryBB, timeframe: .monthly, currentPrice: currentPrice)
+        case .monthly:
+            dailyBB = estimateBollingerData(from: primaryBB, timeframe: .daily, currentPrice: currentPrice)
+            weeklyBB = estimateBollingerData(from: primaryBB, timeframe: .weekly, currentPrice: currentPrice)
+            monthlyBB = primaryBB
         }
 
         let bollingerBands = BollingerBandAnalysis(

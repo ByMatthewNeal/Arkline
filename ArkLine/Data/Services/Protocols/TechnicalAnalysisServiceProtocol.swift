@@ -1,5 +1,39 @@
 import Foundation
 
+// MARK: - Analysis Timeframe
+/// Timeframe for technical analysis
+enum AnalysisTimeframe: String, CaseIterable, Identifiable {
+    case daily = "1d"
+    case weekly = "1w"
+    case monthly = "1M"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .daily: return "1D"
+        case .weekly: return "1W"
+        case .monthly: return "1M"
+        }
+    }
+
+    var fullLabel: String {
+        switch self {
+        case .daily: return "Daily"
+        case .weekly: return "Weekly"
+        case .monthly: return "Monthly"
+        }
+    }
+
+    var bollingerTimeframe: BollingerTimeframe {
+        switch self {
+        case .daily: return .daily
+        case .weekly: return .weekly
+        case .monthly: return .monthly
+        }
+    }
+}
+
 // MARK: - Technical Analysis Service Protocol
 /// Protocol defining technical analysis operations using Taapi.io API.
 protocol TechnicalAnalysisServiceProtocol {
@@ -7,8 +41,9 @@ protocol TechnicalAnalysisServiceProtocol {
     /// - Parameters:
     ///   - symbol: Trading pair symbol (e.g., "BTC/USDT")
     ///   - exchange: Exchange name (e.g., "binance")
+    ///   - interval: Analysis timeframe (default: daily)
     /// - Returns: TechnicalAnalysis with all indicators
-    func fetchTechnicalAnalysis(symbol: String, exchange: String) async throws -> TechnicalAnalysis
+    func fetchTechnicalAnalysis(symbol: String, exchange: String, interval: AnalysisTimeframe) async throws -> TechnicalAnalysis
 
     /// Fetches SMA values for multiple periods
     /// - Parameters:

@@ -42,6 +42,36 @@ struct CustomizeHomeView: View {
                     }
                     .padding(.top, 10)
 
+                    // Core Assets section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Core Assets")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.8)
+                            .padding(.horizontal, 4)
+
+                        VStack(spacing: 0) {
+                            ForEach(Array(CoreAsset.allCases.enumerated()), id: \.element.id) { index, asset in
+                                CoreAssetToggleRow(
+                                    asset: asset,
+                                    isEnabled: appState.isCoreAssetEnabled(asset),
+                                    isLast: index == CoreAsset.allCases.count - 1,
+                                    onToggle: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            appState.toggleCoreAsset(asset)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(cardBackground)
+                        )
+                    }
+                    .padding(.horizontal, 16)
+
                     // Widget toggles
                     VStack(spacing: 12) {
                         ForEach(HomeWidgetType.allCases) { widget in
@@ -118,6 +148,7 @@ struct CustomizeHomeView: View {
     private func resetToDefaults() {
         withAnimation(.spring(response: 0.3)) {
             appState.setWidgetConfiguration(WidgetConfiguration())
+            appState.setCoreAssets(CoreAsset.defaultEnabled)
             expandedWidget = nil
         }
     }
@@ -303,6 +334,73 @@ struct SizeOptionButton: View {
         case .compact: return 32
         case .standard: return 44
         case .expanded: return 56
+        }
+    }
+}
+
+// MARK: - Core Asset Toggle Row
+struct CoreAssetToggleRow: View {
+    let asset: CoreAsset
+    let isEnabled: Bool
+    let isLast: Bool
+    let onToggle: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                // Asset icon
+                ZStack {
+                    Circle()
+                        .fill(AppColors.accent.opacity(0.15))
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: asset.icon)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                }
+
+                // Asset info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(asset.rawValue)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Text(asset.name)
+                        .font(.system(size: 12))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+
+                Spacer()
+
+                // Toggle
+                Button(action: onToggle) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(isEnabled ? AppColors.accent : Color.gray.opacity(0.3))
+                            .frame(width: 52, height: 32)
+
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 26, height: 26)
+                            .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                            .offset(x: isEnabled ? 10 : -10)
+                    }
+                    .animation(.spring(response: 0.3), value: isEnabled)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            if !isLast {
+                Divider()
+                    .background(AppColors.divider(colorScheme))
+                    .padding(.leading, 68)
+            }
         }
     }
 }

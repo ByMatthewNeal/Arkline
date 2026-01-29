@@ -89,12 +89,30 @@ enum AssetTrendDirection: String, Equatable {
         case .strongDowntrend: return AppColors.error
         }
     }
+
+    var shortLabel: String {
+        switch self {
+        case .strongUptrend: return "Strong Up"
+        case .uptrend: return "Up"
+        case .sideways: return "Sideways"
+        case .downtrend: return "Down"
+        case .strongDowntrend: return "Strong Down"
+        }
+    }
 }
 
 enum TrendStrength: String, Equatable {
     case strong = "Strong"
     case moderate = "Moderate"
     case weak = "Weak"
+
+    var level: Int {
+        switch self {
+        case .strong: return 3
+        case .moderate: return 2
+        case .weak: return 1
+        }
+    }
 }
 
 // MARK: - SMA Analysis

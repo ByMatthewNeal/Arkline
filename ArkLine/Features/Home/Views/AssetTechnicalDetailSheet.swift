@@ -10,6 +10,11 @@ struct AssetTechnicalDetailSheet: View {
     @State private var technicalAnalysis: TechnicalAnalysis?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedTimeframe: AnalysisTimeframe = .daily
+
+    // Multi-timeframe trend data
+    @State private var multiTimeframeTrends: [AnalysisTimeframe: TrendAnalysis] = [:]
+    @State private var isLoadingMultiTimeframe = false
 
     private let technicalAnalysisService = ServiceContainer.shared.technicalAnalysisService
 
@@ -23,6 +28,9 @@ struct AssetTechnicalDetailSheet: View {
                 VStack(spacing: ArkSpacing.xl) {
                     // Asset header
                     AssetHeaderSection(asset: asset, colorScheme: colorScheme)
+
+                    // Timeframe picker
+                    TimeframePicker(selectedTimeframe: $selectedTimeframe, colorScheme: colorScheme)
 
                     if isLoading {
                         // Loading state
@@ -50,10 +58,17 @@ struct AssetTechnicalDetailSheet: View {
                         }
                         .padding(.top, 40)
                     } else if let analysis = technicalAnalysis {
+                        // Multi-timeframe trend summary (shows 1D, 1W, 1M at a glance)
+                        MultiTimeframeTrendCard(
+                            trends: multiTimeframeTrends,
+                            isLoading: isLoadingMultiTimeframe,
+                            colorScheme: colorScheme
+                        )
+
                         // Overall sentiment
                         OverallSentimentCard(analysis: analysis, colorScheme: colorScheme)
 
-                        // Trend section
+                        // Trend section for selected timeframe
                         TrendAnalysisCard(trend: analysis.trend, colorScheme: colorScheme)
 
                         // SMA section
@@ -89,6 +104,12 @@ struct AssetTechnicalDetailSheet: View {
             }
             .task {
                 await fetchTechnicalAnalysis()
+                await fetchMultiTimeframeTrends()
+            }
+            .onChange(of: selectedTimeframe) { _, _ in
+                Task {
+                    await fetchTechnicalAnalysis()
+                }
             }
         }
     }
@@ -105,7 +126,8 @@ struct AssetTechnicalDetailSheet: View {
 
             let analysis = try await technicalAnalysisService.fetchTechnicalAnalysis(
                 symbol: symbol,
-                exchange: exchange
+                exchange: exchange,
+                interval: selectedTimeframe
             )
 
             await MainActor.run {
@@ -121,6 +143,191 @@ struct AssetTechnicalDetailSheet: View {
                 // self.errorMessage = "Unable to fetch live data. Showing estimated values."
             }
         }
+    }
+
+    private func fetchMultiTimeframeTrends() async {
+        await MainActor.run {
+            isLoadingMultiTimeframe = true
+        }
+
+        let symbol = TaapiSymbolMapper.symbol(for: asset)
+        let exchange = TaapiSymbolMapper.exchange(for: asset)
+
+        // Fetch all three timeframes in parallel
+        await withTaskGroup(of: (AnalysisTimeframe, TrendAnalysis?).self) { group in
+            for timeframe in AnalysisTimeframe.allCases {
+                group.addTask {
+                    do {
+                        let analysis = try await self.technicalAnalysisService.fetchTechnicalAnalysis(
+                            symbol: symbol,
+                            exchange: exchange,
+                            interval: timeframe
+                        )
+                        return (timeframe, analysis.trend)
+                    } catch {
+                        // Fallback to generated data
+                        let mockAnalysis = TechnicalAnalysisGenerator.generate(for: self.asset)
+                        return (timeframe, mockAnalysis.trend)
+                    }
+                }
+            }
+
+            var results: [AnalysisTimeframe: TrendAnalysis] = [:]
+            for await (timeframe, trend) in group {
+                if let trend = trend {
+                    results[timeframe] = trend
+                }
+            }
+
+            await MainActor.run {
+                self.multiTimeframeTrends = results
+                self.isLoadingMultiTimeframe = false
+            }
+        }
+    }
+}
+
+// MARK: - Multi-Timeframe Trend Card
+private struct MultiTimeframeTrendCard: View {
+    let trends: [AnalysisTimeframe: TrendAnalysis]
+    let isLoading: Bool
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            Text("Trend Overview")
+                .font(.headline)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            if isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Loading trends...")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                }
+                .padding(.vertical, ArkSpacing.md)
+            } else {
+                HStack(spacing: ArkSpacing.sm) {
+                    ForEach(AnalysisTimeframe.allCases) { timeframe in
+                        TimeframeTrendCell(
+                            timeframe: timeframe,
+                            trend: trends[timeframe],
+                            colorScheme: colorScheme
+                        )
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+private struct TimeframeTrendCell: View {
+    let timeframe: AnalysisTimeframe
+    let trend: TrendAnalysis?
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Timeframe label
+            Text(timeframe.label)
+                .font(.caption.bold())
+                .foregroundColor(AppColors.textSecondary)
+
+            if let trend = trend {
+                // Trend icon
+                ZStack {
+                    Circle()
+                        .fill(trend.direction.color.opacity(0.15))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: trend.direction.icon)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(trend.direction.color)
+                }
+
+                // Trend label
+                Text(trend.direction.shortLabel)
+                    .font(.caption2.bold())
+                    .foregroundColor(trend.direction.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                // Strength indicator
+                HStack(spacing: 2) {
+                    ForEach(0..<3) { index in
+                        Rectangle()
+                            .fill(index < trend.strength.level ? trend.direction.color : trend.direction.color.opacity(0.2))
+                            .frame(width: 8, height: 4)
+                            .cornerRadius(2)
+                    }
+                }
+            } else {
+                // No data state
+                ZStack {
+                    Circle()
+                        .fill(AppColors.textSecondary.opacity(0.1))
+                        .frame(width: 44, height: 44)
+
+                    Image(systemName: "minus")
+                        .font(.system(size: 18))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Text("N/A")
+                    .font(.caption2.bold())
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, ArkSpacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
+        )
+    }
+}
+
+// MARK: - Timeframe Picker
+private struct TimeframePicker: View {
+    @Binding var selectedTimeframe: AnalysisTimeframe
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(AnalysisTimeframe.allCases) { timeframe in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedTimeframe = timeframe
+                    }
+                } label: {
+                    Text(timeframe.label)
+                        .font(.system(size: 14, weight: selectedTimeframe == timeframe ? .semibold : .medium))
+                        .foregroundColor(selectedTimeframe == timeframe ? .white : AppColors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            selectedTimeframe == timeframe
+                                ? AppColors.accent
+                                : Color.clear
+                        )
+                }
+            }
+        }
+        .background(
+            colorScheme == .dark
+                ? Color(hex: "1F1F1F")
+                : Color(hex: "F0F0F0")
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 

@@ -73,6 +73,52 @@ struct ArkLineApp: App {
 }
 
 // MARK: - App State
+// MARK: - Core Asset Type
+/// Represents the core cryptocurrency assets that can be displayed in the Core widget
+enum CoreAsset: String, CaseIterable, Codable, Identifiable {
+    case btc = "BTC"
+    case eth = "ETH"
+    case sol = "SOL"
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .btc: return "Bitcoin"
+        case .eth: return "Ethereum"
+        case .sol: return "Solana"
+        }
+    }
+
+    var coinGeckoId: String {
+        switch self {
+        case .btc: return "bitcoin"
+        case .eth: return "ethereum"
+        case .sol: return "solana"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .btc: return "bitcoinsign.circle.fill"
+        case .eth: return "diamond.fill"
+        case .sol: return "solana-logo" // Image asset name
+        }
+    }
+
+    /// Whether the icon is an SF Symbol (true) or an image asset (false)
+    var isSystemIcon: Bool {
+        switch self {
+        case .btc, .eth: return true
+        case .sol: return false
+        }
+    }
+
+    static var defaultEnabled: Set<CoreAsset> {
+        [.btc, .eth]
+    }
+}
+
 @MainActor
 class AppState: ObservableObject {
     @Published var isAuthenticated = false
@@ -83,6 +129,7 @@ class AppState: ObservableObject {
     @Published var chartColorPalette: Constants.ChartColorPalette = .classic
     @Published var preferredCurrency: String = "USD"
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
+    @Published var enabledCoreAssets: Set<CoreAsset> = CoreAsset.defaultEnabled
 
     // Navigation reset triggers - increment to pop to root
     @Published var homeNavigationReset = UUID()
@@ -130,6 +177,12 @@ class AppState: ObservableObject {
         // Load preferred currency
         if let currency = UserDefaults.standard.string(forKey: Constants.UserDefaults.preferredCurrency) {
             preferredCurrency = currency
+        }
+
+        // Load enabled core assets
+        if let data = UserDefaults.standard.data(forKey: "enabledCoreAssets"),
+           let assets = try? JSONDecoder().decode(Set<CoreAsset>.self, from: data) {
+            enabledCoreAssets = assets.isEmpty ? CoreAsset.defaultEnabled : assets
         }
 
         // Load widget configuration
@@ -249,6 +302,35 @@ class AppState: ObservableObject {
         order.move(fromOffsets: source, toOffset: destination)
         widgetConfiguration.widgetOrder = order
         setWidgetConfiguration(widgetConfiguration)
+    }
+
+    // MARK: - Core Assets
+
+    func toggleCoreAsset(_ asset: CoreAsset) {
+        if enabledCoreAssets.contains(asset) {
+            // Don't allow disabling the last asset
+            if enabledCoreAssets.count > 1 {
+                enabledCoreAssets.remove(asset)
+            }
+        } else {
+            enabledCoreAssets.insert(asset)
+        }
+        saveCoreAssets()
+    }
+
+    func setCoreAssets(_ assets: Set<CoreAsset>) {
+        enabledCoreAssets = assets.isEmpty ? CoreAsset.defaultEnabled : assets
+        saveCoreAssets()
+    }
+
+    func isCoreAssetEnabled(_ asset: CoreAsset) -> Bool {
+        enabledCoreAssets.contains(asset)
+    }
+
+    private func saveCoreAssets() {
+        if let data = try? JSONEncoder().encode(enabledCoreAssets) {
+            UserDefaults.standard.set(data, forKey: "enabledCoreAssets")
+        }
     }
 
     func signOut() {

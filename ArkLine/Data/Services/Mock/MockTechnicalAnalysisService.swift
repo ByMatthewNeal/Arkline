@@ -9,7 +9,7 @@ final class MockTechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
 
     // MARK: - TechnicalAnalysisServiceProtocol
 
-    func fetchTechnicalAnalysis(symbol: String, exchange: String) async throws -> TechnicalAnalysis {
+    func fetchTechnicalAnalysis(symbol: String, exchange: String, interval: AnalysisTimeframe = .daily) async throws -> TechnicalAnalysis {
         try await simulateNetworkDelay()
 
         // Create a mock CryptoAsset to use with the generator
