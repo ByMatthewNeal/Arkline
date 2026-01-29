@@ -118,6 +118,9 @@ class OnboardingViewModel {
     // MARK: - Created User
     var createdUser: User?
 
+    // MARK: - Security
+    private let passcodeManager = PasscodeManager.shared
+
     // MARK: - Validation
     var isEmailValid: Bool {
         email.isValidEmail
@@ -267,11 +270,13 @@ class OnboardingViewModel {
 
     func setupFaceID(enabled: Bool) {
         isFaceIDEnabled = enabled
+        passcodeManager.isBiometricEnabled = enabled
         completeOnboarding()
     }
 
     func skipFaceID() {
         isFaceIDEnabled = false
+        passcodeManager.isBiometricEnabled = false
         completeOnboarding()
     }
 
@@ -286,6 +291,9 @@ class OnboardingViewModel {
                     throw AppError.authenticationRequired
                 }
 
+                // Store passcode securely using PBKDF2 hashing in Keychain
+                try passcodeManager.setPasscode(passcode)
+
                 let socialLinks = SocialLinks(
                     twitter: twitterHandle.nilIfEmpty,
                     linkedin: linkedinUrl.nilIfEmpty,
@@ -296,6 +304,8 @@ class OnboardingViewModel {
                 // Generate username from email (part before @) since we no longer collect username
                 let generatedUsername = email.components(separatedBy: "@").first ?? "user"
 
+                // Note: passcodeHash is no longer stored in User model or database
+                // It's securely stored in Keychain via PasscodeManager
                 let user = User(
                     id: userId,
                     username: generatedUsername,
@@ -305,7 +315,7 @@ class OnboardingViewModel {
                     careerIndustry: careerIndustry?.rawValue,
                     experienceLevel: experienceLevel?.rawValue,
                     socialLinks: socialLinks,
-                    passcodeHash: hashPasscode(passcode),
+                    passcodeHash: nil, // No longer stored in DB - using Keychain
                     faceIdEnabled: isFaceIDEnabled
                 )
 
@@ -318,7 +328,7 @@ class OnboardingViewModel {
                     try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
                 } catch {
                     // Log error but don't block onboarding - tables may not exist yet
-                    print("Database insert failed (tables may not exist): \(error.localizedDescription)")
+                    AppLogger.shared.error("Database insert failed (tables may not exist): \(error.localizedDescription)")
                 }
 
                 createdUser = user
@@ -329,11 +339,5 @@ class OnboardingViewModel {
 
             isLoading = false
         }
-    }
-
-    private func hashPasscode(_ passcode: String) -> String {
-        // In production, use proper hashing (e.g., bcrypt or Keychain)
-        // This is a simplified version
-        return passcode.data(using: .utf8)?.base64EncodedString() ?? ""
     }
 }

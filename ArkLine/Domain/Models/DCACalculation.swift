@@ -133,8 +133,9 @@ struct DCACalculation: Equatable {
     var riskRangeDescription: String {
         guard strategyType == .riskBased, !riskBands.isEmpty else { return "" }
         let sortedBands = riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
-        let minRisk = Int(sortedBands.first!.riskRange.lowerBound)
-        let maxRisk = Int(sortedBands.last!.riskRange.upperBound)
+        guard let firstBand = sortedBands.first, let lastBand = sortedBands.last else { return "" }
+        let minRisk = Int(firstBand.riskRange.lowerBound)
+        let maxRisk = Int(lastBand.riskRange.upperBound)
         return "\(minRisk) - \(maxRisk)"
     }
 }

@@ -1,0 +1,532 @@
+import SwiftUI
+
+// MARK: - Portfolio Hero Card
+struct PortfolioHeroCard: View {
+    let totalValue: Double
+    let change: Double
+    let changePercent: Double
+    let portfolioName: String
+    let chartData: [CGFloat]
+    let onPortfolioTap: () -> Void
+    @Binding var selectedTimePeriod: TimePeriod
+    @Environment(\.colorScheme) var colorScheme
+
+    // Track time period changes to re-trigger animation
+    @State private var chartAnimationId = UUID()
+
+    var isPositive: Bool { change >= 0 }
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Portfolio Selector (Delta-style centered dropdown)
+            Button(action: onPortfolioTap) {
+                HStack(spacing: 6) {
+                    Text(portfolioName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
+                )
+            }
+            .buttonStyle(.plain)
+
+            // Time Period Selector
+            TimePeriodSelector(selectedPeriod: $selectedTimePeriod)
+
+            // Total Value
+            VStack(spacing: 8) {
+                Text("FUNDS")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(textPrimary.opacity(0.5))
+                    .tracking(1)
+
+                Text(totalValue.asCurrency)
+                    .font(.system(size: 42, weight: .bold))
+                    .foregroundColor(textPrimary)
+
+                // Change indicator
+                HStack(spacing: 6) {
+                    Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 14, weight: .semibold))
+
+                    Text("\(isPositive ? "+" : "")\(change.asCurrency)")
+                        .font(.system(size: 16, weight: .semibold))
+
+                    Text("(\(isPositive ? "+" : "")\(changePercent, specifier: "%.2f")%)")
+                        .font(.system(size: 14))
+                        .opacity(0.8)
+                }
+                .foregroundColor(isPositive ? AppColors.success : AppColors.error)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill((isPositive ? AppColors.success : AppColors.error).opacity(0.15))
+                )
+            }
+
+            // Portfolio sparkline chart - re-animates on time period change
+            PortfolioSparkline(
+                dataPoints: chartData,
+                isPositive: isPositive,
+                showGlow: true,
+                showEndDot: true,
+                animated: true
+            )
+            .id(chartAnimationId)  // Forces view recreation for animation
+            .frame(height: 80)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .onChange(of: selectedTimePeriod) { _, _ in
+            // Trigger chart re-animation when time period changes
+            chartAnimationId = UUID()
+        }
+    }
+}
+
+// MARK: - Glass Quick Actions
+struct GlassQuickActions: View {
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            GlassQuickActionButton(icon: "plus", label: "Buy")
+            GlassQuickActionButton(icon: "arrow.up.right", label: "Send")
+            GlassQuickActionButton(icon: "arrow.down.left", label: "Receive")
+            GlassQuickActionButton(icon: "chart.bar.fill", label: "Trade")
+        }
+    }
+}
+
+// MARK: - Glass Quick Action Button
+struct GlassQuickActionButton: View {
+    let icon: String
+    let label: String
+    @State private var isPressed = false
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        Button(action: { }) {
+            VStack(spacing: 8) {
+                // Icon container - subtle background, monochrome
+                Circle()
+                    .fill(colorScheme == .dark
+                        ? Color.white.opacity(0.06)
+                        : Color.black.opacity(0.04))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(textPrimary.opacity(0.8))
+                    )
+
+                Text(label)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(textPrimary.opacity(0.6))
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Time Period Selector
+struct TimePeriodSelector: View {
+    @Binding var selectedPeriod: TimePeriod
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(TimePeriod.allCases) { period in
+                TimePeriodPill(
+                    period: period,
+                    isSelected: selectedPeriod == period,
+                    onTap: { selectedPeriod = period }
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Time Period Pill
+struct TimePeriodPill: View {
+    let period: TimePeriod
+    let isSelected: Bool
+    let onTap: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            Text(period.displayName)
+                .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                .foregroundColor(isSelected ? .white : textPrimary.opacity(0.6))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(isSelected ? AppColors.accent : Color.clear)
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(isSelected ? Color.clear : textPrimary.opacity(0.2), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Portfolio Picker Sheet
+struct PortfolioPickerSheet: View {
+    let portfolios: [Portfolio]
+    @Binding var selectedPortfolio: Portfolio?
+    var onCreatePortfolio: (() -> Void)? = nil
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var sheetBackground: Color {
+        colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7")
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(portfolios) { portfolio in
+                            PortfolioPickerRow(
+                                portfolio: portfolio,
+                                isSelected: selectedPortfolio?.id == portfolio.id,
+                                onSelect: {
+                                    selectedPortfolio = portfolio
+                                    dismiss()
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                }
+
+                Button(action: {
+                    dismiss()
+                    onCreatePortfolio?()
+                }) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(AppColors.accent.opacity(0.15))
+                                .frame(width: 44, height: 44)
+
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(AppColors.accent)
+                        }
+
+                        Text("Create New Portfolio")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(textPrimary)
+
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(cardBackground)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+            .background(sheetBackground)
+            .navigationTitle("Select Portfolio")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(textPrimary.opacity(0.4))
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+// MARK: - Portfolio Picker Row
+struct PortfolioPickerRow: View {
+    let portfolio: Portfolio
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(portfolioColor.opacity(0.15))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: portfolioIcon)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(portfolioColor)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(portfolio.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(textPrimary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(AppColors.accent)
+                } else {
+                    Circle()
+                        .stroke(textPrimary.opacity(0.2), lineWidth: 2)
+                        .frame(width: 24, height: 24)
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isSelected ? AppColors.accent : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var portfolioIcon: String {
+        switch portfolio.name.lowercased() {
+        case let name where name.contains("crypto"):
+            return "bitcoinsign.circle"
+        case let name where name.contains("long"):
+            return "chart.line.uptrend.xyaxis"
+        case let name where name.contains("main"):
+            return "briefcase"
+        default:
+            return "folder"
+        }
+    }
+
+    private var portfolioColor: Color {
+        AppColors.accent
+    }
+}
+
+// MARK: - Macro Trend Signal
+enum MacroTrendSignal: String {
+    case bullish = "Bullish"
+    case bearish = "Bearish"
+    case neutral = "Neutral"
+
+    var color: Color {
+        switch self {
+        case .bullish: return AppColors.success
+        case .bearish: return AppColors.error
+        case .neutral: return AppColors.warning
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .bullish: return "arrow.up.right.circle.fill"
+        case .bearish: return "arrow.down.right.circle.fill"
+        case .neutral: return "minus.circle.fill"
+        }
+    }
+}
+
+// MARK: - Multi-Coin Risk Section
+struct MultiCoinRiskSection: View {
+    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?)]
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            // Section header
+            HStack {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Asset Risk Levels")
+                    .font(ArkFonts.subheadline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Spacer()
+
+                Text("\(riskLevels.count) selected")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, ArkSpacing.xs)
+
+            // Risk cards grid/scroll
+            if riskLevels.count == 1, let first = riskLevels.first {
+                // Single coin - full width
+                RiskLevelWidget(
+                    riskLevel: first.riskLevel,
+                    coinSymbol: first.coin,
+                    size: size
+                )
+            } else if riskLevels.count == 2 {
+                // Two coins - side by side
+                HStack(spacing: ArkSpacing.sm) {
+                    ForEach(riskLevels, id: \.coin) { item in
+                        CompactRiskCard(
+                            riskLevel: item.riskLevel,
+                            coinSymbol: item.coin
+                        )
+                    }
+                }
+            } else {
+                // Three or more - horizontal scroll
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: ArkSpacing.sm) {
+                        ForEach(riskLevels, id: \.coin) { item in
+                            CompactRiskCard(
+                                riskLevel: item.riskLevel,
+                                coinSymbol: item.coin
+                            )
+                            .frame(width: 160)
+                        }
+                    }
+                    .padding(.horizontal, ArkSpacing.xs)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Compact Risk Card (for Multi-Coin Display)
+struct CompactRiskCard: View {
+    let riskLevel: ITCRiskLevel?
+    let coinSymbol: String
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingDetail = false
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                // Header
+                HStack {
+                    Text(coinSymbol)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Spacer()
+
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                }
+
+                if let risk = riskLevel {
+                    // Risk value
+                    Text(String(format: "%.3f", risk.riskLevel))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(RiskColors.color(for: risk.riskLevel))
+
+                    // Category badge
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(RiskColors.color(for: risk.riskLevel))
+                            .frame(width: 6, height: 6)
+
+                        Text(RiskColors.category(for: risk.riskLevel))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(RiskColors.color(for: risk.riskLevel))
+                            .lineLimit(1)
+                    }
+                } else {
+                    // Loading state
+                    Text("--")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(textPrimary.opacity(0.3))
+
+                    Text("Loading...")
+                        .font(.system(size: 10))
+                        .foregroundColor(textPrimary.opacity(0.5))
+                }
+            }
+            .padding(ArkSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(cardBackground)
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            RiskLevelChartView()
+        }
+    }
+}

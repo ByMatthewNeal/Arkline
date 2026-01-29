@@ -6,6 +6,14 @@ import Foundation
 ///
 /// Supported assets: BTC, ETH, SOL only.
 struct AssetRiskConfig {
+    // MARK: - Safe Date Helper
+
+    /// Creates a date from year/month/day components safely
+    /// Falls back to distant past if creation fails (should never happen for valid dates)
+    private static func safeDate(year: Int, month: Int, day: Int) -> Date {
+        DateComponents(calendar: .current, year: year, month: month, day: day).date
+            ?? Date.distantPast
+    }
     /// Asset identifier (symbol like "BTC", "ETH")
     let assetId: String
 
@@ -32,7 +40,7 @@ struct AssetRiskConfig {
     static let btc = AssetRiskConfig(
         assetId: "BTC",
         geckoId: "bitcoin",
-        originDate: DateComponents(calendar: .current, year: 2009, month: 1, day: 3).date!,
+        originDate: safeDate(year: 2009, month: 1, day: 3),
         deviationBounds: (low: -0.8, high: 0.8),
         confidenceLevel: 9,
         displayName: "Bitcoin"
@@ -42,7 +50,7 @@ struct AssetRiskConfig {
     static let eth = AssetRiskConfig(
         assetId: "ETH",
         geckoId: "ethereum",
-        originDate: DateComponents(calendar: .current, year: 2015, month: 7, day: 30).date!,
+        originDate: safeDate(year: 2015, month: 7, day: 30),
         deviationBounds: (low: -0.7, high: 0.7),
         confidenceLevel: 8,
         displayName: "Ethereum"
@@ -52,7 +60,7 @@ struct AssetRiskConfig {
     static let sol = AssetRiskConfig(
         assetId: "SOL",
         geckoId: "solana",
-        originDate: DateComponents(calendar: .current, year: 2020, month: 4, day: 10).date!,
+        originDate: safeDate(year: 2020, month: 4, day: 10),
         deviationBounds: (low: -0.6, high: 0.6),
         confidenceLevel: 6,
         displayName: "Solana"

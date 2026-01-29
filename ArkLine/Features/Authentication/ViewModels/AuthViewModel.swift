@@ -16,16 +16,34 @@ class AuthViewModel {
     var passcode: String = ""
     var authState: AuthState = .idle
     var errorMessage: String?
-    var remainingAttempts: Int = 5
-    var isLocked: Bool = false
-    var lockoutEndTime: Date?
     var showFaceID: Bool = true
 
     var isAuthenticated: Bool = false
     var user: User?
 
-    private let maxAttempts = 5
-    private let lockoutDuration: TimeInterval = 300 // 5 minutes
+    private let passcodeManager = PasscodeManager.shared
+
+    // MARK: - Computed Properties from PasscodeManager
+    var remainingAttempts: Int {
+        5 - (getFailedAttemptCount())
+    }
+
+    var isLocked: Bool {
+        passcodeManager.isLockedOut
+    }
+
+    var lockoutEndTime: Date? {
+        passcodeManager.lockoutEndTime
+    }
+
+    private func getFailedAttemptCount() -> Int {
+        // Access via keychain (read-only check)
+        if let data = KeychainManager.shared.loadOptional(forKey: KeychainManager.Keys.failedAttempts),
+           data.count == MemoryLayout<Int>.size {
+            return data.withUnsafeBytes { $0.load(as: Int.self) }
+        }
+        return 0
+    }
 
     // MARK: - Computed Properties
     var canUseBiometrics: Bool {
@@ -53,19 +71,11 @@ class AuthViewModel {
     }
 
     var lockoutTimeRemaining: String {
-        guard let endTime = lockoutEndTime else { return "" }
-        let remaining = endTime.timeIntervalSinceNow
-        if remaining <= 0 {
-            return ""
-        }
-        let minutes = Int(remaining) / 60
-        let seconds = Int(remaining) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        passcodeManager.lockoutTimeRemaining
     }
 
     // MARK: - Initialization
     init() {
-        checkLockoutStatus()
         loadUserSettings()
     }
 
@@ -78,25 +88,19 @@ class AuthViewModel {
 
         authState = .authenticating
 
-        // Simulate passcode verification (replace with actual verification)
+        // Verify using secure PBKDF2 hashing
         Task {
-            do {
-                let isValid = try await verifyPasscodeWithStorage(passcode)
+            // Small delay to prevent timing attacks
+            try? await Task.sleep(nanoseconds: 100_000_000)
 
-                await MainActor.run {
-                    if isValid {
-                        authState = .authenticated
-                        isAuthenticated = true
-                        remainingAttempts = maxAttempts
-                        errorMessage = nil
-                    } else {
-                        handleFailedAttempt()
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    authState = .failed(error.localizedDescription)
-                    errorMessage = error.localizedDescription
+            await MainActor.run {
+                if passcodeManager.verify(passcode) {
+                    authState = .authenticated
+                    isAuthenticated = true
+                    passcodeManager.resetFailedAttempts()
+                    errorMessage = nil
+                } else {
+                    handleFailedAttempt()
                 }
             }
         }
@@ -156,76 +160,21 @@ class AuthViewModel {
 
     // MARK: - Private Methods
     private func handleFailedAttempt() {
-        remainingAttempts -= 1
         passcode = ""
 
-        if remainingAttempts <= 0 {
-            lockAccount()
-        } else {
+        if let remaining = passcodeManager.recordFailedAttempt() {
             authState = .failed("Incorrect passcode")
-            errorMessage = "Incorrect passcode. \(remainingAttempts) attempts remaining."
-        }
-    }
-
-    private func lockAccount() {
-        isLocked = true
-        lockoutEndTime = Date().addingTimeInterval(lockoutDuration)
-        errorMessage = "Too many failed attempts. Try again in 5 minutes."
-        authState = .failed("Account locked")
-
-        // Store lockout time
-        UserDefaults.standard.set(lockoutEndTime, forKey: "auth_lockout_end")
-
-        // Schedule unlock
-        DispatchQueue.main.asyncAfter(deadline: .now() + lockoutDuration) { [weak self] in
-            self?.unlockAccount()
-        }
-    }
-
-    private func unlockAccount() {
-        isLocked = false
-        lockoutEndTime = nil
-        remainingAttempts = maxAttempts
-        errorMessage = nil
-        authState = .idle
-        UserDefaults.standard.removeObject(forKey: "auth_lockout_end")
-    }
-
-    private func checkLockoutStatus() {
-        if let endTime = UserDefaults.standard.object(forKey: "auth_lockout_end") as? Date {
-            if endTime > Date() {
-                isLocked = true
-                lockoutEndTime = endTime
-                let remaining = endTime.timeIntervalSinceNow
-                DispatchQueue.main.asyncAfter(deadline: .now() + remaining) { [weak self] in
-                    self?.unlockAccount()
-                }
-            } else {
-                UserDefaults.standard.removeObject(forKey: "auth_lockout_end")
-            }
+            errorMessage = "Incorrect passcode. \(remaining) attempts remaining."
+        } else {
+            // Locked out
+            errorMessage = "Too many failed attempts. Try again in 5 minutes."
+            authState = .failed("Account locked")
         }
     }
 
     private func loadUserSettings() {
-        // Load Face ID preference
-        showFaceID = UserDefaults.standard.bool(forKey: "face_id_enabled")
-    }
-
-    private func verifyPasscodeWithStorage(_ passcode: String) async throws -> Bool {
-        // In production, this would verify against securely stored hash
-        // Using Keychain or similar secure storage
-
-        // Simulate network/storage delay
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // For demo purposes, check against stored passcode
-        // In production, use proper hash comparison
-        guard let storedHash = UserDefaults.standard.string(forKey: "passcode_hash") else {
-            throw AppError.invalidCredentials
-        }
-
-        // Simple comparison for demo - use proper hashing in production
-        return passcode.hashValue == Int(storedHash) ?? 0
+        // Load Face ID preference from secure storage
+        showFaceID = passcodeManager.isBiometricEnabled
     }
 }
 

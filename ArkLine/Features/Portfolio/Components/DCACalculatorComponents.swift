@@ -1178,11 +1178,12 @@ struct DCARiskBandCard: View {
                         .foregroundColor(AppColors.textSecondary)
 
                     let sortedBands = selectedBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
-                    let rangeText = "\(Int(sortedBands.first!.riskRange.lowerBound)) - \(Int(sortedBands.last!.riskRange.upperBound))"
-
-                    Text("\(sortedBands.map { $0.rawValue }.joined(separator: ", ")) (\(rangeText))")
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(AppColors.accent)
+                    if let firstBand = sortedBands.first, let lastBand = sortedBands.last {
+                        let rangeText = "\(Int(firstBand.riskRange.lowerBound)) - \(Int(lastBand.riskRange.upperBound))"
+                        Text("\(sortedBands.map { $0.rawValue }.joined(separator: ", ")) (\(rangeText))")
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(AppColors.accent)
+                    }
                 }
                 .padding(.top, 8)
             }

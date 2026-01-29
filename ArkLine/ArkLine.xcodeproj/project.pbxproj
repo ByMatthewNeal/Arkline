@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
+		7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */; };
+		7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BFE18532B42396BDE06325 /* KeychainManager.swift */; };
 		0163AAB9E3115D7C8026A39F /* GlobalLiquidityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */; };
 		0344C4B0955D58DCD34C2EC8 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8185913CA90DB0567893C5 /* CommunityView.swift */; };
 		035B405038E4D458D2EEE003 /* RiskFactorFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AD7B8805E2F8C37E1FA861 /* RiskFactorFetcher.swift */; };
@@ -84,6 +86,15 @@
 		56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */; };
 		57CACD5F5AC3FA93AF2C8580 /* MockNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6E843529C78DE117880236 /* MockNewsService.swift */; };
 		58758A7C9170D7678030686C /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1C05960B8B6F9455FAE91A /* HomeView.swift */; };
+		03511C8F239A1869BE9FCF6B /* HomeRiskComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC7551915A761FBD11F4A866 /* HomeRiskComponents.swift */; };
+D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */; };
+		868D5A79BD5FE7A55B6D82AA /* HomeDCAComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */; };
+		730F82B9852ACAAD5852DB0B /* HomeFavoritesComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152FE6D7EF1AA3A40A0FF69D /* HomeFavoritesComponents.swift */; };
+		9CF38AE112C1EA8A9BB5A4EC /* HomePortfolioComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C39D88A8D207BF39F8B272E /* HomePortfolioComponents.swift */; };
+		7A25211C40B68B1D0D097B32 /* HomeNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5690746804883DD3637B36A6 /* HomeNotifications.swift */; };
+		82F96FA708990F52E2245B80 /* HomeMacroWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0525EDAE18EC96DFEECAAB8 /* HomeMacroWidgets.swift */; };
+		7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */; };
+		4FE5B6C69341426C63DE16EC /* HomeHeaderComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AC5E0E4BBC995EA18E94FF /* HomeHeaderComponents.swift */; };
 		58D6351162371B50FE504198 /* RiskTooltipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D6633C62AA788C16E0342E7 /* RiskTooltipView.swift */; };
 		5CF2A893794727B0769FA275 /* TechnicalAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 809EC62EBAD1E6B547403712 /* TechnicalAnalysis.swift */; };
 		5F4B99B5C4891DD601F0FF5B /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBD2F46C74ADE2DABD045242 /* AuthViewModel.swift */; };
@@ -280,6 +291,8 @@
 		2C529AFE6D31B15B880E64C1 /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketServiceProtocol.swift; sourceTree = "<group>"; };
 		2D81358145D7861C61D27013 /* SellAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SellAssetView.swift; sourceTree = "<group>"; };
 		2EEF32D24CEC66662543D000 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeManager.swift; sourceTree = "<group>"; };
+		22BFE18532B42396BDE06325 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealEstateProperty.swift; sourceTree = "<group>"; };
 		319895490145710C89575633 /* AddRealEstateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRealEstateView.swift; sourceTree = "<group>"; };
 		33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroZScoreData.swift; sourceTree = "<group>"; };
@@ -345,6 +358,15 @@
 		74B4B1375E8CFAC9F01975F3 /* MockITCRiskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockITCRiskService.swift; sourceTree = "<group>"; };
 		7595D2044FCFDCA031195CAA /* YahooDXYService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooDXYService.swift; sourceTree = "<group>"; };
 		7A1C05960B8B6F9455FAE91A /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AC7551915A761FBD11F4A866 /* HomeRiskComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeRiskComponents.swift; sourceTree = "<group>"; };
+E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketComponents.swift; sourceTree = "<group>"; };
+		161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDCAComponents.swift; sourceTree = "<group>"; };
+		152FE6D7EF1AA3A40A0FF69D /* HomeFavoritesComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFavoritesComponents.swift; sourceTree = "<group>"; };
+		1C39D88A8D207BF39F8B272E /* HomePortfolioComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePortfolioComponents.swift; sourceTree = "<group>"; };
+		5690746804883DD3637B36A6 /* HomeNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNotifications.swift; sourceTree = "<group>"; };
+		C0525EDAE18EC96DFEECAAB8 /* HomeMacroWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMacroWidgets.swift; sourceTree = "<group>"; };
+		69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeEventsComponents.swift; sourceTree = "<group>"; };
+		A6AC5E0E4BBC995EA18E94FF /* HomeHeaderComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHeaderComponents.swift; sourceTree = "<group>"; };
 		7C36C75D83F3A8445A56B3F5 /* APIBinanceFundingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIBinanceFundingService.swift; sourceTree = "<group>"; };
 		7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIITCRiskService.swift; sourceTree = "<group>"; };
 		7D5A5C466F3FACF792A28F50 /* Asset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Asset.swift; sourceTree = "<group>"; };
@@ -1020,6 +1042,15 @@
 				3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */,
 				29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */,
 				7A1C05960B8B6F9455FAE91A /* HomeView.swift */,
+				AC7551915A761FBD11F4A866 /* HomeRiskComponents.swift */,
+				1C39D88A8D207BF39F8B272E /* HomePortfolioComponents.swift */,
+				152FE6D7EF1AA3A40A0FF69D /* HomeFavoritesComponents.swift */,
+				161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */,
+				E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */,
+				5690746804883DD3637B36A6 /* HomeNotifications.swift */,
+				C0525EDAE18EC96DFEECAAB8 /* HomeMacroWidgets.swift */,
+				69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */,
+				A6AC5E0E4BBC995EA18E94FF /* HomeHeaderComponents.swift */,
 				049CD12B81D2D7863DA67B24 /* ITCRiskWidget.swift */,
 				485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */,
 				0F899A618850ED4F1DCABE67 /* QuickActionsBar.swift */,
@@ -1333,6 +1364,8 @@
 				0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */,
 				BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */,
 				2EEF32D24CEC66662543D000 /* Logger.swift */,
+				E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */,
+				22BFE18532B42396BDE06325 /* KeychainManager.swift */,
 				82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */,
 				AD814640FCA732E1097598F2 /* StatisticsCalculator.swift */,
 			);
@@ -1514,6 +1547,15 @@
 				7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */,
 				3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */,
 				58758A7C9170D7678030686C /* HomeView.swift in Sources */,
+				03511C8F239A1869BE9FCF6B /* HomeRiskComponents.swift in Sources */,
+				9CF38AE112C1EA8A9BB5A4EC /* HomePortfolioComponents.swift in Sources */,
+				730F82B9852ACAAD5852DB0B /* HomeFavoritesComponents.swift in Sources */,
+				868D5A79BD5FE7A55B6D82AA /* HomeDCAComponents.swift in Sources */,
+				D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */,
+				7A25211C40B68B1D0D097B32 /* HomeNotifications.swift in Sources */,
+				82F96FA708990F52E2245B80 /* HomeMacroWidgets.swift in Sources */,
+				7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */,
+				4FE5B6C69341426C63DE16EC /* HomeHeaderComponents.swift in Sources */,
 				D228AC880FFF603048A50D81 /* HomeViewModel.swift in Sources */,
 				BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */,
 				E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */,
@@ -1523,6 +1565,8 @@
 				DEB18F951F4E9D8E064B2453 /* LoadingView.swift in Sources */,
 				07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */,
 				0040B691123D65196663027A /* Logger.swift in Sources */,
+				7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */,
+				7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */,
 				81173E2E4A51178EFA18143F /* LoginView.swift in Sources */,
 				C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */,
 				0ABDC16775229FAEB1DC2E18 /* MacroStatisticsService.swift in Sources */,

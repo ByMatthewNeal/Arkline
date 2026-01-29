@@ -208,9 +208,7 @@ struct ImageAnnotationView: View {
     }
 
     private func drawArrow(points: [CGPoint], color: Color, width: CGFloat, in context: inout GraphicsContext) {
-        guard points.count >= 2 else { return }
-        let start = points.first!
-        let end = points.last!
+        guard let start = points.first, let end = points.last, points.count >= 2 else { return }
 
         // Draw line
         var path = Path()
@@ -238,17 +236,15 @@ struct ImageAnnotationView: View {
     }
 
     private func drawLine(points: [CGPoint], color: Color, width: CGFloat, in context: inout GraphicsContext) {
-        guard points.count >= 2 else { return }
+        guard let start = points.first, let end = points.last, points.count >= 2 else { return }
         var path = Path()
-        path.move(to: points.first!)
-        path.addLine(to: points.last!)
+        path.move(to: start)
+        path.addLine(to: end)
         context.stroke(path, with: .color(color), lineWidth: width)
     }
 
     private func drawCircle(points: [CGPoint], color: Color, width: CGFloat, in context: inout GraphicsContext) {
-        guard points.count >= 2 else { return }
-        let start = points.first!
-        let end = points.last!
+        guard let start = points.first, let end = points.last, points.count >= 2 else { return }
         let center = CGPoint(x: (start.x + end.x) / 2, y: (start.y + end.y) / 2)
         let radius = sqrt(pow(end.x - start.x, 2) + pow(end.y - start.y, 2)) / 2
 
@@ -258,9 +254,7 @@ struct ImageAnnotationView: View {
     }
 
     private func drawRectangle(points: [CGPoint], color: Color, width: CGFloat, in context: inout GraphicsContext) {
-        guard points.count >= 2 else { return }
-        let start = points.first!
-        let end = points.last!
+        guard let start = points.first, let end = points.last, points.count >= 2 else { return }
         let rect = CGRect(
             x: min(start.x, end.x),
             y: min(start.y, end.y),
@@ -274,9 +268,9 @@ struct ImageAnnotationView: View {
     }
 
     private func drawFreehand(points: [CGPoint], color: Color, width: CGFloat, in context: inout GraphicsContext) {
-        guard points.count >= 2 else { return }
+        guard let first = points.first, points.count >= 2 else { return }
         var path = Path()
-        path.move(to: points.first!)
+        path.move(to: first)
         for point in points.dropFirst() {
             path.addLine(to: point)
         }
@@ -311,8 +305,8 @@ struct ImageAnnotationView: View {
             currentPath.append(clampedPoint)
         } else if currentPath.isEmpty {
             currentPath = [clampedPoint]
-        } else {
-            currentPath = [currentPath.first!, clampedPoint]
+        } else if let first = currentPath.first {
+            currentPath = [first, clampedPoint]
         }
     }
 

@@ -120,14 +120,72 @@ final class AppLogger {
         log(message, level: .critical, category: category, file: file, function: function, line: line)
     }
 
+    // MARK: - Sensitive Data Filtering
+
+    /// Headers that should be redacted from logs
+    private static let sensitiveHeaders: Set<String> = [
+        "authorization",
+        "x-api-key",
+        "api-key",
+        "apikey",
+        "x-access-token",
+        "x-auth-token",
+        "bearer",
+        "x-cg-demo-api-key",
+        "x-cg-pro-api-key"
+    ]
+
+    /// Query parameter keys that should be redacted from logs
+    private static let sensitiveQueryParams: Set<String> = [
+        "api_key",
+        "apikey",
+        "key",
+        "token",
+        "secret",
+        "access_key",
+        "auth"
+    ]
+
+    /// Redact sensitive information from a URL string
+    private func redactURL(_ urlString: String) -> String {
+        guard var components = URLComponents(string: urlString) else {
+            return urlString
+        }
+
+        // Redact sensitive query parameters
+        if let queryItems = components.queryItems {
+            components.queryItems = queryItems.map { item in
+                if Self.sensitiveQueryParams.contains(item.name.lowercased()) {
+                    return URLQueryItem(name: item.name, value: "[REDACTED]")
+                }
+                return item
+            }
+        }
+
+        return components.string ?? urlString
+    }
+
+    /// Redact sensitive headers from a dictionary
+    private func redactHeaders(_ headers: [String: String]) -> [String: String] {
+        var redacted = headers
+        for key in headers.keys {
+            if Self.sensitiveHeaders.contains(key.lowercased()) {
+                redacted[key] = "[REDACTED]"
+            }
+        }
+        return redacted
+    }
+
     // MARK: - Network Logging
     func logRequest(_ request: URLRequest) {
         guard isEnabled else { return }
 
-        var message = "REQUEST: \(request.httpMethod ?? "GET") \(request.url?.absoluteString ?? "unknown")"
+        let redactedURL = redactURL(request.url?.absoluteString ?? "unknown")
+        var message = "REQUEST: \(request.httpMethod ?? "GET") \(redactedURL)"
 
         if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
-            message += "\nHeaders: \(headers)"
+            let redactedHeaders = redactHeaders(headers)
+            message += "\nHeaders: \(redactedHeaders)"
         }
 
         if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
@@ -151,7 +209,8 @@ final class AppLogger {
             return
         }
 
-        var message = "RESPONSE: \(response.statusCode) \(response.url?.absoluteString ?? "unknown")"
+        let redactedURL = redactURL(response.url?.absoluteString ?? "unknown")
+        var message = "RESPONSE: \(response.statusCode) \(redactedURL)"
 
         if let data = data, let bodyString = String(data: data, encoding: .utf8) {
             let truncated = bodyString.prefix(500)

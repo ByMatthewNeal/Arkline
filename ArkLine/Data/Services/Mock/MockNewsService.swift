@@ -62,7 +62,10 @@ final class MockNewsService: NewsServiceProtocol {
     func fetchFedWatchData() async throws -> FedWatchData {
         try await simulateNetworkDelay()
         // Returns data for the next upcoming meeting
-        return generateFedWatchMeetings().first!
+        guard let firstMeeting = generateFedWatchMeetings().first else {
+            throw AppError.dataNotFound
+        }
+        return firstMeeting
     }
 
     func fetchFedWatchMeetings() async throws -> [FedWatchData] {
