@@ -513,13 +513,13 @@ class HomeViewModel {
             // Change values are computed dynamically based on time period
             switch portfolio.name {
             case "Main Portfolio":
-                portfolioValue = 125432.67
+                portfolioValue = 3_017_500.00
             case "Crypto Only":
-                portfolioValue = 142580.00
+                portfolioValue = 3_450_000.00
             case "Long Term":
-                portfolioValue = 89750.25
+                portfolioValue = 2_847_500.00
             default:
-                portfolioValue = 50000.00
+                portfolioValue = 2_500_000.00
             }
         }
     }

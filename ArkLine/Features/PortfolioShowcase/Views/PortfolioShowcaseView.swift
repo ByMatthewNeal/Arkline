@@ -79,7 +79,7 @@ struct PortfolioShowcaseView: View {
                 }
             }
             .sheet(isPresented: $showLeftPicker) {
-                PortfolioPickerSheet(
+                ShowcasePortfolioPicker(
                     title: "Select Left Portfolio",
                     portfolios: viewModel.availableForLeft,
                     onSelect: { portfolio in
@@ -90,7 +90,7 @@ struct PortfolioShowcaseView: View {
                 )
             }
             .sheet(isPresented: $showRightPicker) {
-                PortfolioPickerSheet(
+                ShowcasePortfolioPicker(
                     title: "Select Right Portfolio",
                     portfolios: viewModel.availableForRight,
                     onSelect: { portfolio in

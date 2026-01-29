@@ -80,6 +80,7 @@ class AppState: ObservableObject {
     @Published var currentUser: User?
     @Published var darkModePreference: Constants.DarkModePreference = .automatic
     @Published var avatarColorTheme: Constants.AvatarColorTheme = .ocean
+    @Published var chartColorPalette: Constants.ChartColorPalette = .classic
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
 
     // Navigation reset triggers - increment to pop to root
@@ -117,6 +118,12 @@ class AppState: ObservableObject {
         if let avatarColorValue = UserDefaults.standard.string(forKey: Constants.UserDefaults.avatarColorTheme),
            let theme = Constants.AvatarColorTheme(rawValue: avatarColorValue) {
             avatarColorTheme = theme
+        }
+
+        // Load chart color palette
+        if let chartPaletteValue = UserDefaults.standard.string(forKey: Constants.UserDefaults.chartColorPalette),
+           let palette = Constants.ChartColorPalette(rawValue: chartPaletteValue) {
+            chartColorPalette = palette
         }
 
         // Load widget configuration
@@ -189,6 +196,11 @@ class AppState: ObservableObject {
     func setAvatarColorTheme(_ theme: Constants.AvatarColorTheme) {
         avatarColorTheme = theme
         UserDefaults.standard.set(theme.rawValue, forKey: Constants.UserDefaults.avatarColorTheme)
+    }
+
+    func setChartColorPalette(_ palette: Constants.ChartColorPalette) {
+        chartColorPalette = palette
+        UserDefaults.standard.set(palette.rawValue, forKey: Constants.UserDefaults.chartColorPalette)
     }
 
     func setWidgetConfiguration(_ config: WidgetConfiguration) {

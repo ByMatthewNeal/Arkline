@@ -6,44 +6,40 @@ import SwiftUI
 struct PortfolioSnapshotCardView: View {
     let snapshot: PortfolioSnapshot
     var onClear: (() -> Void)? = nil
+    var chartPalette: Constants.ChartColorPalette = .classic
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            // Header
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            // Header with name and clear button
             headerSection
 
-            // Total Value
-            valueSection
+            // Performance + Donut chart side by side
+            HStack(alignment: .center) {
+                performanceSection
+                Spacer()
+                MiniDonutChart(allocations: snapshot.allocations, chartPalette: chartPalette, size: 40)
+            }
 
-            // Performance
-            performanceSection
-
-            Divider()
-                .background(AppColors.textTertiary.opacity(0.3))
-
-            // Mini Allocation Chart
-            MiniAllocationChart(allocations: snapshot.allocations)
-
-            // Top Holdings
-            topHoldingsSection
+            // Top Holdings (simplified)
+            holdingsSection
         }
-        .padding(ArkSpacing.md)
+        .padding(ArkSpacing.sm)
         .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(ArkSpacing.md)
+        .cornerRadius(ArkSpacing.sm)
     }
 
     // MARK: - Header Section
 
     private var headerSection: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(snapshot.portfolioName)
-                    .font(ArkFonts.subheadline)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AppColors.textPrimary(colorScheme))
                     .lineLimit(1)
 
-                AssetTypeBadge(type: snapshot.primaryAssetType)
+                AssetTypeBadge(type: snapshot.primaryAssetType, chartPalette: chartPalette)
             }
 
             Spacer()
@@ -51,24 +47,10 @@ struct PortfolioSnapshotCardView: View {
             if let onClear = onClear {
                 Button(action: onClear) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundColor(AppColors.textTertiary)
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.textTertiary.opacity(0.6))
                 }
                 .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - Value Section
-
-    private var valueSection: some View {
-        Group {
-            if let totalValue = snapshot.totalValue {
-                Text(totalValue.asCurrency)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-            } else {
-                PrivacyMaskedValue(size: .large)
             }
         }
     }
@@ -76,62 +58,39 @@ struct PortfolioSnapshotCardView: View {
     // MARK: - Performance Section
 
     private var performanceSection: some View {
-        HStack(spacing: ArkSpacing.md) {
-            // All-time P/L
-            VStack(alignment: .leading, spacing: 2) {
-                Text("All Time")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
-
-                if let percentage = snapshot.profitLossPercentage {
-                    HStack(spacing: 2) {
-                        Image(systemName: percentage >= 0 ? "arrow.up.right" : "arrow.down.right")
-                            .font(.caption2)
-                        Text(String(format: "%+.2f%%", percentage))
-                            .font(ArkFonts.bodySemibold)
-                    }
-                    .foregroundColor(percentage >= 0 ? AppColors.success : AppColors.error)
-                } else {
-                    PrivacyMaskedValue(size: .small)
+        VStack(alignment: .leading, spacing: 6) {
+            // All-time performance (main metric)
+            if let percentage = snapshot.profitLossPercentage {
+                HStack(spacing: 4) {
+                    Image(systemName: percentage >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(String(format: "%+.1f%%", percentage))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                 }
+                .foregroundColor(percentage >= 0 ? AppColors.success : AppColors.error)
+            } else {
+                PrivacyMaskedValue(size: .medium)
             }
 
-            Spacer()
-
-            // Today's change
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("Today")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
-
-                if let dayChange = snapshot.dayChangePercentage {
-                    HStack(spacing: 2) {
-                        Image(systemName: dayChange >= 0 ? "arrow.up.right" : "arrow.down.right")
-                            .font(.caption2)
-                        Text(String(format: "%+.2f%%", dayChange))
-                            .font(ArkFonts.bodySemibold)
-                    }
-                    .foregroundColor(dayChange >= 0 ? AppColors.success : AppColors.error)
-                } else {
-                    PrivacyMaskedValue(size: .small)
-                }
-            }
+            // Asset count
+            Text("\(snapshot.assetCount) assets")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary)
         }
     }
 
-    // MARK: - Top Holdings Section
+    // MARK: - Holdings Section
 
-    private var topHoldingsSection: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+    private var holdingsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
             ForEach(snapshot.holdings.prefix(3)) { holding in
-                CompactHoldingRow(holding: holding)
+                SimpleHoldingRow(holding: holding, chartPalette: chartPalette)
             }
 
             if snapshot.holdings.count > 3 {
                 Text("+\(snapshot.holdings.count - 3) more")
-                    .font(ArkFonts.caption)
+                    .font(.system(size: 10))
                     .foregroundColor(AppColors.textTertiary)
-                    .padding(.top, 2)
             }
         }
     }
@@ -141,13 +100,13 @@ struct PortfolioSnapshotCardView: View {
 
 struct AssetTypeBadge: View {
     let type: String
-    @Environment(\.colorScheme) var colorScheme
+    var chartPalette: Constants.ChartColorPalette = .classic
 
     var body: some View {
         Text(displayName)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 9, weight: .medium))
             .foregroundColor(badgeColor)
-            .padding(.horizontal, ArkSpacing.xs)
+            .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(badgeColor.opacity(0.15))
             .cornerRadius(4)
@@ -156,22 +115,19 @@ struct AssetTypeBadge: View {
     private var displayName: String {
         switch type.lowercased() {
         case "crypto": return "Crypto"
-        case "stock": return "Stocks"
-        case "metal": return "Metals"
-        case "real_estate": return "Real Estate"
+        case "stock", "stocks": return "Stocks"
+        case "metal", "metals": return "Metals"
+        case "real_estate", "realestate": return "Real Estate"
         case "mixed": return "Mixed"
         default: return type.capitalized
         }
     }
 
     private var badgeColor: Color {
-        switch type.lowercased() {
-        case "crypto": return Color(hex: "6366F1")
-        case "stock": return Color(hex: "22C55E")
-        case "metal": return Color(hex: "F59E0B")
-        case "real_estate": return Color(hex: "3B82F6")
-        default: return AppColors.textSecondary
+        if type.lowercased() == "mixed" {
+            return Color.gray
         }
+        return chartPalette.colors.color(for: type)
     }
 }
 
@@ -182,20 +138,12 @@ struct PrivacyMaskedValue: View {
     var size: Size = .medium
 
     var body: some View {
-        HStack(spacing: dotSpacing) {
-            ForEach(0..<dotCount, id: \.self) { _ in
+        HStack(spacing: 3) {
+            ForEach(0..<4, id: \.self) { _ in
                 Circle()
-                    .fill(AppColors.textSecondary.opacity(0.4))
+                    .fill(Color.gray.opacity(0.4))
                     .frame(width: dotSize, height: dotSize)
             }
-        }
-    }
-
-    private var dotCount: Int {
-        switch size {
-        case .small: return 3
-        case .medium: return 4
-        case .large: return 5
         }
     }
 
@@ -206,182 +154,158 @@ struct PrivacyMaskedValue: View {
         case .large: return 8
         }
     }
+}
 
-    private var dotSpacing: CGFloat {
-        switch size {
-        case .small: return 2
-        case .medium: return 3
-        case .large: return 4
+// MARK: - Simple Holding Row
+
+struct SimpleHoldingRow: View {
+    let holding: HoldingSnapshot
+    var chartPalette: Constants.ChartColorPalette = .classic
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // Colored dot
+            Circle()
+                .fill(chartPalette.colors.color(for: holding.assetType))
+                .frame(width: 8, height: 8)
+
+            // Symbol
+            Text(holding.symbol.uppercased())
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Spacer()
+
+            // Allocation percentage
+            Text(String(format: "%.0f%%", holding.allocationPercentage))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+
+            // Performance (if available)
+            if let perf = holding.profitLossPercentage {
+                Text(String(format: "%+.0f%%", perf))
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(perf >= 0 ? AppColors.success : AppColors.error)
+                    .frame(width: 36, alignment: .trailing)
+            }
         }
     }
 }
 
-// MARK: - Compact Holding Row
+// MARK: - Mini Donut Chart
+
+struct MiniDonutChart: View {
+    let allocations: [AllocationSnapshot]
+    var chartPalette: Constants.ChartColorPalette = .classic
+    var size: CGFloat = 44
+
+    var body: some View {
+        ZStack {
+            // Background ring
+            Circle()
+                .stroke(Color.gray.opacity(0.1), lineWidth: 6)
+
+            // Allocation segments
+            ForEach(Array(allocations.enumerated()), id: \.element.id) { index, allocation in
+                Circle()
+                    .trim(from: startAngle(for: index), to: endAngle(for: index))
+                    .stroke(colorFor(allocation), style: StrokeStyle(lineWidth: 6, lineCap: .butt))
+                    .rotationEffect(.degrees(-90))
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func colorFor(_ allocation: AllocationSnapshot) -> Color {
+        chartPalette.colors.color(for: allocation.category)
+    }
+
+    private func startAngle(for index: Int) -> CGFloat {
+        let preceding = allocations.prefix(index).reduce(0) { $0 + $1.percentage }
+        return preceding / 100
+    }
+
+    private func endAngle(for index: Int) -> CGFloat {
+        let including = allocations.prefix(index + 1).reduce(0) { $0 + $1.percentage }
+        return including / 100
+    }
+}
+
+// MARK: - Allocation Bar (kept for compatibility)
+
+struct AllocationBar: View {
+    let allocations: [AllocationSnapshot]
+
+    var body: some View {
+        GeometryReader { geometry in
+            HStack(spacing: 2) {
+                ForEach(allocations) { allocation in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(allocation.swiftUIColor)
+                        .frame(width: max(4, geometry.size.width * (allocation.percentage / 100)))
+                }
+            }
+        }
+        .frame(height: 6)
+        .cornerRadius(3)
+    }
+}
+
+// MARK: - Compact Holding Row (kept for compatibility)
 
 struct CompactHoldingRow: View {
     let holding: HoldingSnapshot
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        HStack(spacing: ArkSpacing.sm) {
-            // Icon placeholder
-            Circle()
-                .fill(assetColor.opacity(0.2))
-                .frame(width: 28, height: 28)
-                .overlay(
-                    Text(String(holding.symbol.prefix(1)))
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(assetColor)
-                )
-
-            // Symbol and name
-            VStack(alignment: .leading, spacing: 0) {
-                Text(holding.symbol.uppercased())
-                    .font(ArkFonts.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                Text(holding.name)
-                    .font(.system(size: 10))
-                    .foregroundColor(AppColors.textSecondary)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            // Value or allocation
-            VStack(alignment: .trailing, spacing: 0) {
-                if let value = holding.currentValue {
-                    Text(value.asCurrency)
-                        .font(ArkFonts.caption)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                } else {
-                    Text(String(format: "%.1f%%", holding.allocationPercentage))
-                        .font(ArkFonts.caption)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                }
-
-                if let perf = holding.profitLossPercentage {
-                    Text(String(format: "%+.1f%%", perf))
-                        .font(.system(size: 10))
-                        .foregroundColor(perf >= 0 ? AppColors.success : AppColors.error)
-                }
-            }
-        }
-    }
-
-    private var assetColor: Color {
-        switch holding.assetType.lowercased() {
-        case "crypto": return Color(hex: "6366F1")
-        case "stock": return Color(hex: "22C55E")
-        case "metal": return Color(hex: "F59E0B")
-        default: return AppColors.accent
-        }
+        SimpleHoldingRow(holding: holding)
     }
 }
 
-// MARK: - Mini Allocation Chart
+// MARK: - Mini Allocation Chart (kept for compatibility)
 
 struct MiniAllocationChart: View {
     let allocations: [AllocationSnapshot]
-    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-            // Bar chart
-            GeometryReader { geometry in
-                HStack(spacing: 2) {
-                    ForEach(allocations) { allocation in
-                        Rectangle()
-                            .fill(allocation.swiftUIColor)
-                            .frame(width: max(4, geometry.size.width * (allocation.percentage / 100)))
-                    }
-                }
-            }
-            .frame(height: 8)
-            .cornerRadius(4)
-
-            // Legend
-            HStack(spacing: ArkSpacing.sm) {
-                ForEach(allocations.prefix(3)) { allocation in
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(allocation.swiftUIColor)
-                            .frame(width: 6, height: 6)
-
-                        Text(allocation.category)
-                            .font(.system(size: 9))
-                            .foregroundColor(AppColors.textSecondary)
-
-                        Text(String(format: "%.0f%%", allocation.percentage))
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
-                    }
-                }
-
-                if allocations.count > 3 {
-                    Text("+\(allocations.count - 3)")
-                        .font(.system(size: 9))
-                        .foregroundColor(AppColors.textTertiary)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Currency Formatting Extension
-
-extension Double {
-    var asCurrency: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-
-        if self >= 1_000_000 {
-            formatter.maximumFractionDigits = 1
-            return (formatter.string(from: NSNumber(value: self / 1_000_000)) ?? "$0") + "M"
-        } else if self >= 10_000 {
-            formatter.maximumFractionDigits = 0
-            return formatter.string(from: NSNumber(value: self)) ?? "$0"
-        } else {
-            formatter.maximumFractionDigits = 2
-            return formatter.string(from: NSNumber(value: self)) ?? "$0"
-        }
+        AllocationBar(allocations: allocations)
     }
 }
 
 // MARK: - Preview
 
 #Preview {
-    VStack {
+    HStack {
         PortfolioSnapshotCardView(
             snapshot: PortfolioSnapshot(
                 id: UUID(),
                 portfolioId: UUID(),
                 portfolioName: "Crypto Portfolio",
                 snapshotDate: Date(),
-                privacyLevel: .full,
-                totalValue: 45230.50,
-                totalCost: 35000,
-                totalProfitLoss: 10230.50,
-                profitLossPercentage: 29.23,
-                dayChange: 523.20,
-                dayChangePercentage: 1.17,
+                privacyLevel: .percentageOnly,
+                totalValue: nil,
+                totalCost: nil,
+                totalProfitLoss: nil,
+                profitLossPercentage: 37.66,
+                dayChange: nil,
+                dayChangePercentage: nil,
                 holdings: [
-                    HoldingSnapshot(id: UUID(), symbol: "BTC", name: "Bitcoin", assetType: "crypto", iconUrl: nil, quantity: 0.5, currentValue: 25000, profitLoss: 5000, profitLossPercentage: 25, allocationPercentage: 55),
-                    HoldingSnapshot(id: UUID(), symbol: "ETH", name: "Ethereum", assetType: "crypto", iconUrl: nil, quantity: 5, currentValue: 15000, profitLoss: 3000, profitLossPercentage: 25, allocationPercentage: 33),
-                    HoldingSnapshot(id: UUID(), symbol: "SOL", name: "Solana", assetType: "crypto", iconUrl: nil, quantity: 50, currentValue: 5230, profitLoss: 2230, profitLossPercentage: 74, allocationPercentage: 12)
+                    HoldingSnapshot(id: UUID(), symbol: "BTC", name: "Bitcoin", assetType: "crypto", iconUrl: nil, quantity: nil, currentValue: nil, profitLoss: nil, profitLossPercentage: 50, allocationPercentage: 61),
+                    HoldingSnapshot(id: UUID(), symbol: "ETH", name: "Ethereum", assetType: "crypto", iconUrl: nil, quantity: nil, currentValue: nil, profitLoss: nil, profitLossPercentage: 23, allocationPercentage: 20),
+                    HoldingSnapshot(id: UUID(), symbol: "SOL", name: "Solana", assetType: "crypto", iconUrl: nil, quantity: nil, currentValue: nil, profitLoss: nil, profitLossPercentage: 46, allocationPercentage: 8)
                 ],
                 allocations: [
-                    AllocationSnapshot(category: "Crypto", percentage: 100, value: 45230.50, color: "#6366F1")
+                    AllocationSnapshot(category: "Crypto", percentage: 89, value: nil, color: "#6366F1"),
+                    AllocationSnapshot(category: "Metal", percentage: 7, value: nil, color: "#F59E0B"),
+                    AllocationSnapshot(category: "Stock", percentage: 4, value: nil, color: "#22C55E")
                 ],
-                assetCount: 3,
+                assetCount: 5,
                 primaryAssetType: "crypto"
             ),
             onClear: {}
         )
-        .frame(width: 180)
     }
     .padding()
-    .background(Color.black)
+    .background(Color(hex: "F5F5F7"))
 }

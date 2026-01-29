@@ -165,29 +165,29 @@ final class MockPortfolioService: PortfolioServiceProtocol {
 
         mockPortfolios = [mainPortfolio, cryptoPortfolio, longTermPortfolio]
 
-        // Holdings for Main Portfolio
+        // Holdings for Main Portfolio (~$3M total)
         let mainHoldings = [
-            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 0.5, avgPrice: 45000, currentPrice: 67500, change: 2.5),
-            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 3.2, avgPrice: 2800, currentPrice: 3450, change: -1.2),
-            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 25, avgPrice: 120, currentPrice: 175, change: 5.8),
-            createHolding(portfolioId: mainPortfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 10, avgPrice: 175, currentPrice: 195, change: 0.8),
-            createHolding(portfolioId: mainPortfolioId, assetType: "metal", symbol: "XAU", name: "Gold", quantity: 2, avgPrice: 1950, currentPrice: 2050, change: 0.3)
+            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 20, avgPrice: 45000, currentPrice: 67500, change: 2.5),
+            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 150, avgPrice: 2800, currentPrice: 3450, change: -1.2),
+            createHolding(portfolioId: mainPortfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 2000, avgPrice: 120, currentPrice: 175, change: 5.8),
+            createHolding(portfolioId: mainPortfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 2000, avgPrice: 175, currentPrice: 195, change: 0.8),
+            createHolding(portfolioId: mainPortfolioId, assetType: "metal", symbol: "XAU", name: "Gold", quantity: 200, avgPrice: 1950, currentPrice: 2050, change: 0.3)
         ]
 
-        // Holdings for Crypto Only Portfolio
+        // Holdings for Crypto Only Portfolio (~$3.5M total)
         let cryptoHoldings = [
-            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 1.2, avgPrice: 42000, currentPrice: 67500, change: 2.5),
-            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 8.5, avgPrice: 2500, currentPrice: 3450, change: -1.2),
-            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 50, avgPrice: 100, currentPrice: 175, change: 5.8),
-            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "AVAX", name: "Avalanche", quantity: 100, avgPrice: 25, currentPrice: 42, change: 3.2)
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 30, avgPrice: 42000, currentPrice: 67500, change: 2.5),
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "ETH", name: "Ethereum", quantity: 200, avgPrice: 2500, currentPrice: 3450, change: -1.2),
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "SOL", name: "Solana", quantity: 3000, avgPrice: 100, currentPrice: 175, change: 5.8),
+            createHolding(portfolioId: cryptoPortfolioId, assetType: "crypto", symbol: "AVAX", name: "Avalanche", quantity: 5000, avgPrice: 25, currentPrice: 42, change: 3.2)
         ]
 
-        // Holdings for Long Term Portfolio
+        // Holdings for Long Term Portfolio (~$2.85M total)
         let longTermHoldings = [
-            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 50, avgPrice: 120, currentPrice: 195, change: 0.8),
-            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "MSFT", name: "Microsoft", quantity: 30, avgPrice: 250, currentPrice: 420, change: 1.1),
-            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "NVDA", name: "NVIDIA", quantity: 20, avgPrice: 150, currentPrice: 875, change: 2.3),
-            createHolding(portfolioId: longTermPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 0.25, avgPrice: 30000, currentPrice: 67500, change: 2.5)
+            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "AAPL", name: "Apple Inc.", quantity: 3000, avgPrice: 120, currentPrice: 195, change: 0.8),
+            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "MSFT", name: "Microsoft", quantity: 2500, avgPrice: 250, currentPrice: 420, change: 1.1),
+            createHolding(portfolioId: longTermPortfolioId, assetType: "stock", symbol: "NVDA", name: "NVIDIA", quantity: 1000, avgPrice: 150, currentPrice: 875, change: 2.3),
+            createHolding(portfolioId: longTermPortfolioId, assetType: "crypto", symbol: "BTC", name: "Bitcoin", quantity: 5, avgPrice: 30000, currentPrice: 67500, change: 2.5)
         ]
 
         mockHoldings = mainHoldings + cryptoHoldings + longTermHoldings

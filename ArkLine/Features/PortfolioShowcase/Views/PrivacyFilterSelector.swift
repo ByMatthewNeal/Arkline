@@ -8,30 +8,8 @@ struct PrivacyFilterSelector: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            // Header
-            HStack {
-                Image(systemName: "eye.slash")
-                    .font(.caption)
-                    .foregroundColor(AppColors.accent)
-
-                Text("Privacy Level")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
-
-                Spacer()
-
-                // Info button
-                Button {
-                    // Could show a tooltip/popover explaining privacy levels
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(.caption)
-                        .foregroundColor(AppColors.textTertiary)
-                }
-            }
-
-            // Privacy level chips
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            // Privacy level chips (no header needed, self-explanatory)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.xs) {
                     ForEach(PrivacyLevel.allCases) { level in
@@ -46,13 +24,12 @@ struct PrivacyFilterSelector: View {
 
             // Description of selected level
             Text(selectedLevel.description)
-                .font(ArkFonts.caption)
+                .font(.system(size: 11))
                 .foregroundColor(AppColors.textTertiary)
                 .animation(.easeInOut(duration: 0.2), value: selectedLevel)
         }
-        .padding(ArkSpacing.md)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(ArkSpacing.sm)
+        .padding(.horizontal, ArkSpacing.sm)
+        .padding(.vertical, ArkSpacing.xs)
     }
 }
 

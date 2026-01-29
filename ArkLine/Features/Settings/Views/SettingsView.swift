@@ -13,6 +13,10 @@ struct SettingsView: View {
         (appState.darkModePreference == .automatic && colorScheme == .dark)
     }
 
+    private var chartIconColor: Color {
+        appState.chartColorPalette.previewColors.first ?? AppColors.accent
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -52,6 +56,15 @@ struct SettingsView: View {
                             iconColor: appState.avatarColorTheme.gradientColors.light,
                             title: "Avatar Color",
                             value: appState.avatarColorTheme.displayName
+                        )
+                    }
+
+                    NavigationLink(destination: ChartColorSelectView(appState: appState)) {
+                        SettingsRow(
+                            icon: "chart.pie.fill",
+                            iconColor: chartIconColor,
+                            title: "Chart Colors",
+                            value: appState.chartColorPalette.displayName
                         )
                     }
 
@@ -458,6 +471,185 @@ struct AvatarColorSelectView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+}
+
+// MARK: - Chart Color Select View
+struct ChartColorSelectView: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+    var appState: AppState
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    var body: some View {
+        ZStack {
+            MeshGradientBackground()
+            if isDarkMode { BrushEffectOverlay() }
+
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Preview Chart
+                    VStack(spacing: 12) {
+                        // Mini pie chart preview
+                        ChartPalettePreview(palette: appState.chartColorPalette)
+
+                        Text("Preview")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.top, 24)
+
+                    // Palette Options
+                    VStack(spacing: 12) {
+                        ForEach(Constants.ChartColorPalette.allCases, id: \.self) { palette in
+                            ChartPaletteOption(
+                                palette: palette,
+                                isSelected: appState.chartColorPalette == palette,
+                                action: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        appState.setChartColorPalette(palette)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    Spacer(minLength: 100)
+                }
+            }
+        }
+        .navigationTitle("Chart Colors")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+}
+
+// MARK: - Chart Palette Preview
+struct ChartPalettePreview: View {
+    let palette: Constants.ChartColorPalette
+
+    var body: some View {
+        ZStack {
+            // Donut chart preview
+            ForEach(Array(allocations.enumerated()), id: \.offset) { index, allocation in
+                Circle()
+                    .trim(from: startAngle(for: index), to: endAngle(for: index))
+                    .stroke(allocation.color, style: StrokeStyle(lineWidth: 16, lineCap: .butt))
+                    .rotationEffect(.degrees(-90))
+            }
+
+            // Center label
+            VStack(spacing: 2) {
+                Text("4")
+                    .font(.system(size: 24, weight: .bold))
+                Text("Assets")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(width: 120, height: 120)
+    }
+
+    private var allocations: [(color: Color, percentage: Double)] {
+        let colors = palette.colors
+        return [
+            (Color(hex: colors.crypto), 45),
+            (Color(hex: colors.stock), 30),
+            (Color(hex: colors.metal), 15),
+            (Color(hex: colors.realEstate), 10)
+        ]
+    }
+
+    private func startAngle(for index: Int) -> CGFloat {
+        let preceding = allocations.prefix(index).reduce(0) { $0 + $1.percentage }
+        return preceding / 100
+    }
+
+    private func endAngle(for index: Int) -> CGFloat {
+        let including = allocations.prefix(index + 1).reduce(0) { $0 + $1.percentage }
+        return including / 100
+    }
+}
+
+// MARK: - Chart Palette Option
+struct ChartPaletteOption: View {
+    let palette: Constants.ChartColorPalette
+    let isSelected: Bool
+    let action: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var primaryColor: Color {
+        palette.previewColors.first ?? AppColors.accent
+    }
+
+    private var iconColor: Color {
+        isSelected ? primaryColor : AppColors.textSecondary
+    }
+
+    private var backgroundColor: Color {
+        if isSelected {
+            return colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05)
+        } else {
+            return colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.02)
+        }
+    }
+
+    private var borderColor: Color {
+        isSelected ? primaryColor : Color.clear
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                // Color swatches
+                HStack(spacing: 4) {
+                    ForEach(palette.previewColors.indices, id: \.self) { index in
+                        Circle()
+                            .fill(palette.previewColors[index])
+                            .frame(width: 20, height: 20)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Image(systemName: palette.icon)
+                            .font(.system(size: 12))
+                            .foregroundColor(iconColor)
+
+                        Text(palette.displayName)
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(isSelected ? AppColors.textPrimary(colorScheme) : AppColors.textSecondary)
+                    }
+
+                    Text(palette.description)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textTertiary)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(backgroundColor)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(borderColor, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

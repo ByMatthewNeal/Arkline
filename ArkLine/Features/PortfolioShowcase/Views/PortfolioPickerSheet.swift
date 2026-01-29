@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Portfolio Picker Sheet
 
 /// Sheet for selecting a portfolio from the user's portfolio list
-struct PortfolioPickerSheet: View {
+struct ShowcasePortfolioPicker: View {
     let title: String
     let portfolios: [Portfolio]
     let onSelect: (Portfolio) -> Void
@@ -39,7 +39,7 @@ struct PortfolioPickerSheet: View {
         ScrollView {
             LazyVStack(spacing: ArkSpacing.sm) {
                 ForEach(portfolios) { portfolio in
-                    PortfolioPickerRow(
+                    ShowcasePortfolioRow(
                         portfolio: portfolio,
                         onTap: {
                             onSelect(portfolio)
@@ -75,7 +75,7 @@ struct PortfolioPickerSheet: View {
 
 // MARK: - Portfolio Picker Row
 
-private struct PortfolioPickerRow: View {
+private struct ShowcasePortfolioRow: View {
     let portfolio: Portfolio
     let onTap: () -> Void
     @Environment(\.colorScheme) var colorScheme
@@ -146,7 +146,7 @@ private struct PortfolioPickerRow: View {
 // MARK: - Preview
 
 #Preview {
-    PortfolioPickerSheet(
+    ShowcasePortfolioPicker(
         title: "Select Portfolio",
         portfolios: [
             Portfolio(userId: UUID(), name: "Crypto Portfolio", isPublic: false),

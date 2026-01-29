@@ -15,6 +15,7 @@ struct DualPortfolioComparisonView: View {
     let onSwap: () -> Void
 
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
         VStack(spacing: ArkSpacing.sm) {
@@ -36,7 +37,8 @@ struct DualPortfolioComparisonView: View {
                 if let left = leftSnapshot {
                     PortfolioSnapshotCardView(
                         snapshot: left,
-                        onClear: onClearLeft
+                        onClear: onClearLeft,
+                        chartPalette: appState.chartColorPalette
                     )
                 } else {
                     EmptyPortfolioSlot(
@@ -46,26 +48,18 @@ struct DualPortfolioComparisonView: View {
                     )
                 }
 
-                // VS Divider
-                VStack {
-                    Spacer()
-                    Text("VS")
-                        .font(ArkFonts.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(AppColors.textSecondary)
-                        .padding(.horizontal, ArkSpacing.sm)
-                        .padding(.vertical, ArkSpacing.xs)
-                        .background(AppColors.cardBackground(colorScheme))
-                        .cornerRadius(ArkSpacing.xs)
-                    Spacer()
-                }
-                .frame(width: 40)
+                // VS Divider (minimal)
+                Text("vs")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AppColors.textTertiary)
+                    .frame(width: 20)
 
                 // Right Portfolio
                 if let right = rightSnapshot {
                     PortfolioSnapshotCardView(
                         snapshot: right,
-                        onClear: onClearRight
+                        onClear: onClearRight,
+                        chartPalette: appState.chartColorPalette
                     )
                 } else {
                     EmptyPortfolioSlot(
@@ -89,30 +83,28 @@ struct EmptyPortfolioSlot: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: ArkSpacing.md) {
+            VStack(spacing: ArkSpacing.sm) {
                 if isLoading {
                     ProgressView()
-                        .scaleEffect(1.2)
                 } else {
-                    Image(systemName: "plus.circle.dashed")
-                        .font(.system(size: 40))
-                        .foregroundColor(AppColors.accent.opacity(0.6))
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 28))
+                        .foregroundColor(AppColors.accent.opacity(0.5))
 
                     Text(title)
-                        .font(ArkFonts.body)
-                        .foregroundColor(AppColors.textSecondary)
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textTertiary)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 280)
+            .frame(minHeight: 200)
             .background(
                 RoundedRectangle(cornerRadius: ArkSpacing.md)
                     .strokeBorder(
-                        AppColors.accent.opacity(0.3),
-                        style: StrokeStyle(lineWidth: 2, dash: [8])
+                        AppColors.textTertiary.opacity(0.2),
+                        style: StrokeStyle(lineWidth: 1, dash: [6])
                     )
             )
-            .background(AppColors.cardBackground(colorScheme).opacity(0.5))
             .cornerRadius(ArkSpacing.md)
         }
         .buttonStyle(.plain)

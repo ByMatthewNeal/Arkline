@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - App Constants
 enum Constants {
@@ -124,6 +125,7 @@ enum Constants {
         static let preferredCurrency = "preferredCurrency"
         static let darkModePreference = "darkModePreference"
         static let avatarColorTheme = "avatarColorTheme"
+        static let chartColorPalette = "chartColorPalette"
         static let riskCoins = "riskCoins"
         static let notificationsEnabled = "notificationsEnabled"
         static let biometricEnabled = "biometricEnabled"
@@ -286,6 +288,108 @@ enum Constants {
             case .midnight: return "moon.stars"
             case .teal: return "leaf"
             case .indigo: return "sparkles"
+            }
+        }
+    }
+
+    // MARK: - Chart Color Palette
+    enum ChartColorPalette: String, CaseIterable {
+        case classic = "classic"
+        case vibrant = "vibrant"
+        case pastel = "pastel"
+        case neon = "neon"
+
+        var displayName: String {
+            switch self {
+            case .classic: return "Classic"
+            case .vibrant: return "Vibrant"
+            case .pastel: return "Pastel"
+            case .neon: return "Neon"
+            }
+        }
+
+        var description: String {
+            switch self {
+            case .classic: return "Traditional colors for clear data visualization"
+            case .vibrant: return "Bold, saturated colors that pop"
+            case .pastel: return "Soft, muted tones for a calm look"
+            case .neon: return "Electric colors for a modern feel"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .classic: return "chart.pie"
+            case .vibrant: return "paintpalette"
+            case .pastel: return "cloud"
+            case .neon: return "bolt"
+            }
+        }
+
+        /// Asset type colors for this palette
+        var colors: ChartColors {
+            switch self {
+            case .classic:
+                return ChartColors(
+                    crypto: "#6366F1",  // Indigo
+                    stock: "#22C55E",   // Green
+                    metal: "#F59E0B",   // Amber
+                    realEstate: "#3B82F6", // Blue
+                    other: "#6B7280"    // Gray
+                )
+            case .vibrant:
+                return ChartColors(
+                    crypto: "#8B5CF6",  // Violet
+                    stock: "#10B981",   // Emerald
+                    metal: "#F97316",   // Orange
+                    realEstate: "#0EA5E9", // Sky
+                    other: "#64748B"    // Slate
+                )
+            case .pastel:
+                return ChartColors(
+                    crypto: "#A5B4FC",  // Indigo-200
+                    stock: "#86EFAC",   // Green-200
+                    metal: "#FDE68A",   // Amber-200
+                    realEstate: "#93C5FD", // Blue-200
+                    other: "#D1D5DB"    // Gray-300
+                )
+            case .neon:
+                return ChartColors(
+                    crypto: "#A855F7",  // Purple
+                    stock: "#22D3EE",   // Cyan
+                    metal: "#FACC15",   // Yellow
+                    realEstate: "#F472B6", // Pink
+                    other: "#94A3B8"    // Slate-400
+                )
+            }
+        }
+
+        /// Preview colors for the settings UI
+        var previewColors: [Color] {
+            [
+                Color(hex: colors.crypto),
+                Color(hex: colors.stock),
+                Color(hex: colors.metal),
+                Color(hex: colors.realEstate)
+            ]
+        }
+    }
+
+    /// Color definitions for chart elements
+    struct ChartColors {
+        let crypto: String
+        let stock: String
+        let metal: String
+        let realEstate: String
+        let other: String
+
+        func color(for assetType: String) -> Color {
+            switch assetType.lowercased() {
+            case "crypto": return Color(hex: crypto)
+            case "stock", "stocks": return Color(hex: stock)
+            case "metal", "metals": return Color(hex: metal)
+            case "real_estate", "realestate": return Color(hex: realEstate)
+            default: return Color(hex: other)
             }
         }
     }

@@ -240,6 +240,12 @@ struct BroadcastCardView: View {
                                 .font(.caption)
                                 .foregroundColor(AppColors.accent)
                         }
+
+                        if broadcast.portfolioAttachment != nil {
+                            Image(systemName: "square.split.2x1.fill")
+                                .font(.caption)
+                                .foregroundColor(AppColors.accent)
+                        }
                     }
                 }
 
@@ -321,6 +327,11 @@ struct BroadcastDetailView: View {
                     Text(broadcast.content)
                         .font(ArkFonts.body)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    // Portfolio Showcase
+                    if let portfolioAttachment = broadcast.portfolioAttachment, portfolioAttachment.hasContent {
+                        EmbeddedPortfolioWidget(attachment: portfolioAttachment)
+                    }
 
                     // Images (placeholder)
                     if !broadcast.images.isEmpty {

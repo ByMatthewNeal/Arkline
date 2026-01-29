@@ -194,6 +194,8 @@ struct AppReferencePickerView: View {
             return "Long-term BTC price bands"
         case .technicalAnalysis:
             return "Charts & technical indicators"
+        case .portfolioShowcase:
+            return "Portfolio comparison showcase"
         }
     }
 }

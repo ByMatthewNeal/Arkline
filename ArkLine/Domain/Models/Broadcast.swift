@@ -11,11 +11,19 @@ struct Broadcast: Codable, Identifiable, Equatable {
     var audioURL: URL?
     var images: [BroadcastImage]
     var appReferences: [AppReference]
+    var portfolioAttachment: BroadcastPortfolioAttachment?
     var targetAudience: TargetAudience
     var status: BroadcastStatus
     let createdAt: Date
     var publishedAt: Date?
+    var scheduledAt: Date?
+    var templateId: UUID?
+    var tags: [String]
     let authorId: UUID
+
+    // Analytics (populated when fetched)
+    var viewCount: Int?
+    var reactionCount: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -24,11 +32,17 @@ struct Broadcast: Codable, Identifiable, Equatable {
         case audioURL = "audio_url"
         case images
         case appReferences = "app_references"
+        case portfolioAttachment = "portfolio_attachment"
         case targetAudience = "target_audience"
         case status
         case createdAt = "created_at"
         case publishedAt = "published_at"
+        case scheduledAt = "scheduled_at"
+        case templateId = "template_id"
+        case tags
         case authorId = "author_id"
+        case viewCount = "view_count"
+        case reactionCount = "reaction_count"
     }
 
     init(
@@ -38,11 +52,17 @@ struct Broadcast: Codable, Identifiable, Equatable {
         audioURL: URL? = nil,
         images: [BroadcastImage] = [],
         appReferences: [AppReference] = [],
+        portfolioAttachment: BroadcastPortfolioAttachment? = nil,
         targetAudience: TargetAudience = .all,
         status: BroadcastStatus = .draft,
         createdAt: Date = Date(),
         publishedAt: Date? = nil,
-        authorId: UUID
+        scheduledAt: Date? = nil,
+        templateId: UUID? = nil,
+        tags: [String] = [],
+        authorId: UUID,
+        viewCount: Int? = nil,
+        reactionCount: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -50,11 +70,17 @@ struct Broadcast: Codable, Identifiable, Equatable {
         self.audioURL = audioURL
         self.images = images
         self.appReferences = appReferences
+        self.portfolioAttachment = portfolioAttachment
         self.targetAudience = targetAudience
         self.status = status
         self.createdAt = createdAt
         self.publishedAt = publishedAt
+        self.scheduledAt = scheduledAt
+        self.templateId = templateId
+        self.tags = tags
         self.authorId = authorId
+        self.viewCount = viewCount
+        self.reactionCount = reactionCount
     }
 }
 
@@ -473,5 +499,295 @@ extension Broadcast {
             return String(content.prefix(100)) + "..."
         }
         return content
+    }
+
+    /// Whether this broadcast is scheduled for future publishing
+    var isScheduled: Bool {
+        status == .scheduled && scheduledAt != nil
+    }
+
+    /// Formatted scheduled date
+    var formattedScheduledDate: String? {
+        guard let scheduledAt else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: scheduledAt)
+    }
+}
+
+// MARK: - Broadcast Template
+
+/// A reusable template for creating broadcasts
+struct BroadcastTemplate: Codable, Identifiable, Equatable {
+    let id: UUID
+    var name: String
+    var description: String
+    var titleTemplate: String
+    var contentTemplate: String
+    var defaultTags: [String]
+    var icon: String
+    var color: String
+    let createdAt: Date
+    var updatedAt: Date
+    let authorId: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case description
+        case titleTemplate = "title_template"
+        case contentTemplate = "content_template"
+        case defaultTags = "default_tags"
+        case icon
+        case color
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case authorId = "author_id"
+    }
+
+    init(
+        id: UUID = UUID(),
+        name: String,
+        description: String = "",
+        titleTemplate: String = "",
+        contentTemplate: String = "",
+        defaultTags: [String] = [],
+        icon: String = "doc.text",
+        color: String = "#3B82F6",
+        createdAt: Date = Date(),
+        updatedAt: Date = Date(),
+        authorId: UUID
+    ) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.titleTemplate = titleTemplate
+        self.contentTemplate = contentTemplate
+        self.defaultTags = defaultTags
+        self.icon = icon
+        self.color = color
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.authorId = authorId
+    }
+
+    /// Create a new broadcast from this template
+    func createBroadcast(authorId: UUID) -> Broadcast {
+        Broadcast(
+            title: titleTemplate,
+            content: contentTemplate,
+            tags: defaultTags,
+            authorId: authorId
+        )
+    }
+}
+
+/// Built-in template types
+enum BuiltInTemplate: String, CaseIterable {
+    case weeklyOutlook = "weekly_outlook"
+    case marketAlert = "market_alert"
+    case dcaReminder = "dca_reminder"
+    case educationalTip = "educational_tip"
+
+    var template: BroadcastTemplate {
+        switch self {
+        case .weeklyOutlook:
+            return BroadcastTemplate(
+                name: "Weekly Outlook",
+                description: "Weekly market analysis and predictions",
+                titleTemplate: "Weekly Market Outlook - [Date]",
+                contentTemplate: """
+                ## Market Overview
+                [Summary of this week's market movements]
+
+                ## Key Observations
+                - [Observation 1]
+                - [Observation 2]
+                - [Observation 3]
+
+                ## Looking Ahead
+                [What to watch for next week]
+
+                ## Action Items
+                - [Recommendation 1]
+                - [Recommendation 2]
+                """,
+                defaultTags: ["weekly", "outlook", "analysis"],
+                icon: "calendar",
+                color: "#3B82F6",
+                authorId: UUID()
+            )
+
+        case .marketAlert:
+            return BroadcastTemplate(
+                name: "Market Alert",
+                description: "Urgent market update or price movement",
+                titleTemplate: "🚨 Market Alert: [Asset/Event]",
+                contentTemplate: """
+                ## What's Happening
+                [Brief description of the event]
+
+                ## Impact
+                [How this affects the market]
+
+                ## My Take
+                [Your analysis and opinion]
+
+                ## What To Do
+                [Actionable advice]
+                """,
+                defaultTags: ["alert", "urgent"],
+                icon: "exclamationmark.triangle",
+                color: "#EF4444",
+                authorId: UUID()
+            )
+
+        case .dcaReminder:
+            return BroadcastTemplate(
+                name: "DCA Reminder",
+                description: "Dollar cost averaging reminder and context",
+                titleTemplate: "DCA Day: [Asset] Update",
+                contentTemplate: """
+                ## Today's DCA
+                It's time for your scheduled [Asset] purchase.
+
+                ## Current Price Context
+                - Current Price: $[price]
+                - 7-Day Change: [change]%
+                - From ATH: [distance]%
+
+                ## Market Sentiment
+                [Brief sentiment overview]
+
+                ## Remember
+                DCA removes emotion from investing. Stay consistent!
+                """,
+                defaultTags: ["dca", "reminder"],
+                icon: "repeat",
+                color: "#10B981",
+                authorId: UUID()
+            )
+
+        case .educationalTip:
+            return BroadcastTemplate(
+                name: "Educational Tip",
+                description: "Share knowledge and educate your audience",
+                titleTemplate: "💡 Did You Know: [Topic]",
+                contentTemplate: """
+                ## The Concept
+                [Explain the concept simply]
+
+                ## Why It Matters
+                [Why your audience should care]
+
+                ## How To Apply It
+                [Practical application]
+
+                ## Learn More
+                [Resources or next steps]
+                """,
+                defaultTags: ["education", "tip"],
+                icon: "lightbulb",
+                color: "#F59E0B",
+                authorId: UUID()
+            )
+        }
+    }
+
+    var displayName: String {
+        template.name
+    }
+
+    var icon: String {
+        template.icon
+    }
+
+    var color: Color {
+        Color(hex: template.color)
+    }
+}
+
+// MARK: - Broadcast Analytics
+
+/// Analytics data for a single broadcast
+struct BroadcastAnalytics: Codable, Identifiable, Equatable {
+    var id: UUID { broadcastId }
+    let broadcastId: UUID
+    let viewCount: Int
+    let uniqueViewers: Int
+    let reactionCount: Int
+    let reactionBreakdown: [String: Int]
+    let readCount: Int
+    let avgTimeSpent: TimeInterval?
+    let peakViewTime: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case broadcastId = "broadcast_id"
+        case viewCount = "view_count"
+        case uniqueViewers = "unique_viewers"
+        case reactionCount = "reaction_count"
+        case reactionBreakdown = "reaction_breakdown"
+        case readCount = "read_count"
+        case avgTimeSpent = "avg_time_spent"
+        case peakViewTime = "peak_view_time"
+    }
+}
+
+/// Overall analytics summary for the admin dashboard
+struct BroadcastAnalyticsSummary: Codable, Equatable {
+    let totalBroadcasts: Int
+    let totalViews: Int
+    let totalReactions: Int
+    let avgViewsPerBroadcast: Double
+    let avgReactionsPerBroadcast: Double
+    let topPerformingBroadcastId: UUID?
+    let mostUsedReaction: String?
+    let periodStart: Date
+    let periodEnd: Date
+
+    enum CodingKeys: String, CodingKey {
+        case totalBroadcasts = "total_broadcasts"
+        case totalViews = "total_views"
+        case totalReactions = "total_reactions"
+        case avgViewsPerBroadcast = "avg_views_per_broadcast"
+        case avgReactionsPerBroadcast = "avg_reactions_per_broadcast"
+        case topPerformingBroadcastId = "top_performing_broadcast_id"
+        case mostUsedReaction = "most_used_reaction"
+        case periodStart = "period_start"
+        case periodEnd = "period_end"
+    }
+}
+
+// MARK: - Broadcast Tag
+
+/// Predefined tags for categorizing broadcasts
+enum BroadcastTag: String, CaseIterable {
+    case btc = "BTC"
+    case eth = "ETH"
+    case altcoins = "Altcoins"
+    case macro = "Macro"
+    case technical = "Technical"
+    case fundamental = "Fundamental"
+    case alert = "Alert"
+    case weekly = "Weekly"
+    case education = "Education"
+    case dca = "DCA"
+
+    var displayName: String { rawValue }
+
+    var color: Color {
+        switch self {
+        case .btc: return Color(hex: "F7931A")
+        case .eth: return Color(hex: "627EEA")
+        case .altcoins: return Color(hex: "8B5CF6")
+        case .macro: return Color(hex: "3B82F6")
+        case .technical: return Color(hex: "10B981")
+        case .fundamental: return Color(hex: "F59E0B")
+        case .alert: return Color(hex: "EF4444")
+        case .weekly: return Color(hex: "6366F1")
+        case .education: return Color(hex: "EC4899")
+        case .dca: return Color(hex: "14B8A6")
+        }
     }
 }
