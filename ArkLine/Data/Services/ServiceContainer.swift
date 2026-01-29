@@ -18,8 +18,10 @@ final class ServiceContainer {
     var useRealNews: Bool = true
 
     /// Use mock data for macro services (VIX, DXY, liquidity, ITC risk)
-    /// Portfolio and DCA are always mock until Supabase integration is complete
     private let useMockMacroServices: Bool = false
+
+    /// Use real Supabase data for Portfolio and DCA
+    var useRealPortfolioData: Bool = true
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
@@ -68,10 +70,9 @@ final class ServiceContainer {
         useRealMarketData ? _apiSentimentService : _mockSentimentService
     }
 
-    /// Portfolio service - mock until Supabase integration is complete
+    /// Portfolio service - uses Supabase for real data
     var portfolioService: PortfolioServiceProtocol {
-        // Always use mock until Supabase integration is implemented
-        _mockPortfolioService
+        useRealPortfolioData ? _apiPortfolioService : _mockPortfolioService
     }
 
     /// News service - uses real Google News RSS when enabled
@@ -79,10 +80,9 @@ final class ServiceContainer {
         useRealNews ? _apiNewsService : _mockNewsService
     }
 
-    /// DCA service - mock until real API is implemented
+    /// DCA service - uses Supabase for real data
     var dcaService: DCAServiceProtocol {
-        // Always use mock until Supabase integration is implemented
-        _mockDCAService
+        useRealPortfolioData ? _apiDCAService : _mockDCAService
     }
 
     /// Technical Analysis service uses real Taapi.io API

@@ -765,22 +765,37 @@ struct AddTransactionView: View {
     @State private var selectedEmotionalState: EmotionalState?
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var isSaving = false
+
+    /// Parse a string that may contain commas as a Double
+    private func parseNumber(_ string: String) -> Double {
+        let cleaned = string.replacingOccurrences(of: ",", with: "")
+        return Double(cleaned) ?? 0
+    }
 
     private var isFormValid: Bool {
         // Real estate uses its own form
         if assetType == .realEstate { return false }
         return !symbol.isEmpty &&
         !name.isEmpty &&
-        Double(quantity) ?? 0 > 0 &&
-        Double(pricePerUnit) ?? 0 > 0
+        parseNumber(quantity) > 0 &&
+        parseNumber(pricePerUnit) > 0
     }
 
     private var totalValue: Double {
-        (Double(quantity) ?? 0) * (Double(pricePerUnit) ?? 0)
+        parseNumber(quantity) * parseNumber(pricePerUnit)
+    }
+
+    private var hasPortfolio: Bool {
+        viewModel.selectedPortfolio != nil || !viewModel.portfolios.isEmpty
     }
 
     var body: some View {
         NavigationStack {
+            if !hasPortfolio {
+                // No portfolio - show helpful message
+                noPortfolioView
+            } else {
             Form {
                 // Transaction Type
                 Section {
@@ -894,12 +909,16 @@ struct AddTransactionView: View {
                         .foregroundColor(AppColors.textSecondary)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveTransaction()
+                    if isSaving {
+                        ProgressView()
+                    } else {
+                        Button("Save") {
+                            saveTransaction()
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(isFormValid ? AppColors.accent : AppColors.textSecondary)
+                        .disabled(!isFormValid)
                     }
-                    .fontWeight(.semibold)
-                    .foregroundColor(isFormValid ? AppColors.accent : AppColors.textSecondary)
-                    .disabled(!isFormValid)
                 }
             }
             #endif
@@ -908,27 +927,128 @@ struct AddTransactionView: View {
             } message: {
                 Text(errorMessage)
             }
+            } // End of else (hasPortfolio)
         }
+    }
+
+    // MARK: - No Portfolio View
+    private var noPortfolioView: some View {
+        VStack(spacing: ArkSpacing.xl) {
+            Spacer()
+
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(AppColors.accent.opacity(0.1))
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "folder.badge.plus")
+                    .font(.system(size: 44))
+                    .foregroundColor(AppColors.accent)
+            }
+
+            // Message
+            VStack(spacing: ArkSpacing.sm) {
+                Text("Create a Portfolio First")
+                    .font(ArkFonts.headline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("You need to create a portfolio before you can add transactions.")
+                    .font(ArkFonts.body)
+                    .foregroundColor(AppColors.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, ArkSpacing.xl)
+            }
+
+            // Instructions
+            VStack(spacing: ArkSpacing.sm) {
+                HStack(spacing: ArkSpacing.sm) {
+                    Image(systemName: "1.circle.fill")
+                        .foregroundColor(AppColors.accent)
+                    Text("Tap")
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("Portfolio")
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.accent)
+                    Text("at the top")
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .font(ArkFonts.body)
+
+                HStack(spacing: ArkSpacing.sm) {
+                    Image(systemName: "2.circle.fill")
+                        .foregroundColor(AppColors.accent)
+                    Text("Tap")
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("Create Portfolio")
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.accent)
+                }
+                .font(ArkFonts.body)
+            }
+            .padding(.top, ArkSpacing.md)
+
+            Spacer()
+
+            // Close button
+            Button(action: { dismiss() }) {
+                Text("Got it")
+                    .font(ArkFonts.bodySemibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(ArkSpacing.md)
+                    .background(AppColors.accent)
+                    .cornerRadius(ArkSpacing.Radius.md)
+            }
+            .padding(.horizontal, ArkSpacing.xl)
+            .padding(.bottom, ArkSpacing.xl)
+        }
+        .background(AppColors.background(colorScheme))
+        .navigationTitle("Add Transaction")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") { dismiss() }
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+        #endif
     }
 
     private func saveTransaction() {
         guard isFormValid else { return }
+        guard !isSaving else { return }
+
+        // Get portfolio ID - use selected portfolio, first portfolio, or show error
+        guard let portfolioId = viewModel.selectedPortfolio?.id ?? viewModel.portfolios.first?.id else {
+            errorMessage = "No portfolio found. Please create a portfolio first."
+            showingError = true
+            return
+        }
+
+        isSaving = true
 
         let transaction = Transaction(
-            portfolioId: viewModel.holdings.first?.portfolioId ?? UUID(),
+            portfolioId: portfolioId,
             holdingId: nil,
             type: transactionType,
             assetType: assetType.rawValue,
             symbol: symbol.uppercased(),
-            quantity: Double(quantity) ?? 0,
-            pricePerUnit: Double(pricePerUnit) ?? 0,
+            quantity: parseNumber(quantity),
+            pricePerUnit: parseNumber(pricePerUnit),
             transactionDate: transactionDate,
             notes: notes.isEmpty ? nil : notes,
             emotionalState: selectedEmotionalState
         )
 
-        Task { await viewModel.addTransaction(transaction) }
-        dismiss()
+        Task {
+            await viewModel.addTransaction(transaction)
+            await MainActor.run {
+                isSaving = false
+                dismiss()
+            }
+        }
     }
 }
 

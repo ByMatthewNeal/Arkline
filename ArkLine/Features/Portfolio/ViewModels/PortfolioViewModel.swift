@@ -132,8 +132,14 @@ final class PortfolioViewModel {
         error = nil
 
         do {
-            // In a real app, get userId from auth service
-            let userId = currentUserId ?? UUID()
+            // Get userId from Supabase auth
+            let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
+            guard let userId = userId else {
+                logWarning("No authenticated user for portfolio refresh", category: .data)
+                await MainActor.run { isLoading = false }
+                return
+            }
+            currentUserId = userId
 
             // Fetch all portfolios
             let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
@@ -224,8 +230,11 @@ final class PortfolioViewModel {
     }
 
     func createPortfolio(name: String, isPublic: Bool) async throws {
-        // In a real app, get userId from auth service
-        let userId = currentUserId ?? UUID()
+        // Get userId from Supabase auth
+        let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
+        guard let userId = userId else {
+            throw AppError.authenticationRequired
+        }
 
         let portfolio = Portfolio(
             userId: userId,
