@@ -92,39 +92,6 @@ actor NetworkManager {
         return data
     }
 
-    // MARK: - Streaming Request (for AI chat)
-    func streamRequest(
-        endpoint: APIEndpoint,
-        onReceive: @escaping (String) -> Void
-    ) async throws {
-        let request = try endpoint.asURLRequest()
-        AppLogger.shared.logRequest(request)
-
-        let (bytes, response) = try await session.bytes(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AppError.invalidResponse
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw AppError.from(httpStatusCode: httpResponse.statusCode)
-        }
-
-        var buffer = ""
-        for try await byte in bytes {
-            let char = Character(UnicodeScalar(byte))
-            buffer.append(char)
-
-            if char == "\n" && buffer.hasPrefix("data: ") {
-                let jsonString = String(buffer.dropFirst(6).dropLast())
-                if jsonString != "[DONE]" {
-                    onReceive(jsonString)
-                }
-                buffer = ""
-            }
-        }
-    }
-
     // MARK: - Cache Management
     private func getCachedData(for endpoint: APIEndpoint, ttl: TimeInterval) -> Data? {
         let key = cacheKey(for: endpoint)

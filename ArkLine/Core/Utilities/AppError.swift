@@ -47,11 +47,6 @@ enum AppError: Error, LocalizedError {
     // MARK: - Supabase Errors
     case supabaseError(message: String)
 
-    // MARK: - AI Chat Errors
-    case chatSessionNotFound
-    case messageFailedToSend
-    case aiServiceUnavailable
-
     // MARK: - General Errors
     case unknown(message: String?)
     case custom(message: String)
@@ -138,14 +133,6 @@ enum AppError: Error, LocalizedError {
         // Supabase
         case .supabaseError(let message):
             return message
-
-        // AI Chat
-        case .chatSessionNotFound:
-            return "Chat session not found"
-        case .messageFailedToSend:
-            return "Failed to send message"
-        case .aiServiceUnavailable:
-            return "AI service is currently unavailable"
 
         // General
         case .unknown(let message):

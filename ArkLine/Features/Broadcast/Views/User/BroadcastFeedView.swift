@@ -3,7 +3,6 @@ import SwiftUI
 // MARK: - Broadcast Feed View
 
 /// User-facing view showing published broadcasts from the admin.
-/// This replaces the AI Chat feature for regular users.
 struct BroadcastFeedView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme

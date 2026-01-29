@@ -206,40 +206,6 @@ enum MetalsAPIEndpoint: APIEndpoint {
     }
 }
 
-// MARK: - Claude API Endpoints
-enum ClaudeEndpoint: APIEndpoint {
-    case messages(request: ClaudeMessageRequest)
-
-    var baseURL: String { Constants.Endpoints.claudeBase }
-
-    var path: String {
-        switch self {
-        case .messages:
-            return "/messages"
-        }
-    }
-
-    var method: HTTPMethod { .post }
-
-    var headers: [String: String]? {
-        [
-            "x-api-key": Constants.API.claudeAPIKey,
-            "anthropic-version": "2023-06-01"
-        ]
-    }
-
-    var body: Data? {
-        switch self {
-        case .messages(let request):
-            let encoder = JSONEncoder()
-            // Don't use .convertToSnakeCase - CodingKeys already handles it
-            return try? encoder.encode(request)
-        }
-    }
-
-    var requiresAuth: Bool { true }
-}
-
 // MARK: - Fear & Greed Index Endpoint (Alternative.me)
 enum FearGreedEndpoint: APIEndpoint {
     case current

@@ -24,7 +24,6 @@ enum Constants {
     enum API {
         static let supabaseURL = Constants.secrets["SUPABASE_URL"] as? String ?? ""
         static let supabaseAnonKey = Constants.secrets["SUPABASE_ANON_KEY"] as? String ?? ""
-        static let claudeAPIKey = Constants.secrets["CLAUDE_API_KEY"] as? String ?? ""
         static let coinGeckoAPIKey = Constants.secrets["COINGECKO_API_KEY"] as? String ?? ""
         static let metalsAPIKey = Constants.secrets["METALS_API_KEY"] as? String ?? ""
         static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String ?? ""
@@ -43,7 +42,6 @@ enum Constants {
     enum Endpoints {
         static let coinGeckoBase = "https://api.coingecko.com/api/v3"
         static let metalsAPIBase = "https://metals-api.com/api"
-        static let claudeBase = "https://api.anthropic.com/v1"
         static let taapiBase = "https://api.taapi.io"
         static let arklineBackendBase = "https://web.arkline.io/api/v1"
         static let fredBase = "https://api.stlouisfed.org/fred"
