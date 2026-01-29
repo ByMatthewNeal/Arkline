@@ -269,11 +269,16 @@ struct EmptyStateView: View {
 // MARK: - Portfolio Header
 struct PortfolioHeader: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let totalValue: Double
     let dayChange: Double
     let dayChangePercentage: Double
     let profitLoss: Double
     let profitLossPercentage: Double
+
+    private var currency: String {
+        appState.preferredCurrency
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -281,7 +286,7 @@ struct PortfolioHeader: View {
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 
-            Text(totalValue.asCurrency)
+            Text(totalValue.asCurrency(code: currency))
                 .font(AppFonts.number44)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -295,7 +300,7 @@ struct PortfolioHeader: View {
                     HStack(spacing: 4) {
                         Image(systemName: dayChange >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
-                        Text("\(dayChange >= 0 ? "+" : "")\(dayChange.asCurrency)")
+                        Text("\(dayChange >= 0 ? "+" : "")\(dayChange.asCurrency(code: currency))")
                             .font(AppFonts.body14Medium)
                         Text("(\(dayChangePercentage >= 0 ? "+" : "")\(dayChangePercentage, specifier: "%.2f")%)")
                             .font(AppFonts.caption12)
@@ -314,7 +319,7 @@ struct PortfolioHeader: View {
                     HStack(spacing: 4) {
                         Image(systemName: profitLoss >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
-                        Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency)")
+                        Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency(code: currency))")
                             .font(AppFonts.body14Medium)
                         Text("(\(profitLossPercentage >= 0 ? "+" : "")\(profitLossPercentage, specifier: "%.2f")%)")
                             .font(AppFonts.caption12)
@@ -382,7 +387,12 @@ struct PortfolioTabSelector: View {
 // MARK: - Overview Content
 struct PortfolioOverviewContent: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+
+    private var currency: String {
+        appState.preferredCurrency
+    }
 
     var body: some View {
         if viewModel.holdings.isEmpty {
@@ -412,7 +422,7 @@ struct PortfolioOverviewContent: View {
 
                     QuickStatCard(
                         title: "Cost Basis",
-                        value: viewModel.totalCost.asCurrencyCompact,
+                        value: viewModel.totalCost.asCurrencyCompact(code: currency),
                         icon: "dollarsign.circle"
                     )
                 }
@@ -527,7 +537,12 @@ struct PortfolioHoldingsContent: View {
 // MARK: - Allocation Content
 struct PortfolioAllocationContent: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+
+    private var currency: String {
+        appState.preferredCurrency
+    }
 
     var body: some View {
         if viewModel.allocations.isEmpty {
@@ -559,7 +574,7 @@ struct PortfolioAllocationContent: View {
 
                             Spacer()
 
-                            Text(allocation.value.asCurrency)
+                            Text(allocation.value.asCurrency(code: currency))
                                 .font(AppFonts.body14)
                                 .foregroundColor(AppColors.textSecondary)
 
@@ -569,7 +584,7 @@ struct PortfolioAllocationContent: View {
                                 .frame(width: 50, alignment: .trailing)
                         }
                         .padding(.horizontal, 20)
-                        .accessibilityLabel("\(allocation.category), \(allocation.percentage, specifier: "%.1f") percent, \(allocation.value.asCurrency)")
+                        .accessibilityLabel("\(allocation.category), \(allocation.percentage, specifier: "%.1f") percent, \(allocation.value.asCurrency(code: currency))")
                     }
                 }
             }
@@ -1022,11 +1037,16 @@ struct EmotionalStateChip: View {
 // MARK: - Holding Detail View
 struct HoldingDetailView: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let holding: PortfolioHolding
     @Bindable var viewModel: PortfolioViewModel
     @State private var showSellSheet = false
     @State private var selectedTransaction: Transaction?
     @State private var showTransactionDetail = false
+
+    private var currency: String {
+        appState.preferredCurrency
+    }
 
     var holdingTransactions: [Transaction] {
         viewModel.transactions.filter { $0.symbol.uppercased() == holding.symbol.uppercased() }
@@ -1064,7 +1084,7 @@ struct HoldingDetailView: View {
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
 
-                        Text(holding.currentValue.asCurrency)
+                        Text(holding.currentValue.asCurrency(code: currency))
                             .font(AppFonts.number44)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                     }
@@ -1075,9 +1095,9 @@ struct HoldingDetailView: View {
                     HStack(spacing: 0) {
                         StatItem(title: "Quantity", value: holding.quantity.asQuantity)
                         Divider().frame(height: 40)
-                        StatItem(title: "Avg. Price", value: (holding.averageBuyPrice ?? 0).asCurrency)
+                        StatItem(title: "Avg. Price", value: (holding.averageBuyPrice ?? 0).asCurrency(code: currency))
                         Divider().frame(height: 40)
-                        StatItem(title: "Current Price", value: (holding.currentPrice ?? 0).asCurrency)
+                        StatItem(title: "Current Price", value: (holding.currentPrice ?? 0).asCurrency(code: currency))
                     }
 
                     Divider()
@@ -1092,7 +1112,7 @@ struct HoldingDetailView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: holding.isProfit ? "arrow.up.right" : "arrow.down.right")
                                     .font(.system(size: 14))
-                                Text(holding.profitLoss.asCurrency)
+                                Text(holding.profitLoss.asCurrency(code: currency))
                                     .font(AppFonts.title18SemiBold)
                             }
                             .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)

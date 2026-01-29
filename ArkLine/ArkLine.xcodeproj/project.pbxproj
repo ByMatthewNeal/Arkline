@@ -227,6 +227,12 @@
 		FB54B74554486F93282A5F64 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A3D4FB06E03FA228047903 /* SplashView.swift */; };
 		FC5266219EBEEC65406B533B /* SupabaseAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3882181D1C76831A5D00FA28 /* SupabaseAuth.swift */; };
 		FD8C19CD038F28845E0A54DA /* EconomicCalendarScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 702FD4F7C52A8914F7A26CFD /* EconomicCalendarScraper.swift */; };
+		FE0000000000000000000001 /* FeatureRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000011 /* FeatureRequest.swift */; };
+		FE0000000000000000000002 /* FeatureRequestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000012 /* FeatureRequestService.swift */; };
+		FE0000000000000000000003 /* FeatureRequestFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000013 /* FeatureRequestFormView.swift */; };
+		FE0000000000000000000004 /* FeatureRequestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000014 /* FeatureRequestViewModel.swift */; };
+		FE0000000000000000000005 /* FeatureBacklogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000015 /* FeatureBacklogView.swift */; };
+		FE0000000000000000000006 /* FeatureRequestDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000000000000000000016 /* FeatureRequestDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -450,6 +456,12 @@
 		FBEE2AB1904E9E24D7B1229D /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnicalAnalysisServiceProtocol.swift; sourceTree = "<group>"; };
 		FE3A61DDFF8974642E22744D /* CommunityViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityViewModel.swift; sourceTree = "<group>"; };
+		FE0000000000000000000011 /* FeatureRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequest.swift; sourceTree = "<group>"; };
+		FE0000000000000000000012 /* FeatureRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestService.swift; sourceTree = "<group>"; };
+		FE0000000000000000000013 /* FeatureRequestFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestFormView.swift; sourceTree = "<group>"; };
+		FE0000000000000000000014 /* FeatureRequestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestViewModel.swift; sourceTree = "<group>"; };
+		FE0000000000000000000015 /* FeatureBacklogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureBacklogView.swift; sourceTree = "<group>"; };
+		FE0000000000000000000016 /* FeatureRequestDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -471,6 +483,7 @@
 				27E0ED5C3FDE9603C46034A6 /* Authentication */,
 				B970B0422F404D87970C0033 /* Community */,
 				0A6A7F4786432264FF0B524D /* DCAReminder */,
+				FE0000000000000000000020 /* FeatureRequests */,
 				A5C54E3138907FA3845D2384 /* Home */,
 				BC14B1C733028D4F3BD7E3AA /* Market */,
 				6CF3C5179C1C97F4EFE1A0EF /* Onboarding */,
@@ -480,6 +493,32 @@
 				CACF014E7133B509C7F2990B /* Broadcast */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		FE0000000000000000000020 /* FeatureRequests */ = {
+			isa = PBXGroup;
+			children = (
+				FE0000000000000000000021 /* ViewModels */,
+				FE0000000000000000000022 /* Views */,
+			);
+			path = FeatureRequests;
+			sourceTree = "<group>";
+		};
+		FE0000000000000000000021 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				FE0000000000000000000014 /* FeatureRequestViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		FE0000000000000000000022 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FE0000000000000000000015 /* FeatureBacklogView.swift */,
+				FE0000000000000000000016 /* FeatureRequestDetailView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		0A1791456BE0132B4D7DD7B3 /* Scrapers */ = {
@@ -621,6 +660,7 @@
 				BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */,
 				A1F5409EE3FED4A42BA318B3 /* YahooVIXService.swift */,
 				8C9F2BB5F78AF614F347490F /* BroadcastService.swift */,
+				FE0000000000000000000012 /* FeatureRequestService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -767,6 +807,7 @@
 				A9CBCD28DAB9835627BA87F5 /* VIXData.swift */,
 				5938799B40563800647E30C4 /* Broadcast.swift */,
 				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
+				FE0000000000000000000011 /* FeatureRequest.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -938,6 +979,7 @@
 		90DA49D7CF31AE93D37997A6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				FE0000000000000000000013 /* FeatureRequestFormView.swift */,
 				EC91A4E48942F70D01846899 /* NewsTopicsSettingsView.swift */,
 				4670E22A47757A0E792C9687 /* SettingsView.swift */,
 			);
@@ -1456,6 +1498,12 @@
 				0F4CC45089337035918EB194 /* FarsideETFScraper.swift in Sources */,
 				7383D460E1983C30AD7C1A4D /* FavoritesWidget.swift in Sources */,
 				2C64471C1DA2261CE83B3164 /* FearGreedWidget.swift in Sources */,
+				FE0000000000000000000005 /* FeatureBacklogView.swift in Sources */,
+				FE0000000000000000000001 /* FeatureRequest.swift in Sources */,
+				FE0000000000000000000006 /* FeatureRequestDetailView.swift in Sources */,
+				FE0000000000000000000003 /* FeatureRequestFormView.swift in Sources */,
+				FE0000000000000000000002 /* FeatureRequestService.swift in Sources */,
+				FE0000000000000000000004 /* FeatureRequestViewModel.swift in Sources */,
 				C23FD5B707CF3A05F96F3EE7 /* FedWatchSection.swift in Sources */,
 				53DB2C4BBFAA8EBE46DFFD6D /* Fonts.swift in Sources */,
 				14D33F97F6618A1779952623 /* GlobalLiquidityData.swift in Sources */,

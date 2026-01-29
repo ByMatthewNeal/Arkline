@@ -81,6 +81,7 @@ class AppState: ObservableObject {
     @Published var darkModePreference: Constants.DarkModePreference = .automatic
     @Published var avatarColorTheme: Constants.AvatarColorTheme = .ocean
     @Published var chartColorPalette: Constants.ChartColorPalette = .classic
+    @Published var preferredCurrency: String = "USD"
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
 
     // Navigation reset triggers - increment to pop to root
@@ -124,6 +125,11 @@ class AppState: ObservableObject {
         if let chartPaletteValue = UserDefaults.standard.string(forKey: Constants.UserDefaults.chartColorPalette),
            let palette = Constants.ChartColorPalette(rawValue: chartPaletteValue) {
             chartColorPalette = palette
+        }
+
+        // Load preferred currency
+        if let currency = UserDefaults.standard.string(forKey: Constants.UserDefaults.preferredCurrency) {
+            preferredCurrency = currency
         }
 
         // Load widget configuration
@@ -201,6 +207,11 @@ class AppState: ObservableObject {
     func setChartColorPalette(_ palette: Constants.ChartColorPalette) {
         chartColorPalette = palette
         UserDefaults.standard.set(palette.rawValue, forKey: Constants.UserDefaults.chartColorPalette)
+    }
+
+    func setPreferredCurrency(_ currency: String) {
+        preferredCurrency = currency
+        UserDefaults.standard.set(currency, forKey: Constants.UserDefaults.preferredCurrency)
     }
 
     func setWidgetConfiguration(_ config: WidgetConfiguration) {

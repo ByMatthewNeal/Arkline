@@ -19,29 +19,47 @@ extension Double {
         formatAsCurrency()
     }
 
+    /// Format as currency with a specific currency code
+    func asCurrency(code: String) -> String {
+        formatAsCurrency(currencyCode: code)
+    }
+
     var asCurrencyCompact: String {
+        asCurrencyCompact(code: "USD")
+    }
+
+    /// Compact currency format with specific currency code
+    func asCurrencyCompact(code: String) -> String {
         if abs(self) >= 1_000_000_000 {
-            return formatAsCurrency(maximumFractionDigits: 1).replacingOccurrences(of: ",000,000,000", with: "B")
+            return formatAsCurrency(currencyCode: code, maximumFractionDigits: 1)
+                .replacingOccurrences(of: ",000,000,000", with: "B")
                 .replacingOccurrences(of: "000,000,000", with: "B")
         } else if abs(self) >= 1_000_000 {
-            return formatAsCurrency(maximumFractionDigits: 1).replacingOccurrences(of: ",000,000", with: "M")
+            return formatAsCurrency(currencyCode: code, maximumFractionDigits: 1)
+                .replacingOccurrences(of: ",000,000", with: "M")
                 .replacingOccurrences(of: "000,000", with: "M")
         } else if abs(self) >= 1_000 {
-            return formatAsCurrency(maximumFractionDigits: 1).replacingOccurrences(of: ",000", with: "K")
+            return formatAsCurrency(currencyCode: code, maximumFractionDigits: 1)
+                .replacingOccurrences(of: ",000", with: "K")
         }
-        return formatAsCurrency()
+        return formatAsCurrency(currencyCode: code)
     }
 
     // MARK: - Crypto Price Formatting
     var asCryptoPrice: String {
+        asCryptoPrice(code: "USD")
+    }
+
+    /// Format as crypto price with specific currency code
+    func asCryptoPrice(code: String) -> String {
         if abs(self) >= 1 {
-            return formatAsCurrency(minimumFractionDigits: 2, maximumFractionDigits: 2)
+            return formatAsCurrency(currencyCode: code, minimumFractionDigits: 2, maximumFractionDigits: 2)
         } else if abs(self) >= 0.01 {
-            return formatAsCurrency(minimumFractionDigits: 4, maximumFractionDigits: 4)
+            return formatAsCurrency(currencyCode: code, minimumFractionDigits: 4, maximumFractionDigits: 4)
         } else if abs(self) >= 0.0001 {
-            return formatAsCurrency(minimumFractionDigits: 6, maximumFractionDigits: 6)
+            return formatAsCurrency(currencyCode: code, minimumFractionDigits: 6, maximumFractionDigits: 6)
         } else {
-            return formatAsCurrency(minimumFractionDigits: 8, maximumFractionDigits: 8)
+            return formatAsCurrency(currencyCode: code, minimumFractionDigits: 8, maximumFractionDigits: 8)
         }
     }
 
@@ -125,10 +143,15 @@ extension Double {
     }
 
     var withSignCurrency: String {
+        withSignCurrency(code: "USD")
+    }
+
+    /// Currency with sign prefix and specific currency code
+    func withSignCurrency(code: String) -> String {
         if self > 0 {
-            return "+\(asCurrency)"
+            return "+\(asCurrency(code: code))"
         }
-        return asCurrency
+        return asCurrency(code: code)
     }
 
     // MARK: - Rounding

@@ -8,6 +8,7 @@ struct ProfileView: View {
     @State private var showPortfolio = false
     @State private var showAlerts = false
     @State private var showEditProfile = false
+    @State private var showFeatureBacklog = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -33,6 +34,14 @@ struct ProfileView: View {
                         onAlerts: { showAlerts = true }
                     )
                     .padding(.horizontal, 20)
+
+                    // Admin Section (only for admins)
+                    if appState.currentUser?.isAdmin == true {
+                        AdminQuickActions(
+                            onFeatureBacklog: { showFeatureBacklog = true }
+                        )
+                        .padding(.horizontal, 20)
+                    }
 
                     // Stats
                     ProfileStats(stats: viewModel.stats)
@@ -72,6 +81,16 @@ struct ProfileView: View {
                 EditProfileView(user: viewModel.user) { updatedUser in
                     viewModel.user = updatedUser
                     appState.setAuthenticated(true, user: updatedUser)
+                }
+            }
+            .sheet(isPresented: $showFeatureBacklog) {
+                NavigationStack {
+                    FeatureBacklogView()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") { showFeatureBacklog = false }
+                            }
+                        }
                 }
             }
             .onAppear {
@@ -273,6 +292,34 @@ struct ProfileQuickActionButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .glassCard(cornerRadius: 12)
+        }
+    }
+}
+
+// MARK: - Admin Quick Actions
+struct AdminQuickActions: View {
+    @Environment(\.colorScheme) var colorScheme
+    let onFeatureBacklog: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            HStack {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.warning)
+                Text("Admin")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.warning)
+            }
+
+            HStack(spacing: 12) {
+                ProfileQuickActionButton(
+                    icon: "lightbulb.fill",
+                    title: "Feature Backlog",
+                    color: AppColors.warning,
+                    action: onFeatureBacklog
+                )
+            }
         }
     }
 }

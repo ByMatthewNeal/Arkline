@@ -158,6 +158,14 @@ struct SettingsView: View {
                         )
                     }
 
+                    NavigationLink(destination: FeatureRequestFormView()) {
+                        SettingsRow(
+                            icon: "lightbulb.fill",
+                            iconColor: AppColors.warning,
+                            title: "Request a Feature"
+                        )
+                    }
+
                     Button(action: openSupportEmail) {
                         SettingsRow(
                             icon: "envelope.fill",
@@ -298,6 +306,7 @@ struct CurrencySelectView: View {
             ForEach(viewModel.currencyOptions, id: \.0) { code, name in
                 Button(action: {
                     viewModel.saveCurrency(code)
+                    appState.setPreferredCurrency(code)
                     dismiss()
                 }) {
                     HStack {
@@ -398,11 +407,17 @@ struct ModeSettingsView: View {
 struct AvatarColorSelectView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
-    var appState: AppState
+    @ObservedObject var appState: AppState
+    @State private var previewTheme: Constants.AvatarColorTheme?
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
         (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    // Use preview theme if set, otherwise use saved theme
+    private var displayTheme: Constants.AvatarColorTheme {
+        previewTheme ?? appState.avatarColorTheme
     }
 
     var body: some View {
@@ -412,15 +427,15 @@ struct AvatarColorSelectView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
-                    // Preview Avatar
+                    // Preview Avatar - updates when tapping options
                     VStack(spacing: 12) {
                         ZStack {
                             Circle()
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            appState.avatarColorTheme.gradientColors.light,
-                                            appState.avatarColorTheme.gradientColors.dark
+                                            displayTheme.gradientColors.light,
+                                            displayTheme.gradientColors.dark
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -437,6 +452,7 @@ struct AvatarColorSelectView: View {
                                 .foregroundColor(.white)
                         }
                         .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: displayTheme)
 
                         Text("Preview")
                             .font(AppFonts.caption12)
@@ -452,11 +468,14 @@ struct AvatarColorSelectView: View {
                         ForEach(Constants.AvatarColorTheme.allCases, id: \.self) { theme in
                             AvatarColorOption(
                                 theme: theme,
-                                isSelected: appState.avatarColorTheme == theme,
+                                isSelected: displayTheme == theme,
                                 action: {
+                                    // Update preview immediately
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        appState.setAvatarColorTheme(theme)
+                                        previewTheme = theme
                                     }
+                                    // Save to AppState
+                                    appState.setAvatarColorTheme(theme)
                                 }
                             )
                         }
@@ -471,6 +490,9 @@ struct AvatarColorSelectView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .onAppear {
+            previewTheme = appState.avatarColorTheme
+        }
     }
 }
 
@@ -478,11 +500,17 @@ struct AvatarColorSelectView: View {
 struct ChartColorSelectView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
-    var appState: AppState
+    @ObservedObject var appState: AppState
+    @State private var previewPalette: Constants.ChartColorPalette?
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
         (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    // Use preview palette if set, otherwise use saved palette
+    private var displayPalette: Constants.ChartColorPalette {
+        previewPalette ?? appState.chartColorPalette
     }
 
     var body: some View {
@@ -492,10 +520,11 @@ struct ChartColorSelectView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
-                    // Preview Chart
+                    // Preview Chart - updates when tapping options
                     VStack(spacing: 12) {
                         // Mini pie chart preview
-                        ChartPalettePreview(palette: appState.chartColorPalette)
+                        ChartPalettePreview(palette: displayPalette)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: displayPalette)
 
                         Text("Preview")
                             .font(AppFonts.caption12)
@@ -508,11 +537,14 @@ struct ChartColorSelectView: View {
                         ForEach(Constants.ChartColorPalette.allCases, id: \.self) { palette in
                             ChartPaletteOption(
                                 palette: palette,
-                                isSelected: appState.chartColorPalette == palette,
+                                isSelected: displayPalette == palette,
                                 action: {
+                                    // Update preview immediately
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        appState.setChartColorPalette(palette)
+                                        previewPalette = palette
                                     }
+                                    // Save to AppState
+                                    appState.setChartColorPalette(palette)
                                 }
                             )
                         }
@@ -527,6 +559,9 @@ struct ChartColorSelectView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .onAppear {
+            previewPalette = appState.chartColorPalette
+        }
     }
 }
 
