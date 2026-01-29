@@ -58,36 +58,30 @@ struct AssetTechnicalDetailSheet: View {
                         }
                         .padding(.top, 40)
                     } else if let analysis = technicalAnalysis {
-                        // Multi-timeframe trend summary (shows 1D, 1W, 1M at a glance)
+                        // Hero: Technical Score - the main metric
+                        PremiumScoreCard(score: analysis.technicalScore, trend: analysis.trend, colorScheme: colorScheme)
+
+                        // Multi-timeframe trend summary (clean, minimal)
                         MultiTimeframeTrendCard(
                             trends: multiTimeframeTrends,
                             isLoading: isLoadingMultiTimeframe,
                             colorScheme: colorScheme
                         )
 
-                        // Overall sentiment
-                        OverallSentimentCard(analysis: analysis, colorScheme: colorScheme)
+                        // Key Levels - simplified SMA with signal
+                        KeyLevelsCard(sma: analysis.smaAnalysis, currentPrice: analysis.currentPrice, colorScheme: colorScheme)
 
-                        // Trend section for selected timeframe
-                        TrendAnalysisCard(trend: analysis.trend, colorScheme: colorScheme)
-
-                        // SMA section
-                        SMAAnalysisCard(sma: analysis.smaAnalysis, colorScheme: colorScheme)
-
-                        // Bollinger Bands section
-                        BollingerBandsCard(bollinger: analysis.bollingerBands, colorScheme: colorScheme)
-
-                        // Technical score
-                        TechnicalScoreCard(score: analysis.technicalScore, colorScheme: colorScheme)
+                        // Price Position - simplified Bollinger
+                        PricePositionCard(bollinger: analysis.bollingerBands.daily, colorScheme: colorScheme)
 
                         // Data source attribution
                         HStack {
                             Spacer()
-                            Text("Data from Taapi.io")
+                            Text("Taapi.io")
                                 .font(.caption2)
-                                .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.4))
                         }
-                        .padding(.top, ArkSpacing.sm)
+                        .padding(.top, ArkSpacing.xs)
                     }
 
                     Spacer(minLength: ArkSpacing.xxl)
@@ -831,6 +825,278 @@ private struct TechnicalScoreCard: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+// MARK: - Premium Score Card (Hero)
+private struct PremiumScoreCard: View {
+    let score: Int
+    let trend: TrendAnalysis
+    let colorScheme: ColorScheme
+
+    private var scoreColor: Color {
+        switch score {
+        case 0..<30: return AppColors.error
+        case 30..<50: return Color(hex: "F97316")
+        case 50..<70: return AppColors.warning
+        case 70..<85: return Color(hex: "84CC16")
+        default: return AppColors.success
+        }
+    }
+
+    private var scoreLabel: String {
+        switch score {
+        case 0..<30: return "Bearish"
+        case 30..<50: return "Weak"
+        case 50..<70: return "Neutral"
+        case 70..<85: return "Bullish"
+        default: return "Strong"
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: ArkSpacing.lg) {
+            // Score gauge
+            ZStack {
+                Circle()
+                    .stroke(
+                        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06),
+                        lineWidth: 8
+                    )
+                    .frame(width: 80, height: 80)
+
+                Circle()
+                    .trim(from: 0, to: CGFloat(score) / 100)
+                    .stroke(
+                        scoreColor,
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .frame(width: 80, height: 80)
+                    .rotationEffect(.degrees(-90))
+
+                Text("\(score)")
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Technical Score")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+
+                Text(scoreLabel)
+                    .font(.title2.bold())
+                    .foregroundColor(scoreColor)
+
+                // Trend badge
+                HStack(spacing: 4) {
+                    Image(systemName: trend.direction.icon)
+                        .font(.caption)
+                    Text(trend.direction.shortLabel)
+                        .font(.caption.bold())
+                }
+                .foregroundColor(trend.direction.color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(trend.direction.color.opacity(0.12))
+                .clipShape(Capsule())
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+// MARK: - Key Levels Card (Simplified SMA)
+private struct KeyLevelsCard: View {
+    let sma: SMAAnalysis
+    let currentPrice: Double
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack {
+                Text("Key Levels")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Spacer()
+
+                // Signal badge
+                HStack(spacing: 4) {
+                    Image(systemName: sma.overallSignal.icon)
+                        .font(.caption2)
+                    Text(sma.overallSignal.rawValue)
+                        .font(.caption.bold())
+                }
+                .foregroundColor(sma.overallSignal.color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(sma.overallSignal.color.opacity(0.12))
+                .clipShape(Capsule())
+            }
+
+            // Simplified SMA indicators
+            HStack(spacing: ArkSpacing.md) {
+                KeyLevelIndicator(
+                    label: "21 MA",
+                    isAbove: sma.above21SMA,
+                    colorScheme: colorScheme
+                )
+                KeyLevelIndicator(
+                    label: "50 MA",
+                    isAbove: sma.above50SMA,
+                    colorScheme: colorScheme
+                )
+                KeyLevelIndicator(
+                    label: "200 MA",
+                    isAbove: sma.above200SMA,
+                    colorScheme: colorScheme
+                )
+            }
+
+            // Golden/Death Cross alert
+            if sma.goldenCross || sma.deathCross {
+                HStack(spacing: 6) {
+                    Image(systemName: sma.goldenCross ? "sparkles" : "exclamationmark.triangle.fill")
+                        .font(.caption)
+                    Text(sma.goldenCross ? "Golden Cross" : "Death Cross")
+                        .font(.caption.bold())
+                }
+                .foregroundColor(sma.goldenCross ? AppColors.success : AppColors.error)
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+private struct KeyLevelIndicator: View {
+    let label: String
+    let isAbove: Bool
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(isAbove ? AppColors.success.opacity(0.15) : AppColors.error.opacity(0.15))
+                    .frame(width: 36, height: 36)
+
+                Image(systemName: isAbove ? "arrow.up" : "arrow.down")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isAbove ? AppColors.success : AppColors.error)
+            }
+
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Price Position Card (Simplified Bollinger)
+private struct PricePositionCard: View {
+    let bollinger: BollingerBandData
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack {
+                Text("Price Position")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Spacer()
+
+                // Position badge
+                HStack(spacing: 4) {
+                    Image(systemName: bollinger.position.icon)
+                        .font(.caption2)
+                    Text(bollinger.position.description)
+                        .font(.caption.bold())
+                }
+                .foregroundColor(bollinger.position.color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(bollinger.position.color.opacity(0.12))
+                .clipShape(Capsule())
+            }
+
+            // Visual band representation
+            VStack(spacing: 8) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        // Band gradient background
+                        LinearGradient(
+                            colors: [
+                                AppColors.success.opacity(0.3),
+                                AppColors.warning.opacity(0.2),
+                                AppColors.error.opacity(0.3)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                        // Price position indicator
+                        let positionX = geo.size.width * min(1, max(0, bollinger.percentB))
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 14, height: 14)
+                            .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+                            .overlay(
+                                Circle()
+                                    .fill(bollinger.position.color)
+                                    .frame(width: 8, height: 8)
+                            )
+                            .offset(x: positionX - 7)
+                    }
+                }
+                .frame(height: 20)
+
+                // Labels
+                HStack {
+                    Text("Oversold")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.success)
+
+                    Spacer()
+
+                    Text("Fair Value")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.warning)
+
+                    Spacer()
+
+                    Text("Overbought")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.error)
+                }
+            }
+
+            // Signal text
+            Text(bollinger.position.signal)
+                .font(.caption)
+                .foregroundColor(bollinger.position.color)
+        }
+        .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
