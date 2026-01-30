@@ -300,59 +300,252 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchArkLineRiskScore() async throws -> ArkLineRiskScore {
-        // Calculate ArkLine Risk Score from available indicators
-        async let fearGreed = fetchFearGreedIndex()
-        async let btcDom = fetchBTCDominance()
+        // Enhanced ArkLine Risk Score from ALL available indicators
+        // Fetch all data in parallel for performance
+        async let fearGreedTask = fetchFearGreedIndex()
+        async let btcDomTask = fetchBTCDominance()
+        async let fundingTask = try? fetchFundingRate()
+        async let altcoinTask = try? fetchAltcoinSeason()
+        async let appStoreTask = try? fetchAppStoreRankings()
 
-        let (fg, btc) = try await (fearGreed, btcDom)
+        // Fetch macro indicators from other services
+        let vixService = ServiceContainer.shared.vixService
+        let dxyService = ServiceContainer.shared.dxyService
+        let liquidityService = ServiceContainer.shared.globalLiquidityService
+        let itcRiskService = ServiceContainer.shared.itcRiskService
 
-        // Build components from available data
+        async let vixTask = try? vixService.fetchLatestVIX()
+        async let dxyTask = try? dxyService.fetchLatestDXY()
+        async let liquidityTask = try? liquidityService.fetchLiquidityChanges()
+        async let itcRiskTask = try? itcRiskService.fetchLatestRiskLevel(coin: "BTC")
+
+        // Await all results
+        let fg = try await fearGreedTask
+        let btc = try await btcDomTask
+        let funding = await fundingTask
+        let altcoin = await altcoinTask
+        let appStore = await appStoreTask
+        let vix = await vixTask
+        let dxy = await dxyTask
+        let liquidity = await liquidityTask
+        let itcRisk = await itcRiskTask
+
+        // Build components from all available data
         var components: [RiskScoreComponent] = []
+        var totalWeight: Double = 0
 
-        // Fear & Greed component (20% weight)
+        // 1. Fear & Greed (15% weight) - Direct sentiment
         let fgValue = Double(fg.value) / 100.0
         components.append(RiskScoreComponent(
             name: "Fear & Greed",
             value: fgValue,
-            weight: 0.35,
+            weight: 0.15,
             signal: SentimentTier.from(score: fg.value)
         ))
+        totalWeight += 0.15
 
-        // BTC Dominance component (15% weight)
-        let btcValue = btc.value / 100.0
+        // 2. ITC Risk Level (15% weight) - Bitcoin cycle risk
+        if let risk = itcRisk {
+            let riskValue = risk.riskLevel  // Already 0-1
+            components.append(RiskScoreComponent(
+                name: "BTC Cycle Risk",
+                value: riskValue,
+                weight: 0.15,
+                signal: riskSignalTier(riskValue)
+            ))
+            totalWeight += 0.15
+        }
+
+        // 3. Funding Rates (12% weight) - Leverage sentiment
+        if let fund = funding {
+            // Normalize: -0.1% to +0.1% range -> 0-1 (higher funding = more greed)
+            let fundingValue = min(1.0, max(0.0, (fund.averageRate + 0.001) / 0.002))
+            components.append(RiskScoreComponent(
+                name: "Funding Rates",
+                value: fundingValue,
+                weight: 0.12,
+                signal: fundingSignalTier(fund.averageRate)
+            ))
+            totalWeight += 0.12
+        }
+
+        // 4. VIX (12% weight) - Market fear gauge (INVERSE - low VIX = complacency/greed)
+        if let vixData = vix {
+            // Normalize: VIX 10-40 range -> 0-1 (INVERTED: low VIX = high risk/greed)
+            let vixNormalized = min(1.0, max(0.0, (40.0 - vixData.value) / 30.0))
+            components.append(RiskScoreComponent(
+                name: "VIX (Volatility)",
+                value: vixNormalized,
+                weight: 0.12,
+                signal: vixSignalTier(vixData.value)
+            ))
+            totalWeight += 0.12
+        }
+
+        // 5. DXY (10% weight) - Dollar strength (INVERSE - weak dollar = risk-on/greed)
+        if let dxyData = dxy {
+            // Normalize: DXY 85-110 range -> 0-1 (INVERTED: low DXY = risk-on)
+            let dxyNormalized = min(1.0, max(0.0, (110.0 - dxyData.value) / 25.0))
+            components.append(RiskScoreComponent(
+                name: "DXY (Dollar)",
+                value: dxyNormalized,
+                weight: 0.10,
+                signal: dxySignalTier(dxyData.value)
+            ))
+            totalWeight += 0.10
+        }
+
+        // 6. Global M2 Liquidity (10% weight) - Expanding liquidity = risk-on
+        if let liq = liquidity {
+            // Normalize: -5% to +5% monthly change -> 0-1
+            let m2Normalized = min(1.0, max(0.0, (liq.monthlyChange + 5.0) / 10.0))
+            components.append(RiskScoreComponent(
+                name: "Global M2",
+                value: m2Normalized,
+                weight: 0.10,
+                signal: liquiditySignalTier(liq.monthlyChange)
+            ))
+            totalWeight += 0.10
+        }
+
+        // 7. App Store Ranking (10% weight) - Retail FOMO indicator
+        if let rankings = appStore, let coinbase = rankings.first(where: { $0.appName == "Coinbase" }) {
+            // Normalize: Rank 1-200 -> 0-1 (INVERTED: lower rank = more FOMO/greed)
+            let rankValue: Double
+            if coinbase.ranking > 0 && coinbase.ranking <= 200 {
+                rankValue = 1.0 - (Double(coinbase.ranking - 1) / 199.0)
+            } else {
+                rankValue = 0.1  // Not ranked = low retail interest
+            }
+            components.append(RiskScoreComponent(
+                name: "App Store FOMO",
+                value: rankValue,
+                weight: 0.10,
+                signal: appStoreSignalTier(coinbase.ranking)
+            ))
+            totalWeight += 0.10
+        }
+
+        // 8. BTC Dominance (8% weight) - Lower dominance = altcoin speculation/greed
+        let btcDomValue = 1.0 - (btc.value / 100.0)  // Invert: low dominance = greed
         components.append(RiskScoreComponent(
             name: "BTC Dominance",
-            value: btcValue,
-            weight: 0.25,
-            signal: btcValue > 0.55 ? .bullish : (btcValue < 0.45 ? .bearish : .neutral)
+            value: btcDomValue,
+            weight: 0.08,
+            signal: btcDomSignalTier(btc.value)
         ))
+        totalWeight += 0.08
 
-        // Add placeholder components for unavailable data
-        components.append(RiskScoreComponent(
-            name: "Market Momentum",
-            value: 0.5,
-            weight: 0.20,
-            signal: .neutral
-        ))
+        // 9. Altcoin Season (8% weight) - Higher = altcoin greed
+        if let alt = altcoin {
+            let altValue = Double(alt.value) / 100.0
+            components.append(RiskScoreComponent(
+                name: "Altcoin Season",
+                value: altValue,
+                weight: 0.08,
+                signal: altcoinSignalTier(alt.value)
+            ))
+            totalWeight += 0.08
+        }
 
-        components.append(RiskScoreComponent(
-            name: "Volatility",
-            value: 0.5,
-            weight: 0.20,
-            signal: .neutral
-        ))
+        // Normalize weights if some indicators are missing
+        let weightMultiplier = totalWeight > 0 ? 1.0 / totalWeight : 1.0
+        let normalizedComponents = components.map { comp in
+            RiskScoreComponent(
+                name: comp.name,
+                value: comp.value,
+                weight: comp.weight * weightMultiplier,
+                signal: comp.signal
+            )
+        }
 
         // Calculate weighted score
-        let weightedSum = components.reduce(0.0) { $0 + ($1.value * $1.weight) }
+        let weightedSum = normalizedComponents.reduce(0.0) { $0 + ($1.value * $1.weight) }
         let score = Int(weightedSum * 100)
+
+        print("📊 ArkLine Score: \(score) from \(components.count) indicators")
 
         return ArkLineRiskScore(
             score: score,
             tier: SentimentTier.from(score: score),
-            components: components,
+            components: normalizedComponents,
             recommendation: generateArkLineRecommendation(score: score),
             timestamp: Date()
         )
+    }
+
+    // MARK: - Signal Tier Helpers
+
+    private func riskSignalTier(_ value: Double) -> SentimentTier {
+        switch value {
+        case 0..<0.2: return .extremelyBearish
+        case 0.2..<0.4: return .bearish
+        case 0.4..<0.6: return .neutral
+        case 0.6..<0.8: return .bullish
+        default: return .extremelyBullish
+        }
+    }
+
+    private func fundingSignalTier(_ rate: Double) -> SentimentTier {
+        if rate > 0.0005 { return .extremelyBullish }  // High positive = greed
+        if rate > 0.0001 { return .bullish }
+        if rate > -0.0001 { return .neutral }
+        if rate > -0.0005 { return .bearish }
+        return .extremelyBearish  // Negative = fear
+    }
+
+    private func vixSignalTier(_ vix: Double) -> SentimentTier {
+        // Low VIX = complacency (greed), High VIX = fear
+        if vix < 15 { return .extremelyBullish }  // Complacent
+        if vix < 20 { return .bullish }
+        if vix < 25 { return .neutral }
+        if vix < 30 { return .bearish }
+        return .extremelyBearish  // High fear
+    }
+
+    private func dxySignalTier(_ dxy: Double) -> SentimentTier {
+        // Low DXY = risk-on (bullish for crypto), High DXY = risk-off
+        if dxy < 90 { return .extremelyBullish }
+        if dxy < 100 { return .bullish }
+        if dxy < 105 { return .neutral }
+        if dxy < 110 { return .bearish }
+        return .extremelyBearish
+    }
+
+    private func liquiditySignalTier(_ change: Double) -> SentimentTier {
+        if change > 2.0 { return .extremelyBullish }
+        if change > 0.5 { return .bullish }
+        if change > -0.5 { return .neutral }
+        if change > -2.0 { return .bearish }
+        return .extremelyBearish
+    }
+
+    private func appStoreSignalTier(_ rank: Int) -> SentimentTier {
+        if rank <= 0 { return .bearish }  // Not ranked
+        if rank <= 20 { return .extremelyBullish }  // High FOMO
+        if rank <= 50 { return .bullish }
+        if rank <= 100 { return .neutral }
+        if rank <= 150 { return .bearish }
+        return .extremelyBearish
+    }
+
+    private func btcDomSignalTier(_ dominance: Double) -> SentimentTier {
+        // Low dominance = altcoin speculation (greedy market)
+        if dominance < 40 { return .extremelyBullish }
+        if dominance < 50 { return .bullish }
+        if dominance < 55 { return .neutral }
+        if dominance < 60 { return .bearish }
+        return .extremelyBearish
+    }
+
+    private func altcoinSignalTier(_ value: Int) -> SentimentTier {
+        switch value {
+        case 0..<25: return .extremelyBearish  // Bitcoin season
+        case 25..<40: return .bearish
+        case 40..<60: return .neutral
+        case 60..<75: return .bullish
+        default: return .extremelyBullish  // Altcoin season
+        }
     }
 
     func fetchGoogleTrends() async throws -> GoogleTrendsData {
