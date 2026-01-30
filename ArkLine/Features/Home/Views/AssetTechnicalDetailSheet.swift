@@ -833,6 +833,7 @@ private struct TechnicalScoreCard: View {
 private struct RSIIndicatorCard: View {
     let rsi: RSIData
     let colorScheme: ColorScheme
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
@@ -840,6 +841,14 @@ private struct RSIIndicatorCard: View {
                 Text("RSI (14)")
                     .font(.subheadline.bold())
                     .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
 
                 Spacer()
 
@@ -932,6 +941,11 @@ private struct RSIIndicatorCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .alert("RSI (Relative Strength Index)", isPresented: $showInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Measures momentum on a 0-100 scale. Below 30 suggests oversold (potential bounce), above 70 suggests overbought (potential pullback).")
+        }
     }
 }
 
@@ -939,12 +953,25 @@ private struct RSIIndicatorCard: View {
 private struct MarketOutlookCard: View {
     let sentiment: MarketSentimentAnalysis
     let colorScheme: ColorScheme
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
-            Text("Market Outlook")
-                .font(.subheadline.bold())
-                .foregroundColor(AppColors.textPrimary(colorScheme))
+            HStack {
+                Text("Market Outlook")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
+
+                Spacer()
+            }
 
             HStack(spacing: 0) {
                 // Short Term
@@ -973,6 +1000,11 @@ private struct MarketOutlookCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .alert("Market Outlook", isPresented: $showInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Short term outlook is based on recent RSI momentum. Long term outlook reflects price position relative to the 200-day moving average.")
+        }
     }
 }
 
@@ -1024,38 +1056,76 @@ private struct DualScoreCard: View {
     let trendScore: Int
     let opportunityScore: Int
     let colorScheme: ColorScheme
+    @State private var showTrendInfo = false
+    @State private var showOpportunityInfo = false
 
     var body: some View {
-        HStack(spacing: ArkSpacing.md) {
-            // Trend Score
-            ScoreGauge(
-                score: trendScore,
-                label: "Trend",
-                subtitle: trendLabel,
-                color: trendColor,
-                colorScheme: colorScheme
-            )
+        VStack(spacing: 0) {
+            // Info buttons row
+            HStack {
+                Button {
+                    showTrendInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
 
-            // Divider
-            Rectangle()
-                .fill(AppColors.divider(colorScheme))
-                .frame(width: 1)
-                .padding(.vertical, 12)
+                Spacer()
 
-            // Opportunity Score
-            ScoreGauge(
-                score: opportunityScore,
-                label: "Opportunity",
-                subtitle: opportunityLabel,
-                color: opportunityColor,
-                colorScheme: colorScheme
-            )
+                Button {
+                    showOpportunityInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+
+            HStack(spacing: ArkSpacing.md) {
+                // Trend Score
+                ScoreGauge(
+                    score: trendScore,
+                    label: "Trend",
+                    subtitle: trendLabel,
+                    color: trendColor,
+                    colorScheme: colorScheme
+                )
+
+                // Divider
+                Rectangle()
+                    .fill(AppColors.divider(colorScheme))
+                    .frame(width: 1)
+                    .padding(.vertical, 12)
+
+                // Opportunity Score
+                ScoreGauge(
+                    score: opportunityScore,
+                    label: "Opportunity",
+                    subtitle: opportunityLabel,
+                    color: opportunityColor,
+                    colorScheme: colorScheme
+                )
+            }
+            .padding(.horizontal)
+            .padding(.bottom)
         }
-        .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .alert("Trend Score", isPresented: $showTrendInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Measures price direction based on trend strength and position relative to key moving averages (21, 50, 200). Higher scores indicate upward momentum.")
+        }
+        .alert("Opportunity Score", isPresented: $showOpportunityInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Identifies potential entry points using RSI and Bollinger Bands. Higher scores suggest the asset may be oversold, presenting a buying opportunity.")
+        }
     }
 
     private var trendColor: Color {
