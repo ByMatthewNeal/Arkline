@@ -15,6 +15,10 @@ struct AssetTechnicalDetailSheet: View {
     @State private var multiTimeframeTrends: [AnalysisTimeframe: TrendAnalysis] = [:]
     @State private var isLoadingMultiTimeframe = false
 
+    // Share functionality
+    @State private var showShareSheet = false
+    @State private var shareImage: UIImage?
+
     private let technicalAnalysisService = ServiceContainer.shared.technicalAnalysisService
 
     private var textPrimary: Color {
@@ -24,9 +28,41 @@ struct AssetTechnicalDetailSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: ArkSpacing.xl) {
-                    // Asset header
-                    AssetHeaderSection(asset: asset, colorScheme: colorScheme)
+                shareableContent
+            }
+            .background(AppColors.background(colorScheme).ignoresSafeArea())
+            .navigationTitle(asset.symbol.uppercased())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        captureAndShare()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(technicalAnalysis == nil)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .task {
+                await fetchTechnicalAnalysis()
+                await fetchMultiTimeframeTrends()
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let image = shareImage {
+                    ShareSheet(items: [image])
+                }
+            }
+        }
+    }
+
+    // MARK: - Shareable Content
+    private var shareableContent: some View {
+        VStack(spacing: ArkSpacing.xl) {
+            // Asset header
+            AssetHeaderSection(asset: asset, colorScheme: colorScheme)
 
                     if isLoading {
                         // Loading state
@@ -86,22 +122,35 @@ struct AssetTechnicalDetailSheet: View {
                         .padding(.top, ArkSpacing.xs)
                     }
 
+                    // Branding for shared screenshots
+                    HStack {
+                        Spacer()
+                        Text("ArkLine")
+                            .font(.caption2.bold())
+                            .foregroundColor(AppColors.textSecondary.opacity(0.3))
+                    }
+                    .padding(.top, ArkSpacing.xs)
+
                     Spacer(minLength: ArkSpacing.xxl)
                 }
                 .padding(.horizontal)
-            }
-            .background(AppColors.background(colorScheme).ignoresSafeArea())
-            .navigationTitle(asset.symbol.uppercased())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .task {
-                await fetchTechnicalAnalysis()
-                await fetchMultiTimeframeTrends()
-            }
+    }
+
+    // MARK: - Share Methods
+
+    private func captureAndShare() {
+        let renderer = ImageRenderer(content:
+            shareableContent
+                .frame(width: UIScreen.main.bounds.width)
+                .padding(.vertical, ArkSpacing.lg)
+                .background(AppColors.background(colorScheme))
+                .environment(\.colorScheme, colorScheme)
+        )
+        renderer.scale = UIScreen.main.scale
+
+        if let image = renderer.uiImage {
+            shareImage = image
+            showShareSheet = true
         }
     }
 
@@ -183,12 +232,25 @@ private struct MultiTimeframeTrendCard: View {
     let trends: [AnalysisTimeframe: TrendAnalysis]
     let isLoading: Bool
     let colorScheme: ColorScheme
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
-            Text("Trend Overview")
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
+            HStack {
+                Text("Trend Overview")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
+
+                Spacer()
+            }
 
             if isLoading {
                 HStack {
@@ -218,6 +280,11 @@ private struct MultiTimeframeTrendCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .alert("Trend Overview", isPresented: $showInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Shows the price trend across daily, weekly, and monthly timeframes. Signal bars indicate trend strength.")
+        }
     }
 }
 
@@ -1309,6 +1376,7 @@ private struct KeyLevelsCard: View {
     let sma: SMAAnalysis
     let currentPrice: Double
     let colorScheme: ColorScheme
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
@@ -1316,6 +1384,14 @@ private struct KeyLevelsCard: View {
                 Text("Key Levels")
                     .font(.subheadline.bold())
                     .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
 
                 Spacer()
 
@@ -1369,6 +1445,11 @@ private struct KeyLevelsCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .alert("Key Levels", isPresented: $showInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Shows if price is above or below key moving averages. A Golden Cross (bullish) or Death Cross (bearish) occurs when the 50 MA crosses the 200 MA.")
+        }
     }
 }
 
@@ -1401,6 +1482,7 @@ private struct KeyLevelIndicator: View {
 private struct PricePositionCard: View {
     let bollinger: BollingerBandData
     let colorScheme: ColorScheme
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
@@ -1408,6 +1490,14 @@ private struct PricePositionCard: View {
                 Text("Price Position")
                     .font(.subheadline.bold())
                     .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
 
                 Spacer()
 
@@ -1487,7 +1577,24 @@ private struct PricePositionCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+        .alert("Price Position", isPresented: $showInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("Uses Bollinger Bands to show if price is stretched. Near the lower band suggests oversold, near the upper band suggests overbought.")
+        }
     }
+}
+
+// MARK: - Share Sheet
+private struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Preview
