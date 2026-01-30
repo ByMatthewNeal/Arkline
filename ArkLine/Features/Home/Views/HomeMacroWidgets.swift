@@ -493,28 +493,39 @@ Global M2 represents the total money supply across major economies, including ca
                                 .font(.headline)
                                 .foregroundColor(textPrimary)
 
-                            if let daily = liquidity.dailyChange {
+                            // Only show rows with meaningful (non-zero) changes
+                            if let daily = liquidity.dailyChange, abs(daily) > 0.001 {
                                 M2ChangeRow(
                                     period: "Daily",
                                     change: daily,
                                     dollarChange: liquidity.formatDollars(liquidity.dailyChangeDollars ?? 0)
                                 )
                             }
-                            M2ChangeRow(
-                                period: "Weekly",
-                                change: liquidity.weeklyChange,
-                                dollarChange: liquidity.formatDollars(liquidity.weeklyChangeDollars)
-                            )
-                            M2ChangeRow(
-                                period: "Monthly",
-                                change: liquidity.monthlyChange,
-                                dollarChange: liquidity.formatDollars(liquidity.monthlyChangeDollars)
-                            )
+                            if abs(liquidity.weeklyChange) > 0.001 {
+                                M2ChangeRow(
+                                    period: "Weekly",
+                                    change: liquidity.weeklyChange,
+                                    dollarChange: liquidity.formatDollars(liquidity.weeklyChangeDollars)
+                                )
+                            }
+                            if abs(liquidity.monthlyChange) > 0.001 {
+                                M2ChangeRow(
+                                    period: "Monthly",
+                                    change: liquidity.monthlyChange,
+                                    dollarChange: liquidity.formatDollars(liquidity.monthlyChangeDollars)
+                                )
+                            }
+                            // Always show yearly as it should have data
                             M2ChangeRow(
                                 period: "Yearly",
                                 change: liquidity.yearlyChange,
                                 dollarChange: liquidity.formatDollars(liquidity.yearlyChangeDollars)
                             )
+
+                            Text("M2 data is released monthly by the Federal Reserve with a 2-3 week lag.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
                         }
                         .padding()
                         .background(Color(.systemGray6))
