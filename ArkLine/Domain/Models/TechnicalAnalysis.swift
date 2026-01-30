@@ -11,6 +11,7 @@ struct TechnicalAnalysis: Equatable {
     let smaAnalysis: SMAAnalysis
     let bollingerBands: BollingerBandAnalysis
     let sentiment: MarketSentimentAnalysis
+    let rsi: RSIData
     let timestamp: Date
 
     /// Overall technical score (0-100)
@@ -31,13 +32,27 @@ struct TechnicalAnalysis: Equatable {
         if smaAnalysis.above50SMA { score += 7 }
         if smaAnalysis.above200SMA { score += 8 }
 
-        // Bollinger contribution (+/- 15)
+        // Bollinger contribution (+/- 10)
         switch bollingerBands.daily.position {
         case .aboveUpper: score -= 5 // Overbought
         case .nearUpper: score += 0
         case .middle: score += 5
         case .nearLower: score += 8
         case .belowLower: score += 10 // Oversold (potential buy)
+        }
+
+        // RSI contribution (+/- 10)
+        switch rsi.value {
+        case 0..<30:
+            score += 10  // Oversold - potential buy
+        case 30..<40:
+            score += 5   // Approaching oversold
+        case 40..<60:
+            score += 0   // Neutral
+        case 60..<70:
+            score -= 5   // Approaching overbought
+        default:
+            score -= 10  // Overbought - potential sell
         }
 
         return max(0, min(100, score))
@@ -326,6 +341,54 @@ enum VolumeTrend: String, Equatable {
     }
 }
 
+// MARK: - RSI Data
+struct RSIData: Equatable {
+    let value: Double // 0-100
+    let period: Int   // typically 14
+
+    var zone: RSIZone {
+        switch value {
+        case 0..<30: return .oversold
+        case 30..<45: return .weak
+        case 45..<55: return .neutral
+        case 55..<70: return .strong
+        default: return .overbought
+        }
+    }
+
+    var displayValue: String {
+        String(format: "%.1f", value)
+    }
+}
+
+enum RSIZone: String {
+    case oversold = "Oversold"
+    case weak = "Weak"
+    case neutral = "Neutral"
+    case strong = "Strong"
+    case overbought = "Overbought"
+
+    var color: Color {
+        switch self {
+        case .oversold: return AppColors.success
+        case .weak: return Color(hex: "84CC16")
+        case .neutral: return AppColors.warning
+        case .strong: return Color(hex: "F97316")
+        case .overbought: return AppColors.error
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .oversold: return "Potential buy signal"
+        case .weak: return "Momentum weakening"
+        case .neutral: return "No clear signal"
+        case .strong: return "Momentum building"
+        case .overbought: return "Potential sell signal"
+        }
+    }
+}
+
 // MARK: - Mock Technical Analysis Generator
 enum TechnicalAnalysisGenerator {
     /// Generates mock technical analysis for an asset based on its price change
@@ -392,6 +455,15 @@ enum TechnicalAnalysisGenerator {
             volumeTrend: changeStrength > 2 ? .increasing : .stable
         )
 
+        // Generate RSI based on price change
+        let rsiValue: Double
+        if isPositive {
+            rsiValue = 50 + (changeStrength * 4) // Higher RSI for positive change
+        } else {
+            rsiValue = 50 - (changeStrength * 4) // Lower RSI for negative change
+        }
+        let rsi = RSIData(value: min(100, max(0, rsiValue)), period: 14)
+
         return TechnicalAnalysis(
             assetId: asset.id,
             assetSymbol: asset.symbol,
@@ -400,6 +472,7 @@ enum TechnicalAnalysisGenerator {
             smaAnalysis: smaAnalysis,
             bollingerBands: bollingerBands,
             sentiment: sentiment,
+            rsi: rsi,
             timestamp: Date()
         )
     }

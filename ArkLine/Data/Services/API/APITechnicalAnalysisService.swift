@@ -125,6 +125,9 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             smaAnalysis: smaAnalysis
         )
 
+        // Create RSI data
+        let rsi = RSIData(value: rsiValue, period: 14)
+
         // Extract asset info from symbol
         let assetSymbol = symbol.split(separator: "/").first.map(String.init) ?? symbol
 
@@ -136,6 +139,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             smaAnalysis: smaAnalysis,
             bollingerBands: bollingerBands,
             sentiment: sentiment,
+            rsi: rsi,
             timestamp: Date()
         )
     }

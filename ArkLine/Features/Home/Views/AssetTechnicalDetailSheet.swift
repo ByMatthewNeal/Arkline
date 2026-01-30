@@ -61,6 +61,12 @@ struct AssetTechnicalDetailSheet: View {
                         // Hero: Technical Score - the main metric
                         PremiumScoreCard(score: analysis.technicalScore, trend: analysis.trend, colorScheme: colorScheme)
 
+                        // Market Outlook - Short term & Long term sentiment
+                        MarketOutlookCard(sentiment: analysis.sentiment, colorScheme: colorScheme)
+
+                        // RSI Indicator
+                        RSIIndicatorCard(rsi: analysis.rsi, colorScheme: colorScheme)
+
                         // Multi-timeframe trend summary (clean, minimal)
                         MultiTimeframeTrendCard(
                             trends: multiTimeframeTrends,
@@ -829,6 +835,196 @@ private struct TechnicalScoreCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+    }
+}
+
+// MARK: - RSI Indicator Card
+private struct RSIIndicatorCard: View {
+    let rsi: RSIData
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack {
+                Text("RSI (14)")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Spacer()
+
+                // Zone badge
+                Text(rsi.zone.rawValue)
+                    .font(.caption.bold())
+                    .foregroundColor(rsi.zone.color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(rsi.zone.color.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+
+            // RSI gauge
+            VStack(spacing: 8) {
+                // Value display
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(rsi.displayValue)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(rsi.zone.color)
+
+                    Text("/ 100")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                // Visual gauge
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        // Background with zones
+                        HStack(spacing: 0) {
+                            // Oversold zone (0-30)
+                            Rectangle()
+                                .fill(AppColors.success.opacity(0.2))
+                                .frame(width: geo.size.width * 0.3)
+
+                            // Neutral zone (30-70)
+                            Rectangle()
+                                .fill(AppColors.warning.opacity(0.15))
+                                .frame(width: geo.size.width * 0.4)
+
+                            // Overbought zone (70-100)
+                            Rectangle()
+                                .fill(AppColors.error.opacity(0.2))
+                                .frame(width: geo.size.width * 0.3)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+
+                        // RSI position indicator
+                        let positionX = geo.size.width * (rsi.value / 100)
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 16, height: 16)
+                            .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+                            .overlay(
+                                Circle()
+                                    .fill(rsi.zone.color)
+                                    .frame(width: 10, height: 10)
+                            )
+                            .offset(x: positionX - 8)
+                    }
+                }
+                .frame(height: 20)
+
+                // Zone labels
+                HStack {
+                    Text("30")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                        .frame(width: 30, alignment: .leading)
+                        .offset(x: 20)
+
+                    Spacer()
+
+                    Text("70")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                        .frame(width: 30, alignment: .trailing)
+                        .offset(x: -20)
+                }
+            }
+
+            // Signal description
+            Text(rsi.zone.description)
+                .font(.caption)
+                .foregroundColor(rsi.zone.color)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+// MARK: - Market Outlook Card (Short/Long Term)
+private struct MarketOutlookCard: View {
+    let sentiment: MarketSentimentAnalysis
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            Text("Market Outlook")
+                .font(.subheadline.bold())
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            HStack(spacing: 0) {
+                // Short Term
+                OutlookIndicator(
+                    label: "Short Term",
+                    sentiment: sentiment.shortTerm,
+                    colorScheme: colorScheme
+                )
+
+                // Divider
+                Rectangle()
+                    .fill(AppColors.divider(colorScheme))
+                    .frame(width: 1)
+                    .padding(.vertical, 8)
+
+                // Long Term
+                OutlookIndicator(
+                    label: "Long Term",
+                    sentiment: sentiment.longTerm,
+                    colorScheme: colorScheme
+                )
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
+private struct OutlookIndicator: View {
+    let label: String
+    let sentiment: AssetSentiment
+    let colorScheme: ColorScheme
+
+    private var sentimentLabel: String {
+        switch sentiment {
+        case .stronglyBullish: return "Very Bullish"
+        case .bullish: return "Bullish"
+        case .neutral: return "Neutral"
+        case .bearish: return "Bearish"
+        case .stronglyBearish: return "Very Bearish"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(sentiment.color.opacity(0.12))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: sentiment.icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(sentiment.color)
+            }
+
+            // Labels
+            VStack(spacing: 2) {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Text(sentimentLabel)
+                    .font(.caption.bold())
+                    .foregroundColor(sentiment.color)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
