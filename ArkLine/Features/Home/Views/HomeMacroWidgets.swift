@@ -81,17 +81,19 @@ struct DXYWidget: View {
     }
 
     private var signalColor: Color {
-        guard let change = dxyData?.changePercent else { return .secondary }
-        if change > 0.3 { return AppColors.error }
-        if change < -0.3 { return AppColors.success }
-        return AppColors.warning
+        guard let dxy = dxyData?.value else { return .secondary }
+        if dxy < 90 { return AppColors.success }      // Green - Weak dollar
+        if dxy < 100 { return Color(hex: "3B82F6") }  // Blue - Normal range
+        if dxy < 105 { return AppColors.warning }     // Orange - Strong dollar
+        return AppColors.error                        // Red - Very strong
     }
 
     private var trendDescription: String {
-        guard let change = dxyData?.changePercent else { return "--" }
-        if change < -0.5 { return "Weakening" }
-        if change > 0.5 { return "Strengthening" }
-        return "Stable"
+        guard let dxy = dxyData?.value else { return "--" }
+        if dxy < 90 { return "Weak" }
+        if dxy < 100 { return "Normal" }
+        if dxy < 105 { return "Strong" }
+        return "Very Strong"
     }
 
     var body: some View {
