@@ -1124,7 +1124,7 @@ private struct DualScoreCard: View {
     let opportunityScore: Int
     let colorScheme: ColorScheme
     @State private var showTrendInfo = false
-    @State private var showOpportunityInfo = false
+    @State private var showValuationInfo = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1141,7 +1141,7 @@ private struct DualScoreCard: View {
                 Spacer()
 
                 Button {
-                    showOpportunityInfo = true
+                    showValuationInfo = true
                 } label: {
                     Image(systemName: "info.circle")
                         .font(.system(size: 14))
@@ -1167,12 +1167,12 @@ private struct DualScoreCard: View {
                     .frame(width: 1)
                     .padding(.vertical, 12)
 
-                // Opportunity Score
+                // Valuation Score
                 ScoreGauge(
                     score: opportunityScore,
-                    label: "Opportunity",
-                    subtitle: opportunityLabel,
-                    color: opportunityColor,
+                    label: "Valuation",
+                    subtitle: valuationLabel,
+                    color: valuationColor,
                     colorScheme: colorScheme
                 )
             }
@@ -1188,10 +1188,10 @@ private struct DualScoreCard: View {
         } message: {
             Text("Measures price direction based on trend strength and position relative to key moving averages (21, 50, 200). Higher scores indicate upward momentum.")
         }
-        .alert("Opportunity Score", isPresented: $showOpportunityInfo) {
+        .alert("Valuation", isPresented: $showValuationInfo) {
             Button("Got it", role: .cancel) { }
         } message: {
-            Text("Identifies potential entry points using RSI and Bollinger Bands. Higher scores suggest the asset may be oversold, presenting a buying opportunity.")
+            Text("Shows if price is stretched using RSI and Bollinger Bands. Oversold may indicate a bounce, but consider trend direction before entering.")
         }
     }
 
@@ -1215,7 +1215,7 @@ private struct DualScoreCard: View {
         }
     }
 
-    private var opportunityColor: Color {
+    private var valuationColor: Color {
         switch opportunityScore {
         case 0..<25: return AppColors.error
         case 25..<40: return Color(hex: "F97316")
@@ -1225,13 +1225,13 @@ private struct DualScoreCard: View {
         }
     }
 
-    private var opportunityLabel: String {
+    private var valuationLabel: String {
         switch opportunityScore {
         case 0..<25: return "Overbought"
-        case 25..<40: return "Risky Entry"
+        case 25..<40: return "Extended"
         case 40..<60: return "Neutral"
-        case 60..<75: return "Good Entry"
-        default: return "Great Entry"
+        case 60..<75: return "Oversold"
+        default: return "Deeply Oversold"
         }
     }
 }
