@@ -87,7 +87,7 @@ struct NotificationsSheet: View {
                             .padding(.horizontal, 4)
 
                         ForEach(unreadNotifications) { notification in
-                            NotificationRow(notification: notification)
+                            AppNotificationRow(notification: notification)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -104,7 +104,7 @@ struct NotificationsSheet: View {
                             .padding(.horizontal, 4)
 
                         ForEach(readNotifications) { notification in
-                            NotificationRow(notification: notification)
+                            AppNotificationRow(notification: notification)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -135,7 +135,7 @@ struct AppNotification: Identifiable {
 }
 
 // MARK: - Notification Row
-struct NotificationRow: View {
+struct AppNotificationRow: View {
     let notification: AppNotification
     @Environment(\.colorScheme) var colorScheme
 

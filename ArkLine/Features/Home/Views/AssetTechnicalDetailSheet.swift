@@ -10,7 +10,6 @@ struct AssetTechnicalDetailSheet: View {
     @State private var technicalAnalysis: TechnicalAnalysis?
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var selectedTimeframe: AnalysisTimeframe = .daily
 
     // Multi-timeframe trend data
     @State private var multiTimeframeTrends: [AnalysisTimeframe: TrendAnalysis] = [:]
@@ -28,9 +27,6 @@ struct AssetTechnicalDetailSheet: View {
                 VStack(spacing: ArkSpacing.xl) {
                     // Asset header
                     AssetHeaderSection(asset: asset, colorScheme: colorScheme)
-
-                    // Timeframe picker
-                    TimeframePicker(selectedTimeframe: $selectedTimeframe, colorScheme: colorScheme)
 
                     if isLoading {
                         // Loading state
@@ -58,8 +54,8 @@ struct AssetTechnicalDetailSheet: View {
                         }
                         .padding(.top, 40)
                     } else if let analysis = technicalAnalysis {
-                        // Hero: Technical Score - the main metric
-                        PremiumScoreCard(score: analysis.technicalScore, trend: analysis.trend, colorScheme: colorScheme)
+                        // Hero: Dual Scores - Trend direction + Entry opportunity
+                        DualScoreCard(trendScore: analysis.trendScore, opportunityScore: analysis.opportunityScore, colorScheme: colorScheme)
 
                         // Market Outlook - Short term & Long term sentiment
                         MarketOutlookCard(sentiment: analysis.sentiment, colorScheme: colorScheme)
@@ -106,11 +102,6 @@ struct AssetTechnicalDetailSheet: View {
                 await fetchTechnicalAnalysis()
                 await fetchMultiTimeframeTrends()
             }
-            .onChange(of: selectedTimeframe) { _, _ in
-                Task {
-                    await fetchTechnicalAnalysis()
-                }
-            }
         }
     }
 
@@ -127,7 +118,7 @@ struct AssetTechnicalDetailSheet: View {
             let analysis = try await technicalAnalysisService.fetchTechnicalAnalysis(
                 symbol: symbol,
                 exchange: exchange,
-                interval: selectedTimeframe
+                interval: .daily
             )
 
             await MainActor.run {
@@ -261,15 +252,15 @@ private struct TimeframeTrendCell: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
-                // Strength indicator
-                HStack(spacing: 2) {
+                // Strength indicator (signal bars)
+                HStack(alignment: .bottom, spacing: 3) {
                     ForEach(0..<3) { index in
-                        Rectangle()
+                        RoundedRectangle(cornerRadius: 1.5)
                             .fill(index < trend.strength.level ? trend.direction.color : trend.direction.color.opacity(0.2))
-                            .frame(width: 8, height: 4)
-                            .cornerRadius(2)
+                            .frame(width: 4, height: CGFloat(6 + (index * 4)))
                     }
                 }
+                .frame(height: 14)
             } else {
                 // No data state
                 ZStack {
@@ -1028,7 +1019,136 @@ private struct OutlookIndicator: View {
     }
 }
 
-// MARK: - Premium Score Card (Hero)
+// MARK: - Dual Score Card (Trend + Opportunity)
+private struct DualScoreCard: View {
+    let trendScore: Int
+    let opportunityScore: Int
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        HStack(spacing: ArkSpacing.md) {
+            // Trend Score
+            ScoreGauge(
+                score: trendScore,
+                label: "Trend",
+                subtitle: trendLabel,
+                color: trendColor,
+                colorScheme: colorScheme
+            )
+
+            // Divider
+            Rectangle()
+                .fill(AppColors.divider(colorScheme))
+                .frame(width: 1)
+                .padding(.vertical, 12)
+
+            // Opportunity Score
+            ScoreGauge(
+                score: opportunityScore,
+                label: "Opportunity",
+                subtitle: opportunityLabel,
+                color: opportunityColor,
+                colorScheme: colorScheme
+            )
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+
+    private var trendColor: Color {
+        switch trendScore {
+        case 0..<25: return AppColors.error
+        case 25..<40: return Color(hex: "F97316")
+        case 40..<60: return AppColors.warning
+        case 60..<75: return Color(hex: "84CC16")
+        default: return AppColors.success
+        }
+    }
+
+    private var trendLabel: String {
+        switch trendScore {
+        case 0..<25: return "Strong Down"
+        case 25..<40: return "Down"
+        case 40..<60: return "Sideways"
+        case 60..<75: return "Up"
+        default: return "Strong Up"
+        }
+    }
+
+    private var opportunityColor: Color {
+        switch opportunityScore {
+        case 0..<25: return AppColors.error
+        case 25..<40: return Color(hex: "F97316")
+        case 40..<60: return AppColors.warning
+        case 60..<75: return Color(hex: "84CC16")
+        default: return AppColors.success
+        }
+    }
+
+    private var opportunityLabel: String {
+        switch opportunityScore {
+        case 0..<25: return "Overbought"
+        case 25..<40: return "Risky Entry"
+        case 40..<60: return "Neutral"
+        case 60..<75: return "Good Entry"
+        default: return "Great Entry"
+        }
+    }
+}
+
+private struct ScoreGauge: View {
+    let score: Int
+    let label: String
+    let subtitle: String
+    let color: Color
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Gauge
+            ZStack {
+                Circle()
+                    .stroke(
+                        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06),
+                        lineWidth: 6
+                    )
+                    .frame(width: 70, height: 70)
+
+                Circle()
+                    .trim(from: 0, to: CGFloat(score) / 100)
+                    .stroke(
+                        color,
+                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                    )
+                    .frame(width: 70, height: 70)
+                    .rotationEffect(.degrees(-90))
+
+                Text("\(score)")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(color)
+            }
+
+            // Labels
+            VStack(spacing: 2) {
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+
+                Text(subtitle)
+                    .font(.caption.bold())
+                    .foregroundColor(color)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// Legacy single score card (keeping for reference)
 private struct PremiumScoreCard: View {
     let score: Int
     let trend: TrendAnalysis

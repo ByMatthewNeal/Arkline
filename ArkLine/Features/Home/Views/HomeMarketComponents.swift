@@ -26,6 +26,22 @@ struct GlassFearGreedCard: View {
         }
     }
 
+    /// Color based on fear/greed level
+    private var sentimentColor: Color {
+        switch index.value {
+        case 0..<25:
+            return Color(hex: "DC2626") // Extreme Fear - Deep Red
+        case 25..<45:
+            return Color(hex: "F97316") // Fear - Orange
+        case 45..<55:
+            return Color(hex: "EAB308") // Neutral - Yellow
+        case 55..<75:
+            return Color(hex: "84CC16") // Greed - Light Green
+        default:
+            return Color(hex: "22C55E") // Extreme Greed - Green
+        }
+    }
+
     var body: some View {
         VStack(spacing: size == .compact ? 10 : 16) {
             HStack {
@@ -35,13 +51,13 @@ struct GlassFearGreedCard: View {
 
                 Spacer()
 
+                // Sentiment badge with color
                 Text(index.level.rawValue)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(textPrimary.opacity(0.6))
+                    .font(.caption.bold())
+                    .foregroundColor(sentimentColor)
             }
 
-            // Gauge - Simplified monochromatic
+            // Gauge with sentiment color
             ZStack {
                 // Background arc
                 Circle()
@@ -55,25 +71,21 @@ struct GlassFearGreedCard: View {
                     .frame(width: gaugeSize, height: gaugeSize)
                     .rotationEffect(.degrees(0))
 
-                // Value arc - simple blue gradient
+                // Value arc with sentiment color
                 Circle()
                     .trim(from: 0.25, to: 0.25 + (0.5 * Double(index.value) / 100))
                     .stroke(
-                        LinearGradient(
-                            colors: [AppColors.accent.opacity(0.6), AppColors.accent],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
+                        sentimentColor,
                         style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
                     )
                     .frame(width: gaugeSize, height: gaugeSize)
                     .rotationEffect(.degrees(0))
 
-                // Center value
+                // Center value with sentiment color
                 VStack(spacing: size == .compact ? 2 : 4) {
                     Text("\(index.value)")
                         .font(.system(size: size == .compact ? 28 : (size == .expanded ? 56 : 48), weight: .bold, design: .rounded))
-                        .foregroundColor(textPrimary)
+                        .foregroundColor(sentimentColor)
 
                     Text("/ 100")
                         .font(size == .compact ? .system(size: 10) : .caption)

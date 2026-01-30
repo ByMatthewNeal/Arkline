@@ -14,45 +14,63 @@ struct TechnicalAnalysis: Equatable {
     let rsi: RSIData
     let timestamp: Date
 
-    /// Overall technical score (0-100)
-    var technicalScore: Int {
+    /// Trend Score (0-100) - measures price direction and momentum
+    /// Higher = more bullish trend, Lower = more bearish trend
+    var trendScore: Int {
         var score = 50
 
-        // Trend contribution (+/- 15)
+        // Trend direction is the primary factor (+/- 30)
         switch trend.direction {
-        case .strongUptrend: score += 15
-        case .uptrend: score += 8
+        case .strongUptrend: score += 30
+        case .uptrend: score += 15
         case .sideways: score += 0
-        case .downtrend: score -= 8
-        case .strongDowntrend: score -= 15
+        case .downtrend: score -= 15
+        case .strongDowntrend: score -= 30
         }
 
-        // SMA contribution (+/- 20)
-        if smaAnalysis.above21SMA { score += 5 }
+        // SMA position confirms trend (+/- 20)
+        if smaAnalysis.above21SMA { score += 7 }
         if smaAnalysis.above50SMA { score += 7 }
-        if smaAnalysis.above200SMA { score += 8 }
+        if smaAnalysis.above200SMA { score += 6 }
 
-        // Bollinger contribution (+/- 10)
-        switch bollingerBands.daily.position {
-        case .aboveUpper: score -= 5 // Overbought
-        case .nearUpper: score += 0
-        case .middle: score += 5
-        case .nearLower: score += 8
-        case .belowLower: score += 10 // Oversold (potential buy)
-        }
+        // Subtract if below MAs
+        if !smaAnalysis.above21SMA { score -= 7 }
+        if !smaAnalysis.above50SMA { score -= 7 }
+        if !smaAnalysis.above200SMA { score -= 6 }
 
-        // RSI contribution (+/- 10)
+        return max(0, min(100, score))
+    }
+
+    /// Opportunity Score (0-100) - measures if it's a good entry point
+    /// Higher = better buying opportunity (oversold), Lower = overbought/risky entry
+    var opportunityScore: Int {
+        var score = 50
+
+        // RSI is primary factor (+/- 30)
         switch rsi.value {
-        case 0..<30:
-            score += 10  // Oversold - potential buy
+        case 0..<20:
+            score += 30  // Extremely oversold - great opportunity
+        case 20..<30:
+            score += 20  // Oversold - good opportunity
         case 30..<40:
-            score += 5   // Approaching oversold
+            score += 10  // Approaching oversold
         case 40..<60:
             score += 0   // Neutral
         case 60..<70:
-            score -= 5   // Approaching overbought
+            score -= 10  // Approaching overbought
+        case 70..<80:
+            score -= 20  // Overbought - risky entry
         default:
-            score -= 10  // Overbought - potential sell
+            score -= 30  // Extremely overbought - avoid
+        }
+
+        // Bollinger position confirms opportunity (+/- 20)
+        switch bollingerBands.daily.position {
+        case .belowLower: score += 20  // Oversold - opportunity
+        case .nearLower: score += 10
+        case .middle: score += 0
+        case .nearUpper: score -= 10
+        case .aboveUpper: score -= 20  // Overbought - risky
         }
 
         return max(0, min(100, score))
