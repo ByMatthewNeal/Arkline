@@ -19,24 +19,20 @@ struct TechnicalAnalysis: Equatable {
     var trendScore: Int {
         var score = 50
 
-        // Trend direction is the primary factor (+/- 30)
+        // Trend direction is the primary factor (+/- 25)
         switch trend.direction {
-        case .strongUptrend: score += 30
-        case .uptrend: score += 15
+        case .strongUptrend: score += 25
+        case .uptrend: score += 12
         case .sideways: score += 0
-        case .downtrend: score -= 15
-        case .strongDowntrend: score -= 30
+        case .downtrend: score -= 12
+        case .strongDowntrend: score -= 25
         }
 
-        // SMA position confirms trend (+/- 20)
-        if smaAnalysis.above21SMA { score += 7 }
-        if smaAnalysis.above50SMA { score += 7 }
-        if smaAnalysis.above200SMA { score += 6 }
-
-        // Subtract if below MAs
-        if !smaAnalysis.above21SMA { score -= 7 }
-        if !smaAnalysis.above50SMA { score -= 7 }
-        if !smaAnalysis.above200SMA { score -= 6 }
+        // SMA position confirms trend (+/- 15)
+        // Only add/subtract based on position (not both)
+        if smaAnalysis.above21SMA { score += 5 } else { score -= 5 }
+        if smaAnalysis.above50SMA { score += 5 } else { score -= 5 }
+        if smaAnalysis.above200SMA { score += 5 } else { score -= 5 }
 
         return max(0, min(100, score))
     }
