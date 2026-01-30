@@ -408,7 +408,7 @@ struct MultiCoinRiskSection: View {
                     .font(.system(size: 14))
                     .foregroundColor(AppColors.accent)
 
-                Text("Asset Risk Levels")
+                Text("Regression Risk")
                     .font(ArkFonts.subheadline)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 

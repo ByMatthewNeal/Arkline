@@ -703,7 +703,7 @@ struct RiskLevelChartView: View {
     // MARK: - Latest Value Section
     private var latestValueSection: some View {
         VStack(spacing: ArkSpacing.md) {
-            Text("Current \(selectedCoin.rawValue) Risk")
+            Text("Multi-Factor \(selectedCoin.rawValue) Risk")
                 .font(.subheadline)
                 .foregroundColor(textSecondary)
 
