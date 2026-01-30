@@ -385,17 +385,22 @@ struct RiskLevelChartView: View {
         AppColors.textSecondary
     }
 
-    // Get current risk level based on enhanced history or legacy data
+    // Get current risk level - prioritize live-calculated multi-factor risk
     private var currentRiskLevel: ITCRiskLevel? {
-        // First try enhanced history (most accurate)
-        if let latest = enhancedRiskHistory.last {
-            return ITCRiskLevel(from: latest)
+        // First try multi-factor risk (live calculation with today's price)
+        if let mfRisk = multiFactorRisk {
+            return ITCRiskLevel(from: mfRisk.toRiskHistoryPoint())
         }
-        // Fall back to legacy data (BTC, ETH only - SOL has no legacy fallback)
+        // Fall back to viewModel's live-calculated risk levels
         switch selectedCoin {
         case .btc: return viewModel.btcRiskLevel
         case .eth: return viewModel.ethRiskLevel
-        case .sol: return nil // SOL uses enhanced history only, no legacy fallback
+        case .sol:
+            // SOL falls back to enhanced history if multi-factor not loaded
+            if let latest = enhancedRiskHistory.last {
+                return ITCRiskLevel(from: latest)
+            }
+            return nil
         }
     }
 
