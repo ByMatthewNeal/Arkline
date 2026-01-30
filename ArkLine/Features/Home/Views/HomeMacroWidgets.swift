@@ -342,6 +342,15 @@ struct DXYDetailView: View {
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
+    /// Color based on absolute DXY level (matches Historical Ranges)
+    private var levelColor: Color {
+        guard let dxy = dxyData?.value else { return .gray }
+        if dxy < 90 { return .green }           // Weak dollar
+        if dxy < 100 { return Color(hex: "3B82F6") }  // Blue - Normal range
+        if dxy < 105 { return .orange }         // Strong dollar
+        return .red                             // Very strong
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -358,10 +367,10 @@ struct DXYDetailView: View {
                             }
                             .font(.title3)
                             .fontWeight(.semibold)
-                            .foregroundColor(change >= 0 ? .red : .green)
+                            .foregroundColor(levelColor)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background((change >= 0 ? Color.red : Color.green).opacity(0.15))
+                            .background(levelColor.opacity(0.15))
                             .cornerRadius(12)
                         }
                     }
