@@ -208,7 +208,7 @@ struct ReorderableWidgetStack: View {
             // Always show - displays loading state if empty
             return true
         case .riskScore:
-            return viewModel.compositeRiskScore != nil
+            return viewModel.arkLineRiskScore != nil
         case .fearGreedIndex:
             return viewModel.fearGreedIndex != nil
         case .marketMovers:
@@ -253,17 +253,9 @@ struct ReorderableWidgetStack: View {
             )
 
         case .riskScore:
-            if let score = viewModel.compositeRiskScore {
-                RiskScoreCard(
-                    score: score,
-                    riskScore: viewModel.arkLineRiskScore,
-                    itcRiskLevel: viewModel.selectedRiskLevel,
-                    size: appState.widgetSize(.riskScore),
-                    selectedCoin: viewModel.selectedRiskCoin,
-                    onCoinChanged: { coin in
-                        viewModel.selectRiskCoin(coin)
-                    }
-                )
+            // Show ArkLine Score widget (same as Market Overview)
+            if let arkLineScore = viewModel.arkLineRiskScore {
+                HomeArkLineScoreWidget(score: arkLineScore, size: appState.widgetSize(.riskScore))
             }
 
         case .fearGreedIndex:

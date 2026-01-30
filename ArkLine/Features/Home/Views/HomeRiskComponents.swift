@@ -471,6 +471,103 @@ struct RiskIndicatorPlaceholderRow: View {
     }
 }
 
+// MARK: - Home ArkLine Score Widget
+/// Widget for Home screen that displays the ArkLine composite score
+/// Same appearance as Market Overview's ArkLineScoreCard but with size support
+struct HomeArkLineScoreWidget: View {
+    let score: ArkLineRiskScore
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingDetail = false
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var progress: Double {
+        Double(score.score) / 100.0
+    }
+
+    private var gaugeSize: CGFloat {
+        switch size {
+        case .compact: return 40
+        case .standard: return 50
+        case .expanded: return 60
+        }
+    }
+
+    private var fontSize: CGFloat {
+        switch size {
+        case .compact: return 24
+        case .standard: return 28
+        case .expanded: return 32
+        }
+    }
+
+    var body: some View {
+        Button(action: { showingDetail = true }) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("ArkLine Score")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Spacer()
+
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                }
+
+                Spacer()
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(score.score)")
+                            .font(.system(size: fontSize, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        Text(score.tier.rawValue)
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    // Circular Progress Gauge
+                    ZStack {
+                        Circle()
+                            .stroke(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.1)
+                                    : Color.black.opacity(0.08),
+                                lineWidth: 6
+                            )
+                            .frame(width: gaugeSize, height: gaugeSize)
+
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .frame(width: gaugeSize, height: gaugeSize)
+                            .rotationEffect(.degrees(-90))
+                    }
+                }
+            }
+            .padding(size == .compact ? 12 : 16)
+            .frame(maxWidth: .infinity, minHeight: size == .compact ? 100 : 120)
+            .background(
+                RoundedRectangle(cornerRadius: size == .compact ? 14 : 16)
+                    .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingDetail) {
+            RiskScoreDetailView(riskScore: score, score: score.score)
+        }
+    }
+}
+
 // Safe array subscript
 private extension Array {
     subscript(safe index: Int) -> Element? {
