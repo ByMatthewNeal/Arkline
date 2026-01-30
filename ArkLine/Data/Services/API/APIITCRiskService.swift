@@ -16,6 +16,10 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
     private let cache: RiskDataCache
     private let factorFetcher: RiskFactorFetcher
 
+    // MARK: - Current Risk Cache (refreshes at 7am EST and 5pm EST)
+    private var currentRiskCache: [String: (risk: RiskHistoryPoint, calculatedAt: Date)] = [:]
+    private let cacheQueue = DispatchQueue(label: "com.arkline.riskCache")
+
     // MARK: - Initialization
     init(
         marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
@@ -92,15 +96,109 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
     }
 
     func calculateCurrentRisk(coin: String) async throws -> RiskHistoryPoint {
-        // For current risk, we need a reasonable amount of history to fit regression
-        // Use 365 days of data for accurate regression
-        let history = try await fetchRiskHistory(coin: coin, days: 365)
+        let coinKey = coin.uppercased()
 
-        guard let latest = history.last else {
+        // Check cache - only recalculate at 7am EST and 5pm EST
+        if let cached = cacheQueue.sync(execute: { currentRiskCache[coinKey] }) {
+            if !shouldRefreshRisk(lastCalculation: cached.calculatedAt) {
+                print("📦 Using cached risk for \(coin) (calculated at \(cached.calculatedAt))")
+                return cached.risk
+            }
+        }
+
+        print("🔄 Calculating fresh risk for \(coin)...")
+
+        // Get asset config
+        guard let config = AssetRiskConfig.forCoin(coin) else {
+            throw RiskCalculationError.unsupportedAsset(coin)
+        }
+
+        // Fetch historical data for regression fitting
+        let priceHistory = getEmbeddedPriceHistory(for: coin)
+
+        guard !priceHistory.isEmpty else {
+            throw RiskCalculationError.insufficientData(coin)
+        }
+
+        // Fetch current price from Binance for today's calculation
+        let currentPrice = try await fetchCurrentPriceFromBinance(coin: coin)
+
+        // Calculate risk for today using live price
+        guard let riskPoint = riskCalculator.calculateRisk(
+            price: currentPrice,
+            date: Date(),
+            config: config,
+            priceHistory: priceHistory
+        ) else {
             throw RiskCalculationError.noDataAvailable(coin)
         }
 
-        return latest
+        // Cache the result
+        cacheQueue.sync {
+            currentRiskCache[coinKey] = (risk: riskPoint, calculatedAt: Date())
+        }
+
+        return riskPoint
+    }
+
+    /// Check if risk should be refreshed based on 7am EST and 5pm EST schedule
+    private func shouldRefreshRisk(lastCalculation: Date) -> Bool {
+        let now = Date()
+
+        // Get EST timezone
+        guard let est = TimeZone(identifier: "America/New_York") else {
+            return true // Fallback: refresh if timezone unavailable
+        }
+
+        var calendar = Calendar.current
+        calendar.timeZone = est
+
+        // Get today's 7am and 5pm EST
+        let todayComponents = calendar.dateComponents([.year, .month, .day], from: now)
+
+        var sevenAMComponents = todayComponents
+        sevenAMComponents.hour = 7
+        sevenAMComponents.minute = 0
+        sevenAMComponents.second = 0
+
+        var fivePMComponents = todayComponents
+        fivePMComponents.hour = 17
+        fivePMComponents.minute = 0
+        fivePMComponents.second = 0
+
+        guard let todaySevenAM = calendar.date(from: sevenAMComponents),
+              let todayFivePM = calendar.date(from: fivePMComponents) else {
+            return true
+        }
+
+        // Find the most recent refresh time (7am or 5pm)
+        let lastRefreshTime: Date
+        if now >= todayFivePM {
+            lastRefreshTime = todayFivePM
+        } else if now >= todaySevenAM {
+            lastRefreshTime = todaySevenAM
+        } else {
+            // Before 7am today, use yesterday's 5pm
+            lastRefreshTime = calendar.date(byAdding: .day, value: -1, to: todayFivePM) ?? todayFivePM
+        }
+
+        // Refresh if last calculation was before the most recent refresh time
+        return lastCalculation < lastRefreshTime
+    }
+
+    /// Fetch current price from Binance (no rate limit)
+    private func fetchCurrentPriceFromBinance(coin: String) async throws -> Double {
+        let binanceSymbol = "\(coin.uppercased())USDT"
+        let endpoint = BinanceEndpoint.tickerPrice(symbol: binanceSymbol)
+        let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let priceString = json["price"] as? String,
+              let price = Double(priceString) else {
+            throw RiskCalculationError.networkError(AppError.invalidResponse)
+        }
+
+        return price
     }
 
     // MARK: - Multi-Factor Risk Methods
