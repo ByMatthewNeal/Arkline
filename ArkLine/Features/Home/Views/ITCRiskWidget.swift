@@ -353,6 +353,9 @@ typealias ITCCoin = RiskCoin
 
 // MARK: - Risk Level Chart View (Full Screen Detail)
 struct RiskLevelChartView: View {
+    // Initial coin to display (defaults to BTC)
+    var initialCoin: RiskCoin = .btc
+
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
@@ -360,6 +363,7 @@ struct RiskLevelChartView: View {
     @State private var selectedTimeRange: RiskTimeRange = .thirtyDays
     @State private var selectedCoin: RiskCoin = .btc
     @State private var showCoinPicker = false
+    @State private var hasInitialized = false
 
     // Interactive chart state
     @State private var selectedDate: Date?
@@ -525,6 +529,10 @@ struct RiskLevelChartView: View {
             }
             #endif
             .onAppear {
+                if !hasInitialized {
+                    selectedCoin = initialCoin
+                    hasInitialized = true
+                }
                 loadEnhancedHistory()
                 loadMultiFactorRisk()
             }

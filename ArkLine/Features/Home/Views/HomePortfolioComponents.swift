@@ -526,7 +526,7 @@ struct CompactRiskCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            RiskLevelChartView()
+            RiskLevelChartView(initialCoin: RiskCoin(rawValue: coinSymbol) ?? .btc)
         }
     }
 }
