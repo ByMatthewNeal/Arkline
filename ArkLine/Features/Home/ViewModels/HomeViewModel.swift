@@ -440,39 +440,64 @@ class HomeViewModel {
             }
         }
 
-        // Now fetch other data that might fail (network-dependent)
-        do {
-            async let fgTask = sentimentService.fetchFearGreedIndex()
-            async let riskScoreTask = sentimentService.fetchArkLineRiskScore()
-            async let remindersTask = dcaService.fetchReminders(userId: userId)
-            async let newsTask = newsService.fetchNews(category: nil, page: 1, perPage: 5)
+        // Fetch other data independently so each can succeed/fail on its own
+        async let fgResult: FearGreedIndex? = {
+            do {
+                return try await sentimentService.fetchFearGreedIndex()
+            } catch {
+                print("⚠️ Fear & Greed fetch failed: \(error.localizedDescription)")
+                return nil
+            }
+        }()
 
-            let (fg, riskScore, reminders) = try await (fgTask, riskScoreTask, remindersTask)
-            let news = try await newsTask
+        async let riskScoreResult: ArkLineRiskScore? = {
+            do {
+                return try await sentimentService.fetchArkLineRiskScore()
+            } catch {
+                print("⚠️ ArkLine Risk Score fetch failed: \(error.localizedDescription)")
+                return nil
+            }
+        }()
 
-            await MainActor.run {
+        async let remindersResult: [DCAReminder] = {
+            do {
+                return try await dcaService.fetchReminders(userId: userId)
+            } catch {
+                print("⚠️ Reminders fetch failed: \(error.localizedDescription)")
+                return []
+            }
+        }()
+
+        async let newsResult: [NewsItem] = {
+            do {
+                return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
+            } catch {
+                print("⚠️ News fetch failed: \(error.localizedDescription)")
+                return []
+            }
+        }()
+
+        let (fg, riskScore, reminders, news) = await (fgResult, riskScoreResult, remindersResult, newsResult)
+
+        await MainActor.run {
+            if let fg = fg {
                 self.fearGreedIndex = fg
-                self.activeReminders = reminders.filter { $0.isActive }
-                self.todayReminders = reminders.filter { $0.isDueToday }
+            }
+            self.activeReminders = reminders.filter { $0.isActive }
+            self.todayReminders = reminders.filter { $0.isDueToday }
+            if let riskScore = riskScore {
                 self.compositeRiskScore = riskScore.score
                 self.arkLineRiskScore = riskScore
-                self.newsItems = news
-
-                self.isLoading = false
-
-                // Fetch Rainbow Chart data (needs BTC price) in background
-                Task {
-                    if self.btcPrice > 0 {
-                        self.rainbowChartData = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
-                    }
-                }
             }
-        } catch {
-            print("🔴 HomeViewModel other data fetch failed: \(error)")
-            logError("HomeViewModel other data fetch failed: \(error)", category: .data)
-            await MainActor.run {
-                // Don't overwrite price data on error - prices are already set
-                self.isLoading = false
+            self.newsItems = news
+
+            self.isLoading = false
+
+            // Fetch Rainbow Chart data (needs BTC price) in background
+            Task {
+                if self.btcPrice > 0 {
+                    self.rainbowChartData = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
+                }
             }
         }
     }
