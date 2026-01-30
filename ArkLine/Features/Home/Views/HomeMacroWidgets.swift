@@ -13,9 +13,11 @@ struct VIXWidget: View {
 
     private var signalColor: Color {
         guard let vix = vixData?.value else { return .secondary }
-        if vix < 18 { return AppColors.success }
-        if vix > 25 { return AppColors.error }
-        return AppColors.warning
+        if vix < 15 { return AppColors.success }      // Green - Complacent
+        if vix < 20 { return Color(hex: "3B82F6") }   // Blue - Normal
+        if vix < 25 { return AppColors.warning }      // Orange - Elevated
+        if vix < 30 { return AppColors.error }        // Red - High fear
+        return Color(hex: "991B1B")                   // Maroon - Extreme
     }
 
     private var levelDescription: String {
@@ -300,9 +302,11 @@ The CBOE Volatility Index (VIX) measures the market's expectation of 30-day vola
 
     private var signalColor: Color {
         guard let vix = vixData?.value else { return .gray }
-        if vix < 18 { return .green }
-        if vix < 25 { return .orange }
-        return .red
+        if vix < 15 { return .green }                 // Complacent
+        if vix < 20 { return Color(hex: "3B82F6") }   // Blue - Normal
+        if vix < 25 { return .orange }                // Elevated
+        if vix < 30 { return .red }                   // High fear
+        return Color(hex: "991B1B")                   // Maroon - Extreme
     }
 }
 
