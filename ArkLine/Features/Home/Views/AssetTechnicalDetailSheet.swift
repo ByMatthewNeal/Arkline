@@ -106,6 +106,9 @@ struct AssetTechnicalDetailSheet: View {
                             colorScheme: colorScheme
                         )
 
+                        // Bull Market Support Bands
+                        BullMarketBandsCard(bands: analysis.bullMarketBands, colorScheme: colorScheme)
+
                         // Key Levels - simplified SMA with signal
                         KeyLevelsCard(sma: analysis.smaAnalysis, currentPrice: analysis.currentPrice, colorScheme: colorScheme)
 
@@ -1368,6 +1371,114 @@ private struct PremiumScoreCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+    }
+}
+
+// MARK: - Bull Market Support Bands Card
+private struct BullMarketBandsCard: View {
+    let bands: BullMarketSupportBands
+    let colorScheme: ColorScheme
+    @State private var showInfo = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack {
+                Text("Bull Market Bands")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
+
+                Spacer()
+
+                // Position badge
+                HStack(spacing: 4) {
+                    Image(systemName: bands.position.icon)
+                        .font(.caption2)
+                    Text(bands.position.rawValue)
+                        .font(.caption.bold())
+                }
+                .foregroundColor(bands.position.color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(bands.position.color.opacity(0.12))
+                .clipShape(Capsule())
+            }
+
+            // Band indicators
+            HStack(spacing: ArkSpacing.md) {
+                BandIndicator(
+                    label: "20W SMA",
+                    value: bands.sma20Week,
+                    isAbove: bands.aboveSMA,
+                    percentFrom: bands.percentFromSMA,
+                    colorScheme: colorScheme
+                )
+                BandIndicator(
+                    label: "21W EMA",
+                    value: bands.ema21Week,
+                    isAbove: bands.aboveEMA,
+                    percentFrom: bands.percentFromEMA,
+                    colorScheme: colorScheme
+                )
+            }
+
+            // Status description
+            Text(bands.position.description)
+                .font(.caption)
+                .foregroundColor(bands.position.color)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .alert("Bull Market Support Bands", isPresented: $showInfo) {
+            Button("Got it", role: .cancel) { }
+        } message: {
+            Text("The 20-week SMA and 21-week EMA act as support during bull markets. Price holding above these levels is bullish.")
+        }
+    }
+}
+
+private struct BandIndicator: View {
+    let label: String
+    let value: Double
+    let isAbove: Bool
+    let percentFrom: Double
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(isAbove ? AppColors.success.opacity(0.15) : AppColors.error.opacity(0.15))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: isAbove ? "arrow.up" : "arrow.down")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(isAbove ? AppColors.success : AppColors.error)
+            }
+
+            Text(label)
+                .font(.caption2.bold())
+                .foregroundColor(AppColors.textSecondary)
+
+            Text(value.asCryptoPrice)
+                .font(.caption2)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Text("\(percentFrom >= 0 ? "+" : "")\(String(format: "%.1f", percentFrom))%")
+                .font(.caption2)
+                .foregroundColor(isAbove ? AppColors.success : AppColors.error)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

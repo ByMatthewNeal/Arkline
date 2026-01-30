@@ -12,6 +12,7 @@ struct TechnicalAnalysis: Equatable {
     let bollingerBands: BollingerBandAnalysis
     let sentiment: MarketSentimentAnalysis
     let rsi: RSIData
+    let bullMarketBands: BullMarketSupportBands
     let timestamp: Date
 
     /// Trend Score (0-100) - measures price direction and momentum
@@ -19,20 +20,26 @@ struct TechnicalAnalysis: Equatable {
     var trendScore: Int {
         var score = 50
 
-        // Trend direction is the primary factor (+/- 25)
+        // Trend direction is the primary factor (+/- 20)
         switch trend.direction {
-        case .strongUptrend: score += 25
-        case .uptrend: score += 12
+        case .strongUptrend: score += 20
+        case .uptrend: score += 10
         case .sideways: score += 0
-        case .downtrend: score -= 12
-        case .strongDowntrend: score -= 25
+        case .downtrend: score -= 10
+        case .strongDowntrend: score -= 20
         }
 
-        // SMA position confirms trend (+/- 15)
-        // Only add/subtract based on position (not both)
-        if smaAnalysis.above21SMA { score += 5 } else { score -= 5 }
-        if smaAnalysis.above50SMA { score += 5 } else { score -= 5 }
-        if smaAnalysis.above200SMA { score += 5 } else { score -= 5 }
+        // SMA position confirms trend (+/- 12)
+        if smaAnalysis.above21SMA { score += 4 } else { score -= 4 }
+        if smaAnalysis.above50SMA { score += 4 } else { score -= 4 }
+        if smaAnalysis.above200SMA { score += 4 } else { score -= 4 }
+
+        // Bull Market Support Bands (+/- 8)
+        switch bullMarketBands.position {
+        case .aboveBoth: score += 8
+        case .inBand: score += 2
+        case .belowBoth: score -= 8
+        }
 
         return max(0, min(100, score))
     }
@@ -403,6 +410,67 @@ enum RSIZone: String {
     }
 }
 
+// MARK: - Bull Market Support Bands
+/// 20-week SMA and 21-week EMA used as support during bull markets
+struct BullMarketSupportBands: Equatable {
+    let sma20Week: Double   // 20-week SMA
+    let ema21Week: Double   // 21-week EMA
+    let currentPrice: Double
+
+    var aboveSMA: Bool { currentPrice > sma20Week }
+    var aboveEMA: Bool { currentPrice > ema21Week }
+
+    var position: BMSBPosition {
+        if aboveSMA && aboveEMA {
+            return .aboveBoth
+        } else if !aboveSMA && !aboveEMA {
+            return .belowBoth
+        } else {
+            return .inBand
+        }
+    }
+
+    var percentFromSMA: Double {
+        guard sma20Week != 0 else { return 0 }
+        return ((currentPrice - sma20Week) / sma20Week) * 100
+    }
+
+    var percentFromEMA: Double {
+        guard ema21Week != 0 else { return 0 }
+        return ((currentPrice - ema21Week) / ema21Week) * 100
+    }
+}
+
+enum BMSBPosition: String {
+    case aboveBoth = "Above Support"
+    case inBand = "Testing Support"
+    case belowBoth = "Below Support"
+
+    var color: Color {
+        switch self {
+        case .aboveBoth: return AppColors.success
+        case .inBand: return AppColors.warning
+        case .belowBoth: return AppColors.error
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .aboveBoth: return "checkmark.circle.fill"
+        case .inBand: return "minus.circle.fill"
+        case .belowBoth: return "xmark.circle.fill"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .aboveBoth: return "Healthy bull market structure"
+        case .inBand: return "Testing key support levels"
+        case .belowBoth: return "Bull market support lost"
+        }
+    }
+}
+
 // MARK: - Mock Technical Analysis Generator
 enum TechnicalAnalysisGenerator {
     /// Generates mock technical analysis for an asset based on its price change
@@ -478,6 +546,15 @@ enum TechnicalAnalysisGenerator {
         }
         let rsi = RSIData(value: min(100, max(0, rsiValue)), period: 14)
 
+        // Generate Bull Market Support Bands
+        let sma20Week = asset.currentPrice * (isPositive ? 0.90 : 1.10)
+        let ema21Week = asset.currentPrice * (isPositive ? 0.88 : 1.12)
+        let bullMarketBands = BullMarketSupportBands(
+            sma20Week: sma20Week,
+            ema21Week: ema21Week,
+            currentPrice: asset.currentPrice
+        )
+
         return TechnicalAnalysis(
             assetId: asset.id,
             assetSymbol: asset.symbol,
@@ -487,6 +564,7 @@ enum TechnicalAnalysisGenerator {
             bollingerBands: bollingerBands,
             sentiment: sentiment,
             rsi: rsi,
+            bullMarketBands: bullMarketBands,
             timestamp: Date()
         )
     }

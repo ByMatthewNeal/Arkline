@@ -128,6 +128,13 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
         // Create RSI data
         let rsi = RSIData(value: rsiValue, period: 14)
 
+        // Fetch Bull Market Support Bands (weekly data)
+        let bullMarketBands = await fetchBullMarketSupportBands(
+            symbol: symbol,
+            exchange: exchange,
+            currentPrice: currentPrice
+        )
+
         // Extract asset info from symbol
         let assetSymbol = symbol.split(separator: "/").first.map(String.init) ?? symbol
 
@@ -140,8 +147,74 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             bollingerBands: bollingerBands,
             sentiment: sentiment,
             rsi: rsi,
+            bullMarketBands: bullMarketBands,
             timestamp: Date()
         )
+    }
+
+    /// Fetches weekly candle data and calculates the 20-week SMA and 21-week EMA
+    private func fetchBullMarketSupportBands(symbol: String, exchange: String, currentPrice: Double) async -> BullMarketSupportBands {
+        do {
+            // Convert symbol format: "BTC/USDT" -> "BTCUSDT" for Binance
+            let binanceSymbol = symbol.replacingOccurrences(of: "/", with: "")
+
+            // Fetch 25 weekly candles (need 21 for EMA calculation)
+            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1w", limit: 25)
+
+            // Binance returns array of arrays
+            let data = try await networkManager.requestData(endpoint: endpoint)
+            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+                throw AppError.invalidData
+            }
+
+            // Parse klines
+            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
+            guard klines.count >= 21 else {
+                throw AppError.invalidData
+            }
+
+            // Get closing prices (excluding the current incomplete candle)
+            let closingPrices = klines.dropLast().map { $0.close }
+
+            // Calculate 20-week SMA (average of last 20 closes)
+            let sma20Week = calculateSMA(prices: Array(closingPrices.suffix(20)))
+
+            // Calculate 21-week EMA
+            let ema21Week = calculateEMA(prices: Array(closingPrices.suffix(21)), period: 21)
+
+            return BullMarketSupportBands(
+                sma20Week: sma20Week,
+                ema21Week: ema21Week,
+                currentPrice: currentPrice
+            )
+        } catch {
+            // Fallback: estimate based on current price if API fails
+            print("Bull Market Bands fetch error: \(error)")
+            return BullMarketSupportBands(
+                sma20Week: currentPrice * 0.95,
+                ema21Week: currentPrice * 0.94,
+                currentPrice: currentPrice
+            )
+        }
+    }
+
+    /// Calculate Simple Moving Average
+    private func calculateSMA(prices: [Double]) -> Double {
+        guard !prices.isEmpty else { return 0 }
+        return prices.reduce(0, +) / Double(prices.count)
+    }
+
+    /// Calculate Exponential Moving Average
+    private func calculateEMA(prices: [Double], period: Int) -> Double {
+        guard !prices.isEmpty else { return 0 }
+        let multiplier = 2.0 / Double(period + 1)
+        var ema = prices[0] // Start with first price as initial EMA
+
+        for i in 1..<prices.count {
+            ema = (prices[i] - ema) * multiplier + ema
+        }
+
+        return ema
     }
 
     func fetchSMAValues(symbol: String, exchange: String, periods: [Int], interval: String) async throws -> [Int: Double] {

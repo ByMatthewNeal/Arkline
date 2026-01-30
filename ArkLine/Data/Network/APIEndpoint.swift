@@ -456,3 +456,63 @@ enum ArklineBackendEndpoint: APIEndpoint {
         }
     }
 }
+
+// MARK: - Binance Endpoints (Public API - no auth required)
+enum BinanceEndpoint: APIEndpoint {
+    case klines(symbol: String, interval: String, limit: Int)
+
+    var baseURL: String { "https://api.binance.com" }
+
+    var path: String {
+        switch self {
+        case .klines:
+            return "/api/v3/klines"
+        }
+    }
+
+    var method: HTTPMethod { .get }
+
+    var queryParameters: [String: String]? {
+        switch self {
+        case .klines(let symbol, let interval, let limit):
+            return [
+                "symbol": symbol,
+                "interval": interval,
+                "limit": String(limit)
+            ]
+        }
+    }
+}
+
+// MARK: - Binance Kline Data
+/// Binance kline/candlestick data - array of arrays
+/// [openTime, open, high, low, close, volume, closeTime, quoteVolume, trades, takerBuyBase, takerBuyQuote, ignore]
+struct BinanceKline {
+    let openTime: Int64
+    let open: Double
+    let high: Double
+    let low: Double
+    let close: Double
+    let volume: Double
+    let closeTime: Int64
+
+    init?(from array: [Any]) {
+        guard array.count >= 7,
+              let openTime = array[0] as? Int64 ?? (array[0] as? Int).map({ Int64($0) }),
+              let openStr = array[1] as? String, let open = Double(openStr),
+              let highStr = array[2] as? String, let high = Double(highStr),
+              let lowStr = array[3] as? String, let low = Double(lowStr),
+              let closeStr = array[4] as? String, let close = Double(closeStr),
+              let volumeStr = array[5] as? String, let volume = Double(volumeStr),
+              let closeTime = array[6] as? Int64 ?? (array[6] as? Int).map({ Int64($0) })
+        else { return nil }
+
+        self.openTime = openTime
+        self.open = open
+        self.high = high
+        self.low = low
+        self.close = close
+        self.volume = volume
+        self.closeTime = closeTime
+    }
+}
