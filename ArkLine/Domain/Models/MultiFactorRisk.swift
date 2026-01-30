@@ -1,11 +1,12 @@
 import Foundation
 
 // MARK: - Risk Factor Type
-/// Enum representing the 6 risk factors in the multi-factor model.
+/// Enum representing the 7 risk factors in the multi-factor model.
 enum RiskFactorType: String, CaseIterable, Codable {
     case logRegression = "Log Regression"
     case rsi = "RSI"
     case smaPosition = "SMA Position"
+    case bullMarketBands = "Bull Market Bands"
     case fundingRate = "Funding Rate"
     case fearGreed = "Fear & Greed"
     case macroRisk = "Macro Risk"
@@ -13,9 +14,10 @@ enum RiskFactorType: String, CaseIterable, Codable {
     /// Default weight for this factor in the composite calculation
     var defaultWeight: Double {
         switch self {
-        case .logRegression: return 0.40
-        case .rsi: return 0.15
-        case .smaPosition: return 0.15
+        case .logRegression: return 0.35
+        case .rsi: return 0.12
+        case .smaPosition: return 0.12
+        case .bullMarketBands: return 0.11
         case .fundingRate: return 0.10
         case .fearGreed: return 0.10
         case .macroRisk: return 0.10
@@ -31,6 +33,8 @@ enum RiskFactorType: String, CaseIterable, Codable {
             return "Relative Strength Index (14-period)"
         case .smaPosition:
             return "Price position relative to 200-day SMA"
+        case .bullMarketBands:
+            return "Position relative to 20W SMA & 21W EMA support"
         case .fundingRate:
             return "Perpetual futures funding rate sentiment"
         case .fearGreed:
@@ -46,6 +50,7 @@ enum RiskFactorType: String, CaseIterable, Codable {
         case .logRegression: return "chart.line.uptrend.xyaxis"
         case .rsi: return "waveform.path.ecg"
         case .smaPosition: return "chart.xyaxis.line"
+        case .bullMarketBands: return "arrow.up.arrow.down"
         case .fundingRate: return "percent"
         case .fearGreed: return "face.smiling"
         case .macroRisk: return "globe"
@@ -91,6 +96,8 @@ struct RiskFactor: Identifiable, Codable, Equatable {
             return String(format: "%.1f", raw)
         case .smaPosition:
             return raw > 0.5 ? "Below 200 SMA" : "Above 200 SMA"
+        case .bullMarketBands:
+            return String(format: "%+.1f%%", raw)
         case .fundingRate:
             return String(format: "%.4f%%", raw * 100)
         case .fearGreed:
@@ -120,15 +127,17 @@ struct RiskFactorWeights: Codable, Equatable {
     let logRegression: Double
     let rsi: Double
     let smaPosition: Double
+    let bullMarketBands: Double
     let fundingRate: Double
     let fearGreed: Double
     let macroRisk: Double
 
-    /// Default weights from the plan
+    /// Default weights (7 factors)
     static let `default` = RiskFactorWeights(
-        logRegression: 0.40,
-        rsi: 0.15,
-        smaPosition: 0.15,
+        logRegression: 0.35,
+        rsi: 0.12,
+        smaPosition: 0.12,
+        bullMarketBands: 0.11,
         fundingRate: 0.10,
         fearGreed: 0.10,
         macroRisk: 0.10
@@ -136,9 +145,10 @@ struct RiskFactorWeights: Codable, Equatable {
 
     /// Conservative weights (more emphasis on regression)
     static let conservative = RiskFactorWeights(
-        logRegression: 0.60,
+        logRegression: 0.50,
         rsi: 0.10,
         smaPosition: 0.10,
+        bullMarketBands: 0.10,
         fundingRate: 0.08,
         fearGreed: 0.06,
         macroRisk: 0.06
@@ -146,9 +156,10 @@ struct RiskFactorWeights: Codable, Equatable {
 
     /// Sentiment-focused weights
     static let sentimentFocused = RiskFactorWeights(
-        logRegression: 0.30,
-        rsi: 0.15,
-        smaPosition: 0.15,
+        logRegression: 0.25,
+        rsi: 0.12,
+        smaPosition: 0.12,
+        bullMarketBands: 0.11,
         fundingRate: 0.15,
         fearGreed: 0.15,
         macroRisk: 0.10
@@ -160,6 +171,7 @@ struct RiskFactorWeights: Codable, Equatable {
         case .logRegression: return logRegression
         case .rsi: return rsi
         case .smaPosition: return smaPosition
+        case .bullMarketBands: return bullMarketBands
         case .fundingRate: return fundingRate
         case .fearGreed: return fearGreed
         case .macroRisk: return macroRisk
@@ -168,7 +180,7 @@ struct RiskFactorWeights: Codable, Equatable {
 
     /// Total of all weights (should equal 1.0)
     var total: Double {
-        logRegression + rsi + smaPosition + fundingRate + fearGreed + macroRisk
+        logRegression + rsi + smaPosition + bullMarketBands + fundingRate + fearGreed + macroRisk
     }
 
     /// Check if weights are valid (sum to 1.0)

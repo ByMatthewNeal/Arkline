@@ -100,10 +100,14 @@ actor RiskFactorFetcher {
         let funding = await fundingResult
         let fearGreed = await fearGreedResult
 
+        // 4. Fetch Bull Market Support Bands (from Binance weekly data)
+        let bullMarketBands = await fetchBullMarketBands(coin: coin, currentPrice: price)
+
         let factorData = RiskFactorData(
             rsi: rsi,
             sma200: sma,
             currentPrice: price,
+            bullMarketBands: bullMarketBands,
             fundingRate: funding,
             fearGreedValue: fearGreed,
             vixValue: vix,
@@ -246,6 +250,50 @@ actor RiskFactorFetcher {
             return price
         } catch {
             print("⚠️ Price fetch failed for \(coin): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func fetchBullMarketBands(coin: String, currentPrice: Double?) async -> BullMarketSupportBands? {
+        guard let price = currentPrice else { return nil }
+
+        do {
+            // Fetch weekly candles from Binance to calculate 20W SMA and 21W EMA
+            let binanceSymbol = "\(coin.uppercased())USDT"
+            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1w", limit: 25)
+
+            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+                return nil
+            }
+
+            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
+            guard klines.count >= 21 else { return nil }
+
+            // Get closing prices (excluding current incomplete candle)
+            let closingPrices = klines.dropLast().map { $0.close }
+
+            // Calculate 20-week SMA
+            let last20 = Array(closingPrices.suffix(20))
+            let sma20Week = last20.reduce(0, +) / Double(last20.count)
+
+            // Calculate 21-week EMA
+            let last21 = Array(closingPrices.suffix(21))
+            let multiplier = 2.0 / 22.0
+            var ema21Week = last21[0]
+            for i in 1..<last21.count {
+                ema21Week = (last21[i] - ema21Week) * multiplier + ema21Week
+            }
+
+            print("📊 Bull Market Bands for \(coin): 20W SMA=\(sma20Week), 21W EMA=\(ema21Week)")
+
+            return BullMarketSupportBands(
+                sma20Week: sma20Week,
+                ema21Week: ema21Week,
+                currentPrice: price
+            )
+        } catch {
+            print("⚠️ Bull Market Bands fetch failed for \(coin): \(error.localizedDescription)")
             return nil
         }
     }

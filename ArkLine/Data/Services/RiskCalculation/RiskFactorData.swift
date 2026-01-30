@@ -12,6 +12,9 @@ struct RiskFactorData {
     /// Current price (for SMA comparison)
     let currentPrice: Double?
 
+    /// Bull Market Support Bands (20W SMA and 21W EMA)
+    let bullMarketBands: BullMarketSupportBands?
+
     /// Funding rate (decimal, e.g., 0.0001 = 0.01%)
     let fundingRate: Double?
 
@@ -30,14 +33,16 @@ struct RiskFactorData {
     /// Check if at least some supplementary data is available
     var hasAnyData: Bool {
         rsi != nil || fundingRate != nil || fearGreedValue != nil ||
-        vixValue != nil || dxyValue != nil || sma200 != nil
+        vixValue != nil || dxyValue != nil || sma200 != nil || bullMarketBands != nil
     }
 
     /// Number of available data points
     var availableCount: Int {
-        [rsi, sma200, fundingRate, fearGreedValue, vixValue, dxyValue]
+        var count = [rsi, sma200, fundingRate, fearGreedValue, vixValue, dxyValue]
             .compactMap { $0 }
             .count
+        if bullMarketBands != nil { count += 1 }
+        return count
     }
 
     // MARK: - Empty
@@ -46,6 +51,7 @@ struct RiskFactorData {
         rsi: nil,
         sma200: nil,
         currentPrice: nil,
+        bullMarketBands: nil,
         fundingRate: nil,
         fearGreedValue: nil,
         vixValue: nil,
@@ -212,6 +218,48 @@ enum RiskFactorNormalizer {
             return d
         case (.none, .none):
             return nil
+        }
+    }
+
+    // MARK: - Bull Market Support Bands Normalization
+
+    /// Normalize Bull Market Support Bands position to risk (0-1)
+    /// - Parameter bands: Bull Market Support Bands data
+    /// - Returns: Normalized risk where below bands = higher risk
+    ///
+    /// Calibration:
+    /// - Above both bands: 0.2 (healthy bull market, low risk)
+    /// - In the band (between SMA and EMA): 0.5 (testing support)
+    /// - Below both bands: 0.8 (bull market structure broken, high risk)
+    /// - Additional gradient based on % distance from bands
+    static func normalizeBullMarketBands(_ bands: BullMarketSupportBands) -> Double {
+        let avgBand = (bands.sma20Week + bands.ema21Week) / 2.0
+        let percentFromAvg = (bands.currentPrice - avgBand) / avgBand
+
+        switch bands.position {
+        case .aboveBoth:
+            // Above both: low risk, gradient based on distance
+            // Far above (>20%): 0.1, slightly above: 0.3
+            if percentFromAvg > 0.20 {
+                return 0.1
+            } else if percentFromAvg > 0.10 {
+                return 0.2
+            } else {
+                return 0.3
+            }
+        case .inBand:
+            // Testing support: moderate risk
+            return 0.5
+        case .belowBoth:
+            // Below both: higher risk, gradient based on distance
+            // Slightly below: 0.7, far below (<-20%): 0.9
+            if percentFromAvg < -0.20 {
+                return 0.9
+            } else if percentFromAvg < -0.10 {
+                return 0.8
+            } else {
+                return 0.7
+            }
         }
     }
 

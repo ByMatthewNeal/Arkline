@@ -212,7 +212,20 @@ final class RiskCalculator {
             factors.append(.unavailable(.smaPosition, weight: weights.smaPosition))
         }
 
-        // Factor 4: Funding Rate
+        // Factor 4: Bull Market Support Bands
+        if let bands = factorData.bullMarketBands {
+            let normalizedBMSB = RiskFactorNormalizer.normalizeBullMarketBands(bands)
+            factors.append(RiskFactor(
+                type: .bullMarketBands,
+                rawValue: bands.percentFromSMA, // Store % from 20W SMA as raw
+                normalizedValue: normalizedBMSB,
+                weight: weights.bullMarketBands
+            ))
+        } else {
+            factors.append(.unavailable(.bullMarketBands, weight: weights.bullMarketBands))
+        }
+
+        // Factor 5: Funding Rate
         if let fundingRate = factorData.fundingRate {
             factors.append(RiskFactor(
                 type: .fundingRate,
@@ -224,7 +237,7 @@ final class RiskCalculator {
             factors.append(.unavailable(.fundingRate, weight: weights.fundingRate))
         }
 
-        // Factor 5: Fear & Greed
+        // Factor 6: Fear & Greed
         if let fearGreed = factorData.fearGreedValue {
             factors.append(RiskFactor(
                 type: .fearGreed,
@@ -236,7 +249,7 @@ final class RiskCalculator {
             factors.append(.unavailable(.fearGreed, weight: weights.fearGreed))
         }
 
-        // Factor 6: Macro Risk (VIX + DXY average)
+        // Factor 7: Macro Risk (VIX + DXY average)
         if let macroNormalized = RiskFactorNormalizer.normalizeMacroRisk(
             vix: factorData.vixValue,
             dxy: factorData.dxyValue
