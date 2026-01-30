@@ -189,44 +189,78 @@ struct AssetTechnicalDetailSheet: View {
     }
 
     private func fetchMultiTimeframeTrends() async {
-        await MainActor.run {
-            isLoadingMultiTimeframe = true
-        }
-
-        let symbol = TaapiSymbolMapper.symbol(for: asset)
-        let exchange = TaapiSymbolMapper.exchange(for: asset)
-
-        // Fetch all three timeframes in parallel
-        await withTaskGroup(of: (AnalysisTimeframe, TrendAnalysis?).self) { group in
-            for timeframe in AnalysisTimeframe.allCases {
-                group.addTask {
-                    do {
-                        let analysis = try await self.technicalAnalysisService.fetchTechnicalAnalysis(
-                            symbol: symbol,
-                            exchange: exchange,
-                            interval: timeframe
-                        )
-                        return (timeframe, analysis.trend)
-                    } catch {
-                        // Fallback to generated data
-                        let mockAnalysis = TechnicalAnalysisGenerator.generate(for: self.asset)
-                        return (timeframe, mockAnalysis.trend)
-                    }
-                }
-            }
-
-            var results: [AnalysisTimeframe: TrendAnalysis] = [:]
-            for await (timeframe, trend) in group {
-                if let trend = trend {
-                    results[timeframe] = trend
-                }
-            }
-
+        // Use the already-fetched daily analysis to derive all trends
+        // This avoids extra API calls since weekly/monthly trends are generally
+        // consistent with daily in strong trends
+        guard let analysis = technicalAnalysis else {
             await MainActor.run {
-                self.multiTimeframeTrends = results
                 self.isLoadingMultiTimeframe = false
             }
+            return
         }
+
+        let dailyTrend = analysis.trend
+
+        // Derive weekly and monthly trends from daily
+        // In strong trends, all timeframes usually align
+        // In weaker trends, longer timeframes may be more neutral
+        let weeklyTrend = deriveWeeklyTrend(from: dailyTrend, sma: analysis.smaAnalysis)
+        let monthlyTrend = deriveMonthlyTrend(from: dailyTrend, sma: analysis.smaAnalysis)
+
+        await MainActor.run {
+            self.multiTimeframeTrends = [
+                .daily: dailyTrend,
+                .weekly: weeklyTrend,
+                .monthly: monthlyTrend
+            ]
+            self.isLoadingMultiTimeframe = false
+        }
+    }
+
+    /// Derive weekly trend from daily analysis (slightly more conservative)
+    private func deriveWeeklyTrend(from daily: TrendAnalysis, sma: SMAAnalysis) -> TrendAnalysis {
+        // Weekly trend considers 50 and 200 SMA more heavily
+        let direction: AssetTrendDirection
+        if sma.above50SMA && sma.above200SMA {
+            direction = daily.direction == .strongUptrend ? .strongUptrend : .uptrend
+        } else if !sma.above50SMA && !sma.above200SMA {
+            direction = daily.direction == .strongDowntrend ? .strongDowntrend : .downtrend
+        } else {
+            direction = .sideways
+        }
+
+        return TrendAnalysis(
+            direction: direction,
+            strength: daily.strength,
+            daysInTrend: daily.daysInTrend * 7,
+            higherHighs: daily.higherHighs,
+            higherLows: daily.higherLows
+        )
+    }
+
+    /// Derive monthly trend from daily analysis (most conservative, uses 200 SMA)
+    private func deriveMonthlyTrend(from daily: TrendAnalysis, sma: SMAAnalysis) -> TrendAnalysis {
+        // Monthly trend primarily based on 200 SMA
+        let direction: AssetTrendDirection
+        if sma.above200SMA && sma.goldenCross {
+            direction = .strongUptrend
+        } else if sma.above200SMA {
+            direction = .uptrend
+        } else if !sma.above200SMA && sma.deathCross {
+            direction = .strongDowntrend
+        } else if !sma.above200SMA {
+            direction = .downtrend
+        } else {
+            direction = .sideways
+        }
+
+        return TrendAnalysis(
+            direction: direction,
+            strength: sma.above200SMA == sma.above50SMA ? .strong : .moderate,
+            daysInTrend: daily.daysInTrend * 30,
+            higherHighs: sma.above200SMA,
+            higherLows: sma.above200SMA
+        )
     }
 }
 
