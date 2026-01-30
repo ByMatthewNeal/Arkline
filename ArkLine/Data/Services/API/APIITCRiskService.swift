@@ -203,7 +203,7 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
 
     // MARK: - Multi-Factor Risk Methods
 
-    /// Calculate multi-factor risk combining 6 data sources.
+    /// Calculate multi-factor risk combining 7 data sources.
     /// - Parameters:
     ///   - coin: Coin symbol (BTC, ETH)
     ///   - weights: Weight configuration (defaults to standard weights)
@@ -217,20 +217,17 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
             throw RiskCalculationError.unsupportedAsset(coin)
         }
 
-        // Fetch price history and factor data in parallel
+        // Fetch price history, live price, and factor data in parallel
         async let historyTask = fetchPriceHistory(config: config)
+        async let livePriceTask = fetchCurrentPriceFromBinance(coin: coin)
         async let factorTask = factorFetcher.fetchFactors(for: coin)
 
-        let (priceHistory, factorData) = try await (historyTask, factorTask)
+        let (priceHistory, livePrice, factorData) = try await (historyTask, livePriceTask, factorTask)
 
-        guard let latestPrice = priceHistory.last else {
-            throw RiskCalculationError.noDataAvailable(coin)
-        }
-
-        // Calculate multi-factor risk
+        // Calculate multi-factor risk using live price and today's date
         guard let multiFactorRisk = riskCalculator.calculateMultiFactorRisk(
-            price: latestPrice.price,
-            date: latestPrice.date,
+            price: livePrice,
+            date: Date(),
             config: config,
             factorData: factorData,
             weights: weights,
@@ -260,17 +257,14 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         }
 
         async let historyTask = fetchPriceHistory(config: config)
+        async let livePriceTask = fetchCurrentPriceFromBinance(coin: coin)
         async let factorTask = factorFetcher.fetchFactors(for: coin)
 
-        let (priceHistory, factorData) = try await (historyTask, factorTask)
-
-        guard let latestPrice = priceHistory.last else {
-            throw RiskCalculationError.noDataAvailable(coin)
-        }
+        let (priceHistory, livePrice, factorData) = try await (historyTask, livePriceTask, factorTask)
 
         guard let multiFactorRisk = riskCalculator.calculateMultiFactorRisk(
-            price: latestPrice.price,
-            date: latestPrice.date,
+            price: livePrice,
+            date: Date(),
             config: AssetRiskConfig.forCoin(coin)!,
             factorData: factorData,
             priceHistory: priceHistory
