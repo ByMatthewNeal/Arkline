@@ -169,17 +169,19 @@ actor RiskFactorFetcher {
     private func fetchTaapiDataSequentially(coin: String) async -> (rsi: Double?, sma: Double?, price: Double?) {
         print("📊 Fetching Taapi.io data sequentially (16s delay between calls)...")
 
-        // First call: RSI
+        // Fetch price from Binance in parallel (no rate limit) while we wait for Taapi
+        async let priceTask = fetchPriceFromBinance(coin: coin)
+
+        // First Taapi call: RSI
         await waitForTaapiRateLimit()
         let rsi = await fetchRSI(coin: coin)
 
-        // Second call: SMA200
+        // Second Taapi call: SMA200
         await waitForTaapiRateLimit()
         let sma = await fetchSMA200(coin: coin)
 
-        // Third call: Current Price
-        await waitForTaapiRateLimit()
-        let price = await fetchCurrentPrice(coin: coin)
+        // Get the price (already fetched in parallel)
+        let price = await priceTask
 
         return (rsi, sma, price)
     }
@@ -250,6 +252,26 @@ actor RiskFactorFetcher {
             return price
         } catch {
             print("⚠️ Price fetch failed for \(coin): \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Fetch current price directly from Binance (no rate limit)
+    private func fetchPriceFromBinance(coin: String) async -> Double? {
+        do {
+            let binanceSymbol = "\(coin.uppercased())USDT"
+            let endpoint = BinanceEndpoint.tickerPrice(symbol: binanceSymbol)
+            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let priceString = json["price"] as? String,
+               let price = Double(priceString) {
+                print("📊 Price for \(coin) (Binance): \(price)")
+                return price
+            }
+            return nil
+        } catch {
+            print("⚠️ Binance price fetch failed for \(coin): \(error.localizedDescription)")
             return nil
         }
     }
