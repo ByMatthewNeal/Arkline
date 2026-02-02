@@ -16,6 +16,7 @@ class HomeViewModel {
     private let rainbowChartService: RainbowChartServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
     private let macroStatisticsService: MacroStatisticsServiceProtocol
+    private let santimentService: SantimentServiceProtocol
 
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
@@ -47,11 +48,12 @@ class HomeViewModel {
     var newsItems: [NewsItem] = []
     var sentimentViewModel: SentimentViewModel?
 
-    // Market Indicators (VIX, DXY, Rainbow, Liquidity)
+    // Market Indicators (VIX, DXY, Rainbow, Liquidity, Supply in Profit)
     var vixData: VIXData?
     var dxyData: DXYData?
     var rainbowChartData: RainbowChartData?
     var globalLiquidityChanges: GlobalLiquidityChanges?
+    var supplyInProfitData: SupplyProfitData?
 
     // Macro Z-Scores (statistical analysis)
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
@@ -309,7 +311,8 @@ class HomeViewModel {
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         rainbowChartService: RainbowChartServiceProtocol = ServiceContainer.shared.rainbowChartService,
         globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
-        macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService
+        macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService,
+        santimentService: SantimentServiceProtocol = ServiceContainer.shared.santimentService
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -322,6 +325,7 @@ class HomeViewModel {
         self.rainbowChartService = rainbowChartService
         self.globalLiquidityService = globalLiquidityService
         self.macroStatisticsService = macroStatisticsService
+        self.santimentService = santimentService
         Task { await loadInitialData() }
         startAutoRefresh()
     }
@@ -398,6 +402,7 @@ class HomeViewModel {
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
         async let liquidityTask = fetchGlobalLiquiditySafe()
+        async let supplyProfitTask = fetchSupplyInProfitSafe()
         async let fedWatchTask = fetchFedWatchMeetingsSafe()
         async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
         async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
@@ -409,6 +414,7 @@ class HomeViewModel {
         let vix = await vixTask
         let dxy = await dxyTask
         let liquidity = await liquidityTask
+        let supplyProfit = await supplyProfitTask
         let fedMeetings = await fedWatchTask
         let btcRisk = await btcRiskTask
         let ethRisk = await ethRiskTask
@@ -421,6 +427,7 @@ class HomeViewModel {
             self.vixData = vix
             self.dxyData = dxy
             self.globalLiquidityChanges = liquidity
+            self.supplyInProfitData = supplyProfit
             self.fedWatchMeetings = fedMeetings ?? []
             self.btcRiskLevel = btcRisk
             self.ethRiskLevel = ethRisk
@@ -624,6 +631,10 @@ class HomeViewModel {
 
     private func fetchGlobalLiquiditySafe() async -> GlobalLiquidityChanges? {
         try? await globalLiquidityService.fetchLiquidityChanges()
+    }
+
+    private func fetchSupplyInProfitSafe() async -> SupplyProfitData? {
+        try? await santimentService.fetchLatestSupplyInProfit()
     }
 
     private func fetchUpcomingEventsSafe() async -> [EconomicEvent] {

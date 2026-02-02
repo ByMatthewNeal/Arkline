@@ -175,6 +175,80 @@ extension SupabaseDatabase {
             .execute()
             .value
     }
+
+    // MARK: - Supply in Profit Data
+
+    /// Save supply in profit data points using upsert (fast batch operation)
+    func saveSupplyInProfitData(_ dataPoints: [SupplyProfitDTO]) async throws {
+        guard SupabaseManager.shared.isConfigured else {
+            logWarning("Supabase not configured - skipping save", category: .network)
+            return
+        }
+        guard !dataPoints.isEmpty else { return }
+
+        let client = SupabaseManager.shared.client
+
+        // Use upsert with onConflict to handle duplicates efficiently
+        try await client
+            .from(SupabaseTable.supplyInProfit.rawValue)
+            .upsert(dataPoints, onConflict: "date")
+            .execute()
+
+        logInfo("Upserted \(dataPoints.count) Supply in Profit data points", category: .network)
+    }
+
+    /// Get supply in profit data from Supabase (sorted by date descending)
+    func getSupplyInProfitData(limit: Int = 365) async throws -> [SupplyProfitDTO] {
+        guard SupabaseManager.shared.isConfigured else { return [] }
+        let client = SupabaseManager.shared.client
+        return try await client
+            .from(SupabaseTable.supplyInProfit.rawValue)
+            .select("*")
+            .order("date", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
+    /// Get supply in profit data for a specific date range
+    func getSupplyInProfitData(from startDate: String, to endDate: String) async throws -> [SupplyProfitDTO] {
+        guard SupabaseManager.shared.isConfigured else { return [] }
+        let client = SupabaseManager.shared.client
+        return try await client
+            .from(SupabaseTable.supplyInProfit.rawValue)
+            .select("*")
+            .gte("date", value: startDate)
+            .lte("date", value: endDate)
+            .order("date", ascending: false)
+            .execute()
+            .value
+    }
+
+    /// Get the latest supply in profit data point
+    func getLatestSupplyInProfitData() async throws -> SupplyProfitDTO? {
+        guard SupabaseManager.shared.isConfigured else { return nil }
+        let client = SupabaseManager.shared.client
+        let results: [SupplyProfitDTO] = try await client
+            .from(SupabaseTable.supplyInProfit.rawValue)
+            .select("*")
+            .order("date", ascending: false)
+            .limit(1)
+            .execute()
+            .value
+        return results.first
+    }
+
+    /// Get dates we already have in the database
+    func getExistingSupplyInProfitDates() async throws -> Set<String> {
+        guard SupabaseManager.shared.isConfigured else { return [] }
+        let client = SupabaseManager.shared.client
+        let results: [SupplyProfitDTO] = try await client
+            .from(SupabaseTable.supplyInProfit.rawValue)
+            .select("date")
+            .execute()
+            .value
+        return Set(results.map { $0.date })
+    }
 }
 
 // MARK: - DTO Types for Database

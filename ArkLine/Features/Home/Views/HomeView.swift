@@ -232,6 +232,8 @@ struct ReorderableWidgetStack: View {
             return true
         case .globalLiquidity:
             return true
+        case .supplyInProfit:
+            return true
         case .macroDashboard:
             // Show if we have at least 2 of the 3 indicators
             let hasVix = viewModel.vixData != nil
@@ -330,6 +332,12 @@ struct ReorderableWidgetStack: View {
             GlobalLiquidityWidget(
                 liquidityChanges: viewModel.globalLiquidityChanges,
                 size: appState.widgetSize(.globalLiquidity)
+            )
+
+        case .supplyInProfit:
+            SupplyInProfitWidget(
+                supplyData: viewModel.supplyInProfitData,
+                size: appState.widgetSize(.supplyInProfit)
             )
 
         case .macroDashboard:

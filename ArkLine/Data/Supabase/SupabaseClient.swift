@@ -79,6 +79,7 @@ enum SupabaseTable: String {
     case riskBasedDcaReminders = "risk_based_dca_reminders"
     case riskDcaInvestments = "risk_dca_investments"
     case portfolioHistory = "portfolio_history"
+    case supplyInProfit = "supply_in_profit"
 }
 
 // MARK: - Storage Buckets

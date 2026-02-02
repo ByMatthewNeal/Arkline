@@ -35,6 +35,7 @@ final class ServiceContainer {
     private lazy var _mockDXYService = MockDXYService()
     private lazy var _mockRainbowChartService = MockRainbowChartService()
     private lazy var _mockGlobalLiquidityService = MockGlobalLiquidityService()
+    private lazy var _mockSantimentOnChainService = MockSantimentService()
 
     // MARK: - Lazy Services - API
     private lazy var _apiMarketService = APIMarketService()
@@ -46,6 +47,7 @@ final class ServiceContainer {
     private lazy var _apiITCRiskService = APIITCRiskService()
     private lazy var _apiRainbowChartService = APIRainbowChartService()
     private lazy var _apiGlobalLiquidityService = APIGlobalLiquidityService()
+    private lazy var _apiSantimentOnChainService = APISantimentService()
 
     // MARK: - Lazy Services - Yahoo Finance (better rate limits than Alpha Vantage)
     private lazy var _yahooVIXService = YahooVIXService()
@@ -117,6 +119,11 @@ final class ServiceContainer {
         useMockMacroServices ? _mockGlobalLiquidityService : _apiGlobalLiquidityService
     }
 
+    /// Santiment service - uses free GraphQL API for on-chain metrics (Supply in Profit)
+    var santimentService: SantimentServiceProtocol {
+        useMockMacroServices ? _mockSantimentOnChainService : _apiSantimentOnChainService
+    }
+
     /// Macro Statistics service - calculates z-scores for VIX, DXY, M2
     var macroStatisticsService: MacroStatisticsServiceProtocol {
         _macroStatisticsService
@@ -148,6 +155,7 @@ final class ServiceContainer {
         _mockDXYService = MockDXYService()
         _mockRainbowChartService = MockRainbowChartService()
         _mockGlobalLiquidityService = MockGlobalLiquidityService()
+        _mockSantimentOnChainService = MockSantimentService()
         _apiMarketService = APIMarketService()
         _apiSentimentService = APISentimentService()
         _apiPortfolioService = APIPortfolioService()
@@ -157,5 +165,6 @@ final class ServiceContainer {
         _apiITCRiskService = APIITCRiskService()
         _apiRainbowChartService = APIRainbowChartService()
         _apiGlobalLiquidityService = APIGlobalLiquidityService()
+        _apiSantimentOnChainService = APISantimentService()
     }
 }

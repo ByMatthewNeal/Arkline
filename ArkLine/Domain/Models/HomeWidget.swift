@@ -45,6 +45,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case dxyIndicator = "dxy_indicator"
     case globalLiquidity = "global_liquidity"
     case macroDashboard = "macro_dashboard"
+    case supplyInProfit = "supply_in_profit"
 
     var id: String { rawValue }
 
@@ -64,6 +65,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .dxyIndicator: return "DXY"
         case .globalLiquidity: return "Global M2"
         case .macroDashboard: return "Macro Dashboard"
+        case .supplyInProfit: return "BTC Supply in Profit"
         }
     }
 
@@ -83,6 +85,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .dxyIndicator: return "US Dollar Index - Dollar strength"
         case .globalLiquidity: return "Global M2 money supply trends"
         case .macroDashboard: return "Combined macro indicators with market regime analysis"
+        case .supplyInProfit: return "Percentage of BTC supply currently in profit"
         }
     }
 
@@ -102,6 +105,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .dxyIndicator: return "dollarsign.circle"
         case .globalLiquidity: return "banknote"
         case .macroDashboard: return "chart.bar.xaxis"
+        case .supplyInProfit: return "chart.pie"
         }
     }
 
@@ -112,7 +116,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .assetRiskLevel, .fedWatch, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
     }
 
     /// Widgets enabled by default
