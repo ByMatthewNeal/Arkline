@@ -39,7 +39,7 @@ final class FarsideETFScraper {
         if let cached = cachedData,
            let timestamp = cacheTimestamp,
            Date().timeIntervalSince(timestamp) < cacheDuration {
-            print("📦 Using cached Farside ETF data")
+            logDebug("Using cached Farside ETF data", category: .network)
             return cached
         }
 
@@ -66,7 +66,7 @@ final class FarsideETFScraper {
         request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
         request.timeoutInterval = 15
 
-        print("🔍 Fetching Farside ETF data from \(baseURL)")
+        logDebug("Fetching Farside ETF data from \(baseURL)", category: .network)
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -75,7 +75,7 @@ final class FarsideETFScraper {
         }
 
         guard httpResponse.statusCode == 200 else {
-            print("❌ Farside HTTP error: \(httpResponse.statusCode)")
+            logError("Farside HTTP error: \(httpResponse.statusCode)", category: .network)
             throw ScraperError.httpError(statusCode: httpResponse.statusCode)
         }
 
@@ -204,7 +204,7 @@ final class FarsideETFScraper {
         // Sort ETF data by absolute flow value (largest impact first)
         etfData.sort { abs($0.netFlow) > abs($1.netFlow) }
 
-        print("📊 Parsed Farside ETF data: Daily=$\(String(format: "%.1f", dailyTotal))M, Total=$\(String(format: "%.1f", cumulativeTotal / 1_000_000))M")
+        logDebug("Parsed Farside ETF data: Daily=$\(String(format: "%.1f", dailyTotal))M, Total=$\(String(format: "%.1f", cumulativeTotal / 1_000_000))M", category: .network)
 
         return ETFNetFlow(
             totalNetFlow: cumulativeTotal,

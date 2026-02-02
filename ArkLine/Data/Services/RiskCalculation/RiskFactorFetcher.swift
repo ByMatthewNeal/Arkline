@@ -81,11 +81,11 @@ actor RiskFactorFetcher {
 
         // Check standard cache first
         if !forceRefresh, let entry = cache[cacheKey], !entry.isExpired(ttl: standardCacheTTL) {
-            print("📦 Using cached factor data for \(coin)")
+            logDebug("Using cached factor data for \(coin)", category: .network)
             return entry.data
         }
 
-        print("🔄 Fetching fresh factor data for \(coin)...")
+        logDebug("Fetching fresh factor data for \(coin)...", category: .network)
 
         // 1. Fetch macro data (VIX/DXY) - uses 2-hour cache
         let (vix, dxy) = await fetchMacroData(forceRefresh: false)
@@ -118,7 +118,7 @@ actor RiskFactorFetcher {
         // Cache the results
         cache[cacheKey] = CacheEntry(data: factorData, timestamp: Date())
 
-        print("✅ Factor data fetch complete for \(coin)")
+        logDebug("Factor data fetch complete for \(coin)", category: .network)
         return factorData
     }
 
@@ -145,11 +145,11 @@ actor RiskFactorFetcher {
         // Check 2-hour cache unless force refresh
         if !forceRefresh, let macro = macroCache, !macro.isExpired(ttl: macroCacheTTL) {
             let age = Int(Date().timeIntervalSince(macro.timestamp) / 60)
-            print("📦 Using cached macro data (VIX/DXY) - \(age) min old, refreshes in \(120 - age) min")
+            logDebug("Using cached macro data (VIX/DXY) - \(age) min old, refreshes in \(120 - age) min", category: .network)
             return (macro.vix, macro.dxy)
         }
 
-        print("🌐 Fetching fresh macro data (VIX/DXY) from Alpha Vantage...")
+        logDebug("Fetching fresh macro data (VIX/DXY) from Alpha Vantage...", category: .network)
 
         // Fetch VIX and DXY in parallel (same provider, counted as 2 requests)
         async let vixResult = fetchVIX()
@@ -167,7 +167,7 @@ actor RiskFactorFetcher {
     // MARK: - Taapi.io Sequential Fetching with Rate Limiting
 
     private func fetchTaapiDataSequentially(coin: String) async -> (rsi: Double?, sma: Double?, price: Double?) {
-        print("📊 Fetching Taapi.io data sequentially (16s delay between calls)...")
+        logDebug("Fetching Taapi.io data sequentially (16s delay between calls)...", category: .network)
 
         // Fetch price from Binance in parallel (no rate limit) while we wait for Taapi
         async let priceTask = fetchPriceFromBinance(coin: coin)
@@ -196,7 +196,7 @@ actor RiskFactorFetcher {
         let elapsed = Date().timeIntervalSince(lastCall)
         if elapsed < taapiDelaySeconds {
             let waitTime = taapiDelaySeconds - elapsed
-            print("⏳ Rate limit: waiting \(String(format: "%.1f", waitTime))s before next Taapi.io call...")
+            logDebug("Rate limit: waiting \(String(format: "%.1f", waitTime))s before next Taapi.io call...", category: .network)
             try? await Task.sleep(nanoseconds: UInt64(waitTime * 1_000_000_000))
         }
         lastTaapiCallTime = Date()
@@ -213,10 +213,10 @@ actor RiskFactorFetcher {
                 interval: "1d",
                 period: 14
             )
-            print("📊 RSI for \(coin): \(rsi)")
+            logDebug("RSI for \(coin): \(rsi)", category: .network)
             return rsi
         } catch {
-            print("⚠️ RSI fetch failed for \(coin): \(error.localizedDescription)")
+            logWarning("RSI fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -232,11 +232,11 @@ actor RiskFactorFetcher {
             )
             let sma200 = smaValues[200]
             if let sma = sma200 {
-                print("📊 SMA200 for \(coin): \(sma)")
+                logDebug("SMA200 for \(coin): \(sma)", category: .network)
             }
             return sma200
         } catch {
-            print("⚠️ SMA200 fetch failed for \(coin): \(error.localizedDescription)")
+            logWarning("SMA200 fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -248,10 +248,10 @@ actor RiskFactorFetcher {
                 symbol: symbol,
                 exchange: "binance"
             )
-            print("📊 Price for \(coin): \(price)")
+            logDebug("Price for \(coin): \(price)", category: .network)
             return price
         } catch {
-            print("⚠️ Price fetch failed for \(coin): \(error.localizedDescription)")
+            logWarning("Price fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -266,12 +266,12 @@ actor RiskFactorFetcher {
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let priceString = json["price"] as? String,
                let price = Double(priceString) {
-                print("📊 Price for \(coin) (Binance): \(price)")
+                logDebug("Price for \(coin) (Binance): \(price)", category: .network)
                 return price
             }
             return nil
         } catch {
-            print("⚠️ Binance price fetch failed for \(coin): \(error.localizedDescription)")
+            logWarning("Binance price fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -307,7 +307,7 @@ actor RiskFactorFetcher {
                 ema21Week = (last21[i] - ema21Week) * multiplier + ema21Week
             }
 
-            print("📊 Bull Market Bands for \(coin): 20W SMA=\(sma20Week), 21W EMA=\(ema21Week)")
+            logDebug("Bull Market Bands for \(coin): 20W SMA=\(sma20Week), 21W EMA=\(ema21Week)", category: .network)
 
             return BullMarketSupportBands(
                 sma20Week: sma20Week,
@@ -315,7 +315,7 @@ actor RiskFactorFetcher {
                 currentPrice: price
             )
         } catch {
-            print("⚠️ Bull Market Bands fetch failed for \(coin): \(error.localizedDescription)")
+            logWarning("Bull Market Bands fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -323,10 +323,10 @@ actor RiskFactorFetcher {
     private func fetchFundingRate() async -> Double? {
         do {
             let fundingData = try await sentimentService.fetchFundingRate()
-            print("📊 Funding Rate: \(fundingData.averageRate)")
+            logDebug("Funding Rate: \(fundingData.averageRate)", category: .network)
             return fundingData.averageRate
         } catch {
-            print("⚠️ Funding rate fetch failed: \(error.localizedDescription)")
+            logWarning("Funding rate fetch failed: \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -334,10 +334,10 @@ actor RiskFactorFetcher {
     private func fetchFearGreed() async -> Double? {
         do {
             let fearGreed = try await sentimentService.fetchFearGreedIndex()
-            print("📊 Fear & Greed: \(fearGreed.value)")
+            logDebug("Fear & Greed: \(fearGreed.value)", category: .network)
             return Double(fearGreed.value)
         } catch {
-            print("⚠️ Fear & Greed fetch failed: \(error.localizedDescription)")
+            logWarning("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -345,13 +345,13 @@ actor RiskFactorFetcher {
     private func fetchVIX() async -> Double? {
         do {
             guard let vixData = try await vixService.fetchLatestVIX() else {
-                print("⚠️ VIX data unavailable (nil response)")
+                logWarning("VIX data unavailable (nil response)", category: .network)
                 return nil
             }
-            print("📊 VIX: \(vixData.value)")
+            logDebug("VIX: \(vixData.value)", category: .network)
             return vixData.value
         } catch {
-            print("⚠️ VIX fetch failed: \(error.localizedDescription)")
+            logWarning("VIX fetch failed: \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -359,13 +359,13 @@ actor RiskFactorFetcher {
     private func fetchDXY() async -> Double? {
         do {
             guard let dxyData = try await dxyService.fetchLatestDXY() else {
-                print("⚠️ DXY data unavailable (nil response)")
+                logWarning("DXY data unavailable (nil response)", category: .network)
                 return nil
             }
-            print("📊 DXY: \(dxyData.value)")
+            logDebug("DXY: \(dxyData.value)", category: .network)
             return dxyData.value
         } catch {
-            print("⚠️ DXY fetch failed: \(error.localizedDescription)")
+            logWarning("DXY fetch failed: \(error.localizedDescription)", category: .network)
             return nil
         }
     }

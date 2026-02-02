@@ -249,9 +249,9 @@ final class MockNewsService: NewsServiceProtocol {
         // If user has specific topics, we could filter here in a real implementation
         // For mock data, we just return the standard mix
         if let topics = topics, !topics.isEmpty {
-            print("📰 [Mock] Using personalized topics: \(topics.map { $0.displayName }.joined(separator: ", "))")
+            logDebug("[Mock] Using personalized topics: \(topics.map { $0.displayName }.joined(separator: ", "))", category: .network)
             if let keywords = customKeywords, !keywords.isEmpty {
-                print("📰 [Mock] With custom keywords: \(keywords.joined(separator: ", "))")
+                logDebug("[Mock] With custom keywords: \(keywords.joined(separator: ", "))", category: .network)
             }
         }
 

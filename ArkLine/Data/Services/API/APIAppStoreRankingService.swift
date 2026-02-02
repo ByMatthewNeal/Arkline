@@ -28,7 +28,7 @@ final class APIAppStoreRankingService {
     /// Generic feed fetcher
     private func fetchRankFromFeed(urlString: String, appId: String) async -> Int? {
         guard let url = URL(string: urlString) else {
-            print("🔴 Invalid iTunes RSS URL")
+            logError("Invalid iTunes RSS URL", category: .network)
             return nil
         }
 
@@ -40,7 +40,7 @@ final class APIAppStoreRankingService {
 
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
-                print("🔴 iTunes RSS error: bad response")
+                logError("iTunes RSS error: bad response", category: .network)
                 return nil
             }
 
@@ -50,17 +50,17 @@ final class APIAppStoreRankingService {
             for (index, app) in feed.feed.entry.enumerated() {
                 if app.id.attributes.imId == appId {
                     let rank = index + 1
-                    print("🏆 Found Coinbase at rank #\(rank) in US App Store")
+                    logDebug("Found Coinbase at rank #\(rank) in US App Store", category: .network)
                     return rank
                 }
             }
 
             // App not in top 200
-            print("⚠️ Coinbase not found in top 200 apps")
+            logWarning("Coinbase not found in top 200 apps", category: .network)
             return nil
 
         } catch {
-            print("🔴 iTunes RSS fetch error: \(error)")
+            logError("iTunes RSS fetch error: \(error)", category: .network)
             return nil
         }
     }

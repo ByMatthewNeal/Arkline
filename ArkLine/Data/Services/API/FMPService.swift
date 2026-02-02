@@ -92,7 +92,7 @@ final class FMPService {
         try validateResponse(response, data: data)
 
         let movers = try JSONDecoder().decode([FMPMover].self, from: data)
-        print("📈 FMP: Fetched \(movers.count) gainers")
+        logDebug("FMP: Fetched \(movers.count) gainers", category: .network)
         return Array(movers.prefix(limit))
     }
 
@@ -111,7 +111,7 @@ final class FMPService {
         try validateResponse(response, data: data)
 
         let movers = try JSONDecoder().decode([FMPMover].self, from: data)
-        print("📉 FMP: Fetched \(movers.count) losers")
+        logDebug("FMP: Fetched \(movers.count) losers", category: .network)
         return Array(movers.prefix(limit))
     }
 
@@ -190,15 +190,15 @@ final class FMPService {
                     quotes.append(quote)
                 }
             } catch FMPError.premiumRequired {
-                print("⚠️ FMP: \(symbol) requires premium subscription")
+                logWarning("FMP: \(symbol) requires premium subscription", category: .network)
                 continue
             } catch {
-                print("⚠️ FMP: Failed to fetch \(symbol): \(error.localizedDescription)")
+                logWarning("FMP: Failed to fetch \(symbol): \(error.localizedDescription)", category: .network)
                 continue
             }
         }
 
-        print("💹 FMP: Fetched \(quotes.count)/\(symbols.count) quotes")
+        logDebug("FMP: Fetched \(quotes.count)/\(symbols.count) quotes", category: .network)
         return quotes
     }
 

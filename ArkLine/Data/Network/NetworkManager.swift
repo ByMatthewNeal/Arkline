@@ -1,4 +1,5 @@
 import Foundation
+import Network
 
 // MARK: - Network Manager
 actor NetworkManager {
@@ -197,6 +198,9 @@ final class NetworkMonitor {
     private(set) var isConnected = true
     private(set) var connectionType: ConnectionType = .unknown
 
+    private let monitor = NWPathMonitor()
+    private let queue = DispatchQueue(label: "com.arkline.networkMonitor")
+
     enum ConnectionType {
         case wifi
         case cellular
@@ -209,9 +213,29 @@ final class NetworkMonitor {
     }
 
     private func startMonitoring() {
-        // In a real app, use NWPathMonitor
-        // For now, assume connected
-        isConnected = true
-        connectionType = .wifi
+        monitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor in
+                self?.updateConnectionStatus(path: path)
+            }
+        }
+        monitor.start(queue: queue)
+    }
+
+    private func updateConnectionStatus(path: NWPath) {
+        isConnected = path.status == .satisfied
+
+        if path.usesInterfaceType(.wifi) {
+            connectionType = .wifi
+        } else if path.usesInterfaceType(.cellular) {
+            connectionType = .cellular
+        } else if path.usesInterfaceType(.wiredEthernet) {
+            connectionType = .wired
+        } else {
+            connectionType = .unknown
+        }
+    }
+
+    deinit {
+        monitor.cancel()
     }
 }
