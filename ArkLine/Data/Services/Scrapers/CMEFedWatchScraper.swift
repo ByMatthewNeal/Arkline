@@ -16,9 +16,9 @@ final class CMEFedWatchScraper {
         // Return calculated estimates based on market conditions
         // Network scraping disabled - CME uses JavaScript rendering
         let meetings = generateEstimatedProbabilities()
-        print("🏛️ FedWatch: Generated \(meetings.count) meetings")
+        logDebug("FedWatch: Generated \(meetings.count) meetings", category: .network)
         for meeting in meetings {
-            print("🏛️ FedWatch: Meeting on \(meeting.meetingDate), rate: \(meeting.currentRate)")
+            logDebug("FedWatch: Meeting on \(meeting.meetingDate), rate: \(meeting.currentRate)", category: .network)
         }
         return meetings
     }
@@ -78,8 +78,8 @@ final class CMEFedWatchScraper {
         let calendar = Calendar.current
         let today = Date()
 
-        print("🏛️ FedWatch: Today is \(today)")
-        print("🏛️ FedWatch: Year is \(calendar.component(.year, from: today))")
+        logDebug("FedWatch: Today is \(today)", category: .network)
+        logDebug("FedWatch: Year is \(calendar.component(.year, from: today))", category: .network)
 
         // 2026 FOMC Meeting Dates (approximate)
         let fomcDates: [(month: Int, day: Int)] = [

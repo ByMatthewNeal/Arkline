@@ -57,19 +57,19 @@ final class APINewsService: NewsServiceProtocol {
 
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
         // Use Investing.com scraper with US market holidays as reliable backup
-        print("📅 APINewsService.fetchUpcomingEvents called - days: \(days)")
+        logDebug("APINewsService.fetchUpcomingEvents called - days: \(days)", category: .network)
         let events = try await calendarScraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
-        print("📅 APINewsService: Got \(events.count) upcoming events")
+        logDebug("APINewsService: Got \(events.count) upcoming events", category: .network)
         return events
     }
 
     // MARK: - Twitter/X News
 
     func fetchTwitterNews(accounts: [String]?, limit: Int) async throws -> [NewsItem] {
-        // TODO: Implement with Twitter/X API v2
-        // Requires Twitter Developer Account and Bearer Token
-        // Endpoint: https://api.twitter.com/2/users/:id/tweets
-        throw AppError.notImplemented
+        // Twitter/X API v2 requires Developer Account and Bearer Token
+        // Return empty array for graceful degradation
+        logInfo("Twitter news requires API credentials", category: .network)
+        return []
     }
 
     // MARK: - Google News RSS
@@ -114,7 +114,7 @@ final class APINewsService: NewsServiceProtocol {
                     limit: limit
                 )
                 allNews.append(contentsOf: personalizedNews)
-                print("📰 Fetched \(personalizedNews.count) personalized news items")
+                logDebug("Fetched \(personalizedNews.count) personalized news items", category: .network)
             } else {
                 // Default behavior: crypto + geopolitical
                 async let cryptoNews = fetchCryptoNews(limit: limit / 2)
@@ -124,9 +124,9 @@ final class APINewsService: NewsServiceProtocol {
                     let (crypto, geo) = try await (cryptoNews, geoNews)
                     allNews.append(contentsOf: crypto)
                     allNews.append(contentsOf: geo)
-                    print("📰 Fetched \(crypto.count) crypto + \(geo.count) geopolitical news items")
+                    logDebug("Fetched \(crypto.count) crypto + \(geo.count) geopolitical news items", category: .network)
                 } catch {
-                    print("⚠️ Failed to fetch Google News: \(error.localizedDescription)")
+                    logWarning("Failed to fetch Google News: \(error.localizedDescription)", category: .network)
                 }
             }
         }
@@ -258,7 +258,7 @@ final class FinnhubEconomicCalendarService {
     /// Fetch upcoming events for a number of days
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
         guard isConfigured else {
-            print("⚠️ Finnhub API key not configured - using fallback")
+            logWarning("Finnhub API key not configured - using fallback", category: .network)
             return try await fallbackToHardcodedData(days: days, impactFilter: impactFilter)
         }
 
@@ -283,10 +283,10 @@ final class FinnhubEconomicCalendarService {
             // Sort by date
             events.sort { $0.date < $1.date }
 
-            print("📅 Finnhub: Fetched \(events.count) economic events")
+            logDebug("Finnhub: Fetched \(events.count) economic events", category: .network)
             return events
         } catch {
-            print("⚠️ Finnhub API failed: \(error.localizedDescription) - using fallback")
+            logWarning("Finnhub API failed: \(error.localizedDescription) - using fallback", category: .network)
             return try await fallbackToHardcodedData(days: days, impactFilter: impactFilter)
         }
     }
@@ -294,7 +294,8 @@ final class FinnhubEconomicCalendarService {
     /// Fetch events for a date range
     func fetchEvents(from startDate: Date, to endDate: Date) async throws -> [EconomicEvent] {
         guard isConfigured else {
-            throw AppError.notImplemented
+            // Return hardcoded events when not configured
+            return try await fallbackToHardcodedData(days: 30, impactFilter: [])
         }
 
         let formatter = DateFormatter()
@@ -317,7 +318,7 @@ final class FinnhubEconomicCalendarService {
         }
 
         guard httpResponse.statusCode == 200 else {
-            print("⚠️ Finnhub returned status \(httpResponse.statusCode)")
+            logWarning("Finnhub returned status \(httpResponse.statusCode)", category: .network)
             throw URLError(.badServerResponse)
         }
 
@@ -602,7 +603,7 @@ final class InvestingComScraper {
         // Sort by date
         allEvents.sort { $0.date < $1.date }
 
-        print("📅 Loaded \(allEvents.count) economic events from hardcoded data")
+        logDebug("Loaded \(allEvents.count) economic events from hardcoded data", category: .network)
         return allEvents
     }
 
@@ -1226,9 +1227,9 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
                     limit: topicsLimit
                 )
                 allNews.append(contentsOf: topicNews)
-                print("📰 Fetched \(topicNews.count) items for topics")
+                logDebug("Fetched \(topicNews.count) items for topics", category: .network)
             } catch {
-                print("⚠️ Failed to fetch topic news: \(error)")
+                logWarning("Failed to fetch topic news: \(error)", category: .network)
             }
         }
 
@@ -1244,9 +1245,9 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
                         limit: perKeywordLimit
                     )
                     allNews.append(contentsOf: keywordNews)
-                    print("📰 Fetched \(keywordNews.count) items for keyword '\(keyword)'")
+                    logDebug("Fetched \(keywordNews.count) items for keyword '\(keyword)'", category: .network)
                 } catch {
-                    print("⚠️ Failed to fetch news for keyword '\(keyword)': \(error)")
+                    logWarning("Failed to fetch news for keyword '\(keyword)': \(error)", category: .network)
                 }
             }
         }
@@ -1287,7 +1288,7 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
         }
 
         guard httpResponse.statusCode == 200 else {
-            print("⚠️ Google News RSS returned status \(httpResponse.statusCode)")
+            logWarning("Google News RSS returned status \(httpResponse.statusCode)", category: .network)
             throw URLError(.badServerResponse)
         }
 
@@ -1310,7 +1311,7 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
             )
         }
 
-        print("📰 [\(category)] Fetched \(newsItems.count) items from Google News RSS")
+        logDebug("[\(category)] Fetched \(newsItems.count) items from Google News RSS", category: .network)
         return Array(newsItems)
     }
 

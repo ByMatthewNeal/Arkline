@@ -259,7 +259,7 @@ final class ExportService {
 
             topController.present(activityVC, animated: true)
         } catch {
-            print("Export error: \(error)")
+            logError("Export error: \(error)", category: .general)
         }
         #endif
     }

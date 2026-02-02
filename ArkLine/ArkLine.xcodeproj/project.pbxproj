@@ -185,6 +185,7 @@
 		BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
 		C23FD5B707CF3A05F96F3EE7 /* FedWatchSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */; };
+		C2C3EA3D9F185775264FEC14 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2FCAAA036F4F22E773961096 /* PrivacyInfo.xcprivacy */; };
 		C2E7E3C879ED12FD8E338627 /* MacroZScoreData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */; };
 		C3CCEDC817E873A64AE0BE57 /* DCACalculatorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */; };
 		C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */; };
@@ -303,6 +304,7 @@
 		2D81358145D7861C61D27013 /* SellAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SellAssetView.swift; sourceTree = "<group>"; };
 		2EEF32D24CEC66662543D000 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealEstateProperty.swift; sourceTree = "<group>"; };
+		2FCAAA036F4F22E773961096 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		319895490145710C89575633 /* AddRealEstateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRealEstateView.swift; sourceTree = "<group>"; };
 		33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroZScoreData.swift; sourceTree = "<group>"; };
 		36F9A053EE94F27B45371F78 /* CommunityPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPost.swift; sourceTree = "<group>"; };
@@ -963,6 +965,14 @@
 			path = AI;
 			sourceTree = "<group>";
 		};
+		905616AC7AFC05D87857B1A0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2FCAAA036F4F22E773961096 /* PrivacyInfo.xcprivacy */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
 		90DA49D7CF31AE93D37997A6 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -1281,6 +1291,7 @@
 				1095DFF4EC5B4A9D135D3A0B /* APISantimentService.swift */,
 				8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */,
 				130AFC1808DDE23C84A31C0B /* SupplyInProfitHistorical.swift */,
+				905616AC7AFC05D87857B1A0 /* Resources */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1449,6 +1460,7 @@
 			files = (
 				BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */,
 				ASSETSCATALOGBUILD00000001 /* Assets.xcassets in Resources */,
+				C2C3EA3D9F185775264FEC14 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

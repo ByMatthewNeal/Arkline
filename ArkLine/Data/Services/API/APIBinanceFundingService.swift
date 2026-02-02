@@ -53,7 +53,7 @@ final class APIBinanceFundingService {
         let response: BinancePremiumIndexResponse = try await request(endpoint: endpoint, params: params)
 
         let fundingRate = Double(response.lastFundingRate) ?? 0
-        print("🟡 Binance \(symbol) funding rate: \(response.lastFundingRate) -> \(fundingRate)")
+        logDebug("Binance \(symbol) funding rate: \(response.lastFundingRate) -> \(fundingRate)", category: .network)
 
         return BinancePremiumIndex(
             symbol: symbol.uppercased(),
@@ -88,7 +88,7 @@ final class APIBinanceFundingService {
 
         guard httpResponse.statusCode == 200 else {
             if let responseStr = String(data: data, encoding: .utf8) {
-                print("🔴 Binance API Error (\(httpResponse.statusCode)): \(responseStr)")
+                logError("Binance API Error (\(httpResponse.statusCode)): \(responseStr)", category: .network)
             }
             throw AppError.serverError(statusCode: httpResponse.statusCode)
         }

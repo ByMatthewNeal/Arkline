@@ -101,12 +101,12 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         // Check cache - only recalculate at 7am EST and 5pm EST
         if let cached = cacheQueue.sync(execute: { currentRiskCache[coinKey] }) {
             if !shouldRefreshRisk(lastCalculation: cached.calculatedAt) {
-                print("📦 Using cached risk for \(coin) (calculated at \(cached.calculatedAt))")
+                logDebug("Using cached risk for \(coin) (calculated at \(cached.calculatedAt))", category: .network)
                 return cached.risk
             }
         }
 
-        print("🔄 Calculating fresh risk for \(coin)...")
+        logDebug("Calculating fresh risk for \(coin)...", category: .network)
 
         // Get asset config
         guard let config = AssetRiskConfig.forCoin(coin) else {

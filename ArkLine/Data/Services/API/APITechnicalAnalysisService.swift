@@ -189,7 +189,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             )
         } catch {
             // Fallback: estimate based on current price if API fails
-            print("Bull Market Bands fetch error: \(error)")
+            logWarning("Bull Market Bands fetch error: \(error)", category: .network)
             return BullMarketSupportBands(
                 sma20Week: currentPrice * 0.95,
                 ema21Week: currentPrice * 0.94,
