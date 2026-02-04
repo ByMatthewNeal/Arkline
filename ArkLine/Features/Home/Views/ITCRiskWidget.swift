@@ -376,6 +376,7 @@ struct RiskLevelChartView: View {
     @State private var showFactorBreakdown = true
     @State private var showConfidenceInfo = false
     @State private var showInfoSheet = false
+    @State private var showChart = true
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -684,53 +685,63 @@ struct RiskLevelChartView: View {
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    // Minimal header
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Risk Level")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(textPrimary)
-                            .textCase(.uppercase)
-                            .tracking(0.8)
+                    // Tappable header to collapse/expand
+                    Button(action: { withAnimation(.easeInOut(duration: 0.25)) { showChart.toggle() } }) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Risk Level")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(textPrimary)
+                                .textCase(.uppercase)
+                                .tracking(0.8)
 
-                        Spacer()
+                            Spacer()
 
-                        if selectedDate != nil {
-                            Button(action: { selectedDate = nil }) {
-                                Text("Reset")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(AppColors.accent)
+                            if showChart, selectedDate != nil {
+                                Button(action: { selectedDate = nil }) {
+                                    Text("Reset")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(AppColors.accent)
+                                }
                             }
+
+                            Image(systemName: showChart ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(textSecondary)
                         }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, ArkSpacing.md)
                     .padding(.top, ArkSpacing.md)
-                    .padding(.bottom, ArkSpacing.sm)
+                    .padding(.bottom, showChart ? ArkSpacing.sm : ArkSpacing.md)
 
-                    // Tooltip overlay
-                    if let point = selectedPoint {
-                        RiskTooltipView(
-                            date: point.date,
-                            riskLevel: point.riskLevel,
-                            price: point.price,
-                            fairValue: point.fairValue
+                    if showChart {
+                        // Tooltip overlay
+                        if let point = selectedPoint {
+                            RiskTooltipView(
+                                date: point.date,
+                                riskLevel: point.riskLevel,
+                                price: point.price,
+                                fairValue: point.fairValue
+                            )
+                            .padding(.horizontal, ArkSpacing.md)
+                            .padding(.bottom, ArkSpacing.sm)
+                            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                            .animation(.easeOut(duration: 0.15), value: selectedDate)
+                        }
+
+                        // Chart
+                        RiskLevelChart(
+                            history: filteredHistory,
+                            timeRange: selectedTimeRange,
+                            colorScheme: colorScheme,
+                            enhancedHistory: filteredEnhancedHistory,
+                            selectedDate: $selectedDate
                         )
-                        .padding(.horizontal, ArkSpacing.md)
-                        .padding(.bottom, ArkSpacing.sm)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                        .animation(.easeOut(duration: 0.15), value: selectedDate)
+                        .frame(height: 280)
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, ArkSpacing.md)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-
-                    // Chart
-                    RiskLevelChart(
-                        history: filteredHistory,
-                        timeRange: selectedTimeRange,
-                        colorScheme: colorScheme,
-                        enhancedHistory: filteredEnhancedHistory,
-                        selectedDate: $selectedDate
-                    )
-                    .frame(height: 280)
-                    .padding(.horizontal, 4)
-                    .padding(.bottom, ArkSpacing.md)
                 }
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
             }
