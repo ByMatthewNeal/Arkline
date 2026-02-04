@@ -56,6 +56,11 @@ struct HomeView: View {
                             appState: appState
                         )
 
+                        // Disclaimer
+                        FinancialDisclaimer()
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+
                         Spacer(minLength: 120)
                     }
                     .padding(.top, 16)

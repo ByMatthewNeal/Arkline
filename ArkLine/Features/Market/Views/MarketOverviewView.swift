@@ -51,6 +51,11 @@ struct MarketOverviewView: View {
                         // 5. Market Movers Section (FMP)
                         FMPMarketMoversSection()
 
+                        // Disclaimer
+                        FinancialDisclaimer()
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+
                         Spacer(minLength: 100)
                     }
                     .padding(.top, 16)
