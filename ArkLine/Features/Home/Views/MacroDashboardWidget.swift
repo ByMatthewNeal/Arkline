@@ -350,10 +350,9 @@ struct MacroDashboardWidget: View {
             VStack(spacing: 0) {
                 // Header
                 HStack(alignment: .center) {
-                    Text("MACRO")
-                        .font(.system(size: 11, weight: .semibold, design: .default))
-                        .foregroundColor(textPrimary.opacity(0.5))
-                        .tracking(1.5)
+                    Text("Macro")
+                        .font(.title3)
+                        .foregroundColor(textPrimary)
 
                     Spacer()
 
