@@ -43,7 +43,7 @@ struct TodaysEventsWidget: View {
             // Header
             HStack {
                 Text("Upcoming Events")
-                    .font(size == .compact ? .subheadline : .headline)
+                    .font(size == .compact ? .subheadline : .title3)
                     .foregroundColor(textPrimary)
 
                 Spacer()

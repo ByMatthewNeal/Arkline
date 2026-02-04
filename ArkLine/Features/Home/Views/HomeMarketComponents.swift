@@ -192,7 +192,7 @@ struct HomeMarketMoversWidget: View {
     var body: some View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
             Text("Core")
-                .font(size == .compact ? .subheadline : .headline)
+                .font(size == .compact ? .subheadline : .title3)
                 .foregroundColor(textPrimary)
 
             if size == .compact {

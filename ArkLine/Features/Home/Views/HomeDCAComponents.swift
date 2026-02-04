@@ -135,15 +135,9 @@ struct DCARemindersEntrySection: View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
             // Header with bell icon
             HStack {
-                HStack(spacing: size == .compact ? 6 : 8) {
-                    Image(systemName: "bell.fill")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(AppColors.accent)
-
-                    Text("DCA Reminders")
-                        .font(size == .compact ? .subheadline : .headline)
-                        .foregroundColor(textPrimary)
-                }
+                Text("DCA Reminders")
+                    .font(size == .compact ? .subheadline : .title3)
+                    .foregroundColor(textPrimary)
 
                 Spacer()
 

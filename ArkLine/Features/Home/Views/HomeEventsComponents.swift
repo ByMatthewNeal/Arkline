@@ -52,7 +52,7 @@ struct UpcomingEventsSection: View {
             VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
                 HStack {
                     Text("Upcoming Events")
-                        .font(size == .compact ? .subheadline : .headline)
+                        .font(size == .compact ? .subheadline : .title3)
                         .foregroundColor(textPrimary)
 
                     Spacer()

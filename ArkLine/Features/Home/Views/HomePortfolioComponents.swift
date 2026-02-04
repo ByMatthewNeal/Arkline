@@ -404,13 +404,9 @@ struct MultiCoinRiskSection: View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
             // Section header
             HStack {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 14))
-                    .foregroundColor(AppColors.accent)
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Regression Risk")
-                        .font(ArkFonts.subheadline)
+                        .font(size == .compact ? .subheadline : .title3)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("Single-factor")
