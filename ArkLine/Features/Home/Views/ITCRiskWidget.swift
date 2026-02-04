@@ -704,9 +704,19 @@ struct RiskLevelChartView: View {
                                 }
                             }
 
-                            Image(systemName: showChart ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(textSecondary)
+                            HStack(spacing: 4) {
+                                Text(showChart ? "Hide" : "Show")
+                                    .font(.system(size: 11, weight: .medium))
+                                Image(systemName: showChart ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule()
+                                    .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
+                            )
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
