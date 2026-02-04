@@ -137,18 +137,12 @@ final class APISantimentService: SantimentServiceProtocol {
     // MARK: - Private Methods
 
     private func fetchFromAPI(days: Int) async throws -> [SupplyProfitData] {
-        // Santiment free tier has a rolling ~11 month window ending around Jan 2, 2026
+        // Santiment free tier has a rolling ~11 month window with ~30 day lag
         // We need to clamp dates to the available range
         let effectiveDays = min(days, 330)
 
-        // Free tier max date is approximately Jan 2, 2026
-        let freeTierEndDate: Date = {
-            var components = DateComponents()
-            components.year = 2026
-            components.month = 1
-            components.day = 2
-            return Calendar.current.date(from: components) ?? Date()
-        }()
+        // Free tier data lags ~30 days behind current date
+        let freeTierEndDate = Calendar.current.date(byAdding: .day, value: -29, to: Date()) ?? Date()
 
         // Use the earlier of today or the free tier end date
         let to = min(Date(), freeTierEndDate)
