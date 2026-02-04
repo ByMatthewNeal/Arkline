@@ -161,6 +161,7 @@
 		87E5C72EC3033733C97B8A92 /* OnboardingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */; };
 		87EB17BC735BE9A7C9D61450 /* ImageAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F96E9F31319C54A3F5158D /* ImageAnnotationView.swift */; };
 		8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */; };
+		E42AD0E11FB19C0D446A3F51 /* IncrementalPriceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */; };
 		8BA5B455BC87E71356E74F27 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C06924AB1053BEBE96D201B /* TransactionRow.swift */; };
 		8D35F7007280F5E80024585A /* CreatePortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5518A68482F92F03B8C61BD6 /* CreatePortfolioView.swift */; };
 		8DD30594AE32B9D1BE06917D /* YahooVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F5409EE3FED4A42BA318B3 /* YahooVIXService.swift */; };
@@ -313,6 +314,7 @@
 		2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeEntryView.swift; sourceTree = "<group>"; };
 		28D7DB64239C464966F42017 /* SocialLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialLinksView.swift; sourceTree = "<group>"; };
 		292C58ACAF95259468F7C280 /* HistoricalPriceData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalPriceData.swift; sourceTree = "<group>"; };
+		50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncrementalPriceStore.swift; sourceTree = "<group>"; };
 		29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketWidgets.swift; sourceTree = "<group>"; };
 		2AD0C37E21E4AD24118B5820 /* DailyNewsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyNewsSection.swift; sourceTree = "<group>"; };
 		2B441A5BF9F6E02BFEAD3BB8 /* BroadcastFeedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastFeedView.swift; sourceTree = "<group>"; };
@@ -643,6 +645,7 @@
 			isa = PBXGroup;
 			children = (
 				292C58ACAF95259468F7C280 /* HistoricalPriceData.swift */,
+				50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */,
 				85D98C62D2451E41B463D1AD /* RiskCalculator.swift */,
 				862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */,
 				209796E3E09731167CEB7D85 /* RiskFactorData.swift */,
@@ -1709,6 +1712,7 @@
 				7496022AFE7F51C4A859F208 /* RealEstateProperty.swift in Sources */,
 				81C072BFFD8B887035D2B021 /* RiskCalculator.swift in Sources */,
 				8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */,
+				E42AD0E11FB19C0D446A3F51 /* IncrementalPriceStore.swift in Sources */,
 				B8294A44B6A4109C2975C726 /* RiskFactorBreakdownView.swift in Sources */,
 				512181C730231BCC1960FD47 /* RiskFactorData.swift in Sources */,
 				035B405038E4D458D2EEE003 /* RiskFactorFetcher.swift in Sources */,

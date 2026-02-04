@@ -59,8 +59,8 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
             throw RiskCalculationError.unsupportedAsset(coin)
         }
 
-        // Use embedded historical data (no API dependency)
-        let fullPriceHistory = getEmbeddedPriceHistory(for: coin)
+        // Use embedded + incremental historical data
+        let fullPriceHistory = await getEmbeddedPriceHistory(for: coin)
 
         guard !fullPriceHistory.isEmpty else {
             throw RiskCalculationError.insufficientData(coin)
@@ -90,9 +90,9 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
 
     // MARK: - Embedded Data Access
 
-    /// Get price history from embedded data (no API call needed)
-    private func getEmbeddedPriceHistory(for coin: String) -> [(date: Date, price: Double)] {
-        return HistoricalPriceData.pricesAsTuples(for: coin)
+    /// Get price history from embedded data + incrementally fetched recent data.
+    private func getEmbeddedPriceHistory(for coin: String) async -> [(date: Date, price: Double)] {
+        return await IncrementalPriceStore.shared.fullPriceHistory(for: coin)
     }
 
     func calculateCurrentRisk(coin: String) async throws -> RiskHistoryPoint {
@@ -114,7 +114,7 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         }
 
         // Fetch historical data for regression fitting
-        let priceHistory = getEmbeddedPriceHistory(for: coin)
+        let priceHistory = await getEmbeddedPriceHistory(for: coin)
 
         guard !priceHistory.isEmpty else {
             throw RiskCalculationError.insufficientData(coin)
@@ -277,16 +277,15 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
 
     // MARK: - Private Helpers
 
-    /// Get price history using embedded data (no API dependency)
+    /// Get price history using embedded + incremental data.
     private func fetchPriceHistory(config: AssetRiskConfig) async throws -> [(date: Date, price: Double)] {
-        // Use embedded historical data - no API call needed
-        let embeddedData = HistoricalPriceData.pricesAsTuples(for: config.assetId)
+        let priceData = await IncrementalPriceStore.shared.fullPriceHistory(for: config.assetId)
 
-        guard !embeddedData.isEmpty else {
+        guard !priceData.isEmpty else {
             throw RiskCalculationError.insufficientData(config.assetId)
         }
 
-        return embeddedData
+        return priceData
     }
 }
 

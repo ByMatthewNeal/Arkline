@@ -375,6 +375,7 @@ struct RiskLevelChartView: View {
     @State private var isLoadingMultiFactor = false
     @State private var showFactorBreakdown = true
     @State private var showConfidenceInfo = false
+    @State private var showInfoSheet = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -401,6 +402,19 @@ struct RiskLevelChartView: View {
         case .eth: return viewModel.ethRiskLevel
         case .sol:
             // SOL falls back to enhanced history if multi-factor not loaded
+            if let latest = enhancedRiskHistory.last {
+                return ITCRiskLevel(from: latest)
+            }
+            return nil
+        }
+    }
+
+    // Get regression-only risk level (single-factor, shown on home page)
+    private var regressionOnlyRiskLevel: ITCRiskLevel? {
+        switch selectedCoin {
+        case .btc: return viewModel.btcRiskLevel
+        case .eth: return viewModel.ethRiskLevel
+        case .sol:
             if let latest = enhancedRiskHistory.last {
                 return ITCRiskLevel(from: latest)
             }
@@ -456,12 +470,18 @@ struct RiskLevelChartView: View {
     }
 
     // Load enhanced risk history for selected coin
+    // Always fetch at least 30 days so short ranges (7D) have data to display
     private func loadEnhancedHistory() {
         isLoadingHistory = true
         Task {
+            let fetchDays: Int? = if let days = selectedTimeRange.days {
+                max(days, 30)
+            } else {
+                nil
+            }
             let history = await viewModel.fetchEnhancedRiskHistory(
                 coin: selectedCoin.rawValue,
-                days: selectedTimeRange.days
+                days: fetchDays
             )
             await MainActor.run {
                 self.enhancedRiskHistory = history
@@ -522,10 +542,19 @@ struct RiskLevelChartView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showInfoSheet = true }) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                         .foregroundColor(AppColors.accent)
                 }
+            }
+            .sheet(isPresented: $showInfoSheet) {
+                RiskLevelInfoSheet()
             }
             #endif
             .onAppear {
@@ -627,9 +656,8 @@ struct RiskLevelChartView: View {
 
     // MARK: - Chart Section
     private var chartSection: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+        VStack(alignment: .leading, spacing: 0) {
             if filteredHistory.isEmpty && !isLoadingHistory {
-                // Placeholder when no data
                 VStack(spacing: ArkSpacing.md) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 40))
@@ -640,10 +668,9 @@ struct RiskLevelChartView: View {
                         .foregroundColor(textSecondary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 250)
+                .frame(height: 280)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
             } else if isLoadingHistory {
-                // Loading state
                 VStack(spacing: ArkSpacing.md) {
                     ProgressView()
                         .scaleEffect(1.2)
@@ -653,33 +680,33 @@ struct RiskLevelChartView: View {
                         .foregroundColor(textSecondary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 250)
+                .frame(height: 280)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
             } else {
-                // Chart with Swift Charts - Interactive
-                VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-                    HStack {
-                        Text("\(selectedCoin.displayName) Risk Level")
-                            .font(.headline)
+                VStack(alignment: .leading, spacing: 0) {
+                    // Minimal header
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Risk Level")
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(textPrimary)
+                            .textCase(.uppercase)
+                            .tracking(0.8)
 
                         Spacer()
 
-                        // Show "Tap to explore" hint or current selection
-                        if selectedDate == nil {
-                            Text("Tap chart to explore")
-                                .font(.caption)
-                                .foregroundColor(textSecondary)
-                        } else {
+                        if selectedDate != nil {
                             Button(action: { selectedDate = nil }) {
-                                Text("Clear")
-                                    .font(.caption)
+                                Text("Reset")
+                                    .font(.system(size: 11, weight: .medium))
                                     .foregroundColor(AppColors.accent)
                             }
                         }
                     }
+                    .padding(.horizontal, ArkSpacing.md)
+                    .padding(.top, ArkSpacing.md)
+                    .padding(.bottom, ArkSpacing.sm)
 
-                    // Tooltip overlay (positioned above chart when point is selected)
+                    // Tooltip overlay
                     if let point = selectedPoint {
                         RiskTooltipView(
                             date: point.date,
@@ -687,11 +714,13 @@ struct RiskLevelChartView: View {
                             price: point.price,
                             fairValue: point.fairValue
                         )
+                        .padding(.horizontal, ArkSpacing.md)
+                        .padding(.bottom, ArkSpacing.sm)
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         .animation(.easeOut(duration: 0.15), value: selectedDate)
                     }
 
-                    // Interactive chart
+                    // Chart
                     RiskLevelChart(
                         history: filteredHistory,
                         timeRange: selectedTimeRange,
@@ -699,10 +728,10 @@ struct RiskLevelChartView: View {
                         enhancedHistory: filteredEnhancedHistory,
                         selectedDate: $selectedDate
                     )
-                    .frame(height: 250)
-
+                    .frame(height: 280)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, ArkSpacing.md)
                 }
-                .padding(ArkSpacing.md)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
             }
         }
@@ -711,9 +740,19 @@ struct RiskLevelChartView: View {
     // MARK: - Latest Value Section
     private var latestValueSection: some View {
         VStack(spacing: ArkSpacing.md) {
-            Text("Multi-Factor \(selectedCoin.rawValue) Risk")
-                .font(.subheadline)
-                .foregroundColor(textSecondary)
+            HStack(spacing: 6) {
+                Text(multiFactorRisk != nil
+                     ? "Multi-Factor \(selectedCoin.rawValue) Risk"
+                     : "Regression \(selectedCoin.rawValue) Risk")
+                    .font(.subheadline)
+                    .foregroundColor(textSecondary)
+
+                if isLoadingMultiFactor {
+                    ProgressView()
+                        .scaleEffect(0.5)
+                        .frame(width: 14, height: 14)
+                }
+            }
 
             if let risk = currentRiskLevel {
                 VStack(spacing: ArkSpacing.xs) {
@@ -738,6 +777,15 @@ struct RiskLevelChartView: View {
                     Text("As of \(formatDate(risk.date))")
                         .font(.caption)
                         .foregroundColor(textSecondary)
+
+                    // Comparison callout: regression-only vs multi-factor
+                    if let regRisk = regressionOnlyRiskLevel,
+                       multiFactorRisk != nil {
+                        regressionComparisonBanner(
+                            regressionValue: regRisk.riskLevel,
+                            compositeValue: risk.riskLevel
+                        )
+                    }
                 }
             } else {
                 Text("--")
@@ -748,6 +796,65 @@ struct RiskLevelChartView: View {
         .frame(maxWidth: .infinity)
         .padding(ArkSpacing.xl)
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+    }
+
+    // MARK: - Regression Comparison Banner
+    private func regressionComparisonBanner(regressionValue: Double, compositeValue: Double) -> some View {
+        VStack(spacing: ArkSpacing.sm) {
+            // Divider
+            Rectangle()
+                .fill(textSecondary.opacity(0.15))
+                .frame(height: 1)
+                .padding(.horizontal, ArkSpacing.lg)
+                .padding(.top, ArkSpacing.sm)
+
+            // Comparison row
+            HStack(spacing: ArkSpacing.md) {
+                // Regression-only value
+                VStack(spacing: 4) {
+                    Text("Regression Only")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(textSecondary)
+
+                    Text(String(format: "%.3f", regressionValue))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(RiskColors.color(for: regressionValue))
+
+                    Text(RiskColors.category(for: regressionValue))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(RiskColors.color(for: regressionValue))
+                }
+                .frame(maxWidth: .infinity)
+
+                // Arrow separator
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textSecondary.opacity(0.4))
+
+                // Composite value
+                VStack(spacing: 4) {
+                    Text("7-Factor Composite")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(textSecondary)
+
+                    Text(String(format: "%.3f", compositeValue))
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(RiskColors.color(for: compositeValue))
+
+                    Text(RiskColors.category(for: compositeValue))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(RiskColors.color(for: compositeValue))
+                }
+                .frame(maxWidth: .infinity)
+            }
+
+            // Explanation text
+            Text("The home page shows regression risk (1 factor). This view combines 7 indicators for a broader assessment.")
+                .font(.system(size: 11))
+                .foregroundColor(textSecondary.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, ArkSpacing.sm)
+        }
     }
 
     // MARK: - Factor Breakdown Section
@@ -928,6 +1035,101 @@ struct RiskLevelChartView: View {
     }
 }
 
+// MARK: - Risk Level Info Sheet
+struct RiskLevelInfoSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // What is it
+                    infoSection(
+                        icon: "chart.line.uptrend.xyaxis",
+                        title: "What is the Risk Level?",
+                        body: "The Risk Level is a score from 0.00 to 1.00 that measures where an asset sits in its market cycle. It uses logarithmic regression on historical price data to determine whether the current price is relatively cheap or expensive compared to its long-term trend."
+                    )
+
+                    // How to use it
+                    infoSection(
+                        icon: "lightbulb",
+                        title: "How to Use It",
+                        body: """
+                        Use the risk level to guide your investment decisions:
+
+                        \u{2022} Low risk (below 0.40) suggests the asset is undervalued relative to its historical trend — a potentially good time to accumulate.
+
+                        \u{2022} Neutral (0.40 - 0.55) means the asset is fairly priced. Neither a strong buy nor sell signal.
+
+                        \u{2022} High risk (above 0.70) indicates the asset may be overheated. Consider taking profits or reducing exposure.
+                        """
+                    )
+
+                    // Why it matters
+                    infoSection(
+                        icon: "exclamationmark.shield",
+                        title: "Why It Matters",
+                        body: "Markets move in cycles. Buying when risk is low and being cautious when risk is high has historically led to better outcomes. This tool helps you avoid buying tops and missing bottoms by providing an objective, data-driven perspective on market conditions."
+                    )
+
+                    // Multi-factor
+                    infoSection(
+                        icon: "slider.horizontal.3",
+                        title: "Multi-Factor Analysis",
+                        body: "The Multi-Factor Risk score combines multiple on-chain and technical indicators — including logarithmic regression, MVRV ratio, NUPL, and Puell Multiple — to produce a more robust signal than any single metric alone. Each factor is weighted based on its historical reliability."
+                    )
+
+                    // Chart interaction
+                    infoSection(
+                        icon: "hand.tap",
+                        title: "Interacting with the Chart",
+                        body: "Tap and drag on the chart to explore historical risk levels at specific dates. Use the time range buttons (7D, 30D, 90D, 1Y, All) to zoom in or out. You can also switch between BTC, ETH, and SOL using the coin selector at the top."
+                    )
+                }
+                .padding(20)
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("About Risk Level")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+    }
+
+    private func infoSection(icon: String, title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(AppColors.accent)
+                    .frame(width: 28)
+
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+            }
+
+            Text(body)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+}
+
 // MARK: - Confidence Info Popover
 /// Explains the data confidence indicator
 struct ConfidenceInfoPopover: View {
@@ -1099,13 +1301,10 @@ struct RiskLevelChart: View {
     let timeRange: RiskTimeRange
     let colorScheme: ColorScheme
 
-    // Enhanced history with price data (optional)
     var enhancedHistory: [RiskHistoryPoint]?
-
-    // Selection binding
     @Binding var selectedDate: Date?
 
-    // Init without selection (backwards compatible)
+    // Backwards-compatible init
     init(history: [ITCRiskLevel], timeRange: RiskTimeRange, colorScheme: ColorScheme) {
         self.history = history
         self.timeRange = timeRange
@@ -1123,32 +1322,31 @@ struct RiskLevelChart: View {
         self._selectedDate = selectedDate
     }
 
-    // Convert string dates to Date objects for proper charting
     private var chartData: [(date: Date, risk: Double, price: Double?, fairValue: Double?)] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-
-        // If we have enhanced history, use it
         if let enhanced = enhancedHistory {
-            return enhanced.map { point in
-                (date: point.date, risk: point.riskLevel, price: point.price, fairValue: point.fairValue)
-            }
+            return enhanced.map { (date: $0.date, risk: $0.riskLevel, price: $0.price, fairValue: $0.fairValue) }
         }
-
-        // Otherwise use legacy history
         return history.compactMap { level in
             guard let date = formatter.date(from: level.date) else { return nil }
             return (date: date, risk: level.riskLevel, price: level.price, fairValue: level.fairValue)
         }
     }
 
-    // Find closest point to selected date
     private var selectedPoint: (date: Date, risk: Double, price: Double?, fairValue: Double?)? {
         guard let selectedDate = selectedDate else { return nil }
         return chartData.min(by: { abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate)) })
     }
 
-    // Determine X-axis label count based on time range
+    private var latestRisk: Double {
+        chartData.last?.risk ?? 0.5
+    }
+
+    private var lineColor: Color {
+        RiskColors.color(for: latestRisk)
+    }
+
     private var xAxisLabelCount: Int {
         switch timeRange {
         case .sevenDays: return 4
@@ -1159,51 +1357,57 @@ struct RiskLevelChart: View {
         }
     }
 
-    // Format label based on time range
     private func formatLabel(for date: Date) -> String {
         let formatter = DateFormatter()
         switch timeRange {
-        case .sevenDays:
-            formatter.dateFormat = "EEE" // Mon, Tue, etc.
-        case .thirtyDays:
-            formatter.dateFormat = "MMM d" // Jan 15
-        case .ninetyDays, .oneYear:
-            formatter.dateFormat = "MMM" // Jan, Feb, etc.
-        case .all:
-            formatter.dateFormat = "MMM yy" // Jan 25
+        case .sevenDays: formatter.dateFormat = "EEE"
+        case .thirtyDays: formatter.dateFormat = "MMM d"
+        case .ninetyDays, .oneYear: formatter.dateFormat = "MMM"
+        case .all: formatter.dateFormat = "MMM yy"
         }
         return formatter.string(from: date)
     }
 
+    // Threshold levels for subtle zone lines
+    private let thresholds: [(value: Double, color: Color, label: String)] = [
+        (0.20, RiskColors.lowRisk, "Low"),
+        (0.40, RiskColors.neutral, ""),
+        (0.55, RiskColors.elevatedRisk, ""),
+        (0.70, RiskColors.highRisk, "High"),
+        (0.90, RiskColors.extremeRisk, ""),
+    ]
+
     var body: some View {
         Chart {
-            // Risk zone backgrounds
-            RectangleMark(yStart: .value("Start", 0), yEnd: .value("End", 0.20))
-                .foregroundStyle(RiskColors.veryLowRisk.opacity(0.08))
-
-            RectangleMark(yStart: .value("Start", 0.20), yEnd: .value("End", 0.40))
-                .foregroundStyle(RiskColors.lowRisk.opacity(0.08))
-
-            RectangleMark(yStart: .value("Start", 0.40), yEnd: .value("End", 0.55))
-                .foregroundStyle(RiskColors.neutral.opacity(0.08))
-
-            RectangleMark(yStart: .value("Start", 0.55), yEnd: .value("End", 0.70))
-                .foregroundStyle(RiskColors.elevatedRisk.opacity(0.08))
-
-            RectangleMark(yStart: .value("Start", 0.70), yEnd: .value("End", 0.90))
-                .foregroundStyle(RiskColors.highRisk.opacity(0.08))
-
-            RectangleMark(yStart: .value("Start", 0.90), yEnd: .value("End", 1.0))
-                .foregroundStyle(RiskColors.extremeRisk.opacity(0.08))
-
-            // Selection rule mark (vertical line)
-            if let point = selectedPoint {
-                RuleMark(x: .value("Selected", point.date))
-                    .foregroundStyle(RiskColors.color(for: point.risk).opacity(0.5))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 2]))
+            // Subtle threshold lines instead of colored bands
+            ForEach(thresholds, id: \.value) { threshold in
+                RuleMark(y: .value("Threshold", threshold.value))
+                    .foregroundStyle(threshold.color.opacity(0.2))
+                    .lineStyle(StrokeStyle(lineWidth: 0.5))
             }
 
-            // Area under the line
+            // Selection crosshair
+            if let point = selectedPoint {
+                // Vertical line
+                RuleMark(x: .value("Selected", point.date))
+                    .foregroundStyle(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.25)
+                            : Color.black.opacity(0.15)
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 0.5))
+
+                // Horizontal line at risk value
+                RuleMark(y: .value("Risk", point.risk))
+                    .foregroundStyle(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.15)
+                            : Color.black.opacity(0.08)
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [4, 3]))
+            }
+
+            // Area fill — clean single gradient
             ForEach(chartData, id: \.date) { point in
                 AreaMark(
                     x: .value("Date", point.date),
@@ -1212,87 +1416,105 @@ struct RiskLevelChart: View {
                 .foregroundStyle(
                     LinearGradient(
                         colors: [
-                            RiskColors.color(for: point.risk).opacity(0.3),
-                            RiskColors.color(for: point.risk).opacity(0.05)
+                            lineColor.opacity(0.15),
+                            lineColor.opacity(0.02)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
+                .interpolationMethod(.catmullRom)
             }
 
-            // Line connecting data points
+            // Primary line — smooth, weighted
             ForEach(chartData, id: \.date) { point in
                 LineMark(
                     x: .value("Date", point.date),
                     y: .value("Risk", point.risk)
                 )
-                .foregroundStyle(
-                    colorScheme == .dark
-                        ? Color.white.opacity(0.6)
-                        : Color.black.opacity(0.4)
-                )
-                .lineStyle(StrokeStyle(lineWidth: 2))
+                .foregroundStyle(lineColor)
+                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .interpolationMethod(.catmullRom)
             }
 
-            // Show points only for smaller datasets
-            if chartData.count <= 30 {
-                ForEach(chartData, id: \.date) { point in
-                    PointMark(
-                        x: .value("Date", point.date),
-                        y: .value("Risk", point.risk)
-                    )
-                    .foregroundStyle(RiskColors.color(for: point.risk))
-                    .symbolSize(chartData.count > 15 ? 25 : 40)
-                }
-            }
-
-            // Selected point marker (always visible when selected)
+            // Selected point — polished indicator
             if let point = selectedPoint {
+                // Outer glow
+                PointMark(
+                    x: .value("Date", point.date),
+                    y: .value("Risk", point.risk)
+                )
+                .foregroundStyle(RiskColors.color(for: point.risk).opacity(0.3))
+                .symbolSize(120)
+
+                // Filled ring
                 PointMark(
                     x: .value("Date", point.date),
                     y: .value("Risk", point.risk)
                 )
                 .foregroundStyle(RiskColors.color(for: point.risk))
-                .symbolSize(80)
+                .symbolSize(50)
 
+                // Inner white dot
                 PointMark(
                     x: .value("Date", point.date),
                     y: .value("Risk", point.risk)
                 )
                 .foregroundStyle(Color.white)
-                .symbolSize(20)
+                .symbolSize(14)
             }
         }
         .chartYScale(domain: 0...1)
         .chartXSelection(value: $selectedDate)
         .chartYAxis {
-            AxisMarks(values: [0, 0.25, 0.5, 0.75, 1]) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 2]))
+            AxisMarks(values: [0, 0.25, 0.50, 0.75, 1.0]) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
                     .foregroundStyle(
                         colorScheme == .dark
-                            ? Color.white.opacity(0.1)
-                            : Color.black.opacity(0.1)
+                            ? Color.white.opacity(0.06)
+                            : Color.black.opacity(0.06)
                     )
-                AxisValueLabel {
-                    if let doubleValue = value.as(Double.self) {
-                        Text(String(format: "%.2f", doubleValue))
-                            .font(.system(size: 10))
-                            .foregroundColor(AppColors.textSecondary)
+                AxisValueLabel(anchor: .leading) {
+                    if let v = value.as(Double.self) {
+                        Text(String(format: "%.2f", v))
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.35)
+                                    : Color.black.opacity(0.35)
+                            )
                     }
                 }
             }
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: xAxisLabelCount)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
+                    .foregroundStyle(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.04)
+                            : Color.black.opacity(0.04)
+                    )
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
                         Text(formatLabel(for: date))
-                            .font(.system(size: 10))
-                            .foregroundColor(AppColors.textSecondary)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.35)
+                                    : Color.black.opacity(0.35)
+                            )
                     }
                 }
             }
+        }
+        .chartPlotStyle { plotArea in
+            plotArea
+                .background(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.02)
+                        : Color.black.opacity(0.015)
+                )
         }
     }
 }

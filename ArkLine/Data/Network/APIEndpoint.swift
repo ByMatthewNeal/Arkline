@@ -460,13 +460,14 @@ enum ArklineBackendEndpoint: APIEndpoint {
 // MARK: - Binance Endpoints (Public API - no auth required)
 enum BinanceEndpoint: APIEndpoint {
     case klines(symbol: String, interval: String, limit: Int)
+    case klinesWithTime(symbol: String, interval: String, startTime: Int64, limit: Int)
     case tickerPrice(symbol: String)
 
     var baseURL: String { "https://api.binance.com" }
 
     var path: String {
         switch self {
-        case .klines:
+        case .klines, .klinesWithTime:
             return "/api/v3/klines"
         case .tickerPrice:
             return "/api/v3/ticker/price"
@@ -481,6 +482,13 @@ enum BinanceEndpoint: APIEndpoint {
             return [
                 "symbol": symbol,
                 "interval": interval,
+                "limit": String(limit)
+            ]
+        case .klinesWithTime(let symbol, let interval, let startTime, let limit):
+            return [
+                "symbol": symbol,
+                "interval": interval,
+                "startTime": String(startTime),
                 "limit": String(limit)
             ]
         case .tickerPrice(let symbol):

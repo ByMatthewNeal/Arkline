@@ -408,9 +408,15 @@ struct MultiCoinRiskSection: View {
                     .font(.system(size: 14))
                     .foregroundColor(AppColors.accent)
 
-                Text("Regression Risk")
-                    .font(ArkFonts.subheadline)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Regression Risk")
+                        .font(ArkFonts.subheadline)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    Text("Single-factor")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                }
 
                 Spacer()
 
