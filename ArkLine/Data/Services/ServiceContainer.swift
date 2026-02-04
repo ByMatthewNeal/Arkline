@@ -21,7 +21,8 @@ final class ServiceContainer {
     private let useMockMacroServices: Bool = false
 
     /// Use real Supabase data for Portfolio and DCA
-    var useRealPortfolioData: Bool = true
+    /// Set to false for screenshots/promotional materials
+    var useRealPortfolioData: Bool = false
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()
