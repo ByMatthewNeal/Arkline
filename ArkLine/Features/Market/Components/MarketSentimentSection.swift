@@ -115,9 +115,9 @@ struct MarketSentimentSection: View {
 
                     // Google Trends / Bitcoin Search
                     if let trends = viewModel.googleTrends {
-                        GoogleTrendsCard(trends: trends)
+                        GoogleTrendsCard(trends: trends, history: viewModel.googleTrendsHistory)
                     } else {
-                        BitcoinSearchCard(searchIndex: viewModel.bitcoinSearchIndex)
+                        BitcoinSearchCard(searchIndex: viewModel.bitcoinSearchIndex, history: viewModel.googleTrendsHistory)
                     }
                 }
             }
@@ -519,6 +519,7 @@ typealias AppStoreRankingsCard = CoinbaseRankingCard
 struct GoogleTrendsCard: View {
     @Environment(\.colorScheme) var colorScheme
     let trends: GoogleTrendsData
+    var history: [GoogleTrendsDTO] = []
     @State private var showingDetail = false
 
     // Use green/red for up/down trends only
@@ -561,7 +562,7 @@ struct GoogleTrendsCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            GoogleTrendsDetailView(trends: trends)
+            GoogleTrendsDetailView(trends: trends, history: history)
         }
     }
 }
@@ -831,6 +832,7 @@ struct BTCDominanceCard: View {
 struct BitcoinSearchCard: View {
     @Environment(\.colorScheme) var colorScheme
     let searchIndex: Int
+    var history: [GoogleTrendsDTO] = []
     @State private var showingDetail = false
 
     var body: some View {
@@ -858,7 +860,7 @@ struct BitcoinSearchCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            GoogleTrendsDetailView(trends: nil, searchIndex: searchIndex)
+            GoogleTrendsDetailView(trends: nil, searchIndex: searchIndex, history: history)
         }
     }
 }
@@ -867,6 +869,7 @@ struct BitcoinSearchCard: View {
 struct GoogleTrendsDetailView: View {
     let trends: GoogleTrendsData?
     var searchIndex: Int? = nil
+    var history: [GoogleTrendsDTO] = []
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
@@ -876,7 +879,36 @@ struct GoogleTrendsDetailView: View {
         trends?.currentIndex ?? searchIndex ?? 0
     }
 
-    // Historical events with search interest and BTC price
+    // Filter history to only show days where value changed
+    private var changedHistory: [(dto: GoogleTrendsDTO, change: Int)] {
+        guard history.count > 1 else {
+            return history.map { ($0, 0) }
+        }
+
+        var result: [(dto: GoogleTrendsDTO, change: Int)] = []
+        let sortedHistory = history.sorted { $0.date > $1.date } // Most recent first
+
+        for (index, item) in sortedHistory.enumerated() {
+            if index == 0 {
+                // Most recent - always show, calculate change from previous
+                let change = sortedHistory.count > 1 ? item.searchIndex - sortedHistory[1].searchIndex : 0
+                if change != 0 || result.isEmpty {
+                    result.append((item, change))
+                }
+            } else {
+                // Compare with previous day
+                let previousIndex = sortedHistory[index - 1].searchIndex
+                let change = previousIndex - item.searchIndex // Change that happened after this day
+                if change != 0 {
+                    result.append((item, change))
+                }
+            }
+        }
+
+        return result
+    }
+
+    // Static historical events for reference
     private var historicalEvents: [(date: String, event: String, searchIndex: Int, btcPrice: String)] {
         [
             ("Jan 2025", "New ATH", 88, "$109,000"),
@@ -889,8 +921,7 @@ struct GoogleTrendsDetailView: View {
             ("May 2021", "China Mining Ban", 85, "$37,000"),
             ("Apr 2021", "Coinbase IPO", 78, "$64,000"),
             ("Jan 2021", "Tesla Buys BTC", 72, "$40,000"),
-            ("Dec 2017", "2017 Bull Run Peak", 100, "$20,000"),
-            ("Current", "Today", currentIndex, "--")
+            ("Dec 2017", "2017 Bull Run Peak", 100, "$20,000")
         ]
     }
 
@@ -933,6 +964,46 @@ struct GoogleTrendsDetailView: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
+
+                    // Recent Changes (from database)
+                    if !changedHistory.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Recent Changes")
+                                    .font(.headline)
+                                    .foregroundColor(textPrimary)
+
+                                Spacer()
+
+                                Text("\(history.count) days tracked")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            if changedHistory.isEmpty || changedHistory.allSatisfy({ $0.change == 0 }) {
+                                HStack {
+                                    Image(systemName: "equal.circle.fill")
+                                        .foregroundColor(AppColors.warning)
+                                    Text("No changes recorded yet")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 8)
+                            } else {
+                                ForEach(changedHistory.prefix(10), id: \.dto.id) { item in
+                                    GoogleTrendsHistoryRow(
+                                        date: item.dto.shortDateDisplay,
+                                        searchIndex: item.dto.searchIndex,
+                                        change: item.change,
+                                        btcPrice: item.dto.btcPriceDisplay
+                                    )
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(16)
+                    }
 
                     // Historical Events
                     VStack(alignment: .leading, spacing: 12) {
@@ -998,6 +1069,59 @@ struct GoogleTrendsDetailView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Google Trends History Row
+struct GoogleTrendsHistoryRow: View {
+    let date: String
+    let searchIndex: Int
+    let change: Int
+    let btcPrice: String
+
+    var changeColor: Color {
+        if change > 0 { return AppColors.success }
+        if change < 0 { return AppColors.error }
+        return .secondary
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(date)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                if btcPrice != "--" {
+                    Text(btcPrice)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                // Change indicator
+                if change != 0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: change > 0 ? "arrow.up" : "arrow.down")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("\(change > 0 ? "+" : "")\(change)")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(changeColor)
+                }
+
+                // Current value
+                Text("\(searchIndex)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(searchIndex >= 80 ? AppColors.error : .primary)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.vertical, 6)
     }
 }
 

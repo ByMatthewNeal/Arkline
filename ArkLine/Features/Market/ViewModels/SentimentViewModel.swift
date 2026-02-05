@@ -73,6 +73,7 @@ class SentimentViewModel {
 
     // Historical Data
     var fearGreedHistory: [FearGreedIndex] = []
+    var googleTrendsHistory: [GoogleTrendsDTO] = []
 
     // MARK: - Computed Properties for UI
 
@@ -334,10 +335,22 @@ class SentimentViewModel {
         }
     }
 
+    func fetchGoogleTrendsHistory(limit: Int = 30) async {
+        do {
+            let history = try await SupabaseDatabase.shared.getGoogleTrendsHistory(limit: limit)
+            await MainActor.run {
+                self.googleTrendsHistory = history
+            }
+        } catch {
+            // Silently fail for history - not critical
+        }
+    }
+
     // MARK: - Private Methods
     private func loadInitialData() async {
         await refresh()
         await fetchFearGreedHistory()
+        await fetchGoogleTrendsHistory()
     }
 
     // Safe fetch methods that return nil on error (for non-critical data)

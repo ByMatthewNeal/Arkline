@@ -550,15 +550,61 @@ final class APISentimentService: SentimentServiceProtocol {
 
     func fetchGoogleTrends() async throws -> GoogleTrendsData {
         // Google Trends API requires SerpAPI or similar service
-        // Return stable placeholder data
+        // Using placeholder data for now (50 = baseline)
+        let currentIndex = 50
+
+        // Try to get historical data from Supabase to calculate change
+        let history = try? await SupabaseDatabase.shared.getGoogleTrendsHistory(limit: 30)
+        let weekAgoIndex = history?.first(where: { daysSince($0.date) >= 7 })?.searchIndex ?? currentIndex
+        let monthAgoIndex = history?.first(where: { daysSince($0.date) >= 30 })?.searchIndex ?? currentIndex
+
+        // Determine trend direction
+        let trend: TrendDirection
+        if currentIndex > weekAgoIndex + 5 {
+            trend = .rising
+        } else if currentIndex < weekAgoIndex - 5 {
+            trend = .falling
+        } else {
+            trend = .stable
+        }
+
+        // Save current data to Supabase for historical tracking
+        Task {
+            await saveGoogleTrendsToSupabase(searchIndex: currentIndex)
+        }
+
         return GoogleTrendsData(
             keyword: "Bitcoin",
-            currentIndex: 50,
-            weekAgoIndex: 50,
-            monthAgoIndex: 50,
-            trend: .stable,
+            currentIndex: currentIndex,
+            weekAgoIndex: weekAgoIndex,
+            monthAgoIndex: monthAgoIndex,
+            trend: trend,
             timestamp: Date()
         )
+    }
+
+    /// Calculate days since a date
+    private func daysSince(_ date: Date) -> Int {
+        Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+    }
+
+    /// Save current Google Trends data to Supabase with BTC price
+    private func saveGoogleTrendsToSupabase(searchIndex: Int) async {
+        do {
+            // Fetch current BTC price
+            let btcPrice = await fetchCurrentBTCPrice()
+
+            // Create DTO
+            let trendsDTO = GoogleTrendsDTO(
+                searchIndex: searchIndex,
+                btcPrice: btcPrice
+            )
+
+            // Save to Supabase
+            try await SupabaseDatabase.shared.saveGoogleTrends(trendsDTO)
+        } catch {
+            logWarning("Failed to save Google Trends to Supabase: \(error.localizedDescription)", category: .network)
+        }
     }
 
     func fetchMarketOverview() async throws -> MarketOverview {

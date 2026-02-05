@@ -249,6 +249,83 @@ extension SupabaseDatabase {
             .value
         return Set(results.map { $0.date })
     }
+
+    // MARK: - Google Trends History
+
+    /// Save today's Google Trends data (upsert - update if exists, insert if not)
+    func saveGoogleTrends(_ trends: GoogleTrendsDTO) async throws {
+        guard SupabaseManager.shared.isConfigured else {
+            logWarning("Supabase not configured - skipping Google Trends save", category: .network)
+            return
+        }
+        let client = SupabaseManager.shared.client
+
+        // Check if we already have a record for this date
+        let existing: [GoogleTrendsDTO] = try await client
+            .from(SupabaseTable.googleTrendsHistory.rawValue)
+            .select("*")
+            .eq("recorded_date", value: trends.recordedDate)
+            .execute()
+            .value
+
+        if existing.isEmpty {
+            // Insert new record
+            try await client
+                .from(SupabaseTable.googleTrendsHistory.rawValue)
+                .insert(trends)
+                .execute()
+            logInfo("Saved new Google Trends data for \(trends.recordedDate): \(trends.searchIndex)", category: .network)
+        } else if let existingRecord = existing.first, existingRecord.searchIndex != trends.searchIndex {
+            // Update if value changed (rare but possible for same-day updates)
+            try await client
+                .from(SupabaseTable.googleTrendsHistory.rawValue)
+                .update(["search_index": trends.searchIndex, "btc_price": trends.btcPrice as Any])
+                .eq("recorded_date", value: trends.recordedDate)
+                .execute()
+            logInfo("Updated Google Trends data for \(trends.recordedDate): \(trends.searchIndex)", category: .network)
+        }
+    }
+
+    /// Get historical Google Trends data (sorted by date descending)
+    func getGoogleTrendsHistory(limit: Int = 30) async throws -> [GoogleTrendsDTO] {
+        guard SupabaseManager.shared.isConfigured else { return [] }
+        let client = SupabaseManager.shared.client
+        return try await client
+            .from(SupabaseTable.googleTrendsHistory.rawValue)
+            .select("*")
+            .order("recorded_date", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
+    /// Get the latest Google Trends data point
+    func getLatestGoogleTrends() async throws -> GoogleTrendsDTO? {
+        guard SupabaseManager.shared.isConfigured else { return nil }
+        let client = SupabaseManager.shared.client
+        let results: [GoogleTrendsDTO] = try await client
+            .from(SupabaseTable.googleTrendsHistory.rawValue)
+            .select("*")
+            .order("recorded_date", ascending: false)
+            .limit(1)
+            .execute()
+            .value
+        return results.first
+    }
+
+    /// Get Google Trends data for a specific date range
+    func getGoogleTrendsHistory(from startDate: String, to endDate: String) async throws -> [GoogleTrendsDTO] {
+        guard SupabaseManager.shared.isConfigured else { return [] }
+        let client = SupabaseManager.shared.client
+        return try await client
+            .from(SupabaseTable.googleTrendsHistory.rawValue)
+            .select("*")
+            .gte("recorded_date", value: startDate)
+            .lte("recorded_date", value: endDate)
+            .order("recorded_date", ascending: false)
+            .execute()
+            .value
+    }
 }
 
 // MARK: - DTO Types for Database
@@ -371,5 +448,80 @@ struct AppStoreRankingDTO: Codable {
     var isRanked: Bool {
         guard let rank = ranking else { return false }
         return rank > 0
+    }
+}
+
+// MARK: - Google Trends DTO
+struct GoogleTrendsDTO: Codable {
+    let id: UUID
+    let searchIndex: Int // 0-100 relative search interest
+    let btcPrice: Double?
+    let recordedDate: String // YYYY-MM-DD format
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case searchIndex = "search_index"
+        case btcPrice = "btc_price"
+        case recordedDate = "recorded_date"
+        case createdAt = "created_at"
+    }
+
+    // Create from current data
+    init(searchIndex: Int, btcPrice: Double?, date: Date = Date()) {
+        self.id = UUID()
+        self.searchIndex = searchIndex
+        self.btcPrice = btcPrice
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        self.recordedDate = formatter.string(from: date)
+        self.createdAt = Date()
+    }
+
+    // For decoding from database
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        searchIndex = try container.decode(Int.self, forKey: .searchIndex)
+        btcPrice = try container.decodeIfPresent(Double.self, forKey: .btcPrice)
+        recordedDate = try container.decode(String.self, forKey: .recordedDate)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+    }
+
+    // Computed properties for display
+    var date: Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: recordedDate) ?? Date()
+    }
+
+    var dateDisplay: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: recordedDate) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d, yyyy"
+            return displayFormatter.string(from: date)
+        }
+        return recordedDate
+    }
+
+    var shortDateDisplay: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: recordedDate) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateFormat = "MMM d"
+            return displayFormatter.string(from: date)
+        }
+        return recordedDate
+    }
+
+    var btcPriceDisplay: String {
+        if let price = btcPrice {
+            return "$\(Int(price).formatted())"
+        }
+        return "--"
     }
 }
