@@ -842,12 +842,14 @@ struct MacroDashboardDetailView: View {
         colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F7")
     }
 
+    @State private var showLearnMore = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
                     // Current Regime Card
-                    VStack(spacing: 16) {
+                    VStack(spacing: 12) {
                         HStack {
                             Circle()
                                 .fill(regime.color)
@@ -861,6 +863,7 @@ struct MacroDashboardDetailView: View {
                         Text(regime.description)
                             .font(.system(size: 15))
                             .foregroundColor(textPrimary.opacity(0.7))
+                            .multilineTextAlignment(.center)
 
                         // Last change info
                         if let lastChange = regimeManager.lastRegimeChange {
@@ -868,45 +871,72 @@ struct MacroDashboardDetailView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(textPrimary.opacity(0.4))
                         }
+
+                        // Learn more expandable
+                        Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showLearnMore.toggle() } }) {
+                            HStack(spacing: 4) {
+                                Text("What does this mean?")
+                                    .font(.system(size: 12, weight: .medium))
+                                Image(systemName: showLearnMore ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .foregroundColor(AppColors.accent)
+                        }
+                        .padding(.top, 4)
+
+                        if showLearnMore {
+                            VStack(alignment: .leading, spacing: 8) {
+                                LearnMoreRow(color: AppColors.success, label: "RISK-ON", text: "Low volatility, weak dollar, expanding liquidity")
+                                LearnMoreRow(color: AppColors.warning, label: "MIXED", text: "Conflicting signals across indicators")
+                                LearnMoreRow(color: AppColors.error, label: "RISK-OFF", text: "High volatility, strong dollar, or tightening liquidity")
+                            }
+                            .padding(.top, 8)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                     }
-                    .padding(24)
+                    .padding(20)
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
                             .fill(cardBackground)
                     )
 
-                    // Signal Key Section
+                    // Simplified Indicators
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("SIGNAL KEY")
+                        Text("CURRENT VALUES")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(textPrimary.opacity(0.5))
                             .tracking(1.5)
 
                         VStack(spacing: 0) {
-                            SignalKeyRow(
-                                signal: "RISK-ON",
-                                color: AppColors.success,
-                                meaning: "Favorable for crypto",
-                                description: "Low volatility, weak dollar, expanding liquidity. Historically positive for Bitcoin."
+                            SimpleIndicatorRow(
+                                icon: "waveform.path.ecg",
+                                title: "VIX",
+                                value: vixData.map { String(format: "%.1f", $0.value) } ?? "--",
+                                status: vixStatus,
+                                statusColor: vixStatusColor
                             )
 
                             Divider().background(textPrimary.opacity(0.08))
 
-                            SignalKeyRow(
-                                signal: "MIXED",
-                                color: AppColors.warning,
-                                meaning: "Conflicting signals",
-                                description: "Indicators disagree. Consider smaller positions until clarity emerges."
+                            SimpleIndicatorRow(
+                                icon: "dollarsign.circle",
+                                title: "DXY",
+                                value: dxyData.map { String(format: "%.1f", $0.value) } ?? "--",
+                                change: dxyData?.changePercent,
+                                status: dxyStatus,
+                                statusColor: dxyStatusColor
                             )
 
                             Divider().background(textPrimary.opacity(0.08))
 
-                            SignalKeyRow(
-                                signal: "RISK-OFF",
-                                color: AppColors.error,
-                                meaning: "Caution advised",
-                                description: "High volatility, strong dollar, or tightening liquidity. Defensive positioning recommended."
+                            SimpleIndicatorRow(
+                                icon: "banknote",
+                                title: "Global M2",
+                                value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
+                                change: liquidityData?.monthlyChange,
+                                status: m2Status,
+                                statusColor: m2StatusColor
                             )
                         }
                         .background(
@@ -915,259 +945,43 @@ struct MacroDashboardDetailView: View {
                         )
                     }
 
-                    // Notification Toggle
+                    // Alerts Section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("ALERTS")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(textPrimary.opacity(0.5))
                             .tracking(1.5)
 
-                        VStack(spacing: 0) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Regime Change Notifications")
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundColor(textPrimary)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Regime Change Alerts")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(textPrimary)
 
-                                    Text("Get notified when market conditions shift")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(textPrimary.opacity(0.5))
-                                }
-
-                                Spacer()
-
-                                Toggle("", isOn: Binding(
-                                    get: { regimeManager.notificationsEnabled },
-                                    set: { newValue in
-                                        regimeManager.notificationsEnabled = newValue
-                                        if newValue {
-                                            regimeManager.requestNotificationPermissions()
-                                        }
-                                    }
-                                ))
-                                .labelsHidden()
-                                .tint(AppColors.accent)
+                                Text("Get notified when conditions shift")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(textPrimary.opacity(0.5))
                             }
-                            .padding(16)
 
-                            Divider().background(textPrimary.opacity(0.08))
+                            Spacer()
 
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 6) {
-                                        Text("Extreme Move Alerts")
-                                            .font(.system(size: 15, weight: .medium))
-                                            .foregroundColor(textPrimary)
-
-                                        Text("±3σ")
-                                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Capsule().fill(AppColors.error))
-                                    }
-
-                                    Text("Alert when indicators hit statistical extremes")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(textPrimary.opacity(0.5))
-                                }
-
-                                Spacer()
-
-                                Toggle("", isOn: Binding(
-                                    get: { alertManager.extremeAlertsEnabled },
-                                    set: { newValue in
-                                        alertManager.extremeAlertsEnabled = newValue
-                                        if newValue {
-                                            alertManager.requestNotificationPermissions()
-                                        }
-                                    }
-                                ))
-                                .labelsHidden()
-                                .tint(AppColors.accent)
-                            }
-                            .padding(16)
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(cardBackground)
-                        )
-                    }
-
-                    // Z-Score Analysis Section (only show if we have z-scores)
-                    if !macroZScores.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("STATISTICAL ANALYSIS")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(textPrimary.opacity(0.5))
-                                .tracking(1.5)
-
-                            VStack(spacing: 0) {
-                                ForEach(Array(macroZScores.values.sorted { $0.indicator.rawValue < $1.indicator.rawValue })) { zScore in
-                                    ZScoreAnalysisRow(zScoreData: zScore)
-
-                                    if zScore.indicator != .m2 {
-                                        Divider().background(textPrimary.opacity(0.08))
+                            Toggle("", isOn: Binding(
+                                get: { regimeManager.notificationsEnabled },
+                                set: { newValue in
+                                    regimeManager.notificationsEnabled = newValue
+                                    if newValue {
+                                        regimeManager.requestNotificationPermissions()
                                     }
                                 }
-                            }
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(cardBackground)
-                            )
-
-                            Text("Z-scores measure how many standard deviations the current value is from the historical mean (90-day rolling window).")
-                                .font(.system(size: 10))
-                                .foregroundColor(textPrimary.opacity(0.4))
-                                .padding(.top, 4)
+                            ))
+                            .labelsHidden()
+                            .tint(AppColors.accent)
                         }
-                    }
-
-                    // Correlation Strength Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("CORRELATION STRENGTH")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(textPrimary.opacity(0.5))
-                            .tracking(1.5)
-
-                        VStack(spacing: 0) {
-                            CorrelationDetailRow(
-                                indicator: "VIX",
-                                strength: vixCorrelation,
-                                relationship: "Inverse",
-                                explanation: "High VIX typically precedes crypto drawdowns"
-                            )
-
-                            Divider().background(textPrimary.opacity(0.08))
-
-                            CorrelationDetailRow(
-                                indicator: "DXY",
-                                strength: dxyCorrelation,
-                                relationship: "Inverse",
-                                explanation: "Strong dollar pressures BTC denominated in USD"
-                            )
-
-                            Divider().background(textPrimary.opacity(0.08))
-
-                            CorrelationDetailRow(
-                                indicator: "Global M2",
-                                strength: m2Correlation,
-                                relationship: "Positive (lagged)",
-                                explanation: "BTC follows M2 with ~2-3 month delay"
-                            )
-                        }
+                        .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(cardBackground)
                         )
-                    }
-
-                    // Individual Indicators
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("INDICATORS")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(textPrimary.opacity(0.5))
-                            .tracking(1.5)
-
-                        MacroDetailRow(
-                            icon: "waveform.path.ecg",
-                            title: "VIX",
-                            subtitle: "Volatility Index",
-                            value: vixData.map { String(format: "%.2f", $0.value) } ?? "--",
-                            change: nil,
-                            interpretation: vixZScoreInterpretation,
-                            correlation: vixCorrelation,
-                            zScoreData: macroZScores[.vix]
-                        )
-
-                        MacroDetailRow(
-                            icon: "dollarsign.circle",
-                            title: "DXY",
-                            subtitle: "US Dollar Index",
-                            value: dxyData.map { String(format: "%.2f", $0.value) } ?? "--",
-                            change: dxyData?.changePercent,
-                            interpretation: dxyZScoreInterpretation,
-                            correlation: dxyCorrelation,
-                            zScoreData: macroZScores[.dxy]
-                        )
-
-                        MacroDetailRow(
-                            icon: "banknote",
-                            title: "Global M2",
-                            subtitle: "Money Supply",
-                            value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
-                            change: liquidityData?.monthlyChange,
-                            interpretation: m2ZScoreInterpretation,
-                            correlation: m2Correlation,
-                            zScoreData: macroZScores[.m2]
-                        )
-                    }
-
-                    // Regime Thresholds
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("REGIME THRESHOLDS")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(textPrimary.opacity(0.5))
-                            .tracking(1.5)
-
-                        VStack(spacing: 0) {
-                            ThresholdRow(indicator: "VIX", bullish: "< 18", bearish: "> 25")
-                            Divider().background(textPrimary.opacity(0.08))
-                            ThresholdRow(indicator: "DXY", bullish: "Falling", bearish: "Rising")
-                            Divider().background(textPrimary.opacity(0.08))
-                            ThresholdRow(indicator: "M2", bullish: "Growing", bearish: "Shrinking")
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(cardBackground)
-                        )
-                    }
-
-                    // Asset Impact Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("ASSET IMPACT")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(textPrimary.opacity(0.5))
-                            .tracking(1.5)
-
-                        VStack(spacing: 0) {
-                            AssetImpactRow(
-                                indicator: "VIX",
-                                currentValue: vixData?.value,
-                                impacts: [
-                                    ("BTC", vixBtcImpact, "chart.line.downtrend.xyaxis"),
-                                    ("Gold", vixGoldImpact, "circle.fill")
-                                ]
-                            )
-                            Divider().background(textPrimary.opacity(0.08))
-                            AssetImpactRow(
-                                indicator: "DXY",
-                                currentValue: dxyData?.value,
-                                impacts: [
-                                    ("BTC", dxyBtcImpact, "bitcoinsign.circle"),
-                                    ("Gold", dxyGoldImpact, "circle.fill")
-                                ]
-                            )
-                            Divider().background(textPrimary.opacity(0.08))
-                            AssetImpactRow(
-                                indicator: "M2",
-                                currentValue: nil,
-                                impacts: [
-                                    ("BTC", m2BtcImpact, "bitcoinsign.circle"),
-                                    ("Gold", m2GoldImpact, "circle.fill")
-                                ]
-                            )
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(cardBackground)
-                        )
-
-                        // Historical context note
-                        Text("Based on historical correlations. Past performance does not guarantee future results.")
-                            .font(.system(size: 10))
-                            .foregroundColor(textPrimary.opacity(0.4))
-                            .padding(.top, 4)
                     }
 
                     Spacer(minLength: 40)
@@ -1259,6 +1073,53 @@ struct MacroDashboardDetailView: View {
             }
         }
         return m2Interpretation
+    }
+
+    // MARK: - Simplified Status Properties
+
+    private var vixStatus: String {
+        guard let vix = vixData?.value else { return "No data" }
+        if vix < 15 { return "Low" }
+        if vix < 20 { return "Normal" }
+        if vix < 25 { return "Elevated" }
+        return "High"
+    }
+
+    private var vixStatusColor: Color {
+        guard let vix = vixData?.value else { return .secondary }
+        if vix < 15 { return AppColors.success }
+        if vix < 20 { return Color(hex: "3B82F6") }
+        if vix < 25 { return AppColors.warning }
+        return AppColors.error
+    }
+
+    private var dxyStatus: String {
+        guard let change = dxyData?.changePercent else { return "No data" }
+        if change < -0.3 { return "Weakening" }
+        if change > 0.3 { return "Strengthening" }
+        return "Stable"
+    }
+
+    private var dxyStatusColor: Color {
+        guard let change = dxyData?.changePercent else { return .secondary }
+        if change < -0.3 { return AppColors.success }
+        if change > 0.3 { return AppColors.error }
+        return AppColors.warning
+    }
+
+    private var m2Status: String {
+        guard let m2 = liquidityData else { return "No data" }
+        if m2.monthlyChange > 1.0 { return "Expanding" }
+        if m2.monthlyChange > 0 { return "Growing" }
+        if m2.monthlyChange > -1.0 { return "Flat" }
+        return "Contracting"
+    }
+
+    private var m2StatusColor: Color {
+        guard let m2 = liquidityData else { return .secondary }
+        if m2.monthlyChange > 0.5 { return AppColors.success }
+        if m2.monthlyChange > -0.5 { return AppColors.warning }
+        return AppColors.error
     }
 
     // MARK: - Asset Impact Interpretations
@@ -1850,6 +1711,84 @@ struct AssetImpactRow: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+            }
+        }
+        .padding(14)
+    }
+}
+
+// MARK: - Learn More Row (Simplified Detail View)
+struct LearnMoreRow: View {
+    let color: Color
+    let label: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+
+            Text(label)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(color)
+
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Simple Indicator Row (Simplified Detail View)
+struct SimpleIndicatorRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    var change: Double? = nil
+    let status: String
+    let statusColor: Color
+
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(AppColors.accent)
+                .frame(width: 32)
+
+            // Title
+            Text(title)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(textPrimary)
+
+            Spacer()
+
+            // Value and change
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(value)
+                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                        .foregroundColor(textPrimary)
+
+                    if let change = change {
+                        Text(String(format: "%+.1f%%", change))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                    }
+                }
+
+                Text(status)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(statusColor)
             }
         }
         .padding(14)

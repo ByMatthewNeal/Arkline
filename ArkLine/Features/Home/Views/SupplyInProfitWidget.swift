@@ -45,10 +45,12 @@ struct SupplyInProfitWidget: View {
     private func formatDataDate(_ dateStr: String) -> String? {
         let inputFormatter = DateFormatter()
         inputFormatter.dateFormat = "yyyy-MM-dd"
+        inputFormatter.timeZone = TimeZone(identifier: "UTC")
         guard let date = inputFormatter.date(from: dateStr) else { return nil }
 
         let outputFormatter = DateFormatter()
         outputFormatter.dateFormat = "MMM d"
+        outputFormatter.timeZone = TimeZone(identifier: "UTC")
         return outputFormatter.string(from: date)
     }
 
@@ -273,6 +275,7 @@ struct SupplyInProfitChart: View {
     private var chartData: [(date: Date, value: Double, original: SupplyProfitData)] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
 
         return history.compactMap { point in
             guard let date = formatter.date(from: point.date) else { return nil }

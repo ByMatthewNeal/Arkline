@@ -67,6 +67,7 @@ struct SupplyProfitData: Codable, Identifiable {
     var dateObject: Date? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
         return formatter.date(from: date)
     }
 
