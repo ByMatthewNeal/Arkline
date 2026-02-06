@@ -225,7 +225,7 @@ struct ReorderableWidgetStack: View {
         case .fedWatch:
             return !viewModel.fedWatchMeetings.isEmpty
         case .dailyNews:
-            return !viewModel.newsItems.isEmpty
+            return true
         case .marketSentiment:
             return viewModel.sentimentViewModel != nil
         case .assetRiskLevel:

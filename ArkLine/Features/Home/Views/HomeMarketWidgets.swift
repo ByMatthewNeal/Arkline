@@ -205,21 +205,38 @@ struct HomeDailyNewsWidget: View {
             }
 
             // News items
-            VStack(spacing: 0) {
-                ForEach(Array(news.prefix(maxItems).enumerated()), id: \.element.id) { index, item in
-                    HomeNewsRow(item: item, isCompact: size == .compact)
+            if news.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "newspaper")
+                        .font(.system(size: 24))
+                        .foregroundColor(textPrimary.opacity(0.3))
+                    Text("No news available")
+                        .font(.caption)
+                        .foregroundColor(textPrimary.opacity(0.5))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, size == .compact ? 16 : 24)
+                .background(
+                    RoundedRectangle(cornerRadius: size == .compact ? 10 : 12)
+                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F8F8F8"))
+                )
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(news.prefix(maxItems).enumerated()), id: \.element.id) { index, item in
+                        HomeNewsRow(item: item, isCompact: size == .compact)
 
-                    if index < min(maxItems, news.count) - 1 {
-                        Divider()
-                            .background(textPrimary.opacity(0.1))
+                        if index < min(maxItems, news.count) - 1 {
+                            Divider()
+                                .background(textPrimary.opacity(0.1))
+                        }
                     }
                 }
+                .padding(size == .compact ? 10 : 12)
+                .background(
+                    RoundedRectangle(cornerRadius: size == .compact ? 10 : 12)
+                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F8F8F8"))
+                )
             }
-            .padding(size == .compact ? 10 : 12)
-            .background(
-                RoundedRectangle(cornerRadius: size == .compact ? 10 : 12)
-                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F8F8F8"))
-            )
         }
         .padding(size == .compact ? 12 : 16)
         .background(
