@@ -38,17 +38,6 @@ struct RiskTooltipView: View {
         }
     }
 
-    private var formattedFairValue: String {
-        guard let fairValue = fairValue else { return "--" }
-        if fairValue >= 1000 {
-            return "$\(Int(fairValue).formatted())"
-        } else if fairValue >= 1 {
-            return String(format: "$%.2f", fairValue)
-        } else {
-            return String(format: "$%.4f", fairValue)
-        }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Date
@@ -79,30 +68,15 @@ struct RiskTooltipView: View {
                 Divider()
                     .background(textSecondary.opacity(0.2))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Price:")
-                            .font(.caption2)
-                            .foregroundColor(textSecondary)
-                        Spacer()
-                        Text(formattedPrice)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(textPrimary)
-                    }
-
-                    if fairValue != nil {
-                        HStack {
-                            Text("Fair Value:")
-                                .font(.caption2)
-                                .foregroundColor(textSecondary)
-                            Spacer()
-                            Text(formattedFairValue)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(textSecondary)
-                        }
-                    }
+                HStack {
+                    Text("Price:")
+                        .font(.caption2)
+                        .foregroundColor(textSecondary)
+                    Spacer()
+                    Text(formattedPrice)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(textPrimary)
                 }
             }
         }
