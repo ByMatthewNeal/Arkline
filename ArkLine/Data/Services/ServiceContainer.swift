@@ -22,7 +22,7 @@ final class ServiceContainer {
 
     /// Use real Supabase data for Portfolio and DCA
     /// Set to false for screenshots/promotional materials
-    var useRealPortfolioData: Bool = false
+    var useRealPortfolioData: Bool = true
 
     // MARK: - Lazy Services - Mock
     private lazy var _mockMarketService = MockMarketService()

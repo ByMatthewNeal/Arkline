@@ -277,9 +277,10 @@ extension SupabaseDatabase {
             logInfo("Saved new Google Trends data for \(trends.recordedDate): \(trends.searchIndex)", category: .network)
         } else if let existingRecord = existing.first, existingRecord.searchIndex != trends.searchIndex {
             // Update if value changed (rare but possible for same-day updates)
+            let updateData = GoogleTrendsUpdateDTO(searchIndex: trends.searchIndex, btcPrice: trends.btcPrice)
             try await client
                 .from(SupabaseTable.googleTrendsHistory.rawValue)
-                .update(["search_index": trends.searchIndex, "btc_price": trends.btcPrice as Any])
+                .update(updateData)
                 .eq("recorded_date", value: trends.recordedDate)
                 .execute()
             logInfo("Updated Google Trends data for \(trends.recordedDate): \(trends.searchIndex)", category: .network)
@@ -523,5 +524,16 @@ struct GoogleTrendsDTO: Codable {
             return "$\(Int(price).formatted())"
         }
         return "--"
+    }
+}
+
+// MARK: - Google Trends Update DTO (for partial updates)
+struct GoogleTrendsUpdateDTO: Codable {
+    let searchIndex: Int
+    let btcPrice: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case searchIndex = "search_index"
+        case btcPrice = "btc_price"
     }
 }
