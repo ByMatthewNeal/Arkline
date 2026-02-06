@@ -205,6 +205,7 @@ actor RiskFactorFetcher {
     // MARK: - Individual Fetch Methods
 
     private func fetchRSI(coin: String) async -> Double? {
+        // Try Taapi.io first
         do {
             let symbol = "\(coin.uppercased())/USDT"
             let rsi = try await technicalService.fetchRSI(
@@ -213,15 +214,17 @@ actor RiskFactorFetcher {
                 interval: "1d",
                 period: 14
             )
-            logDebug("RSI for \(coin): \(rsi)", category: .network)
+            logDebug("RSI for \(coin) (Taapi): \(rsi)", category: .network)
             return rsi
         } catch {
-            logWarning("RSI fetch failed for \(coin): \(error.localizedDescription)", category: .network)
-            return nil
+            logWarning("RSI fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Binance fallback...", category: .network)
+            // Fall back to calculating from Binance klines
+            return await fetchRSIFromBinance(coin: coin)
         }
     }
 
     private func fetchSMA200(coin: String) async -> Double? {
+        // Try Taapi.io first
         do {
             let symbol = "\(coin.uppercased())/USDT"
             let smaValues = try await technicalService.fetchSMAValues(
@@ -232,11 +235,97 @@ actor RiskFactorFetcher {
             )
             let sma200 = smaValues[200]
             if let sma = sma200 {
-                logDebug("SMA200 for \(coin): \(sma)", category: .network)
+                logDebug("SMA200 for \(coin) (Taapi): \(sma)", category: .network)
             }
             return sma200
         } catch {
-            logWarning("SMA200 fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            logWarning("SMA200 fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Binance fallback...", category: .network)
+            // Fall back to calculating from Binance klines
+            return await fetchSMA200FromBinance(coin: coin)
+        }
+    }
+
+    // MARK: - Binance Fallback Methods
+
+    /// Calculate RSI from Binance kline data (14-period)
+    private func fetchRSIFromBinance(coin: String) async -> Double? {
+        do {
+            let binanceSymbol = "\(coin.uppercased())USDT"
+            // Need 15 candles to calculate 14-period RSI (first candle is just for price change reference)
+            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1d", limit: 15)
+
+            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+                return nil
+            }
+
+            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
+            guard klines.count >= 15 else {
+                logWarning("Not enough klines for RSI calculation for \(coin)", category: .network)
+                return nil
+            }
+
+            // Calculate price changes
+            var gains: [Double] = []
+            var losses: [Double] = []
+
+            for i in 1..<klines.count {
+                let change = klines[i].close - klines[i-1].close
+                if change > 0 {
+                    gains.append(change)
+                    losses.append(0)
+                } else {
+                    gains.append(0)
+                    losses.append(abs(change))
+                }
+            }
+
+            // Calculate average gain and loss (simple moving average for first RSI)
+            let avgGain = gains.reduce(0, +) / 14.0
+            let avgLoss = losses.reduce(0, +) / 14.0
+
+            guard avgLoss > 0 else {
+                // No losses means RSI is 100
+                logDebug("RSI for \(coin) (Binance): 100.0", category: .network)
+                return 100.0
+            }
+
+            let rs = avgGain / avgLoss
+            let rsi = 100.0 - (100.0 / (1.0 + rs))
+
+            logDebug("RSI for \(coin) (Binance fallback): \(rsi)", category: .network)
+            return rsi
+        } catch {
+            logWarning("RSI Binance fallback failed for \(coin): \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+
+    /// Calculate 200-day SMA from Binance kline data
+    private func fetchSMA200FromBinance(coin: String) async -> Double? {
+        do {
+            let binanceSymbol = "\(coin.uppercased())USDT"
+            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1d", limit: 200)
+
+            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+                return nil
+            }
+
+            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
+            guard klines.count >= 200 else {
+                logWarning("Not enough klines for SMA200 calculation for \(coin) (got \(klines.count))", category: .network)
+                return nil
+            }
+
+            // Calculate 200-day SMA from closing prices
+            let closingPrices = klines.map { $0.close }
+            let sma200 = closingPrices.reduce(0, +) / Double(closingPrices.count)
+
+            logDebug("SMA200 for \(coin) (Binance fallback): \(sma200)", category: .network)
+            return sma200
+        } catch {
+            logWarning("SMA200 Binance fallback failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }

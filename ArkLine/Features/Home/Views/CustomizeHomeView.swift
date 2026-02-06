@@ -366,8 +366,10 @@ struct CoreAssetToggleRow: View {
                     } else {
                         Image(asset.icon)
                             .resizable()
+                            .renderingMode(.template)
                             .scaledToFit()
                             .frame(width: 20, height: 20)
+                            .foregroundColor(AppColors.accent)
                     }
                 }
 

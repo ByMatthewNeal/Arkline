@@ -25,7 +25,7 @@ struct RiskFactorBreakdownView: View {
                 Spacer()
 
                 // Factor availability badge
-                Text("\(multiFactorRisk.availableFactorCount)/6 factors")
+                Text("\(multiFactorRisk.availableFactorCount)/\(RiskFactorType.allCases.count) factors")
                     .font(.caption)
                     .foregroundColor(textSecondary)
                     .padding(.horizontal, 8)

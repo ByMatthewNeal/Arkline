@@ -913,7 +913,7 @@ struct RiskLevelChartView: View {
                             .scaleEffect(0.7)
                     } else if let risk = multiFactorRisk {
                         HStack(spacing: 4) {
-                            Text("\(risk.availableFactorCount)/6")
+                            Text("\(risk.availableFactorCount)/\(RiskFactorType.allCases.count)")
                                 .font(.caption)
                                 .foregroundColor(textSecondary)
 
