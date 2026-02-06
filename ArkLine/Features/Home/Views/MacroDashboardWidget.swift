@@ -346,29 +346,29 @@ struct MacroDashboardWidget: View {
     }
 
     var body: some View {
-        Button(action: { showingDetail = true }) {
-            VStack(spacing: 0) {
-                // Header
-                HStack(alignment: .center) {
-                    Text("Macro")
-                        .font(.title3)
-                        .foregroundColor(textPrimary)
+        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+            // Header outside the card (matches Core section style)
+            Text("Macro")
+                .font(size == .compact ? .subheadline : .title3)
+                .foregroundColor(textPrimary)
 
-                    Spacer()
-
-                    // Live indicator
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(AppColors.success)
-                            .frame(width: 6, height: 6)
-                        Text("LIVE")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(textPrimary.opacity(0.4))
+            Button(action: { showingDetail = true }) {
+                VStack(spacing: 0) {
+                    // Live indicator row
+                    HStack {
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(AppColors.success)
+                                .frame(width: 6, height: 6)
+                            Text("LIVE")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundColor(textPrimary.opacity(0.4))
+                        }
                     }
-                }
-                .padding(.bottom, size == .compact ? 8 : 12)
+                    .padding(.bottom, size == .compact ? 8 : 12)
 
-                // Three-column indicator grid with correlation strength and sparklines
+                    // Three-column indicator grid with correlation strength and sparklines
                 HStack(spacing: 0) {
                     MacroIndicatorColumn(
                         label: "VIX",
@@ -520,6 +520,7 @@ struct MacroDashboardWidget: View {
         .onChange(of: marketRegime) { _, newRegime in
             regimeManager.checkRegimeChange(newRegime: newRegime)
         }
+        } // Close outer VStack
     }
 
     private var correlationInsight: String {
