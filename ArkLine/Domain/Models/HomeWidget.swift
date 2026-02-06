@@ -39,7 +39,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     // Market widgets (from Market tab)
     case fedWatch = "fed_watch"
     case dailyNews = "daily_news"
-    case marketSentiment = "market_sentiment"
     case assetRiskLevel = "asset_risk_level"
     case vixIndicator = "vix_indicator"
     case dxyIndicator = "dxy_indicator"
@@ -59,7 +58,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .favorites: return "Favorites"
         case .fedWatch: return "Fed Watch"
         case .dailyNews: return "Daily News"
-        case .marketSentiment: return "Market Sentiment"
         case .assetRiskLevel: return "Asset Risk Level"
         case .vixIndicator: return "VIX"
         case .dxyIndicator: return "DXY"
@@ -79,7 +77,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .favorites: return "Your favorite assets at a glance"
         case .fedWatch: return "Fed interest rate probability from CME"
         case .dailyNews: return "Latest crypto and market news"
-        case .marketSentiment: return "Retail & institutional sentiment indicators"
         case .assetRiskLevel: return "BTC risk level based on cycle analysis"
         case .vixIndicator: return "CBOE Volatility Index - Market fear gauge"
         case .dxyIndicator: return "US Dollar Index - Dollar strength"
@@ -99,7 +96,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .favorites: return "star.fill"
         case .fedWatch: return "building.columns"
         case .dailyNews: return "newspaper"
-        case .marketSentiment: return "waveform.path.ecg"
         case .assetRiskLevel: return "gauge.with.needle"
         case .vixIndicator: return "waveform.path.ecg"
         case .dxyIndicator: return "dollarsign.circle"
@@ -116,7 +112,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .marketSentiment, .dcaReminders, .favorites]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .favorites]
     }
 
     /// Widgets enabled by default

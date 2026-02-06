@@ -359,9 +359,16 @@ struct CoreAssetToggleRow: View {
                         .fill(AppColors.accent.opacity(0.15))
                         .frame(width: 40, height: 40)
 
-                    Image(systemName: asset.icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(AppColors.accent)
+                    if asset.isSystemIcon {
+                        Image(systemName: asset.icon)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(AppColors.accent)
+                    } else {
+                        Image(asset.icon)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                    }
                 }
 
                 // Asset info

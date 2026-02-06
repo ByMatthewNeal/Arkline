@@ -226,8 +226,6 @@ struct ReorderableWidgetStack: View {
             return !viewModel.fedWatchMeetings.isEmpty
         case .dailyNews:
             return true
-        case .marketSentiment:
-            return viewModel.sentimentViewModel != nil
         case .assetRiskLevel:
             // Show if any user-selected coin has risk data
             return !viewModel.userSelectedRiskLevels.filter { $0.riskLevel != nil }.isEmpty
@@ -293,14 +291,6 @@ struct ReorderableWidgetStack: View {
                 news: viewModel.newsItems,
                 size: appState.widgetSize(.dailyNews)
             )
-
-        case .marketSentiment:
-            if let sentimentVM = viewModel.sentimentViewModel {
-                HomeMarketSentimentWidget(
-                    viewModel: sentimentVM,
-                    size: appState.widgetSize(.marketSentiment)
-                )
-            }
 
         case .dcaReminders:
             DCARemindersEntrySection(

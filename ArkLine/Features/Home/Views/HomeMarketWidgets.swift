@@ -193,7 +193,7 @@ struct HomeDailyNewsWidget: View {
 
                 Spacer()
 
-                NavigationLink(destination: Text("Full News List")) {
+                NavigationLink(destination: FullNewsListView(news: news)) {
                     HStack(spacing: 4) {
                         Text("See all")
                             .font(.caption)
@@ -263,6 +263,7 @@ struct HomeNewsRow: View {
                 .font(.system(size: isCompact ? 12 : 13, weight: .medium))
                 .foregroundColor(textPrimary)
                 .lineLimit(isCompact ? 1 : 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 6) {
                 Text(item.source)
@@ -278,7 +279,85 @@ struct HomeNewsRow: View {
                     .foregroundColor(textPrimary.opacity(0.5))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, isCompact ? 4 : 8)
+    }
+}
+
+// MARK: - Full News List View
+struct FullNewsListView: View {
+    let news: [NewsItem]
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.openURL) var openURL
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(news) { item in
+                    Button {
+                        if let url = URL(string: item.url) {
+                            openURL(url)
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(item.title)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(textPrimary)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            if let description = item.description, !description.isEmpty {
+                                Text(description)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(textPrimary.opacity(0.7))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+
+                            HStack(spacing: 6) {
+                                Text(item.source)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(textPrimary.opacity(0.5))
+
+                                Text("•")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(textPrimary.opacity(0.3))
+
+                                Text(item.publishedAt.timeAgoDisplay())
+                                    .font(.system(size: 11))
+                                    .foregroundColor(textPrimary.opacity(0.5))
+
+                                Spacer()
+
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(cardBackground)
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider()
+                        .background(textPrimary.opacity(0.1))
+                        .padding(.leading, 16)
+                }
+            }
+        }
+        .background(colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F5"))
+        .navigationTitle("Daily News")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
