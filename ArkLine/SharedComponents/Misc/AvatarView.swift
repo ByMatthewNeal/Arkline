@@ -6,6 +6,7 @@ struct AvatarView: View {
     let name: String
     var size: CGFloat = 40
     var showBorder: Bool = false
+    var usePhoto: Bool = true
     @EnvironmentObject var appState: AppState
 
     private var initials: String {
@@ -32,7 +33,7 @@ struct AvatarView: View {
 
     var body: some View {
         Group {
-            if let url = imageUrl {
+            if usePhoto, let url = imageUrl {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
@@ -76,11 +77,21 @@ struct AvatarView: View {
 // MARK: - Convenience Initializers
 extension AvatarView {
     /// Initialize with string URL
-    init(urlString: String?, name: String, size: CGFloat = 40, showBorder: Bool = false) {
+    init(urlString: String?, name: String, size: CGFloat = 40, showBorder: Bool = false, usePhoto: Bool = true) {
         self.imageUrl = urlString.flatMap { URL(string: $0) }
         self.name = name
         self.size = size
         self.showBorder = showBorder
+        self.usePhoto = usePhoto
+    }
+
+    /// Initialize with User object - automatically respects user's avatar preference
+    init(user: User, size: CGFloat = 40, showBorder: Bool = false) {
+        self.imageUrl = user.avatarUrl.flatMap { URL(string: $0) }
+        self.name = user.displayName
+        self.size = size
+        self.showBorder = showBorder
+        self.usePhoto = user.usePhotoAvatar
     }
 }
 
@@ -92,6 +103,7 @@ extension AvatarView {
         self.name = initials
         self.size = size.dimension
         self.showBorder = showBorder
+        self.usePhoto = true
     }
 }
 

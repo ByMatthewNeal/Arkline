@@ -11667,7 +11667,8 @@ struct HistoricalPriceData {
     static func pricesAsTuples(for symbol: String) -> [(date: Date, price: Double)] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        
+        formatter.timeZone = TimeZone(identifier: "UTC")
+
         return prices(for: symbol).compactMap { point in
             guard let date = formatter.date(from: point.date) else { return nil }
             return (date: date, price: point.close)

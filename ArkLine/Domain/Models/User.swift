@@ -24,6 +24,7 @@ struct User: Codable, Identifiable, Equatable {
     var email: String
     var fullName: String?
     var avatarUrl: String?
+    var usePhotoAvatar: Bool
     var dateOfBirth: Date?
     var careerIndustry: String?
     var experienceLevel: String?
@@ -45,6 +46,7 @@ struct User: Codable, Identifiable, Equatable {
         case email
         case fullName = "full_name"
         case avatarUrl = "avatar_url"
+        case usePhotoAvatar = "use_photo_avatar"
         case dateOfBirth = "date_of_birth"
         case careerIndustry = "career_industry"
         case experienceLevel = "experience_level"
@@ -67,6 +69,7 @@ struct User: Codable, Identifiable, Equatable {
         email: String,
         fullName: String? = nil,
         avatarUrl: String? = nil,
+        usePhotoAvatar: Bool = true,
         dateOfBirth: Date? = nil,
         careerIndustry: String? = nil,
         experienceLevel: String? = nil,
@@ -86,6 +89,7 @@ struct User: Codable, Identifiable, Equatable {
         self.email = email
         self.fullName = fullName
         self.avatarUrl = avatarUrl
+        self.usePhotoAvatar = usePhotoAvatar
         self.dateOfBirth = dateOfBirth
         self.careerIndustry = careerIndustry
         self.experienceLevel = experienceLevel
@@ -261,6 +265,7 @@ struct UpdateUserRequest: Encodable {
     var username: String?
     var fullName: String?
     var avatarUrl: String?
+    var usePhotoAvatar: Bool?
     var dateOfBirth: Date?
     var careerIndustry: String?
     var experienceLevel: String?
@@ -277,6 +282,7 @@ struct UpdateUserRequest: Encodable {
         case username
         case fullName = "full_name"
         case avatarUrl = "avatar_url"
+        case usePhotoAvatar = "use_photo_avatar"
         case dateOfBirth = "date_of_birth"
         case careerIndustry = "career_industry"
         case experienceLevel = "experience_level"

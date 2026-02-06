@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -662,6 +663,10 @@ struct EditProfileView: View {
     @State private var fullName: String = ""
     @State private var username: String = ""
     @State private var email: String = ""
+    @State private var usePhotoAvatar: Bool = true
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var selectedImageData: Data?
+    @State private var isUploading: Bool = false
 
     init(user: User?, onSave: @escaping (User) -> Void) {
         self.user = user
@@ -669,22 +674,66 @@ struct EditProfileView: View {
         _fullName = State(initialValue: user?.fullName ?? "")
         _username = State(initialValue: user?.username ?? "")
         _email = State(initialValue: user?.email ?? "")
+        _usePhotoAvatar = State(initialValue: user?.usePhotoAvatar ?? true)
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
-                // Avatar
-                ZStack {
-                    Circle()
-                        .fill(AppColors.accent.opacity(0.2))
-                        .frame(width: 100, height: 100)
+                // Avatar with Photo Picker
+                PhotosPicker(selection: $selectedItem, matching: .images) {
+                    ZStack(alignment: .bottomTrailing) {
+                        // Avatar display
+                        if let imageData = selectedImageData,
+                           let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                        } else if let avatarUrl = user?.avatarUrl,
+                                  let url = URL(string: avatarUrl),
+                                  usePhotoAvatar {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            } placeholder: {
+                                letterAvatar
+                            }
+                            .frame(width: 100, height: 100)
+                            .clipShape(Circle())
+                        } else {
+                            letterAvatar
+                        }
 
-                    Text(initials)
-                        .font(AppFonts.title30)
-                        .foregroundColor(AppColors.accent)
+                        // Camera badge
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white)
+                            )
+                    }
+                }
+                .onChange(of: selectedItem) { _, newItem in
+                    Task {
+                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                            selectedImageData = data
+                        }
+                    }
                 }
                 .padding(.top, 20)
+
+                // Photo avatar toggle
+                if user?.avatarUrl != nil || selectedImageData != nil {
+                    Toggle("Use Photo as Avatar", isOn: $usePhotoAvatar)
+                        .font(AppFonts.body14)
+                        .tint(AppColors.accent)
+                        .padding(.horizontal, 20)
+                }
 
                 // Form fields
                 VStack(spacing: 16) {
@@ -715,18 +764,25 @@ struct EditProfileView: View {
 
                 // Save button
                 Button(action: saveProfile) {
-                    Text("Save Changes")
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(AppColors.accent)
-                        .cornerRadius(12)
+                    HStack {
+                        if isUploading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        }
+                        Text(isUploading ? "Saving..." : "Save Changes")
+                    }
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(AppColors.accent)
+                    .cornerRadius(12)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
-                .disabled(fullName.trimmingCharacters(in: .whitespaces).isEmpty)
-                .opacity(fullName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
+                .disabled(fullName.trimmingCharacters(in: .whitespaces).isEmpty || isUploading)
+                .opacity(fullName.trimmingCharacters(in: .whitespaces).isEmpty || isUploading ? 0.5 : 1)
             }
             .background(AppColors.background(colorScheme))
             .navigationTitle("Edit Profile")
@@ -750,12 +806,65 @@ struct EditProfileView: View {
         return String(name.prefix(2)).uppercased()
     }
 
+    private var letterAvatar: some View {
+        ZStack {
+            Circle()
+                .fill(AppColors.accent.opacity(0.2))
+                .frame(width: 100, height: 100)
+
+            Text(initials)
+                .font(AppFonts.title30)
+                .foregroundColor(AppColors.accent)
+        }
+    }
+
     private func saveProfile() {
         guard var updatedUser = user else { return }
-        updatedUser.fullName = fullName.trimmingCharacters(in: .whitespaces)
-        updatedUser.username = username.trimmingCharacters(in: .whitespaces)
-        onSave(updatedUser)
-        dismiss()
+
+        isUploading = true
+
+        Task {
+            // Upload new image if selected
+            if let imageData = selectedImageData {
+                do {
+                    let avatarURL = try await AvatarUploadService.shared.uploadAvatar(
+                        data: imageData,
+                        for: updatedUser.id
+                    )
+                    updatedUser.avatarUrl = avatarURL.absoluteString
+                } catch {
+                    AppLogger.shared.error("Avatar upload failed: \(error.localizedDescription)")
+                }
+            }
+
+            updatedUser.fullName = fullName.trimmingCharacters(in: .whitespaces)
+            updatedUser.username = username.trimmingCharacters(in: .whitespaces)
+            updatedUser.usePhotoAvatar = usePhotoAvatar
+
+            // Save to database
+            let updateRequest = UpdateUserRequest(
+                username: updatedUser.username,
+                fullName: updatedUser.fullName,
+                avatarUrl: updatedUser.avatarUrl,
+                usePhotoAvatar: updatedUser.usePhotoAvatar
+            )
+
+            do {
+                try await SupabaseDatabase.shared.update(
+                    in: .profiles,
+                    values: updateRequest,
+                    id: updatedUser.id.uuidString
+                )
+            } catch {
+                AppLogger.shared.error("Profile update failed: \(error.localizedDescription)")
+            }
+
+            await MainActor.run {
+                isUploading = false
+                onSave(updatedUser)
+                dismiss()
+            }
+        }
     }
 }
 

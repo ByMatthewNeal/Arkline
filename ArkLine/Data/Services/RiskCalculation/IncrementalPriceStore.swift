@@ -266,10 +266,13 @@ actor IncrementalPriceStore {
 
     private func buildMergedHistory(coin: String) -> [(date: Date, price: Double)] {
         var result = HistoricalPriceData.pricesAsTuples(for: coin)
+        let embeddedEnd = embeddedEndDate(for: coin)
 
         if let incremental = incrementalData[coin] {
             for point in incremental.prices {
                 if let date = dateFormatter.date(from: point.date) {
+                    // Skip dates already covered by embedded data
+                    if let end = embeddedEnd, date <= end { continue }
                     result.append((date: date, price: point.close))
                 }
             }

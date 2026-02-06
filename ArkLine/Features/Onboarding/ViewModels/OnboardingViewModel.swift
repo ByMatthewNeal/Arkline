@@ -111,6 +111,7 @@ class OnboardingViewModel {
     var telegramHandle = ""
     var websiteUrl = ""
     var profileImageData: Data?
+    var uploadedAvatarUrl: String?
     var passcode = ""
     var confirmPasscode = ""
     var isFaceIDEnabled = false
@@ -245,8 +246,22 @@ class OnboardingViewModel {
 
     func saveProfilePicture() async {
         // Upload image if provided
-        if let _ = profileImageData {
-            // TODO: Upload to Supabase Storage
+        if let imageData = profileImageData {
+            guard let userId = SupabaseAuthManager.shared.currentUserId else {
+                nextStep()
+                return
+            }
+
+            do {
+                let avatarURL = try await AvatarUploadService.shared.uploadAvatar(
+                    data: imageData,
+                    for: userId
+                )
+                uploadedAvatarUrl = avatarURL.absoluteString
+            } catch {
+                AppLogger.shared.error("Avatar upload failed: \(error.localizedDescription)")
+                // Continue without avatar - user can add later
+            }
         }
         nextStep()
     }
@@ -311,6 +326,7 @@ class OnboardingViewModel {
                     username: generatedUsername,
                     email: email,
                     fullName: fullName,
+                    avatarUrl: uploadedAvatarUrl,
                     dateOfBirth: dateOfBirth,
                     careerIndustry: careerIndustry?.rawValue,
                     experienceLevel: experienceLevel?.rawValue,

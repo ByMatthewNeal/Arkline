@@ -710,12 +710,12 @@ struct RiskLevelChartView: View {
                                 Image(systemName: showChart ? "chevron.up" : "chevron.down")
                                     .font(.system(size: 10, weight: .semibold))
                             }
-                            .foregroundColor(textPrimary.opacity(0.5))
+                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .black.opacity(0.5))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(
                                 Capsule()
-                                    .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
+                                    .fill(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08))
                             )
                         }
                     }
