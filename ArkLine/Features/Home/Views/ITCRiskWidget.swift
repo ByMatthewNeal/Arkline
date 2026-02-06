@@ -749,8 +749,21 @@ struct RiskLevelChartView: View {
                         )
                         .frame(height: 280)
                         .padding(.horizontal, 4)
-                        .padding(.bottom, ArkSpacing.md)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+
+                        // Hint for touch interaction (only show when no point selected)
+                        if selectedDate == nil {
+                            HStack(spacing: 6) {
+                                Image(systemName: "hand.draw")
+                                    .font(.system(size: 11))
+                                Text("Touch chart to explore historical values")
+                                    .font(.system(size: 11))
+                            }
+                            .foregroundColor(textSecondary.opacity(0.7))
+                            .padding(.top, 4)
+                            .padding(.bottom, ArkSpacing.sm)
+                        } else {
+                            Spacer().frame(height: ArkSpacing.md)
+                        }
                     }
                 }
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
