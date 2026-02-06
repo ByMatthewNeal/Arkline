@@ -396,7 +396,7 @@ enum MacroTrendSignal: String {
 
 // MARK: - Multi-Coin Risk Section
 struct MultiCoinRiskSection: View {
-    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?)]
+    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?)]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
 
@@ -436,7 +436,8 @@ struct MultiCoinRiskSection: View {
                     ForEach(riskLevels, id: \.coin) { item in
                         CompactRiskCard(
                             riskLevel: item.riskLevel,
-                            coinSymbol: item.coin
+                            coinSymbol: item.coin,
+                            daysAtLevel: item.daysAtLevel
                         )
                     }
                 }
@@ -447,7 +448,8 @@ struct MultiCoinRiskSection: View {
                         ForEach(riskLevels, id: \.coin) { item in
                             CompactRiskCard(
                                 riskLevel: item.riskLevel,
-                                coinSymbol: item.coin
+                                coinSymbol: item.coin,
+                                daysAtLevel: item.daysAtLevel
                             )
                             .frame(width: 160)
                         }
@@ -463,6 +465,7 @@ struct MultiCoinRiskSection: View {
 struct CompactRiskCard: View {
     let riskLevel: ITCRiskLevel?
     let coinSymbol: String
+    var daysAtLevel: Int? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -506,6 +509,14 @@ struct CompactRiskCard: View {
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(RiskColors.color(for: risk.riskLevel))
                             .lineLimit(1)
+                    }
+
+                    // Days at level indicator
+                    if let days = daysAtLevel {
+                        Text("\(days) days at this level")
+                            .font(.system(size: 9))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .padding(.top, 2)
                     }
                 } else {
                     // Loading state

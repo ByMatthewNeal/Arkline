@@ -238,6 +238,11 @@ class HomeViewModel {
     var solRiskLevel: ITCRiskLevel?
     var selectedRiskCoin: String = "BTC"
 
+    // Risk History for calculating consecutive days
+    var btcRiskHistory: [ITCRiskLevel] = []
+    var ethRiskHistory: [ITCRiskLevel] = []
+    var solRiskHistory: [ITCRiskLevel] = []
+
     // User-selected risk coins from settings
     var userRiskCoins: [String] {
         UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) ?? ["BTC", "ETH"]
@@ -253,16 +258,36 @@ class HomeViewModel {
         }
     }
 
-    // Get all risk levels for user's selected coins
-    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?)] {
+    // Get all risk levels for user's selected coins (with consecutive days)
+    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?)] {
         userRiskCoins.map { coin in
             switch coin {
-            case "BTC": return (coin, btcRiskLevel)
-            case "ETH": return (coin, ethRiskLevel)
-            case "SOL": return (coin, solRiskLevel)
-            default: return (coin, nil)
+            case "BTC": return (coin, btcRiskLevel, consecutiveDaysAtCurrentLevel(history: btcRiskHistory, current: btcRiskLevel))
+            case "ETH": return (coin, ethRiskLevel, consecutiveDaysAtCurrentLevel(history: ethRiskHistory, current: ethRiskLevel))
+            case "SOL": return (coin, solRiskLevel, consecutiveDaysAtCurrentLevel(history: solRiskHistory, current: solRiskLevel))
+            default: return (coin, nil, nil)
             }
         }
+    }
+
+    // Calculate consecutive days at current risk category
+    private func consecutiveDaysAtCurrentLevel(history: [ITCRiskLevel], current: ITCRiskLevel?) -> Int? {
+        guard let current = current, !history.isEmpty else { return nil }
+
+        let currentCategory = current.riskCategory
+        var count = 0
+
+        // Count backwards from end of history
+        for level in history.reversed() {
+            if level.riskCategory == currentCategory {
+                count += 1
+            } else {
+                break
+            }
+        }
+
+        // Only return if we have at least 2 days (meaningful streak)
+        return count >= 2 ? count : nil
     }
 
     // Top Movers
@@ -407,6 +432,9 @@ class HomeViewModel {
         async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
         async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
         async let solRiskTask = fetchITCRiskLevelSafe(coin: "SOL")
+        async let btcHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
+        async let ethHistoryTask = fetchITCRiskHistorySafe(coin: "ETH")
+        async let solHistoryTask = fetchITCRiskHistorySafe(coin: "SOL")
         async let upcomingEventsTask = fetchUpcomingEventsSafe()
         async let todaysEventsTask = fetchTodaysEventsSafe()
 
@@ -419,6 +447,9 @@ class HomeViewModel {
         let btcRisk = await btcRiskTask
         let ethRisk = await ethRiskTask
         let solRisk = await solRiskTask
+        let btcHistory = await btcHistoryTask
+        let ethHistory = await ethHistoryTask
+        let solHistory = await solHistoryTask
         let upcoming = await upcomingEventsTask
         let todaysEvts = await todaysEventsTask
 
@@ -432,6 +463,9 @@ class HomeViewModel {
             self.btcRiskLevel = btcRisk
             self.ethRiskLevel = ethRisk
             self.solRiskLevel = solRisk
+            self.btcRiskHistory = btcHistory
+            self.ethRiskHistory = ethHistory
+            self.solRiskHistory = solHistory
             self.upcomingEvents = upcoming
             self.todaysEvents = todaysEvts
             self.eventsLastUpdated = Date()
@@ -604,6 +638,10 @@ class HomeViewModel {
 
     private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
         try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+    }
+
+    private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel] {
+        (try? await itcRiskService.fetchRiskLevel(coin: coin)) ?? []
     }
 
     private func fetchCryptoAssetsSafe() async -> [CryptoAsset] {
