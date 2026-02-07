@@ -160,6 +160,7 @@ struct HomeDailyNewsWidget: View {
     let news: [NewsItem]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.openURL) var openURL
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -223,7 +224,14 @@ struct HomeDailyNewsWidget: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(news.prefix(maxItems).enumerated()), id: \.element.id) { index, item in
-                        HomeNewsRow(item: item, isCompact: size == .compact)
+                        Button {
+                            if let url = URL(string: item.url) {
+                                openURL(url)
+                            }
+                        } label: {
+                            HomeNewsRow(item: item, isCompact: size == .compact)
+                        }
+                        .buttonStyle(.plain)
 
                         if index < min(maxItems, news.count) - 1 {
                             Divider()
