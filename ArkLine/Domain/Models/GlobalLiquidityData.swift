@@ -165,19 +165,32 @@ enum LiquidityTimeframe: String, CaseIterable {
 }
 
 // MARK: - Fed Data Series
-/// FRED API series IDs for liquidity data
+/// FRED API series IDs for liquidity and FX data
 enum FREDSeries: String {
-    case m2 = "M2SL"                    // M2 Money Stock
-    case m2Weekly = "WM2NS"             // M2 Weekly
+    // M2 Money Supply
+    case m2 = "M2SL"                    // US M2 Money Stock (Billions, Monthly)
+    case m2Weekly = "WM2NS"             // US M2 Weekly
+
+    // Other Fed series
     case fedBalance = "WALCL"           // Fed Total Assets
     case federalFundsRate = "FEDFUNDS"  // Federal Funds Rate
 
+    // FX Rates (used for Global M2 aggregation)
+    case fxCNYUSD = "DEXCHUS"           // CNY per USD
+    case fxEURUSD = "DEXUSEU"           // USD per EUR
+    case fxJPYUSD = "DEXJPUS"           // JPY per USD
+    case fxGBPUSD = "DEXUSUK"           // USD per GBP
+
     var name: String {
         switch self {
-        case .m2: return "M2 Money Supply"
+        case .m2: return "US M2 Money Supply"
         case .m2Weekly: return "M2 Weekly"
         case .fedBalance: return "Fed Balance Sheet"
         case .federalFundsRate: return "Federal Funds Rate"
+        case .fxCNYUSD: return "CNY/USD Exchange Rate"
+        case .fxEURUSD: return "EUR/USD Exchange Rate"
+        case .fxJPYUSD: return "JPY/USD Exchange Rate"
+        case .fxGBPUSD: return "GBP/USD Exchange Rate"
         }
     }
 }

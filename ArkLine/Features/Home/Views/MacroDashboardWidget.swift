@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 import UserNotifications
 
 // MARK: - Market Regime
@@ -850,6 +851,13 @@ struct MacroDashboardDetailView: View {
     @State private var dxyHistory: [DXYData] = []
     @State private var isLoadingChart = false
 
+    // BTC vs M2 overlay
+    @State private var btcHistory: [PricePoint] = []
+    @State private var showBTCOverlay = false
+    @State private var isLoadingBTC = false
+    @State private var btcM2TimeRange: BTCvsM2TimeRange = .year
+    @State private var btcM2SelectedDate: Date? = nil
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -1000,8 +1008,60 @@ struct MacroDashboardDetailView: View {
                                     },
                                     selectedTimeRange: $macroTimeRange,
                                     selectedDate: $macroSelectedDate,
-                                    isLoading: false
+                                    isLoading: false,
+                                    overlayData: showBTCOverlay ? btcChartData : nil,
+                                    overlayColor: .orange,
+                                    overlayLabel: "BTC",
+                                    overlayValueFormatter: showBTCOverlay ? { value in
+                                        String(format: "$%,.0f", value)
+                                    } : nil,
+                                    primaryLabel: showBTCOverlay ? "Global M2" : ""
                                 )
+                                .padding(.horizontal, 14)
+
+                                // BTC overlay toggle
+                                HStack(spacing: 8) {
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            showBTCOverlay.toggle()
+                                        }
+                                        if showBTCOverlay { loadBTCHistory() }
+                                    }) {
+                                        HStack(spacing: 5) {
+                                            Image(systemName: "bitcoinsign")
+                                                .font(.system(size: 10, weight: .semibold))
+                                            Text(showBTCOverlay ? "Hide BTC" : "Show BTC")
+                                                .font(.system(size: 10, weight: .semibold))
+                                        }
+                                        .foregroundColor(showBTCOverlay ? .white : .orange)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(
+                                            Capsule()
+                                                .fill(showBTCOverlay ? Color.orange : Color.orange.opacity(0.15))
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+
+                                    if isLoadingBTC {
+                                        ProgressView()
+                                            .scaleEffect(0.6)
+                                    }
+
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 14)
+
+                                // Economies info note
+                                HStack(spacing: 6) {
+                                    Image(systemName: "info.circle")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(textPrimary.opacity(0.35))
+                                    Text("Aggregates US, China, Eurozone, Japan & UK M2 supply converted to USD")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(textPrimary.opacity(0.35))
+                                    Spacer()
+                                }
                                 .padding(.horizontal, 14)
                                 .padding(.bottom, 14)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -1011,6 +1071,116 @@ struct MacroDashboardDetailView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(cardBackground)
                         )
+                    }
+
+                    // BTC vs Global M2 Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("BTC vs GLOBAL M2")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.5))
+                            .tracking(1.5)
+
+                        VStack(spacing: 12) {
+                            // Correlation badge
+                            HStack(spacing: 8) {
+                                Image(systemName: "chart.line.uptrend.xyaxis")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(AppColors.accent)
+
+                                Text("Price Correlation")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(textPrimary)
+
+                                Spacer()
+
+                                if let r = correlationCoefficient(m2SectionChartData, btcM2SectionChartData) {
+                                    Text(String(format: "r = %.2f", r))
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundColor(r > 0.7 ? AppColors.success : (r > 0.4 ? AppColors.warning : textPrimary.opacity(0.6)))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(
+                                            Capsule()
+                                                .fill((r > 0.7 ? AppColors.success : (r > 0.4 ? AppColors.warning : textPrimary)).opacity(0.12))
+                                        )
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.top, 14)
+
+                            // Time range picker (Day/Week/Month/Year)
+                            HStack(spacing: ArkSpacing.xs) {
+                                ForEach(BTCvsM2TimeRange.allCases, id: \.self) { range in
+                                    Button(action: {
+                                        btcM2TimeRange = range
+                                        btcM2SelectedDate = nil
+                                    }) {
+                                        Text(range.rawValue)
+                                            .font(.subheadline)
+                                            .fontWeight(btcM2TimeRange == range ? .semibold : .regular)
+                                            .foregroundColor(
+                                                btcM2TimeRange == range ? .white : textPrimary
+                                            )
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, ArkSpacing.sm)
+                                            .background(
+                                                btcM2TimeRange == range
+                                                    ? AppColors.accent
+                                                    : (colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
+                                            )
+                                            .cornerRadius(ArkSpacing.Radius.sm)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                            .padding(.horizontal, 14)
+
+                            // Chart (no built-in picker — we handle it above)
+                            btcM2ChartView
+                                .padding(.horizontal, 14)
+
+                            // Legend
+                            HStack(spacing: 16) {
+                                HStack(spacing: 4) {
+                                    RoundedRectangle(cornerRadius: 1)
+                                        .fill(AppColors.accent)
+                                        .frame(width: 12, height: 3)
+                                    Text("M2 (77d lead)")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(textPrimary.opacity(0.6))
+                                }
+                                HStack(spacing: 4) {
+                                    RoundedRectangle(cornerRadius: 1)
+                                        .fill(Color.orange)
+                                        .frame(width: 12, height: 3)
+                                    Text("BTC")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(textPrimary.opacity(0.6))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+
+                            // Description
+                            HStack(spacing: 6) {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(textPrimary.opacity(0.35))
+                                Text("M2 shifted forward 77 days to show leading correlation with BTC")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(textPrimary.opacity(0.35))
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 14)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(cardBackground)
+                        )
+                    }
+                    .onAppear {
+                        loadBTCHistory()
                     }
 
                     // Alerts Section
@@ -1203,30 +1373,288 @@ struct MacroDashboardDetailView: View {
 
     // MARK: - Chart Data
 
+    private static let m2LagDays = 77
+
+    /// Date cutoff for a given time range
+    private func dateCutoff(for range: MacroChartTimeRange) -> Date {
+        Calendar.current.date(byAdding: .day, value: -range.days, to: Date()) ?? Date()
+    }
+
+    private func dateCutoff(for range: BTCvsM2TimeRange) -> Date {
+        Calendar.current.date(byAdding: .day, value: -range.days, to: Date()) ?? Date()
+    }
+
     private var vixChartData: [MacroChartPoint] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        let points = vixHistory.reversed().compactMap { item -> MacroChartPoint? in
-            guard let date = formatter.date(from: item.date) else { return nil }
+        let cutoff = dateCutoff(for: macroTimeRange)
+        return vixHistory.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date), date >= cutoff else { return nil }
             return MacroChartPoint(date: date, value: item.value)
         }
-        return Array(points.suffix(macroTimeRange.days))
     }
 
     private var dxyChartData: [MacroChartPoint] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        let points = dxyHistory.reversed().compactMap { item -> MacroChartPoint? in
-            guard let date = formatter.date(from: item.date) else { return nil }
+        let cutoff = dateCutoff(for: macroTimeRange)
+        return dxyHistory.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date), date >= cutoff else { return nil }
             return MacroChartPoint(date: date, value: item.value)
         }
-        return Array(points.suffix(macroTimeRange.days))
     }
 
     private var m2ChartData: [MacroChartPoint] {
         guard let history = liquidityData?.history else { return [] }
-        let points = history.map { MacroChartPoint(date: $0.date, value: $0.value) }
-        return Array(points.suffix(macroTimeRange.days))
+        let cutoff = dateCutoff(for: macroTimeRange)
+        return history.compactMap { item -> MacroChartPoint? in
+            guard item.date >= cutoff else { return nil }
+            return MacroChartPoint(date: item.date, value: item.value)
+        }
+    }
+
+    // MARK: - BTC Overlay Data
+
+    /// BTC data for the M2 expanded overlay (no lag shift)
+    private var btcChartData: [MacroChartPoint] {
+        let cutoff = dateCutoff(for: macroTimeRange)
+        return btcHistory.compactMap { point -> MacroChartPoint? in
+            guard point.date >= cutoff else { return nil }
+            return MacroChartPoint(date: point.date, value: point.price)
+        }
+    }
+
+    /// BTC data for the dedicated BTC vs M2 section (original dates)
+    private var btcM2SectionChartData: [MacroChartPoint] {
+        let cutoff = dateCutoff(for: btcM2TimeRange)
+        return btcHistory.compactMap { point -> MacroChartPoint? in
+            guard point.date >= cutoff else { return nil }
+            return MacroChartPoint(date: point.date, value: point.price)
+        }
+    }
+
+    /// M2 data shifted forward by 77 days for the dedicated BTC vs M2 section
+    /// This aligns M2 movements with the BTC response ~77 days later
+    private var m2SectionChartData: [MacroChartPoint] {
+        guard let history = liquidityData?.history else { return [] }
+        let calendar = Calendar.current
+        let cutoff = dateCutoff(for: btcM2TimeRange)
+        return history.compactMap { item -> MacroChartPoint? in
+            guard let shiftedDate = calendar.date(byAdding: .day, value: Self.m2LagDays, to: item.date) else { return nil }
+            guard shiftedDate >= cutoff else { return nil }
+            return MacroChartPoint(date: shiftedDate, value: item.value)
+        }
+    }
+
+    private func loadBTCHistory() {
+        guard btcHistory.isEmpty else { return }
+        isLoadingBTC = true
+        Task {
+            do {
+                let chart = try await ServiceContainer.shared.marketService.fetchCoinMarketChart(
+                    id: "bitcoin", currency: "usd", days: 365
+                )
+                await MainActor.run {
+                    self.btcHistory = chart.priceHistory
+                    self.isLoadingBTC = false
+                }
+            } catch {
+                await MainActor.run { self.isLoadingBTC = false }
+            }
+        }
+    }
+
+    /// Pearson correlation coefficient between two data series
+    private func correlationCoefficient(_ a: [MacroChartPoint], _ b: [MacroChartPoint]) -> Double? {
+        // Align by date (find overlapping dates within 1 day)
+        var pairs: [(Double, Double)] = []
+        for aPoint in a {
+            if let closest = b.min(by: {
+                abs($0.date.timeIntervalSince(aPoint.date)) < abs($1.date.timeIntervalSince(aPoint.date))
+            }) {
+                let daysDiff = abs(closest.date.timeIntervalSince(aPoint.date)) / 86400
+                if daysDiff <= 1 {
+                    pairs.append((aPoint.value, closest.value))
+                }
+            }
+        }
+
+        guard pairs.count >= 10 else { return nil }
+
+        let n = Double(pairs.count)
+        let sumX = pairs.map(\.0).reduce(0, +)
+        let sumY = pairs.map(\.1).reduce(0, +)
+        let sumXY = pairs.map { $0 * $1 }.reduce(0, +)
+        let sumX2 = pairs.map { $0.0 * $0.0 }.reduce(0, +)
+        let sumY2 = pairs.map { $0.1 * $0.1 }.reduce(0, +)
+
+        let numerator = n * sumXY - sumX * sumY
+        let denominator = sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY))
+
+        guard denominator > 0 else { return nil }
+        return numerator / denominator
+    }
+
+    // MARK: - BTC vs M2 Chart View
+
+    private func normalizePoints(_ points: [MacroChartPoint]) -> [MacroChartPoint] {
+        let values = points.map(\.value)
+        guard let minVal = values.min(), let maxVal = values.max(), maxVal > minVal else { return points }
+        return points.map { MacroChartPoint(date: $0.date, value: ($0.value - minVal) / (maxVal - minVal)) }
+    }
+
+    @ViewBuilder
+    private var btcM2ChartView: some View {
+        if isLoadingBTC && btcHistory.isEmpty {
+            VStack(spacing: 8) {
+                ProgressView()
+                    .scaleEffect(0.8)
+                Text("Loading...")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .frame(height: 200)
+            .frame(maxWidth: .infinity)
+        } else if m2SectionChartData.isEmpty && btcM2SectionChartData.isEmpty {
+            VStack(spacing: 8) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.title2)
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                Text("No data available")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .frame(height: 200)
+            .frame(maxWidth: .infinity)
+        } else {
+            let normM2 = normalizePoints(m2SectionChartData)
+            let normBTC = normalizePoints(btcM2SectionChartData)
+
+            // Tooltip values
+            let selectedM2 = btcM2SelectedDate.flatMap { sel in
+                m2SectionChartData.min { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }
+            }
+            let selectedBTC = btcM2SelectedDate.flatMap { sel in
+                btcM2SectionChartData.min { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }
+            }
+            let selectedNormPoint = btcM2SelectedDate.flatMap { sel in
+                normM2.min { abs($0.date.timeIntervalSince(sel)) < abs($1.date.timeIntervalSince(sel)) }
+            }
+
+            VStack(spacing: 8) {
+                // Tooltip
+                if let selDate = btcM2SelectedDate {
+                    HStack(spacing: 12) {
+                        Text(selDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+
+                        if let m2Pt = selectedM2 {
+                            HStack(spacing: 4) {
+                                Circle().fill(AppColors.accent).frame(width: 6, height: 6)
+                                Text(m2Pt.value >= 1_000_000_000_000
+                                     ? String(format: "$%.1fT", m2Pt.value / 1_000_000_000_000)
+                                     : String(format: "$%.0fB", m2Pt.value / 1_000_000_000))
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
+
+                        if let btcPt = selectedBTC {
+                            HStack(spacing: 4) {
+                                Circle().fill(Color.orange).frame(width: 6, height: 6)
+                                Text(String(format: "$%,.0f", btcPt.value))
+                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.orange)
+                            }
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                }
+
+                // Chart
+                Chart {
+                    if let point = selectedNormPoint {
+                        RuleMark(x: .value("Selected", point.date))
+                            .foregroundStyle(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.25)
+                                    : Color.black.opacity(0.15)
+                            )
+                            .lineStyle(StrokeStyle(lineWidth: 0.5))
+                    }
+
+                    ForEach(normM2) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Value", point.value),
+                            series: .value("Series", "M2")
+                        )
+                        .foregroundStyle(AppColors.accent)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .interpolationMethod(.catmullRom)
+                    }
+
+                    ForEach(normBTC) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Value", point.value),
+                            series: .value("Series", "BTC")
+                        )
+                        .foregroundStyle(Color.orange)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .interpolationMethod(.catmullRom)
+                    }
+                }
+                .chartYScale(domain: -0.05...1.05)
+                .chartXSelection(value: $btcM2SelectedDate)
+                .chartYAxis(.hidden)
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 5)) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
+                            .foregroundStyle(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.04)
+                                    : Color.black.opacity(0.04)
+                            )
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                Text(btcM2XAxisLabel(for: date))
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(
+                                        colorScheme == .dark
+                                            ? Color.white.opacity(0.35)
+                                            : Color.black.opacity(0.35)
+                                    )
+                            }
+                        }
+                    }
+                }
+                .chartPlotStyle { plotArea in
+                    plotArea
+                        .background(
+                            colorScheme == .dark
+                                ? Color.white.opacity(0.02)
+                                : Color.black.opacity(0.015)
+                        )
+                }
+                .frame(height: 200)
+                .clipped()
+            }
+        }
+    }
+
+    private func btcM2XAxisLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        switch btcM2TimeRange {
+        case .day: formatter.dateFormat = "HH:mm"
+        case .week: formatter.dateFormat = "EEE"
+        case .month: formatter.dateFormat = "MMM d"
+        case .year: formatter.dateFormat = "MMM yy"
+        }
+        return formatter.string(from: date)
     }
 
     // MARK: - Simplified Status Properties

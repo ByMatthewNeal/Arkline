@@ -18,6 +18,23 @@ enum MacroChartTimeRange: String, CaseIterable {
     }
 }
 
+// MARK: - BTC vs M2 Time Range
+enum BTCvsM2TimeRange: String, CaseIterable {
+    case day = "Day"
+    case week = "Week"
+    case month = "Month"
+    case year = "Year"
+
+    var days: Int {
+        switch self {
+        case .day: return 1
+        case .week: return 7
+        case .month: return 30
+        case .year: return 365
+        }
+    }
+}
+
 // MARK: - Chart Data Point
 struct MacroChartPoint: Identifiable {
     let id = UUID()
@@ -34,20 +51,80 @@ struct MacroIndicatorChart: View {
     @Binding var selectedDate: Date?
     let isLoading: Bool
 
+    // Optional overlay (e.g. BTC price on M2 chart)
+    var overlayData: [MacroChartPoint]? = nil
+    var overlayColor: Color = .orange
+    var overlayLabel: String = "BTC"
+    var overlayValueFormatter: ((Double) -> String)? = nil
+    var primaryLabel: String = ""
+
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
 
+    private var hasOverlay: Bool {
+        guard let overlay = overlayData else { return false }
+        return !overlay.isEmpty
+    }
+
     private var selectedPoint: MacroChartPoint? {
+        guard let selectedDate = selectedDate else { return nil }
+        let source = hasOverlay ? normalizedPrimary : data
+        return source.min(by: {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        })
+    }
+
+    /// Find the closest original (non-normalized) data point for tooltip display
+    private var selectedOriginalPoint: MacroChartPoint? {
         guard let selectedDate = selectedDate else { return nil }
         return data.min(by: {
             abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
         })
     }
 
+    private var selectedOverlayPoint: MacroChartPoint? {
+        guard let selectedDate = selectedDate, let overlay = overlayData else { return nil }
+        return overlay.min(by: {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        })
+    }
+
+    private var periodChange: Double? {
+        guard data.count >= 2,
+              let first = data.first,
+              let last = data.last,
+              first.value != 0 else { return nil }
+        return ((last.value - first.value) / first.value) * 100
+    }
+
+    // MARK: - Normalization (for overlay mode)
+
+    private func normalize(_ points: [MacroChartPoint]) -> [MacroChartPoint] {
+        let values = points.map(\.value)
+        guard let minVal = values.min(), let maxVal = values.max(), maxVal > minVal else { return points }
+        return points.map { MacroChartPoint(date: $0.date, value: ($0.value - minVal) / (maxVal - minVal)) }
+    }
+
+    private var normalizedPrimary: [MacroChartPoint] {
+        normalize(data)
+    }
+
+    private var normalizedOverlay: [MacroChartPoint] {
+        guard let overlay = overlayData else { return [] }
+        return normalize(overlay)
+    }
+
+    private var chartData: [MacroChartPoint] {
+        hasOverlay ? normalizedPrimary : data
+    }
+
     private var yDomain: ClosedRange<Double> {
+        if hasOverlay {
+            return -0.05...1.05 // Normalized range with padding
+        }
         guard let minVal = data.map(\.value).min(),
               let maxVal = data.map(\.value).max() else {
             return 0...1
@@ -81,8 +158,10 @@ struct MacroIndicatorChart: View {
             // Time range picker
             timeRangePicker
 
-            // Tooltip
-            if let point = selectedPoint {
+            // Value summary with period change
+            if hasOverlay {
+                overlayTooltip
+            } else if let point = selectedPoint {
                 HStack(spacing: 8) {
                     Text(point.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.system(size: 11, weight: .medium))
@@ -92,10 +171,35 @@ struct MacroIndicatorChart: View {
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(lineColor)
 
+                    if let change = periodChange {
+                        Text(String(format: "%+.1f%%", change))
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                    }
+
                     Spacer()
                 }
                 .padding(.horizontal, 4)
                 .transition(.opacity)
+            } else if !data.isEmpty, let last = data.last {
+                HStack(spacing: 8) {
+                    Text(valueFormatter(last.value))
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(textPrimary)
+
+                    if let change = periodChange {
+                        Text(String(format: "%+.1f%%", change))
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                    }
+
+                    Text(selectedTimeRange.rawValue)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
             }
 
             // Chart
@@ -120,11 +224,83 @@ struct MacroIndicatorChart: View {
                 }
                 .frame(height: 200)
                 .frame(maxWidth: .infinity)
+            } else if hasOverlay {
+                overlayChartView
+                    .frame(height: 200)
+                    .clipped()
             } else {
                 chartView
                     .frame(height: 200)
+                    .clipped()
+            }
+
+            // Legend (only in overlay mode)
+            if hasOverlay {
+                chartLegend
             }
         }
+    }
+
+    // MARK: - Overlay Tooltip
+    private var overlayTooltip: some View {
+        Group {
+            if let primaryPt = selectedOriginalPoint {
+                HStack(spacing: 12) {
+                    Text(primaryPt.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+
+                    // Primary value
+                    HStack(spacing: 4) {
+                        Circle().fill(lineColor).frame(width: 6, height: 6)
+                        Text(valueFormatter(primaryPt.value))
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(lineColor)
+                    }
+
+                    // Overlay value
+                    if let overlayPt = selectedOverlayPoint,
+                       let formatter = overlayValueFormatter {
+                        HStack(spacing: 4) {
+                            Circle().fill(overlayColor).frame(width: 6, height: 6)
+                            Text(formatter(overlayPt.value))
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(overlayColor)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(.horizontal, 4)
+                .transition(.opacity)
+            }
+        }
+    }
+
+    // MARK: - Chart Legend
+    private var chartLegend: some View {
+        HStack(spacing: 16) {
+            if !primaryLabel.isEmpty {
+                HStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(lineColor)
+                        .frame(width: 12, height: 3)
+                    Text(primaryLabel)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+            }
+            HStack(spacing: 4) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(overlayColor)
+                    .frame(width: 12, height: 3)
+                Text(overlayLabel)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(textPrimary.opacity(0.6))
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 4)
     }
 
     // MARK: - Time Range Picker
@@ -155,7 +331,79 @@ struct MacroIndicatorChart: View {
         }
     }
 
-    // MARK: - Chart View
+    // MARK: - Overlay Chart View (normalized dual-line)
+    private var overlayChartView: some View {
+        Chart {
+            // Selection crosshair
+            if let point = selectedPoint {
+                RuleMark(x: .value("Selected", point.date))
+                    .foregroundStyle(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.25)
+                            : Color.black.opacity(0.15)
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: 0.5))
+            }
+
+            // Primary line (M2)
+            ForEach(normalizedPrimary) { point in
+                LineMark(
+                    x: .value("Date", point.date),
+                    y: .value("Value", point.value),
+                    series: .value("Series", "Primary")
+                )
+                .foregroundStyle(lineColor)
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .interpolationMethod(.catmullRom)
+            }
+
+            // Overlay line (BTC)
+            ForEach(normalizedOverlay) { point in
+                LineMark(
+                    x: .value("Date", point.date),
+                    y: .value("Value", point.value),
+                    series: .value("Series", "Overlay")
+                )
+                .foregroundStyle(overlayColor)
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                .interpolationMethod(.catmullRom)
+            }
+        }
+        .chartYScale(domain: yDomain)
+        .chartXSelection(value: $selectedDate)
+        .chartYAxis(.hidden)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: xAxisLabelCount)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
+                    .foregroundStyle(
+                        colorScheme == .dark
+                            ? Color.white.opacity(0.04)
+                            : Color.black.opacity(0.04)
+                    )
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(formatLabel(for: date))
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.35)
+                                    : Color.black.opacity(0.35)
+                            )
+                    }
+                }
+            }
+        }
+        .chartPlotStyle { plotArea in
+            plotArea
+                .background(
+                    colorScheme == .dark
+                        ? Color.white.opacity(0.02)
+                        : Color.black.opacity(0.015)
+                )
+        }
+    }
+
+    // MARK: - Single-Series Chart View
     private var chartView: some View {
         Chart {
             // Selection crosshair

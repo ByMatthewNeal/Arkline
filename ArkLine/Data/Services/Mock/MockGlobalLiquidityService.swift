@@ -4,8 +4,8 @@ import Foundation
 final class MockGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     // MARK: - Mock Data
 
-    /// Current approximate US M2 money supply (as of early 2024)
-    private let currentM2: Double = 21_500_000_000_000 // ~$21.5 trillion
+    /// Current approximate Global M2 (5 economies: US, China, Eurozone, Japan, UK)
+    private let currentM2: Double = 92_000_000_000_000 // ~$92T global M2
 
     func fetchLiquidityChanges() async throws -> GlobalLiquidityChanges {
         let history = try await fetchLiquidityHistory(days: 400)
