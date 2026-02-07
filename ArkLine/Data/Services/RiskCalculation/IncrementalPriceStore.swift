@@ -40,8 +40,14 @@ actor IncrementalPriceStore {
     /// Track CoinGecko baseline fetch attempts to enforce cooldown.
     private var geckoFetchAttempted: [String: Date] = [:]
 
+    /// Track failed CoinGecko fetches (shorter cooldown for retries).
+    private var geckoFetchFailed: [String: Date] = [:]
+
     /// Minimum interval between fetch attempts (15 minutes).
     private let fetchCooldown: TimeInterval = 900
+
+    /// Shorter cooldown after a failed CoinGecko baseline fetch (30 seconds).
+    private let failedFetchCooldown: TimeInterval = 30
 
     // MARK: - Date Formatter
 
@@ -86,9 +92,11 @@ actor IncrementalPriceStore {
         // Try to fetch missing days
         await fetchMissingDaysIfNeeded(coin: symbol)
 
-        // Build and cache merged result
+        // Build and cache merged result (only cache if non-empty)
         let merged = buildMergedHistory(coin: symbol)
-        mergedCache[symbol] = merged
+        if !merged.isEmpty {
+            mergedCache[symbol] = merged
+        }
         return merged
     }
 
@@ -103,18 +111,31 @@ actor IncrementalPriceStore {
     /// Fetches the complete price history from CoinGecko for coins without embedded data.
     /// Only called once per coin; result is cached to disk.
     private func fetchFullHistoryFromCoinGecko(coin: String) async {
-        // Check cooldown
-        if let lastAttempt = geckoFetchAttempted[coin],
-           Date().timeIntervalSince(lastAttempt) < fetchCooldown {
+        // Already have baseline data - no need to refetch
+        if geckoBaselineData[coin] != nil { return }
+
+        // Check failure cooldown (short - allows quick retries)
+        if let lastFailed = geckoFetchFailed[coin],
+           Date().timeIntervalSince(lastFailed) < failedFetchCooldown {
             return
         }
 
         guard let config = AssetRiskConfig.forCoin(coin) else { return }
-        geckoFetchAttempted[coin] = Date()
+
+        // Mark attempt for failure tracking (cleared on success)
+        geckoFetchFailed[coin] = Date()
 
         logDebug("IncrementalPriceStore: Fetching full history from CoinGecko for \(coin) (\(config.geckoId))", category: .network)
 
         do {
+            // Rate-limit: wait 1.5s between CoinGecko baseline requests to avoid 429s
+            if let lastRequest = geckoFetchAttempted.values.max(),
+               Date().timeIntervalSince(lastRequest) < 1.5 {
+                let delay = 1.5 - Date().timeIntervalSince(lastRequest)
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+            geckoFetchAttempted[coin] = Date()
+
             let endpoint = CoinGeckoEndpoint.coinMarketChart(
                 id: config.geckoId,
                 currency: "usd",
@@ -162,6 +183,9 @@ actor IncrementalPriceStore {
             geckoBaselineData[coin] = file
             saveBaselineToDisk(coin: coin, file: file)
             mergedCache.removeValue(forKey: coin)
+
+            // Clear failure tracker on success
+            geckoFetchFailed.removeValue(forKey: coin)
 
             logDebug("IncrementalPriceStore: Loaded \(points.count) historical points for \(coin) from CoinGecko", category: .network)
 
