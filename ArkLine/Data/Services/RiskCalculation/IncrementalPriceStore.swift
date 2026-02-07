@@ -3,8 +3,8 @@ import Foundation
 // MARK: - Incremental Price Store
 /// Fetches and persists daily close prices to fill the gap
 /// between the frozen embedded data (HistoricalPriceData.swift) and today.
-/// For coins without embedded data (BNB, HYPE, SUI, UNI, ONDO, RENDER),
-/// fetches full history from CoinGecko on first use and caches to disk.
+/// For coins without embedded data (BNB, SUI, UNI, ONDO, RENDER),
+/// fetches full history from Binance on first use and caches to disk.
 /// Thread-safe via actor isolation. Disk-persisted via JSON in ~/Library/Caches/PriceHistory/.
 actor IncrementalPriceStore {
 
@@ -31,22 +31,19 @@ actor IncrementalPriceStore {
     /// Raw incremental data loaded from disk, keyed by coin symbol.
     private var incrementalData: [String: CoinPriceFile] = [:]
 
-    /// Full history fetched from CoinGecko (for coins without embedded data).
-    private var geckoBaselineData: [String: CoinPriceFile] = [:]
+    /// Full history fetched from Binance (for coins without embedded data).
+    private var baselineData: [String: CoinPriceFile] = [:]
 
     /// Track fetch attempts to enforce cooldown.
     private var fetchAttempted: [String: Date] = [:]
 
-    /// Track CoinGecko baseline fetch attempts to enforce cooldown.
-    private var geckoFetchAttempted: [String: Date] = [:]
-
-    /// Track failed CoinGecko fetches (shorter cooldown for retries).
-    private var geckoFetchFailed: [String: Date] = [:]
+    /// Track failed baseline fetches (shorter cooldown for retries).
+    private var baselineFetchFailed: [String: Date] = [:]
 
     /// Minimum interval between fetch attempts (15 minutes).
     private let fetchCooldown: TimeInterval = 900
 
-    /// Shorter cooldown after a failed CoinGecko baseline fetch (30 seconds).
+    /// Shorter cooldown after a failed baseline fetch (30 seconds).
     private let failedFetchCooldown: TimeInterval = 30
 
     // MARK: - Date Formatter
@@ -67,15 +64,15 @@ actor IncrementalPriceStore {
                 incrementalData[coin] = loaded
             }
             if let baseline = loadBaselineFromDisk(coin: coin) {
-                geckoBaselineData[coin] = baseline
+                baselineData[coin] = baseline
             }
         }
     }
 
     // MARK: - Public API
 
-    /// Returns the full price history for a coin: embedded baseline (or CoinGecko baseline) + incremental days.
-    /// Fetches missing days from Binance/CoinGecko if needed (respects cooldown).
+    /// Returns the full price history for a coin: embedded baseline (or Binance baseline) + incremental days.
+    /// Fetches missing days from Binance if needed (respects cooldown).
     func fullPriceHistory(for coin: String) async -> [(date: Date, price: Double)] {
         let symbol = coin.uppercased()
 
@@ -84,8 +81,8 @@ actor IncrementalPriceStore {
             return cached
         }
 
-        // For coins without embedded data, fetch full history if needed
-        if !hasEmbeddedData(coin: symbol) && geckoBaselineData[symbol] == nil {
+        // For coins without embedded data, fetch full history from Binance if needed
+        if !hasEmbeddedData(coin: symbol) && baselineData[symbol] == nil {
             await fetchFullBaselineHistory(coin: symbol)
         }
 
@@ -108,28 +105,22 @@ actor IncrementalPriceStore {
 
     // MARK: - Full Baseline History Fetch
 
-    /// Fetches the complete price history for coins without embedded data.
-    /// Prefers Binance klines (no rate limits). Falls back to CoinGecko for coins without Binance listing.
+    /// Fetches the complete price history for coins without embedded data using Binance daily klines.
     private func fetchFullBaselineHistory(coin: String) async {
         // Already have baseline data
-        if geckoBaselineData[coin] != nil { return }
+        if baselineData[coin] != nil { return }
 
         // Check failure cooldown
-        if let lastFailed = geckoFetchFailed[coin],
+        if let lastFailed = baselineFetchFailed[coin],
            Date().timeIntervalSince(lastFailed) < failedFetchCooldown {
             return
         }
 
-        guard let config = AssetRiskConfig.forCoin(coin) else { return }
-        geckoFetchFailed[coin] = Date()
+        guard let config = AssetRiskConfig.forCoin(coin),
+              let binanceSymbol = config.binanceSymbol else { return }
 
-        if let binanceSymbol = config.binanceSymbol {
-            // Prefer Binance (no rate limits, fast, reliable)
-            await fetchFullHistoryFromBinance(coin: coin, binanceSymbol: binanceSymbol, originDate: config.originDate)
-        } else {
-            // Fall back to CoinGecko for coins without Binance listing (e.g. HYPE)
-            await fetchFullHistoryFromCoinGecko(coin: coin, geckoId: config.geckoId)
-        }
+        baselineFetchFailed[coin] = Date()
+        await fetchFullHistoryFromBinance(coin: coin, binanceSymbol: binanceSymbol, originDate: config.originDate)
     }
 
     /// Fetch full history from Binance using paginated daily klines (1000 per request, no rate limits).
@@ -191,71 +182,15 @@ actor IncrementalPriceStore {
             }
 
             let file = CoinPriceFile(prices: allPoints, lastUpdated: Date())
-            geckoBaselineData[coin] = file
+            baselineData[coin] = file
             saveBaselineToDisk(coin: coin, file: file)
             mergedCache.removeValue(forKey: coin)
-            geckoFetchFailed.removeValue(forKey: coin)
+            baselineFetchFailed.removeValue(forKey: coin)
 
             logDebug("IncrementalPriceStore: Loaded \(allPoints.count) historical points for \(coin) from Binance", category: .network)
 
         } catch {
             logDebug("IncrementalPriceStore: Binance full history fetch failed for \(coin): \(error.localizedDescription)", category: .network)
-        }
-    }
-
-    /// Fetch full history from CoinGecko (fallback for coins not on Binance).
-    private func fetchFullHistoryFromCoinGecko(coin: String, geckoId: String) async {
-        logDebug("IncrementalPriceStore: Fetching full history from CoinGecko for \(coin) (\(geckoId))", category: .network)
-
-        do {
-            let endpoint = CoinGeckoEndpoint.coinMarketChartAll(
-                id: geckoId,
-                currency: "usd"
-            )
-
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let pricesArray = json["prices"] as? [[Double]] else {
-                logDebug("IncrementalPriceStore: Invalid CoinGecko response for \(coin)", category: .network)
-                return
-            }
-
-            let calendar = Calendar.current
-            let todayStart = calendar.startOfDay(for: Date())
-            var seen = Set<String>()
-            var points: [PersistedPricePoint] = []
-
-            for entry in pricesArray {
-                guard entry.count >= 2 else { continue }
-                let timestamp = entry[0] / 1000.0
-                let price = entry[1]
-                let date = Date(timeIntervalSince1970: timestamp)
-                let dayStart = calendar.startOfDay(for: date)
-
-                guard dayStart < todayStart else { continue }
-                let dateStr = dateFormatter.string(from: dayStart)
-                guard seen.insert(dateStr).inserted else { continue }
-
-                points.append(PersistedPricePoint(date: dateStr, close: price))
-            }
-
-            points.sort { $0.date < $1.date }
-
-            guard !points.isEmpty else {
-                logDebug("IncrementalPriceStore: No CoinGecko data for \(coin)", category: .network)
-                return
-            }
-
-            let file = CoinPriceFile(prices: points, lastUpdated: Date())
-            geckoBaselineData[coin] = file
-            saveBaselineToDisk(coin: coin, file: file)
-            mergedCache.removeValue(forKey: coin)
-            geckoFetchFailed.removeValue(forKey: coin)
-
-            logDebug("IncrementalPriceStore: Loaded \(points.count) historical points for \(coin) from CoinGecko", category: .network)
-
-        } catch {
-            logDebug("IncrementalPriceStore: CoinGecko fetch failed for \(coin): \(error.localizedDescription)", category: .network)
         }
     }
 
@@ -328,15 +263,15 @@ actor IncrementalPriceStore {
 
     // MARK: - Gap Detection
 
-    /// Returns the end date of the baseline data (embedded or CoinGecko-fetched).
+    /// Returns the end date of the baseline data (embedded or Binance-fetched).
     private func baselineEndDate(for coin: String) -> Date? {
         // Check embedded data first
         if let range = HistoricalPriceData.dateRange(for: coin),
            let endDate = dateFormatter.date(from: range.end) {
             return endDate
         }
-        // Fall back to CoinGecko baseline
-        if let baseline = geckoBaselineData[coin],
+        // Fall back to Binance baseline
+        if let baseline = baselineData[coin],
            let last = baseline.prices.last,
            let date = dateFormatter.date(from: last.date) {
             return date
@@ -382,8 +317,8 @@ actor IncrementalPriceStore {
             let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
             return endDate >= calendar.startOfDay(for: yesterday)
         }
-        // Check CoinGecko baseline
-        if let baseline = geckoBaselineData[coin] {
+        // Check Binance baseline
+        if let baseline = baselineData[coin] {
             let calendar = Calendar.current
             return calendar.isDateInToday(baseline.lastUpdated)
         }
@@ -407,11 +342,7 @@ actor IncrementalPriceStore {
 
         // Get Binance symbol from config
         guard let config = AssetRiskConfig.forCoin(coin),
-              let binanceSymbol = config.binanceSymbol else {
-            // No Binance symbol - use CoinGecko for incremental updates
-            await fetchIncrementalFromCoinGecko(coin: coin, days: count)
-            return
-        }
+              let binanceSymbol = config.binanceSymbol else { return }
 
         logDebug("IncrementalPriceStore: Fetching \(count) missing days for \(coin) from \(dateFormatter.string(from: startDate))", category: .network)
 
@@ -488,76 +419,6 @@ actor IncrementalPriceStore {
         }
     }
 
-    /// Fetch incremental daily data from CoinGecko (for coins without Binance listing).
-    private func fetchIncrementalFromCoinGecko(coin: String, days: Int) async {
-        guard let config = AssetRiskConfig.forCoin(coin) else { return }
-
-        logDebug("IncrementalPriceStore: Fetching \(days) days from CoinGecko for \(coin)", category: .network)
-
-        do {
-            let endpoint = CoinGeckoEndpoint.coinMarketChart(
-                id: config.geckoId,
-                currency: "usd",
-                days: min(days + 2, 90)
-            )
-
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let pricesArray = json["prices"] as? [[Double]] else {
-                return
-            }
-
-            let calendar = Calendar.current
-            let todayStart = calendar.startOfDay(for: Date())
-            let baseEnd = baselineEndDate(for: coin)
-
-            var newPoints: [PersistedPricePoint] = []
-            var seen = Set<String>()
-
-            for entry in pricesArray {
-                guard entry.count >= 2 else { continue }
-                let timestamp = entry[0] / 1000.0
-                let price = entry[1]
-                let date = Date(timeIntervalSince1970: timestamp)
-                let dayStart = calendar.startOfDay(for: date)
-
-                guard dayStart < todayStart else { continue }
-                if let end = baseEnd, dayStart <= end { continue }
-
-                let dateStr = dateFormatter.string(from: dayStart)
-                guard seen.insert(dateStr).inserted else { continue }
-
-                if let existing = incrementalData[coin],
-                   existing.prices.contains(where: { $0.date == dateStr }) {
-                    continue
-                }
-
-                newPoints.append(PersistedPricePoint(date: dateStr, close: price))
-            }
-
-            guard !newPoints.isEmpty else { return }
-
-            var existing = incrementalData[coin] ?? CoinPriceFile(prices: [], lastUpdated: Date())
-            existing.prices.append(contentsOf: newPoints)
-            existing.prices.sort { $0.date < $1.date }
-
-            var seenDates = Set<String>()
-            existing.prices = existing.prices.filter { seenDates.insert($0.date).inserted }
-            existing.lastUpdated = Date()
-
-            incrementalData[coin] = existing
-            saveToDisk(coin: coin, file: existing)
-            mergedCache.removeValue(forKey: coin)
-
-            await RiskDataCache.shared.clear(for: coin)
-
-            logDebug("IncrementalPriceStore: Added \(newPoints.count) CoinGecko points for \(coin)", category: .network)
-
-        } catch {
-            logDebug("IncrementalPriceStore: CoinGecko incremental fetch failed for \(coin): \(error.localizedDescription)", category: .network)
-        }
-    }
-
     // MARK: - Merging
 
     private func buildMergedHistory(coin: String) -> [(date: Date, price: Double)] {
@@ -569,8 +430,8 @@ actor IncrementalPriceStore {
             return endDate
         }()
 
-        // Add CoinGecko baseline data (for coins without embedded data)
-        if result.isEmpty, let baseline = geckoBaselineData[coin] {
+        // Add Binance baseline data (for coins without embedded data)
+        if result.isEmpty, let baseline = baselineData[coin] {
             for point in baseline.prices {
                 if let date = dateFormatter.date(from: point.date) {
                     result.append((date: date, price: point.close))

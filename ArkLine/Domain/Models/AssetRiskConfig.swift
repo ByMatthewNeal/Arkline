@@ -125,22 +125,11 @@ struct AssetRiskConfig {
         binanceSymbol: "ONDOUSDT"
     )
 
-    /// Hyperliquid - DEX native token (not on Binance)
-    static let hype = AssetRiskConfig(
-        assetId: "HYPE",
-        geckoId: "hyperliquid",
-        originDate: safeDate(year: 2024, month: 11, day: 29),
-        deviationBounds: (low: -0.40, high: 0.40),
-        confidenceLevel: 2,
-        displayName: "Hyperliquid",
-        binanceSymbol: nil
-    )
-
     // MARK: - All Configs
 
     /// All supported assets
     static let allConfigs: [AssetRiskConfig] = [
-        .btc, .eth, .sol, .bnb, .hype, .sui, .uni, .ondo, .render
+        .btc, .eth, .sol, .bnb, .sui, .uni, .ondo, .render
     ]
 
     /// Dictionary for quick lookup by symbol

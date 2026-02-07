@@ -61,7 +61,6 @@ struct CoinOption: Identifiable, Equatable {
         CoinOption(symbol: "UNI", name: "Uniswap", hasRiskData: true),
         CoinOption(symbol: "ONDO", name: "Ondo", hasRiskData: true),
         CoinOption(symbol: "RENDER", name: "Render", hasRiskData: true),
-        CoinOption(symbol: "HYPE", name: "Hyperliquid", hasRiskData: true),
         CoinOption(symbol: "ADA", name: "Cardano", hasRiskData: false),
         CoinOption(symbol: "DOT", name: "Polkadot", hasRiskData: false),
         CoinOption(symbol: "AVAX", name: "Avalanche", hasRiskData: false),
