@@ -844,7 +844,7 @@ struct MacroDashboardDetailView: View {
 
     @State private var showLearnMore = false
     @State private var expandedIndicator: MacroIndicatorType? = nil
-    @State private var macroTimeRange: MacroChartTimeRange = .thirtyDays
+    @State private var macroTimeRange: MacroChartTimeRange = .threeDays
     @State private var macroSelectedDate: Date? = nil
     @State private var vixHistory: [VIXData] = []
     @State private var dxyHistory: [DXYData] = []
@@ -1248,10 +1248,10 @@ struct MacroDashboardDetailView: View {
         // Use count-based suffix mapped to each time range.
         let count: Int
         switch macroTimeRange {
-        case .sevenDays: count = 2
-        case .thirtyDays: count = 3
-        case .ninetyDays: count = 4
-        case .oneYear: count = 13
+        case .daily: count = 2
+        case .threeDays: count = 3
+        case .weekly: count = 4
+        case .monthly: count = 13
         }
         return Array(points.suffix(count))
     }
