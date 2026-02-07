@@ -7,22 +7,12 @@ struct CoinPickerView: View {
     @Binding var selectedCoin: CoinOption?
     @Bindable var viewModel: DCAViewModel
 
-    @State private var searchText = ""
-    @State private var selectedCategory: DCAAssetCategory = .crypto
-
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
 
-    private var filteredCoins: [CoinOption] {
-        let coins = CoinOption.cryptoCoins
-        if searchText.isEmpty {
-            return coins
-        }
-        return coins.filter {
-            $0.symbol.localizedCaseInsensitiveContains(searchText) ||
-            $0.name.localizedCaseInsensitiveContains(searchText)
-        }
+    private var riskCoins: [CoinOption] {
+        CoinOption.cryptoCoins.filter { $0.hasRiskData }
     }
 
     var body: some View {
@@ -32,40 +22,6 @@ struct CoinPickerView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 16) {
-                    // Category tabs
-                    HStack(spacing: 8) {
-                        ForEach(DCAAssetCategory.allCases, id: \.self) { category in
-                            Button(action: { selectedCategory = category }) {
-                                Text(category.displayName)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(selectedCategory == category ? .white : textPrimary)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(selectedCategory == category ? AppColors.accent : Color.clear)
-                                    )
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-
-                    // Search bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(textPrimary.opacity(0.5))
-
-                        TextField("Search", text: $searchText)
-                            .font(.system(size: 16))
-                            .foregroundColor(textPrimary)
-                    }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color.white)
-                    )
-                    .padding(.horizontal, 20)
-
                     // Risk level note
                     HStack(spacing: 8) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
@@ -83,7 +39,7 @@ struct CoinPickerView: View {
                     // Coin list
                     ScrollView {
                         VStack(spacing: 0) {
-                            ForEach(filteredCoins) { coin in
+                            ForEach(riskCoins) { coin in
                                 CoinRowView(
                                     coin: coin,
                                     hasRiskData: coin.hasRiskData,
