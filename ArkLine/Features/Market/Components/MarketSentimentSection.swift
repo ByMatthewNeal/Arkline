@@ -65,23 +65,15 @@ struct MarketSentimentSection: View {
                     icon: "chart.line.uptrend.xyaxis",
                     iconColor: AppColors.accent
                 ) {
-                    VStack(spacing: 12) {
-                        // BTC and ETH Risk Cards in grid
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            // BTC Risk Level
-                            if let btcRisk = viewModel.btcRiskLevel {
-                                RiskCard(riskLevel: btcRisk, coinSymbol: "BTC")
-                            }
-
-                            // ETH Risk Level
-                            if let ethRisk = viewModel.ethRiskLevel {
-                                RiskCard(riskLevel: ethRisk, coinSymbol: "ETH")
-                            }
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        // BTC Risk Level
+                        if let btcRisk = viewModel.btcRiskLevel {
+                            RiskCard(riskLevel: btcRisk, coinSymbol: "BTC")
                         }
 
-                        // Historical trend chart (tappable)
-                        if !viewModel.btcRiskHistory.isEmpty {
-                            RiskHistoryCard(history: viewModel.btcRiskHistory)
+                        // ETH Risk Level
+                        if let ethRisk = viewModel.ethRiskLevel {
+                            RiskCard(riskLevel: ethRisk, coinSymbol: "ETH")
                         }
                     }
                 }
