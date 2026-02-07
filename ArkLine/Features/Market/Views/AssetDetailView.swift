@@ -5,9 +5,20 @@ struct AssetDetailView: View {
     let asset: CryptoAsset
     @State private var selectedTimeframe: ChartTimeframe = .day
     @State private var isFavorite = false
+    @State private var chartData: [PricePoint] = []
+    @State private var isLoadingChart = false
     @Environment(\.dismiss) private var dismiss
 
+    private let marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
+
     var isPositive: Bool { asset.priceChangePercentage24h >= 0 }
+
+    private var chartIsPositive: Bool {
+        guard let first = chartData.first?.price, let last = chartData.last?.price else {
+            return isPositive
+        }
+        return last >= first
+    }
 
     var body: some View {
         ScrollView {
@@ -35,14 +46,12 @@ struct AssetDetailView: View {
 
                 // Chart
                 VStack(spacing: 16) {
-                    // Placeholder Chart
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "1F1F1F"))
-                        .frame(height: 200)
-                        .overlay(
-                            Text("Price Chart")
-                                .foregroundColor(Color(hex: "A1A1AA"))
-                        )
+                    AssetPriceChart(
+                        data: chartData,
+                        isPositive: chartIsPositive,
+                        isLoading: isLoadingChart
+                    )
+                    .frame(height: 200)
 
                     // Timeframe Selector
                     TimeframeSelector(selected: $selectedTimeframe)
@@ -63,6 +72,11 @@ struct AssetDetailView: View {
         }
         .background(Color(hex: "0F0F0F"))
         .navigationBarBackButtonHidden()
+        .task { await loadChart() }
+        .onChange(of: selectedTimeframe) { _, _ in
+            Task { await loadChart() }
+        }
+        .onAppear { loadFavoriteState() }
         #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -73,20 +87,48 @@ struct AssetDetailView: View {
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    Button(action: { isFavorite.toggle() }) {
-                        Image(systemName: isFavorite ? "star.fill" : "star")
-                            .foregroundColor(isFavorite ? Color(hex: "EAB308") : .white)
-                    }
-
-                    Button(action: { }) {
-                        Image(systemName: "square.and.arrow.up")
-                            .foregroundColor(.white)
-                    }
+                Button(action: { toggleFavorite() }) {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                        .foregroundColor(isFavorite ? Color(hex: "EAB308") : .white)
                 }
             }
         }
         #endif
+    }
+
+    private func loadChart() async {
+        isLoadingChart = true
+        defer { isLoadingChart = false }
+
+        do {
+            let chart = try await marketService.fetchCoinMarketChart(
+                id: asset.id,
+                currency: "usd",
+                days: selectedTimeframe.days
+            )
+            chartData = chart.priceHistory
+        } catch {
+            // Fall back to 7d sparkline if available
+            if let sparkline = asset.sparklinePrices, !sparkline.isEmpty {
+                let now = Date()
+                let interval = (7.0 * 24 * 3600) / Double(sparkline.count)
+                chartData = sparkline.enumerated().map { index, price in
+                    PricePoint(
+                        date: now.addingTimeInterval(-Double(sparkline.count - 1 - index) * interval),
+                        price: price
+                    )
+                }
+            }
+        }
+    }
+
+    private func loadFavoriteState() {
+        isFavorite = FavoritesStore.shared.isFavorite(asset.id)
+    }
+
+    private func toggleFavorite() {
+        isFavorite.toggle()
+        FavoritesStore.shared.setFavorite(asset.id, isFavorite: isFavorite)
     }
 }
 
@@ -99,6 +141,90 @@ enum ChartTimeframe: String, CaseIterable {
     case threeMonths = "3M"
     case year = "1Y"
     case all = "ALL"
+
+    var days: Int {
+        switch self {
+        case .hour: return 1      // CoinGecko minimum is 1 day; gives 5-min intervals
+        case .day: return 1
+        case .week: return 7
+        case .month: return 30
+        case .threeMonths: return 90
+        case .year: return 365
+        case .all: return 1825    // ~5 years
+        }
+    }
+}
+
+// MARK: - Asset Price Chart
+struct AssetPriceChart: View {
+    let data: [PricePoint]
+    let isPositive: Bool
+    let isLoading: Bool
+
+    private var lineColor: Color {
+        isPositive ? Color(hex: "22C55E") : Color(hex: "EF4444")
+    }
+
+    var body: some View {
+        if isLoading && data.isEmpty {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(hex: "1F1F1F"))
+                .overlay(ProgressView().tint(.gray))
+        } else if data.isEmpty {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(hex: "1F1F1F"))
+                .overlay(
+                    Text("No chart data")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "A1A1AA"))
+                )
+        } else {
+            Chart(data) { point in
+                LineMark(
+                    x: .value("Date", point.date),
+                    y: .value("Price", point.price)
+                )
+                .foregroundStyle(lineColor)
+                .interpolationMethod(.catmullRom)
+
+                AreaMark(
+                    x: .value("Date", point.date),
+                    y: .value("Price", point.price)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [lineColor.opacity(0.3), lineColor.opacity(0)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .interpolationMethod(.catmullRom)
+            }
+            .chartXAxis(.hidden)
+            .chartYAxis {
+                AxisMarks(position: .trailing) { value in
+                    AxisValueLabel {
+                        if let price = value.as(Double.self) {
+                            Text(price.asCryptoPrice)
+                                .font(.system(size: 9))
+                                .foregroundColor(Color(hex: "A1A1AA"))
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(hex: "1F1F1F"))
+            )
+            .overlay {
+                if isLoading {
+                    ProgressView()
+                        .tint(.gray)
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Asset Detail Header
@@ -198,10 +324,10 @@ struct AssetStatsSection: View {
             VStack(spacing: 12) {
                 StatRow(label: "Market Cap", value: (asset.marketCap ?? 0).asCurrencyCompact)
                 StatRow(label: "Market Cap Rank", value: "#\(asset.marketCapRank ?? 0)")
-                StatRow(label: "24h High", value: (asset.currentPrice * 1.02).asCurrency)
-                StatRow(label: "24h Low", value: (asset.currentPrice * 0.98).asCurrency)
-                StatRow(label: "24h Volume", value: ((asset.marketCap ?? 0) * 0.05).asCurrencyCompact)
-                StatRow(label: "Circulating Supply", value: "\(((asset.marketCap ?? 0) / asset.currentPrice).formattedCompact) \(asset.symbol.uppercased())")
+                StatRow(label: "24h High", value: (asset.high24h ?? 0).asCurrency)
+                StatRow(label: "24h Low", value: (asset.low24h ?? 0).asCurrency)
+                StatRow(label: "24h Volume", value: (asset.totalVolume ?? 0).asCurrencyCompact)
+                StatRow(label: "Circulating Supply", value: "\((asset.circulatingSupply ?? 0).formattedCompact) \(asset.symbol.uppercased())")
             }
             .padding(16)
             .background(Color(hex: "1F1F1F"))

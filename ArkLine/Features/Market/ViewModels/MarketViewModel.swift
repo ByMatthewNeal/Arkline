@@ -80,7 +80,6 @@ class MarketViewModel {
     ) {
         self.marketService = marketService
         self.newsService = newsService
-        Task { await loadInitialData() }
     }
 
     // MARK: - Public Methods
@@ -159,19 +158,16 @@ class MarketViewModel {
                 customKeywords: customKeywords
             )
         } catch {
-            print("⚠️ News fetch failed: \(error)")
+            logError("News fetch failed: \(error)")
             return []
         }
     }
 
     private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
-        print("🏛️ MarketVM: Fetching Fed Watch meetings...")
         do {
-            let meetings = try await newsService.fetchFedWatchMeetings()
-            print("🏛️ MarketVM: Got \(meetings.count) meetings")
-            return meetings
+            return try await newsService.fetchFedWatchMeetings()
         } catch {
-            print("🏛️ MarketVM: Error fetching Fed Watch: \(error)")
+            logError("Fed Watch fetch failed: \(error)")
             return nil
         }
     }
@@ -233,10 +229,6 @@ class MarketViewModel {
     }
 
     // MARK: - Private Methods
-    private func loadInitialData() async {
-        await refresh()
-    }
-
     private func updateDerivedData() {
         trendingAssets = Array(cryptoAssets.prefix(5))
         topGainers = cryptoAssets.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }.prefix(5).map { $0 }

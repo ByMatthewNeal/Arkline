@@ -27,8 +27,7 @@ struct MarketOverviewView: View {
                     VStack(spacing: 24) {
                         // 1. Daily News Section
                         DailyNewsSection(
-                            news: viewModel.newsItems,
-                            onSeeAll: { /* Navigate to full news list */ }
+                            news: viewModel.newsItems
                         )
 
                         // 2. Fed Watch Section
@@ -72,14 +71,6 @@ struct MarketOverviewView: View {
             }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { /* Notifications */ }) {
-                        Image(systemName: "bell")
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
-                    }
-                }
-            }
             #endif
         }
     }
