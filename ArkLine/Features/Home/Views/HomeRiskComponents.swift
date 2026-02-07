@@ -126,7 +126,7 @@ struct RiskScoreCard: View {
 
                         if itcRiskLevel != nil && onCoinChanged != nil {
                             HStack(spacing: 0) {
-                                ForEach(["BTC", "ETH"], id: \.self) { coin in
+                                ForEach(AssetRiskConfig.allConfigs.map(\.assetId), id: \.self) { coin in
                                     Button(action: {
                                         onCoinChanged?(coin)
                                     }) {

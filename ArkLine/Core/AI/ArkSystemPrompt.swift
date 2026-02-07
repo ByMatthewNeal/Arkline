@@ -112,8 +112,7 @@ enum ArkSystemPrompt {
         fearGreedIndex: Int?,
         fearGreedClassification: String?,
         btcDominance: Double?,
-        btcRiskLevel: Double?,
-        ethRiskLevel: Double?,
+        riskLevels: [String: Double],
         rainbowBand: String?,
         vixValue: Double?,
         vixSignal: String?,
@@ -133,12 +132,8 @@ enum ArkSystemPrompt {
             context += "BTC Dominance: \(formatPercent(btcDom))\n"
         }
 
-        if let btcRisk = btcRiskLevel {
-            context += "BTC ITC Risk Level: \(String(format: "%.3f", btcRisk))\n"
-        }
-
-        if let ethRisk = ethRiskLevel {
-            context += "ETH ITC Risk Level: \(String(format: "%.3f", ethRisk))\n"
+        for (coin, risk) in riskLevels.sorted(by: { $0.key < $1.key }) {
+            context += "\(coin) ITC Risk Level: \(String(format: "%.3f", risk))\n"
         }
 
         if let rainbow = rainbowBand {

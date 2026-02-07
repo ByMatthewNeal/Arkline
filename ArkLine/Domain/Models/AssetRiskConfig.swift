@@ -3,8 +3,6 @@ import Foundation
 // MARK: - Asset Risk Configuration
 /// Per-asset configuration for risk level calculation.
 /// Each asset has unique parameters based on its history and volatility.
-///
-/// Supported assets: BTC, ETH, SOL only.
 struct AssetRiskConfig {
     // MARK: - Safe Date Helper
 
@@ -34,7 +32,10 @@ struct AssetRiskConfig {
     /// Display name for the asset
     let displayName: String
 
-    // MARK: - Supported Assets (BTC, ETH, SOL only)
+    /// Binance trading pair symbol (nil if not listed on Binance)
+    let binanceSymbol: String?
+
+    // MARK: - Supported Assets
 
     /// Bitcoin - longest history, most reliable
     static let btc = AssetRiskConfig(
@@ -43,7 +44,8 @@ struct AssetRiskConfig {
         originDate: safeDate(year: 2009, month: 1, day: 3),
         deviationBounds: (low: -0.8, high: 0.8),
         confidenceLevel: 9,
-        displayName: "Bitcoin"
+        displayName: "Bitcoin",
+        binanceSymbol: "BTCUSDT"
     )
 
     /// Ethereum - second longest, high reliability
@@ -53,7 +55,8 @@ struct AssetRiskConfig {
         originDate: safeDate(year: 2015, month: 7, day: 30),
         deviationBounds: (low: -0.7, high: 0.7),
         confidenceLevel: 8,
-        displayName: "Ethereum"
+        displayName: "Ethereum",
+        binanceSymbol: "ETHUSDT"
     )
 
     /// Solana
@@ -63,13 +66,82 @@ struct AssetRiskConfig {
         originDate: safeDate(year: 2020, month: 4, day: 10),
         deviationBounds: (low: -0.6, high: 0.6),
         confidenceLevel: 6,
-        displayName: "Solana"
+        displayName: "Solana",
+        binanceSymbol: "SOLUSDT"
+    )
+
+    /// BNB - Binance coin, multiple cycles of data
+    static let bnb = AssetRiskConfig(
+        assetId: "BNB",
+        geckoId: "binancecoin",
+        originDate: safeDate(year: 2017, month: 7, day: 25),
+        deviationBounds: (low: -0.65, high: 0.65),
+        confidenceLevel: 7,
+        displayName: "BNB",
+        binanceSymbol: "BNBUSDT"
+    )
+
+    /// Uniswap - DeFi governance token
+    static let uni = AssetRiskConfig(
+        assetId: "UNI",
+        geckoId: "uniswap",
+        originDate: safeDate(year: 2020, month: 9, day: 17),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 5,
+        displayName: "Uniswap",
+        binanceSymbol: "UNIUSDT"
+    )
+
+    /// Render - GPU rendering network
+    static let render = AssetRiskConfig(
+        assetId: "RENDER",
+        geckoId: "render-token",
+        originDate: safeDate(year: 2020, month: 6, day: 10),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 5,
+        displayName: "Render",
+        binanceSymbol: "RENDERUSDT"
+    )
+
+    /// Sui - Move-based L1
+    static let sui = AssetRiskConfig(
+        assetId: "SUI",
+        geckoId: "sui",
+        originDate: safeDate(year: 2023, month: 5, day: 3),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Sui",
+        binanceSymbol: "SUIUSDT"
+    )
+
+    /// Ondo - RWA tokenization
+    static let ondo = AssetRiskConfig(
+        assetId: "ONDO",
+        geckoId: "ondo-finance",
+        originDate: safeDate(year: 2024, month: 1, day: 18),
+        deviationBounds: (low: -0.45, high: 0.45),
+        confidenceLevel: 3,
+        displayName: "Ondo",
+        binanceSymbol: "ONDOUSDT"
+    )
+
+    /// Hyperliquid - DEX native token (not on Binance)
+    static let hype = AssetRiskConfig(
+        assetId: "HYPE",
+        geckoId: "hyperliquid",
+        originDate: safeDate(year: 2024, month: 11, day: 29),
+        deviationBounds: (low: -0.40, high: 0.40),
+        confidenceLevel: 2,
+        displayName: "Hyperliquid",
+        binanceSymbol: nil
     )
 
     // MARK: - All Configs
 
-    /// All supported assets (BTC, ETH, SOL only)
-    static let allConfigs: [AssetRiskConfig] = [.btc, .eth, .sol]
+    /// All supported assets
+    static let allConfigs: [AssetRiskConfig] = [
+        .btc, .eth, .sol, .bnb, .hype, .sui, .uni, .ondo, .render
+    ]
 
     /// Dictionary for quick lookup by symbol
     static let bySymbol: [String: AssetRiskConfig] = {
@@ -83,7 +155,7 @@ struct AssetRiskConfig {
 
     // MARK: - Lookup Methods
 
-    /// Get config for a coin symbol (BTC, ETH, SOL)
+    /// Get config for a coin symbol
     static func forCoin(_ symbol: String) -> AssetRiskConfig? {
         bySymbol[symbol.uppercased()]
     }
@@ -106,10 +178,8 @@ struct AssetRiskConfig {
 
 // MARK: - CoinGecko ID Mapping
 extension AssetRiskConfig {
-    /// Static mapping from symbol to CoinGecko ID (BTC, ETH, SOL only)
-    static let coinGeckoIds: [String: String] = [
-        "BTC": "bitcoin",
-        "ETH": "ethereum",
-        "SOL": "solana"
-    ]
+    /// Static mapping from symbol to CoinGecko ID
+    static let coinGeckoIds: [String: String] = {
+        Dictionary(uniqueKeysWithValues: allConfigs.map { ($0.assetId, $0.geckoId) })
+    }()
 }

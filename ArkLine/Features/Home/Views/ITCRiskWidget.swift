@@ -325,18 +325,20 @@ enum RiskTimeRange: String, CaseIterable {
 // Legacy alias
 typealias ITCTimeRange = RiskTimeRange
 
-// MARK: - Supported Coins for Risk Level (BTC, ETH, SOL only)
+// MARK: - Supported Coins for Risk Level
 enum RiskCoin: String, CaseIterable {
     case btc = "BTC"
     case eth = "ETH"
     case sol = "SOL"
+    case bnb = "BNB"
+    case hype = "HYPE"
+    case sui = "SUI"
+    case uni = "UNI"
+    case ondo = "ONDO"
+    case render = "RENDER"
 
     var displayName: String {
-        switch self {
-        case .btc: return "Bitcoin"
-        case .eth: return "Ethereum"
-        case .sol: return "Solana"
-        }
+        AssetRiskConfig.forCoin(rawValue)?.displayName ?? rawValue
     }
 
     var icon: String {
@@ -344,6 +346,12 @@ enum RiskCoin: String, CaseIterable {
         case .btc: return "bitcoinsign.circle.fill"
         case .eth: return "e.circle.fill"
         case .sol: return "s.circle.fill"
+        case .bnb: return "b.circle.fill"
+        case .hype: return "h.circle.fill"
+        case .sui: return "s.circle.fill"
+        case .uni: return "u.circle.fill"
+        case .ondo: return "o.circle.fill"
+        case .render: return "r.circle.fill"
         }
     }
 }
@@ -398,29 +406,25 @@ struct RiskLevelChartView: View {
             return ITCRiskLevel(from: mfRisk.toRiskHistoryPoint())
         }
         // Fall back to viewModel's live-calculated risk levels
-        switch selectedCoin {
-        case .btc: return viewModel.btcRiskLevel
-        case .eth: return viewModel.ethRiskLevel
-        case .sol:
-            // SOL falls back to enhanced history if multi-factor not loaded
-            if let latest = enhancedRiskHistory.last {
-                return ITCRiskLevel(from: latest)
-            }
-            return nil
+        if let level = viewModel.riskLevels[selectedCoin.rawValue] {
+            return level
         }
+        // Fall back to enhanced history
+        if let latest = enhancedRiskHistory.last {
+            return ITCRiskLevel(from: latest)
+        }
+        return nil
     }
 
     // Get regression-only risk level (single-factor, shown on home page)
     private var regressionOnlyRiskLevel: ITCRiskLevel? {
-        switch selectedCoin {
-        case .btc: return viewModel.btcRiskLevel
-        case .eth: return viewModel.ethRiskLevel
-        case .sol:
-            if let latest = enhancedRiskHistory.last {
-                return ITCRiskLevel(from: latest)
-            }
-            return nil
+        if let level = viewModel.riskLevels[selectedCoin.rawValue] {
+            return level
         }
+        if let latest = enhancedRiskHistory.last {
+            return ITCRiskLevel(from: latest)
+        }
+        return nil
     }
 
     // Get history based on selected coin (legacy format for compatibility)
@@ -428,12 +432,7 @@ struct RiskLevelChartView: View {
         if !enhancedRiskHistory.isEmpty {
             return enhancedRiskHistory.map { ITCRiskLevel(from: $0) }
         }
-        // Fall back to legacy BTC history only for BTC coin
-        // ETH and SOL should rely on enhanced history
-        if selectedCoin == .btc {
-            return viewModel.btcRiskHistory
-        }
-        return []
+        return viewModel.riskHistories[selectedCoin.rawValue] ?? []
     }
 
     // Filter history based on time range
@@ -1120,7 +1119,7 @@ struct RiskLevelInfoSheet: View {
                     infoSection(
                         icon: "hand.tap",
                         title: "Interacting with the Chart",
-                        body: "Tap and drag on the chart to explore historical risk levels at specific dates. Use the time range buttons (7D, 30D, 90D, 1Y, All) to zoom in or out. You can also switch between BTC, ETH, and SOL using the coin selector at the top."
+                        body: "Tap and drag on the chart to explore historical risk levels at specific dates. Use the time range buttons (7D, 30D, 90D, 1Y, All) to zoom in or out. You can also switch between coins using the coin selector at the top."
                     )
                 }
                 .padding(20)

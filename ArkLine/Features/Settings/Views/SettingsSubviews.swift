@@ -154,7 +154,7 @@ struct RiskLevelSelectView: View {
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: SettingsViewModel
 
-    let availableCoins = ["BTC", "ETH", "SOL"]
+    let availableCoins = AssetRiskConfig.allConfigs.map(\.assetId)
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||

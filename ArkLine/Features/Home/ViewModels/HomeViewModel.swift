@@ -233,15 +233,9 @@ class HomeViewModel {
     var arkLineRiskScore: ArkLineRiskScore? = nil
 
     // Risk Level (powers ArkLine Risk Score card)
-    var btcRiskLevel: ITCRiskLevel?
-    var ethRiskLevel: ITCRiskLevel?
-    var solRiskLevel: ITCRiskLevel?
+    var riskLevels: [String: ITCRiskLevel] = [:]
+    var riskHistories: [String: [ITCRiskLevel]] = [:]
     var selectedRiskCoin: String = "BTC"
-
-    // Risk History for calculating consecutive days
-    var btcRiskHistory: [ITCRiskLevel] = []
-    var ethRiskHistory: [ITCRiskLevel] = []
-    var solRiskHistory: [ITCRiskLevel] = []
 
     // User-selected risk coins from settings
     var userRiskCoins: [String] {
@@ -250,23 +244,15 @@ class HomeViewModel {
 
     // Computed property to get risk level for selected coin
     var selectedRiskLevel: ITCRiskLevel? {
-        switch selectedRiskCoin {
-        case "BTC": return btcRiskLevel
-        case "ETH": return ethRiskLevel
-        case "SOL": return solRiskLevel
-        default: return btcRiskLevel // Fallback to BTC for other coins
-        }
+        riskLevels[selectedRiskCoin]
     }
 
     // Get all risk levels for user's selected coins (with consecutive days)
     var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?)] {
         userRiskCoins.map { coin in
-            switch coin {
-            case "BTC": return (coin, btcRiskLevel, consecutiveDaysAtCurrentLevel(history: btcRiskHistory, current: btcRiskLevel))
-            case "ETH": return (coin, ethRiskLevel, consecutiveDaysAtCurrentLevel(history: ethRiskHistory, current: ethRiskLevel))
-            case "SOL": return (coin, solRiskLevel, consecutiveDaysAtCurrentLevel(history: solRiskHistory, current: solRiskLevel))
-            default: return (coin, nil, nil)
-            }
+            let level = riskLevels[coin]
+            let history = riskHistories[coin] ?? []
+            return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level))
         }
     }
 
@@ -429,14 +415,12 @@ class HomeViewModel {
         async let liquidityTask = fetchGlobalLiquiditySafe()
         async let supplyProfitTask = fetchSupplyInProfitSafe()
         async let fedWatchTask = fetchFedWatchMeetingsSafe()
-        async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
-        async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
-        async let solRiskTask = fetchITCRiskLevelSafe(coin: "SOL")
-        async let btcHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
-        async let ethHistoryTask = fetchITCRiskHistorySafe(coin: "ETH")
-        async let solHistoryTask = fetchITCRiskHistorySafe(coin: "SOL")
         async let upcomingEventsTask = fetchUpcomingEventsSafe()
         async let todaysEventsTask = fetchTodaysEventsSafe()
+
+        // Fetch risk levels for all supported coins in parallel
+        let riskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
+        async let riskResultsTask = fetchAllRiskLevels(coins: riskCoins)
 
         // Await macro indicators and events first (these use safe wrappers, won't throw)
         let vix = await vixTask
@@ -444,12 +428,7 @@ class HomeViewModel {
         let liquidity = await liquidityTask
         let supplyProfit = await supplyProfitTask
         let fedMeetings = await fedWatchTask
-        let btcRisk = await btcRiskTask
-        let ethRisk = await ethRiskTask
-        let solRisk = await solRiskTask
-        let btcHistory = await btcHistoryTask
-        let ethHistory = await ethHistoryTask
-        let solHistory = await solHistoryTask
+        let riskResults = await riskResultsTask
         let upcoming = await upcomingEventsTask
         let todaysEvts = await todaysEventsTask
 
@@ -460,12 +439,10 @@ class HomeViewModel {
             self.globalLiquidityChanges = liquidity
             self.supplyInProfitData = supplyProfit
             self.fedWatchMeetings = fedMeetings ?? []
-            self.btcRiskLevel = btcRisk
-            self.ethRiskLevel = ethRisk
-            self.solRiskLevel = solRisk
-            self.btcRiskHistory = btcHistory
-            self.ethRiskHistory = ethHistory
-            self.solRiskHistory = solHistory
+            for (coin, level, history) in riskResults {
+                self.riskLevels[coin] = level
+                self.riskHistories[coin] = history
+            }
             self.upcomingEvents = upcoming
             self.todaysEvents = todaysEvts
             self.eventsLastUpdated = Date()
@@ -642,6 +619,23 @@ class HomeViewModel {
 
     private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel] {
         (try? await itcRiskService.fetchRiskLevel(coin: coin)) ?? []
+    }
+
+    private func fetchAllRiskLevels(coins: [String]) async -> [(String, ITCRiskLevel?, [ITCRiskLevel])] {
+        await withTaskGroup(of: (String, ITCRiskLevel?, [ITCRiskLevel]).self) { group in
+            for coin in coins {
+                group.addTask { [self] in
+                    let level = await self.fetchITCRiskLevelSafe(coin: coin)
+                    let history = await self.fetchITCRiskHistorySafe(coin: coin)
+                    return (coin, level, history)
+                }
+            }
+            var results: [(String, ITCRiskLevel?, [ITCRiskLevel])] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
     }
 
     private func fetchCryptoAssetsSafe() async -> [CryptoAsset] {

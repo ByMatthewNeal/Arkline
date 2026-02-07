@@ -52,10 +52,9 @@ class SentimentViewModel {
     // Legacy risk level (backwards compatibility)
     var riskLevel: RiskLevel?
 
-    // ITC Risk Levels (Into The Cryptoverse)
-    var btcRiskLevel: ITCRiskLevel?
-    var ethRiskLevel: ITCRiskLevel?
-    var btcRiskHistory: [ITCRiskLevel] = []
+    // ITC Risk Levels
+    var riskLevels: [String: ITCRiskLevel] = [:]
+    var riskHistories: [String: [ITCRiskLevel]] = [:]
 
     // Enhanced Risk History (per-coin)
     var riskHistoryCache: [String: [RiskHistoryPoint]] = [:]
@@ -263,10 +262,11 @@ class SentimentViewModel {
         async let arkLineScoreTask = fetchArkLineRiskScoreSafe()
         async let googleTrendsTask = fetchGoogleTrendsSafe()
 
-        // ITC Risk Levels
+        // ITC Risk Levels (fetch BTC and ETH for sentiment display)
         async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
         async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
         async let btcRiskHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
+        async let ethRiskHistoryTask = fetchITCRiskHistorySafe(coin: "ETH")
 
         // Macro Indicators (VIX, DXY, Global M2)
         async let vixTask = fetchVIXSafe()
@@ -279,7 +279,7 @@ class SentimentViewModel {
         // Await all results (none will throw since they use safe wrappers)
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
-        let (btcRisk, ethRisk, btcHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask)
+        let (btcRisk, ethRisk, btcHistory, ethHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask, ethRiskHistoryTask)
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
         let zScores = await zScoresTask
 
@@ -300,9 +300,10 @@ class SentimentViewModel {
             self.googleTrends = trends
 
             // ITC Risk Levels
-            self.btcRiskLevel = btcRisk
-            self.ethRiskLevel = ethRisk
-            self.btcRiskHistory = btcHistory ?? []
+            if let btcRisk = btcRisk { self.riskLevels["BTC"] = btcRisk }
+            if let ethRisk = ethRisk { self.riskLevels["ETH"] = ethRisk }
+            self.riskHistories["BTC"] = btcHistory ?? []
+            self.riskHistories["ETH"] = ethHistory ?? []
 
             // Macro Indicators
             self.vixData = vix

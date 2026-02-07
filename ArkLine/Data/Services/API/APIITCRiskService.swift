@@ -121,7 +121,7 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         }
 
         // Fetch current price from Binance for today's calculation
-        let currentPrice = try await fetchCurrentPriceFromBinance(coin: coin)
+        let currentPrice = try await fetchCurrentPrice(coin: coin)
 
         // Calculate risk for today using live price
         guard let riskPoint = riskCalculator.calculateRisk(
@@ -186,15 +186,37 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         return lastCalculation < lastRefreshTime
     }
 
-    /// Fetch current price from Binance (no rate limit)
-    private func fetchCurrentPriceFromBinance(coin: String) async throws -> Double {
-        let binanceSymbol = "\(coin.uppercased())USDT"
-        let endpoint = BinanceEndpoint.tickerPrice(symbol: binanceSymbol)
-        let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+    /// Fetch current price: tries Binance first, falls back to CoinGecko
+    private func fetchCurrentPrice(coin: String) async throws -> Double {
+        let config = AssetRiskConfig.forCoin(coin)
 
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let priceString = json["price"] as? String,
-              let price = Double(priceString) else {
+        // Try Binance first (fast, no rate limit)
+        if let binanceSymbol = config?.binanceSymbol {
+            do {
+                let endpoint = BinanceEndpoint.tickerPrice(symbol: binanceSymbol)
+                let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let priceString = json["price"] as? String,
+                   let price = Double(priceString) {
+                    return price
+                }
+            } catch {
+                logDebug("Binance price fetch failed for \(coin), falling back to CoinGecko", category: .network)
+            }
+        }
+
+        // Fallback to CoinGecko
+        guard let geckoId = config?.geckoId else {
+            throw RiskCalculationError.unsupportedAsset(coin)
+        }
+
+        let endpoint = CoinGeckoEndpoint.simplePrice(ids: [geckoId], currencies: ["usd"])
+        let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+
+        guard let coinData = json?[geckoId] as? [String: Any],
+              let price = coinData["usd"] as? Double else {
             throw RiskCalculationError.networkError(AppError.invalidResponse)
         }
 
@@ -219,7 +241,7 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
 
         // Fetch price history, live price, and factor data in parallel
         async let historyTask = fetchPriceHistory(config: config)
-        async let livePriceTask = fetchCurrentPriceFromBinance(coin: coin)
+        async let livePriceTask = fetchCurrentPrice(coin: coin)
         async let factorTask = factorFetcher.fetchFactors(for: coin)
 
         let (priceHistory, livePrice, factorData) = try await (historyTask, livePriceTask, factorTask)
@@ -257,7 +279,7 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         }
 
         async let historyTask = fetchPriceHistory(config: config)
-        async let livePriceTask = fetchCurrentPriceFromBinance(coin: coin)
+        async let livePriceTask = fetchCurrentPrice(coin: coin)
         async let factorTask = factorFetcher.fetchFactors(for: coin)
 
         let (priceHistory, livePrice, factorData) = try await (historyTask, livePriceTask, factorTask)
