@@ -9,9 +9,11 @@ struct BroadcastTabView: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        // TODO: Restore admin check after debugging
-        // For now, always show studio for testing
-        BroadcastStudioView()
+        if appState.currentUser?.isAdmin == true {
+            BroadcastStudioView()
+        } else {
+            BroadcastFeedView()
+        }
     }
 }
 

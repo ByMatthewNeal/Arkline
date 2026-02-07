@@ -18,23 +18,6 @@ enum MacroChartTimeRange: String, CaseIterable {
     }
 }
 
-// MARK: - BTC vs M2 Time Range
-enum BTCvsM2TimeRange: String, CaseIterable {
-    case day = "Day"
-    case week = "Week"
-    case month = "Month"
-    case year = "Year"
-
-    var days: Int {
-        switch self {
-        case .day: return 1
-        case .week: return 7
-        case .month: return 30
-        case .year: return 365
-        }
-    }
-}
-
 // MARK: - Chart Data Point
 struct MacroChartPoint: Identifiable {
     let id = UUID()
@@ -354,7 +337,7 @@ struct MacroIndicatorChart: View {
                 )
                 .foregroundStyle(lineColor)
                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.linear)
             }
 
             // Overlay line (BTC)
@@ -366,7 +349,7 @@ struct MacroIndicatorChart: View {
                 )
                 .foregroundStyle(overlayColor)
                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.linear)
             }
         }
         .chartYScale(domain: yDomain)
@@ -438,7 +421,7 @@ struct MacroIndicatorChart: View {
                         endPoint: .bottom
                     )
                 )
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.linear)
             }
 
             // Line
@@ -449,7 +432,7 @@ struct MacroIndicatorChart: View {
                 )
                 .foregroundStyle(lineColor)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.linear)
             }
 
             // Selected point indicator
