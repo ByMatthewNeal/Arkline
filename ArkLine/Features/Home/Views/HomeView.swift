@@ -53,6 +53,10 @@ struct HomeView: View {
                             portfolioName: viewModel.selectedPortfolio?.name ?? "Main Portfolio",
                             chartData: viewModel.portfolioChartData,
                             onPortfolioTap: { showPortfolioPicker = true },
+                            onSetupTap: {
+                                appState.selectedTab = .portfolio
+                                appState.shouldShowPortfolioCreation = true
+                            },
                             selectedTimePeriod: Binding(
                                 get: { viewModel.selectedTimePeriod },
                                 set: { viewModel.selectedTimePeriod = $0 }

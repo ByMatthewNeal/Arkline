@@ -8,6 +8,7 @@ struct PortfolioHeroCard: View {
     let portfolioName: String
     let chartData: [CGFloat]
     let onPortfolioTap: () -> Void
+    let onSetupTap: () -> Void
     @Binding var selectedTimePeriod: TimePeriod
     @Environment(\.colorScheme) var colorScheme
 
@@ -15,6 +16,7 @@ struct PortfolioHeroCard: View {
     @State private var chartAnimationId = UUID()
 
     var isPositive: Bool { change >= 0 }
+    private var isEmpty: Bool { totalValue == 0 }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -22,7 +24,67 @@ struct PortfolioHeroCard: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // Portfolio Selector (Delta-style centered dropdown)
+            if isEmpty {
+                emptyStateContent
+            } else {
+                portfolioContent
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .onChange(of: selectedTimePeriod) { _, _ in
+            chartAnimationId = UUID()
+        }
+    }
+
+    // MARK: - Empty State
+    private var emptyStateContent: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "chart.pie")
+                .font(.system(size: 40, weight: .light))
+                .foregroundColor(AppColors.accent.opacity(0.6))
+
+            VStack(spacing: 6) {
+                Text("Track Your Portfolio")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(textPrimary)
+
+                Text("Add your holdings to see your total value, performance, and allocation.")
+                    .font(.system(size: 14))
+                    .foregroundColor(textPrimary.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+
+            Button(action: onSetupTap) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 16))
+                    Text("Set Up Portfolio")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(
+                    Capsule()
+                        .fill(AppColors.accent)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Portfolio Content
+    private var portfolioContent: some View {
+        Group {
+            // Portfolio Selector
             Button(action: onPortfolioTap) {
                 HStack(spacing: 6) {
                     Text(portfolioName)
@@ -42,10 +104,8 @@ struct PortfolioHeroCard: View {
             }
             .buttonStyle(.plain)
 
-            // Time Period Selector
             TimePeriodSelector(selectedPeriod: $selectedTimePeriod)
 
-            // Total Value
             VStack(spacing: 8) {
                 Text("FUNDS")
                     .font(.system(size: 11, weight: .medium))
@@ -56,7 +116,6 @@ struct PortfolioHeroCard: View {
                     .font(.system(size: 42, weight: .bold))
                     .foregroundColor(textPrimary)
 
-                // Change indicator
                 HStack(spacing: 6) {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 14, weight: .semibold))
@@ -77,7 +136,6 @@ struct PortfolioHeroCard: View {
                 )
             }
 
-            // Portfolio sparkline chart - re-animates on time period change
             PortfolioSparkline(
                 dataPoints: chartData,
                 isPositive: isPositive,
@@ -85,19 +143,8 @@ struct PortfolioHeroCard: View {
                 showEndDot: true,
                 animated: true
             )
-            .id(chartAnimationId)  // Forces view recreation for animation
+            .id(chartAnimationId)
             .frame(height: 80)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
-        )
-        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
-        .onChange(of: selectedTimePeriod) { _, _ in
-            // Trigger chart re-animation when time period changes
-            chartAnimationId = UUID()
         }
     }
 }
