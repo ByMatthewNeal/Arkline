@@ -136,10 +136,9 @@ actor IncrementalPriceStore {
             }
             geckoFetchAttempted[coin] = Date()
 
-            let endpoint = CoinGeckoEndpoint.coinMarketChart(
+            let endpoint = CoinGeckoEndpoint.coinMarketChartAll(
                 id: config.geckoId,
-                currency: "usd",
-                days: 10000 // max - returns all available data
+                currency: "usd"
             )
 
             let data = try await NetworkManager.shared.requestData(endpoint: endpoint)

@@ -82,6 +82,7 @@ enum CoinGeckoEndpoint: APIEndpoint {
     case coinMarketsWithPriceChange(currency: String, perPage: Int, priceChangePeriods: [String])
     case coinDetail(id: String)
     case coinMarketChart(id: String, currency: String, days: Int)
+    case coinMarketChartAll(id: String, currency: String)
     case searchCoins(query: String)
     case globalData
     case trendingCoins
@@ -98,6 +99,8 @@ enum CoinGeckoEndpoint: APIEndpoint {
         case .coinDetail(let id):
             return "/coins/\(id)"
         case .coinMarketChart(let id, _, _):
+            return "/coins/\(id)/market_chart"
+        case .coinMarketChartAll(let id, _):
             return "/coins/\(id)/market_chart"
         case .searchCoins:
             return "/search"
@@ -157,6 +160,11 @@ enum CoinGeckoEndpoint: APIEndpoint {
             return [
                 "vs_currency": currency,
                 "days": "\(days)"
+            ]
+        case .coinMarketChartAll(_, let currency):
+            return [
+                "vs_currency": currency,
+                "days": "max"
             ]
         case .searchCoins(let query):
             return ["query": query]
