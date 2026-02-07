@@ -28,20 +28,14 @@ struct MarketSentimentSection: View {
 
                     // Fear & Greed Index
                     if let fearGreed = viewModel.fearGreedIndex {
-                        NavigationLink(destination: FearGreedDetailView()) {
-                            FearGreedSentimentCard(index: fearGreed)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        FearGreedSentimentCard(index: fearGreed)
                     } else {
                         PlaceholderCard(title: "Fear & Greed", icon: "gauge.with.needle")
                     }
 
                     // Bitcoin/Altcoin Season
                     if let altcoin = viewModel.altcoinSeason {
-                        NavigationLink(destination: AltcoinSeasonDetailView()) {
-                            BitcoinSeasonCard(index: altcoin)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        BitcoinSeasonCard(index: altcoin)
                     } else {
                         PlaceholderCard(title: "Season Indicator", icon: "bitcoinsign.circle")
                     }
@@ -55,10 +49,7 @@ struct MarketSentimentSection: View {
 
                     // BTC Dominance
                     if let btcDom = viewModel.btcDominance {
-                        NavigationLink(destination: BTCDominanceDetailView()) {
-                            BTCDominanceCard(dominance: btcDom)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        BTCDominanceCard(dominance: btcDom)
                     } else {
                         PlaceholderCard(title: "BTC Dominance", icon: "chart.pie")
                     }
