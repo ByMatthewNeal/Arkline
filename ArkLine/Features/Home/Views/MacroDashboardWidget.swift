@@ -843,6 +843,12 @@ struct MacroDashboardDetailView: View {
     }
 
     @State private var showLearnMore = false
+    @State private var expandedIndicator: MacroIndicatorType? = nil
+    @State private var macroTimeRange: MacroChartTimeRange = .thirtyDays
+    @State private var macroSelectedDate: Date? = nil
+    @State private var vixHistory: [VIXData] = []
+    @State private var dxyHistory: [DXYData] = []
+    @State private var isLoadingChart = false
 
     var body: some View {
         NavigationStack {
@@ -909,35 +915,97 @@ struct MacroDashboardDetailView: View {
                             .tracking(1.5)
 
                         VStack(spacing: 0) {
-                            SimpleIndicatorRow(
-                                icon: "waveform.path.ecg",
-                                title: "VIX",
-                                value: vixData.map { String(format: "%.1f", $0.value) } ?? "--",
-                                status: vixStatus,
-                                statusColor: vixStatusColor
-                            )
+                            // VIX
+                            Button(action: { toggleIndicator(.vix) }) {
+                                SimpleIndicatorRow(
+                                    icon: "waveform.path.ecg",
+                                    title: "VIX",
+                                    value: vixData.map { String(format: "%.1f", $0.value) } ?? "--",
+                                    status: vixStatus,
+                                    statusColor: vixStatusColor,
+                                    isExpanded: expandedIndicator == .vix
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            if expandedIndicator == .vix {
+                                MacroIndicatorChart(
+                                    data: vixChartData,
+                                    lineColor: vixStatusColor,
+                                    valueFormatter: { String(format: "%.1f", $0) },
+                                    selectedTimeRange: $macroTimeRange,
+                                    selectedDate: $macroSelectedDate,
+                                    isLoading: isLoadingChart
+                                )
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 14)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
 
                             Divider().background(textPrimary.opacity(0.08))
 
-                            SimpleIndicatorRow(
-                                icon: "dollarsign.circle",
-                                title: "DXY",
-                                value: dxyData.map { String(format: "%.1f", $0.value) } ?? "--",
-                                change: dxyData?.changePercent,
-                                status: dxyStatus,
-                                statusColor: dxyStatusColor
-                            )
+                            // DXY
+                            Button(action: { toggleIndicator(.dxy) }) {
+                                SimpleIndicatorRow(
+                                    icon: "dollarsign.circle",
+                                    title: "DXY",
+                                    value: dxyData.map { String(format: "%.1f", $0.value) } ?? "--",
+                                    change: dxyData?.changePercent,
+                                    status: dxyStatus,
+                                    statusColor: dxyStatusColor,
+                                    isExpanded: expandedIndicator == .dxy
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            if expandedIndicator == .dxy {
+                                MacroIndicatorChart(
+                                    data: dxyChartData,
+                                    lineColor: dxyStatusColor,
+                                    valueFormatter: { String(format: "%.1f", $0) },
+                                    selectedTimeRange: $macroTimeRange,
+                                    selectedDate: $macroSelectedDate,
+                                    isLoading: isLoadingChart
+                                )
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 14)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
 
                             Divider().background(textPrimary.opacity(0.08))
 
-                            SimpleIndicatorRow(
-                                icon: "banknote",
-                                title: "Global M2",
-                                value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
-                                change: liquidityData?.monthlyChange,
-                                status: m2Status,
-                                statusColor: m2StatusColor
-                            )
+                            // Global M2
+                            Button(action: { toggleIndicator(.m2) }) {
+                                SimpleIndicatorRow(
+                                    icon: "banknote",
+                                    title: "Global M2",
+                                    value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
+                                    change: liquidityData?.monthlyChange,
+                                    status: m2Status,
+                                    statusColor: m2StatusColor,
+                                    isExpanded: expandedIndicator == .m2
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            if expandedIndicator == .m2 {
+                                MacroIndicatorChart(
+                                    data: m2ChartData,
+                                    lineColor: m2StatusColor,
+                                    valueFormatter: { value in
+                                        if value >= 1_000_000_000_000 {
+                                            return String(format: "$%.1fT", value / 1_000_000_000_000)
+                                        }
+                                        return String(format: "$%.0fB", value / 1_000_000_000)
+                                    },
+                                    selectedTimeRange: $macroTimeRange,
+                                    selectedDate: $macroSelectedDate,
+                                    isLoading: false
+                                )
+                                .padding(.horizontal, 14)
+                                .padding(.bottom, 14)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 12)
@@ -1073,6 +1141,92 @@ struct MacroDashboardDetailView: View {
             }
         }
         return m2Interpretation
+    }
+
+    // MARK: - Chart Expand/Collapse
+
+    private func toggleIndicator(_ type: MacroIndicatorType) {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            if expandedIndicator == type {
+                expandedIndicator = nil
+                macroSelectedDate = nil
+            } else {
+                expandedIndicator = type
+                macroSelectedDate = nil
+                loadHistoryIfNeeded(for: type)
+            }
+        }
+    }
+
+    private func loadHistoryIfNeeded(for type: MacroIndicatorType) {
+        switch type {
+        case .vix:
+            guard vixHistory.isEmpty else { return }
+            loadVIXHistory()
+        case .dxy:
+            guard dxyHistory.isEmpty else { return }
+            loadDXYHistory()
+        case .m2:
+            break // Already available in liquidityData.history
+        }
+    }
+
+    private func loadVIXHistory() {
+        isLoadingChart = true
+        Task {
+            do {
+                let history = try await ServiceContainer.shared.vixService.fetchVIXHistory(days: 365)
+                await MainActor.run {
+                    self.vixHistory = history
+                    self.isLoadingChart = false
+                }
+            } catch {
+                await MainActor.run { self.isLoadingChart = false }
+            }
+        }
+    }
+
+    private func loadDXYHistory() {
+        isLoadingChart = true
+        Task {
+            do {
+                let history = try await ServiceContainer.shared.dxyService.fetchDXYHistory(days: 365)
+                await MainActor.run {
+                    self.dxyHistory = history
+                    self.isLoadingChart = false
+                }
+            } catch {
+                await MainActor.run { self.isLoadingChart = false }
+            }
+        }
+    }
+
+    // MARK: - Chart Data
+
+    private var vixChartData: [MacroChartPoint] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let points = vixHistory.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date) else { return nil }
+            return MacroChartPoint(date: date, value: item.value)
+        }
+        return Array(points.suffix(macroTimeRange.days))
+    }
+
+    private var dxyChartData: [MacroChartPoint] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let points = dxyHistory.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date) else { return nil }
+            return MacroChartPoint(date: date, value: item.value)
+        }
+        return Array(points.suffix(macroTimeRange.days))
+    }
+
+    private var m2ChartData: [MacroChartPoint] {
+        guard let history = liquidityData?.history else { return [] }
+        let points = history.map { MacroChartPoint(date: $0.date, value: $0.value) }
+        return Array(points.suffix(macroTimeRange.days))
     }
 
     // MARK: - Simplified Status Properties
@@ -1750,6 +1904,7 @@ struct SimpleIndicatorRow: View {
     var change: Double? = nil
     let status: String
     let statusColor: Color
+    var isExpanded: Bool = false
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -1790,6 +1945,13 @@ struct SimpleIndicatorRow: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(statusColor)
             }
+
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(textPrimary.opacity(0.3))
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                .animation(.easeInOut(duration: 0.2), value: isExpanded)
         }
         .padding(14)
     }

@@ -43,7 +43,7 @@ final class YahooFinanceService {
 
     /// Fetch VIX history
     func fetchVIXHistory(days: Int) async throws -> [VIXData] {
-        let range = days <= 7 ? "7d" : (days <= 30 ? "1mo" : "3mo")
+        let range = days <= 7 ? "7d" : (days <= 30 ? "1mo" : (days <= 90 ? "3mo" : "1y"))
         let data = try await fetchQuote(symbol: vixSymbol, range: range)
 
         guard let result = data.chart.result?.first,
@@ -107,7 +107,7 @@ final class YahooFinanceService {
 
     /// Fetch DXY history
     func fetchDXYHistory(days: Int) async throws -> [DXYData] {
-        let range = days <= 7 ? "7d" : (days <= 30 ? "1mo" : "3mo")
+        let range = days <= 7 ? "7d" : (days <= 30 ? "1mo" : (days <= 90 ? "3mo" : "1y"))
         let data = try await fetchQuote(symbol: dxySymbol, range: range)
 
         guard let result = data.chart.result?.first,
