@@ -1,5 +1,25 @@
 import SwiftUI
 
+// MARK: - Date Filter
+
+enum BroadcastDateFilter: String, CaseIterable {
+    case all = "All"
+    case today = "Today"
+    case thisWeek = "This Week"
+    case thisMonth = "This Month"
+}
+
+// MARK: - Date Section Key
+
+private struct DateSectionKey: Hashable, Comparable {
+    let order: Int
+    let label: String
+
+    static func < (lhs: DateSectionKey, rhs: DateSectionKey) -> Bool {
+        lhs.order < rhs.order
+    }
+}
+
 // MARK: - Broadcast Feed View
 
 /// User-facing view showing published broadcasts from the admin.
@@ -12,6 +32,89 @@ struct BroadcastFeedView: View {
     @State private var selectedBroadcast: Broadcast?
     @State private var showNotificationPrompt = false
     @State private var hasCheckedNotifications = false
+    @State private var searchText = ""
+    @State private var selectedDateFilter: BroadcastDateFilter = .all
+    @State private var selectedTags: Set<String> = []
+
+    // MARK: - Filtered Broadcasts
+
+    private var filteredBroadcasts: [Broadcast] {
+        var result = viewModel.published
+
+        // Date filter
+        if selectedDateFilter != .all {
+            let calendar = Calendar.current
+            let now = Date()
+            result = result.filter { broadcast in
+                let date = broadcast.publishedAt ?? broadcast.createdAt
+                switch selectedDateFilter {
+                case .all: return true
+                case .today: return calendar.isDateInToday(date)
+                case .thisWeek:
+                    guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) else { return true }
+                    return date >= weekAgo
+                case .thisMonth:
+                    guard let monthAgo = calendar.date(byAdding: .month, value: -1, to: now) else { return true }
+                    return date >= monthAgo
+                }
+            }
+        }
+
+        // Tag filter
+        if !selectedTags.isEmpty {
+            result = result.filter { broadcast in
+                !selectedTags.isDisjoint(with: Set(broadcast.tags))
+            }
+        }
+
+        // Search filter
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            result = result.filter { broadcast in
+                broadcast.title.lowercased().contains(query)
+                || broadcast.content.lowercased().contains(query)
+                || broadcast.tags.contains(where: { $0.lowercased().contains(query) })
+            }
+        }
+
+        return result
+    }
+
+    /// All unique tags from published broadcasts
+    private var availableTags: [String] {
+        let allTags = viewModel.published.flatMap { $0.tags }
+        return Array(Set(allTags)).sorted()
+    }
+
+    /// Group filtered broadcasts into date sections
+    private var groupedBroadcasts: [(key: DateSectionKey, broadcasts: [Broadcast])] {
+        let calendar = Calendar.current
+        let now = Date()
+
+        let grouped = Dictionary(grouping: filteredBroadcasts) { broadcast -> DateSectionKey in
+            let date = broadcast.publishedAt ?? broadcast.createdAt
+            if calendar.isDateInToday(date) {
+                return DateSectionKey(order: 0, label: "Today")
+            } else if calendar.isDateInYesterday(date) {
+                return DateSectionKey(order: 1, label: "Yesterday")
+            } else if let weekAgo = calendar.date(byAdding: .day, value: -7, to: now), date >= weekAgo {
+                return DateSectionKey(order: 2, label: "This Week")
+            } else {
+                // Group by month
+                let formatter = DateFormatter()
+                formatter.dateFormat = calendar.component(.year, from: date) == calendar.component(.year, from: now)
+                    ? "MMMM"
+                    : "MMMM yyyy"
+                let monthLabel = formatter.string(from: date)
+                // Order by how far back the month is (3+ for anything older than this week)
+                let monthsAgo = calendar.dateComponents([.month], from: date, to: now).month ?? 0
+                return DateSectionKey(order: 3 + monthsAgo, label: monthLabel)
+            }
+        }
+
+        return grouped.map { (key: $0.key, broadcasts: $0.value.sorted { ($0.publishedAt ?? $0.createdAt) > ($1.publishedAt ?? $1.createdAt) }) }
+            .sorted { $0.key < $1.key }
+    }
 
     var body: some View {
         NavigationStack {
@@ -27,7 +130,15 @@ struct BroadcastFeedView: View {
                     } else if viewModel.published.isEmpty {
                         emptyStateView
                     } else {
-                        broadcastList
+                        // Filter bar
+                        filterBar
+
+                        // Broadcast list (grouped)
+                        if filteredBroadcasts.isEmpty {
+                            noResultsView
+                        } else {
+                            groupedBroadcastList
+                        }
                     }
                 }
                 .padding(.horizontal, ArkSpacing.md)
@@ -36,6 +147,7 @@ struct BroadcastFeedView: View {
             .background(AppColors.background(colorScheme))
             .navigationTitle("Insights")
             .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $searchText, prompt: "Search insights...")
             .refreshable {
                 await viewModel.loadBroadcasts()
             }
@@ -46,6 +158,112 @@ struct BroadcastFeedView: View {
                 await viewModel.loadBroadcasts()
                 await checkNotificationStatus()
             }
+        }
+    }
+
+    // MARK: - Filter Bar
+
+    private var filterBar: some View {
+        VStack(spacing: ArkSpacing.sm) {
+            // Date filter chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: ArkSpacing.xs) {
+                    ForEach(BroadcastDateFilter.allCases, id: \.self) { filter in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedDateFilter = filter
+                            }
+                        } label: {
+                            Text(filter.rawValue)
+                                .font(ArkFonts.caption)
+                                .foregroundColor(selectedDateFilter == filter ? .white : AppColors.textSecondary)
+                                .padding(.horizontal, ArkSpacing.sm)
+                                .padding(.vertical, ArkSpacing.xs)
+                                .background(selectedDateFilter == filter ? AppColors.accent : AppColors.cardBackground(colorScheme))
+                                .cornerRadius(ArkSpacing.sm)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            // Tag pills (only if tags exist)
+            if !availableTags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: ArkSpacing.xs) {
+                        ForEach(availableTags, id: \.self) { tag in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    if selectedTags.contains(tag) {
+                                        selectedTags.remove(tag)
+                                    } else {
+                                        selectedTags.insert(tag)
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: ArkSpacing.xxs) {
+                                    Text("#\(tag)")
+                                        .font(ArkFonts.caption)
+                                }
+                                .foregroundColor(selectedTags.contains(tag) ? .white : AppColors.accent)
+                                .padding(.horizontal, ArkSpacing.sm)
+                                .padding(.vertical, ArkSpacing.xxs)
+                                .background(selectedTags.contains(tag) ? AppColors.accent : AppColors.accent.opacity(0.1))
+                                .cornerRadius(ArkSpacing.xs)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Grouped Broadcast List
+
+    private var groupedBroadcastList: some View {
+        LazyVStack(spacing: ArkSpacing.md, pinnedViews: [.sectionHeaders]) {
+            ForEach(groupedBroadcasts, id: \.key) { section in
+                Section {
+                    ForEach(section.broadcasts) { broadcast in
+                        BroadcastCardView(broadcast: broadcast) {
+                            selectedBroadcast = broadcast
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text(section.key.label)
+                            .font(ArkFonts.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                    }
+                    .padding(.vertical, ArkSpacing.xs)
+                    .background(AppColors.background(colorScheme))
+                }
+            }
+        }
+        .padding(.top, ArkSpacing.xs)
+    }
+
+    // MARK: - No Results View
+
+    private var noResultsView: some View {
+        VStack(spacing: ArkSpacing.sm) {
+            Spacer().frame(height: 40)
+
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 40))
+                .foregroundColor(AppColors.textTertiary)
+
+            Text("No Results Found")
+                .font(ArkFonts.headline)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Text("Try adjusting your search or filters")
+                .font(ArkFonts.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            Spacer()
         }
     }
 
@@ -146,19 +364,6 @@ struct BroadcastFeedView: View {
         }
     }
 
-    // MARK: - Broadcast List
-
-    private var broadcastList: some View {
-        LazyVStack(spacing: ArkSpacing.md) {
-            ForEach(viewModel.published) { broadcast in
-                BroadcastCardView(broadcast: broadcast) {
-                    selectedBroadcast = broadcast
-                }
-            }
-        }
-        .padding(.top, ArkSpacing.sm)
-    }
-
     // MARK: - Loading View
 
     private var loadingView: some View {
@@ -214,15 +419,9 @@ struct BroadcastCardView: View {
                     Image(systemName: "antenna.radiowaves.left.and.right")
                         .foregroundColor(AppColors.accent)
 
-                    if let publishedAt = broadcast.publishedAt {
-                        Text(publishedAt.formatted(date: .abbreviated, time: .shortened))
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
-                    } else {
-                        Text(broadcast.timeAgo)
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
+                    Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
 
                     Spacer()
 
@@ -308,7 +507,7 @@ struct BroadcastDetailView: View {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
                     // Header
                     VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        Text(broadcast.timeAgo)
+                        Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
                             .font(ArkFonts.caption)
                             .foregroundColor(AppColors.textSecondary)
 
@@ -548,6 +747,39 @@ struct BroadcastDetailView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Date Formatting Helper
+
+/// Formats a broadcast date with friendly relative labels.
+/// - "Today at 2:30 PM"
+/// - "Yesterday at 9:15 AM"
+/// - "Monday at 4:00 PM" (this week)
+/// - "Jan 15 at 11:30 AM" (older, same year)
+/// - "Dec 3, 2025 at 8:00 AM" (different year)
+private func formattedBroadcastDate(_ date: Date) -> String {
+    let calendar = Calendar.current
+    let timeFormatter = DateFormatter()
+    timeFormatter.dateFormat = "h:mm a"
+    let time = timeFormatter.string(from: date)
+
+    if calendar.isDateInToday(date) {
+        return "Today at \(time)"
+    } else if calendar.isDateInYesterday(date) {
+        return "Yesterday at \(time)"
+    } else if let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()), date >= weekAgo {
+        let dayFormatter = DateFormatter()
+        dayFormatter.dateFormat = "EEEE"
+        return "\(dayFormatter.string(from: date)) at \(time)"
+    } else if calendar.component(.year, from: date) == calendar.component(.year, from: Date()) {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+        return "\(dateFormatter.string(from: date)) at \(time)"
+    } else {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, yyyy"
+        return "\(dateFormatter.string(from: date)) at \(time)"
     }
 }
 
