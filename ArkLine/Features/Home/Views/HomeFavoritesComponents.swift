@@ -26,12 +26,6 @@ struct FavoritesSection: View {
                     .foregroundColor(textPrimary)
 
                 Spacer()
-
-                Button(action: { }) {
-                    Text("See All")
-                        .font(.caption)
-                        .foregroundColor(AppColors.accent)
-                }
             }
 
             ScrollView(.horizontal, showsIndicators: false) {

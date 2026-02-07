@@ -13,12 +13,6 @@ struct FavoritesWidget: View {
                     .foregroundColor(.white)
 
                 Spacer()
-
-                NavigationLink(destination: MarketAssetsView()) {
-                    Text("See All")
-                        .font(.caption)
-                        .foregroundColor(Color(hex: "6366F1"))
-                }
             }
 
             VStack(spacing: 8) {
@@ -43,15 +37,6 @@ struct FavoritesWidget: View {
     }
 }
 
-// MARK: - Placeholder Market Assets View
-struct MarketAssetsView: View {
-    var body: some View {
-        Text("Market Assets")
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(hex: "0F0F0F"))
-    }
-}
 
 #Preview {
     FavoritesWidget(

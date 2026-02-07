@@ -102,56 +102,6 @@ struct PortfolioHeroCard: View {
     }
 }
 
-// MARK: - Glass Quick Actions
-struct GlassQuickActions: View {
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        HStack(spacing: 12) {
-            GlassQuickActionButton(icon: "plus", label: "Buy")
-            GlassQuickActionButton(icon: "arrow.up.right", label: "Send")
-            GlassQuickActionButton(icon: "arrow.down.left", label: "Receive")
-            GlassQuickActionButton(icon: "chart.bar.fill", label: "Trade")
-        }
-    }
-}
-
-// MARK: - Glass Quick Action Button
-struct GlassQuickActionButton: View {
-    let icon: String
-    let label: String
-    @State private var isPressed = false
-    @Environment(\.colorScheme) var colorScheme
-
-    private var textPrimary: Color {
-        AppColors.textPrimary(colorScheme)
-    }
-
-    var body: some View {
-        Button(action: { }) {
-            VStack(spacing: 8) {
-                // Icon container - subtle background, monochrome
-                Circle()
-                    .fill(colorScheme == .dark
-                        ? Color.white.opacity(0.06)
-                        : Color.black.opacity(0.04))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: icon)
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(textPrimary.opacity(0.8))
-                    )
-
-                Text(label)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(textPrimary.opacity(0.6))
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
 // MARK: - Time Period Selector
 struct TimePeriodSelector: View {
     @Binding var selectedPeriod: TimePeriod

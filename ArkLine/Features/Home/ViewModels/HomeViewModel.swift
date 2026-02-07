@@ -27,6 +27,11 @@ class HomeViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    /// Timestamp of last successful data refresh
+    var lastRefreshed: Date?
+    /// Number of fetch failures in the last refresh cycle
+    var failedFetchCount = 0
+
     // Fear & Greed
     var fearGreedIndex: FearGreedIndex?
 
@@ -337,7 +342,8 @@ class HomeViewModel {
         self.globalLiquidityService = globalLiquidityService
         self.macroStatisticsService = macroStatisticsService
         self.santimentService = santimentService
-        Task { await loadInitialData() }
+        // Initialize user data synchronously; data loading is triggered by HomeView.task
+        self.sentimentViewModel = SentimentViewModel()
         startAutoRefresh()
     }
 
@@ -377,21 +383,21 @@ class HomeViewModel {
 
     // MARK: - Public Methods
     func refresh() async {
-        print("🔵 HomeViewModel.refresh() called")
         isLoading = true
+        defer { isLoading = false }
         errorMessage = nil
+        var failures = 0
 
         let userId = currentUserId ?? Constants.Mock.userId
 
         // Fetch crypto prices first (critical for Core widget) - independent of other fetches
         let crypto = await fetchCryptoAssetsSafe()
+        if crypto.isEmpty { failures += 1 }
 
         // Extract BTC, ETH, and SOL prices immediately
         let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
         let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
         let sol = crypto.first { $0.symbol.uppercased() == "SOL" }
-
-        print("🟢 HomeViewModel: Fetched \(crypto.count) assets, BTC = \(btc?.currentPrice ?? -1), ETH = \(eth?.currentPrice ?? -1), SOL = \(sol?.currentPrice ?? -1)")
 
         // Set prices on main actor immediately
         await MainActor.run {
@@ -463,7 +469,7 @@ class HomeViewModel {
             do {
                 return try await sentimentService.fetchFearGreedIndex()
             } catch {
-                print("⚠️ Fear & Greed fetch failed: \(error.localizedDescription)")
+                logError("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
                 return nil
             }
         }()
@@ -472,7 +478,7 @@ class HomeViewModel {
             do {
                 return try await sentimentService.fetchArkLineRiskScore()
             } catch {
-                print("⚠️ ArkLine Risk Score fetch failed: \(error.localizedDescription)")
+                logError("ArkLine Risk Score fetch failed: \(error.localizedDescription)", category: .network)
                 return nil
             }
         }()
@@ -481,7 +487,7 @@ class HomeViewModel {
             do {
                 return try await dcaService.fetchReminders(userId: userId)
             } catch {
-                print("⚠️ Reminders fetch failed: \(error.localizedDescription)")
+                logError("Reminders fetch failed: \(error.localizedDescription)", category: .network)
                 return []
             }
         }()
@@ -490,12 +496,16 @@ class HomeViewModel {
             do {
                 return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
             } catch {
-                print("⚠️ News fetch failed: \(error.localizedDescription)")
+                logError("News fetch failed: \(error.localizedDescription)", category: .network)
                 return []
             }
         }()
 
         let (fg, riskScore, reminders, news) = await (fgResult, riskScoreResult, remindersResult, newsResult)
+
+        // Count secondary failures
+        if fg == nil { failures += 1 }
+        if riskScore == nil { failures += 1 }
 
         await MainActor.run {
             if let fg = fg {
@@ -508,14 +518,15 @@ class HomeViewModel {
                 self.arkLineRiskScore = riskScore
             }
             self.newsItems = news
+            self.failedFetchCount = failures
+            self.lastRefreshed = Date()
+        }
 
-            self.isLoading = false
-
-            // Fetch Rainbow Chart data (needs BTC price) in background
+        // Fetch Rainbow Chart data (needs BTC price) in background
+        if btcPrice > 0 {
             Task {
-                if self.btcPrice > 0 {
-                    self.rainbowChartData = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
-                }
+                let rainbow = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
+                await MainActor.run { self.rainbowChartData = rainbow }
             }
         }
     }
@@ -594,21 +605,6 @@ class HomeViewModel {
         }
     }
 
-    private func loadInitialData() async {
-        // Set initial user data
-        await MainActor.run {
-            self.userName = "Matthew"
-            // Initialize sentiment view model for Market Sentiment widget
-            self.sentimentViewModel = SentimentViewModel()
-        }
-
-        // Load portfolios first
-        await loadPortfolios()
-
-        // Then refresh other data
-        await refresh()
-    }
-
     private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
         try? await newsService.fetchFedWatchMeetings()
     }
@@ -640,11 +636,9 @@ class HomeViewModel {
 
     private func fetchCryptoAssetsSafe() async -> [CryptoAsset] {
         do {
-            let assets = try await marketService.fetchCryptoAssets(page: 1, perPage: 20)
-            print("🟢 fetchCryptoAssetsSafe: Got \(assets.count) assets")
-            return assets
+            return try await marketService.fetchCryptoAssets(page: 1, perPage: 20)
         } catch {
-            print("🔴 fetchCryptoAssetsSafe failed: \(error)")
+            logError("Crypto assets fetch failed: \(error.localizedDescription)", category: .network)
             return []
         }
     }
