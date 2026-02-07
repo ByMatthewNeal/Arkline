@@ -476,7 +476,7 @@ final class APIDCAService: DCAServiceProtocol {
 
             // 2. Create investment record
             let riskLevel = reminder.lastTriggeredRiskLevel ?? 50.0
-            let price = fetchCurrentPriceSync(for: reminder.symbol)
+            let price = await fetchCurrentPrice(for: reminder.symbol)
             let investment = RiskDCAInvestment(
                 id: UUID(),
                 reminderId: id,
@@ -699,14 +699,21 @@ final class APIDCAService: DCAServiceProtocol {
 
     // MARK: - Private Price Helper
 
-    /// Fetches current price for a symbol (placeholder until market service integration)
-    private func fetchCurrentPriceSync(for symbol: String) -> Double {
-        // Placeholder prices - integrate with market service for real prices
-        let prices: [String: Double] = [
-            "BTC": 67000, "ETH": 3500, "SOL": 175,
-            "XRP": 0.55, "ADA": 0.48, "DOGE": 0.12
-        ]
-        return prices[symbol.uppercased()] ?? 100.0
+    /// Fetches current price for a symbol from Binance
+    private func fetchCurrentPrice(for symbol: String) async -> Double {
+        let pair = "\(symbol.uppercased())USDT"
+        do {
+            let endpoint = BinanceEndpoint.tickerPrice(symbol: pair)
+            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let priceStr = json["price"] as? String,
+               let price = Double(priceStr) {
+                return price
+            }
+        } catch {
+            logError("DCA price fetch failed for \(symbol): \(error.localizedDescription)", category: .network)
+        }
+        return 0
     }
 
     // MARK: - Private Helpers

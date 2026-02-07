@@ -23,6 +23,9 @@ class HomeViewModel {
     private let refreshInterval: TimeInterval = 300 // 5 minutes for events
     var eventsLastUpdated: Date?
 
+    /// Whether a refresh is currently in flight (prevents stacking)
+    private var isRefreshing = false
+
     // MARK: - Properties
     var isLoading = false
     var errorMessage: String?
@@ -368,6 +371,7 @@ class HomeViewModel {
 
     /// Refresh only events data (lighter weight than full refresh)
     func refreshEvents() async {
+        guard !isRefreshing else { return }
         do {
             let upcoming = try await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
 
@@ -383,8 +387,13 @@ class HomeViewModel {
 
     // MARK: - Public Methods
     func refresh() async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
         errorMessage = nil
         var failures = 0
 
@@ -454,15 +463,8 @@ class HomeViewModel {
             self.eventsLastUpdated = Date()
         }
 
-        // Fetch z-scores in background (doesn't block main UI)
-        Task {
-            let zScores = await fetchMacroZScoresSafe()
-            await MainActor.run {
-                self.macroZScores = zScores
-                // Check for extreme moves and trigger alerts
-                ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
-            }
-        }
+        // Fetch z-scores alongside other secondary data
+        async let zScoresTask = fetchMacroZScoresSafe()
 
         // Fetch other data independently so each can succeed/fail on its own
         async let fgResult: FearGreedIndex? = {
@@ -502,6 +504,7 @@ class HomeViewModel {
         }()
 
         let (fg, riskScore, reminders, news) = await (fgResult, riskScoreResult, remindersResult, newsResult)
+        let zScores = await zScoresTask
 
         // Count secondary failures
         if fg == nil { failures += 1 }
@@ -518,6 +521,8 @@ class HomeViewModel {
                 self.arkLineRiskScore = riskScore
             }
             self.newsItems = news
+            self.macroZScores = zScores
+            ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
             self.failedFetchCount = failures
             self.lastRefreshed = Date()
         }

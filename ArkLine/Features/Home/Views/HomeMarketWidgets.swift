@@ -297,6 +297,11 @@ struct FullNewsListView: View {
     let news: [NewsItem]
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.openURL) var openURL
+    @State private var allNews: [NewsItem] = []
+    @State private var currentPage = 1
+    @State private var isLoadingMore = false
+    @State private var hasMore = true
+    private let newsService = ServiceContainer.shared.newsService
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -309,7 +314,7 @@ struct FullNewsListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(news) { item in
+                ForEach(allNews) { item in
                     Button {
                         if let url = URL(string: item.url) {
                             openURL(url)
@@ -361,11 +366,52 @@ struct FullNewsListView: View {
                         .background(textPrimary.opacity(0.1))
                         .padding(.leading, 16)
                 }
+
+                // Load more button
+                if hasMore {
+                    Button {
+                        Task { await loadMore() }
+                    } label: {
+                        if isLoadingMore {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 20)
+                        } else {
+                            Text("Load More")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(AppColors.accent)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                        }
+                    }
+                    .disabled(isLoadingMore)
+                }
             }
         }
         .background(colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F5"))
         .navigationTitle("Daily News")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { allNews = news }
+    }
+
+    private func loadMore() async {
+        guard !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+
+        let nextPage = currentPage + 1
+        do {
+            let moreNews = try await newsService.fetchNews(category: nil, page: nextPage, perPage: 20)
+            if moreNews.isEmpty {
+                hasMore = false
+            } else {
+                allNews.append(contentsOf: moreNews)
+                currentPage = nextPage
+            }
+        } catch {
+            logError("Failed to load more news: \(error.localizedDescription)", category: .network)
+            hasMore = false
+        }
     }
 }
 

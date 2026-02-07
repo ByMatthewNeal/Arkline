@@ -47,7 +47,7 @@ struct RiskLevelWidget: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            RiskLevelChartView()
+            RiskLevelChartView(initialCoin: RiskCoin(rawValue: coinSymbol) ?? .btc)
         }
     }
 
@@ -1638,7 +1638,7 @@ struct RiskCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            RiskLevelChartView()
+            RiskLevelChartView(initialCoin: RiskCoin(rawValue: coinSymbol) ?? .btc)
         }
     }
 }
