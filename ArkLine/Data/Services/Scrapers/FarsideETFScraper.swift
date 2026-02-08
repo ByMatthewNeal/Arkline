@@ -147,7 +147,7 @@ final class FarsideETFScraper {
 
             for (index, match) in cellMatches.enumerated() {
                 guard let range = Range(match.range(at: 1), in: dataRow) else { continue }
-                var cellContent = String(dataRow[range])
+                let cellContent = String(dataRow[range])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                     .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                     .replacingOccurrences(of: "&nbsp;", with: "")

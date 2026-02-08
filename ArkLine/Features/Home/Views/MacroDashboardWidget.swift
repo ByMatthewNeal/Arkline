@@ -713,7 +713,7 @@ enum SparklineGenerator {
 
         // Work backwards from current value
         var value = current
-        for i in 0..<7 {
+        for _ in 0..<7 {
             // Normalize VIX to 0-1 scale (10-40 range)
             let normalized = CGFloat(max(0, min(1, (value - 10) / 30)))
             data.insert(normalized, at: 0)
@@ -734,7 +734,7 @@ enum SparklineGenerator {
         var data: [CGFloat] = []
 
         var value = current
-        for i in 0..<7 {
+        for _ in 0..<7 {
             // Normalize DXY to 0-1 scale (95-115 range)
             let normalized = CGFloat(max(0, min(1, (value - 95) / 20)))
             data.insert(normalized, at: 0)

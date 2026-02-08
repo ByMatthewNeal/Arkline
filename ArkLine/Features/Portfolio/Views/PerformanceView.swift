@@ -116,7 +116,7 @@ struct PerformanceView: View {
 
             switch format {
             case .screenshot:
-                fileData = await ExportService.captureScreenshot(
+                fileData = ExportService.captureScreenshot(
                     of: PerformanceExportView(
                         portfolioName: portfolioName,
                         metrics: viewModel.performanceMetrics,
@@ -144,7 +144,7 @@ struct PerformanceView: View {
             }
 
             if let data = fileData {
-                await ExportService.shareFile(data: data, fileName: fileName, format: format)
+                ExportService.shareFile(data: data, fileName: fileName, format: format)
             }
         }
     }

@@ -260,8 +260,8 @@ final class BroadcastService: BroadcastServiceProtocol {
         _ = try await supabase.storage
             .from(SupabaseBucket.broadcastMedia.rawValue)
             .upload(
-                path: fileName,
-                file: data,
+                fileName,
+                data: data,
                 options: .init(contentType: "audio/m4a")
             )
 
@@ -282,8 +282,8 @@ final class BroadcastService: BroadcastServiceProtocol {
         _ = try await supabase.storage
             .from(SupabaseBucket.broadcastMedia.rawValue)
             .upload(
-                path: fileName,
-                file: data,
+                fileName,
+                data: data,
                 options: .init(contentType: "image/jpeg")
             )
 

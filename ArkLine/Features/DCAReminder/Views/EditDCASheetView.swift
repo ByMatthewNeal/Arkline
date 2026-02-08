@@ -297,7 +297,7 @@ struct EditDCASheetView: View {
         var updated = reminder
         updated.isActive = isActive
         updated.notificationTime = notificationTime
-        if let amountValue = Double(amount) {
+        if let _ = Double(amount) {
             // Note: amount is not mutable in the current model, this would need model update
         }
         updated.frequency = selectedFrequency.toDCAFrequency

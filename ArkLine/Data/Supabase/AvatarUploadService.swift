@@ -28,8 +28,8 @@ actor AvatarUploadService {
         _ = try await supabase.storage
             .from(SupabaseBucket.avatars.rawValue)
             .upload(
-                path: fileName,
-                file: data,
+                fileName,
+                data: data,
                 options: .init(contentType: "image/jpeg", upsert: true)
             )
 

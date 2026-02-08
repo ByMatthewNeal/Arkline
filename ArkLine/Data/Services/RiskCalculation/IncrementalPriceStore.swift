@@ -424,11 +424,6 @@ actor IncrementalPriceStore {
     private func buildMergedHistory(coin: String) -> [(date: Date, price: Double)] {
         // Start with embedded data (BTC/ETH/SOL)
         var result = HistoricalPriceData.pricesAsTuples(for: coin)
-        let embeddedEnd: Date? = {
-            guard let range = HistoricalPriceData.dateRange(for: coin),
-                  let endDate = dateFormatter.date(from: range.end) else { return nil }
-            return endDate
-        }()
 
         // Add Binance baseline data (for coins without embedded data)
         if result.isEmpty, let baseline = baselineData[coin] {

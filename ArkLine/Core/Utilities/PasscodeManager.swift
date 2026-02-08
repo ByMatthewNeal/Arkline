@@ -97,7 +97,7 @@ final class PasscodeManager {
         let passcodeData = Data(passcode.utf8)
         var derivedKey = Data(count: Self.keyLength)
 
-        derivedKey.withUnsafeMutableBytes { derivedKeyPtr in
+        _ = derivedKey.withUnsafeMutableBytes { derivedKeyPtr in
             salt.withUnsafeBytes { saltPtr in
                 passcodeData.withUnsafeBytes { passcodePtr in
                     CCKeyDerivationPBKDF(

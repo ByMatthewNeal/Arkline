@@ -437,7 +437,6 @@ final class FinnhubEconomicCalendarService {
 
     private func generateHolidaysForYear(_ year: Int) -> [EconomicEvent] {
         var holidays: [EconomicEvent] = []
-        let calendar = Calendar.current
 
         func makeHoliday(title: String, date: Date) -> EconomicEvent {
             EconomicEvent(
@@ -506,13 +505,13 @@ final class FinnhubEconomicCalendarService {
 
     private func nthWeekday(nth: Int, weekday: Int, month: Int, year: Int) -> Date? {
         let calendar = Calendar.current
-        var components = DateComponents(year: year, month: month, weekday: weekday, weekdayOrdinal: nth)
+        let components = DateComponents(year: year, month: month, weekday: weekday, weekdayOrdinal: nth)
         return calendar.date(from: components)
     }
 
     private func lastWeekday(weekday: Int, month: Int, year: Int) -> Date? {
         let calendar = Calendar.current
-        var components = DateComponents(year: year, month: month, weekday: weekday, weekdayOrdinal: -1)
+        let components = DateComponents(year: year, month: month, weekday: weekday, weekdayOrdinal: -1)
         return calendar.date(from: components)
     }
 
@@ -743,14 +742,14 @@ final class InvestingComScraper {
     /// Get the nth occurrence of a weekday in a month
     private func nthWeekdayOf(nth: Int, weekday: Weekday, month: Int, year: Int) -> Date? {
         let calendar = Calendar.current
-        var components = DateComponents(year: year, month: month, weekday: weekday.rawValue, weekdayOrdinal: nth)
+        let components = DateComponents(year: year, month: month, weekday: weekday.rawValue, weekdayOrdinal: nth)
         return calendar.date(from: components)
     }
 
     /// Get the last occurrence of a weekday in a month
     private func lastWeekdayOf(weekday: Weekday, month: Int, year: Int) -> Date? {
         let calendar = Calendar.current
-        var components = DateComponents(year: year, month: month, weekday: weekday.rawValue, weekdayOrdinal: -1)
+        let components = DateComponents(year: year, month: month, weekday: weekday.rawValue, weekdayOrdinal: -1)
         return calendar.date(from: components)
     }
 
@@ -951,7 +950,7 @@ final class InvestingComScraper {
 
     private func cleanEventName(_ name: String) -> String {
         // Remove HTML entities and extra whitespace
-        var cleaned = name
+        let cleaned = name
             .replacingOccurrences(of: "&amp;", with: "&")
             .replacingOccurrences(of: "&nbsp;", with: " ")
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)

@@ -242,7 +242,7 @@ final class DCAViewModel {
 
     func markAsInvested(_ reminder: DCAReminder) async {
         do {
-            try await dcaService.markAsInvested(id: reminder.id)
+            _ = try await dcaService.markAsInvested(id: reminder.id)
 
             await MainActor.run {
                 if let index = self.reminders.firstIndex(where: { $0.id == reminder.id }) {
@@ -259,7 +259,7 @@ final class DCAViewModel {
 
     func skipReminder(_ reminder: DCAReminder) async {
         do {
-            try await dcaService.skipReminder(id: reminder.id)
+            _ = try await dcaService.skipReminder(id: reminder.id)
 
             await MainActor.run {
                 if let index = self.reminders.firstIndex(where: { $0.id == reminder.id }) {

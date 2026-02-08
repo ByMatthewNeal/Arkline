@@ -201,20 +201,16 @@ class BroadcastNotificationService: ObservableObject {
 
     /// Clear the notification badge
     func clearBadge() {
-        #if canImport(UIKit)
-        Task { @MainActor in
-            UIApplication.shared.applicationIconBadgeNumber = 0
+        Task {
+            try? await UNUserNotificationCenter.current().setBadgeCount(0)
         }
-        #endif
     }
 
     /// Set the notification badge count
     func setBadge(_ count: Int) {
-        #if canImport(UIKit)
-        Task { @MainActor in
-            UIApplication.shared.applicationIconBadgeNumber = count
+        Task {
+            try? await UNUserNotificationCenter.current().setBadgeCount(count)
         }
-        #endif
     }
 
     // MARK: - Notification Categories

@@ -83,7 +83,7 @@ final class MockCoinglassService: CoinglassServiceProtocol {
 
     func fetchTopTraderRatio(symbol: String) async throws -> LongShortRatioData {
         try await simulateNetworkDelay()
-        var ratio = generateMockLongShortRatio(symbol: symbol)
+        let ratio = generateMockLongShortRatio(symbol: symbol)
         // Top traders often have slightly different positioning
         return LongShortRatioData(
             id: UUID(),

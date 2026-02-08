@@ -135,7 +135,7 @@ final class SettingsViewModel {
                 do {
                     let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
                     if granted {
-                        await UIApplication.shared.registerForRemoteNotifications()
+                        UIApplication.shared.registerForRemoteNotifications()
                     } else {
                         await MainActor.run {
                             self.notificationsEnabled = false

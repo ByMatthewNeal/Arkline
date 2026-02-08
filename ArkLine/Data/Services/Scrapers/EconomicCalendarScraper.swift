@@ -78,9 +78,6 @@ final class EconomicCalendarScraper {
         // Each row has data attributes: data-event-datetime, data-event-currency, etc.
 
         // Find event rows using regex patterns
-        let rowPattern = #"<tr[^>]*class="[^"]*js-event-item[^"]*"[^>]*data-event-datetime="([^"]*)"[^>]*>"#
-        let rowRegex = try? NSRegularExpression(pattern: rowPattern, options: [])
-
         // Alternative: Parse based on table structure
         // The calendar table has specific class patterns we can match
 

@@ -61,7 +61,7 @@ final class CMEFedWatchScraper {
     private func parseHTML(_ html: String) throws -> [FedWatchData] {
         // CME's FedWatch tool uses JavaScript to render data
         // This is a simplified parser that looks for embedded JSON data
-        var meetings: [FedWatchData] = []
+        let meetings: [FedWatchData] = []
 
         // Look for probability data in the page
         // The actual implementation would need to parse the specific format CME uses
@@ -127,8 +127,6 @@ final class CMEFedWatchScraper {
         // Market typically prices in gradual rate cuts over time
         // Earlier meetings: higher hold probability
         // Later meetings: higher cut probability
-
-        let progressRatio = Double(index) / Double(totalMeetings)
 
         // Base probabilities that shift over time
         var holdProb: Double

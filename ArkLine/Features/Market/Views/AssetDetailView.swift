@@ -273,7 +273,7 @@ struct AssetDetailHeader: View {
             Spacer()
 
             // Rank Badge
-            Text("#\(asset.marketCapRank)")
+            Text("#\(asset.marketCapRank ?? 0)")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(Color(hex: "A1A1AA"))
