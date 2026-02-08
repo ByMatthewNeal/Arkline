@@ -82,6 +82,27 @@ struct Broadcast: Codable, Identifiable, Equatable {
         self.viewCount = viewCount
         self.reactionCount = reactionCount
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        content = try container.decode(String.self, forKey: .content)
+        audioURL = try container.decodeIfPresent(URL.self, forKey: .audioURL)
+        images = (try? container.decodeIfPresent([BroadcastImage].self, forKey: .images)) ?? []
+        appReferences = (try? container.decodeIfPresent([AppReference].self, forKey: .appReferences)) ?? []
+        portfolioAttachment = try? container.decodeIfPresent(BroadcastPortfolioAttachment.self, forKey: .portfolioAttachment)
+        targetAudience = (try? container.decode(TargetAudience.self, forKey: .targetAudience)) ?? .all
+        status = try container.decode(BroadcastStatus.self, forKey: .status)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        publishedAt = try container.decodeIfPresent(Date.self, forKey: .publishedAt)
+        scheduledAt = try container.decodeIfPresent(Date.self, forKey: .scheduledAt)
+        templateId = try container.decodeIfPresent(UUID.self, forKey: .templateId)
+        tags = (try? container.decodeIfPresent([String].self, forKey: .tags)) ?? []
+        authorId = try container.decode(UUID.self, forKey: .authorId)
+        viewCount = try container.decodeIfPresent(Int.self, forKey: .viewCount)
+        reactionCount = try container.decodeIfPresent(Int.self, forKey: .reactionCount)
+    }
 }
 
 // MARK: - Broadcast Image

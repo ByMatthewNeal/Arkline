@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 // MARK: - Date Filter
 
@@ -308,7 +309,7 @@ struct BroadcastFeedView: View {
                         }
                         if granted {
                             // Mark that user enabled notifications
-                            UserDefaults.standard.set(true, forKey: "arkline_notifications_prompted")
+                            UserDefaults.standard.set(true, forKey: Constants.UserDefaults.notificationsPrompted)
                         }
                     }
                 } label: {
@@ -325,7 +326,7 @@ struct BroadcastFeedView: View {
                     withAnimation {
                         showNotificationPrompt = false
                     }
-                    UserDefaults.standard.set(true, forKey: "arkline_notifications_prompted")
+                    UserDefaults.standard.set(true, forKey: Constants.UserDefaults.notificationsPrompted)
                 } label: {
                     Text("Not Now")
                         .font(ArkFonts.body)
@@ -350,7 +351,7 @@ struct BroadcastFeedView: View {
         hasCheckedNotifications = true
 
         // Check if we've already prompted
-        let alreadyPrompted = UserDefaults.standard.bool(forKey: "arkline_notifications_prompted")
+        let alreadyPrompted = UserDefaults.standard.bool(forKey: Constants.UserDefaults.notificationsPrompted)
         guard !alreadyPrompted else { return }
 
         // Check current status
@@ -500,6 +501,8 @@ struct BroadcastDetailView: View {
 
     @State private var reactionSummary: [ReactionSummary] = []
     @State private var isLoadingReactions = false
+    @State private var audioPlayer: AVPlayer?
+    @State private var isPlayingAudio = false
 
     var body: some View {
         NavigationStack {
@@ -660,14 +663,14 @@ struct BroadcastDetailView: View {
         }
     }
 
-    // MARK: - Audio Player Placeholder
+    // MARK: - Audio Player
 
     private var audioPlayerPlaceholder: some View {
         HStack(spacing: ArkSpacing.md) {
             Button {
-                // TODO: Implement audio playback
+                toggleAudioPlayback()
             } label: {
-                Image(systemName: "play.circle.fill")
+                Image(systemName: isPlayingAudio ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 44))
                     .foregroundColor(AppColors.accent)
             }
@@ -677,7 +680,7 @@ struct BroadcastDetailView: View {
                     .font(ArkFonts.bodySemibold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text("Audio playback coming soon")
+                Text(isPlayingAudio ? "Playing..." : "Tap to play")
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -687,6 +690,34 @@ struct BroadcastDetailView: View {
         .padding(ArkSpacing.md)
         .background(AppColors.cardBackground(colorScheme))
         .cornerRadius(ArkSpacing.sm)
+        .onDisappear {
+            audioPlayer?.pause()
+            isPlayingAudio = false
+        }
+    }
+
+    private func toggleAudioPlayback() {
+        if isPlayingAudio {
+            audioPlayer?.pause()
+            isPlayingAudio = false
+        } else {
+            if audioPlayer == nil, let url = broadcast.audioURL {
+                let player = AVPlayer(url: url)
+                audioPlayer = player
+
+                // Observe when playback finishes
+                NotificationCenter.default.addObserver(
+                    forName: .AVPlayerItemDidPlayToEndTime,
+                    object: player.currentItem,
+                    queue: .main
+                ) { _ in
+                    isPlayingAudio = false
+                    player.seek(to: .zero)
+                }
+            }
+            audioPlayer?.play()
+            isPlayingAudio = true
+        }
     }
 
     // MARK: - Images Section

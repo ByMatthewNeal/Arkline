@@ -145,13 +145,17 @@ final class BroadcastService: BroadcastServiceProtocol {
             throw AppError.supabaseNotConfigured
         }
 
-        var broadcast = try await fetchBroadcast(id: id)
-        broadcast.status = .published
-        broadcast.publishedAt = Date()
+        // Atomic update — no fetch-modify-update race
+        let updated: Broadcast = try await supabase.database
+            .from(SupabaseTable.broadcasts.rawValue)
+            .update(PublishUpdate(status: BroadcastStatus.published.rawValue, publishedAt: Date()))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
 
-        let updated = try await updateBroadcast(broadcast)
         logInfo("Published broadcast: \(updated.id)", category: .data)
-
         return updated
     }
 
@@ -160,12 +164,17 @@ final class BroadcastService: BroadcastServiceProtocol {
             throw AppError.supabaseNotConfigured
         }
 
-        var broadcast = try await fetchBroadcast(id: id)
-        broadcast.status = .archived
+        // Atomic update — no fetch-modify-update race
+        let updated: Broadcast = try await supabase.database
+            .from(SupabaseTable.broadcasts.rawValue)
+            .update(StatusUpdate(status: BroadcastStatus.archived.rawValue))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
 
-        let updated = try await updateBroadcast(broadcast)
         logInfo("Archived broadcast: \(updated.id)", category: .data)
-
         return updated
     }
 
@@ -214,19 +223,30 @@ final class BroadcastService: BroadcastServiceProtocol {
             return 0
         }
 
-        // Fetch all published broadcasts that the user hasn't read
-        // This is a simplified approach - in production you'd use a more efficient query
-        let publishedBroadcasts = try await fetchPublishedBroadcasts(for: userId, limit: 100, offset: 0)
-        var unreadCount = 0
-
-        for broadcast in publishedBroadcasts {
-            let isRead = try await hasBeenRead(broadcastId: broadcast.id, userId: userId)
-            if !isRead {
-                unreadCount += 1
-            }
+        // Two lightweight queries instead of N+1
+        struct IdRow: Codable { let id: UUID }
+        struct BroadcastIdRow: Codable {
+            let broadcastId: UUID
+            enum CodingKeys: String, CodingKey { case broadcastId = "broadcast_id" }
         }
 
-        return unreadCount
+        async let publishedTask: [IdRow] = supabase.database
+            .from(SupabaseTable.broadcasts.rawValue)
+            .select("id")
+            .eq("status", value: BroadcastStatus.published.rawValue)
+            .execute()
+            .value
+
+        async let readTask: [BroadcastIdRow] = supabase.database
+            .from(SupabaseTable.broadcastReads.rawValue)
+            .select("broadcast_id")
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+
+        let (publishedIds, readIds) = try await (publishedTask, readTask)
+        let readSet = Set(readIds.map { $0.broadcastId })
+        return publishedIds.filter { !readSet.contains($0.id) }.count
     }
 
     // MARK: - File Upload
@@ -373,6 +393,21 @@ final class BroadcastService: BroadcastServiceProtocol {
 
         return summaries
     }
+}
+
+// MARK: - Atomic Update Structs
+
+private struct PublishUpdate: Encodable {
+    let status: String
+    let publishedAt: Date
+    enum CodingKeys: String, CodingKey {
+        case status
+        case publishedAt = "published_at"
+    }
+}
+
+private struct StatusUpdate: Encodable {
+    let status: String
 }
 
 // MARK: - AppError Extension
