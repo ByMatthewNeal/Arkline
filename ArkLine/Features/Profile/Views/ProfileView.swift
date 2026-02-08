@@ -115,7 +115,9 @@ struct ProfileHeader: View {
                         .fill(AppColors.accent.opacity(0.2))
                         .frame(width: 100, height: 100)
 
-                    if let avatarUrl = viewModel.user?.avatarUrl,
+                    if let user = viewModel.user,
+                       user.usePhotoAvatar,
+                       let avatarUrl = user.avatarUrl,
                        let url = URL(string: avatarUrl) {
                         AsyncImage(url: url) { image in
                             image
@@ -587,6 +589,8 @@ struct EditProfileView: View {
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImageData: Data?
     @State private var isUploading: Bool = false
+    @State private var showError = false
+    @State private var errorMessage = ""
 
     init(user: User?, onSave: @escaping (User) -> Void) {
         self.user = user
@@ -714,6 +718,11 @@ struct EditProfileView: View {
                 }
             }
             #endif
+            .alert("Error", isPresented: $showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
         }
     }
 
@@ -747,13 +756,29 @@ struct EditProfileView: View {
             // Upload new image if selected
             if let imageData = selectedImageData {
                 do {
+                    // Convert to JPEG format (PhotosPicker may return HEIC/PNG)
+                    let jpegData: Data
+                    if let uiImage = UIImage(data: imageData),
+                       let compressed = uiImage.jpegData(compressionQuality: 0.8) {
+                        jpegData = compressed
+                    } else {
+                        jpegData = imageData
+                    }
+
                     let avatarURL = try await AvatarUploadService.shared.uploadAvatar(
-                        data: imageData,
+                        data: jpegData,
                         for: updatedUser.id
                     )
                     updatedUser.avatarUrl = avatarURL.absoluteString
+                    updatedUser.usePhotoAvatar = true
                 } catch {
                     AppLogger.shared.error("Avatar upload failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        isUploading = false
+                        errorMessage = "Failed to upload photo. Please try again."
+                        showError = true
+                    }
+                    return
                 }
             }
 
@@ -777,6 +802,12 @@ struct EditProfileView: View {
                 )
             } catch {
                 AppLogger.shared.error("Profile update failed: \(error.localizedDescription)")
+                await MainActor.run {
+                    isUploading = false
+                    errorMessage = "Failed to save profile. Please try again."
+                    showError = true
+                }
+                return
             }
 
             await MainActor.run {
