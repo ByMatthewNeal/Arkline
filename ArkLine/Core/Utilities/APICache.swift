@@ -18,6 +18,8 @@ final class APICache {
 
     // MARK: - Storage
     private var cache: [String: Any] = [:]
+    private var insertionOrder: [String] = []
+    private let maxEntries = 100
     private let queue = DispatchQueue(label: "com.arkline.cache", attributes: .concurrent)
 
     // MARK: - Default TTLs (in seconds)
@@ -46,7 +48,29 @@ final class APICache {
     /// Store value in cache with TTL
     func set<T>(_ key: String, value: T, ttl: TimeInterval = TTL.medium) {
         queue.async(flags: .barrier) {
+            // Evict oldest entries if over limit
+            if self.cache.count >= self.maxEntries {
+                // Remove expired entries first
+                let now = Date()
+                var expiredKeys: [String] = []
+                for (k, v) in self.cache {
+                    if let entry = v as? CacheEntry<Any>, entry.isExpired {
+                        expiredKeys.append(k)
+                    }
+                }
+                for k in expiredKeys {
+                    self.cache.removeValue(forKey: k)
+                    self.insertionOrder.removeAll { $0 == k }
+                }
+                // If still over limit, remove oldest by insertion order
+                while self.cache.count >= self.maxEntries, let oldest = self.insertionOrder.first {
+                    self.cache.removeValue(forKey: oldest)
+                    self.insertionOrder.removeFirst()
+                }
+            }
             self.cache[key] = CacheEntry(value: value, timestamp: Date(), ttl: ttl)
+            self.insertionOrder.removeAll { $0 == key }
+            self.insertionOrder.append(key)
         }
     }
 

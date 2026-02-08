@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 // MARK: - Broadcast Service
 
@@ -26,6 +27,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .from(SupabaseTable.broadcasts.rawValue)
             .select()
             .order("created_at", ascending: false)
+            .limit(100)
             .execute()
             .value
 
@@ -83,6 +85,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .select()
             .eq("status", value: status.rawValue)
             .order("created_at", ascending: false)
+            .limit(100)
             .execute()
             .value
 
@@ -234,6 +237,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .from(SupabaseTable.broadcasts.rawValue)
             .select("id")
             .eq("status", value: BroadcastStatus.published.rawValue)
+            .limit(500)
             .execute()
             .value
 
@@ -241,6 +245,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .from(SupabaseTable.broadcastReads.rawValue)
             .select("broadcast_id")
             .eq("user_id", value: userId.uuidString)
+            .limit(500)
             .execute()
             .value
 
@@ -278,12 +283,15 @@ final class BroadcastService: BroadcastServiceProtocol {
             throw AppError.supabaseNotConfigured
         }
 
+        // Resize to max 1200px to save bandwidth (300 users will download this)
+        let uploadData = AvatarUploadService.resizeImage(data: data, maxDimension: 1200)
+
         let fileName = "\(broadcastId.uuidString)/image_\(Date().timeIntervalSince1970).jpg"
         _ = try await supabase.storage
             .from(SupabaseBucket.broadcastMedia.rawValue)
             .upload(
                 fileName,
-                data: data,
+                data: uploadData,
                 options: .init(contentType: "image/jpeg")
             )
 
@@ -357,6 +365,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .select()
             .eq("broadcast_id", value: broadcastId.uuidString)
             .order("created_at", ascending: false)
+            .limit(500)
             .execute()
             .value
 

@@ -9,6 +9,7 @@ actor NetworkManager {
     // MARK: - Properties
     private let session: URLSession
     private var cache: [String: CachedResponse] = [:]
+    private let maxCacheEntries = 100
 
     // MARK: - Cache Entry
     private struct CachedResponse {
@@ -28,6 +29,10 @@ actor NetworkManager {
         self.session = URLSession(configuration: configuration)
     }
 
+    // MARK: - Retry Config
+    private let maxRetries = 3
+    private let baseRetryDelay: TimeInterval = 1.0
+
     // MARK: - Generic Request
     func request<T: Decodable>(
         endpoint: APIEndpoint,
@@ -39,38 +44,55 @@ actor NetworkManager {
             return try decode(cachedData, as: responseType)
         }
 
-        let request = try endpoint.asURLRequest()
-        AppLogger.shared.logRequest(request)
+        let urlRequest = try endpoint.asURLRequest()
 
-        do {
-            let (data, response) = try await session.data(for: request)
+        var lastError: Error?
+        for attempt in 0..<maxRetries {
+            AppLogger.shared.logRequest(urlRequest)
 
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw AppError.invalidResponse
+            do {
+                let (data, response) = try await session.data(for: urlRequest)
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw AppError.invalidResponse
+                }
+
+                AppLogger.shared.logResponse(httpResponse, data: data, error: nil)
+
+                // Retry on 429 (rate limited) with exponential backoff
+                if httpResponse.statusCode == 429 {
+                    let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After")
+                        .flatMap(Double.init) ?? (baseRetryDelay * pow(2, Double(attempt)))
+                    logWarning("Rate limited (429), retrying in \(retryAfter)s (attempt \(attempt + 1)/\(maxRetries))", category: .network)
+                    try await Task.sleep(nanoseconds: UInt64(retryAfter * 1_000_000_000))
+                    continue
+                }
+
+                guard (200...299).contains(httpResponse.statusCode) else {
+                    let errorMessage = try? JSONDecoder().decode(APIErrorResponse.self, from: data).message
+                    throw AppError.from(httpStatusCode: httpResponse.statusCode, message: errorMessage)
+                }
+
+                // Cache successful response
+                if let ttl = cacheTTL {
+                    cacheData(data, for: endpoint, ttl: ttl)
+                }
+
+                return try decode(data, as: responseType)
+            } catch let error as AppError {
+                throw error
+            } catch let error as URLError {
+                AppLogger.shared.logResponse(nil, data: nil, error: error)
+                throw mapURLError(error)
+            } catch {
+                lastError = error
+                AppLogger.shared.logResponse(nil, data: nil, error: error)
+                throw AppError.networkError(underlying: error)
             }
-
-            AppLogger.shared.logResponse(httpResponse, data: data, error: nil)
-
-            guard (200...299).contains(httpResponse.statusCode) else {
-                let errorMessage = try? JSONDecoder().decode(APIErrorResponse.self, from: data).message
-                throw AppError.from(httpStatusCode: httpResponse.statusCode, message: errorMessage)
-            }
-
-            // Cache successful response
-            if let ttl = cacheTTL {
-                cacheData(data, for: endpoint, ttl: ttl)
-            }
-
-            return try decode(data, as: responseType)
-        } catch let error as AppError {
-            throw error
-        } catch let error as URLError {
-            AppLogger.shared.logResponse(nil, data: nil, error: error)
-            throw mapURLError(error)
-        } catch {
-            AppLogger.shared.logResponse(nil, data: nil, error: error)
-            throw AppError.networkError(underlying: error)
         }
+
+        // All retries exhausted (only reachable for 429s)
+        throw lastError ?? AppError.rateLimitExceeded
     }
 
     // MARK: - Request with Raw Data Response
@@ -108,6 +130,18 @@ actor NetworkManager {
     }
 
     private func cacheData(_ data: Data, for endpoint: APIEndpoint, ttl: TimeInterval) {
+        // Evict expired entries before adding
+        if cache.count >= maxCacheEntries {
+            clearExpiredCache()
+        }
+        // If still over limit, remove oldest entries
+        if cache.count >= maxCacheEntries {
+            let sorted = cache.sorted { $0.value.timestamp < $1.value.timestamp }
+            let toRemove = cache.count - maxCacheEntries + 1
+            for (key, _) in sorted.prefix(toRemove) {
+                cache.removeValue(forKey: key)
+            }
+        }
         let key = cacheKey(for: endpoint)
         cache[key] = CachedResponse(data: data, timestamp: Date(), ttl: ttl)
     }

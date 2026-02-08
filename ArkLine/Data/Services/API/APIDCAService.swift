@@ -21,6 +21,7 @@ final class APIDCAService: DCAServiceProtocol {
                 .select()
                 .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
+                .limit(100)
                 .execute()
                 .value
 
@@ -318,6 +319,7 @@ final class APIDCAService: DCAServiceProtocol {
                 .select()
                 .eq("reminder_id", value: reminderId.uuidString)
                 .order("purchase_date", ascending: false)
+                .limit(500)
                 .execute()
                 .value
 
@@ -342,6 +344,7 @@ final class APIDCAService: DCAServiceProtocol {
                 .select()
                 .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
+                .limit(100)
                 .execute()
                 .value
 
@@ -640,6 +643,7 @@ final class APIDCAService: DCAServiceProtocol {
                 .select()
                 .eq("reminder_id", value: reminderId.uuidString)
                 .order("purchase_date", ascending: false)
+                .limit(500)
                 .execute()
                 .value
 

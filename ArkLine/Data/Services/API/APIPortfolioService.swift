@@ -27,6 +27,7 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .select()
                 .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
+                .limit(50)
                 .execute()
                 .value
 
@@ -75,6 +76,7 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .select()
                 .eq("portfolio_id", value: portfolioId.uuidString)
                 .order("created_at", ascending: false)
+                .limit(200)
                 .execute()
                 .value
 
@@ -100,6 +102,7 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .select()
                 .eq("portfolio_id", value: portfolioId.uuidString)
                 .order("transaction_date", ascending: false)
+                .limit(500)
                 .execute()
                 .value
 
@@ -130,6 +133,7 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .eq("portfolio_id", value: portfolioId.uuidString)
                 .gte("recorded_at", value: dateFormatter.string(from: cutoffDate))
                 .order("recorded_at", ascending: true)
+                .limit(1000)
                 .execute()
                 .value
 
