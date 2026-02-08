@@ -84,6 +84,28 @@ struct Transaction: Codable, Identifiable, Equatable {
         self.destinationPortfolioId = destinationPortfolioId
         self.relatedTransactionId = relatedTransactionId
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        portfolioId = try container.decode(UUID.self, forKey: .portfolioId)
+        holdingId = try container.decodeIfPresent(UUID.self, forKey: .holdingId)
+        type = try container.decode(TransactionType.self, forKey: .type)
+        assetType = try container.decode(String.self, forKey: .assetType)
+        symbol = try container.decode(String.self, forKey: .symbol)
+        quantity = try container.decode(Double.self, forKey: .quantity)
+        pricePerUnit = try container.decode(Double.self, forKey: .pricePerUnit)
+        gasFee = try container.decodeIfPresent(Double.self, forKey: .gasFee) ?? 0
+        totalValue = try container.decode(Double.self, forKey: .totalValue)
+        transactionDate = try container.decode(Date.self, forKey: .transactionDate)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        emotionalState = try container.decodeIfPresent(EmotionalState.self, forKey: .emotionalState)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        costBasisPerUnit = try container.decodeIfPresent(Double.self, forKey: .costBasisPerUnit)
+        realizedProfitLoss = try container.decodeIfPresent(Double.self, forKey: .realizedProfitLoss)
+        destinationPortfolioId = try container.decodeIfPresent(UUID.self, forKey: .destinationPortfolioId)
+        relatedTransactionId = try container.decodeIfPresent(UUID.self, forKey: .relatedTransactionId)
+    }
 }
 
 // MARK: - Emotional State

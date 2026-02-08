@@ -126,10 +126,7 @@ final class MockPortfolioService: PortfolioServiceProtocol {
 
     func recordPortfolioSnapshot(
         portfolioId: UUID,
-        totalValue: Double,
-        totalCost: Double?,
-        dayChange: Double?,
-        dayChangePercentage: Double?
+        totalValue: Double
     ) async throws {
         // Mock implementation - no-op for testing
         try await simulateNetworkDelay()

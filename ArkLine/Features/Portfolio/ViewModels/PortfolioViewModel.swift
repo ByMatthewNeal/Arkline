@@ -160,15 +160,40 @@ final class PortfolioViewModel {
             if let portfolio = selectedPortfolio {
                 self.portfolioId = portfolio.id
 
-                // Fetch holdings and transactions concurrently
+                // Fetch holdings, transactions, and history concurrently
+                // Each fetch is independent — one failure shouldn't block the others
                 async let holdingsTask = portfolioService.fetchHoldings(portfolioId: portfolio.id)
                 async let transactionsTask = portfolioService.fetchTransactions(portfolioId: portfolio.id)
                 async let historyTask = portfolioService.fetchPortfolioHistory(portfolioId: portfolio.id, days: 30)
 
-                let (fetchedHoldings, fetchedTransactions, history) = try await (holdingsTask, transactionsTask, historyTask)
+                let fetchedHoldings: [PortfolioHolding]
+                do { fetchedHoldings = try await holdingsTask }
+                catch {
+                    logError("Failed to fetch holdings: \(error)", category: .data)
+                    fetchedHoldings = []
+                }
+
+                let fetchedTransactions: [Transaction]
+                do { fetchedTransactions = try await transactionsTask }
+                catch {
+                    logError("Failed to fetch transactions: \(error)", category: .data)
+                    fetchedTransactions = []
+                }
+
+                let history: [PortfolioHistoryPoint]
+                do { history = try await historyTask }
+                catch {
+                    logError("Failed to fetch portfolio history: \(error)", category: .data)
+                    history = []
+                }
 
                 // Refresh live prices for holdings
-                let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: fetchedHoldings)
+                let holdingsWithPrices: [PortfolioHolding]
+                do { holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: fetchedHoldings) }
+                catch {
+                    logError("Price refresh failed: \(error)", category: .data)
+                    holdingsWithPrices = fetchedHoldings
+                }
 
                 await MainActor.run {
                     self.holdings = holdingsWithPrices
@@ -180,21 +205,12 @@ final class PortfolioViewModel {
 
                 // Record daily portfolio snapshot for history charts
                 let snapshotValue = holdingsWithPrices.reduce(0) { $0 + $1.currentValue }
-                let snapshotCost = holdingsWithPrices.reduce(0) { $0 + $1.totalCost }
-                let snapshotDayChange = holdingsWithPrices.reduce(0.0) { total, holding in
-                    guard let change = holding.priceChangePercentage24h else { return total }
-                    return total + holding.currentValue * (change / 100)
+                if snapshotValue > 0 {
+                    try await portfolioService.recordPortfolioSnapshot(
+                        portfolioId: portfolio.id,
+                        totalValue: snapshotValue
+                    )
                 }
-                let previousValue = snapshotValue - snapshotDayChange
-                let snapshotDayChangePercentage = previousValue > 0 ? (snapshotDayChange / previousValue) * 100 : 0
-
-                try await portfolioService.recordPortfolioSnapshot(
-                    portfolioId: portfolio.id,
-                    totalValue: snapshotValue,
-                    totalCost: snapshotCost > 0 ? snapshotCost : nil,
-                    dayChange: snapshotDayChange,
-                    dayChangePercentage: snapshotDayChangePercentage
-                )
             } else {
                 await MainActor.run {
                     self.holdings = []

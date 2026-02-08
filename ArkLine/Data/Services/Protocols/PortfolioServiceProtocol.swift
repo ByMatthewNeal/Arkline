@@ -72,16 +72,9 @@ protocol PortfolioServiceProtocol {
 
     /// Records a daily portfolio value snapshot for history tracking
     /// - Parameters:
-    ///   - portfolioId: Portfolio identifier
-    ///   - totalValue: Current total portfolio value
-    ///   - totalCost: Total cost basis
-    ///   - dayChange: Change in value from previous day
-    ///   - dayChangePercentage: Percentage change from previous day
+    /// Records a daily portfolio value snapshot for history tracking
     func recordPortfolioSnapshot(
         portfolioId: UUID,
-        totalValue: Double,
-        totalCost: Double?,
-        dayChange: Double?,
-        dayChangePercentage: Double?
+        totalValue: Double
     ) async throws
 }
