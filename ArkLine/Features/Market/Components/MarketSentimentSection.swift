@@ -223,7 +223,7 @@ struct PlaceholderCard: View {
                     .font(.system(size: 24))
                     .foregroundColor(AppColors.textSecondary.opacity(0.5))
 
-                Text("Coming Soon")
+                Text("No Data")
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textSecondary)

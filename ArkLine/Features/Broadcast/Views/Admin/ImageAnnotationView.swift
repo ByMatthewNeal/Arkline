@@ -471,7 +471,7 @@ struct ImageAnnotationView: View {
         // For now, just save the annotations without rendering
         // In production, you'd render the image with annotations to a new UIImage
         let broadcastImage = BroadcastImage(
-            imageURL: URL(string: "local://temp")!, // Placeholder - would upload to Supabase
+            imageURL: URL(filePath: NSTemporaryDirectory()).appending(path: UUID().uuidString),
             annotations: currentAnnotations,
             caption: nil
         )

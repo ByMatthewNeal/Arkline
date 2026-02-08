@@ -112,7 +112,7 @@ final class SettingsViewModel {
 
     private func saveCustomTopics() {
         UserDefaults.standard.set(customNewsTopics, forKey: Constants.UserDefaults.customNewsTopics)
-        print("📰 Saved \(customNewsTopics.count) custom keywords: \(customNewsTopics)")
+        logInfo("Saved \(customNewsTopics.count) custom news keywords")
     }
 
     func saveCurrency(_ currency: String) {

@@ -51,7 +51,7 @@ struct ArkLineApp: App {
                     )
                 }
             } catch {
-                print("Error handling auth callback: \(error)")
+                logError("Error handling auth callback: \(error)", category: .network)
             }
         }
     }

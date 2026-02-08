@@ -336,7 +336,7 @@ struct EmbeddedWidgetView: View {
 
             Spacer()
 
-            Text("Coming Soon")
+            Text("Not Yet Available")
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textTertiary)
         }
@@ -358,7 +358,7 @@ struct EmbeddedWidgetView: View {
 
             Spacer()
 
-            Text("Coming Soon")
+            Text("Not Yet Available")
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textTertiary)
         }
@@ -380,7 +380,7 @@ struct EmbeddedWidgetView: View {
 
             Spacer()
 
-            Text("Coming Soon")
+            Text("Not Yet Available")
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textTertiary)
         }

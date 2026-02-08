@@ -284,10 +284,14 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
 
         let (priceHistory, livePrice, factorData) = try await (historyTask, livePriceTask, factorTask)
 
+        guard let config = AssetRiskConfig.forCoin(coin) else {
+            throw RiskCalculationError.unsupportedAsset(coin)
+        }
+
         guard let multiFactorRisk = riskCalculator.calculateMultiFactorRisk(
             price: livePrice,
             date: Date(),
-            config: AssetRiskConfig.forCoin(coin)!,
+            config: config,
             factorData: factorData,
             priceHistory: priceHistory
         ) else {

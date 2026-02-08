@@ -98,7 +98,7 @@ struct AudiencePickerView: View {
                         }
 
                         Button {
-                            // TODO: Show user search/picker
+                            // User search/picker — future feature
                         } label: {
                             HStack {
                                 Image(systemName: "plus.circle.fill")

@@ -55,10 +55,22 @@ struct DevicesView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .alert("Sign Out All Devices", isPresented: $showSignOutConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Sign Out", role: .destructive) {
+                Task {
+                    try? await SupabaseAuthManager.shared.signOut()
+                }
+            }
+        } message: {
+            Text("This will sign you out of all devices, including this one. You will need to sign in again.")
+        }
     }
 
+    @State private var showSignOutConfirmation = false
+
     private func signOutAllDevices() {
-        // TODO: Implement sign out all devices
+        showSignOutConfirmation = true
     }
 }
 

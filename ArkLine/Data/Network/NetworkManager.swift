@@ -162,8 +162,7 @@ actor NetworkManager {
         do {
             return try decoder.decode(type, from: data)
         } catch {
-            print("DEBUG: Decoding error for \(type): \(error)")
-            logDebug("Decoding error: \(error)", category: .network)
+            logError("Decoding error for \(type): \(error)", category: .network)
             throw AppError.decodingError(underlying: error)
         }
     }

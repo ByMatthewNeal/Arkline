@@ -7,7 +7,7 @@ struct ProfileView: View {
     @State private var viewModel = ProfileViewModel()
     @State private var showReferral = false
     @State private var showPortfolio = false
-    @State private var showAlerts = false
+
     @State private var showEditProfile = false
     @State private var showFeatureBacklog = false
 
@@ -31,8 +31,7 @@ struct ProfileView: View {
                     // Quick Actions
                     ProfileQuickActions(
                         onReferral: { showReferral = true },
-                        onPortfolio: { showPortfolio = true },
-                        onAlerts: { showAlerts = true }
+                        onPortfolio: { showPortfolio = true }
                     )
                     .padding(.horizontal, 20)
 
@@ -74,9 +73,6 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showPortfolio) {
                 PortfolioSheetView()
-            }
-            .sheet(isPresented: $showAlerts) {
-                AlertsSheetView()
             }
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(user: viewModel.user) { updatedUser in
@@ -244,8 +240,6 @@ struct ProfileQuickActions: View {
     @Environment(\.colorScheme) var colorScheme
     let onReferral: () -> Void
     let onPortfolio: () -> Void
-    let onAlerts: () -> Void
-
     var body: some View {
         HStack(spacing: 12) {
             ProfileQuickActionButton(
@@ -260,13 +254,6 @@ struct ProfileQuickActions: View {
                 title: "My Portfolio",
                 color: AppColors.accent,
                 action: onPortfolio
-            )
-
-            ProfileQuickActionButton(
-                icon: "bell",
-                title: "Alerts",
-                color: AppColors.warning,
-                action: onAlerts
             )
         }
     }

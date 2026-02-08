@@ -5,7 +5,6 @@ struct NotificationsSheet: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
-    // TODO: Replace with real notifications from a NotificationService
     @State private var notifications: [AppNotification] = []
 
     private var textPrimary: Color {

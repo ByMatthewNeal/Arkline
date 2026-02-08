@@ -1123,30 +1123,6 @@ struct BroadcastEditorView: View {
         selectedTags = template.defaultTags
     }
 
-    private func comingSoonSection(title: String, icon: String) -> some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(AppColors.accent)
-
-            Text(title)
-                .font(ArkFonts.body)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-            Spacer()
-
-            Text("Coming Soon")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textTertiary)
-                .padding(.horizontal, ArkSpacing.sm)
-                .padding(.vertical, ArkSpacing.xxs)
-                .background(AppColors.cardBackground(colorScheme))
-                .cornerRadius(ArkSpacing.xs)
-        }
-        .padding(ArkSpacing.md)
-        .background(AppColors.cardBackground(colorScheme).opacity(0.5))
-        .cornerRadius(ArkSpacing.sm)
-    }
-
     private func saveBroadcast(publish: Bool = false, schedule: Bool = false) {
         guard let userId = appState.currentUser?.id else { return }
 

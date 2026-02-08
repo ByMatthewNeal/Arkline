@@ -611,15 +611,30 @@ class HomeViewModel {
     }
 
     private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
-        try? await newsService.fetchFedWatchMeetings()
+        do {
+            return try await newsService.fetchFedWatchMeetings()
+        } catch {
+            logError("Fed Watch fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchITCRiskLevelSafe(coin: String) async -> ITCRiskLevel? {
-        try? await itcRiskService.fetchLatestRiskLevel(coin: coin)
+        do {
+            return try await itcRiskService.fetchLatestRiskLevel(coin: coin)
+        } catch {
+            logError("Risk level fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel] {
-        (try? await itcRiskService.fetchRiskLevel(coin: coin)) ?? []
+        do {
+            return try await itcRiskService.fetchRiskLevel(coin: coin)
+        } catch {
+            logError("Risk history fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            return []
+        }
     }
 
     private func fetchAllRiskLevels(coins: [String]) async -> [(String, ITCRiskLevel?, [ITCRiskLevel])] {
@@ -649,34 +664,74 @@ class HomeViewModel {
     }
 
     private func fetchVIXSafe() async -> VIXData? {
-        try? await vixService.fetchLatestVIX()
+        do {
+            return try await vixService.fetchLatestVIX()
+        } catch {
+            logError("VIX fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchDXYSafe() async -> DXYData? {
-        try? await dxyService.fetchLatestDXY()
+        do {
+            return try await dxyService.fetchLatestDXY()
+        } catch {
+            logError("DXY fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchRainbowChartSafe(btcPrice: Double) async -> RainbowChartData? {
-        try? await rainbowChartService.fetchCurrentRainbowData(btcPrice: btcPrice)
+        do {
+            return try await rainbowChartService.fetchCurrentRainbowData(btcPrice: btcPrice)
+        } catch {
+            logError("Rainbow chart fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchGlobalLiquiditySafe() async -> GlobalLiquidityChanges? {
-        try? await globalLiquidityService.fetchLiquidityChanges()
+        do {
+            return try await globalLiquidityService.fetchLiquidityChanges()
+        } catch {
+            logError("Global liquidity fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchSupplyInProfitSafe() async -> SupplyProfitData? {
-        try? await santimentService.fetchLatestSupplyInProfit()
+        do {
+            return try await santimentService.fetchLatestSupplyInProfit()
+        } catch {
+            logError("Supply in profit fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     private func fetchUpcomingEventsSafe() async -> [EconomicEvent] {
-        (try? await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])) ?? []
+        do {
+            return try await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
+        } catch {
+            logError("Upcoming events fetch failed: \(error.localizedDescription)", category: .network)
+            return []
+        }
     }
 
     private func fetchTodaysEventsSafe() async -> [EconomicEvent] {
-        (try? await newsService.fetchTodaysEvents()) ?? []
+        do {
+            return try await newsService.fetchTodaysEvents()
+        } catch {
+            logError("Today's events fetch failed: \(error.localizedDescription)", category: .network)
+            return []
+        }
     }
 
     private func fetchMacroZScoresSafe() async -> [MacroIndicatorType: MacroZScoreData] {
-        (try? await macroStatisticsService.fetchAllZScores()) ?? [:]
+        do {
+            return try await macroStatisticsService.fetchAllZScores()
+        } catch {
+            logError("Macro Z-scores fetch failed: \(error.localizedDescription)", category: .network)
+            return [:]
+        }
     }
 }

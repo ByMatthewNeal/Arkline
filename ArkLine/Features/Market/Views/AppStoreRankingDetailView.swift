@@ -87,9 +87,9 @@ struct AppStoreRankingDetailView: View {
         do {
             let sentimentService = APISentimentService()
             rankingHistory = try await sentimentService.fetchAppStoreRankingHistory(limit: 30)
-            print("📊 Loaded \(rankingHistory.count) historical rankings")
+            logInfo("Loaded \(rankingHistory.count) historical rankings", category: .data)
         } catch {
-            print("⚠️ Failed to load ranking history: \(error.localizedDescription)")
+            logError("Failed to load ranking history: \(error.localizedDescription)", category: .data)
         }
         isLoading = false
     }

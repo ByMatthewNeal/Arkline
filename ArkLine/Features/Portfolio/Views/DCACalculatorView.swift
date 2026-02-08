@@ -281,10 +281,14 @@ struct DCACalculatorView: View {
 
         Task {
             do {
+                guard let userId = SupabaseAuthManager.shared.currentUserId else {
+                    throw AppError.custom(message: "Please sign in to create DCA reminders")
+                }
+
                 if calculation.strategyType == .timeBased {
-                    try await createTimeBasedReminder(calculation)
+                    try await createTimeBasedReminder(calculation, userId: userId)
                 } else {
-                    try await createRiskBasedReminder(calculation)
+                    try await createRiskBasedReminder(calculation, userId: userId)
                 }
 
                 await MainActor.run {
@@ -299,11 +303,11 @@ struct DCACalculatorView: View {
         }
     }
 
-    private func createTimeBasedReminder(_ calculation: DCACalculation) async throws {
+    private func createTimeBasedReminder(_ calculation: DCACalculation, userId: UUID) async throws {
         let dcaService = ServiceContainer.shared.dcaService
 
         let request = CreateDCARequest(
-            userId: Constants.Mock.userId, // Use consistent mock user ID
+            userId: userId,
             symbol: calculation.asset.symbol,
             name: calculation.asset.name,
             amount: calculation.amountPerPurchase,
@@ -318,7 +322,7 @@ struct DCACalculatorView: View {
         _ = try await dcaService.createReminder(request)
     }
 
-    private func createRiskBasedReminder(_ calculation: DCACalculation) async throws {
+    private func createRiskBasedReminder(_ calculation: DCACalculation, userId: UUID) async throws {
         let dcaService = ServiceContainer.shared.dcaService
 
         // Get the risk threshold from selected bands
@@ -326,7 +330,7 @@ struct DCACalculatorView: View {
         let riskThreshold = sortedBands.first?.riskRange.upperBound ?? 40
 
         let request = CreateRiskBasedDCARequest(
-            userId: Constants.Mock.userId, // Use consistent mock user ID
+            userId: userId,
             symbol: calculation.asset.symbol,
             name: calculation.asset.name,
             amount: calculation.totalAmount,

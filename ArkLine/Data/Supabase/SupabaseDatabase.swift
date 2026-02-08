@@ -125,7 +125,7 @@ extension SupabaseDatabase {
     /// Save today's ranking (upsert - update if exists, insert if not)
     func saveAppStoreRanking(_ ranking: AppStoreRankingDTO) async throws {
         guard SupabaseManager.shared.isConfigured else {
-            print("⚠️ Supabase not configured - skipping save")
+            logWarning("Supabase not configured - skipping ranking save", category: .data)
             return
         }
         let client = SupabaseManager.shared.client
@@ -145,9 +145,9 @@ extension SupabaseDatabase {
                 .from(SupabaseTable.appStoreRankings.rawValue)
                 .insert(ranking)
                 .execute()
-            print("📊 Saved new App Store ranking for \(ranking.recordedDate): \(ranking.rankDisplay)")
+            logInfo("Saved new App Store ranking for \(ranking.recordedDate): \(ranking.rankDisplay)", category: .data)
         } else {
-            print("📊 App Store ranking already exists for \(ranking.recordedDate)")
+            logInfo("App Store ranking already exists for \(ranking.recordedDate)", category: .data)
         }
     }
 

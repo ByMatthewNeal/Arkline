@@ -17,20 +17,28 @@ final class SupabaseManager {
 
         // Check if Supabase is properly configured
         if urlString.isEmpty || key.isEmpty {
-            print("⚠️ Supabase credentials not configured - using placeholder")
-            // Use a placeholder that won't crash but won't work either
+            logWarning("Supabase credentials not configured - using placeholder", category: .network)
+            let placeholderURL = URL(string: "https://placeholder.supabase.co") ?? URL(filePath: "/")
             client = SupabaseClient(
-                supabaseURL: URL(string: "https://placeholder.supabase.co")!,
+                supabaseURL: placeholderURL,
                 supabaseKey: "placeholder_key"
             )
             isConfigured = false
-        } else {
+        } else if let url = URL(string: urlString) {
             client = SupabaseClient(
-                supabaseURL: URL(string: urlString)!,
+                supabaseURL: url,
                 supabaseKey: key
             )
             isConfigured = true
-            print("✅ Supabase configured: \(urlString)")
+            logInfo("Supabase configured successfully", category: .network)
+        } else {
+            logError("Invalid Supabase URL: credentials misconfigured", category: .network)
+            let placeholderURL = URL(string: "https://placeholder.supabase.co") ?? URL(filePath: "/")
+            client = SupabaseClient(
+                supabaseURL: placeholderURL,
+                supabaseKey: "placeholder_key"
+            )
+            isConfigured = false
         }
     }
 
