@@ -392,13 +392,11 @@ class HomeViewModel {
             isRefreshing = false
         }
         errorMessage = nil
-        var failures = 0
 
         let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
 
         // Fetch crypto prices first (critical for Core widget) - independent of other fetches
         let crypto = await fetchCryptoAssetsSafe()
-        if crypto.isEmpty { failures += 1 }
 
         // Extract BTC, ETH, and SOL prices immediately
         let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
@@ -504,9 +502,8 @@ class HomeViewModel {
         let (fg, riskScore, reminders, news) = await (fgResult, riskScoreResult, remindersResult, newsResult)
         let zScores = await zScoresTask
 
-        // Count secondary failures
-        if fg == nil { failures += 1 }
-        if riskScore == nil { failures += 1 }
+        // Count failures after all fetches complete
+        let failureCount = (crypto.isEmpty ? 1 : 0) + (fg == nil ? 1 : 0) + (riskScore == nil ? 1 : 0)
 
         await MainActor.run {
             if let fg = fg {
@@ -521,7 +518,7 @@ class HomeViewModel {
             self.newsItems = news
             self.macroZScores = zScores
             ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
-            self.failedFetchCount = failures
+            self.failedFetchCount = failureCount
             self.lastRefreshed = Date()
         }
 

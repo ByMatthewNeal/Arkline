@@ -51,7 +51,6 @@ final class APICache {
             // Evict oldest entries if over limit
             if self.cache.count >= self.maxEntries {
                 // Remove expired entries first
-                let now = Date()
                 var expiredKeys: [String] = []
                 for (k, v) in self.cache {
                     if let entry = v as? CacheEntry<Any>, entry.isExpired {

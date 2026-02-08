@@ -176,12 +176,12 @@ actor NetworkManager {
         let decoder = JSONDecoder()
         // Don't use .convertFromSnakeCase - models have explicit CodingKeys
         // Use custom ISO8601 formatter that handles fractional seconds
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let dateString = try container.decode(String.self)
             // Try with fractional seconds first
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             if let date = formatter.date(from: dateString) {
                 return date
             }

@@ -299,9 +299,10 @@ final class PortfolioViewModel {
     }
 
     func updatePortfolio(_ portfolio: Portfolio, name: String, isPublic: Bool) async throws {
-        var updated = portfolio
-        updated.name = name
-        updated.isPublic = isPublic
+        var mutable = portfolio
+        mutable.name = name
+        mutable.isPublic = isPublic
+        let updated = mutable
         try await portfolioService.updatePortfolio(updated)
 
         await MainActor.run {
@@ -505,13 +506,14 @@ final class PortfolioViewModel {
 
                 if let existing = existingHolding {
                     // Update existing holding with new weighted average
-                    var updated = existing
+                    var mutableHolding = existing
                     let oldTotal = existing.quantity * (existing.averageBuyPrice ?? 0)
                     let newTotal = quantity * pricePerUnit
                     let newQuantity = existing.quantity + quantity
-                    updated.quantity = newQuantity
-                    updated.averageBuyPrice = (oldTotal + newTotal) / newQuantity
-                    try await portfolioService.updateHolding(updated)
+                    mutableHolding.quantity = newQuantity
+                    mutableHolding.averageBuyPrice = (oldTotal + newTotal) / newQuantity
+                    let updatedHolding = mutableHolding
+                    try await portfolioService.updateHolding(updatedHolding)
                 } else {
                     // Create new holding
                     let newHolding = PortfolioHolding(

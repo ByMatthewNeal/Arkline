@@ -29,10 +29,10 @@ actor IncrementalPriceStore {
     private var mergedCache: [String: [(date: Date, price: Double)]] = [:]
 
     /// Raw incremental data loaded from disk, keyed by coin symbol.
-    private var incrementalData: [String: CoinPriceFile] = [:]
+    private nonisolated(unsafe) var incrementalData: [String: CoinPriceFile] = [:]
 
     /// Full history fetched from Binance (for coins without embedded data).
-    private var baselineData: [String: CoinPriceFile] = [:]
+    private nonisolated(unsafe) var baselineData: [String: CoinPriceFile] = [:]
 
     /// Track fetch attempts to enforce cooldown.
     private var fetchAttempted: [String: Date] = [:]
@@ -58,15 +58,19 @@ actor IncrementalPriceStore {
     // MARK: - Init
 
     private init() {
+        var loadedIncremental: [String: CoinPriceFile] = [:]
+        var loadedBaseline: [String: CoinPriceFile] = [:]
         for config in AssetRiskConfig.allConfigs {
             let coin = config.assetId
             if let loaded = loadFromDisk(coin: coin) {
-                incrementalData[coin] = loaded
+                loadedIncremental[coin] = loaded
             }
             if let baseline = loadBaselineFromDisk(coin: coin) {
-                baselineData[coin] = baseline
+                loadedBaseline[coin] = baseline
             }
         }
+        self.incrementalData = loadedIncremental
+        self.baselineData = loadedBaseline
     }
 
     // MARK: - Public API
