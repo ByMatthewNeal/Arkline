@@ -484,9 +484,10 @@ struct RiskLevelChartView: View {
                 days: fetchDays
             )
             await MainActor.run {
-                // Only apply if user hasn't switched coins during fetch
-                guard self.selectedCoin == coin else { return }
-                self.enhancedRiskHistory = history
+                // Only apply data if user hasn't switched coins during fetch
+                if self.selectedCoin == coin {
+                    self.enhancedRiskHistory = history
+                }
                 self.isLoadingHistory = false
             }
         }
@@ -499,8 +500,9 @@ struct RiskLevelChartView: View {
         Task {
             let risk = await viewModel.fetchMultiFactorRisk(coin: coin.rawValue)
             await MainActor.run {
-                guard self.selectedCoin == coin else { return }
-                self.multiFactorRisk = risk
+                if self.selectedCoin == coin {
+                    self.multiFactorRisk = risk
+                }
                 self.isLoadingMultiFactor = false
             }
         }
@@ -573,11 +575,9 @@ struct RiskLevelChartView: View {
                 if !hasInitialized {
                     selectedCoin = initialCoin
                     hasInitialized = true
-                    // onChange will fire from setting selectedCoin, skip loading here
-                } else {
-                    loadEnhancedHistory()
-                    loadMultiFactorRisk()
                 }
+                loadEnhancedHistory()
+                loadMultiFactorRisk()
             }
             .onChange(of: selectedCoin) { _, _ in
                 selectedDate = nil
