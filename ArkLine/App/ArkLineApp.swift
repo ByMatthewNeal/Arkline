@@ -345,6 +345,17 @@ class AppState: ObservableObject {
 #if canImport(UIKit)
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
+    /// Controls which orientations are currently allowed. Default is portrait only.
+    /// Set to `.allButUpsideDown` temporarily when a fullscreen chart is shown.
+    static var orientationLock: UIInterfaceOrientationMask = .portrait
+
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        return AppDelegate.orientationLock
+    }
+
     // MARK: - Push Notification Registration
 
     func application(

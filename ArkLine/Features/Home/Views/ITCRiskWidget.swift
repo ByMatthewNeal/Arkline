@@ -383,6 +383,7 @@ struct RiskLevelChartView: View {
     @State private var showConfidenceInfo = false
     @State private var showInfoSheet = false
     @State private var showChart = true
+    @State private var showFullscreenChart = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -554,6 +555,14 @@ struct RiskLevelChartView: View {
             .sheet(isPresented: $showInfoSheet) {
                 RiskLevelInfoSheet()
             }
+            .fullScreenCover(isPresented: $showFullscreenChart) {
+                RiskChartFullscreenView(
+                    history: riskHistory,
+                    enhancedHistory: enhancedRiskHistory,
+                    timeRange: $selectedTimeRange,
+                    coinName: selectedCoin.rawValue
+                )
+            }
             #endif
             .onAppear {
                 if !hasInitialized {
@@ -693,11 +702,24 @@ struct RiskLevelChartView: View {
 
                             Spacer()
 
-                            if showChart, selectedDate != nil {
-                                Button(action: { selectedDate = nil }) {
-                                    Text("Reset")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(AppColors.accent)
+                            if showChart {
+                                if selectedDate != nil {
+                                    Button(action: { selectedDate = nil }) {
+                                        Text("Reset")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundColor(AppColors.accent)
+                                    }
+                                }
+
+                                Button(action: { showFullscreenChart = true }) {
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .black.opacity(0.5))
+                                        .frame(width: 28, height: 28)
+                                        .background(
+                                            Circle()
+                                                .fill(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08))
+                                        )
                                 }
                             }
 
@@ -1496,7 +1518,28 @@ struct RiskLevelChart: View {
             }
         }
         .chartYScale(domain: 0...1)
-        .chartXSelection(value: $selectedDate)
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let x = value.location.x
+                                if let date: Date = proxy.value(atX: x) {
+                                    let closest = chartData.min { a, b in
+                                        abs(a.date.timeIntervalSince(date)) < abs(b.date.timeIntervalSince(date))
+                                    }
+                                    if let closest {
+                                        selectedDate = closest.date
+                                    }
+                                }
+                            }
+                            .onEnded { _ in }
+                    )
+            }
+        }
         .chartYAxis {
             AxisMarks(values: [0, 0.25, 0.50, 0.75, 1.0]) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
@@ -1546,6 +1589,138 @@ struct RiskLevelChart: View {
                         ? Color.white.opacity(0.02)
                         : Color.black.opacity(0.015)
                 )
+        }
+    }
+}
+
+// MARK: - Fullscreen Risk Chart View
+struct RiskChartFullscreenView: View {
+    let history: [ITCRiskLevel]
+    let enhancedHistory: [RiskHistoryPoint]
+    @Binding var timeRange: RiskTimeRange
+    let coinName: String
+
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+    @State private var selectedDate: Date?
+
+    private var selectedPoint: RiskHistoryPoint? {
+        guard let selectedDate else { return nil }
+        return enhancedHistory.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    private var filteredHistory: [ITCRiskLevel] {
+        guard let days = timeRange.days else { return history }
+        return Array(history.suffix(days))
+    }
+
+    private var filteredEnhancedHistory: [RiskHistoryPoint] {
+        guard let days = timeRange.days else { return enhancedHistory }
+        return Array(enhancedHistory.suffix(days))
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Top bar
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(coinName) Risk Level")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+
+                        if let point = selectedPoint {
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(RiskColors.color(for: point.riskLevel))
+                                    .frame(width: 8, height: 8)
+                                Text(String(format: "%.3f", point.riskLevel))
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    .foregroundColor(RiskColors.color(for: point.riskLevel))
+                                Text(RiskColors.category(for: point.riskLevel))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(RiskColors.color(for: point.riskLevel))
+                                Text("·")
+                                    .foregroundColor(.white.opacity(0.4))
+                                Text(point.date, format: .dateTime.month(.abbreviated).day().year())
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.5))
+                                if point.price > 0 {
+                                    Text("·")
+                                        .foregroundColor(.white.opacity(0.4))
+                                    Text(point.price >= 1 ? String(format: "$%.0f", point.price) : String(format: "$%.4f", point.price))
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                            }
+                        } else {
+                            Text("Drag to explore")
+                                .font(.system(size: 13))
+                                .foregroundColor(.white.opacity(0.4))
+                        }
+                    }
+
+                    Spacer()
+
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.white.opacity(0.4))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+                // Chart — fills remaining space
+                RiskLevelChart(
+                    history: filteredHistory,
+                    timeRange: timeRange,
+                    colorScheme: .dark,
+                    enhancedHistory: filteredEnhancedHistory,
+                    selectedDate: $selectedDate
+                )
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+
+                // Time range picker
+                HStack(spacing: 8) {
+                    ForEach(RiskTimeRange.allCases, id: \.self) { range in
+                        Button(action: {
+                            selectedDate = nil
+                            timeRange = range
+                        }) {
+                            Text(range.rawValue)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(timeRange == range ? .white : .white.opacity(0.5))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 7)
+                                .background(
+                                    Capsule()
+                                        .fill(timeRange == range ? AppColors.accent : Color.white.opacity(0.1))
+                                )
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            #if canImport(UIKit)
+            AppDelegate.orientationLock = .allButUpsideDown
+            #endif
+        }
+        .onDisappear {
+            #if canImport(UIKit)
+            AppDelegate.orientationLock = .portrait
+            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            #endif
         }
     }
 }
