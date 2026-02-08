@@ -772,10 +772,10 @@ struct EditProfileView: View {
                     updatedUser.avatarUrl = avatarURL.absoluteString
                     updatedUser.usePhotoAvatar = true
                 } catch {
-                    AppLogger.shared.error("Avatar upload failed: \(error.localizedDescription)")
+                    AppLogger.shared.error("Avatar upload failed: \(error)")
                     await MainActor.run {
                         isUploading = false
-                        errorMessage = "Failed to upload photo. Please try again."
+                        errorMessage = "Failed to upload photo: \(error.localizedDescription)"
                         showError = true
                     }
                     return
