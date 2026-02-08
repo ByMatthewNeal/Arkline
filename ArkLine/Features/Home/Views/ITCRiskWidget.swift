@@ -1666,7 +1666,16 @@ struct RiskChartFullscreenView: View {
 
                     Spacer()
 
-                    Button(action: { dismiss() }) {
+                    Button {
+                        #if canImport(UIKit)
+                        AppDelegate.orientationLock = .portrait
+                        if let windowScene = UIApplication.shared.connectedScenes
+                            .compactMap({ $0 as? UIWindowScene }).first {
+                            windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+                        }
+                        #endif
+                        dismiss()
+                    } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
                             .foregroundColor(.white.opacity(0.4))
@@ -1719,7 +1728,10 @@ struct RiskChartFullscreenView: View {
         .onDisappear {
             #if canImport(UIKit)
             AppDelegate.orientationLock = .portrait
-            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            if let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene }).first {
+                windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+            }
             #endif
         }
     }
