@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Broadcast Studio View
 
@@ -898,25 +899,16 @@ struct BroadcastEditorView: View {
 
     private func imagePreviewThumbnail(_ image: BroadcastImage) -> some View {
         ZStack(alignment: .topTrailing) {
-            AsyncImage(url: image.imageURL) { phase in
-                switch phase {
-                case .success(let loadedImage):
-                    loadedImage
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    Image(systemName: "photo")
-                        .font(.title2)
-                        .foregroundColor(AppColors.textTertiary)
-                case .empty:
+            KFImage(image.imageURL)
+                .resizable()
+                .placeholder {
                     ProgressView()
-                @unknown default:
-                    EmptyView()
                 }
-            }
-            .frame(width: 80, height: 80)
-            .background(AppColors.cardBackground(colorScheme))
-            .cornerRadius(ArkSpacing.sm)
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 80, height: 80)
+                .background(AppColors.cardBackground(colorScheme))
+                .cornerRadius(ArkSpacing.sm)
             .clipped()
 
             // Annotation indicator

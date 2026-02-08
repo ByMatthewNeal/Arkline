@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import Kingfisher
 
 struct ProfileView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -119,17 +120,17 @@ struct ProfileHeader: View {
                        user.usePhotoAvatar,
                        let avatarUrl = user.avatarUrl,
                        let url = URL(string: avatarUrl) {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            Text(viewModel.initials)
-                                .font(AppFonts.title30)
-                                .foregroundColor(AppColors.accent)
-                        }
-                        .frame(width: 96, height: 96)
-                        .clipShape(Circle())
+                        KFImage(url)
+                            .resizable()
+                            .placeholder {
+                                Text(viewModel.initials)
+                                    .font(AppFonts.title30)
+                                    .foregroundColor(AppColors.accent)
+                            }
+                            .fade(duration: 0.2)
+                            .scaledToFill()
+                            .frame(width: 96, height: 96)
+                            .clipShape(Circle())
                     } else {
                         Text(viewModel.initials)
                             .font(AppFonts.title30)
@@ -618,15 +619,13 @@ struct EditProfileView: View {
                         } else if let avatarUrl = user?.avatarUrl,
                                   let url = URL(string: avatarUrl),
                                   usePhotoAvatar {
-                            AsyncImage(url: url) { image in
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            } placeholder: {
-                                letterAvatar
-                            }
-                            .frame(width: 100, height: 100)
-                            .clipShape(Circle())
+                            KFImage(url)
+                                .resizable()
+                                .placeholder { letterAvatar }
+                                .fade(duration: 0.2)
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
                         } else {
                             letterAvatar
                         }

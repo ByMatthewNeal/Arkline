@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Kingfisher
 
 // MARK: - Date Filter
 
@@ -736,24 +737,16 @@ struct BroadcastDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.sm) {
                     ForEach(broadcast.images) { image in
-                        AsyncImage(url: image.imageURL) { phase in
-                            switch phase {
-                            case .success(let loadedImage):
-                                loadedImage
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .foregroundColor(AppColors.textTertiary)
-                            case .empty:
+                        KFImage(image.imageURL)
+                            .resizable()
+                            .placeholder {
                                 ProgressView()
-                            @unknown default:
-                                EmptyView()
                             }
-                        }
-                        .frame(width: 200, height: 150)
-                        .cornerRadius(ArkSpacing.sm)
-                        .clipped()
+                            .fade(duration: 0.2)
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 200, height: 150)
+                            .cornerRadius(ArkSpacing.sm)
+                            .clipped()
                     }
                 }
             }

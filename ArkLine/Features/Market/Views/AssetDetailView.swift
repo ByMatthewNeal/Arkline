@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import Kingfisher
 
 struct AssetDetailView: View {
     let asset: CryptoAsset
@@ -235,29 +236,29 @@ struct AssetDetailHeader: View {
     var body: some View {
         HStack(spacing: 12) {
             // Icon
-            AsyncImage(url: URL(string: asset.iconUrl ?? "")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } placeholder: {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            KFImage(URL(string: asset.iconUrl ?? ""))
+                .resizable()
+                .placeholder {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
 
-                    Text(asset.symbol.prefix(1))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        Text(asset.symbol.prefix(1))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
                 }
-            }
-            .frame(width: 48, height: 48)
-            .clipShape(Circle())
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(asset.name)

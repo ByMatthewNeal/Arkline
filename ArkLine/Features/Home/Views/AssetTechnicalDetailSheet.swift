@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Asset Technical Detail Sheet
 /// Shows detailed technical analysis for an asset including trend, SMAs, and Bollinger Bands
@@ -436,27 +437,27 @@ private struct AssetHeaderSection: View {
     var body: some View {
         HStack(spacing: ArkSpacing.md) {
             // Icon
-            AsyncImage(url: URL(string: asset.iconUrl ?? "")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } placeholder: {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [AppColors.fillPrimary, AppColors.accentLight],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            KFImage(URL(string: asset.iconUrl ?? ""))
+                .resizable()
+                .placeholder {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [AppColors.fillPrimary, AppColors.accentLight],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                    Text(asset.symbol.prefix(1))
-                        .font(.title2.bold())
-                        .foregroundColor(.white)
+                        Text(asset.symbol.prefix(1))
+                            .font(.title2.bold())
+                            .foregroundColor(.white)
+                    }
                 }
-            }
-            .frame(width: 56, height: 56)
-            .clipShape(Circle())
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 56, height: 56)
+                .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(asset.name)

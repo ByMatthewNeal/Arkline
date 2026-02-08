@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 struct NewsCard: View {
     let news: NewsItem
@@ -7,16 +8,16 @@ struct NewsCard: View {
         HStack(spacing: 12) {
             // Thumbnail
             if let imageUrl = news.imageUrl, let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color(hex: "2A2A2A"))
-                }
-                .frame(width: 80, height: 80)
-                .cornerRadius(8)
+                KFImage(url)
+                    .resizable()
+                    .placeholder {
+                        Rectangle()
+                            .fill(Color(hex: "2A2A2A"))
+                    }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(8)
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
@@ -72,16 +73,16 @@ struct FeaturedNewsCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Image
             if let imageUrl = news.imageUrl, let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color(hex: "2A2A2A"))
-                }
-                .frame(height: 180)
-                .cornerRadius(12)
+                KFImage(url)
+                    .resizable()
+                    .placeholder {
+                        Rectangle()
+                            .fill(Color(hex: "2A2A2A"))
+                    }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 180)
+                    .cornerRadius(12)
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)

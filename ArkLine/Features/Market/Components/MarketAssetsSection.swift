@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Asset Category for Segment Control
 enum AssetSegment: String, CaseIterable {
@@ -112,29 +113,29 @@ struct CryptoAssetRow: View {
     var body: some View {
         HStack(spacing: 12) {
             // Icon
-            AsyncImage(url: URL(string: asset.iconUrl ?? "")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-            } placeholder: {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            KFImage(URL(string: asset.iconUrl ?? ""))
+                .resizable()
+                .placeholder {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
 
-                    Text(asset.symbol.prefix(1))
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        Text(asset.symbol.prefix(1))
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
                 }
-            }
-            .frame(width: 40, height: 40)
-            .clipShape(Circle())
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
 
             // Name & Symbol
             VStack(alignment: .leading, spacing: 2) {

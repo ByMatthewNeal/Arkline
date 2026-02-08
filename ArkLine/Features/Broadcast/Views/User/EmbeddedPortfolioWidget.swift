@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Embedded Portfolio Widget
 
@@ -34,22 +35,12 @@ struct EmbeddedPortfolioWidget: View {
             // Content
             if let imageURL = attachment.renderedImageURL {
                 // Show pre-rendered image
-                AsyncImage(url: imageURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .cornerRadius(ArkSpacing.sm)
-                    case .failure:
-                        fallbackView
-                    case .empty:
-                        ProgressView()
-                            .frame(height: 200)
-                    @unknown default:
-                        fallbackView
-                    }
-                }
+                KFImage(imageURL)
+                    .resizable()
+                    .placeholder { fallbackView }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fit)
+                    .cornerRadius(ArkSpacing.sm)
             } else {
                 // Show compact inline view from snapshot data
                 compactSnapshotView

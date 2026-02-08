@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Avatar View
 struct AvatarView: View {
@@ -34,20 +35,11 @@ struct AvatarView: View {
     var body: some View {
         Group {
             if usePhoto, let url = imageUrl {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .empty:
-                        placeholderView
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure:
-                        placeholderView
-                    @unknown default:
-                        placeholderView
-                    }
-                }
+                KFImage(url)
+                    .resizable()
+                    .placeholder { placeholderView }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fill)
             } else {
                 placeholderView
             }

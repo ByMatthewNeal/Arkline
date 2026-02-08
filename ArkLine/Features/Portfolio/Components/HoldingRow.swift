@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Holding Row (Full)
 struct HoldingRow: View {
@@ -131,14 +132,12 @@ struct CoinIconView: View {
                 .fill(AppColors.fillSecondary(colorScheme))
 
             if let iconUrl = iconUrl, let url = URL(string: iconUrl) {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFit()
-                } placeholder: {
-                    symbolInitials
-                }
-                .frame(width: size * 0.6, height: size * 0.6)
+                KFImage(url)
+                    .resizable()
+                    .placeholder { symbolInitials }
+                    .fade(duration: 0.2)
+                    .scaledToFit()
+                    .frame(width: size * 0.6, height: size * 0.6)
             } else {
                 symbolInitials
             }

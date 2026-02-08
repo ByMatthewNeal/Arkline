@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Glass Header (Hedge Fund Style)
 struct GlassHeader: View {
@@ -120,15 +121,13 @@ struct ProfessionalAvatar: View {
         ZStack {
             if let url = imageUrl {
                 // Image avatar
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    initialsView
-                }
-                .frame(width: size, height: size)
-                .clipShape(Circle())
+                KFImage(url)
+                    .resizable()
+                    .placeholder { initialsView }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
             } else {
                 // Initials avatar with gradient
                 initialsView
