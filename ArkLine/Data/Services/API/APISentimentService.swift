@@ -7,11 +7,12 @@ final class APISentimentService: SentimentServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
     private let cache = APICache.shared
+    private let sharedCache = SharedCacheService.shared
 
     // MARK: - SentimentServiceProtocol
 
     func fetchFearGreedIndex() async throws -> FearGreedIndex {
-        return try await cache.getOrFetch(CacheKey.fearGreedIndex, ttl: APICache.TTL.medium) {
+        return try await sharedCache.getOrFetch(CacheKey.fearGreedIndex, ttl: APICache.TTL.medium) { [networkManager] in
             let endpoint = FearGreedEndpoint.current
             let response: FearGreedAPIResponse = try await networkManager.request(endpoint)
 
@@ -29,7 +30,7 @@ final class APISentimentService: SentimentServiceProtocol {
 
     func fetchFearGreedHistory(days: Int) async throws -> [FearGreedIndex] {
         let cacheKey = "fear_greed_history_\(days)"
-        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
+        return try await sharedCache.getOrFetch(cacheKey, ttl: APICache.TTL.long) { [networkManager] in
             let endpoint = FearGreedEndpoint.historical(days: days)
             let response: FearGreedAPIResponse = try await networkManager.request(endpoint)
 
@@ -44,7 +45,7 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchBTCDominance() async throws -> BTCDominance {
-        return try await cache.getOrFetch(CacheKey.btcDominance, ttl: APICache.TTL.medium) {
+        return try await sharedCache.getOrFetch(CacheKey.btcDominance, ttl: APICache.TTL.medium) { [networkManager] in
             // Use CoinGecko global data for BTC dominance
             let endpoint = CoinGeckoEndpoint.globalData
             let response: CoinGeckoGlobalData = try await networkManager.request(endpoint)
@@ -109,7 +110,7 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchAltcoinSeason() async throws -> AltcoinSeasonIndex {
-        return try await cache.getOrFetch(CacheKey.altcoinSeason, ttl: APICache.TTL.medium) {
+        return try await sharedCache.getOrFetch(CacheKey.altcoinSeason, ttl: APICache.TTL.medium) { [networkManager] in
             // Fetch top 150 coins with 30-day price change from CoinGecko
             let endpoint = CoinGeckoEndpoint.coinMarketsWithPriceChange(
                 currency: "usd",
@@ -138,8 +139,12 @@ final class APISentimentService: SentimentServiceProtocol {
 
             // Find Bitcoin's 30-day change
             guard let btcCoin = coins.first(where: { $0.id == "bitcoin" }) else {
-                // Fallback to dominance-based calculation
-                return try await calculateAltcoinSeasonFromDominance()
+                // Fallback: dominance-based calculation
+                let globalEndpoint = CoinGeckoEndpoint.globalData
+                let globalData: CoinGeckoGlobalData = try await networkManager.request(globalEndpoint)
+                let dominance = globalData.data.marketCapPercentage["btc"] ?? 50
+                let fallbackIndex = Int(max(0, min(100, (65 - dominance) * 3)))
+                return AltcoinSeasonIndex(value: fallbackIndex, isBitcoinSeason: fallbackIndex < 50, timestamp: Date())
             }
 
             let btcChange30d = btcCoin.priceChangePercentage30dInCurrency ?? 0
@@ -159,7 +164,12 @@ final class APISentimentService: SentimentServiceProtocol {
             }
 
             guard totalAltcoins > 0 else {
-                return try await calculateAltcoinSeasonFromDominance()
+                // Fallback: dominance-based calculation
+                let globalEndpoint = CoinGeckoEndpoint.globalData
+                let globalData: CoinGeckoGlobalData = try await networkManager.request(globalEndpoint)
+                let dominance = globalData.data.marketCapPercentage["btc"] ?? 50
+                let fallbackIndex = Int(max(0, min(100, (65 - dominance) * 3)))
+                return AltcoinSeasonIndex(value: fallbackIndex, isBitcoinSeason: fallbackIndex < 50, timestamp: Date())
             }
 
             // Calculate index (0-100)

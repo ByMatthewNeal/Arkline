@@ -775,8 +775,8 @@ struct RiskLevelChartView: View {
                 Text(multiFactorRisk != nil
                      ? "Multi-Factor \(selectedCoin.rawValue) Risk"
                      : "Regression \(selectedCoin.rawValue) Risk")
-                    .font(.subheadline)
-                    .foregroundColor(textSecondary)
+                    .font(.callout)
+                    .foregroundColor(textSecondary.opacity(0.85))
 
                 if isLoadingMultiFactor {
                     ProgressView()
@@ -806,8 +806,8 @@ struct RiskLevelChartView: View {
 
                     // Date in new format
                     Text("As of \(formatDate(risk.date))")
-                        .font(.caption)
-                        .foregroundColor(textSecondary)
+                        .font(.footnote)
+                        .foregroundColor(textSecondary.opacity(0.85))
 
                     // Comparison callout: regression-only vs multi-factor
                     if let regRisk = regressionOnlyRiskLevel,
@@ -844,36 +844,36 @@ struct RiskLevelChartView: View {
                 // Regression-only value
                 VStack(spacing: 4) {
                     Text("Regression Only")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(textSecondary)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textSecondary.opacity(0.85))
 
                     Text(String(format: "%.3f", regressionValue))
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(RiskColors.color(for: regressionValue))
 
                     Text(RiskColors.category(for: regressionValue))
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(RiskColors.color(for: regressionValue))
                 }
                 .frame(maxWidth: .infinity)
 
                 // Arrow separator
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(textSecondary.opacity(0.4))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(textSecondary.opacity(0.6))
 
                 // Composite value
                 VStack(spacing: 4) {
                     Text("7-Factor Composite")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(textSecondary)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textSecondary.opacity(0.85))
 
                     Text(String(format: "%.3f", compositeValue))
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(RiskColors.color(for: compositeValue))
 
                     Text(RiskColors.category(for: compositeValue))
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(RiskColors.color(for: compositeValue))
                 }
                 .frame(maxWidth: .infinity)
@@ -881,8 +881,8 @@ struct RiskLevelChartView: View {
 
             // Explanation text
             Text("The home page shows regression risk (1 factor). This view combines 7 indicators for a broader assessment.")
-                .font(.system(size: 11))
-                .foregroundColor(textSecondary.opacity(0.7))
+                .font(.system(size: 12))
+                .foregroundColor(textSecondary.opacity(0.85))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, ArkSpacing.sm)
         }
@@ -911,12 +911,12 @@ struct RiskLevelChartView: View {
                     } else if let risk = multiFactorRisk {
                         HStack(spacing: 4) {
                             Text("\(risk.availableFactorCount)/\(RiskFactorType.allCases.count)")
-                                .font(.caption)
-                                .foregroundColor(textSecondary)
+                                .font(.footnote)
+                                .foregroundColor(textSecondary.opacity(0.85))
 
                             Image(systemName: showFactorBreakdown ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 12))
-                                .foregroundColor(textSecondary)
+                                .font(.system(size: 13))
+                                .foregroundColor(textSecondary.opacity(0.85))
                         }
                     }
                 }
@@ -930,8 +930,8 @@ struct RiskLevelChartView: View {
                         VStack(spacing: ArkSpacing.sm) {
                             ProgressView()
                             Text("Loading factor data...")
-                                .font(.caption)
-                                .foregroundColor(textSecondary)
+                                .font(.footnote)
+                                .foregroundColor(textSecondary.opacity(0.85))
                         }
                         Spacer()
                     }
@@ -947,8 +947,8 @@ struct RiskLevelChartView: View {
                             .foregroundColor(textSecondary.opacity(0.5))
 
                         Text("Unable to load factor data")
-                            .font(.caption)
-                            .foregroundColor(textSecondary)
+                            .font(.footnote)
+                            .foregroundColor(textSecondary.opacity(0.85))
 
                         Button("Retry") {
                             loadMultiFactorRisk()

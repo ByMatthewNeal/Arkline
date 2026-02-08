@@ -89,6 +89,7 @@ enum SupabaseTable: String {
     case portfolioHistory = "portfolio_history"
     case supplyInProfit = "supply_in_profit"
     case googleTrendsHistory = "google_trends_history"
+    case marketDataCache = "market_data_cache"
 }
 
 // MARK: - Storage Buckets

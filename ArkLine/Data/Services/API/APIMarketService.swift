@@ -7,6 +7,7 @@ final class APIMarketService: MarketServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
     private let cache = APICache.shared
+    private let sharedCache = SharedCacheService.shared
     private let fmpService = FMPService.shared
 
     // MARK: - MarketServiceProtocol
@@ -14,7 +15,7 @@ final class APIMarketService: MarketServiceProtocol {
     func fetchCryptoAssets(page: Int, perPage: Int) async throws -> [CryptoAsset] {
         let cacheKey = CacheKey.cryptoAssets(page: page, perPage: perPage)
 
-        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.medium) {
+        return try await sharedCache.getOrFetch(cacheKey, ttl: APICache.TTL.medium) { [networkManager] in
             let endpoint = CoinGeckoEndpoint.coinMarkets(
                 currency: "usd",
                 page: page,
@@ -29,7 +30,7 @@ final class APIMarketService: MarketServiceProtocol {
     func fetchStockAssets(symbols: [String]) async throws -> [StockAsset] {
         let cacheKey = CacheKey.stockAssets(symbols: symbols)
 
-        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
+        return try await sharedCache.getOrFetch(cacheKey, ttl: APICache.TTL.long) { [fmpService] in
             do {
                 let quotes = try await fmpService.fetchStockQuotes(symbols: symbols)
                 return quotes.map { $0.toStockAsset() }
@@ -43,10 +44,12 @@ final class APIMarketService: MarketServiceProtocol {
     func fetchMetalAssets(symbols: [String]) async throws -> [MetalAsset] {
         let cacheKey = CacheKey.metalAssets(symbols: symbols)
 
-        return try await cache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
+        return try await sharedCache.getOrFetch(cacheKey, ttl: APICache.TTL.long) { [networkManager] in
             let endpoint = MetalsAPIEndpoint.latest(base: "USD", symbols: symbols)
 
             let response: MetalsAPIResponse = try await networkManager.request(endpoint)
+
+            let metalNames = ["XAU": "Gold", "XAG": "Silver", "XPT": "Platinum", "XPD": "Palladium"]
 
             return symbols.compactMap { symbol -> MetalAsset? in
                 guard let rate = response.rates[symbol] else { return nil }
@@ -57,7 +60,7 @@ final class APIMarketService: MarketServiceProtocol {
                 return MetalAsset(
                     id: symbol.lowercased(),
                     symbol: symbol,
-                    name: self.metalName(for: symbol),
+                    name: metalNames[symbol] ?? symbol,
                     currentPrice: price,
                     priceChange24h: 0, // Would need historical data
                     priceChangePercentage24h: 0,
@@ -71,23 +74,28 @@ final class APIMarketService: MarketServiceProtocol {
     }
 
     func fetchGlobalMarketData() async throws -> CoinGeckoGlobalData {
-        return try await cache.getOrFetch(CacheKey.globalMarketData, ttl: APICache.TTL.medium) {
+        return try await sharedCache.getOrFetch(CacheKey.globalMarketData, ttl: APICache.TTL.medium) { [networkManager] in
             let endpoint = CoinGeckoEndpoint.globalData
             return try await networkManager.request(endpoint)
         }
     }
 
     func fetchTrendingCrypto() async throws -> [CryptoAsset] {
-        return try await cache.getOrFetch(CacheKey.trendingCoins, ttl: APICache.TTL.long) {
+        return try await sharedCache.getOrFetch(CacheKey.trendingCoins, ttl: APICache.TTL.long) { [networkManager] in
             let endpoint = CoinGeckoEndpoint.trendingCoins
-            let response: CoinGeckoTrendingResponse = try await self.networkManager.request(endpoint)
+            let response: CoinGeckoTrendingResponse = try await networkManager.request(endpoint)
 
             // Convert trending coins to CryptoAsset
             // Note: Trending endpoint doesn't include price data, would need additional calls
             let coinIds = response.coins.map { $0.item.id }
 
             // Fetch price data for trending coins
-            return try await self.fetchCryptoAssets(ids: coinIds)
+            let filterEndpoint = CoinGeckoEndpoint.coinMarketsFiltered(
+                currency: "usd",
+                ids: coinIds,
+                sparkline: false
+            )
+            return try await networkManager.request(filterEndpoint)
         }
     }
 

@@ -26,8 +26,8 @@ struct RiskFactorBreakdownView: View {
 
                 // Factor availability badge
                 Text("\(multiFactorRisk.availableFactorCount)/\(RiskFactorType.allCases.count) factors")
-                    .font(.caption)
-                    .foregroundColor(textSecondary)
+                    .font(.footnote)
+                    .foregroundColor(textSecondary.opacity(0.85))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(
@@ -40,8 +40,8 @@ struct RiskFactorBreakdownView: View {
             HStack(spacing: ArkSpacing.sm) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Composite Risk")
-                        .font(.caption)
-                        .foregroundColor(textSecondary)
+                        .font(.footnote)
+                        .foregroundColor(textSecondary.opacity(0.85))
                     Text(String(format: "%.3f", multiFactorRisk.riskLevel))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(RiskColors.color(for: multiFactorRisk.riskLevel))
@@ -84,13 +84,13 @@ struct RiskFactorBreakdownView: View {
             // Formula explanation
             VStack(alignment: .leading, spacing: 4) {
                 Text("Calculation Method")
-                    .font(.caption)
+                    .font(.footnote)
                     .fontWeight(.medium)
-                    .foregroundColor(textSecondary)
+                    .foregroundColor(textSecondary.opacity(0.85))
 
                 Text("Weighted average of normalized factors. Unavailable factors have their weights redistributed proportionally.")
-                    .font(.caption2)
-                    .foregroundColor(textSecondary.opacity(0.8))
+                    .font(.caption)
+                    .foregroundColor(textSecondary.opacity(0.85))
             }
             .padding(.top, ArkSpacing.xs)
         }
@@ -142,9 +142,9 @@ struct RiskFactorRow: View {
 
                 // Weight
                 Text(weightPercentage)
-                    .font(.caption)
-                    .foregroundColor(textSecondary)
-                    .frame(width: 35, alignment: .trailing)
+                    .font(.footnote)
+                    .foregroundColor(textSecondary.opacity(0.85))
+                    .frame(width: 40, alignment: .trailing)
 
                 // Value
                 if factor.isAvailable {
@@ -155,8 +155,8 @@ struct RiskFactorRow: View {
                         .frame(width: 45, alignment: .trailing)
                 } else {
                     Text("N/A")
-                        .font(.caption)
-                        .foregroundColor(textSecondary.opacity(0.5))
+                        .font(.footnote)
+                        .foregroundColor(textSecondary.opacity(0.6))
                         .frame(width: 45, alignment: .trailing)
                 }
             }
@@ -188,8 +188,8 @@ struct RiskFactorRow: View {
             if factor.isAvailable {
                 HStack {
                     Text(factor.rawValueDisplay)
-                        .font(.caption2)
-                        .foregroundColor(textSecondary.opacity(0.7))
+                        .font(.caption)
+                        .foregroundColor(textSecondary.opacity(0.85))
 
                     Spacer()
                 }
