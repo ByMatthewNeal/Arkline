@@ -519,40 +519,6 @@ struct GlassThemeToggleButton: View {
     }
 }
 
-// MARK: - Glass Icon Button
-struct GlassIconButton: View {
-    let icon: String
-    var hasNotification: Bool = false
-    @State private var isPressed = false
-    @Environment(\.colorScheme) var colorScheme
-
-    private var textPrimary: Color {
-        AppColors.textPrimary(colorScheme)
-    }
-
-    var body: some View {
-        Button(action: { }) {
-            ZStack {
-                Circle()
-                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F5"))
-                    .frame(width: 44, height: 44)
-
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(textPrimary)
-
-                // Notification dot
-                if hasNotification {
-                    Circle()
-                        .fill(AppColors.error)
-                        .frame(width: 8, height: 8)
-                        .offset(x: 12, y: -12)
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Glass Avatar (Legacy - wraps ProfessionalAvatar)
 struct GlassAvatar: View {
     let imageUrl: URL?

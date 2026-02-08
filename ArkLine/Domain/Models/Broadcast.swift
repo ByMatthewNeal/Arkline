@@ -285,7 +285,7 @@ enum AppSection: String, Codable, CaseIterable {
 
     /// Deep link URL for navigation
     var deepLinkURL: URL {
-        URL(string: "arkline://section/\(rawValue)")!
+        URL(string: "arkline://section/\(rawValue)") ?? URL(string: "arkline://home")!
     }
 }
 

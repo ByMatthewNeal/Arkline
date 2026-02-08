@@ -204,7 +204,7 @@ struct SentimentCategorySection<Content: View>: View {
     }
 }
 
-// MARK: - Placeholder Card (Coming Soon)
+// MARK: - Placeholder Card (Loading/No Data)
 struct PlaceholderCard: View {
     @Environment(\.colorScheme) var colorScheme
     let title: String

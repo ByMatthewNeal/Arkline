@@ -246,44 +246,6 @@ struct CategoryChip: View {
     }
 }
 
-// MARK: - Placeholder Detail Views
-struct BTCDominanceDetailView: View {
-    @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var appState: AppState
-
-    private var isDarkMode: Bool {
-        appState.darkModePreference == .dark ||
-        (appState.darkModePreference == .automatic && colorScheme == .dark)
-    }
-
-    var body: some View {
-        ZStack {
-            MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
-            Text("BTC Dominance Detail")
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-        }
-    }
-}
-
-struct ETFNetFlowDetailView: View {
-    @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var appState: AppState
-
-    private var isDarkMode: Bool {
-        appState.darkModePreference == .dark ||
-        (appState.darkModePreference == .automatic && colorScheme == .dark)
-    }
-
-    var body: some View {
-        ZStack {
-            MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
-            Text("ETF Net Flow Detail")
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-        }
-    }
-}
 
 struct FundingRateDetailView: View {
     let fundingRate: FundingRate?
@@ -453,43 +415,6 @@ struct FundingInterpretRow: View {
     }
 }
 
-struct LiquidationDetailView: View {
-    @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var appState: AppState
-
-    private var isDarkMode: Bool {
-        appState.darkModePreference == .dark ||
-        (appState.darkModePreference == .automatic && colorScheme == .dark)
-    }
-
-    var body: some View {
-        ZStack {
-            MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
-            Text("Liquidation Detail")
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-        }
-    }
-}
-
-struct AltcoinSeasonDetailView: View {
-    @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var appState: AppState
-
-    private var isDarkMode: Bool {
-        appState.darkModePreference == .dark ||
-        (appState.darkModePreference == .automatic && colorScheme == .dark)
-    }
-
-    var body: some View {
-        ZStack {
-            MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
-            Text("Altcoin Season Detail")
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-        }
-    }
-}
 
 // MARK: - Macro Indicators Section
 struct MacroIndicatorsSection: View {

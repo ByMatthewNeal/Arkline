@@ -285,7 +285,7 @@ struct PostCard: View {
 
                 Spacer()
 
-                Button(action: {}) {
+                ShareLink(item: "\(post.title)\n\(post.contentPreview)") {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundColor(AppColors.textSecondary)
                 }

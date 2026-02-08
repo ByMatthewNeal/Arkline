@@ -262,7 +262,7 @@ enum AppPlatform: String, Codable, CaseIterable {
     var icon: String {
         switch self {
         case .ios: return "apple.logo"
-        case .android: return "logo.playstation" // Using as Android placeholder
+        case .android: return "apps.iphone"
         }
     }
 }

@@ -503,6 +503,7 @@ struct BroadcastDetailView: View {
     @State private var isLoadingReactions = false
     @State private var audioPlayer: AVPlayer?
     @State private var isPlayingAudio = false
+    @State private var audioEndObserver: NSObjectProtocol?
 
     var body: some View {
         NavigationStack {
@@ -693,6 +694,10 @@ struct BroadcastDetailView: View {
         .onDisappear {
             audioPlayer?.pause()
             isPlayingAudio = false
+            if let observer = audioEndObserver {
+                NotificationCenter.default.removeObserver(observer)
+                audioEndObserver = nil
+            }
         }
     }
 
@@ -706,7 +711,7 @@ struct BroadcastDetailView: View {
                 audioPlayer = player
 
                 // Observe when playback finishes
-                NotificationCenter.default.addObserver(
+                audioEndObserver = NotificationCenter.default.addObserver(
                     forName: .AVPlayerItemDidPlayToEndTime,
                     object: player.currentItem,
                     queue: .main
