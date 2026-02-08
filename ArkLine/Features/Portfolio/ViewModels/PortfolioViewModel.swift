@@ -28,7 +28,9 @@ final class PortfolioViewModel {
     var historyPoints: [PortfolioHistoryPoint] = []
 
     var isLoading = false
+    var isRefreshing = false
     var error: AppError?
+    var priceRefreshFailed = false
 
     // User context
     private var currentUserId: UUID?
@@ -123,13 +125,15 @@ final class PortfolioViewModel {
     ) {
         self.portfolioService = portfolioService
         self.marketService = marketService
-        Task { await loadInitialData() }
     }
 
     // MARK: - Data Loading
     func refresh() async {
+        guard !isRefreshing else { return }
+        isRefreshing = true
         isLoading = true
         error = nil
+        defer { isRefreshing = false }
 
         do {
             // Get userId from Supabase auth
@@ -217,9 +221,13 @@ final class PortfolioViewModel {
             await MainActor.run {
                 self.holdings = updatedHoldings
                 self.allocations = PortfolioAllocation.calculate(from: updatedHoldings)
+                self.priceRefreshFailed = false
             }
         } catch {
-            // Silently fail - prices will update on next full refresh
+            logError("Price refresh failed: \(error)", category: .data)
+            await MainActor.run {
+                self.priceRefreshFailed = true
+            }
         }
     }
 
@@ -341,9 +349,27 @@ final class PortfolioViewModel {
             throw AppError.unknown(message: "No portfolio selected")
         }
 
+        // Validate inputs
+        guard quantity > 0 else {
+            throw AppError.unknown(message: "Quantity must be positive")
+        }
+        guard pricePerUnit > 0 else {
+            throw AppError.unknown(message: "Price must be positive")
+        }
+        guard fee >= 0 else {
+            throw AppError.unknown(message: "Fee cannot be negative")
+        }
+        guard quantity <= holding.quantity else {
+            throw AppError.unknown(message: "Cannot sell more than you hold")
+        }
+
         // Calculate profit/loss using average cost basis
         let costBasisPerUnit = holding.averageBuyPrice ?? 0
         let totalProceeds = (quantity * pricePerUnit) - fee
+
+        guard totalProceeds > 0 else {
+            throw AppError.unknown(message: "Fee exceeds sale proceeds")
+        }
         let totalCostBasis = quantity * costBasisPerUnit
         let realizedProfitLoss = totalProceeds - totalCostBasis
 
@@ -508,10 +534,6 @@ final class PortfolioViewModel {
         }
     }
 
-    // MARK: - Private Methods
-    private func loadInitialData() async {
-        await refresh()
-    }
 }
 
 // MARK: - PortfolioHolding Extension for Mock Data

@@ -75,6 +75,9 @@ struct PortfolioView: View {
                     .refreshable {
                         await viewModel.refresh()
                     }
+                    .task {
+                        await viewModel.refresh()
+                    }
 
                     // Loading Overlay
                     if viewModel.isLoading {

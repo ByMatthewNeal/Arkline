@@ -56,7 +56,9 @@ struct SellAssetView: View {
     private var isValid: Bool {
         quantity > 0 &&
         quantity <= holding.quantity &&
-        salePrice > 0
+        salePrice > 0 &&
+        fee >= 0 &&
+        totalProceeds > 0
     }
 
     private var isRealEstate: Bool {

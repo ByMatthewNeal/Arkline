@@ -33,7 +33,15 @@ final class DCAViewModel {
     var cachedRiskLevels: [String: AssetRiskLevel] = [:]
 
     // User context
-    private var currentUserId: UUID?
+    private var cachedUserId: UUID?
+
+    /// Resolves user ID from Supabase auth (must be called from async context)
+    @MainActor
+    private func resolveUserId() -> UUID? {
+        let id = SupabaseAuthManager.shared.currentUserId
+        cachedUserId = id
+        return id
+    }
 
     // MARK: - Computed Properties
     var activeReminders: [DCAReminder] {
@@ -79,7 +87,13 @@ final class DCAViewModel {
         error = nil
 
         do {
-            let userId = currentUserId ?? Constants.Mock.userId
+            guard let userId = await resolveUserId() else {
+                await MainActor.run {
+                    self.error = .authenticationRequired
+                    self.isLoading = false
+                }
+                return
+            }
 
             // Fetch time-based and risk-based reminders concurrently
             async let timeBasedTask = dcaService.fetchReminders(userId: userId)
@@ -125,7 +139,7 @@ final class DCAViewModel {
 
     /// Checks all risk-based reminders and triggers those that meet conditions
     func checkAndTriggerReminders() async {
-        let userId = currentUserId ?? Constants.Mock.userId
+        guard let userId = await resolveUserId() else { return }
 
         do {
             let triggered = try await dcaService.checkAndTriggerReminders(userId: userId)
@@ -291,8 +305,12 @@ final class DCAViewModel {
         riskCondition: RiskCondition
     ) async {
         do {
+            guard let userId = await resolveUserId() else {
+                await MainActor.run { self.error = .authenticationRequired }
+                return
+            }
             let request = CreateRiskBasedDCARequest(
-                userId: currentUserId ?? Constants.Mock.userId,
+                userId: userId,
                 symbol: symbol.uppercased(),
                 name: name,
                 amount: amount,
