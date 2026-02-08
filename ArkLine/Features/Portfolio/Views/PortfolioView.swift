@@ -131,6 +131,7 @@ struct PortfolioView: View {
                             }
                         }
                     ),
+                    viewModel: viewModel,
                     onCreatePortfolio: {
                         showCreatePortfolio = true
                     }

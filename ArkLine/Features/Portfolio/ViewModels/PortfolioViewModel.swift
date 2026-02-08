@@ -298,6 +298,41 @@ final class PortfolioViewModel {
         }
     }
 
+    func updatePortfolio(_ portfolio: Portfolio, name: String, isPublic: Bool) async throws {
+        var updated = portfolio
+        updated.name = name
+        updated.isPublic = isPublic
+        try await portfolioService.updatePortfolio(updated)
+
+        await MainActor.run {
+            if let index = self.portfolios.firstIndex(where: { $0.id == portfolio.id }) {
+                self.portfolios[index] = updated
+            }
+            if self.selectedPortfolio?.id == portfolio.id {
+                self.selectedPortfolio = updated
+            }
+        }
+    }
+
+    func deletePortfolio(_ portfolio: Portfolio) async throws {
+        try await portfolioService.deletePortfolio(portfolioId: portfolio.id)
+
+        await MainActor.run {
+            self.portfolios.removeAll { $0.id == portfolio.id }
+            if self.selectedPortfolio?.id == portfolio.id {
+                self.selectedPortfolio = self.portfolios.first
+                if let first = self.selectedPortfolio {
+                    self.portfolioId = first.id
+                }
+            }
+        }
+
+        // Reload data for newly selected portfolio
+        if selectedPortfolio != nil {
+            await refresh()
+        }
+    }
+
     func addRealEstateProperty(
         propertyName: String,
         address: String,

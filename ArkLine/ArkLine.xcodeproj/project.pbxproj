@@ -270,6 +270,7 @@
 		H0LD1NGD3TA1LV13W000002 /* HoldingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H0LD1NGD3TA1LV13W000001 /* HoldingDetailView.swift */; };
 		N0T1F1CAT10N5D3T002 /* NotificationsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = N0T1F1CAT10N5D3T001 /* NotificationsDetailView.swift */; };
 		P0RTF0L10SW1TCH3R0002 /* PortfolioSwitcherSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = P0RTF0L10SW1TCH3R0001 /* PortfolioSwitcherSheet.swift */; };
+		ED1TP0RTF0L100002 /* EditPortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1TP0RTF0L100001 /* EditPortfolioView.swift */; };
 		S3TT1NG5APP3AR000002 /* SettingsAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5APP3AR000001 /* SettingsAppearance.swift */; };
 		S3TT1NG5SUBV13W500002 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */; };
 /* End PBXBuildFile section */
@@ -537,6 +538,7 @@
 		H0LD1NGD3TA1LV13W000001 /* HoldingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingDetailView.swift; sourceTree = "<group>"; };
 		N0T1F1CAT10N5D3T001 /* NotificationsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsDetailView.swift; sourceTree = "<group>"; };
 		P0RTF0L10SW1TCH3R0001 /* PortfolioSwitcherSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSwitcherSheet.swift; sourceTree = "<group>"; };
+		ED1TP0RTF0L100001 /* EditPortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditPortfolioView.swift; sourceTree = "<group>"; };
 		S3TT1NG5APP3AR000001 /* SettingsAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAppearance.swift; sourceTree = "<group>"; };
 		S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSubviews.swift; sourceTree = "<group>"; };
 		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
@@ -672,6 +674,7 @@
 				F1B8485392D8FDF725D94732 /* PerformanceView.swift */,
 				C909B38D6272803B487236EF /* PortfolioView.swift */,
 				P0RTF0L10SW1TCH3R0001 /* PortfolioSwitcherSheet.swift */,
+				ED1TP0RTF0L100001 /* EditPortfolioView.swift */,
 				2D81358145D7861C61D27013 /* SellAssetView.swift */,
 				A4910EA95756EA732F81117A /* TransactionDetailView.swift */,
 			);
@@ -1711,6 +1714,7 @@
 				H0LD1NGD3TA1LV13W000002 /* HoldingDetailView.swift in Sources */,
 				ALL0CAT10NP13CHART0002 /* AllocationPieChart.swift in Sources */,
 				P0RTF0L10SW1TCH3R0002 /* PortfolioSwitcherSheet.swift in Sources */,
+				ED1TP0RTF0L100002 /* EditPortfolioView.swift in Sources */,
 				DA8CF466635746C18BE84FA6 /* PortfolioViewModel.swift in Sources */,
 				05A89424EED50115096BA977 /* PrimaryButton.swift in Sources */,
 				466D283EE26005651F716BD9 /* ProfilePictureView.swift in Sources */,

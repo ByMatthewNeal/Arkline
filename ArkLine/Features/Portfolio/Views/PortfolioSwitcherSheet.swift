@@ -4,9 +4,14 @@ import SwiftUI
 struct PortfolioSwitcherSheet: View {
     let portfolios: [Portfolio]
     @Binding var selectedPortfolio: Portfolio?
+    @Bindable var viewModel: PortfolioViewModel
     var onCreatePortfolio: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+
+    @State private var portfolioToEdit: Portfolio?
+    @State private var portfolioToDelete: Portfolio?
+    @State private var showDeleteConfirmation = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -34,6 +39,20 @@ struct PortfolioSwitcherSheet: View {
                                     dismiss()
                                 }
                             )
+                            .contextMenu {
+                                Button {
+                                    portfolioToEdit = portfolio
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+
+                                Button(role: .destructive) {
+                                    portfolioToDelete = portfolio
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
 
                         if portfolios.isEmpty {
@@ -97,6 +116,26 @@ struct PortfolioSwitcherSheet: View {
                             .font(.system(size: 24))
                             .foregroundColor(textPrimary.opacity(0.4))
                     }
+                }
+            }
+            .sheet(item: $portfolioToEdit) { portfolio in
+                EditPortfolioView(viewModel: viewModel, portfolio: portfolio)
+            }
+            .alert("Delete Portfolio", isPresented: $showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    portfolioToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let portfolio = portfolioToDelete {
+                        Task {
+                            try? await viewModel.deletePortfolio(portfolio)
+                        }
+                        portfolioToDelete = nil
+                    }
+                }
+            } message: {
+                if let portfolio = portfolioToDelete {
+                    Text("Are you sure you want to delete \"\(portfolio.name)\"? This will permanently remove all holdings and transactions.")
                 }
             }
         }
