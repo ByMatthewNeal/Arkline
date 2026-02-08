@@ -844,7 +844,7 @@ struct RiskLevelChartView: View {
                 // Regression-only value
                 VStack(spacing: 4) {
                     Text("Regression Only")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(textSecondary.opacity(0.85))
 
                     Text(String(format: "%.3f", regressionValue))
@@ -852,7 +852,7 @@ struct RiskLevelChartView: View {
                         .foregroundColor(RiskColors.color(for: regressionValue))
 
                     Text(RiskColors.category(for: regressionValue))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(RiskColors.color(for: regressionValue))
                 }
                 .frame(maxWidth: .infinity)
@@ -865,7 +865,7 @@ struct RiskLevelChartView: View {
                 // Composite value
                 VStack(spacing: 4) {
                     Text("7-Factor Composite")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(textSecondary.opacity(0.85))
 
                     Text(String(format: "%.3f", compositeValue))
@@ -873,7 +873,7 @@ struct RiskLevelChartView: View {
                         .foregroundColor(RiskColors.color(for: compositeValue))
 
                     Text(RiskColors.category(for: compositeValue))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(RiskColors.color(for: compositeValue))
                 }
                 .frame(maxWidth: .infinity)
@@ -881,7 +881,7 @@ struct RiskLevelChartView: View {
 
             // Explanation text
             Text("The home page shows regression risk (1 factor). This view combines 7 indicators for a broader assessment.")
-                .font(.system(size: 12))
+                .font(.system(size: 13))
                 .foregroundColor(textSecondary.opacity(0.85))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, ArkSpacing.sm)
