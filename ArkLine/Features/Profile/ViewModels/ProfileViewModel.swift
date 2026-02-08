@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import Supabase
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -71,41 +72,6 @@ final class ProfileViewModel {
     // MARK: - Initialization
     init(user: User? = nil) {
         self.user = user ?? createMockUser()
-        loadMockData()
-    }
-
-    private func loadMockData() {
-        // Load mock stats (replace with real data from Supabase in production)
-        stats = ProfileStatsData(
-            dcaReminders: 12,
-            chatSessions: 45,
-            portfolios: 3
-        )
-
-        // Load mock activity (replace with real data from Supabase in production)
-        recentActivity = [
-            ActivityItem(
-                icon: "arrow.down.left",
-                iconColor: AppColors.success,
-                title: "Bought 0.01 BTC",
-                subtitle: "",
-                timestamp: Date().addingTimeInterval(-7200) // 2 hours ago
-            ),
-            ActivityItem(
-                icon: "bell.fill",
-                iconColor: AppColors.warning,
-                title: "DCA Reminder completed",
-                subtitle: "",
-                timestamp: Date().addingTimeInterval(-86400) // Yesterday
-            ),
-            ActivityItem(
-                icon: "bubble.left.fill",
-                iconColor: AppColors.accent,
-                title: "Asked AI about ETH",
-                subtitle: "",
-                timestamp: Date().addingTimeInterval(-172800) // 2 days ago
-            )
-        ]
     }
 
     private func createMockUser() -> User {
@@ -147,28 +113,47 @@ final class ProfileViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        // TODO: Fetch real data from Supabase
-        // For now, reload mock data
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        await MainActor.run {
-            loadMockData()
-        }
+        await loadStats()
     }
 
     func loadStats() async {
-        // TODO: Implement real stats loading from Supabase
-        // Example:
-        // let dcaCount = try await SupabaseManager.shared.database
-        //     .from(SupabaseTable.dcaReminders.rawValue)
-        //     .select("*", head: true, count: .exact)
-        //     .eq("user_id", value: userId)
-        //     .execute()
-        //     .count
-    }
+        guard let userId = await MainActor.run(body: { SupabaseAuthManager.shared.currentUserId }) else {
+            return
+        }
 
-    func loadRecentActivity() async {
-        // TODO: Implement real activity loading from Supabase
-        // This would aggregate from transactions, chat sessions, etc.
+        do {
+            let db = SupabaseManager.shared.database
+
+            async let dcaResult = db
+                .from(SupabaseTable.dcaReminders.rawValue)
+                .select("id", head: true, count: .exact)
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+
+            async let portfolioResult = db
+                .from(SupabaseTable.portfolios.rawValue)
+                .select("id", head: true, count: .exact)
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+
+            async let chatResult = db
+                .from(SupabaseTable.chatSessions.rawValue)
+                .select("id", head: true, count: .exact)
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+
+            let (dca, portfolios, chats) = try await (dcaResult, portfolioResult, chatResult)
+
+            await MainActor.run {
+                self.stats = ProfileStatsData(
+                    dcaReminders: dca.count ?? 0,
+                    chatSessions: chats.count ?? 0,
+                    portfolios: portfolios.count ?? 0
+                )
+            }
+        } catch {
+            logError("Failed to load profile stats: \(error)", category: .data)
+        }
     }
 
     func copyReferralCode() {

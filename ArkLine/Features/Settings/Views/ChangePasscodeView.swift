@@ -74,6 +74,15 @@ struct ChangePasscodeView: View {
     }
 
     private func changePasscode() {
+        // Verify current passcode if one is set
+        if PasscodeManager.shared.hasPasscode {
+            guard PasscodeManager.shared.verify(currentPasscode) else {
+                errorMessage = "Current passcode is incorrect"
+                showError = true
+                return
+            }
+        }
+
         guard newPasscode == confirmPasscode else {
             errorMessage = "Passcodes don't match"
             showError = true
@@ -86,7 +95,12 @@ struct ChangePasscodeView: View {
             return
         }
 
-        // TODO: Implement actual passcode change logic
-        dismiss()
+        do {
+            try PasscodeManager.shared.setPasscode(newPasscode)
+            dismiss()
+        } catch {
+            errorMessage = "Failed to save passcode"
+            showError = true
+        }
     }
 }

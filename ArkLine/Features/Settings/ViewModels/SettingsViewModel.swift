@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import Supabase
+import UserNotifications
 
 // MARK: - Settings View Model
 @MainActor
@@ -67,17 +68,17 @@ final class SettingsViewModel {
         if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.selectedNewsTopics),
            let topics = try? JSONDecoder().decode(Set<Constants.NewsTopic>.self, from: data) {
             selectedNewsTopics = topics
-            print("📰 Loaded \(topics.count) saved news topics: \(topics.map { $0.displayName })")
+            logInfo(" Loaded \(topics.count) saved news topics: \(topics.map { $0.displayName })")
         } else {
-            print("📰 No saved news topics found, using defaults")
+            logInfo(" No saved news topics found, using defaults")
         }
 
         // Load custom keywords
         if let custom = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.customNewsTopics) {
             customNewsTopics = custom
-            print("📰 Loaded \(custom.count) custom keywords: \(custom)")
+            logInfo(" Loaded \(custom.count) custom keywords: \(custom)")
         } else {
-            print("📰 No custom keywords found")
+            logInfo(" No custom keywords found")
         }
     }
 
@@ -105,7 +106,7 @@ final class SettingsViewModel {
     private func saveNewsTopics() {
         if let data = try? JSONEncoder().encode(selectedNewsTopics) {
             UserDefaults.standard.set(data, forKey: Constants.UserDefaults.selectedNewsTopics)
-            print("📰 Saved \(selectedNewsTopics.count) news topics: \(selectedNewsTopics.map { $0.displayName })")
+            logInfo(" Saved \(selectedNewsTopics.count) news topics: \(selectedNewsTopics.map { $0.displayName })")
         }
     }
 
@@ -127,6 +128,29 @@ final class SettingsViewModel {
     func toggleNotifications(_ enabled: Bool) {
         notificationsEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: Constants.UserDefaults.notificationsEnabled)
+
+        if enabled {
+            Task {
+                let center = UNUserNotificationCenter.current()
+                do {
+                    let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
+                    if granted {
+                        await UIApplication.shared.registerForRemoteNotifications()
+                    } else {
+                        await MainActor.run {
+                            self.notificationsEnabled = false
+                            UserDefaults.standard.set(false, forKey: Constants.UserDefaults.notificationsEnabled)
+                        }
+                    }
+                } catch {
+                    logError("Push notification request failed: \(error)", category: .auth)
+                    await MainActor.run {
+                        self.notificationsEnabled = false
+                        UserDefaults.standard.set(false, forKey: Constants.UserDefaults.notificationsEnabled)
+                    }
+                }
+            }
+        }
     }
 
     func toggleBiometric(_ enabled: Bool) {
@@ -159,16 +183,72 @@ final class SettingsViewModel {
         defer { isLoading = false }
 
         do {
-            // Delete user profile from database first
-            if let userId = SupabaseAuthManager.shared.currentUserId {
-                try await SupabaseManager.shared.database
-                    .from(SupabaseTable.profiles.rawValue)
-                    .delete()
-                    .eq("id", value: userId.uuidString)
-                    .execute()
+            guard let userId = SupabaseAuthManager.shared.currentUserId else {
+                try await SupabaseAuthManager.shared.signOut()
+                return
             }
 
-            // Sign out (Supabase doesn't support client-side account deletion,
+            let db = SupabaseManager.shared.database
+            let uid = userId.uuidString
+
+            // Delete user data from all tables (order matters for foreign keys)
+            let userTables: [(table: String, column: String)] = [
+                (SupabaseTable.riskDcaInvestments.rawValue, "user_id"),
+                (SupabaseTable.riskBasedDcaReminders.rawValue, "user_id"),
+                (SupabaseTable.dcaReminders.rawValue, "user_id"),
+                (SupabaseTable.chatMessages.rawValue, "user_id"),
+                (SupabaseTable.chatSessions.rawValue, "user_id"),
+                (SupabaseTable.broadcastReads.rawValue, "user_id"),
+                (SupabaseTable.broadcastReactions.rawValue, "user_id"),
+                (SupabaseTable.communityPosts.rawValue, "user_id"),
+                (SupabaseTable.portfolioHistory.rawValue, "portfolio_id"),
+                (SupabaseTable.transactions.rawValue, "portfolio_id"),
+                (SupabaseTable.holdings.rawValue, "portfolio_id"),
+                (SupabaseTable.portfolios.rawValue, "user_id"),
+                (SupabaseTable.userDevices.rawValue, "user_id"),
+                (SupabaseTable.featureRequests.rawValue, "user_id"),
+                (SupabaseTable.favorites.rawValue, "user_id"),
+                (SupabaseTable.profiles.rawValue, "id"),
+            ]
+
+            // For portfolio-scoped tables, first get portfolio IDs
+            let portfolioIds: [String] = await {
+                do {
+                    struct IdRow: Codable { let id: UUID }
+                    let rows: [IdRow] = try await db
+                        .from(SupabaseTable.portfolios.rawValue)
+                        .select("id")
+                        .eq("user_id", value: uid)
+                        .execute()
+                        .value
+                    return rows.map { $0.id.uuidString }
+                } catch {
+                    return []
+                }
+            }()
+
+            for (table, column) in userTables {
+                do {
+                    if ["portfolio_id"].contains(column) {
+                        // Delete by portfolio IDs
+                        for pid in portfolioIds {
+                            try await db.from(table).delete().eq(column, value: pid).execute()
+                        }
+                    } else {
+                        // Delete by user ID
+                        let value = column == "id" ? uid : uid
+                        try await db.from(table).delete().eq(column, value: value).execute()
+                    }
+                } catch {
+                    // Continue cleanup even if individual table delete fails
+                    logError("Failed to delete from \(table): \(error)", category: .auth)
+                }
+            }
+
+            // Clear local data
+            try? PasscodeManager.shared.clearPasscode()
+
+            // Sign out (Supabase doesn't support client-side auth user deletion,
             // this should be handled by a server-side function in production)
             try await SupabaseAuthManager.shared.signOut()
         } catch {

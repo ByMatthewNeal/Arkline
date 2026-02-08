@@ -136,13 +136,6 @@ struct SettingsView: View {
                         )
                     }
 
-                    NavigationLink(destination: DevicesView()) {
-                        SettingsRow(
-                            icon: "iphone",
-                            iconColor: AppColors.textSecondary,
-                            title: "Devices"
-                        )
-                    }
                 } header: {
                     Text("Security")
                 }
