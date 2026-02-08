@@ -292,9 +292,6 @@ class HomeViewModel {
     var userName: String = ""
     var userAvatar: URL?
 
-    // User context
-    private var currentUserId: UUID?
-
     // MARK: - Computed Properties
     var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -397,7 +394,7 @@ class HomeViewModel {
         errorMessage = nil
         var failures = 0
 
-        let userId = currentUserId ?? Constants.Mock.userId
+        let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
 
         // Fetch crypto prices first (critical for Core widget) - independent of other fetches
         let crypto = await fetchCryptoAssetsSafe()
@@ -486,8 +483,9 @@ class HomeViewModel {
         }()
 
         async let remindersResult: [DCAReminder] = {
+            guard let uid = userId else { return [] }
             do {
-                return try await dcaService.fetchReminders(userId: userId)
+                return try await dcaService.fetchReminders(userId: uid)
             } catch {
                 logError("Reminders fetch failed: \(error.localizedDescription)", category: .network)
                 return []
@@ -557,7 +555,11 @@ class HomeViewModel {
 
     func loadPortfolios() async {
         do {
-            let userId = currentUserId ?? Constants.Mock.userId
+            let resolvedUserId: UUID? = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
+            guard let userId = resolvedUserId else {
+                logWarning("No authenticated user for portfolio fetch", category: .data)
+                return
+            }
             let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
 
             await MainActor.run {

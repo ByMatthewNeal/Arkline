@@ -133,7 +133,7 @@ final class MockDCAService: DCAServiceProtocol {
     }
 
     private func setupMockData() {
-        let userId = Constants.Mock.userId
+        let userId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
 
         mockReminders = [
             DCAReminder(
@@ -233,7 +233,7 @@ final class MockDCAService: DCAServiceProtocol {
     // MARK: - Risk-Based Mock Data Setup
 
     private func setupRiskBasedMockData() {
-        let userId = Constants.Mock.userId
+        let userId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
 
         // Setup mock risk levels for various assets
         mockRiskLevels = [

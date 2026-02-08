@@ -58,11 +58,13 @@ enum Constants {
     }
 
     // MARK: - Mock Data (for development/testing)
+    #if DEBUG
     enum Mock {
         /// Consistent user ID for mock data during development
         /// This ensures DCA reminders created in one view appear in others
         static let userId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
     }
+    #endif
 
     // MARK: - Cache Configuration
     enum Cache {
