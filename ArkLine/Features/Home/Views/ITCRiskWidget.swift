@@ -472,6 +472,7 @@ struct RiskLevelChartView: View {
     // Always fetch at least 30 days so short ranges (7D) have data to display
     private func loadEnhancedHistory() {
         isLoadingHistory = true
+        let coin = selectedCoin
         Task {
             let fetchDays: Int? = if let days = selectedTimeRange.days {
                 max(days, 30)
@@ -479,10 +480,12 @@ struct RiskLevelChartView: View {
                 nil
             }
             let history = await viewModel.fetchEnhancedRiskHistory(
-                coin: selectedCoin.rawValue,
+                coin: coin.rawValue,
                 days: fetchDays
             )
             await MainActor.run {
+                // Only apply if user hasn't switched coins during fetch
+                guard self.selectedCoin == coin else { return }
                 self.enhancedRiskHistory = history
                 self.isLoadingHistory = false
             }
@@ -492,9 +495,11 @@ struct RiskLevelChartView: View {
     // Load multi-factor risk for selected coin
     private func loadMultiFactorRisk() {
         isLoadingMultiFactor = true
+        let coin = selectedCoin
         Task {
-            let risk = await viewModel.fetchMultiFactorRisk(coin: selectedCoin.rawValue)
+            let risk = await viewModel.fetchMultiFactorRisk(coin: coin.rawValue)
             await MainActor.run {
+                guard self.selectedCoin == coin else { return }
                 self.multiFactorRisk = risk
                 self.isLoadingMultiFactor = false
             }
@@ -568,9 +573,11 @@ struct RiskLevelChartView: View {
                 if !hasInitialized {
                     selectedCoin = initialCoin
                     hasInitialized = true
+                    // onChange will fire from setting selectedCoin, skip loading here
+                } else {
+                    loadEnhancedHistory()
+                    loadMultiFactorRisk()
                 }
-                loadEnhancedHistory()
-                loadMultiFactorRisk()
             }
             .onChange(of: selectedCoin) { _, _ in
                 selectedDate = nil
@@ -670,9 +677,15 @@ struct RiskLevelChartView: View {
                         .font(.system(size: 40))
                         .foregroundColor(textSecondary.opacity(0.5))
 
-                    Text("Loading \(selectedCoin.displayName) data...")
+                    Text("No risk data available")
                         .font(.subheadline)
                         .foregroundColor(textSecondary)
+
+                    Button(action: { loadEnhancedHistory() }) {
+                        Text("Retry")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AppColors.accent)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 280)
@@ -721,6 +734,7 @@ struct RiskLevelChartView: View {
                                                 .fill(colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.08))
                                         )
                                 }
+                                .disabled(filteredHistory.isEmpty)
                             }
 
                             HStack(spacing: 4) {
