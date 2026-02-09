@@ -446,24 +446,16 @@ struct RiskLevelChartView: View {
         return Array(enhancedRiskHistory.suffix(days))
     }
 
-    // Selected point from enhanced history
+    // Selected point from enhanced history (binary search: O(log n) vs O(n))
     private var selectedPoint: RiskHistoryPoint? {
         guard let selectedDate = selectedDate else { return nil }
-        return filteredEnhancedHistory.min(by: {
-            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
-        })
+        return nearestByDate(in: filteredEnhancedHistory, to: selectedDate, dateOf: \.date)
     }
 
     // Format date as "January 23, 2026"
     private func formatDate(_ dateString: String) -> String {
-        let inputFormatter = DateFormatter()
-        inputFormatter.dateFormat = "yyyy-MM-dd"
-
-        let outputFormatter = DateFormatter()
-        outputFormatter.dateFormat = "MMMM d, yyyy"
-
-        if let date = inputFormatter.date(from: dateString) {
-            return outputFormatter.string(from: date)
+        if let date = RiskDateFormatters.iso.date(from: dateString) {
+            return RiskDateFormatters.display.string(from: date)
         }
         return dateString
     }
@@ -1390,20 +1382,18 @@ struct RiskLevelChart: View {
     }
 
     private var chartData: [(date: Date, risk: Double, price: Double?, fairValue: Double?)] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
         if let enhanced = enhancedHistory {
             return enhanced.map { (date: $0.date, risk: $0.riskLevel, price: $0.price, fairValue: $0.fairValue) }
         }
         return history.compactMap { level in
-            guard let date = formatter.date(from: level.date) else { return nil }
+            guard let date = RiskDateFormatters.iso.date(from: level.date) else { return nil }
             return (date: date, risk: level.riskLevel, price: level.price, fairValue: level.fairValue)
         }
     }
 
     private var selectedPoint: (date: Date, risk: Double, price: Double?, fairValue: Double?)? {
         guard let selectedDate = selectedDate else { return nil }
-        return chartData.min(by: { abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate)) })
+        return nearestByDate(in: chartData, to: selectedDate) { $0.date }
     }
 
     private var latestRisk: Double {
@@ -1425,12 +1415,11 @@ struct RiskLevelChart: View {
     }
 
     private func formatLabel(for date: Date) -> String {
-        let formatter = DateFormatter()
-        switch timeRange {
-        case .sevenDays: formatter.dateFormat = "EEE"
-        case .thirtyDays: formatter.dateFormat = "MMM d"
-        case .ninetyDays, .oneYear: formatter.dateFormat = "MMM"
-        case .all: formatter.dateFormat = "MMM yy"
+        let formatter: DateFormatter = switch timeRange {
+        case .sevenDays: RiskDateFormatters.sevenDay
+        case .thirtyDays: RiskDateFormatters.thirtyDay
+        case .ninetyDays, .oneYear: RiskDateFormatters.month
+        case .all: RiskDateFormatters.monthYear
         }
         return formatter.string(from: date)
     }
@@ -1541,13 +1530,9 @@ struct RiskLevelChart: View {
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
                                 let x = value.location.x
-                                if let date: Date = proxy.value(atX: x) {
-                                    let closest = chartData.min { a, b in
-                                        abs(a.date.timeIntervalSince(date)) < abs(b.date.timeIntervalSince(date))
-                                    }
-                                    if let closest {
-                                        selectedDate = closest.date
-                                    }
+                                if let date: Date = proxy.value(atX: x),
+                                   let closest = nearestByDate(in: chartData, to: date, dateOf: { $0.date }) {
+                                    selectedDate = closest.date
                                 }
                             }
                             .onEnded { _ in }
@@ -1620,9 +1605,7 @@ struct RiskChartFullscreenView: View {
 
     private var selectedPoint: RiskHistoryPoint? {
         guard let selectedDate else { return nil }
-        return enhancedHistory.min {
-            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
-        }
+        return nearestByDate(in: enhancedHistory, to: selectedDate, dateOf: \.date)
     }
 
     private var filteredHistory: [ITCRiskLevel] {
@@ -1759,6 +1742,42 @@ struct ITCRiskChart: View {
     var body: some View {
         RiskLevelChart(history: history, timeRange: .thirtyDays, colorScheme: colorScheme)
     }
+}
+
+// MARK: - Cached DateFormatters (avoid allocation per frame)
+private enum RiskDateFormatters {
+    static let iso: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    static let display: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MMMM d, yyyy"; return f
+    }()
+    static let sevenDay: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "EEE"; return f
+    }()
+    static let thirtyDay: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MMM d"; return f
+    }()
+    static let month: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MMM"; return f
+    }()
+    static let monthYear: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "MMM yy"; return f
+    }()
+}
+
+// MARK: - Binary Search for Nearest Date
+/// O(log n) lookup for the nearest element to a target date in a sorted-by-date array
+private func nearestByDate<T>(in items: [T], to target: Date, dateOf: (T) -> Date) -> T? {
+    guard !items.isEmpty else { return nil }
+    var low = 0, high = items.count - 1
+    while low < high {
+        let mid = (low + high) / 2
+        if dateOf(items[mid]) < target { low = mid + 1 } else { high = mid }
+    }
+    guard low > 0 else { return items[0] }
+    let before = items[low - 1], after = items[min(low, items.count - 1)]
+    return abs(dateOf(before).timeIntervalSince(target)) <= abs(dateOf(after).timeIntervalSince(target)) ? before : after
 }
 
 // Safe array subscript
