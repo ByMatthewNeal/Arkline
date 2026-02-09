@@ -1382,26 +1382,16 @@ struct RiskLevelChart: View {
     }
 
     private var chartData: [(date: Date, risk: Double, price: Double?, fairValue: Double?)] {
+        let raw: [(date: Date, risk: Double, price: Double?, fairValue: Double?)]
         if let enhanced = enhancedHistory {
-            return enhanced.map { (date: $0.date, risk: $0.riskLevel, price: $0.price, fairValue: $0.fairValue) }
+            raw = enhanced.map { (date: $0.date, risk: $0.riskLevel, price: $0.price, fairValue: $0.fairValue) }
+        } else {
+            raw = history.compactMap { level in
+                guard let date = RiskDateFormatters.iso.date(from: level.date) else { return nil }
+                return (date: date, risk: level.riskLevel, price: level.price, fairValue: level.fairValue)
+            }
         }
-        return history.compactMap { level in
-            guard let date = RiskDateFormatters.iso.date(from: level.date) else { return nil }
-            return (date: date, risk: level.riskLevel, price: level.price, fairValue: level.fairValue)
-        }
-    }
-
-    private var selectedPoint: (date: Date, risk: Double, price: Double?, fairValue: Double?)? {
-        guard let selectedDate = selectedDate else { return nil }
-        return nearestByDate(in: chartData, to: selectedDate) { $0.date }
-    }
-
-    private var latestRisk: Double {
-        chartData.last?.risk ?? 0.5
-    }
-
-    private var lineColor: Color {
-        RiskColors.color(for: latestRisk)
+        return downsampled(raw)
     }
 
     private var xAxisLabelCount: Int {
@@ -1434,6 +1424,10 @@ struct RiskLevelChart: View {
     ]
 
     var body: some View {
+        let data = chartData
+        let nearest = selectedDate.flatMap { nearestByDate(in: data, to: $0) { $0.date } }
+        let lineCol = RiskColors.color(for: data.last?.risk ?? 0.5)
+
         Chart {
             // Subtle threshold lines instead of colored bands
             ForEach(thresholds, id: \.value) { threshold in
@@ -1443,7 +1437,7 @@ struct RiskLevelChart: View {
             }
 
             // Selection crosshair
-            if let point = selectedPoint {
+            if let point = nearest {
                 // Vertical line
                 RuleMark(x: .value("Selected", point.date))
                     .foregroundStyle(
@@ -1464,7 +1458,7 @@ struct RiskLevelChart: View {
             }
 
             // Area fill — clean single gradient
-            ForEach(chartData, id: \.date) { point in
+            ForEach(data, id: \.date) { point in
                 AreaMark(
                     x: .value("Date", point.date),
                     y: .value("Risk", point.risk)
@@ -1472,8 +1466,8 @@ struct RiskLevelChart: View {
                 .foregroundStyle(
                     LinearGradient(
                         colors: [
-                            lineColor.opacity(0.15),
-                            lineColor.opacity(0.02)
+                            lineCol.opacity(0.15),
+                            lineCol.opacity(0.02)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -1483,18 +1477,18 @@ struct RiskLevelChart: View {
             }
 
             // Primary line — smooth, weighted
-            ForEach(chartData, id: \.date) { point in
+            ForEach(data, id: \.date) { point in
                 LineMark(
                     x: .value("Date", point.date),
                     y: .value("Risk", point.risk)
                 )
-                .foregroundStyle(lineColor)
+                .foregroundStyle(lineCol)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                 .interpolationMethod(.catmullRom)
             }
 
             // Selected point — polished indicator
-            if let point = selectedPoint {
+            if let point = nearest {
                 // Outer glow
                 PointMark(
                     x: .value("Date", point.date),
@@ -1531,7 +1525,7 @@ struct RiskLevelChart: View {
                             .onChanged { value in
                                 let x = value.location.x
                                 if let date: Date = proxy.value(atX: x),
-                                   let closest = nearestByDate(in: chartData, to: date, dateOf: { $0.date }) {
+                                   let closest = nearestByDate(in: data, to: date, dateOf: { $0.date }) {
                                     selectedDate = closest.date
                                 }
                             }
@@ -1764,6 +1758,20 @@ private enum RiskDateFormatters {
     static let monthYear: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "MMM yy"; return f
     }()
+}
+
+// MARK: - Chart Data Downsampling
+/// Uniformly downsample an array to at most maxPoints, preserving first and last elements.
+/// Reduces Swift Charts mark count from thousands to ~250 for smooth drag interaction.
+private func downsampled<T>(_ items: [T], maxPoints: Int = 250) -> [T] {
+    guard items.count > maxPoints, maxPoints >= 2 else { return items }
+    var result = [items[0]]
+    let step = Double(items.count - 1) / Double(maxPoints - 1)
+    for i in 1..<(maxPoints - 1) {
+        result.append(items[Int(Double(i) * step)])
+    }
+    result.append(items[items.count - 1])
+    return result
 }
 
 // MARK: - Binary Search for Nearest Date
