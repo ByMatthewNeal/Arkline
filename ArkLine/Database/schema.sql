@@ -742,6 +742,207 @@ CREATE POLICY "google_trends_history_update_admin" ON google_trends_history
     );
 
 -- ============================================================
+-- 25. MARKET SNAPSHOTS (Daily crypto asset data)
+-- ============================================================
+CREATE TABLE market_snapshots (
+    id                          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    coin_id                     TEXT NOT NULL,
+    recorded_date               DATE NOT NULL,
+    current_price               NUMERIC NOT NULL,
+    market_cap                  NUMERIC,
+    total_volume                NUMERIC,
+    price_change_24h            NUMERIC,
+    price_change_pct_24h        NUMERIC,
+    high_24h                    NUMERIC,
+    low_24h                     NUMERIC,
+    market_cap_rank             INTEGER,
+    circulating_supply          NUMERIC,
+    total_supply                NUMERIC,
+    max_supply                  NUMERIC,
+    ath                         NUMERIC,
+    ath_change_percentage       NUMERIC,
+    atl                         NUMERIC,
+    atl_change_percentage       NUMERIC,
+    created_at                  TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(recorded_date, coin_id)
+);
+
+ALTER TABLE market_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "market_snapshots_select_all" ON market_snapshots
+    FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "market_snapshots_insert_admin" ON market_snapshots
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "market_snapshots_update_admin" ON market_snapshots
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- 26. INDICATOR SNAPSHOTS (VIX, DXY, M2, Fear/Greed, etc.)
+-- ============================================================
+CREATE TABLE indicator_snapshots (
+    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    indicator         TEXT NOT NULL,
+    recorded_date     DATE NOT NULL,
+    value             NUMERIC NOT NULL,
+    metadata          JSONB,
+    created_at        TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(recorded_date, indicator)
+);
+
+ALTER TABLE indicator_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "indicator_snapshots_select_all" ON indicator_snapshots
+    FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "indicator_snapshots_insert_admin" ON indicator_snapshots
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "indicator_snapshots_update_admin" ON indicator_snapshots
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- 27. TECHNICALS SNAPSHOTS (RSI, SMA, Bollinger, etc.)
+-- ============================================================
+CREATE TABLE technicals_snapshots (
+    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    coin_id           TEXT NOT NULL,
+    recorded_date     DATE NOT NULL,
+    rsi               NUMERIC,
+    sma_21            NUMERIC,
+    sma_50            NUMERIC,
+    sma_200           NUMERIC,
+    bb_upper          NUMERIC,
+    bb_middle         NUMERIC,
+    bb_lower          NUMERIC,
+    bb_bandwidth      NUMERIC,
+    bmsb_sma_20w      NUMERIC,
+    bmsb_ema_21w      NUMERIC,
+    trend_direction   TEXT,
+    trend_strength    TEXT,
+    current_price     NUMERIC,
+    metadata          JSONB,
+    created_at        TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(recorded_date, coin_id)
+);
+
+ALTER TABLE technicals_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "technicals_snapshots_select_all" ON technicals_snapshots
+    FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "technicals_snapshots_insert_admin" ON technicals_snapshots
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "technicals_snapshots_update_admin" ON technicals_snapshots
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- 28. RISK SNAPSHOTS (Daily composite risk score)
+-- ============================================================
+CREATE TABLE risk_snapshots (
+    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    recorded_date     DATE NOT NULL UNIQUE,
+    composite_score   INTEGER NOT NULL,
+    tier              TEXT NOT NULL,
+    recommendation    TEXT,
+    components        JSONB,
+    created_at        TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE risk_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "risk_snapshots_select_all" ON risk_snapshots
+    FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "risk_snapshots_insert_admin" ON risk_snapshots
+    FOR INSERT WITH CHECK (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+CREATE POLICY "risk_snapshots_update_admin" ON risk_snapshots
+    FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- 29. ANALYTICS EVENTS (User behavior tracking)
+-- ============================================================
+CREATE TABLE analytics_events (
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id       UUID REFERENCES auth.users(id),
+    event_name    TEXT NOT NULL,
+    properties    JSONB,
+    session_id    UUID,
+    device_info   JSONB,
+    created_at    TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+
+-- Users can only read their own events
+CREATE POLICY "analytics_events_select_own" ON analytics_events
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Users can insert their own events
+CREATE POLICY "analytics_events_insert_own" ON analytics_events
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Admins can read all events
+CREATE POLICY "analytics_events_select_admin" ON analytics_events
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
+-- 30. DAILY ACTIVE USERS (Aggregated daily usage)
+-- ============================================================
+CREATE TABLE daily_active_users (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID REFERENCES auth.users(id) NOT NULL,
+    recorded_date   DATE NOT NULL,
+    session_count   INTEGER DEFAULT 1,
+    screen_views    INTEGER DEFAULT 0,
+    coins_viewed    TEXT[] DEFAULT '{}',
+    app_version     TEXT,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    updated_at      TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(recorded_date, user_id)
+);
+
+ALTER TABLE daily_active_users ENABLE ROW LEVEL SECURITY;
+
+-- Users can read their own data
+CREATE POLICY "daily_active_users_select_own" ON daily_active_users
+    FOR SELECT USING (auth.uid() = user_id);
+
+-- Users can insert/update their own data
+CREATE POLICY "daily_active_users_insert_own" ON daily_active_users
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "daily_active_users_update_own" ON daily_active_users
+    FOR UPDATE USING (auth.uid() = user_id);
+
+-- Admins can read all
+CREATE POLICY "daily_active_users_select_admin" ON daily_active_users
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    );
+
+-- ============================================================
 -- STORAGE BUCKETS (configured via Supabase Dashboard)
 -- ============================================================
 -- avatars         - Profile pictures (public read, owner write)
@@ -776,3 +977,11 @@ CREATE INDEX idx_app_store_rankings_date ON app_store_rankings(recorded_date);
 CREATE INDEX idx_sentiment_history_type ON sentiment_history(metric_type);
 CREATE INDEX idx_supply_in_profit_date ON supply_in_profit(date);
 CREATE INDEX idx_google_trends_date ON google_trends_history(recorded_date);
+CREATE INDEX idx_market_snapshots_coin_date ON market_snapshots(coin_id, recorded_date);
+CREATE INDEX idx_indicator_snapshots_indicator_date ON indicator_snapshots(indicator, recorded_date);
+CREATE INDEX idx_technicals_snapshots_coin_date ON technicals_snapshots(coin_id, recorded_date);
+CREATE INDEX idx_risk_snapshots_date ON risk_snapshots(recorded_date);
+CREATE INDEX idx_analytics_events_user_id ON analytics_events(user_id);
+CREATE INDEX idx_analytics_events_name ON analytics_events(event_name);
+CREATE INDEX idx_analytics_events_created ON analytics_events(created_at);
+CREATE INDEX idx_daily_active_users_user_date ON daily_active_users(user_id, recorded_date);

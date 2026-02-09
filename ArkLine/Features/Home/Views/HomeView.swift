@@ -116,6 +116,7 @@ struct HomeView: View {
             }
             .onAppear {
                 viewModel.userName = appState.currentUser?.firstName ?? "User"
+                Task { await AnalyticsService.shared.trackScreenView("home") }
             }
         }
     }

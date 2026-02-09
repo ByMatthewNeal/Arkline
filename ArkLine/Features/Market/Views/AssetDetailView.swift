@@ -77,7 +77,10 @@ struct AssetDetailView: View {
         .onChange(of: selectedTimeframe) { _, _ in
             Task { await loadChart() }
         }
-        .onAppear { loadFavoriteState() }
+        .onAppear {
+            loadFavoriteState()
+            Task { await AnalyticsService.shared.trackScreenView("coin_detail", coin: asset.id) }
+        }
         #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {

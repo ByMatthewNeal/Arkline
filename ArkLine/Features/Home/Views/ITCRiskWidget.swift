@@ -570,6 +570,7 @@ struct RiskLevelChartView: View {
                 }
                 loadEnhancedHistory()
                 loadMultiFactorRisk()
+                Task { await AnalyticsService.shared.trackScreenView("risk_chart", coin: initialCoin.rawValue) }
             }
             .onChange(of: selectedCoin) { _, _ in
                 selectedDate = nil

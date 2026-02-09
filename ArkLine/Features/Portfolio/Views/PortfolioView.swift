@@ -78,6 +78,9 @@ struct PortfolioView: View {
                     .task {
                         await viewModel.refresh()
                     }
+                    .onAppear {
+                        Task { await AnalyticsService.shared.trackScreenView("portfolio") }
+                    }
 
                     // Loading Overlay
                     if viewModel.isLoading {

@@ -323,6 +323,59 @@ class SentimentViewModel {
 
             self.isLoading = false
         }
+
+        // Archive all sentiment/macro indicators (fire-and-forget)
+        Task {
+            let collector = MarketDataCollector.shared
+            if let fg = fg {
+                await collector.recordIndicator(
+                    name: "fear_greed", value: Double(fg.value),
+                    metadata: ["classification": .string(fg.classification)]
+                )
+            }
+            if let btc = btc {
+                await collector.recordIndicator(
+                    name: "btc_dominance", value: btc.value,
+                    metadata: ["change_24h": .double(btc.change24h)]
+                )
+            }
+            if let etf = etf {
+                await collector.recordIndicator(
+                    name: "etf_net_flow", value: etf.dailyNetFlow,
+                    metadata: ["total_net_flow": .double(etf.totalNetFlow)]
+                )
+            }
+            if let funding = funding {
+                await collector.recordIndicator(name: "funding_rate", value: funding.averageRate)
+            }
+            if let liq = liq {
+                await collector.recordIndicator(
+                    name: "liquidations", value: liq.total24h,
+                    metadata: ["long": .double(liq.longLiquidations), "short": .double(liq.shortLiquidations)]
+                )
+            }
+            if let alt = alt {
+                await collector.recordIndicator(
+                    name: "altcoin_season", value: Double(alt.value),
+                    metadata: ["is_bitcoin_season": .bool(alt.isBitcoinSeason)]
+                )
+            }
+            if let vix = vix {
+                await collector.recordIndicator(name: "vix", value: vix.value)
+            }
+            if let dxy = dxy {
+                await collector.recordIndicator(name: "dxy", value: dxy.value)
+            }
+            if let m2 = globalM2 {
+                await collector.recordIndicator(
+                    name: "global_m2", value: m2.current,
+                    metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
+                )
+            }
+            if let arkLineScore = arkLineScore {
+                await collector.recordRiskScore(arkLineScore)
+            }
+        }
     }
 
     func fetchFearGreedHistory(days: Int = 30) async {

@@ -8,6 +8,7 @@ import UIKit
 struct ArkLineApp: App {
     @StateObject private var appState = AppState()
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -17,12 +18,18 @@ struct ArkLineApp: App {
                 .onAppear {
                     setupAppearance()
                     setupNotifications()
+                    Task { await AnalyticsService.shared.trackAppOpen() }
                 }
                 .onOpenURL { url in
                     Task {
                         await handleDeepLink(url)
                     }
                 }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                Task { await AnalyticsService.shared.flush() }
+            }
         }
     }
 

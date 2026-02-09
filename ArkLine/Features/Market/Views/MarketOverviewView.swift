@@ -69,6 +69,9 @@ struct MarketOverviewView: View {
                 await viewModel.refresh()
                 await sentimentViewModel.refresh()
             }
+            .onAppear {
+                Task { await AnalyticsService.shared.trackScreenView("market") }
+            }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             #endif

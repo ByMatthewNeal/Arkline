@@ -398,6 +398,11 @@ class HomeViewModel {
         // Fetch crypto prices first (critical for Core widget) - independent of other fetches
         let crypto = await fetchCryptoAssetsSafe()
 
+        // Archive crypto market data (fire-and-forget)
+        if !crypto.isEmpty {
+            Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) }
+        }
+
         // Extract BTC, ETH, and SOL prices immediately
         let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
         let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
@@ -456,6 +461,32 @@ class HomeViewModel {
             self.upcomingEvents = upcoming
             self.todaysEvents = todaysEvts
             self.eventsLastUpdated = Date()
+        }
+
+        // Archive macro indicators (fire-and-forget)
+        Task {
+            let collector = MarketDataCollector.shared
+            if let vix = vix {
+                await collector.recordIndicator(
+                    name: "vix", value: vix.value,
+                    metadata: vix.open.map { ["open": .double($0), "high": .double(vix.high ?? 0), "low": .double(vix.low ?? 0), "close": .double(vix.close ?? 0)] }
+                )
+            }
+            if let dxy = dxy {
+                await collector.recordIndicator(
+                    name: "dxy", value: dxy.value,
+                    metadata: dxy.open.map { ["open": .double($0), "high": .double(dxy.high ?? 0), "low": .double(dxy.low ?? 0), "close": .double(dxy.close ?? 0)] }
+                )
+            }
+            if let m2 = liquidity {
+                await collector.recordIndicator(
+                    name: "global_m2", value: m2.current,
+                    metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
+                )
+            }
+            if let sp = supplyProfit {
+                await collector.recordIndicator(name: "supply_in_profit", value: sp.value)
+            }
         }
 
         // Fetch z-scores alongside other secondary data
@@ -520,6 +551,25 @@ class HomeViewModel {
             ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
             self.failedFetchCount = failureCount
             self.lastRefreshed = Date()
+        }
+
+        // Archive fear/greed and risk score (fire-and-forget)
+        Task {
+            let collector = MarketDataCollector.shared
+            if let fg = fg {
+                await collector.recordIndicator(
+                    name: "fear_greed", value: Double(fg.value),
+                    metadata: [
+                        "classification": .string(fg.classification),
+                        "previous_close": .int(fg.previousClose ?? 0),
+                        "week_ago": .int(fg.weekAgo ?? 0),
+                        "month_ago": .int(fg.monthAgo ?? 0)
+                    ]
+                )
+            }
+            if let riskScore = riskScore {
+                await collector.recordRiskScore(riskScore)
+            }
         }
 
         // Fetch Rainbow Chart data (needs BTC price) in background

@@ -51,6 +51,7 @@ struct CustomTabBar: View {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             selectedTab = tab
                         }
+                        Task { await AnalyticsService.shared.trackTabSwitch(tab.rawValue) }
                     }
                 }
             }

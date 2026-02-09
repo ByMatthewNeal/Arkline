@@ -174,6 +174,9 @@ struct AssetTechnicalDetailSheet: View {
                 interval: .daily
             )
 
+            // Archive technicals (fire-and-forget)
+            Task { await MarketDataCollector.shared.recordTechnicals(analysis) }
+
             await MainActor.run {
                 self.technicalAnalysis = analysis
                 self.isLoading = false

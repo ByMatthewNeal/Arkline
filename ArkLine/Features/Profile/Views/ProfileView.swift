@@ -96,6 +96,7 @@ struct ProfileView: View {
                 if let currentUser = appState.currentUser {
                     viewModel.user = currentUser
                 }
+                Task { await AnalyticsService.shared.trackScreenView("profile") }
             }
         }
     }
