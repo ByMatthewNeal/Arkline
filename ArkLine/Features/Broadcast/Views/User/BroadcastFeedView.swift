@@ -568,6 +568,12 @@ struct BroadcastDetailView: View {
                 if let userId = appState.currentUser?.id {
                     try? await viewModel.markAsRead(broadcastId: broadcast.id, userId: userId)
                 }
+                // Track broadcast read
+                Task {
+                    await AnalyticsService.shared.track("broadcast_read", properties: [
+                        "broadcast_id": .string(broadcast.id.uuidString)
+                    ])
+                }
                 // Load reactions
                 await loadReactions()
             }

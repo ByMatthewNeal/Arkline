@@ -218,6 +218,7 @@ class MarketViewModel {
                 await MainActor.run {
                     self.cryptoAssets = results
                 }
+                Task { await AnalyticsService.shared.trackSearch(query: query, resultCount: results.count) }
             } catch is CancellationError {
                 // Search was cancelled, ignore
             } catch {

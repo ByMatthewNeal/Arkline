@@ -551,6 +551,15 @@ final class PortfolioViewModel {
         do {
             let createdTransaction = try await portfolioService.addTransaction(transaction)
 
+            // Track portfolio action
+            Task {
+                await AnalyticsService.shared.track("portfolio_action", properties: [
+                    "action": .string(transaction.type.rawValue),
+                    "coin": .string(transaction.symbol),
+                    "amount": .double(transaction.totalValue)
+                ])
+            }
+
             await MainActor.run {
                 self.transactions.append(createdTransaction)
             }

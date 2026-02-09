@@ -35,6 +35,9 @@ struct MarketAssetsSection: View {
                             CryptoAssetRow(asset: asset)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            Task { await AnalyticsService.shared.trackCoinTap(asset.id, source: "market_list") }
+                        })
 
                         if asset.id != viewModel.cryptoAssets.last?.id {
                             Divider()

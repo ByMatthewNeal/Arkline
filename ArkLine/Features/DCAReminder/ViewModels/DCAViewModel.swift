@@ -194,6 +194,15 @@ final class DCAViewModel {
             )
             let createdReminder = try await dcaService.createReminder(request)
 
+            // Track DCA creation
+            Task {
+                await AnalyticsService.shared.track("dca_created", properties: [
+                    "coin": .string(reminder.symbol),
+                    "frequency": .string(reminder.frequency.rawValue),
+                    "amount": .double(reminder.amount)
+                ])
+            }
+
             await MainActor.run {
                 self.reminders.append(createdReminder)
             }
