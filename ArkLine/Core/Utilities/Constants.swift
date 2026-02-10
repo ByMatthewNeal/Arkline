@@ -52,7 +52,7 @@ enum Constants {
     enum App {
         static let name = "ArkLine"
         static let bundleIdentifier = "com.arkline.app"
-        static let appStoreID = "000000000"
+        static let appStoreID = "" // Set after app is created in App Store Connect
         static let minimumIOSVersion = "17.0"
         static let defaultCurrency = "USD"
         static let defaultRiskCoins = ["BTC", "ETH"]

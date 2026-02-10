@@ -60,7 +60,7 @@ struct CreateDCASheetView: View {
                     .padding(.top, 20)
                 }
             }
-            .navigationTitle(selectedCoin != nil ? "\(selectedCoin!.symbol) DCA Reminder" : "New Reminder")
+            .navigationTitle(selectedCoin.map { "\($0.symbol) DCA Reminder" } ?? "New Reminder")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

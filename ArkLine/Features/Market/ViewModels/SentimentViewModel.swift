@@ -109,7 +109,7 @@ class SentimentViewModel {
         appStoreRankings.filter { ranking in
             let platformMatch = platform == nil || ranking.platform == platform
             let regionMatch = region == nil || ranking.region == region
-            let appMatch = apps == nil || apps!.contains(ranking.appName)
+            let appMatch = apps?.contains(ranking.appName) ?? true
             return platformMatch && regionMatch && appMatch
         }
     }

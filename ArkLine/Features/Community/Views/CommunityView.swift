@@ -223,7 +223,7 @@ struct PostCard: View {
             // Author & Date
             HStack(spacing: 10) {
                 AvatarView(
-                    imageUrl: post.author?.avatarUrl != nil ? URL(string: post.author!.avatarUrl!) : nil,
+                    imageUrl: post.author?.avatarUrl.flatMap { URL(string: $0) },
                     name: post.author?.username ?? "User",
                     size: 36
                 )

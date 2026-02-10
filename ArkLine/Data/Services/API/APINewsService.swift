@@ -347,9 +347,9 @@ final class FinnhubEconomicCalendarService {
         let flag = countryFlags[item.country]
 
         // Format values
-        let actualStr = item.actual != nil ? formatValue(item.actual!, unit: item.unit) : nil
-        let forecastStr = item.estimate != nil ? formatValue(item.estimate!, unit: item.unit) : nil
-        let previousStr = item.prev != nil ? formatValue(item.prev!, unit: item.unit) : nil
+        let actualStr = item.actual.map { formatValue($0, unit: item.unit) }
+        let forecastStr = item.estimate.map { formatValue($0, unit: item.unit) }
+        let previousStr = item.prev.map { formatValue($0, unit: item.unit) }
 
         return EconomicEvent(
             id: UUID(),
