@@ -1179,12 +1179,20 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		AE9B616165DFB536A5EF5225 /* SharedComponents */ = {
+		C985CF0A2F3B830000E10778 /* Premium */ = {
 			isa = PBXGroup;
 			children = (
 				C985CF002F3B82A100E10778 /* PremiumFeature.swift */,
 				C985CF012F3B82A100E10778 /* PremiumFeatureGate.swift */,
 				C985CF022F3B82A100E10778 /* PremiumRequiredModifier.swift */,
+			);
+			path = Premium;
+			sourceTree = "<group>";
+		};
+		AE9B616165DFB536A5EF5225 /* SharedComponents */ = {
+			isa = PBXGroup;
+			children = (
+				C985CF0A2F3B830000E10778 /* Premium */,
 				DBE9C48C4DBC83540E63EC50 /* Buttons */,
 				6CB27EFFF30500D8C22D7F28 /* Cards */,
 				C2D5CC01C430C419B36BD5CB /* Inputs */,
