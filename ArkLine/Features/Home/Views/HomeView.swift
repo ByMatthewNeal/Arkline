@@ -294,7 +294,7 @@ struct ReorderableWidgetStack: View {
                 btcChange: viewModel.btcChange24h,
                 ethChange: viewModel.ethChange24h,
                 solChange: viewModel.solChange24h,
-                enabledAssets: appState.enabledCoreAssets,
+                enabledAssets: appState.isPro ? appState.enabledCoreAssets : [.btc],
                 size: appState.widgetSize(.marketMovers)
             )
 
@@ -325,7 +325,7 @@ struct ReorderableWidgetStack: View {
 
         case .assetRiskLevel:
             MultiCoinRiskSection(
-                riskLevels: viewModel.userSelectedRiskLevels,
+                riskLevels: appState.isPro ? viewModel.userSelectedRiskLevels : viewModel.userSelectedRiskLevels.filter { $0.coin == "BTC" },
                 size: appState.widgetSize(.assetRiskLevel)
             )
 

@@ -425,6 +425,7 @@ struct MultiCoinRiskSection: View {
                 RiskLevelWidget(
                     riskLevel: first.riskLevel,
                     coinSymbol: first.coin,
+                    daysAtLevel: first.daysAtLevel,
                     size: size
                 )
             } else if riskLevels.count == 2 {

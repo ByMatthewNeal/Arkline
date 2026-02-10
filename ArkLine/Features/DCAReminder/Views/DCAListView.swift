@@ -2,9 +2,11 @@ import SwiftUI
 
 // MARK: - DCA List View
 struct DCAListView: View {
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @State private var viewModel = DCAViewModel()
     @State private var showCreateSheet = false
+    @State private var showPaywall = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -51,7 +53,13 @@ struct DCAListView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showCreateSheet = true }) {
+                Button(action: {
+                    if !appState.isPro && viewModel.reminders.count >= 3 {
+                        showPaywall = true
+                    } else {
+                        showCreateSheet = true
+                    }
+                }) {
                     ZStack {
                         Circle()
                             .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "EAEAEA"))
@@ -65,6 +73,9 @@ struct DCAListView: View {
             }
         }
         #endif
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(feature: .unlimitedDCA)
+        }
         .sheet(isPresented: $showCreateSheet) {
             CreateDCASheetView(viewModel: viewModel)
         }

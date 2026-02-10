@@ -44,7 +44,8 @@ struct MarketOverviewView: View {
                         // 4. Market Sentiment Section
                         MarketSentimentSection(
                             viewModel: sentimentViewModel,
-                            lastUpdated: Date()
+                            lastUpdated: Date(),
+                            isPro: appState.isPro
                         )
 
                         // 5. Market Movers Section (FMP)

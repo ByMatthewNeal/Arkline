@@ -6,6 +6,7 @@ import Charts
 struct RiskLevelWidget: View {
     let riskLevel: ITCRiskLevel?
     var coinSymbol: String = "BTC"
+    var daysAtLevel: Int? = nil
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -85,6 +86,12 @@ struct RiskLevelWidget: View {
                         .font(size == .compact ? .caption : .subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(RiskColors.color(for: risk.riskLevel))
+                }
+
+                if let days = daysAtLevel {
+                    Text("\(days) days at this level")
+                        .font(.system(size: size == .compact ? 9 : 11))
+                        .foregroundColor(textPrimary.opacity(0.5))
                 }
 
                 if size == .expanded {
@@ -387,6 +394,7 @@ struct RiskLevelChartView: View {
     @State private var showInfoSheet = false
     @State private var showChart = true
     @State private var showFullscreenChart = false
+    @State private var showPaywall = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -557,6 +565,9 @@ struct RiskLevelChartView: View {
             .sheet(isPresented: $showInfoSheet) {
                 RiskLevelInfoSheet()
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView(feature: .allCoinRisk)
+            }
             .fullScreenCover(isPresented: $showFullscreenChart) {
                 RiskChartFullscreenView(
                     history: riskHistory,
@@ -588,9 +599,13 @@ struct RiskLevelChartView: View {
     }
 
     // MARK: - Coin Dropdown
+    private var availableCoins: [RiskCoin] {
+        appState.isPro ? RiskCoin.allCases : [.btc]
+    }
+
     private var coinDropdown: some View {
         Menu {
-            ForEach(RiskCoin.allCases, id: \.self) { coin in
+            ForEach(availableCoins, id: \.self) { coin in
                 Button(action: { selectedCoin = coin }) {
                     HStack {
                         Text(coin.displayName)
@@ -600,6 +615,12 @@ struct RiskLevelChartView: View {
                             Image(systemName: "checkmark")
                         }
                     }
+                }
+            }
+            if !appState.isPro {
+                Divider()
+                Button(action: { showPaywall = true }) {
+                    Label("Unlock All Coins", systemImage: "crown.fill")
                 }
             }
         } label: {
@@ -1815,6 +1836,7 @@ struct ITCRiskDetailView: View {
 struct RiskCard: View {
     let riskLevel: ITCRiskLevel
     let coinSymbol: String
+    var daysAtLevel: Int? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -1855,6 +1877,12 @@ struct RiskCard: View {
                             Text(RiskColors.category(for: riskLevel.riskLevel))
                                 .font(.caption2)
                                 .foregroundColor(RiskColors.color(for: riskLevel.riskLevel))
+                        }
+
+                        if let days = daysAtLevel {
+                            Text("\(days) days at this level")
+                                .font(.system(size: 9))
+                                .foregroundColor(textPrimary.opacity(0.5))
                         }
                     }
 

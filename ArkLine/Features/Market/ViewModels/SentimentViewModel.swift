@@ -262,11 +262,9 @@ class SentimentViewModel {
         async let arkLineScoreTask = fetchArkLineRiskScoreSafe()
         async let googleTrendsTask = fetchGoogleTrendsSafe()
 
-        // ITC Risk Levels (fetch BTC and ETH for sentiment display)
-        async let btcRiskTask = fetchITCRiskLevelSafe(coin: "BTC")
-        async let ethRiskTask = fetchITCRiskLevelSafe(coin: "ETH")
-        async let btcRiskHistoryTask = fetchITCRiskHistorySafe(coin: "BTC")
-        async let ethRiskHistoryTask = fetchITCRiskHistorySafe(coin: "ETH")
+        // ITC Risk Levels (fetch all supported coins)
+        let allRiskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
+        async let allRiskResultsTask = fetchAllRiskLevels(coins: allRiskCoins)
 
         // Macro Indicators (VIX, DXY, Global M2)
         async let vixTask = fetchVIXSafe()
@@ -279,7 +277,7 @@ class SentimentViewModel {
         // Await all results (none will throw since they use safe wrappers)
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
-        let (btcRisk, ethRisk, btcHistory, ethHistory) = await (btcRiskTask, ethRiskTask, btcRiskHistoryTask, ethRiskHistoryTask)
+        let allRiskResults = await allRiskResultsTask
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
         let zScores = await zScoresTask
 
@@ -299,11 +297,11 @@ class SentimentViewModel {
             self.arkLineRiskScore = arkLineScore
             self.googleTrends = trends
 
-            // ITC Risk Levels
-            if let btcRisk = btcRisk { self.riskLevels["BTC"] = btcRisk }
-            if let ethRisk = ethRisk { self.riskLevels["ETH"] = ethRisk }
-            self.riskHistories["BTC"] = btcHistory ?? []
-            self.riskHistories["ETH"] = ethHistory ?? []
+            // ITC Risk Levels (all coins)
+            for (coin, level, history) in allRiskResults {
+                if let level = level { self.riskLevels[coin] = level }
+                self.riskHistories[coin] = history
+            }
 
             // Macro Indicators
             self.vixData = vix
@@ -454,6 +452,23 @@ class SentimentViewModel {
 
     private func fetchITCRiskHistorySafe(coin: String) async -> [ITCRiskLevel]? {
         try? await itcRiskService.fetchRiskLevel(coin: coin)
+    }
+
+    private func fetchAllRiskLevels(coins: [String]) async -> [(String, ITCRiskLevel?, [ITCRiskLevel])] {
+        await withTaskGroup(of: (String, ITCRiskLevel?, [ITCRiskLevel]).self) { group in
+            for coin in coins {
+                group.addTask { [self] in
+                    let level = await self.fetchITCRiskLevelSafe(coin: coin)
+                    let history = await self.fetchITCRiskHistorySafe(coin: coin) ?? []
+                    return (coin, level, history)
+                }
+            }
+            var results: [(String, ITCRiskLevel?, [ITCRiskLevel])] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
     }
 
     private func fetchVIXSafe() async -> VIXData? {

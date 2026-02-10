@@ -31,6 +31,7 @@ enum Constants {
         static let fredAPIKey = Constants.secrets["FRED_API_KEY"] as? String ?? ""
         static let finnhubAPIKey = Constants.secrets["FINNHUB_API_KEY"] as? String ?? ""
         static let fmpAPIKey = Constants.secrets["FMP_API_KEY"] as? String ?? ""
+        static let revenueCatAPIKey = Constants.secrets["REVENUE_CAT_API_KEY"] as? String ?? ""
     }
 
     // MARK: - Coinglass API Key (accessed from root for convenience)
@@ -134,6 +135,7 @@ enum Constants {
         static let marketDataUpdated = Notification.Name("marketDataUpdated")
         static let sentimentDataUpdated = Notification.Name("sentimentDataUpdated")
         static let themeChanged = Notification.Name("themeChanged")
+        static let subscriptionStatusChanged = Notification.Name("subscriptionStatusChanged")
     }
 
     // MARK: - Date Formats

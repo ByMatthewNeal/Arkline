@@ -110,6 +110,16 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         return AppColors.accent
     }
 
+    /// Whether this widget requires a Pro subscription
+    var isPremium: Bool {
+        switch self {
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .favorites, .dailyNews, .assetRiskLevel:
+            return false
+        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit:
+            return true
+        }
+    }
+
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
         [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .favorites]

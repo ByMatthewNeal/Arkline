@@ -25,6 +25,7 @@ struct NewsTopicsSettingsView: View {
 
                     // Custom Topics Section
                     customTopicsSection
+                        .premiumRequired(.customNews)
 
                     Spacer(minLength: ArkSpacing.xxxl)
                 }

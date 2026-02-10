@@ -5,6 +5,7 @@ struct MarketSentimentSection: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: SentimentViewModel
     let lastUpdated: Date
+    var isPro: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -65,10 +66,17 @@ struct MarketSentimentSection: View {
                     icon: "chart.line.uptrend.xyaxis",
                     iconColor: AppColors.accent
                 ) {
+                    let visibleCoins = isPro
+                        ? Array(viewModel.riskLevels.keys.sorted())
+                        : viewModel.riskLevels.keys.sorted().filter { $0 == "BTC" }
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        ForEach(Array(viewModel.riskLevels.keys.sorted()), id: \.self) { coin in
+                        ForEach(visibleCoins, id: \.self) { coin in
                             if let riskLevel = viewModel.riskLevels[coin] {
-                                RiskCard(riskLevel: riskLevel, coinSymbol: coin)
+                                RiskCard(
+                                    riskLevel: riskLevel,
+                                    coinSymbol: coin,
+                                    daysAtLevel: consecutiveDays(for: coin, current: riskLevel)
+                                )
                             }
                         }
                     }
@@ -115,6 +123,21 @@ struct MarketSentimentSection: View {
                 }
             }
         }
+    }
+
+    private func consecutiveDays(for coin: String, current: ITCRiskLevel) -> Int? {
+        let history = viewModel.riskHistories[coin] ?? []
+        guard !history.isEmpty else { return nil }
+        let currentCategory = current.riskCategory
+        var count = 0
+        for level in history.reversed() {
+            if level.riskCategory == currentCategory {
+                count += 1
+            } else {
+                break
+            }
+        }
+        return count > 0 ? count : nil
     }
 }
 

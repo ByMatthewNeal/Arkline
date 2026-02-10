@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import RevenueCat
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -18,6 +19,7 @@ struct ArkLineApp: App {
                 .onAppear {
                     setupAppearance()
                     setupNotifications()
+                    setupRevenueCat()
                     Task { await AnalyticsService.shared.trackAppOpen() }
                 }
                 .onOpenURL { url in
@@ -29,6 +31,8 @@ struct ArkLineApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
                 Task { await AnalyticsService.shared.flush() }
+            } else if newPhase == .active {
+                Task { await appState.refreshSubscriptionStatus() }
             }
         }
     }
@@ -60,6 +64,14 @@ struct ArkLineApp: App {
             } catch {
                 logError("Error handling auth callback: \(error)", category: .network)
             }
+        }
+    }
+
+    private func setupRevenueCat() {
+        Task {
+            await SubscriptionService.shared.configure()
+            Purchases.shared.delegate = appDelegate
+            await appState.refreshSubscriptionStatus()
         }
     }
 
@@ -145,6 +157,9 @@ class AppState: ObservableObject {
     @Published var insightsNavigationReset = UUID()
     @Published var profileNavigationReset = UUID()
 
+    // Subscription
+    @Published var isPro = false
+
     // Tab navigation
     @Published var selectedTab: AppTab = .home
     @Published var shouldShowPortfolioCreation = false
@@ -159,6 +174,17 @@ class AppState: ObservableObject {
 
     init() {
         loadPersistedState()
+        NotificationCenter.default.addObserver(
+            forName: Constants.Notifications.subscriptionStatusChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            if let isPro = notification.userInfo?["isPro"] as? Bool {
+                MainActor.assumeIsolated {
+                    self?.isPro = isPro
+                }
+            }
+        }
     }
 
     private func loadPersistedState() {
@@ -247,6 +273,13 @@ class AppState: ObservableObject {
             sanitized.passcodeHash = nil
             if let data = try? JSONEncoder().encode(sanitized) {
                 UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
+            }
+            // Sync RevenueCat user identity
+            if authenticated {
+                Task {
+                    try? await SubscriptionService.shared.login(userId: user.id.uuidString)
+                    await refreshSubscriptionStatus()
+                }
             }
         } else if !authenticated {
             UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
@@ -344,9 +377,18 @@ class AppState: ObservableObject {
         }
     }
 
+    // MARK: - Subscription
+
+    func refreshSubscriptionStatus() async {
+        let pro = await SubscriptionService.shared.refreshStatus()
+        isPro = pro
+    }
+
     func signOut() {
         isAuthenticated = false
         currentUser = nil
+        isPro = false
+        Task { try? await SubscriptionService.shared.logout() }
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
     }
 }
@@ -415,6 +457,20 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         BroadcastNotificationService.shared.clearBadge()
 
         completionHandler()
+    }
+}
+
+// MARK: - RevenueCat Delegate
+extension AppDelegate: PurchasesDelegate {
+    nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
+        let isPro = customerInfo.entitlements["premium"]?.isActive == true
+        Task { @MainActor in
+            NotificationCenter.default.post(
+                name: Constants.Notifications.subscriptionStatusChanged,
+                object: nil,
+                userInfo: ["isPro": isPro]
+            )
+        }
     }
 }
 #else

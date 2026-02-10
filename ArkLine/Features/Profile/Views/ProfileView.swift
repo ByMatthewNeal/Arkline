@@ -104,6 +104,7 @@ struct ProfileView: View {
 
 // MARK: - Profile Header
 struct ProfileHeader: View {
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: ProfileViewModel
     var onEditTap: () -> Void = {}
@@ -161,6 +162,16 @@ struct ProfileHeader: View {
                     Text(viewModel.displayName)
                         .font(AppFonts.title24)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    if appState.isPro {
+                        Text("PRO")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(Color(hex: "F59E0B"))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color(hex: "F59E0B").opacity(0.15))
+                            .cornerRadius(ArkSpacing.Radius.xs)
+                    }
                 }
 
                 if let username = viewModel.user?.username {

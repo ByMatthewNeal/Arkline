@@ -120,6 +120,15 @@ struct BroadcastFeedView: View {
 
     var body: some View {
         NavigationStack {
+            if appState.isPro {
+                broadcastContent
+            } else {
+                PremiumFeatureGate(feature: .broadcasts) {}
+            }
+        }
+    }
+
+    private var broadcastContent: some View {
             ScrollView {
                 VStack(spacing: ArkSpacing.md) {
                     // Notification prompt banner
@@ -160,7 +169,6 @@ struct BroadcastFeedView: View {
                 await viewModel.loadBroadcasts()
                 await checkNotificationStatus()
             }
-        }
     }
 
     // MARK: - Filter Bar

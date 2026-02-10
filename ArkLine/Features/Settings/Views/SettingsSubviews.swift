@@ -153,6 +153,7 @@ struct RiskLevelSelectView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: SettingsViewModel
+    @State private var showPaywall = false
 
     let availableCoins = AssetRiskConfig.allConfigs.map(\.assetId)
 
@@ -168,22 +169,35 @@ struct RiskLevelSelectView: View {
             List {
             Section {
                 ForEach(availableCoins, id: \.self) { coin in
-                    Button(action: { toggleCoin(coin) }) {
-                        HStack {
-                            CoinIconView(symbol: coin, size: 36)
+                    if coin == "BTC" {
+                        // BTC always available
+                        Button(action: { toggleCoin(coin) }) {
+                            riskCoinRow(coin: coin, isSelected: viewModel.riskCoins.contains(coin))
+                        }
+                    } else if appState.isPro {
+                        // Pro users can toggle any coin
+                        Button(action: { toggleCoin(coin) }) {
+                            riskCoinRow(coin: coin, isSelected: viewModel.riskCoins.contains(coin))
+                        }
+                    } else {
+                        // Free users see locked coins
+                        Button(action: { showPaywall = true }) {
+                            HStack {
+                                CoinIconView(symbol: coin, size: 36)
+                                    .opacity(0.4)
 
-                            Text(coin)
-                                .font(AppFonts.body14Medium)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                                Text(coin)
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.4))
 
-                            Spacer()
+                                Spacer()
 
-                            if viewModel.riskCoins.contains(coin) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(AppColors.accent)
-                            } else {
-                                Image(systemName: "circle")
-                                    .foregroundColor(AppColors.textSecondary)
+                                Text("PRO")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Capsule().fill(Color(hex: "F59E0B")))
                             }
                         }
                     }
@@ -204,6 +218,29 @@ struct RiskLevelSelectView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(feature: .allCoinRisk)
+        }
+    }
+
+    private func riskCoinRow(coin: String, isSelected: Bool) -> some View {
+        HStack {
+            CoinIconView(symbol: coin, size: 36)
+
+            Text(coin)
+                .font(AppFonts.body14Medium)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Spacer()
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(AppColors.accent)
+            } else {
+                Image(systemName: "circle")
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
     }
 
     private func toggleCoin(_ coin: String) {

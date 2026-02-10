@@ -53,16 +53,26 @@ struct CustomizeHomeView: View {
 
                         VStack(spacing: 0) {
                             ForEach(Array(CoreAsset.allCases.enumerated()), id: \.element.id) { index, asset in
-                                CoreAssetToggleRow(
-                                    asset: asset,
-                                    isEnabled: appState.isCoreAssetEnabled(asset),
-                                    isLast: index == CoreAsset.allCases.count - 1,
-                                    onToggle: {
-                                        withAnimation(.spring(response: 0.3)) {
-                                            appState.toggleCoreAsset(asset)
+                                if asset == .btc || appState.isPro {
+                                    CoreAssetToggleRow(
+                                        asset: asset,
+                                        isEnabled: appState.isCoreAssetEnabled(asset),
+                                        isLast: index == CoreAsset.allCases.count - 1,
+                                        onToggle: {
+                                            withAnimation(.spring(response: 0.3)) {
+                                                appState.toggleCoreAsset(asset)
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                } else {
+                                    CoreAssetToggleRow(
+                                        asset: asset,
+                                        isEnabled: false,
+                                        isLast: index == CoreAsset.allCases.count - 1,
+                                        onToggle: {}
+                                    )
+                                    .premiumRequired(.allCoinRisk)
+                                }
                             }
                         }
                         .background(
@@ -75,34 +85,47 @@ struct CustomizeHomeView: View {
                     // Widget toggles
                     VStack(spacing: 12) {
                         ForEach(HomeWidgetType.allCases) { widget in
-                            WidgetConfigRow(
-                                widget: widget,
-                                isEnabled: appState.isWidgetEnabled(widget),
-                                currentSize: appState.widgetSize(widget),
-                                isExpanded: expandedWidget == widget,
-                                onToggle: {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        appState.toggleWidget(widget)
-                                        if !appState.isWidgetEnabled(widget) {
-                                            expandedWidget = nil
+                            if widget.isPremium && !appState.isPro {
+                                WidgetConfigRow(
+                                    widget: widget,
+                                    isEnabled: false,
+                                    currentSize: .standard,
+                                    isExpanded: false,
+                                    onToggle: {},
+                                    onExpand: {},
+                                    onSizeChange: { _ in }
+                                )
+                                .premiumRequired(.premiumWidgets)
+                            } else {
+                                WidgetConfigRow(
+                                    widget: widget,
+                                    isEnabled: appState.isWidgetEnabled(widget),
+                                    currentSize: appState.widgetSize(widget),
+                                    isExpanded: expandedWidget == widget,
+                                    onToggle: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            appState.toggleWidget(widget)
+                                            if !appState.isWidgetEnabled(widget) {
+                                                expandedWidget = nil
+                                            }
+                                        }
+                                    },
+                                    onExpand: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            if expandedWidget == widget {
+                                                expandedWidget = nil
+                                            } else if appState.isWidgetEnabled(widget) {
+                                                expandedWidget = widget
+                                            }
+                                        }
+                                    },
+                                    onSizeChange: { size in
+                                        withAnimation(.spring(response: 0.3)) {
+                                            appState.setWidgetSize(size, for: widget)
                                         }
                                     }
-                                },
-                                onExpand: {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        if expandedWidget == widget {
-                                            expandedWidget = nil
-                                        } else if appState.isWidgetEnabled(widget) {
-                                            expandedWidget = widget
-                                        }
-                                    }
-                                },
-                                onSizeChange: { size in
-                                    withAnimation(.spring(response: 0.3)) {
-                                        appState.setWidgetSize(size, for: widget)
-                                    }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                     .padding(.horizontal, 16)

@@ -5,6 +5,7 @@ import Kingfisher
 /// Shows detailed technical analysis for an asset including trend, SMAs, and Bollinger Bands
 struct AssetTechnicalDetailSheet: View {
     let asset: CryptoAsset
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
 
@@ -28,28 +29,38 @@ struct AssetTechnicalDetailSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                shareableContent
+            Group {
+                if appState.isPro || asset.symbol.uppercased() == "BTC" {
+                    ScrollView {
+                        shareableContent
+                    }
+                    .background(AppColors.background(colorScheme).ignoresSafeArea())
+                } else {
+                    PremiumFeatureGate(feature: .technicalAnalysis) {}
+                }
             }
-            .background(AppColors.background(colorScheme).ignoresSafeArea())
             .navigationTitle(asset.symbol.uppercased())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        captureAndShare()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
+                    if appState.isPro || asset.symbol.uppercased() == "BTC" {
+                        Button {
+                            captureAndShare()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        .disabled(technicalAnalysis == nil)
                     }
-                    .disabled(technicalAnalysis == nil)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
             }
             .task {
-                await fetchTechnicalAnalysis()
-                await fetchMultiTimeframeTrends()
+                if appState.isPro || asset.symbol.uppercased() == "BTC" {
+                    await fetchTechnicalAnalysis()
+                    await fetchMultiTimeframeTrends()
+                }
             }
             .sheet(isPresented: $showShareSheet) {
                 if let image = shareImage {

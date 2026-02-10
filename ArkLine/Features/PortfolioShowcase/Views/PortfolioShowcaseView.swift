@@ -15,6 +15,15 @@ struct PortfolioShowcaseView: View {
 
     var body: some View {
         NavigationStack {
+            if appState.isPro {
+                showcaseContent
+            } else {
+                PremiumFeatureGate(feature: .portfolioShowcase) {}
+            }
+        }
+    }
+
+    private var showcaseContent: some View {
             ScrollView {
                 VStack(spacing: ArkSpacing.lg) {
                     // Privacy Level Selector
@@ -108,7 +117,6 @@ struct PortfolioShowcaseView: View {
                     await viewModel.loadPortfolios(userId: userId)
                 }
             }
-        }
     }
 }
 

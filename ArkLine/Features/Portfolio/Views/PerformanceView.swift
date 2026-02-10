@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PerformanceView: View {
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: PortfolioViewModel
     @State private var showExportSheet = false
@@ -36,11 +37,13 @@ struct PerformanceView: View {
             // Risk Metrics
             RiskMetricsCard(metrics: viewModel.performanceMetrics)
                 .padding(.horizontal, 20)
+                .premiumRequired(.advancedPortfolio)
 
             // Equity Curve
             if !viewModel.historyPoints.isEmpty {
                 EquityCurveCard(historyPoints: viewModel.historyPoints)
                     .padding(.horizontal, 20)
+                    .premiumRequired(.advancedPortfolio)
             }
 
             // Export Button
@@ -59,6 +62,7 @@ struct PerformanceView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
+            .premiumRequired(.exportData)
 
             Spacer(minLength: 100)
         }

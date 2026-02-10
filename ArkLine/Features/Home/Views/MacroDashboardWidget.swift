@@ -207,10 +207,12 @@ struct MacroDashboardWidget: View {
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     var size: WidgetSize = .standard
 
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @StateObject private var regimeManager = RegimeChangeManager.shared
     @StateObject private var alertManager = ExtremeMoveAlertManager.shared
     @State private var showingDetail = false
+    @State private var showPaywall = false
     @State private var isPulsing = false
 
     /// Whether any indicator has an extreme z-score
@@ -490,16 +492,20 @@ struct MacroDashboardWidget: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            MacroDashboardDetailView(
-                vixData: vixData,
-                dxyData: dxyData,
-                liquidityData: liquidityData,
-                regime: marketRegime,
-                vixCorrelation: vixCorrelation,
-                dxyCorrelation: dxyCorrelation,
-                m2Correlation: m2Correlation,
-                macroZScores: macroZScores
-            )
+            if appState.isPro {
+                MacroDashboardDetailView(
+                    vixData: vixData,
+                    dxyData: dxyData,
+                    liquidityData: liquidityData,
+                    regime: marketRegime,
+                    vixCorrelation: vixCorrelation,
+                    dxyCorrelation: dxyCorrelation,
+                    m2Correlation: m2Correlation,
+                    macroZScores: macroZScores
+                )
+            } else {
+                PaywallView(feature: .macroDetail)
+            }
         }
         .alert("Market Regime Changed", isPresented: $regimeManager.showRegimeChangeAlert) {
             Button("View Details") {
