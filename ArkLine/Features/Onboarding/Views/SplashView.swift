@@ -6,6 +6,7 @@ struct SplashView: View {
     @State private var isAnimating = false
     @State private var showLogo = false
     @State private var showTagline = false
+    @State private var showSlogan = false
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -46,35 +47,36 @@ struct SplashView: View {
                         .scaleEffect(isAnimating ? 1.2 : 1.0)
                         .opacity(isAnimating ? 1 : 0.5)
 
-                    // Logo icon
-                    Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                    // App logo
+                    Image("LaunchIcon")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 80, height: 80)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [AppColors.fillPrimary, AppColors.accentLight],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .frame(width: 100, height: 100)
                         .scaleEffect(showLogo ? 1 : 0.5)
                         .opacity(showLogo ? 1 : 0)
                 }
 
-                // App name and tagline
-                VStack(spacing: ArkSpacing.xs) {
+                // App name and slogan
+                VStack(spacing: ArkSpacing.md) {
                     Text("ArkLine")
                         .font(AppFonts.title32)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
                         .opacity(showLogo ? 1 : 0)
                         .offset(y: showLogo ? 0 : 20)
 
-                    Text("Track • Analyze • Grow")
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(AppColors.textSecondary)
-                        .opacity(showTagline ? 1 : 0)
-                        .offset(y: showTagline ? 0 : 10)
+                    VStack(spacing: 4) {
+                        Text("Everyone sees the price.")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                            .opacity(showTagline ? 1 : 0)
+                            .offset(y: showTagline ? 0 : 10)
+
+                        Text("Few see the shift.")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AppColors.accent)
+                            .opacity(showSlogan ? 1 : 0)
+                            .offset(y: showSlogan ? 0 : 10)
+                    }
                 }
             }
         }
@@ -89,10 +91,17 @@ struct SplashView: View {
             showLogo = true
         }
 
-        // Tagline animation
+        // First line
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation(.easeOut(duration: 0.5)) {
                 showTagline = true
+            }
+        }
+
+        // Second line (staggered)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            withAnimation(.easeOut(duration: 0.5)) {
+                showSlogan = true
             }
         }
 
