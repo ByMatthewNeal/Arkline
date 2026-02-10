@@ -171,6 +171,8 @@ struct CryptoAssetRow: View {
             }
         }
         .padding(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
 }
 
@@ -233,6 +235,8 @@ struct StockAssetRow: View {
             }
         }
         .padding(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
 }
 
@@ -292,6 +296,8 @@ struct MetalAssetRow: View {
             }
         }
         .padding(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
 
     private func metalEmoji(for symbol: String) -> String {

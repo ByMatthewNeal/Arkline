@@ -241,9 +241,13 @@ class AppState: ObservableObject {
         isAuthenticated = authenticated
         currentUser = user
 
-        // Persist user to UserDefaults
-        if let user = user, let data = try? JSONEncoder().encode(user) {
-            UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
+        // Persist user to UserDefaults (strip sensitive fields)
+        if let user = user {
+            var sanitized = user
+            sanitized.passcodeHash = nil
+            if let data = try? JSONEncoder().encode(sanitized) {
+                UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
+            }
         } else if !authenticated {
             UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
         }

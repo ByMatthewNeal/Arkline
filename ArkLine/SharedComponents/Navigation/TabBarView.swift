@@ -139,6 +139,8 @@ struct TabBarItem: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 44)
+            .accessibilityLabel(tab.rawValue)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
         }
         .buttonStyle(.plain)
     }

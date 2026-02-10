@@ -11,6 +11,22 @@ actor AnalyticsService {
     // MARK: - Singleton
     static let shared = AnalyticsService()
 
+    // MARK: - Consent
+    private static let consentKey = "analyticsConsentGranted"
+
+    /// Whether the user has granted analytics consent. Defaults to false.
+    var isConsentGranted: Bool {
+        UserDefaults.standard.bool(forKey: Self.consentKey)
+    }
+
+    /// Call from Settings or onboarding to update consent.
+    func setConsent(_ granted: Bool) {
+        UserDefaults.standard.set(granted, forKey: Self.consentKey)
+        if !granted {
+            buffer.removeAll()
+        }
+    }
+
     // MARK: - Configuration
     private let flushInterval: TimeInterval = 60
     private let flushThreshold = 10
@@ -73,7 +89,9 @@ actor AnalyticsService {
     // MARK: - Track Event
 
     /// Buffer an analytics event. Flushes automatically when threshold is reached.
+    /// Respects user consent — no-ops if consent has not been granted.
     func track(_ eventName: String, properties: [String: AnyCodableValue]? = nil) async {
+        guard isConsentGranted else { return }
         let userId = await getUserId()
         let event = AnalyticsEventDTO(
             userId: userId,

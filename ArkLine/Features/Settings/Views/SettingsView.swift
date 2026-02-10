@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @State private var viewModel = SettingsViewModel()
+    @State private var analyticsEnabled = UserDefaults.standard.bool(forKey: "analyticsConsentGranted")
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -138,6 +139,25 @@ struct SettingsView: View {
 
                 } header: {
                     Text("Security")
+                }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                // Privacy Section
+                Section {
+                    Toggle(isOn: $analyticsEnabled) {
+                        SettingsRow(
+                            icon: "chart.bar.fill",
+                            iconColor: AppColors.info,
+                            title: "Usage Analytics"
+                        )
+                    }
+                    .onChange(of: analyticsEnabled) { _, newValue in
+                        Task { await AnalyticsService.shared.setConsent(newValue) }
+                    }
+                } header: {
+                    Text("Privacy")
+                } footer: {
+                    Text("Help improve Arkline by sharing anonymous usage data. No personal or financial data is collected.")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 

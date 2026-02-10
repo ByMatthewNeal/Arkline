@@ -106,6 +106,8 @@ struct GlassFearGreedCard: View {
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Fear and Greed Index, \(index.value) out of 100, \(index.level.rawValue)")
     }
 }
 
@@ -309,6 +311,8 @@ struct CompactCoinCard: View {
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
         .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(symbol), \(price.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.1f", abs(change))) percent")
     }
 }
 
@@ -391,5 +395,7 @@ struct GlassCoinCard: View {
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(symbol), \(price.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.1f", abs(change))) percent")
     }
 }

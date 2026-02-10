@@ -666,6 +666,9 @@ struct MacroIndicatorCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title), \(value), \(description)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             detailView
         }

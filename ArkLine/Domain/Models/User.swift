@@ -183,18 +183,6 @@ enum CareerIndustry: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Admin Configuration
-
-/// Admin user IDs - these users always have admin access regardless of role
-private let adminUserIds: Set<UUID> = [
-    UUID(uuidString: "5269677e-cc2c-4ea8-9246-1e6574f35b0b")! // Matt (Supabase auth)
-]
-
-/// Admin emails - fallback check for admin access
-private let adminEmails: Set<String> = [
-    "mneal.jw@gmail.com"
-]
-
 // MARK: - User Extensions
 extension User {
     var displayName: String {
@@ -217,16 +205,17 @@ extension User {
     }
 
     var hasCompletedProfile: Bool {
-        fullName != nil && !fullName!.isEmpty
+        fullName?.isEmpty == false
     }
 
     var hasSetupSecurity: Bool {
         passcodeHash != nil || faceIdEnabled
     }
 
-    /// Whether the user has admin privileges (can create broadcasts)
+    /// Whether the user has admin privileges (can create broadcasts).
+    /// Relies solely on the database `role` column enforced by RLS policies.
     var isAdmin: Bool {
-        adminUserIds.contains(id) || adminEmails.contains(email.lowercased()) || role == .admin
+        role == .admin
     }
 
     /// Whether the user has premium access

@@ -46,6 +46,9 @@ struct RiskLevelWidget: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(coinSymbol) risk level: \(riskLevel.map { String(format: "%.0f", $0.riskLevel * 100) } ?? "loading") percent")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             RiskLevelChartView(initialCoin: RiskCoin(rawValue: coinSymbol) ?? .btc)
         }

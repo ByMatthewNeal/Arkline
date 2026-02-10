@@ -35,6 +35,7 @@ struct SearchBar: View {
                             .font(.system(size: 16))
                             .foregroundColor(AppColors.textSecondary)
                     }
+                    .accessibilityLabel("Clear search")
                 }
             }
             .padding(.horizontal, 12)
