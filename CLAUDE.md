@@ -45,18 +45,21 @@ ArkLine/
 
 ## Known Issues (Audit Findings)
 
-### Critical Security Issues
+### Critical Security Issues (All Resolved)
 
-1. **Hardcoded API Keys** - `Constants.swift:18-31` contains fallback API keys
-2. **Weak Passcode Hashing** - `AuthViewModel.swift:228` uses `.hashValue` instead of PBKDF2
-3. **UserDefaults for Auth Data** - Passcode hash and lockout state stored unencrypted
+1. ~~**Hardcoded API Keys**~~ - Fixed: keys loaded only from Secrets.plist
+2. ~~**Weak Passcode Hashing**~~ - Fixed: PBKDF2 (10k iterations, SHA256-HMAC) in PasscodeManager
+3. ~~**UserDefaults for Auth Data**~~ - Fixed: migrated to Keychain via KeychainManager
 
-### Code Quality Issues
+### Open Issues
 
-1. **Force Unwraps** - `AssetRiskConfig.swift` has 12 `date!` force unwraps
-2. **No Tests** - Zero test coverage across 2,373 Swift files
+1. ~~**Force Unwraps**~~ - Fixed: AssetRiskConfig already uses safe `safeDate()`, remaining production unwrap in Broadcast.swift fixed
+2. **No Tests** - Zero test coverage
 3. **Large Files** - `HomeView.swift` (4,208 lines) needs decomposition
 4. **Unimplemented Services** - `APIDCAService`, `APIPortfolioService` throw `.notImplemented`
+5. **No SSL Certificate Pinning** - `NetworkManager.swift`
+6. ~~**API Keys in URL Query Params**~~ - Fixed: moved to HTTP headers in FMPService and APINewsService
+7. ~~**Debug Print Statements / API Key Logging**~~ - Fixed: only intentional `#if DEBUG` print remains in Logger
 
 ### Use `/audit-fix` command
 
