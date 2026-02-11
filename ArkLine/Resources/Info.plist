@@ -59,6 +59,43 @@
     <string>ArkLine uses speech recognition to transcribe your voice recordings to text.</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSPinnedDomains</key>
+        <dict>
+            <key>supabase.co</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSPinnedCAIdentities</key>
+                <array>
+                    <!-- Google Trust Services WE1 (intermediate) -->
+                    <dict>
+                        <key>SPKI-SHA256-BASE64</key>
+                        <string>kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=</string>
+                    </dict>
+                    <!-- GTS Root R4 (root, backup) -->
+                    <dict>
+                        <key>SPKI-SHA256-BASE64</key>
+                        <string>mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</string>
+                    </dict>
+                </array>
+            </dict>
+            <key>web.arkline.io</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSPinnedCAIdentities</key>
+                <array>
+                    <!-- Let's Encrypt R12 (intermediate) -->
+                    <dict>
+                        <key>SPKI-SHA256-BASE64</key>
+                        <string>kZwN96eHtZftBWrOZUsd6cA4es80n3NzSk/XtYz2EqQ=</string>
+                    </dict>
+                </array>
+            </dict>
+        </dict>
+    </dict>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>

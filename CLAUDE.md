@@ -57,7 +57,7 @@ ArkLine/
 2. **No Tests** - Zero test coverage
 3. **Large Files** - `HomeView.swift` (4,208 lines) needs decomposition
 4. **Unimplemented Services** - `APIDCAService`, `APIPortfolioService` throw `.notImplemented`
-5. **No SSL Certificate Pinning** - `NetworkManager.swift`
+5. ~~**No SSL Certificate Pinning**~~ - Fixed: NSPinnedDomains in Info.plist for supabase.co and web.arkline.io
 6. ~~**API Keys in URL Query Params**~~ - Fixed: moved to HTTP headers in FMPService and APINewsService
 7. ~~**Debug Print Statements / API Key Logging**~~ - Fixed: only intentional `#if DEBUG` print remains in Logger
 
