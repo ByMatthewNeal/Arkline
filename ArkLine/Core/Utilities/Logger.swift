@@ -132,7 +132,9 @@ final class AppLogger {
         "x-auth-token",
         "bearer",
         "x-cg-demo-api-key",
-        "x-cg-pro-api-key"
+        "x-cg-pro-api-key",
+        "cg-api-key",
+        "x-finnhub-token"
     ]
 
     /// Query parameter keys that should be redacted from logs
