@@ -6,7 +6,7 @@ actor SubscriptionService {
     static let shared = SubscriptionService()
 
     // MARK: - Constants
-    private static let premiumEntitlementID = "premium"
+    private static let premiumEntitlementID = "Arkline Pro"
 
     // MARK: - State
     private var customerInfo: CustomerInfo?
@@ -23,7 +23,7 @@ actor SubscriptionService {
             logWarning("RevenueCat API key not found in Secrets.plist", category: .network)
             return
         }
-        Purchases.logLevel = .warn
+        Purchases.logLevel = .debug
         Purchases.configure(withAPIKey: apiKey)
     }
 
