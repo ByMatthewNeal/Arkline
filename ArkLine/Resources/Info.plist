@@ -81,6 +81,24 @@
                     </dict>
                 </array>
             </dict>
+            <key>binance.com</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSPinnedCAIdentities</key>
+                <array>
+                    <!-- GeoTrust TLS RSA CA G1 (intermediate) -->
+                    <dict>
+                        <key>SPKI-SHA256-BASE64</key>
+                        <string>SDG5orEv8iX6MNenIAxa8nQFNpROB/6+llsZdXHZNqs=</string>
+                    </dict>
+                    <!-- DigiCert Global Root G2 (root, backup) -->
+                    <dict>
+                        <key>SPKI-SHA256-BASE64</key>
+                        <string>i7WTqTvh0OioIruIfFR4kMPnBqrS2rdiVPl/s2uC/CY=</string>
+                    </dict>
+                </array>
+            </dict>
             <key>web.arkline.io</key>
             <dict>
                 <key>NSIncludesSubdomains</key>

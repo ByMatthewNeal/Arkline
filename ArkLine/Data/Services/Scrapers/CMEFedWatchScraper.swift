@@ -4,9 +4,6 @@ import Foundation
 /// Scrapes Fed rate probability data from CME FedWatch Tool
 final class CMEFedWatchScraper {
 
-    private let baseURL = "https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html"
-    private let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
-
     // Current Fed Funds rate (updated periodically)
     private let currentFedFundsRate: Double = 4.375 // 4.25-4.50% range midpoint as of Jan 2026
 
@@ -29,45 +26,6 @@ final class CMEFedWatchScraper {
             throw AppError.invalidResponse
         }
         return first
-    }
-
-    // MARK: - Private Methods
-
-    private func fetchHTML() async throws -> String {
-        guard let url = URL(string: baseURL) else {
-            throw URLError(.badURL)
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-        request.setValue("text/html,application/xhtml+xml", forHTTPHeaderField: "Accept")
-        request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
-        request.timeoutInterval = 15
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-
-        guard let html = String(data: data, encoding: .utf8) else {
-            throw URLError(.cannotDecodeContentData)
-        }
-
-        return html
-    }
-
-    private func parseHTML(_ html: String) throws -> [FedWatchData] {
-        // CME's FedWatch tool uses JavaScript to render data
-        // This is a simplified parser that looks for embedded JSON data
-        let meetings: [FedWatchData] = []
-
-        // Look for probability data in the page
-        // The actual implementation would need to parse the specific format CME uses
-        // For now, we'll use the estimated probabilities as fallback
-
-        return meetings
     }
 
     // MARK: - Estimated Probabilities
