@@ -30,7 +30,6 @@ enum Constants {
         static let coinglassAPIKey = Constants.secrets["COINGLASS_API_KEY"] as? String ?? ""
         static let fredAPIKey = Constants.secrets["FRED_API_KEY"] as? String ?? ""
         static let finnhubAPIKey = Constants.secrets["FINNHUB_API_KEY"] as? String ?? ""
-        static let fmpAPIKey = Constants.secrets["FMP_API_KEY"] as? String ?? ""
         static let revenueCatAPIKey = Constants.secrets["REVENUE_CAT_API_KEY"] as? String ?? ""
     }
 

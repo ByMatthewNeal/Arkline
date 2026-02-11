@@ -57,6 +57,11 @@ final class SupabaseManager {
         client.storage
     }
 
+    // MARK: - Functions Reference
+    var functions: FunctionsClient {
+        client.functions
+    }
+
     // MARK: - Realtime Reference
     var realtime: RealtimeClient {
         client.realtime

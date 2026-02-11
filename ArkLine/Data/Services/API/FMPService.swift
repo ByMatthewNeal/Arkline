@@ -1,9 +1,11 @@
 import Foundation
+import Supabase
 
 // MARK: - FMP Service
 /// Financial Modeling Prep API Service
 /// Free tier: 250 calls/day
 /// Provides stock quotes, crypto quotes, historical data, gainers/losers
+/// Requests are proxied through a Supabase Edge Function (fmp-proxy) to keep the API key server-side.
 /// Docs: https://site.financialmodelingprep.com/developer/docs
 final class FMPService {
 
@@ -11,29 +13,44 @@ final class FMPService {
     static let shared = FMPService()
 
     // MARK: - Properties
-    private let baseURL = "https://financialmodelingprep.com/stable"
-
-    private var apiKey: String {
-        Constants.API.fmpAPIKey
-    }
 
     var isConfigured: Bool {
-        !apiKey.isEmpty
+        SupabaseManager.shared.isConfigured
     }
 
     private init() {}
 
-    /// Build a URLRequest with the API key in a header instead of the URL
-    private func makeRequest(path: String, queryItems: [URLQueryItem] = []) throws -> URLRequest {
+    // MARK: - Edge Function Proxy
+
+    /// Request body sent to the fmp-proxy Edge Function
+    private struct ProxyRequest: Encodable {
+        let path: String
+        let queryItems: [String: String]
+    }
+
+    /// Invoke the fmp-proxy Edge Function and return raw response Data
+    private func invokeProxy(path: String, queryItems: [URLQueryItem] = []) async throws -> Data {
         guard isConfigured else { throw FMPError.notConfigured }
-        var components = URLComponents(string: baseURL + path)
-        if !queryItems.isEmpty {
-            components?.queryItems = queryItems
+
+        var queryDict: [String: String] = [:]
+        for item in queryItems {
+            if let value = item.value {
+                queryDict[item.name] = value
+            }
         }
-        guard let url = components?.url else { throw FMPError.invalidURL }
-        var request = URLRequest(url: url)
-        request.setValue(apiKey, forHTTPHeaderField: "apikey")
-        return request
+
+        let requestBody = ProxyRequest(path: path, queryItems: queryDict)
+
+        do {
+            let data: Data = try await SupabaseManager.shared.functions.invoke(
+                "fmp-proxy",
+                options: FunctionInvokeOptions(body: requestBody),
+                decode: { data, _ in data }
+            )
+            return data
+        } catch let error as FunctionsError {
+            throw mapFunctionsError(error)
+        }
     }
 
     // MARK: - Stock Quotes
@@ -72,14 +89,12 @@ final class FMPService {
 
     /// Fetch historical daily prices for a symbol
     func fetchHistoricalPrices(symbol: String, limit: Int = 30) async throws -> [FMPHistoricalPrice] {
-        let request = try makeRequest(
+        let data = try await invokeProxy(
             path: "/historical-price-eod/full",
             queryItems: [URLQueryItem(name: "symbol", value: symbol)]
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        try validateResponse(response, data: data)
+        try validateResponseData(data)
 
         let prices = try JSONDecoder().decode([FMPHistoricalPrice].self, from: data)
         return Array(prices.prefix(limit))
@@ -89,11 +104,9 @@ final class FMPService {
 
     /// Fetch today's biggest gainers
     func fetchBiggestGainers(limit: Int = 10) async throws -> [FMPMover] {
-        let request = try makeRequest(path: "/biggest-gainers")
+        let data = try await invokeProxy(path: "/biggest-gainers")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        try validateResponse(response, data: data)
+        try validateResponseData(data)
 
         let movers = try JSONDecoder().decode([FMPMover].self, from: data)
         logDebug("FMP: Fetched \(movers.count) gainers", category: .network)
@@ -102,11 +115,9 @@ final class FMPService {
 
     /// Fetch today's biggest losers
     func fetchBiggestLosers(limit: Int = 10) async throws -> [FMPMover] {
-        let request = try makeRequest(path: "/biggest-losers")
+        let data = try await invokeProxy(path: "/biggest-losers")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        try validateResponse(response, data: data)
+        try validateResponseData(data)
 
         let movers = try JSONDecoder().decode([FMPMover].self, from: data)
         logDebug("FMP: Fetched \(movers.count) losers", category: .network)
@@ -117,14 +128,12 @@ final class FMPService {
 
     /// Search for stocks by query
     func searchStocks(query: String, limit: Int = 10) async throws -> [StockSearchResult] {
-        let request = try makeRequest(
+        let data = try await invokeProxy(
             path: "/search-symbol",
             queryItems: [URLQueryItem(name: "query", value: query)]
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        try validateResponse(response, data: data)
+        try validateResponseData(data)
 
         let results = try JSONDecoder().decode([FMPSearchResult].self, from: data)
         // Limit results and filter to primary exchanges
@@ -138,14 +147,12 @@ final class FMPService {
 
     /// Fetch company profile/info
     func fetchCompanyProfile(symbol: String) async throws -> FMPCompanyProfile {
-        let request = try makeRequest(
+        let data = try await invokeProxy(
             path: "/profile",
             queryItems: [URLQueryItem(name: "symbol", value: symbol)]
         )
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        try validateResponse(response, data: data)
+        try validateResponseData(data)
 
         let profiles = try JSONDecoder().decode([FMPCompanyProfile].self, from: data)
         guard let profile = profiles.first else {
@@ -165,16 +172,12 @@ final class FMPService {
 
         // FMP requires individual calls for each symbol on free tier
         for symbol in symbols {
-            guard let request = try? makeRequest(
-                path: "/quote",
-                queryItems: [URLQueryItem(name: "symbol", value: symbol)]
-            ) else {
-                continue
-            }
-
             do {
-                let (data, response) = try await URLSession.shared.data(for: request)
-                try validateResponse(response, data: data)
+                let data = try await invokeProxy(
+                    path: "/quote",
+                    queryItems: [URLQueryItem(name: "symbol", value: symbol)]
+                )
+                try validateResponseData(data)
 
                 let quoteArray = try JSONDecoder().decode([FMPQuote].self, from: data)
                 if let quote = quoteArray.first {
@@ -193,12 +196,8 @@ final class FMPService {
         return quotes
     }
 
-    private func validateResponse(_ response: URLResponse, data: Data) throws {
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw FMPError.invalidResponse
-        }
-
-        // Check for error messages in response
+    /// Validate FMP-specific error messages in the response body
+    private func validateResponseData(_ data: Data) throws {
         if let responseString = String(data: data, encoding: .utf8) {
             if responseString.contains("Premium") || responseString.contains("not available under your current subscription") {
                 throw FMPError.premiumRequired
@@ -210,9 +209,19 @@ final class FMPService {
                 throw FMPError.rateLimitExceeded
             }
         }
+    }
 
-        guard httpResponse.statusCode == 200 else {
-            throw FMPError.httpError(statusCode: httpResponse.statusCode)
+    /// Map Supabase FunctionsError to FMPError
+    private func mapFunctionsError(_ error: FunctionsError) -> FMPError {
+        switch error {
+        case .httpError(let code, let data):
+            if let body = String(data: data, encoding: .utf8),
+               body.contains("Unauthorized") || body.contains("Missing authorization") {
+                return .invalidAPIKey
+            }
+            return .httpError(statusCode: code)
+        case .relayError:
+            return .invalidResponse
         }
     }
 }
