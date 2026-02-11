@@ -1,11 +1,10 @@
 import Foundation
-import Supabase
 
 // MARK: - FMP Service
 /// Financial Modeling Prep API Service
 /// Free tier: 250 calls/day
 /// Provides stock quotes, crypto quotes, historical data, gainers/losers
-/// Requests are proxied through a Supabase Edge Function (fmp-proxy) to keep the API key server-side.
+/// Requests are proxied through the api-proxy Supabase Edge Function to keep the API key server-side.
 /// Docs: https://site.financialmodelingprep.com/developer/docs
 final class FMPService {
 
@@ -22,13 +21,7 @@ final class FMPService {
 
     // MARK: - Edge Function Proxy
 
-    /// Request body sent to the fmp-proxy Edge Function
-    private struct ProxyRequest: Encodable {
-        let path: String
-        let queryItems: [String: String]
-    }
-
-    /// Invoke the fmp-proxy Edge Function and return raw response Data
+    /// Invoke the api-proxy Edge Function for FMP and return raw response Data
     private func invokeProxy(path: String, queryItems: [URLQueryItem] = []) async throws -> Data {
         guard isConfigured else { throw FMPError.notConfigured }
 
@@ -39,17 +32,14 @@ final class FMPService {
             }
         }
 
-        let requestBody = ProxyRequest(path: path, queryItems: queryDict)
-
         do {
-            let data: Data = try await SupabaseManager.shared.functions.invoke(
-                "fmp-proxy",
-                options: FunctionInvokeOptions(body: requestBody),
-                decode: { data, _ in data }
+            return try await APIProxy.shared.request(
+                service: .fmp,
+                path: path,
+                queryItems: queryDict.isEmpty ? nil : queryDict
             )
-            return data
-        } catch let error as FunctionsError {
-            throw mapFunctionsError(error)
+        } catch let error as APIProxyError {
+            throw mapProxyError(error)
         }
     }
 
@@ -211,15 +201,15 @@ final class FMPService {
         }
     }
 
-    /// Map Supabase FunctionsError to FMPError
-    private func mapFunctionsError(_ error: FunctionsError) -> FMPError {
+    /// Map APIProxyError to FMPError
+    private func mapProxyError(_ error: APIProxyError) -> FMPError {
         switch error {
-        case .httpError(let code, let data):
-            if let body = String(data: data, encoding: .utf8),
-               body.contains("Unauthorized") || body.contains("Missing authorization") {
-                return .invalidAPIKey
-            }
+        case .unauthorized:
+            return .invalidAPIKey
+        case .httpError(let code, _):
             return .httpError(statusCode: code)
+        case .notConfigured:
+            return .notConfigured
         case .relayError:
             return .invalidResponse
         }

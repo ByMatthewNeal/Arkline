@@ -6,8 +6,7 @@ import Foundation
 final class APICoinglassService: CoinglassServiceProtocol {
 
     // MARK: - Configuration
-    private let baseURL = "https://open-api-v4.coinglass.com/api"
-    private let apiKey = Constants.coinglassAPIKey
+    // API key injected server-side by api-proxy Edge Function
 
     // MARK: - Open Interest
 
@@ -356,34 +355,12 @@ final class APICoinglassService: CoinglassServiceProtocol {
     // MARK: - Private Networking
 
     private func request<T: Codable>(endpoint: String, params: [String: String]) async throws -> T {
-        var components = URLComponents(string: baseURL + endpoint)
-        components?.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
-
-        guard let url = components?.url else {
-            throw AppError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        // Coinglass API v4 uses "CG-API-KEY" header (not "coinglassSecret")
-        request.setValue(apiKey, forHTTPHeaderField: "CG-API-KEY")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 15
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AppError.invalidResponse
-        }
-
-        guard httpResponse.statusCode == 200 else {
-            if httpResponse.statusCode == 401 {
-                throw AppError.unauthorized
-            } else if httpResponse.statusCode == 429 {
-                throw AppError.rateLimited
-            }
-            throw AppError.serverError(statusCode: httpResponse.statusCode)
-        }
+        // CG-API-KEY header injected server-side by api-proxy Edge Function
+        let data = try await APIProxy.shared.request(
+            service: .coinglass,
+            path: endpoint,
+            queryItems: params.isEmpty ? nil : params
+        )
 
         let decoder = JSONDecoder()
         do {

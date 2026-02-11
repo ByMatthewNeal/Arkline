@@ -217,14 +217,10 @@ struct CryptoCompareNewsItem: Codable {
 /// Docs: https://finnhub.io/docs/api/economic-calendar
 final class FinnhubEconomicCalendarService {
 
-    private let baseURL = "https://finnhub.io/api/v1"
-
-    private var apiKey: String {
-        Constants.API.finnhubAPIKey
-    }
+    // API key injected server-side by api-proxy Edge Function
 
     private var isConfigured: Bool {
-        !apiKey.isEmpty
+        SupabaseManager.shared.isConfigured
     }
 
     // Country code to currency mapping
@@ -303,30 +299,15 @@ final class FinnhubEconomicCalendarService {
         let fromStr = formatter.string(from: startDate)
         let toStr = formatter.string(from: endDate)
 
-        var components = URLComponents(string: "\(baseURL)/calendar/economic")
-        components?.queryItems = [
-            URLQueryItem(name: "from", value: fromStr),
-            URLQueryItem(name: "to", value: toStr),
-        ]
-        guard let url = components?.url else {
-            throw URLError(.badURL)
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue(apiKey, forHTTPHeaderField: "X-Finnhub-Token")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 15
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-
-        guard httpResponse.statusCode == 200 else {
-            logWarning("Finnhub returned status \(httpResponse.statusCode)", category: .network)
-            throw URLError(.badServerResponse)
-        }
+        // X-Finnhub-Token header injected server-side by api-proxy Edge Function
+        let data = try await APIProxy.shared.request(
+            service: .finnhub,
+            path: "/calendar/economic",
+            queryItems: [
+                "from": fromStr,
+                "to": toStr
+            ]
+        )
 
         // Parse response
         let finnhubResponse = try JSONDecoder().decode(FinnhubEconomicCalendarResponse.self, from: data)

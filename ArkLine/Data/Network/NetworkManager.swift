@@ -33,6 +33,15 @@ actor NetworkManager {
     private let maxRetries = 3
     private let baseRetryDelay: TimeInterval = 1.0
 
+    // MARK: - Proxy Service Map
+    /// Maps base URLs to proxy service identifiers.
+    /// Endpoints with base URLs in this map are routed through the api-proxy Edge Function.
+    private static let proxyServiceMap: [String: APIProxy.Service] = [
+        Constants.Endpoints.coinGeckoBase: .coingecko,
+        Constants.Endpoints.metalsAPIBase: .metals,
+        Constants.Endpoints.taapiBase: .taapi,
+    ]
+
     // MARK: - Generic Request
     func request<T: Decodable>(
         endpoint: APIEndpoint,
@@ -42,6 +51,16 @@ actor NetworkManager {
         // Check cache first
         if let ttl = cacheTTL, let cachedData = getCachedData(for: endpoint, ttl: ttl) {
             return try decode(cachedData, as: responseType)
+        }
+
+        // Route through API proxy if this endpoint's base URL is in the proxy map
+        if let proxyService = Self.proxyServiceMap[endpoint.baseURL] {
+            return try await proxyRequest(
+                endpoint: endpoint,
+                service: proxyService,
+                responseType: responseType,
+                cacheTTL: cacheTTL
+            )
         }
 
         let urlRequest = try endpoint.asURLRequest()
@@ -97,6 +116,16 @@ actor NetworkManager {
 
     // MARK: - Request with Raw Data Response
     func requestData(endpoint: APIEndpoint) async throws -> Data {
+        // Route through API proxy if applicable
+        if let proxyService = Self.proxyServiceMap[endpoint.baseURL] {
+            return try await APIProxy.shared.request(
+                service: proxyService,
+                path: endpoint.path,
+                method: endpoint.method.rawValue,
+                queryItems: endpoint.queryParameters
+            )
+        }
+
         let request = try endpoint.asURLRequest()
         AppLogger.shared.logRequest(request)
 
@@ -113,6 +142,58 @@ actor NetworkManager {
         }
 
         return data
+    }
+
+    // MARK: - Proxy Request (with caching and retry)
+    private func proxyRequest<T: Decodable>(
+        endpoint: APIEndpoint,
+        service: APIProxy.Service,
+        responseType: T.Type,
+        cacheTTL: TimeInterval?
+    ) async throws -> T {
+        var lastError: Error?
+
+        for attempt in 0..<maxRetries {
+            do {
+                let data: Data
+                if let body = endpoint.body {
+                    // POST request with body (e.g., TAAPI bulk)
+                    data = try await APIProxy.shared.request(
+                        service: service,
+                        path: endpoint.path,
+                        queryItems: endpoint.queryParameters,
+                        body: RawJSON(data: body)
+                    )
+                } else {
+                    data = try await APIProxy.shared.request(
+                        service: service,
+                        path: endpoint.path,
+                        method: endpoint.method.rawValue,
+                        queryItems: endpoint.queryParameters
+                    )
+                }
+
+                // Cache successful response
+                if let ttl = cacheTTL {
+                    cacheData(data, for: endpoint, ttl: ttl)
+                }
+
+                return try decode(data, as: responseType)
+            } catch let error as APIProxyError {
+                if case .httpError(let code, _) = error, code == 429 {
+                    let delay = baseRetryDelay * pow(2, Double(attempt))
+                    logWarning("Rate limited (429) via proxy, retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))", category: .network)
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    lastError = error
+                    continue
+                }
+                throw AppError.networkError(underlying: error)
+            } catch {
+                throw AppError.networkError(underlying: error)
+            }
+        }
+
+        throw lastError ?? AppError.rateLimitExceeded
     }
 
     // MARK: - Cache Management

@@ -173,15 +173,7 @@ enum CoinGeckoEndpoint: APIEndpoint {
         }
     }
 
-    var headers: [String: String]? {
-        let apiKey = Constants.API.coinGeckoAPIKey
-        if !apiKey.isEmpty && apiKey != "your-coingecko-api-key" {
-            // Demo API keys start with "CG-", Pro keys don't have this prefix
-            let headerKey = apiKey.hasPrefix("CG-") ? "x-cg-demo-api-key" : "x-cg-pro-api-key"
-            return [headerKey: apiKey]
-        }
-        return nil
-    }
+    // API key injected server-side by api-proxy Edge Function
 }
 
 // MARK: - Metals API Endpoints
@@ -205,8 +197,8 @@ enum MetalsAPIEndpoint: APIEndpoint {
     var queryParameters: [String: String]? {
         switch self {
         case .latest(let base, let symbols), .historical(_, let base, let symbols):
+            // access_key injected server-side by api-proxy Edge Function
             return [
-                "access_key": Constants.API.metalsAPIKey,
                 "base": base,
                 "symbols": symbols.joined(separator: ",")
             ]
@@ -311,10 +303,10 @@ enum TaapiEndpoint: APIEndpoint {
     }
 
     var queryParameters: [String: String]? {
+        // secret injected server-side by api-proxy Edge Function
         switch self {
         case .sma(let exchange, let symbol, let interval, let period):
             return [
-                "secret": Constants.API.taapiAPIKey,
                 "exchange": exchange,
                 "symbol": symbol,
                 "interval": interval,
@@ -322,7 +314,6 @@ enum TaapiEndpoint: APIEndpoint {
             ]
         case .bbands(let exchange, let symbol, let interval, let period):
             return [
-                "secret": Constants.API.taapiAPIKey,
                 "exchange": exchange,
                 "symbol": symbol,
                 "interval": interval,
@@ -330,7 +321,6 @@ enum TaapiEndpoint: APIEndpoint {
             ]
         case .rsi(let exchange, let symbol, let interval, let period):
             return [
-                "secret": Constants.API.taapiAPIKey,
                 "exchange": exchange,
                 "symbol": symbol,
                 "interval": interval,
@@ -338,7 +328,6 @@ enum TaapiEndpoint: APIEndpoint {
             ]
         case .macd(let exchange, let symbol, let interval):
             return [
-                "secret": Constants.API.taapiAPIKey,
                 "exchange": exchange,
                 "symbol": symbol,
                 "interval": interval
@@ -347,7 +336,6 @@ enum TaapiEndpoint: APIEndpoint {
             return nil // Uses body instead
         case .price(let exchange, let symbol, let interval):
             return [
-                "secret": Constants.API.taapiAPIKey,
                 "exchange": exchange,
                 "symbol": symbol,
                 "interval": interval
@@ -358,8 +346,8 @@ enum TaapiEndpoint: APIEndpoint {
     var body: Data? {
         switch self {
         case .bulk(let exchange, let symbol, let interval, let indicators):
+            // secret injected server-side by api-proxy Edge Function
             let request = TaapiBulkRequest(
-                secret: Constants.API.taapiAPIKey,
                 construct: TaapiBulkConstruct(
                     exchange: exchange,
                     symbol: symbol,
@@ -390,7 +378,6 @@ struct TaapiIndicator: Codable {
 }
 
 struct TaapiBulkRequest: Codable {
-    let secret: String
     let construct: TaapiBulkConstruct
 }
 

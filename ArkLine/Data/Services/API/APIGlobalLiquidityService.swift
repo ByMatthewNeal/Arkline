@@ -14,8 +14,7 @@ import Foundation
 final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     // MARK: - Constants
 
-    private let baseURL = Constants.Endpoints.fredBase
-    private var apiKey: String { Constants.API.fredAPIKey }
+    // API key injected server-side by api-proxy Edge Function
 
     // MARK: - Global M2 Reference Data
     // Base values sourced from central bank publications as of Jan 2025.
@@ -91,7 +90,7 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     }
 
     func fetchLiquidityHistory(days: Int) async throws -> [GlobalLiquidityData] {
-        guard apiKey != "your-fred-api-key" else {
+        guard SupabaseManager.shared.isConfigured else {
             throw LiquidityError.apiKeyNotConfigured
         }
 
@@ -145,26 +144,20 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
         let startDateStr = dateFormatter.string(from: startDate)
         let endDateStr = dateFormatter.string(from: endDate)
 
-        var components = URLComponents(string: "\(baseURL)/series/observations")
-        components?.queryItems = [
-            URLQueryItem(name: "series_id", value: seriesId),
-            URLQueryItem(name: "api_key", value: apiKey),
-            URLQueryItem(name: "file_type", value: "json"),
-            URLQueryItem(name: "observation_start", value: startDateStr),
-            URLQueryItem(name: "observation_end", value: endDateStr),
-            URLQueryItem(name: "sort_order", value: "asc")
+        // api_key injected server-side by api-proxy Edge Function
+        let queryItems: [String: String] = [
+            "series_id": seriesId,
+            "file_type": "json",
+            "observation_start": startDateStr,
+            "observation_end": endDateStr,
+            "sort_order": "asc"
         ]
 
-        guard let url = components?.url else {
-            throw LiquidityError.invalidURL
-        }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw LiquidityError.apiError
-        }
+        let data = try await APIProxy.shared.request(
+            service: .fred,
+            path: "/series/observations",
+            queryItems: queryItems
+        )
 
         let fredResponse = try JSONDecoder().decode(FREDResponse.self, from: data)
         return fredResponse.observations
