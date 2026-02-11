@@ -23,6 +23,19 @@ final class FMPService {
 
     private init() {}
 
+    /// Build a URLRequest with the API key in a header instead of the URL
+    private func makeRequest(path: String, queryItems: [URLQueryItem] = []) throws -> URLRequest {
+        guard isConfigured else { throw FMPError.notConfigured }
+        var components = URLComponents(string: baseURL + path)
+        if !queryItems.isEmpty {
+            components?.queryItems = queryItems
+        }
+        guard let url = components?.url else { throw FMPError.invalidURL }
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "apikey")
+        return request
+    }
+
     // MARK: - Stock Quotes
 
     /// Fetch a single stock quote
@@ -59,15 +72,12 @@ final class FMPService {
 
     /// Fetch historical daily prices for a symbol
     func fetchHistoricalPrices(symbol: String, limit: Int = 30) async throws -> [FMPHistoricalPrice] {
-        guard isConfigured else {
-            throw FMPError.notConfigured
-        }
+        let request = try makeRequest(
+            path: "/historical-price-eod/full",
+            queryItems: [URLQueryItem(name: "symbol", value: symbol)]
+        )
 
-        guard let url = URL(string: "\(baseURL)/historical-price-eod/full?symbol=\(symbol)&apikey=\(apiKey)") else {
-            throw FMPError.invalidURL
-        }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         try validateResponse(response, data: data)
 
@@ -79,15 +89,9 @@ final class FMPService {
 
     /// Fetch today's biggest gainers
     func fetchBiggestGainers(limit: Int = 10) async throws -> [FMPMover] {
-        guard isConfigured else {
-            throw FMPError.notConfigured
-        }
+        let request = try makeRequest(path: "/biggest-gainers")
 
-        guard let url = URL(string: "\(baseURL)/biggest-gainers?apikey=\(apiKey)") else {
-            throw FMPError.invalidURL
-        }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         try validateResponse(response, data: data)
 
@@ -98,15 +102,9 @@ final class FMPService {
 
     /// Fetch today's biggest losers
     func fetchBiggestLosers(limit: Int = 10) async throws -> [FMPMover] {
-        guard isConfigured else {
-            throw FMPError.notConfigured
-        }
+        let request = try makeRequest(path: "/biggest-losers")
 
-        guard let url = URL(string: "\(baseURL)/biggest-losers?apikey=\(apiKey)") else {
-            throw FMPError.invalidURL
-        }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         try validateResponse(response, data: data)
 
@@ -119,17 +117,10 @@ final class FMPService {
 
     /// Search for stocks by query
     func searchStocks(query: String, limit: Int = 10) async throws -> [StockSearchResult] {
-        guard isConfigured else {
-            throw FMPError.notConfigured
-        }
-
-        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        guard let url = URL(string: "\(baseURL)/search-symbol?query=\(encodedQuery)") else {
-            throw FMPError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue(apiKey, forHTTPHeaderField: "apikey")
+        let request = try makeRequest(
+            path: "/search-symbol",
+            queryItems: [URLQueryItem(name: "query", value: query)]
+        )
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -147,15 +138,12 @@ final class FMPService {
 
     /// Fetch company profile/info
     func fetchCompanyProfile(symbol: String) async throws -> FMPCompanyProfile {
-        guard isConfigured else {
-            throw FMPError.notConfigured
-        }
+        let request = try makeRequest(
+            path: "/profile",
+            queryItems: [URLQueryItem(name: "symbol", value: symbol)]
+        )
 
-        guard let url = URL(string: "\(baseURL)/profile?symbol=\(symbol)&apikey=\(apiKey)") else {
-            throw FMPError.invalidURL
-        }
-
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         try validateResponse(response, data: data)
 
@@ -177,12 +165,15 @@ final class FMPService {
 
         // FMP requires individual calls for each symbol on free tier
         for symbol in symbols {
-            guard let url = URL(string: "\(baseURL)/quote?symbol=\(symbol)&apikey=\(apiKey)") else {
+            guard let request = try? makeRequest(
+                path: "/quote",
+                queryItems: [URLQueryItem(name: "symbol", value: symbol)]
+            ) else {
                 continue
             }
 
             do {
-                let (data, response) = try await URLSession.shared.data(from: url)
+                let (data, response) = try await URLSession.shared.data(for: request)
                 try validateResponse(response, data: data)
 
                 let quoteArray = try JSONDecoder().decode([FMPQuote].self, from: data)

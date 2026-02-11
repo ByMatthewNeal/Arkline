@@ -303,11 +303,17 @@ final class FinnhubEconomicCalendarService {
         let fromStr = formatter.string(from: startDate)
         let toStr = formatter.string(from: endDate)
 
-        guard let url = URL(string: "\(baseURL)/calendar/economic?from=\(fromStr)&to=\(toStr)&token=\(apiKey)") else {
+        var components = URLComponents(string: "\(baseURL)/calendar/economic")
+        components?.queryItems = [
+            URLQueryItem(name: "from", value: fromStr),
+            URLQueryItem(name: "to", value: toStr),
+        ]
+        guard let url = components?.url else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "X-Finnhub-Token")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 15
 
