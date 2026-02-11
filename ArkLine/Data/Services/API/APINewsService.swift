@@ -1135,8 +1135,14 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
         static let world = "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
 
         static func search(_ query: String) -> String {
-            let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-            return "https://news.google.com/rss/search?q=\(encoded)&hl=en-US&gl=US&ceid=US:en"
+            var components = URLComponents(string: "https://news.google.com/rss/search")!
+            components.queryItems = [
+                URLQueryItem(name: "q", value: query),
+                URLQueryItem(name: "hl", value: "en-US"),
+                URLQueryItem(name: "gl", value: "US"),
+                URLQueryItem(name: "ceid", value: "US:en")
+            ]
+            return components.string ?? ""
         }
 
         /// Build a combined query URL from user-selected topics and custom keywords
@@ -1156,10 +1162,16 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
                 }
             }
 
-            // Join with OR and encode
+            // Join with OR — URLComponents handles encoding
             let combinedQuery = queryParts.joined(separator: " OR ")
-            let encoded = combinedQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? combinedQuery
-            return "https://news.google.com/rss/search?q=\(encoded)&hl=en-US&gl=US&ceid=US:en"
+            var components = URLComponents(string: "https://news.google.com/rss/search")!
+            components.queryItems = [
+                URLQueryItem(name: "q", value: combinedQuery),
+                URLQueryItem(name: "hl", value: "en-US"),
+                URLQueryItem(name: "gl", value: "US"),
+                URLQueryItem(name: "ceid", value: "US:en")
+            ]
+            return components.string ?? ""
         }
     }
 

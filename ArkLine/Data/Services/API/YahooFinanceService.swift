@@ -152,9 +152,13 @@ final class YahooFinanceService {
 
     private func fetchQuote(symbol: String, range: String = "1d", interval: String = "1d") async throws -> YahooChartResponse {
         let encodedSymbol = symbol.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? symbol
-        let urlString = "\(baseURL)/\(encodedSymbol)?interval=\(interval)&range=\(range)"
+        var components = URLComponents(string: "\(baseURL)/\(encodedSymbol)")
+        components?.queryItems = [
+            URLQueryItem(name: "interval", value: interval),
+            URLQueryItem(name: "range", value: range)
+        ]
 
-        guard let url = URL(string: urlString) else {
+        guard let url = components?.url else {
             throw YahooFinanceError.invalidURL
         }
 
