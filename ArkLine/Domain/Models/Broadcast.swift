@@ -284,8 +284,9 @@ enum AppSection: String, Codable, CaseIterable {
     }
 
     /// Deep link URL for navigation
+    private static let fallbackURL = URL(string: "arkline://home")!
     var deepLinkURL: URL {
-        URL(string: "arkline://section/\(rawValue)") ?? URL(string: "arkline://home")!
+        URL(string: "arkline://section/\(rawValue)") ?? Self.fallbackURL
     }
 }
 

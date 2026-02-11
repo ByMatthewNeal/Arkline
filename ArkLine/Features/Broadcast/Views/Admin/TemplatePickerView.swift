@@ -190,6 +190,6 @@ private struct TemplateCard: View {
 
 #Preview {
     TemplatePickerView { template in
-        print("Selected: \(template.name)")
+        logDebug("Selected: \(template.name)")
     }
 }
