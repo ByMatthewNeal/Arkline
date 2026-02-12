@@ -138,6 +138,9 @@
 		7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */; };
 		7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */; };
 		7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */; };
+		BB220001CCDD00220001BB01 /* DCAInputCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220001CCDD00220001AA01 /* DCAInputCards.swift */; };
+		BB220002CCDD00220002BB02 /* DCAResultComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220002CCDD00220002AA02 /* DCAResultComponents.swift */; };
+		BB220003CCDD00220003BB03 /* DCAStrategyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220003CCDD00220003AA03 /* DCAStrategyComponents.swift */; };
 		AA110001AABB00110001BB01 /* PortfolioCommonComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */; };
 		AA110002AABB00110002BB02 /* PortfolioHeaderComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */; };
 		AA110003AABB00110003BB03 /* PortfolioTabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */; };
@@ -217,7 +220,6 @@
 		C2C3EA3D9F185775264FEC14 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2FCAAA036F4F22E773961096 /* PrivacyInfo.xcprivacy */; };
 		C2E7E3C879ED12FD8E338627 /* MacroZScoreData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */; };
 		C379103721013AD9D5DC663A /* MacroDashboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C016882441A58FCC6F6BCC62 /* MacroDashboardDetailView.swift */; };
-		C3CCEDC817E873A64AE0BE57 /* DCACalculatorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */; };
 		C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */; };
 		C3FBD16C521507EA40CFD953 /* EconomicEventsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F85984ECA110FEAA838B5870 /* EconomicEventsData.swift */; };
 		C515208CC5C1562E18F7B67F /* PasscodeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */; };
@@ -476,7 +478,6 @@
 		872F085E24F150BFF85D1495 /* ArkLineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineApp.swift; sourceTree = "<group>"; };
 		87CF0E5EC762D968DCBE4F7D /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinglassData.swift; sourceTree = "<group>"; };
-		8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCACalculatorComponents.swift; sourceTree = "<group>"; };
 		8AAAF40361CD29C51A718DFC /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		8AE2DD9BE22EC503BFD189D0 /* SentimentRiskCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentimentRiskCards.swift; sourceTree = "<group>"; };
 		8AE42B1F64D053FD667B857C /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
@@ -523,6 +524,9 @@
 		B9945832BAAEB3194B052824 /* SentimentRetailCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentimentRetailCards.swift; sourceTree = "<group>"; };
 		BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooFinanceService.swift; sourceTree = "<group>"; };
 		BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
+		BB220001CCDD00220001AA01 /* DCAInputCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAInputCards.swift; sourceTree = "<group>"; };
+		BB220002CCDD00220002AA02 /* DCAResultComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAResultComponents.swift; sourceTree = "<group>"; };
+		BB220003CCDD00220003AA03 /* DCAStrategyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAStrategyComponents.swift; sourceTree = "<group>"; };
 		AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioCommonComponents.swift; sourceTree = "<group>"; };
 		AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioHeaderComponents.swift; sourceTree = "<group>"; };
 		AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioTabComponents.swift; sourceTree = "<group>"; };
@@ -1032,8 +1036,10 @@
 		6CBB6E14ADC94B34D5659880 /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */,
 				BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */,
+				BB220001CCDD00220001AA01 /* DCAInputCards.swift */,
+				BB220002CCDD00220002AA02 /* DCAResultComponents.swift */,
+				BB220003CCDD00220003AA03 /* DCAStrategyComponents.swift */,
 				AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */,
 				AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */,
 				AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */,
@@ -1805,7 +1811,6 @@
 				2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */,
 				2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */,
 				3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */,
-				C3CCEDC817E873A64AE0BE57 /* DCACalculatorComponents.swift in Sources */,
 				56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */,
 				4C8160414F9E10ADFB569E1E /* DCACalculatorView.swift in Sources */,
 				7315E035C2C0BFD44CEDC052 /* DCAListView.swift in Sources */,
@@ -1856,6 +1861,9 @@
 				1CB691EE833C0349B6BCC6FA /* HistoricalContextService.swift in Sources */,
 				39CD7F11738B007D0C63DC2F /* HistoricalPriceData.swift in Sources */,
 				7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */,
+				BB220001CCDD00220001BB01 /* DCAInputCards.swift in Sources */,
+				BB220002CCDD00220002BB02 /* DCAResultComponents.swift in Sources */,
+				BB220003CCDD00220003BB03 /* DCAStrategyComponents.swift in Sources */,
 				AA110001AABB00110001BB01 /* PortfolioCommonComponents.swift in Sources */,
 				AA110002AABB00110002BB02 /* PortfolioHeaderComponents.swift in Sources */,
 				AA110003AABB00110003BB03 /* PortfolioTabComponents.swift in Sources */,

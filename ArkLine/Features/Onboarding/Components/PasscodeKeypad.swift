@@ -157,18 +157,6 @@ struct OnboardingKeypadButton: View {
     }
 }
 
-// MARK: - Legacy OnboardingProgress (Deprecated)
-/// @deprecated Use OnboardingProgressBar from OnboardingHeader.swift instead
-struct OnboardingProgress: View {
-    let progress: Double
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        OnboardingProgressBar(progress: progress)
-    }
-}
-
 // MARK: - Preview
 #Preview {
     VStack {
