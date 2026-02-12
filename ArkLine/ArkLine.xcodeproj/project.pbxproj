@@ -271,7 +271,6 @@
 		D1AF8FDEFF881E70158A1A50 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26D4F0EA5E9FBFA77BBACD87 /* SecondaryButton.swift */; };
 		D228AC880FFF603048A50D81 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */; };
 		D2B53B6567B582423307EC2E /* RainbowChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99708F513364A5D80BA69774 /* RainbowChartData.swift */; };
-		D3V1C35V13W00000002 /* DevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3V1C35V13W00000001 /* DevicesView.swift */; };
 		D45CA1F56ADCB5F63AD04B62 /* GoogleTrendsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91682101CBACB8AFAFBF1334 /* GoogleTrendsDetailView.swift */; };
 		D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */; };
 		D5874DED9CA0410B6DC862F3 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D247521DC8A835AF61FC8D60 /* View+Extensions.swift */; };
@@ -594,7 +593,6 @@
 		D27C191CC461606E44DF972D /* RiskHistoryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskHistoryPoint.swift; sourceTree = "<group>"; };
 		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerIndustryView.swift; sourceTree = "<group>"; };
-		D3V1C35V13W00000001 /* DevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicesView.swift; sourceTree = "<group>"; };
 		D5E0FC7CA101BBA281BE5F25 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		D70639807A66EB3892917BEA /* RainbowChartServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RainbowChartServiceProtocol.swift; sourceTree = "<group>"; };
 		D8AD7B8805E2F8C37E1FA861 /* RiskFactorFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskFactorFetcher.swift; sourceTree = "<group>"; };
@@ -1184,7 +1182,6 @@
 				C985CF062F3B82C600E10778 /* PaywallView.swift */,
 				AB0UTV13W000000000001 /* AboutView.swift */,
 				CHANG3PA55C0D30001 /* ChangePasscodeView.swift */,
-				D3V1C35V13W00000001 /* DevicesView.swift */,
 				FAQV13W0000000000001 /* FAQView.swift */,
 				FE0000000000000000000013 /* FeatureRequestFormView.swift */,
 				EC91A4E48942F70D01846899 /* NewsTopicsSettingsView.swift */,
@@ -2021,7 +2018,6 @@
 				S3TT1NG5APP3AR000002 /* SettingsAppearance.swift in Sources */,
 				N0T1F1CAT10N5D3T002 /* NotificationsDetailView.swift in Sources */,
 				CHANG3PA55C0D30002 /* ChangePasscodeView.swift in Sources */,
-				D3V1C35V13W00000002 /* DevicesView.swift in Sources */,
 				FAQV13W0000000000002 /* FAQView.swift in Sources */,
 				AB0UTV13W000000000002 /* AboutView.swift in Sources */,
 				2DFD1CE8B62B33F45CFAAC17 /* SettingsViewModel.swift in Sources */,
