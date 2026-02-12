@@ -46,6 +46,12 @@
 		1CB7FECB27F55097111DA2C0 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4D010FAE4110F01A75275BB /* TabBarView.swift */; };
 		1D7DC43A6391750FB169A43B /* StatisticsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD814640FCA732E1097598F2 /* StatisticsCalculator.swift */; };
 		1F0833CA9F56648D541F75B2 /* APINewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3734A6788EEBE7830A322555 /* APINewsService.swift */; };
+		AA1B2C3D06 /* GoogleNewsRSSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1B2C3D05 /* GoogleNewsRSSService.swift */; };
+		AA1B2C3D04 /* InvestingComScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1B2C3D03 /* InvestingComScraper.swift */; };
+		AA1B2C3D02 /* FinnhubEconomicCalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */; };
+		AA1B2C3D05 /* GoogleNewsRSSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleNewsRSSService.swift; sourceTree = "<group>"; };
+		AA1B2C3D03 /* InvestingComScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestingComScraper.swift; sourceTree = "<group>"; };
+		AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubEconomicCalendarService.swift; sourceTree = "<group>"; };
 		1FE8B8807834E98A836ED48F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F447EEE9DD02CC43E731078 /* Foundation.framework */; };
 		1NV35TH15T0RY5H33T002 /* InvestmentHistorySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1NV35TH15T0RY5H33T001 /* InvestmentHistorySheetView.swift */; };
 		238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */; };
@@ -220,6 +226,8 @@
 		C2C3EA3D9F185775264FEC14 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2FCAAA036F4F22E773961096 /* PrivacyInfo.xcprivacy */; };
 		C2E7E3C879ED12FD8E338627 /* MacroZScoreData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */; };
 		C379103721013AD9D5DC663A /* MacroDashboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C016882441A58FCC6F6BCC62 /* MacroDashboardDetailView.swift */; };
+		BB2C3D4E02 /* MacroDashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2C3D4E01 /* MacroDashboardComponents.swift */; };
+		BB2C3D4E01 /* MacroDashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroDashboardComponents.swift; sourceTree = "<group>"; };
 		C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */; };
 		C3FBD16C521507EA40CFD953 /* EconomicEventsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F85984ECA110FEAA838B5870 /* EconomicEventsData.swift */; };
 		C515208CC5C1562E18F7B67F /* PasscodeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */; };
@@ -815,6 +823,9 @@
 				CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */,
 				83DD4D44D13A4395CA4331B4 /* SharedCacheService.swift */,
 				3734A6788EEBE7830A322555 /* APINewsService.swift */,
+				AA1B2C3D05 /* GoogleNewsRSSService.swift */,
+				AA1B2C3D03 /* InvestingComScraper.swift */,
+				AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */,
 				09632E6060BBE9A1576A3022 /* APIPortfolioService.swift */,
 				B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */,
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
@@ -1194,6 +1205,7 @@
 			isa = PBXGroup;
 			children = (
 				C9B757B52F371D4900428AEB /* MacroIndicatorChart.swift */,
+				BB2C3D4E01 /* MacroDashboardComponents.swift */,
 				4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */,
 				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
 				6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */,
@@ -1775,6 +1787,9 @@
 				0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */,
 				9F258977094FFD1F30C4E46B /* SharedCacheService.swift in Sources */,
 				1F0833CA9F56648D541F75B2 /* APINewsService.swift in Sources */,
+				AA1B2C3D06 /* GoogleNewsRSSService.swift in Sources */,
+				AA1B2C3D04 /* InvestingComScraper.swift in Sources */,
+				AA1B2C3D02 /* FinnhubEconomicCalendarService.swift in Sources */,
 				7997651354297A0F1994195C /* APIPortfolioService.swift in Sources */,
 				4732DC10C2E52D8A1C1016DE /* APIRainbowChartService.swift in Sources */,
 				E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */,
@@ -2042,6 +2057,7 @@
 				DDB4683F5BC63BF09C8C7B8F /* AnalyticsService.swift in Sources */,
 				E819430F3E00303F1A55EFAE /* MacroDashboardModels.swift in Sources */,
 				C379103721013AD9D5DC663A /* MacroDashboardDetailView.swift in Sources */,
+				BB2C3D4E02 /* MacroDashboardComponents.swift in Sources */,
 				CB7805A9B0595243211641AB /* SparklineView.swift in Sources */,
 				030FE9AB6E861E212A56106A /* CorrelationBars.swift in Sources */,
 				944895C52A483A1C1759D6A4 /* RiskModels.swift in Sources */,
