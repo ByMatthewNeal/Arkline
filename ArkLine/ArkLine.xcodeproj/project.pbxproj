@@ -79,6 +79,9 @@
 		3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCC24BCEBE385AEFCCAD355 /* DCACalculation.swift */; };
 		3ED20C98B679E1B39E700AEC /* DCAViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C17169C2A394081F66E2FF3 /* DCAViewModel.swift */; };
 		3FB8C2F1C366252738DCB0FF /* BroadcastStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACF7C2AD9CD10450F3D8442 /* BroadcastStudioView.swift */; };
+		CC3D4E5F01 /* BroadcastEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3D4E5F02 /* BroadcastEditorView.swift */; };
+		CC3D4E5F03 /* BroadcastStudioComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3D4E5F04 /* BroadcastStudioComponents.swift */; };
+		CC3D4E5F05 /* RiskLevelComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3D4E5F06 /* RiskLevelComponents.swift */; };
 		402E88F785A7AD9050953DCD /* VoiceRecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD189DDCC3B8120CC26673EC /* VoiceRecordingService.swift */; };
 		40A81608DAEB3AA5D63F5E75 /* MockSantimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51911C535784ED78B6640ECB /* MockSantimentService.swift */; };
 		43A46C7A8D6ED6366495D642 /* ArkLineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872F085E24F150BFF85D1495 /* ArkLineApp.swift */; };
@@ -376,6 +379,7 @@
 		23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastServiceProtocol.swift; sourceTree = "<group>"; };
 		2435855BCB0DC6452F414E3A /* NewsServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsServiceProtocol.swift; sourceTree = "<group>"; };
 		261CB564B75128AA955811D5 /* RiskLevelDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RiskLevelDetailView.swift; sourceTree = "<group>"; };
+		CC3D4E5F06 /* RiskLevelComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RiskLevelComponents.swift; sourceTree = "<group>"; };
 		267B802EB8458A0C8582EA6F /* MockTechnicalAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTechnicalAnalysisService.swift; sourceTree = "<group>"; };
 		26876123F57B804A4A24DC97 /* TodaysEventsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysEventsWidget.swift; sourceTree = "<group>"; };
 		26D4F0EA5E9FBFA77BBACD87 /* SecondaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButton.swift; sourceTree = "<group>"; };
@@ -455,6 +459,8 @@
 		6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminderWidget.swift; sourceTree = "<group>"; };
 		6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeView.swift; sourceTree = "<group>"; };
 		6ACF7C2AD9CD10450F3D8442 /* BroadcastStudioView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastStudioView.swift; sourceTree = "<group>"; };
+		CC3D4E5F02 /* BroadcastEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastEditorView.swift; sourceTree = "<group>"; };
+		CC3D4E5F04 /* BroadcastStudioComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastStudioComponents.swift; sourceTree = "<group>"; };
 		6BC34A1FDFF566C6A0501418 /* GradientCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientCard.swift; sourceTree = "<group>"; };
 		6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSparkline.swift; sourceTree = "<group>"; };
 		6C06924AB1053BEBE96D201B /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
@@ -743,6 +749,8 @@
 			isa = PBXGroup;
 			children = (
 				6ACF7C2AD9CD10450F3D8442 /* BroadcastStudioView.swift */,
+				CC3D4E5F02 /* BroadcastEditorView.swift */,
+				CC3D4E5F04 /* BroadcastStudioComponents.swift */,
 				DC2181B4F84D41BEF9220E46 /* VoiceRecorderView.swift */,
 				04628B553AF47C260C3AF994 /* AppReferencePickerView.swift */,
 				A1F96E9F31319C54A3F5158D /* ImageAnnotationView.swift */,
@@ -1236,6 +1244,7 @@
 				EA7F134462B3F6014226E87D /* RiskGaugeViews.swift */,
 				282DE21A1DA85EEE1F8FE86A /* RiskLevelChart.swift */,
 				261CB564B75128AA955811D5 /* RiskLevelDetailView.swift */,
+				CC3D4E5F06 /* RiskLevelComponents.swift */,
 				DC89DF198D092E66D2A9440C /* TechnicalScoreCards.swift */,
 				225593D759C7AC730D64DB0F /* TechnicalIndicatorCards.swift */,
 				F5665DE61C432589AB9CD08A /* TechnicalTrendCards.swift */,
@@ -2035,6 +2044,8 @@
 				DD0AF2DAE7F44D769CA184A3 /* BroadcastService.swift in Sources */,
 				9AE4238F8FF6E912DC75A36D /* BroadcastTabView.swift in Sources */,
 				3FB8C2F1C366252738DCB0FF /* BroadcastStudioView.swift in Sources */,
+				CC3D4E5F01 /* BroadcastEditorView.swift in Sources */,
+				CC3D4E5F03 /* BroadcastStudioComponents.swift in Sources */,
 				472AC991849ABF60FA0F65AC /* BroadcastFeedView.swift in Sources */,
 				195DFE65EA6ABC27F2693F6B /* BroadcastViewModel.swift in Sources */,
 				402E88F785A7AD9050953DCD /* VoiceRecordingService.swift in Sources */,
@@ -2064,6 +2075,7 @@
 				E121534029046575AA751496 /* RiskGaugeViews.swift in Sources */,
 				F609D5591C8412F0E1F3966D /* RiskLevelChart.swift in Sources */,
 				CD73737D1798F84D8C5655D7 /* RiskLevelDetailView.swift in Sources */,
+				CC3D4E5F05 /* RiskLevelComponents.swift in Sources */,
 				A5875BFFCCED61E8CB4EE44B /* TechnicalScoreCards.swift in Sources */,
 				9D6651BC269061C338CE29C5 /* TechnicalIndicatorCards.swift in Sources */,
 				5ADF8BC359620A4DAE72ED54 /* TechnicalTrendCards.swift in Sources */,
