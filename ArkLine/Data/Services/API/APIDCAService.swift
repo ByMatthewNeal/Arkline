@@ -655,15 +655,28 @@ final class APIDCAService: DCAServiceProtocol {
     }
 
     func fetchRiskLevel(symbol: String) async throws -> AssetRiskLevel {
-        // TODO: Integrate with real risk assessment API (e.g., Into The Cryptoverse)
-        // For now, return a moderate risk level placeholder
-        return AssetRiskLevel(
-            assetId: symbol.lowercased(),
-            symbol: symbol.uppercased(),
-            riskScore: 50.0,
-            riskCategory: .moderate,
-            lastUpdated: Date()
-        )
+        let itcRiskService = ServiceContainer.shared.itcRiskService
+
+        do {
+            let riskPoint = try await itcRiskService.calculateCurrentRisk(coin: symbol.uppercased())
+            let score = riskPoint.riskLevel * 100 // Convert 0-1 to 0-100
+            return AssetRiskLevel(
+                assetId: symbol.lowercased(),
+                symbol: symbol.uppercased(),
+                riskScore: score,
+                riskCategory: RiskCategory.from(score: score),
+                lastUpdated: riskPoint.date
+            )
+        } catch {
+            logWarning("ITC risk fetch failed for \(symbol), falling back to moderate: \(error.localizedDescription)", category: .data)
+            return AssetRiskLevel(
+                assetId: symbol.lowercased(),
+                symbol: symbol.uppercased(),
+                riskScore: 50.0,
+                riskCategory: .moderate,
+                lastUpdated: Date()
+            )
+        }
     }
 
     func checkAndTriggerReminders(userId: UUID) async throws -> [RiskBasedDCAReminder] {

@@ -140,24 +140,23 @@ final class APINewsService: NewsServiceProtocol {
 
     private func generateKnownFOMCMeetings() -> [FedMeeting] {
         // FOMC typically meets 8 times per year
-        // These dates should be updated periodically
+        // These are the announced 2026 FOMC meeting dates (decision day)
         let calendar = Calendar.current
-        let year = calendar.component(.year, from: Date())
 
-        // Example 2024 meeting dates (update as needed)
-        let meetingDates: [(month: Int, day: Int, hasProjections: Bool)] = [
-            (1, 31, false),
-            (3, 20, true),
-            (5, 1, false),
-            (6, 12, true),
-            (7, 31, false),
-            (9, 18, true),
-            (11, 7, false),
-            (12, 18, true)
+        let meetingDates: [(year: Int, month: Int, day: Int, hasProjections: Bool)] = [
+            // 2026 FOMC meetings
+            (2026, 1, 29, false),   // Jan 28-29
+            (2026, 3, 19, true),    // Mar 18-19 (SEP)
+            (2026, 5, 7, false),    // May 6-7
+            (2026, 6, 18, true),    // Jun 17-18 (SEP)
+            (2026, 7, 30, false),   // Jul 29-30
+            (2026, 9, 17, true),    // Sep 16-17 (SEP)
+            (2026, 11, 5, false),   // Nov 4-5
+            (2026, 12, 17, true),   // Dec 16-17 (SEP)
         ]
 
         return meetingDates.compactMap { dateInfo -> FedMeeting? in
-            guard let date = calendar.date(from: DateComponents(year: year, month: dateInfo.month, day: dateInfo.day)) else {
+            guard let date = calendar.date(from: DateComponents(year: dateInfo.year, month: dateInfo.month, day: dateInfo.day)) else {
                 return nil
             }
 

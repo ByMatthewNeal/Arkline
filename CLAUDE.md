@@ -55,8 +55,8 @@ ArkLine/
 
 1. ~~**Force Unwraps**~~ - Fixed: AssetRiskConfig already uses safe `safeDate()`, remaining production unwrap in Broadcast.swift fixed
 2. ~~**No Tests**~~ - Fixed: 247 unit tests across 7 test files (extensions, statistics, risk, DCA, performance)
-3. **Large Files** - `HomeView.swift` (4,208 lines) needs decomposition
-4. **Unimplemented Services** - `APIDCAService`, `APIPortfolioService` throw `.notImplemented`
+3. ~~**Large Files**~~ - Fixed: all files decomposed under 830 lines (11 files split across sessions)
+4. ~~**Unimplemented Services**~~ - Fixed: APIDCAService and APIPortfolioService fully implemented with Supabase
 5. ~~**Bypassable Lockout**~~ - Fixed: lockout state stored in Keychain (persists across reinstalls)
 5. ~~**No SSL Certificate Pinning**~~ - Fixed: NSPinnedDomains in Info.plist for supabase.co and web.arkline.io
 6. ~~**API Keys in URL Query Params**~~ - Fixed: moved to HTTP headers in FMPService and APINewsService
