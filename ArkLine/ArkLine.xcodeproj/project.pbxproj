@@ -138,6 +138,9 @@
 		7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */; };
 		7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */; };
 		7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */; };
+		AA110001AABB00110001BB01 /* PortfolioCommonComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */; };
+		AA110002AABB00110002BB02 /* PortfolioHeaderComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */; };
+		AA110003AABB00110003BB03 /* PortfolioTabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */; };
 		7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BFE18532B42396BDE06325 /* KeychainManager.swift */; };
 		80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */; };
 		81173E2E4A51178EFA18143F /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AAAF40361CD29C51A718DFC /* LoginView.swift */; };
@@ -520,6 +523,9 @@
 		B9945832BAAEB3194B052824 /* SentimentRetailCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentimentRetailCards.swift; sourceTree = "<group>"; };
 		BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooFinanceService.swift; sourceTree = "<group>"; };
 		BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
+		AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioCommonComponents.swift; sourceTree = "<group>"; };
+		AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioHeaderComponents.swift; sourceTree = "<group>"; };
+		AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioTabComponents.swift; sourceTree = "<group>"; };
 		BBC73CFDFB027E944D3D8798 /* MultiFactorRisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiFactorRisk.swift; sourceTree = "<group>"; };
 		BCBF4C0FD7FA0D9C50427165 /* APIProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIProxy.swift; sourceTree = "<group>"; };
 		BD230306097151521197A696 /* DataCollectionDTOs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DataCollectionDTOs.swift; sourceTree = "<group>"; };
@@ -1028,6 +1034,9 @@
 			children = (
 				8822EE89562E32838350AC27 /* DCACalculatorComponents.swift */,
 				BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */,
+				AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */,
+				AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */,
+				AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */,
 				DFA6D89396B94ACB0433199B /* PerformanceCards.swift */,
 				6C06924AB1053BEBE96D201B /* TransactionRow.swift */,
 			);
@@ -1847,6 +1856,9 @@
 				1CB691EE833C0349B6BCC6FA /* HistoricalContextService.swift in Sources */,
 				39CD7F11738B007D0C63DC2F /* HistoricalPriceData.swift in Sources */,
 				7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */,
+				AA110001AABB00110001BB01 /* PortfolioCommonComponents.swift in Sources */,
+				AA110002AABB00110002BB02 /* PortfolioHeaderComponents.swift in Sources */,
+				AA110003AABB00110003BB03 /* PortfolioTabComponents.swift in Sources */,
 				3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */,
 				58758A7C9170D7678030686C /* HomeView.swift in Sources */,
 				03511C8F239A1869BE9FCF6B /* HomeRiskComponents.swift in Sources */,
