@@ -205,7 +205,11 @@ struct CryptoCompareNewsItem: Codable {
             source: source,
             publishedAt: Date(timeIntervalSince1970: TimeInterval(publishedOn)),
             imageUrl: imageurl,
-            url: url
+            url: url,
+            sourceType: .traditional,
+            twitterHandle: nil,
+            isVerified: false,
+            description: nil
         )
     }
 }

@@ -10,6 +10,7 @@ final class RiskCalculator {
 
     // MARK: - Cache
     private var regressionCache: [String: LogarithmicRegression.Result] = [:]
+    private let cacheLock = NSLock()
 
     // MARK: - Calculate Risk for Single Price Point
 
@@ -35,7 +36,7 @@ final class RiskCalculator {
             reg = regression
         } else if let history = priceHistory {
             reg = LogarithmicRegression.fit(prices: history, originDate: config.originDate)
-        } else if let cached = regressionCache[config.assetId] {
+        } else if let cached = cacheLock.withLock({ regressionCache[config.assetId] }) {
             reg = cached
         } else {
             return nil
@@ -79,7 +80,7 @@ final class RiskCalculator {
         }
 
         // Cache the regression for future single-point calculations
-        regressionCache[config.assetId] = regression
+        cacheLock.withLock { regressionCache[config.assetId] = regression }
 
         // Calculate risk for each price point
         return prices.compactMap { point -> RiskHistoryPoint? in
@@ -306,12 +307,12 @@ final class RiskCalculator {
 
     /// Clear the regression cache
     func clearCache() {
-        regressionCache.removeAll()
+        cacheLock.withLock { regressionCache.removeAll() }
     }
 
     /// Clear cache for a specific asset
     func clearCache(for assetId: String) {
-        regressionCache.removeValue(forKey: assetId)
+        cacheLock.withLock { regressionCache.removeValue(forKey: assetId) }
     }
 
     // MARK: - Private Init

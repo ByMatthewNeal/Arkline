@@ -49,6 +49,7 @@ actor SubscriptionService {
     /// Refresh subscription status from RevenueCat server
     @discardableResult
     func refreshStatus() async -> Bool {
+        guard Purchases.isConfigured else { return false }
         do {
             let info = try await Purchases.shared.customerInfo()
             self.customerInfo = info

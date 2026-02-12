@@ -70,7 +70,9 @@ struct ArkLineApp: App {
     private func setupRevenueCat() {
         Task {
             await SubscriptionService.shared.configure()
-            Purchases.shared.delegate = appDelegate
+            if Purchases.isConfigured {
+                Purchases.shared.delegate = appDelegate
+            }
             await appState.refreshSubscriptionStatus()
         }
     }
