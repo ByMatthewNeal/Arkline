@@ -25,8 +25,17 @@ enum Constants {
         static let supabaseURL = Constants.secrets["SUPABASE_URL"] as? String ?? ""
         static let supabaseAnonKey = Constants.secrets["SUPABASE_ANON_KEY"] as? String ?? ""
         static let revenueCatAPIKey = Constants.secrets["REVENUE_CAT_API_KEY"] as? String ?? ""
-        // All other API keys (CoinGecko, Metals, TAAPI, Coinglass, FRED, Finnhub)
-        // are injected server-side by the api-proxy Edge Function.
+
+        // Optional fallback keys for direct API access when proxy is unavailable.
+        // Primary path: api-proxy Edge Function injects keys server-side.
+        // Fallback: local keys from Secrets.plist (for development / offline proxy).
+        static let coinGeckoAPIKey = Constants.secrets["COINGECKO_API_KEY"] as? String
+        static let fredAPIKey = Constants.secrets["FRED_API_KEY"] as? String
+        static let fmpAPIKey = Constants.secrets["FMP_API_KEY"] as? String
+        static let coinglassAPIKey = Constants.secrets["COINGLASS_API_KEY"] as? String
+        static let finnhubAPIKey = Constants.secrets["FINNHUB_API_KEY"] as? String
+        static let metalsAPIKey = Constants.secrets["METALS_API_KEY"] as? String
+        static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String
     }
 
     // MARK: - API Endpoints
@@ -36,6 +45,9 @@ enum Constants {
         static let taapiBase = "https://api.taapi.io"
         static let arklineBackendBase = "https://web.arkline.io/api/v1"
         static let fredBase = "https://api.stlouisfed.org/fred"
+        static let fmpBase = "https://financialmodelingprep.com/stable"
+        static let coinglassBase = "https://open-api-v4.coinglass.com/api"
+        static let finnhubBase = "https://finnhub.io/api/v1"
     }
 
     // MARK: - App Configuration

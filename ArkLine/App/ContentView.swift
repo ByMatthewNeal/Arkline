@@ -51,24 +51,36 @@ struct ContentView: View {
 
     #if DEBUG
     private func skipToMainApp() {
-        // Create a mock user for development
-        let mockUser = User(
-            id: UUID(),
-            username: "matt",
-            email: "matt@arkline.app",
-            fullName: "Matt",
-            dateOfBirth: nil,
-            careerIndustry: "Technology",
-            experienceLevel: "advanced",
-            socialLinks: nil,
-            passcodeHash: nil,
-            faceIdEnabled: false
-        )
+        Task {
+            // Try anonymous Supabase auth so the api-proxy Edge Function
+            // receives a valid JWT (required for all proxied API calls).
+            if SupabaseManager.shared.isConfigured {
+                do {
+                    _ = try await SupabaseManager.shared.auth.signInAnonymously()
+                    logInfo("DEV: Signed in anonymously to Supabase", category: .auth)
+                } catch {
+                    logWarning("DEV: Anonymous auth failed (\(error.localizedDescription)), data will use direct fallback", category: .auth)
+                }
+            }
 
-        withAnimation {
-            showSplash = false
-            appState.setOnboarded(true)
-            appState.setAuthenticated(true, user: mockUser)
+            let mockUser = User(
+                id: UUID(),
+                username: "matt",
+                email: "matt@arkline.app",
+                fullName: "Matt",
+                dateOfBirth: nil,
+                careerIndustry: "Technology",
+                experienceLevel: "advanced",
+                socialLinks: nil,
+                passcodeHash: nil,
+                faceIdEnabled: false
+            )
+
+            withAnimation {
+                showSplash = false
+                appState.setOnboarded(true)
+                appState.setAuthenticated(true, user: mockUser)
+            }
         }
     }
     #endif

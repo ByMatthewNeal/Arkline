@@ -2,8 +2,10 @@ import Foundation
 import Supabase
 
 // MARK: - API Proxy
-/// Shared proxy client that routes all external API requests through the
-/// `api-proxy` Supabase Edge Function, keeping API keys server-side.
+/// Routes external API requests through the `api-proxy` Supabase Edge Function,
+/// keeping API keys server-side. Falls back to direct HTTP with local API keys
+/// from Secrets.plist when the proxy is unavailable (no auth session, Edge
+/// Function down, etc.).
 final class APIProxy {
     // MARK: - Singleton
     static let shared = APIProxy()
@@ -40,19 +42,118 @@ final class APIProxy {
         let body: Body
     }
 
-    // MARK: - Public API
+    // MARK: - Direct Fallback Configuration
 
-    /// Invoke the api-proxy Edge Function for a GET request (or any request without a body).
+    private enum KeyInjection {
+        case header(name: String)
+        case queryParam(name: String)
+        case dynamicCoinGeckoHeader
+    }
+
+    private struct DirectConfig {
+        let baseURL: String
+        let apiKey: String?
+        let keyInjection: KeyInjection
+    }
+
+    private func directConfig(for service: Service) -> DirectConfig {
+        switch service {
+        case .coingecko:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.coinGeckoBase,
+                apiKey: Constants.API.coinGeckoAPIKey,
+                keyInjection: .dynamicCoinGeckoHeader
+            )
+        case .fred:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.fredBase,
+                apiKey: Constants.API.fredAPIKey,
+                keyInjection: .queryParam(name: "api_key")
+            )
+        case .metals:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.metalsAPIBase,
+                apiKey: Constants.API.metalsAPIKey,
+                keyInjection: .queryParam(name: "access_key")
+            )
+        case .taapi:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.taapiBase,
+                apiKey: Constants.API.taapiAPIKey,
+                keyInjection: .queryParam(name: "secret")
+            )
+        case .fmp:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.fmpBase,
+                apiKey: Constants.API.fmpAPIKey,
+                keyInjection: .header(name: "apikey")
+            )
+        case .coinglass:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.coinglassBase,
+                apiKey: Constants.API.coinglassAPIKey,
+                keyInjection: .header(name: "CG-API-KEY")
+            )
+        case .finnhub:
+            return DirectConfig(
+                baseURL: Constants.Endpoints.finnhubBase,
+                apiKey: Constants.API.finnhubAPIKey,
+                keyInjection: .header(name: "X-Finnhub-Token")
+            )
+        }
+    }
+
+    // MARK: - Public API (GET)
+
+    /// Request data from an external API. Tries the Edge Function proxy first,
+    /// falls back to a direct HTTP request with local API keys on failure.
     func request(
         service: Service,
         path: String,
         method: String = "GET",
         queryItems: [String: String]? = nil
     ) async throws -> Data {
-        guard SupabaseManager.shared.isConfigured else {
-            throw APIProxyError.notConfigured
+        // Try proxy first
+        if SupabaseManager.shared.isConfigured {
+            do {
+                return try await proxyGetRequest(service: service, path: path, method: method, queryItems: queryItems)
+            } catch {
+                logWarning("Proxy failed for \(service.rawValue)\(path): \(error.localizedDescription), trying direct", category: .network)
+            }
         }
 
+        // Fallback: direct HTTP with local API key
+        return try await directGetRequest(service: service, path: path, method: method, queryItems: queryItems)
+    }
+
+    /// Request data with a POST body. Tries proxy first, falls back to direct.
+    func request<Body: Encodable>(
+        service: Service,
+        path: String,
+        queryItems: [String: String]? = nil,
+        body: Body
+    ) async throws -> Data {
+        // Try proxy first
+        if SupabaseManager.shared.isConfigured {
+            do {
+                return try await proxyPostRequest(service: service, path: path, queryItems: queryItems, body: body)
+            } catch {
+                logWarning("Proxy POST failed for \(service.rawValue)\(path): \(error.localizedDescription), trying direct", category: .network)
+            }
+        }
+
+        // Fallback: direct HTTP with local API key
+        return try await directPostRequest(service: service, path: path, queryItems: queryItems, body: body)
+    }
+
+    // MARK: - Proxy GET Request
+
+    private func proxyGetRequest(
+        service: Service,
+        path: String,
+        method: String,
+        queryItems: [String: String]?
+    ) async throws -> Data {
         let payload = GetRequest(
             service: service.rawValue,
             path: path,
@@ -72,17 +173,14 @@ final class APIProxy {
         }
     }
 
-    /// Invoke the api-proxy Edge Function for a POST request with an Encodable body.
-    func request<Body: Encodable>(
+    // MARK: - Proxy POST Request
+
+    private func proxyPostRequest<Body: Encodable>(
         service: Service,
         path: String,
-        queryItems: [String: String]? = nil,
+        queryItems: [String: String]?,
         body: Body
     ) async throws -> Data {
-        guard SupabaseManager.shared.isConfigured else {
-            throw APIProxyError.notConfigured
-        }
-
         let payload = PostRequest(
             service: service.rawValue,
             path: path,
@@ -101,6 +199,106 @@ final class APIProxy {
         } catch let error as FunctionsError {
             throw mapError(error)
         }
+    }
+
+    // MARK: - Direct GET Fallback
+
+    private func directGetRequest(
+        service: Service,
+        path: String,
+        method: String,
+        queryItems: [String: String]?
+    ) async throws -> Data {
+        let config = directConfig(for: service)
+        let request = try buildDirectRequest(config: config, path: path, method: method, queryItems: queryItems)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw APIProxyError.httpError(statusCode: statusCode, data: data)
+        }
+
+        return data
+    }
+
+    // MARK: - Direct POST Fallback
+
+    private func directPostRequest<Body: Encodable>(
+        service: Service,
+        path: String,
+        queryItems: [String: String]?,
+        body: Body
+    ) async throws -> Data {
+        let config = directConfig(for: service)
+        var request = try buildDirectRequest(config: config, path: path, method: "POST", queryItems: queryItems)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Encode body, injecting TAAPI secret into body if needed
+        var bodyData = try JSONEncoder().encode(body)
+        if service == .taapi, let key = config.apiKey {
+            if var bodyDict = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any] {
+                bodyDict["secret"] = key
+                bodyData = try JSONSerialization.data(withJSONObject: bodyDict)
+            }
+        }
+        request.httpBody = bodyData
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw APIProxyError.httpError(statusCode: statusCode, data: data)
+        }
+
+        return data
+    }
+
+    // MARK: - Build Direct URL Request
+
+    private func buildDirectRequest(
+        config: DirectConfig,
+        path: String,
+        method: String,
+        queryItems: [String: String]?
+    ) throws -> URLRequest {
+        var components = URLComponents(string: config.baseURL + path)
+        var items = queryItems?.map { URLQueryItem(name: $0.key, value: $0.value) } ?? []
+
+        // Inject API key as query param if applicable
+        if case .queryParam(let name) = config.keyInjection, let key = config.apiKey {
+            items.append(URLQueryItem(name: name, value: key))
+        }
+        if !items.isEmpty {
+            components?.queryItems = items
+        }
+
+        guard let url = components?.url else {
+            throw APIProxyError.notConfigured
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        // Inject API key as header if applicable
+        switch config.keyInjection {
+        case .header(let name):
+            if let key = config.apiKey {
+                request.setValue(key, forHTTPHeaderField: name)
+            }
+        case .dynamicCoinGeckoHeader:
+            if let key = config.apiKey {
+                let headerName = key.hasPrefix("CG-") ? "x-cg-demo-api-key" : "x-cg-pro-api-key"
+                request.setValue(key, forHTTPHeaderField: headerName)
+            }
+        case .queryParam:
+            break // already handled above
+        }
+
+        return request
     }
 
     // MARK: - Error Mapping
