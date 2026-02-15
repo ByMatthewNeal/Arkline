@@ -87,14 +87,17 @@ struct GoogleTrendsDetailView: View {
                     }
                     .padding(.top, 20)
 
-                    // What is Google Trends
+                    // What is Search Interest
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("What is Google Trends?")
+                        Text("What is Search Interest?")
                             .font(.headline)
                             .foregroundColor(textPrimary)
-                        Text("Google Trends measures relative search interest for \"Bitcoin\" on a scale of 0-100. A value of 100 represents peak popularity, while 50 means half as popular. It's a useful gauge of retail interest and potential market tops/bottoms.")
+                        Text("Search Interest measures relative public attention for Bitcoin on a scale of 0-100. A value of 100 represents peak interest in the 90-day window, while 50 means moderate interest. It's a useful gauge of retail attention and potential market tops/bottoms.")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
+                        Text("Data: Wikipedia Pageviews")
+                            .font(.caption2)
+                            .foregroundColor(.secondary.opacity(0.7))
                     }
                     .padding()
                     .background(Color(.systemGray6))

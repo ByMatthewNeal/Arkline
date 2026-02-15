@@ -613,12 +613,11 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchGoogleTrends() async throws -> GoogleTrendsData {
-        // Google Trends API requires SerpAPI or similar service
-        // Using placeholder data for now (50 = baseline)
-        let currentIndex = 50
-
-        // Try to get historical data from Supabase to calculate change
+        // Read real data from Supabase (populated by collect-trends edge function)
         let history = try? await SupabaseDatabase.shared.getGoogleTrendsHistory(limit: 30)
+        let latest = history?.first // Most recent (ordered by date DESC)
+
+        let currentIndex = latest?.searchIndex ?? 50
         let weekAgoIndex = history?.first(where: { daysSince($0.date) >= 7 })?.searchIndex ?? currentIndex
         let monthAgoIndex = history?.first(where: { daysSince($0.date) >= 30 })?.searchIndex ?? currentIndex
 
@@ -632,18 +631,13 @@ final class APISentimentService: SentimentServiceProtocol {
             trend = .stable
         }
 
-        // Save current data to Supabase for historical tracking
-        Task {
-            await saveGoogleTrendsToSupabase(searchIndex: currentIndex)
-        }
-
         return GoogleTrendsData(
             keyword: "Bitcoin",
             currentIndex: currentIndex,
             weekAgoIndex: weekAgoIndex,
             monthAgoIndex: monthAgoIndex,
             trend: trend,
-            timestamp: Date()
+            timestamp: latest?.date ?? Date()
         )
     }
 
@@ -652,22 +646,32 @@ final class APISentimentService: SentimentServiceProtocol {
         Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
     }
 
-    /// Save current Google Trends data to Supabase with BTC price
-    private func saveGoogleTrendsToSupabase(searchIndex: Int) async {
+    // MARK: - Trends Data Collection
+
+    /// Timestamp of last trends refresh to avoid excessive calls
+    private static var lastTrendsRefresh: Date?
+
+    /// Trigger the collect-trends edge function to fetch fresh Wikipedia pageview data.
+    /// Rate limited to once per hour.
+    func refreshTrendsData() async {
+        // Rate limit: skip if refreshed within the last hour
+        if let last = Self.lastTrendsRefresh, Date().timeIntervalSince(last) < 3600 {
+            return
+        }
+
         do {
-            // Fetch current BTC price
-            let btcPrice = await fetchCurrentBTCPrice()
-
-            // Create DTO
-            let trendsDTO = GoogleTrendsDTO(
-                searchIndex: searchIndex,
-                btcPrice: btcPrice
+            let secret = Constants.API.collectTrendsSecret
+            let _: Data = try await SupabaseManager.shared.functions.invoke(
+                "collect-trends",
+                options: .init(
+                    headers: ["Authorization": "Bearer \(secret)"],
+                    body: ["trigger": "ios_refresh"]
+                ),
+                decode: { data, _ in data }
             )
-
-            // Save to Supabase
-            try await SupabaseDatabase.shared.saveGoogleTrends(trendsDTO)
+            Self.lastTrendsRefresh = Date()
         } catch {
-            logWarning("Failed to save Google Trends to Supabase: \(error.localizedDescription)", category: .network)
+            logWarning("Failed to trigger trends collection: \(error.localizedDescription)", category: .network)
         }
     }
 

@@ -250,6 +250,9 @@ class SentimentViewModel {
         isLoading = true
         errorMessage = nil
 
+        // Trigger Wikipedia pageview collection (fire-and-forget, rate limited to 1x/hour)
+        Task { await sentimentService.refreshTrendsData() }
+
         // Fetch all indicators independently using safe wrappers
         // This ensures one failure doesn't block others
         async let fgTask = fetchFearGreedSafe()

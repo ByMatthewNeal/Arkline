@@ -267,6 +267,10 @@ final class MockSentimentService: SentimentServiceProtocol {
         )
     }
 
+    func refreshTrendsData() async {
+        // No-op for mock
+    }
+
     private func recommendationFor(score: Int) -> String {
         switch score {
         case 0...20:

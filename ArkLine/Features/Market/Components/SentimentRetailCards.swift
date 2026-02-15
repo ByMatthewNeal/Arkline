@@ -190,7 +190,7 @@ struct BitcoinSearchCard: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text("Google Trends")
+                    Text("Search Interest")
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary)
                 }

@@ -36,6 +36,7 @@ enum Constants {
         static let finnhubAPIKey = Constants.secrets["FINNHUB_API_KEY"] as? String
         static let metalsAPIKey = Constants.secrets["METALS_API_KEY"] as? String
         static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String
+        static let collectTrendsSecret = Constants.secrets["COLLECT_TRENDS_SECRET"] as? String ?? ""
     }
 
     // MARK: - API Endpoints

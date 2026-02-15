@@ -56,6 +56,10 @@ protocol SentimentServiceProtocol {
     /// - Returns: GoogleTrendsData with search volume index
     func fetchGoogleTrends() async throws -> GoogleTrendsData
 
+    /// Triggers collection of fresh Wikipedia pageview data via edge function.
+    /// Rate limited to once per hour.
+    func refreshTrendsData() async
+
     /// Fetches all sentiment data in one call
     /// - Returns: MarketOverview containing all indicators
     func fetchMarketOverview() async throws -> MarketOverview
