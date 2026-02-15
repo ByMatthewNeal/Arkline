@@ -81,7 +81,7 @@ struct CustomTabBar: View {
             x: 0,
             y: 4
         )
-        .padding(.horizontal, 40)
+        .padding(.horizontal, max(16, UIScreen.main.bounds.width * 0.05))
         .padding(.bottom, 0)
     }
 
@@ -121,7 +121,7 @@ struct TabBarItem: View {
                     if isSelected {
                         Capsule()
                             .fill(pillColor)
-                            .frame(width: 56, height: 36)
+                            .frame(width: max(44, min(56, UIScreen.main.bounds.width / 8)), height: 36)
                     }
 
                     Image(systemName: isSelected ? tab.icon : tab.unselectedIcon)

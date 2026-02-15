@@ -109,7 +109,7 @@ struct OpenInterestCard: View {
             )
         }
         .padding(16)
-        .frame(width: 200, height: 160)
+        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -132,7 +132,7 @@ struct OIRow: View {
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textSecondary)
-                .frame(width: 35, alignment: .leading)
+                .frame(minWidth: 30, alignment: .leading)
 
             Text(oi)
                 .font(.subheadline)
@@ -220,7 +220,7 @@ struct LiquidationsCard: View {
             }
         }
         .padding(16)
-        .frame(width: 200, height: 160)
+        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -301,7 +301,7 @@ struct FundingRatesCard: View {
             .foregroundColor(Color(hex: btcFunding.sentiment.color.replacingOccurrences(of: "#", with: "")))
         }
         .padding(16)
-        .frame(width: 200, height: 160)
+        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -323,7 +323,7 @@ struct FundingRow: View {
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textSecondary)
-                .frame(width: 35, alignment: .leading)
+                .frame(minWidth: 30, alignment: .leading)
 
             Text(rate)
                 .font(.subheadline)
@@ -384,7 +384,7 @@ struct LongShortRatioCard: View {
             }
         }
         .padding(16)
-        .frame(width: 200, height: 160)
+        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -408,7 +408,7 @@ struct LSRow: View {
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textSecondary)
-                    .frame(width: 35, alignment: .leading)
+                    .frame(minWidth: 30, alignment: .leading)
 
                 // Mini bar
                 GeometryReader { geo in
@@ -427,7 +427,7 @@ struct LSRow: View {
                     .font(.caption2)
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
-                    .frame(width: 35, alignment: .trailing)
+                    .frame(minWidth: 30, alignment: .trailing)
             }
         }
     }
@@ -440,7 +440,7 @@ struct DerivativesLoadingView: View {
             ForEach(0..<4) { _ in
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: 200, height: 160)
+                    .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
                     .shimmer(isLoading: true)
             }
         }

@@ -45,19 +45,25 @@ struct QuickActionButton: View {
     let color: Color
     let action: () -> Void
 
+    private var buttonSize: CGFloat {
+        max(44, min(56, UIScreen.main.bounds.width / 8))
+    }
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 24))
+                    .font(.system(size: min(24, buttonSize * 0.43)))
                     .foregroundColor(color)
-                    .frame(width: 56, height: 56)
+                    .frame(width: buttonSize, height: buttonSize)
                     .background(color.opacity(0.1))
                     .cornerRadius(16)
 
                 Text(label)
                     .font(.caption2)
                     .foregroundColor(Color(hex: "A1A1AA"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
         .frame(maxWidth: .infinity)

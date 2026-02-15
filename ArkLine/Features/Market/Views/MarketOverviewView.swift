@@ -119,11 +119,14 @@ struct StatColumn: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
 
             if let change = change {
                 Text("\(change >= 0 ? "+" : "")\(change, specifier: "%.2f")%")
                     .font(.caption2)
                     .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                    .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity)
@@ -145,6 +148,8 @@ struct CompactFearGreedCard: View {
                     Text("\(index.value)")
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
 
                     // Simplified: neutral badge, no color
                     Text(index.level.rawValue)
@@ -275,6 +280,8 @@ struct FundingRateDetailView: View {
                             .font(.system(size: 48, weight: .bold, design: .default))
                             .foregroundColor(rateColor)
                             .monospacedDigit()
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
 
                         if let rate = fundingRate {
                             Text(rate.annualizedDisplay + " APR")

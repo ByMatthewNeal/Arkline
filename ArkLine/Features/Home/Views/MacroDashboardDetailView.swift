@@ -50,12 +50,15 @@ struct MacroDashboardDetailView: View {
                             Text(regime.rawValue)
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(regime.color)
+                                .minimumScaleFactor(0.7)
+                                .lineLimit(1)
                         }
 
                         Text(regime.description)
                             .font(.system(size: 15))
                             .foregroundColor(textPrimary.opacity(0.7))
                             .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.8)
 
                         // Last change info
                         if let lastChange = regimeManager.lastRegimeChange {
@@ -223,10 +226,14 @@ struct MacroDashboardDetailView: View {
                                 Text("Regime Change Alerts")
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundColor(textPrimary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
 
                                 Text("Get notified when conditions shift")
                                     .font(.system(size: 12))
                                     .foregroundColor(textPrimary.opacity(0.5))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                             }
 
                             Spacer()

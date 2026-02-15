@@ -132,6 +132,8 @@ struct AppStoreRankingDetailView: View {
                             Text("\(ranking.ranking)")
                                 .font(.system(size: 36, weight: .bold))
                                 .foregroundColor(textPrimary)
+                                .minimumScaleFactor(0.7)
+                                .lineLimit(1)
                         }
 
                         if ranking.change != 0 {
@@ -151,6 +153,8 @@ struct AppStoreRankingDetailView: View {
                         Text(">200")
                             .font(.system(size: 36, weight: .bold))
                             .foregroundColor(AppColors.textSecondary)
+                            .minimumScaleFactor(0.7)
+                            .lineLimit(1)
 
                         Text("Outside Top 200")
                             .font(.caption)
@@ -251,13 +255,13 @@ struct DailyRankingsCard: View {
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.textSecondary)
-                                .frame(width: 70, alignment: .trailing)
+                                .frame(minWidth: 50, alignment: .trailing)
 
                             Text("BTC Price")
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.textSecondary)
-                                .frame(width: 90, alignment: .trailing)
+                                .frame(minWidth: 70, alignment: .trailing)
                         }
                         .padding(.vertical, 8)
                         .background(
@@ -436,13 +440,13 @@ struct HistoricalMilestonesCard: View {
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.textSecondary)
-                            .frame(width: 50, alignment: .trailing)
+                            .frame(minWidth: 40, alignment: .trailing)
 
                         Text("BTC")
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.textSecondary)
-                            .frame(width: 70, alignment: .trailing)
+                            .frame(minWidth: 60, alignment: .trailing)
                     }
                     .padding(.vertical, 8)
                     .background(
@@ -523,13 +527,16 @@ struct MilestoneRow: View {
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .foregroundColor(milestone.ranking != nil ? AppColors.success : AppColors.textSecondary)
-                .frame(width: 50, alignment: .trailing)
+                .frame(minWidth: 40, alignment: .trailing)
+                .lineLimit(1)
 
             // BTC Price
             Text(milestone.btcPriceDisplay)
                 .font(.subheadline)
                 .foregroundColor(textPrimary)
-                .frame(width: 70, alignment: .trailing)
+                .frame(minWidth: 60, alignment: .trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -558,13 +565,16 @@ struct DailyRankingRow: View {
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .foregroundColor(ranking.isRanked ? textPrimary : AppColors.textSecondary)
-                .frame(width: 70, alignment: .trailing)
+                .frame(minWidth: 50, alignment: .trailing)
+                .lineLimit(1)
 
             // BTC Price
             Text(ranking.btcPriceDisplay)
                 .font(.subheadline)
                 .foregroundColor(textPrimary)
-                .frame(width: 90, alignment: .trailing)
+                .frame(minWidth: 70, alignment: .trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
