@@ -20,6 +20,12 @@
 		07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */; };
 		0ABDC16775229FAEB1DC2E18 /* MacroStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6268CFEC85C00257A9DE85B /* MacroStatisticsService.swift */; };
 		0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */; };
+		BB0000000000000000000011 /* AppErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000011 /* AppErrorTests.swift */; };
+		BB0000000000000000000012 /* AssetRiskConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000012 /* AssetRiskConfigTests.swift */; };
+		BB0000000000000000000013 /* MultiFactorRiskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000013 /* MultiFactorRiskTests.swift */; };
+		BB0000000000000000000014 /* RiskFactorNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* RiskFactorNormalizerTests.swift */; };
+		BB0000000000000000000015 /* RiskHistoryPointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* RiskHistoryPointTests.swift */; };
+		BB0000000000000000000016 /* SSLPinningConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* SSLPinningConfigurationTests.swift */; };
 		0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */; };
 		0BB9196B1B6620C4C16FA8DA /* DateExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BC257F981A64B96EC641B0 /* DateExtensionsTests.swift */; };
 		0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */; };
@@ -644,6 +650,12 @@
 		FAQV13W0000000000001 /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
 		FBEE2AB1904E9E24D7B1229D /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StatisticsCalculatorTests.swift; path = ../ArkLineTests/StatisticsCalculatorTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000011 /* AppErrorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppErrorTests.swift; path = ../ArkLineTests/AppErrorTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000012 /* AssetRiskConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssetRiskConfigTests.swift; path = ../ArkLineTests/AssetRiskConfigTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000013 /* MultiFactorRiskTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MultiFactorRiskTests.swift; path = ../ArkLineTests/MultiFactorRiskTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000014 /* RiskFactorNormalizerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RiskFactorNormalizerTests.swift; path = ../ArkLineTests/RiskFactorNormalizerTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000015 /* RiskHistoryPointTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RiskHistoryPointTests.swift; path = ../ArkLineTests/RiskHistoryPointTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000016 /* SSLPinningConfigurationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SSLPinningConfigurationTests.swift; path = ../ArkLineTests/SSLPinningConfigurationTests.swift; sourceTree = "<group>"; };
 		FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnicalAnalysisServiceProtocol.swift; sourceTree = "<group>"; };
 		FE0000000000000000000011 /* FeatureRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequest.swift; sourceTree = "<group>"; };
 		FE0000000000000000000012 /* FeatureRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestService.swift; sourceTree = "<group>"; };
@@ -1269,11 +1281,17 @@
 		9FEFA5F4CC1991910CFEC033 /* ArkLineTests */ = {
 			isa = PBXGroup;
 			children = (
+				AA0000000000000000000011 /* AppErrorTests.swift */,
+				AA0000000000000000000012 /* AssetRiskConfigTests.swift */,
 				7B8B3B915F6DCA0B6875473B /* DCACalculatorTests.swift */,
 				B8BC257F981A64B96EC641B0 /* DateExtensionsTests.swift */,
 				E0226AB419D7AB03D9541784 /* DoubleExtensionsTests.swift */,
+				AA0000000000000000000013 /* MultiFactorRiskTests.swift */,
 				3ADAC4F7B0196234F927192D /* PerformanceMetricsTests.swift */,
 				DBE6446991C913AF2BE73E43 /* RiskCalculatorTests.swift */,
+				AA0000000000000000000014 /* RiskFactorNormalizerTests.swift */,
+				AA0000000000000000000015 /* RiskHistoryPointTests.swift */,
+				AA0000000000000000000016 /* SSLPinningConfigurationTests.swift */,
 				FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */,
 				C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */,
 			);
@@ -1788,11 +1806,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB0000000000000000000011 /* AppErrorTests.swift in Sources */,
+				BB0000000000000000000012 /* AssetRiskConfigTests.swift in Sources */,
 				443B89F3386009063C6E7535 /* DCACalculatorTests.swift in Sources */,
 				0BB9196B1B6620C4C16FA8DA /* DateExtensionsTests.swift in Sources */,
 				0287C168D12A0BBB5F6AAD51 /* DoubleExtensionsTests.swift in Sources */,
+				BB0000000000000000000013 /* MultiFactorRiskTests.swift in Sources */,
 				0CBE5B9F0D1C21DA431CED2F /* PerformanceMetricsTests.swift in Sources */,
 				70897146C2AE0DE489ADC17C /* RiskCalculatorTests.swift in Sources */,
+				BB0000000000000000000014 /* RiskFactorNormalizerTests.swift in Sources */,
+				BB0000000000000000000015 /* RiskHistoryPointTests.swift in Sources */,
+				BB0000000000000000000016 /* SSLPinningConfigurationTests.swift in Sources */,
 				0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */,
 				95DCC179469B65E518BAA33F /* StringExtensionsTests.swift in Sources */,
 			);
