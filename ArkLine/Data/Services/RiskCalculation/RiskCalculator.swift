@@ -63,6 +63,29 @@ final class RiskCalculator {
         )
     }
 
+    // MARK: - Calculate Risk with Regression Result
+
+    /// Calculate risk and return both the risk point and the regression result.
+    /// This exposes R-squared for adaptive confidence tracking.
+    func calculateRiskWithRegression(
+        price: Double,
+        date: Date,
+        config: AssetRiskConfig,
+        priceHistory: [(date: Date, price: Double)]
+    ) -> (risk: RiskHistoryPoint, regression: LogarithmicRegression.Result)? {
+        guard let regression = LogarithmicRegression.fit(
+            prices: priceHistory, originDate: config.originDate
+        ) else { return nil }
+
+        cacheLock.withLock { regressionCache[config.assetId] = regression }
+
+        guard let risk = calculateRisk(
+            price: price, date: date, config: config, regression: regression
+        ) else { return nil }
+
+        return (risk, regression)
+    }
+
     // MARK: - Calculate Risk History
 
     /// Calculate risk levels for an array of price points.

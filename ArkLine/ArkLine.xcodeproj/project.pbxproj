@@ -179,6 +179,8 @@
 		87E5C72EC3033733C97B8A92 /* OnboardingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */; };
 		87EB17BC735BE9A7C9D61450 /* ImageAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F96E9F31319C54A3F5158D /* ImageAnnotationView.swift */; };
 		8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */; };
+		CC0000000000000000000001 /* ConfidenceTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000002 /* ConfidenceTracker.swift */; };
+		CC0000000000000000000003 /* ConfidenceTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000004 /* ConfidenceTrackerTests.swift */; };
 		8BA5B455BC87E71356E74F27 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C06924AB1053BEBE96D201B /* TransactionRow.swift */; };
 		8C5C3B248351250E78D35AC6 /* SentimentRetailCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9945832BAAEB3194B052824 /* SentimentRetailCards.swift */; };
 		8D35F7007280F5E80024585A /* CreatePortfolioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5518A68482F92F03B8C61BD6 /* CreatePortfolioView.swift */; };
@@ -504,6 +506,8 @@
 		85D98C62D2451E41B463D1AD /* RiskCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskCalculator.swift; sourceTree = "<group>"; };
 		85E08551BAC46315B29293E7 /* MockGlobalLiquidityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGlobalLiquidityService.swift; sourceTree = "<group>"; };
 		862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskDataCache.swift; sourceTree = "<group>"; };
+		CC0000000000000000000002 /* ConfidenceTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfidenceTracker.swift; sourceTree = "<group>"; };
+		CC0000000000000000000004 /* ConfidenceTrackerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ConfidenceTrackerTests.swift; path = ../ArkLineTests/ConfidenceTrackerTests.swift; sourceTree = "<group>"; };
 		86AA2774D5757CF06C791EEC /* AssetDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetDetailView.swift; sourceTree = "<group>"; };
 		872F085E24F150BFF85D1495 /* ArkLineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineApp.swift; sourceTree = "<group>"; };
 		87CF0E5EC762D968DCBE4F7D /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
@@ -799,6 +803,7 @@
 		11BA2E7D60A4A2B15512A08A /* RiskCalculation */ = {
 			isa = PBXGroup;
 			children = (
+				CC0000000000000000000002 /* ConfidenceTracker.swift */,
 				292C58ACAF95259468F7C280 /* HistoricalPriceData.swift */,
 				50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */,
 				85D98C62D2451E41B463D1AD /* RiskCalculator.swift */,
@@ -1292,6 +1297,7 @@
 				AA0000000000000000000014 /* RiskFactorNormalizerTests.swift */,
 				AA0000000000000000000015 /* RiskHistoryPointTests.swift */,
 				AA0000000000000000000016 /* SSLPinningConfigurationTests.swift */,
+				CC0000000000000000000004 /* ConfidenceTrackerTests.swift */,
 				FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */,
 				C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */,
 			);
@@ -1817,6 +1823,7 @@
 				BB0000000000000000000014 /* RiskFactorNormalizerTests.swift in Sources */,
 				BB0000000000000000000015 /* RiskHistoryPointTests.swift in Sources */,
 				BB0000000000000000000016 /* SSLPinningConfigurationTests.swift in Sources */,
+				CC0000000000000000000003 /* ConfidenceTrackerTests.swift in Sources */,
 				0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */,
 				95DCC179469B65E518BAA33F /* StringExtensionsTests.swift in Sources */,
 			);
@@ -2030,6 +2037,7 @@
 				7496022AFE7F51C4A859F208 /* RealEstateProperty.swift in Sources */,
 				81C072BFFD8B887035D2B021 /* RiskCalculator.swift in Sources */,
 				8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */,
+				CC0000000000000000000001 /* ConfidenceTracker.swift in Sources */,
 				E42AD0E11FB19C0D446A3F51 /* IncrementalPriceStore.swift in Sources */,
 				B8294A44B6A4109C2975C726 /* RiskFactorBreakdownView.swift in Sources */,
 				512181C730231BCC1960FD47 /* RiskFactorData.swift in Sources */,

@@ -123,14 +123,27 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         // Fetch current price from Binance for today's calculation
         let currentPrice = try await fetchCurrentPrice(coin: coin)
 
-        // Calculate risk for today using live price
-        guard let riskPoint = riskCalculator.calculateRisk(
+        // Calculate risk for today using live price (with regression for confidence tracking)
+        guard let result = riskCalculator.calculateRiskWithRegression(
             price: currentPrice,
             date: Date(),
             config: config,
             priceHistory: priceHistory
         ) else {
             throw RiskCalculationError.noDataAvailable(coin)
+        }
+
+        let riskPoint = result.risk
+
+        // Track regression quality and prediction accuracy for adaptive confidence
+        Task {
+            await ConfidenceTracker.shared.recordCalculation(
+                assetId: coinKey,
+                rSquared: result.regression.rSquared,
+                dataPointCount: priceHistory.count,
+                riskLevel: riskPoint.riskLevel,
+                price: currentPrice
+            )
         }
 
         // Cache the result

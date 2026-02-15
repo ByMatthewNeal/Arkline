@@ -101,6 +101,12 @@ struct ConfidenceInfoPopover: View {
     let config: AssetRiskConfig
     let colorScheme: ColorScheme
 
+    @State private var adaptiveResult: AdaptiveConfidenceResult?
+
+    private var displayConfidence: Int {
+        adaptiveResult?.adaptiveConfidence ?? config.confidenceLevel
+    }
+
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
@@ -110,7 +116,7 @@ struct ConfidenceInfoPopover: View {
     }
 
     private var confidenceDescription: String {
-        switch config.confidenceLevel {
+        switch displayConfidence {
         case 9:
             return "Highest confidence. Over 15 years of price data provides excellent regression accuracy."
         case 8:
@@ -156,7 +162,7 @@ struct ConfidenceInfoPopover: View {
 
                     Spacer()
 
-                    Text("\(config.confidenceLevel)/9")
+                    Text("\(displayConfidence)/9")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.accent)
@@ -170,10 +176,23 @@ struct ConfidenceInfoPopover: View {
 
                         RoundedRectangle(cornerRadius: 3)
                             .fill(AppColors.accent)
-                            .frame(width: geometry.size.width * (Double(config.confidenceLevel) / 9.0))
+                            .frame(width: geometry.size.width * (Double(displayConfidence) / 9.0))
                     }
                 }
                 .frame(height: 6)
+            }
+
+            // Adaptive badge
+            if let result = adaptiveResult,
+               result.adaptiveConfidence != result.staticConfidence {
+                HStack(spacing: 4) {
+                    Image(systemName: result.adaptiveConfidence > result.staticConfidence
+                          ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                        .font(.system(size: 10))
+                    Text("Adapted from base \(result.staticConfidence)/9")
+                        .font(.caption2)
+                }
+                .foregroundColor(AppColors.accent.opacity(0.8))
             }
 
             // Description
@@ -205,12 +224,43 @@ struct ConfidenceInfoPopover: View {
                         .fontWeight(.medium)
                         .foregroundColor(textPrimary)
                 }
+
+                if let r2 = adaptiveResult?.rSquared {
+                    HStack {
+                        Text("R-squared:")
+                            .font(.caption)
+                            .foregroundColor(textSecondary)
+                        Spacer()
+                        Text(String(format: "%.4f", r2))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(textPrimary)
+                    }
+                }
+
+                if let accuracy = adaptiveResult?.predictionAccuracy,
+                   let count = adaptiveResult?.validatedPredictionCount {
+                    HStack {
+                        Text("Prediction accuracy:")
+                            .font(.caption)
+                            .foregroundColor(textSecondary)
+                        Spacer()
+                        Text(String(format: "%.0f%% (%d validated)", accuracy * 100, count))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(textPrimary)
+                    }
+                }
             }
             .padding(.top, 4)
         }
         .padding(16)
         .frame(width: 280)
         .background(colorScheme == .dark ? Color(hex: "1C1C1E") : Color.white)
+        .task {
+            adaptiveResult = await ConfidenceTracker.shared
+                .computeAdaptiveConfidence(for: config.assetId)
+        }
     }
 }
 
