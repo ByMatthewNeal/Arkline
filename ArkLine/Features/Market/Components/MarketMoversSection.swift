@@ -141,9 +141,11 @@ struct MoverRow: View {
                 Text(mover.changePercentFormatted)
                     .font(.subheadline)
                     .fontWeight(.semibold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             .foregroundColor(isGainer ? AppColors.success : AppColors.error)
-            .frame(width: 80, alignment: .trailing)
+            .frame(minWidth: 80, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
