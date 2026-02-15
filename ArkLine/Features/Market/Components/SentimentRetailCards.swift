@@ -67,7 +67,7 @@ struct CoinbaseRankingCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(">200")
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(AppColors.textSecondary)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("US App Store")
                         .font(.caption2)
