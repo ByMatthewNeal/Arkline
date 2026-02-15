@@ -375,7 +375,8 @@ class SentimentViewModel {
             if let alt = alt {
                 await collector.recordIndicator(
                     name: "altcoin_season", value: Double(alt.value),
-                    metadata: ["is_bitcoin_season": .bool(alt.isBitcoinSeason)]
+                    metadata: ["is_bitcoin_season": .bool(alt.isBitcoinSeason),
+                               "calculation_window": .int(alt.calculationWindow)]
                 )
             }
             if let vix = vix {
@@ -392,6 +393,28 @@ class SentimentViewModel {
             }
             if let arkLineScore = arkLineScore {
                 await collector.recordRiskScore(arkLineScore)
+            }
+            if let overview = marketOverview {
+                await collector.recordIndicator(
+                    name: "total_market_cap", value: overview.totalMarketCap,
+                    metadata: ["change_24h_pct": .double(overview.marketCapChange24h),
+                               "total_volume_24h": .double(overview.totalVolume24h)]
+                )
+            }
+            if let trends = trends {
+                await collector.recordIndicator(
+                    name: "google_trends_bitcoin", value: Double(trends.currentIndex)
+                )
+            }
+            if let rankings = appRankings, !rankings.isEmpty {
+                var rankMeta: [String: AnyCodableValue] = [:]
+                for r in rankings {
+                    rankMeta[r.appName.lowercased()] = .int(r.ranking)
+                }
+                await collector.recordIndicator(
+                    name: "app_store_rankings", value: Double(rankings.first?.ranking ?? 0),
+                    metadata: rankMeta
+                )
             }
         }
     }
