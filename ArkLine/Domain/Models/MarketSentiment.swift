@@ -75,6 +75,14 @@ struct AltcoinSeasonIndex: Codable, Equatable {
     let value: Int
     let isBitcoinSeason: Bool
     let timestamp: Date
+    let calculationWindow: Int
+
+    init(value: Int, isBitcoinSeason: Bool, timestamp: Date, calculationWindow: Int = 30) {
+        self.value = value
+        self.isBitcoinSeason = isBitcoinSeason
+        self.timestamp = timestamp
+        self.calculationWindow = calculationWindow
+    }
 
     var season: String {
         isBitcoinSeason ? "Bitcoin Season" : "Altcoin Season"
@@ -83,6 +91,30 @@ struct AltcoinSeasonIndex: Codable, Equatable {
     var displayValue: String {
         "\(value)"
     }
+
+    var windowLabel: String {
+        "\(calculationWindow)d"
+    }
+}
+
+// MARK: - Altcoin Season Snapshots (Daily Persistence)
+
+struct AltcoinSnapshotCoin: Codable, Equatable {
+    let coinId: String
+    let price: Double
+    let marketCapRank: Int
+}
+
+struct AltcoinSeasonSnapshot: Codable, Equatable {
+    let date: String
+    let btcPrice: Double
+    let coins: [AltcoinSnapshotCoin]
+    let score30d: Int
+}
+
+struct AltcoinSeasonSnapshotFile: Codable {
+    var snapshots: [AltcoinSeasonSnapshot]
+    var lastUpdated: Date
 }
 
 // MARK: - ETF Net Flow

@@ -9,6 +9,13 @@ final class APISentimentService: SentimentServiceProtocol {
     private let cache = APICache.shared
     private let sharedCache = SharedCacheService.shared
 
+    private static let snapshotDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f
+    }()
+
     // MARK: - SentimentServiceProtocol
 
     func fetchFearGreedIndex() async throws -> FearGreedIndex {
@@ -173,13 +180,38 @@ final class APISentimentService: SentimentServiceProtocol {
             }
 
             // Calculate index (0-100)
-            let index = Int((Double(outperformers) / Double(totalAltcoins)) * 100)
-            let isBitcoinSeason = index < 50
+            let score30d = Int((Double(outperformers) / Double(totalAltcoins)) * 100)
 
+            // Persist daily snapshot for 90-day calculation
+            let todayStr = Self.snapshotDateFormatter.string(from: Date())
+            let snapshotCoins = validCoins.compactMap { coin -> AltcoinSnapshotCoin? in
+                guard let price = coin.currentPrice, price > 0,
+                      let rank = coin.marketCapRank else { return nil }
+                return AltcoinSnapshotCoin(coinId: coin.id, price: price, marketCapRank: rank)
+            }
+            if let btcPrice = btcCoin.currentPrice, btcPrice > 0, !snapshotCoins.isEmpty {
+                let snapshot = AltcoinSeasonSnapshot(
+                    date: todayStr,
+                    btcPrice: btcPrice,
+                    coins: snapshotCoins,
+                    score30d: score30d
+                )
+                Task {
+                    await AltcoinSeasonStore.shared.recordSnapshot(snapshot)
+                }
+            }
+
+            // Use local data if we have >30 days (progressively improves toward 90d)
+            if let localIndex = await AltcoinSeasonStore.shared.computeBestIndex() {
+                return localIndex
+            }
+
+            // Fall back to 30-day CoinGecko data
             return AltcoinSeasonIndex(
-                value: index,
-                isBitcoinSeason: isBitcoinSeason,
-                timestamp: Date()
+                value: score30d,
+                isBitcoinSeason: score30d < 50,
+                timestamp: Date(),
+                calculationWindow: 30
             )
         }
     }

@@ -196,9 +196,23 @@ struct BitcoinSeasonCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Season Indicator")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+            HStack {
+                Text("Season Indicator")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                Text(index.windowLabel)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.05))
+                    )
+            }
 
             Spacer()
 
