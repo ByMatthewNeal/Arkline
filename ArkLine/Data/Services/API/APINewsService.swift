@@ -49,8 +49,6 @@ final class APINewsService: NewsServiceProtocol {
     }
 
     func fetchUpcomingFedMeetings() async throws -> [FedMeeting] {
-        // TODO: Implement with Fed meeting schedule
-        // Could be hardcoded with known FOMC meeting dates
         let meetings = generateKnownFOMCMeetings()
         return meetings.filter { $0.date > Date() }
     }
@@ -139,20 +137,20 @@ final class APINewsService: NewsServiceProtocol {
     // MARK: - Private Helpers
 
     private func generateKnownFOMCMeetings() -> [FedMeeting] {
-        // FOMC typically meets 8 times per year
-        // These are the announced 2026 FOMC meeting dates (decision day)
+        // Source: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+        // Decision day = second day of each 2-day meeting
         let calendar = Calendar.current
 
         let meetingDates: [(year: Int, month: Int, day: Int, hasProjections: Bool)] = [
-            // 2026 FOMC meetings
-            (2026, 1, 29, false),   // Jan 28-29
-            (2026, 3, 19, true),    // Mar 18-19 (SEP)
-            (2026, 5, 7, false),    // May 6-7
-            (2026, 6, 18, true),    // Jun 17-18 (SEP)
-            (2026, 7, 30, false),   // Jul 29-30
-            (2026, 9, 17, true),    // Sep 16-17 (SEP)
-            (2026, 11, 5, false),   // Nov 4-5
-            (2026, 12, 17, true),   // Dec 16-17 (SEP)
+            // 2026 FOMC meetings (decision day)
+            (2026, 1, 28, false),   // Jan 27-28
+            (2026, 3, 18, true),    // Mar 17-18 (SEP)
+            (2026, 4, 29, false),   // Apr 28-29
+            (2026, 6, 17, true),    // Jun 16-17 (SEP)
+            (2026, 7, 29, false),   // Jul 28-29
+            (2026, 9, 16, true),    // Sep 15-16 (SEP)
+            (2026, 10, 28, false),  // Oct 27-28
+            (2026, 12, 9, true),    // Dec 8-9 (SEP)
         ]
 
         return meetingDates.compactMap { dateInfo -> FedMeeting? in

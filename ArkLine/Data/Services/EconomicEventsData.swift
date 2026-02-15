@@ -237,6 +237,31 @@ enum EconomicEventsData {
         makeEvent(title: "FOMC Press Conference", currency: "USD", dateString: "2026-06-17", timeString: "14:30", impact: .high),
         makeEvent(title: "FOMC Economic Projections", currency: "USD", dateString: "2026-06-17", timeString: "14:00", impact: .high),
 
+        // ==================== H2 2026 FOMC MEETINGS ====================
+        // Source: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+
+        // Jul 29, 2026 (Wednesday) - FOMC DAY
+        makeEvent(title: "Fed Interest Rate Decision", currency: "USD", dateString: "2026-07-29", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Statement", currency: "USD", dateString: "2026-07-29", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Press Conference", currency: "USD", dateString: "2026-07-29", timeString: "14:30", impact: .high),
+
+        // Sep 16, 2026 (Wednesday) - FOMC DAY
+        makeEvent(title: "Fed Interest Rate Decision", currency: "USD", dateString: "2026-09-16", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Statement", currency: "USD", dateString: "2026-09-16", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Press Conference", currency: "USD", dateString: "2026-09-16", timeString: "14:30", impact: .high),
+        makeEvent(title: "FOMC Economic Projections", currency: "USD", dateString: "2026-09-16", timeString: "14:00", impact: .high),
+
+        // Oct 28, 2026 (Wednesday) - FOMC DAY
+        makeEvent(title: "Fed Interest Rate Decision", currency: "USD", dateString: "2026-10-28", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Statement", currency: "USD", dateString: "2026-10-28", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Press Conference", currency: "USD", dateString: "2026-10-28", timeString: "14:30", impact: .high),
+
+        // Dec 9, 2026 (Wednesday) - FOMC DAY
+        makeEvent(title: "Fed Interest Rate Decision", currency: "USD", dateString: "2026-12-09", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Statement", currency: "USD", dateString: "2026-12-09", timeString: "14:00", impact: .high),
+        makeEvent(title: "FOMC Press Conference", currency: "USD", dateString: "2026-12-09", timeString: "14:30", impact: .high),
+        makeEvent(title: "FOMC Economic Projections", currency: "USD", dateString: "2026-12-09", timeString: "14:00", impact: .high),
+
         // ==================== HOLIDAYS ====================
 
         // US Holidays (Markets Closed)
@@ -244,5 +269,9 @@ enum EconomicEventsData {
         makeEvent(title: "US Holiday - Good Friday", currency: "USD", dateString: "2026-04-03", timeString: "00:00", impact: .low),
         makeEvent(title: "US Holiday - Memorial Day", currency: "USD", dateString: "2026-05-25", timeString: "00:00", impact: .low),
         makeEvent(title: "US Holiday - Juneteenth", currency: "USD", dateString: "2026-06-19", timeString: "00:00", impact: .low),
+        makeEvent(title: "US Holiday - Independence Day (Observed)", currency: "USD", dateString: "2026-07-03", timeString: "00:00", impact: .low),
+        makeEvent(title: "US Holiday - Labor Day", currency: "USD", dateString: "2026-09-07", timeString: "00:00", impact: .low),
+        makeEvent(title: "US Holiday - Thanksgiving Day", currency: "USD", dateString: "2026-11-26", timeString: "00:00", impact: .low),
+        makeEvent(title: "US Holiday - Christmas Day", currency: "USD", dateString: "2026-12-25", timeString: "00:00", impact: .low),
     ]
 }
