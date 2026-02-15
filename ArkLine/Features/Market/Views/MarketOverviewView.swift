@@ -41,6 +41,9 @@ struct MarketOverviewView: View {
                             macroZScores: sentimentViewModel.macroZScores
                         )
 
+                        // 3.5 Precious Metals Section
+                        PreciousMetalsSection(metalAssets: viewModel.metalAssets)
+
                         // 4. Market Sentiment Section
                         MarketSentimentSection(
                             viewModel: sentimentViewModel,

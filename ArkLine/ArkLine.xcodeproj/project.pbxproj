@@ -179,6 +179,7 @@
 		86A35FC4DE871DF32AFE316E /* DCAServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 546EB1AA744607463EE86B28 /* DCAServiceProtocol.swift */; };
 		86DF4BF06655B31CF6A4676C /* APISantimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1095DFF4EC5B4A9D135D3A0B /* APISantimentService.swift */; };
 		8770B85D4052B18A0EB8667F /* MarketMoversSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF75F6804B0EEA5772F8BEE /* MarketMoversSection.swift */; };
+		BB1122334455667788990022 /* PreciousMetalsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1122334455667788990011 /* PreciousMetalsSection.swift */; };
 		87E5C72EC3033733C97B8A92 /* OnboardingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */; };
 		87EB17BC735BE9A7C9D61450 /* ImageAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F96E9F31319C54A3F5158D /* ImageAnnotationView.swift */; };
 		8A570EB9B3DA6C6CB3F5F265 /* RiskDataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862D8308D9E8B6C7E218A3E8 /* RiskDataCache.swift */; };
@@ -452,6 +453,7 @@
 		4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockRainbowChartService.swift; sourceTree = "<group>"; };
 		4F83C7068E9D94A46C50410C /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketAssetsSection.swift; sourceTree = "<group>"; };
+		BB1122334455667788990011 /* PreciousMetalsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreciousMetalsSection.swift; sourceTree = "<group>"; };
 		509FFD3817DDAF75AAA5B555 /* BroadcastTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastTabView.swift; sourceTree = "<group>"; };
 		50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncrementalPriceStore.swift; sourceTree = "<group>"; };
 		51911C535784ED78B6640ECB /* MockSantimentService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockSantimentService.swift; path = Data/Services/Mock/MockSantimentService.swift; sourceTree = "<group>"; };
@@ -1409,6 +1411,7 @@
 				508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */,
 				2BF75F6804B0EEA5772F8BEE /* MarketMoversSection.swift */,
 				1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */,
+				BB1122334455667788990011 /* PreciousMetalsSection.swift */,
 				C1C9947884BDE4102F110274 /* NewsCard.swift */,
 				9997D8052D5270DC5237E5E6 /* SentimentCard.swift */,
 				5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */,
@@ -2004,6 +2007,7 @@
 				A712337319DAB3F289605869 /* MarketOverviewView.swift in Sources */,
 				F374FD71053262F2670E0F46 /* MarketSentiment.swift in Sources */,
 				BC96D22F01376C054BC47DC2 /* MarketSentimentSection.swift in Sources */,
+				BB1122334455667788990022 /* PreciousMetalsSection.swift in Sources */,
 				1652EDF9F5840922C777B78C /* MarketServiceProtocol.swift in Sources */,
 				4B72ED4396687C6142BCE540 /* MarketViewModel.swift in Sources */,
 				238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */,
