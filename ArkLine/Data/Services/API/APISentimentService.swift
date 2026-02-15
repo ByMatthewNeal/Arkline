@@ -664,7 +664,7 @@ final class APISentimentService: SentimentServiceProtocol {
             let _: Data = try await SupabaseManager.shared.functions.invoke(
                 "collect-trends",
                 options: .init(
-                    headers: ["Authorization": "Bearer \(secret)"],
+                    headers: ["X-Trends-Secret": secret],
                     body: ["trigger": "ios_refresh"]
                 ),
                 decode: { data, _ in data }

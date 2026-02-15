@@ -27,11 +27,11 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Verify shared secret
-  const authHeader = req.headers.get("Authorization") ?? ""
+  // Verify shared secret (custom header to avoid conflict with Supabase JWT auth)
+  const secret = req.headers.get("X-Trends-Secret") ?? ""
   const expectedSecret = Deno.env.get("COLLECT_TRENDS_SECRET") ?? ""
 
-  if (!expectedSecret || !authHeader.includes(expectedSecret)) {
+  if (!expectedSecret || secret !== expectedSecret) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
