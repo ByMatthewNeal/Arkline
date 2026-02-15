@@ -60,6 +60,7 @@
 		AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubEconomicCalendarService.swift; sourceTree = "<group>"; };
 		1FE8B8807834E98A836ED48F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F447EEE9DD02CC43E731078 /* Foundation.framework */; };
 		1NV35TH15T0RY5H33T002 /* InvestmentHistorySheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1NV35TH15T0RY5H33T001 /* InvestmentHistorySheetView.swift */; };
+		225A1070FCDF3751115B7F4F /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B778AE7F7AE7B07921A533 /* ToastManager.swift */; };
 		238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */; };
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
 		268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */; };
@@ -283,6 +284,7 @@
 		D45CA1F56ADCB5F63AD04B62 /* GoogleTrendsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91682101CBACB8AFAFBF1334 /* GoogleTrendsDetailView.swift */; };
 		D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */; };
 		D5874DED9CA0410B6DC862F3 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D247521DC8A835AF61FC8D60 /* View+Extensions.swift */; };
+		D58AF3584BA0350D9DB9CBF2 /* ToastOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E575776F504266A437D822D8 /* ToastOverlay.swift */; };
 		D753B579F81758E62F04E4B9 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153A4CDBB8CF61BA375BD929 /* ProfileView.swift */; };
 		DD4E5F6001 /* ProfileComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4E5F6002 /* ProfileComponents.swift */; };
 		DD4E5F6003 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4E5F6004 /* EditProfileView.swift */; };
@@ -578,6 +580,7 @@
 		C1C9947884BDE4102F110274 /* NewsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsCard.swift; sourceTree = "<group>"; };
 		C363BE93C1AF81DE643E762B /* MarketSentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSentiment.swift; sourceTree = "<group>"; };
 		C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StringExtensionsTests.swift; path = ../ArkLineTests/StringExtensionsTests.swift; sourceTree = "<group>"; };
+		C4B778AE7F7AE7B07921A533 /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
 		C909B38D6272803B487236EF /* PortfolioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioView.swift; sourceTree = "<group>"; };
 		C9178E142F35DF1F009C46A2 /* AvatarUploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarUploadService.swift; sourceTree = "<group>"; };
 		C9245E372F2A8FCC000D2A08 /* PortfolioShowcaseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioShowcaseViewModel.swift; sourceTree = "<group>"; };
@@ -629,6 +632,7 @@
 		E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketComponents.swift; sourceTree = "<group>"; };
 		E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VIXServiceProtocol.swift; sourceTree = "<group>"; };
 		E4AA341F0BE9B3F11D4EDFDC /* BroadcastViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastViewModel.swift; sourceTree = "<group>"; };
+		E575776F504266A437D822D8 /* ToastOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastOverlay.swift; sourceTree = "<group>"; };
 		E5FD717CBEAFF16D0F0E926C /* MockSentimentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSentimentService.swift; sourceTree = "<group>"; };
 		E6F2557597AC24FAC8868E19 /* AnalyticsService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		E87133CEA340A437F8B91AEF /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
@@ -748,6 +752,15 @@
 				E87133CEA340A437F8B91AEF /* LoadingView.swift */,
 			);
 			path = Loading;
+			sourceTree = "<group>";
+		};
+		EC439D6BB8FB7D4F521E6AF0 /* Toast */ = {
+			isa = PBXGroup;
+			children = (
+				C4B778AE7F7AE7B07921A533 /* ToastManager.swift */,
+				E575776F504266A437D822D8 /* ToastOverlay.swift */,
+			);
+			path = Toast;
 			sourceTree = "<group>";
 		};
 		0C516F9C3D848A25C082A055 /* Views */ = {
@@ -1369,6 +1382,7 @@
 				0B3232120C68509C6A086EDB /* Loading */,
 				D0E14F1F2D37C117302D315D /* Misc */,
 				4303F7BE033EE7B7B0E2950F /* Navigation */,
+				EC439D6BB8FB7D4F521E6AF0 /* Toast */,
 			);
 			path = SharedComponents;
 			sourceTree = "<group>";
@@ -2079,6 +2093,8 @@
 				5CF2A893794727B0769FA275 /* TechnicalAnalysis.swift in Sources */,
 				C9D7CE383CD214EBDF8A1AE1 /* TechnicalAnalysisServiceProtocol.swift in Sources */,
 				78F15E09D170B61BD4292FFF /* TodaysEventsWidget.swift in Sources */,
+				225A1070FCDF3751115B7F4F /* ToastManager.swift in Sources */,
+				D58AF3584BA0350D9DB9CBF2 /* ToastOverlay.swift in Sources */,
 				8331DD57A5E7BAAC58068B76 /* Transaction.swift in Sources */,
 				628B818C69781D7CF29F53E0 /* TransactionDetailView.swift in Sources */,
 				8BA5B455BC87E71356E74F27 /* TransactionRow.swift in Sources */,

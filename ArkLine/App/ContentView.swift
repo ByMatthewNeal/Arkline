@@ -38,6 +38,7 @@ struct ContentView: View {
             }
             #endif
         }
+        .toastContainer()
         .animation(.easeInOut(duration: 0.5), value: showSplash)
         .onAppear {
             // Show splash for minimum duration

@@ -117,21 +117,32 @@ struct FeedContent: View {
             }
 
             // Posts
-            LazyVStack(spacing: 12) {
-                ForEach(viewModel.filteredPosts) { post in
-                    NavigationLink(destination: PostDetailView(post: post)) {
-                        PostCard(post: post, onLike: {
-                            if post.isLikedByCurrentUser == true {
-                                viewModel.unlikePost(post)
-                            } else {
-                                viewModel.likePost(post)
-                            }
-                        })
+            if viewModel.filteredPosts.isEmpty && !viewModel.isLoading {
+                EmptyStateView(
+                    icon: "text.bubble",
+                    title: "No Posts Yet",
+                    message: viewModel.selectedCategory != nil
+                        ? "No posts in this category yet. Be the first to share!"
+                        : "The community feed is empty. Start a conversation!"
+                )
+                .padding(.top, 40)
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(viewModel.filteredPosts) { post in
+                        NavigationLink(destination: PostDetailView(post: post)) {
+                            PostCard(post: post, onLike: {
+                                if post.isLikedByCurrentUser == true {
+                                    viewModel.unlikePost(post)
+                                } else {
+                                    viewModel.likePost(post)
+                                }
+                            })
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
+                .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
         }
         .padding(.top, 16)
     }

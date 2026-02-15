@@ -72,6 +72,7 @@ struct AssetDetailView: View {
             .padding(.top, 16)
         }
         .background(Color(hex: "0F0F0F"))
+        .refreshable { await loadChart() }
         .navigationBarBackButtonHidden()
         .task { await loadChart() }
         .onChange(of: selectedTimeframe) { _, _ in

@@ -24,21 +24,21 @@ struct MarketSentimentSection: View {
                     if let arkLineScore = viewModel.arkLineRiskScore {
                         ArkLineScoreCard(score: arkLineScore)
                     } else {
-                        PlaceholderCard(title: "ArkLine Score", icon: "sparkles")
+                        ShimmerPlaceholderCard(title: "ArkLine Score", icon: "sparkles", isLoading: viewModel.isLoading)
                     }
 
                     // Fear & Greed Index
                     if let fearGreed = viewModel.fearGreedIndex {
                         FearGreedSentimentCard(index: fearGreed)
                     } else {
-                        PlaceholderCard(title: "Fear & Greed", icon: "gauge.with.needle")
+                        ShimmerPlaceholderCard(title: "Fear & Greed", icon: "gauge.with.needle", isLoading: viewModel.isLoading)
                     }
 
                     // Bitcoin/Altcoin Season
                     if let altcoin = viewModel.altcoinSeason {
                         BitcoinSeasonCard(index: altcoin)
                     } else {
-                        PlaceholderCard(title: "Season Indicator", icon: "bitcoinsign.circle")
+                        ShimmerPlaceholderCard(title: "Season Indicator", icon: "bitcoinsign.circle", isLoading: viewModel.isLoading)
                     }
 
                     // Market Cap
@@ -52,7 +52,7 @@ struct MarketSentimentSection: View {
                     if let btcDom = viewModel.btcDominance {
                         BTCDominanceCard(dominance: btcDom)
                     } else {
-                        PlaceholderCard(title: "BTC Dominance", icon: "chart.pie")
+                        ShimmerPlaceholderCard(title: "BTC Dominance", icon: "chart.pie", isLoading: viewModel.isLoading)
                     }
 
                     // Liquidations hidden - requires paid Coinglass subscription
@@ -92,7 +92,7 @@ struct MarketSentimentSection: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // App Store Rankings (Multiple Apps)
                     if viewModel.appStoreRankings.isEmpty {
-                        PlaceholderCard(title: "App Store Rankings", icon: "arrow.down.app")
+                        ShimmerPlaceholderCard(title: "App Store Rankings", icon: "arrow.down.app", isLoading: viewModel.isLoading)
                     } else {
                         NavigationLink(destination: AppStoreRankingDetailView(viewModel: viewModel)) {
                             AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
@@ -119,7 +119,7 @@ struct MarketSentimentSection: View {
                 if let funding = viewModel.fundingRate {
                     FundingRateCard(fundingRate: funding)
                 } else {
-                    PlaceholderCard(title: "Funding Rate", icon: "percent")
+                    ShimmerPlaceholderCard(title: "Funding Rate", icon: "percent", isLoading: viewModel.isLoading)
                 }
             }
         }
@@ -261,6 +261,42 @@ struct PlaceholderCard: View {
         .frame(maxWidth: .infinity, minHeight: 120)
         .glassCard(cornerRadius: 16)
         .opacity(0.7)
+    }
+}
+
+// MARK: - Shimmer Placeholder Card (Loading vs No Data)
+struct ShimmerPlaceholderCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    let title: String
+    let icon: String
+    let isLoading: Bool
+
+    var body: some View {
+        if isLoading {
+            // Shimmer skeleton during loading
+            VStack(alignment: .leading, spacing: 8) {
+                SkeletonView(height: 12, cornerRadius: 4)
+                    .frame(width: 80)
+
+                Spacer()
+
+                VStack(spacing: 8) {
+                    SkeletonView(height: 28, cornerRadius: 6)
+                        .frame(width: 60)
+                    SkeletonView(height: 10, cornerRadius: 4)
+                        .frame(width: 50)
+                }
+                .frame(maxWidth: .infinity)
+
+                Spacer()
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 120)
+            .glassCard(cornerRadius: 16)
+        } else {
+            // Static "No Data" after loading completes
+            PlaceholderCard(title: title, icon: icon)
+        }
     }
 }
 

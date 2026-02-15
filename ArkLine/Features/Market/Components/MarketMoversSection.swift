@@ -26,11 +26,6 @@ struct FMPMarketMoversSection: View {
                     .foregroundColor(textPrimary)
 
                 Spacer()
-
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
             }
             .padding(.horizontal, 20)
 
@@ -152,17 +147,19 @@ struct MoverRow: View {
     }
 }
 
-// MARK: - Loading Card
+// MARK: - Loading Card (Skeleton)
 private struct LoadingCard: View {
     var body: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-            Text("Loading market movers...")
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary)
+        VStack(spacing: 0) {
+            ForEach(0..<5, id: \.self) { index in
+                SkeletonListItem()
+                if index < 4 {
+                    Divider()
+                        .background(AppColors.textSecondary.opacity(0.2))
+                        .padding(.horizontal, 16)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 120)
         .glassCard(cornerRadius: 16)
     }
 }

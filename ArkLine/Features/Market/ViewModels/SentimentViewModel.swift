@@ -342,6 +342,12 @@ class SentimentViewModel {
             self.isLoading = false
         }
 
+        // Surface failures via toast (only when multiple core indicators fail)
+        await notifyFailures(
+            fg: fg, btc: btc, marketOverview: marketOverview,
+            vix: vix, dxy: dxy, globalM2: globalM2
+        )
+
         // Archive all sentiment/macro indicators (fire-and-forget)
         Task {
             let collector = MarketDataCollector.shared
@@ -446,6 +452,36 @@ class SentimentViewModel {
         await refresh()
         await fetchFearGreedHistory()
         await fetchGoogleTrendsHistory()
+    }
+
+    // MARK: - Failure Notifications
+
+    @MainActor
+    private func notifyFailures(
+        fg: FearGreedIndex?, btc: BTCDominance?, marketOverview: MarketOverview?,
+        vix: VIXData?, dxy: DXYData?, globalM2: GlobalLiquidityChanges?
+    ) {
+        var failedCore: [String] = []
+        if fg == nil { failedCore.append("Fear & Greed") }
+        if btc == nil { failedCore.append("BTC Dominance") }
+        if marketOverview == nil { failedCore.append("Market Cap") }
+
+        var failedMacro: [String] = []
+        if vix == nil { failedMacro.append("VIX") }
+        if dxy == nil { failedMacro.append("DXY") }
+        if globalM2 == nil { failedMacro.append("Global M2") }
+
+        let totalFailed = failedCore.count + failedMacro.count
+        if totalFailed >= 3 {
+            ToastManager.shared.warning(
+                "Some data unavailable",
+                message: "\(totalFailed) indicators couldn't be updated"
+            )
+        } else if !failedCore.isEmpty {
+            ToastManager.shared.warning(
+                "\(failedCore.joined(separator: ", ")) unavailable"
+            )
+        }
     }
 
     // Safe fetch methods that return nil on error (for non-critical data)
