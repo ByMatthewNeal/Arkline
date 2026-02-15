@@ -43,28 +43,25 @@ ArkLine/
 └── SharedComponents/      # Reusable UI components
 ```
 
-## Known Issues (Audit Findings)
+## Security & Code Quality Audit (All 12 Items Resolved)
 
-### Critical Security Issues (All Resolved)
+### Critical
+1. **Hardcoded API Keys** - Keys loaded from Secrets.plist, backend proxy for sensitive APIs
+2. **Weak Passcode Hashing** - PBKDF2 (10k iterations, SHA256-HMAC) via PasscodeManager
+3. **Sensitive Data in UserDefaults** - Migrated to Keychain via KeychainManager
+4. **Test Coverage** - 396 unit tests across 13 test files
 
-1. ~~**Hardcoded API Keys**~~ - Fixed: keys loaded only from Secrets.plist
-2. ~~**Weak Passcode Hashing**~~ - Fixed: PBKDF2 (10k iterations, SHA256-HMAC) in PasscodeManager
-3. ~~**UserDefaults for Auth Data**~~ - Fixed: migrated to Keychain via KeychainManager
+### High
+5. **API Keys in URL Query Params** - Moved to HTTP headers
+6. **Force Unwraps** - Safe defaults (`safeDate()`, nil coalescing)
+7. **SSL Certificate Pinning** - SPKI pinning for Binance domains via PinnedURLSession
 
-### Open Issues
-
-1. ~~**Force Unwraps**~~ - Fixed: AssetRiskConfig already uses safe `safeDate()`, remaining production unwrap in Broadcast.swift fixed
-2. ~~**No Tests**~~ - Fixed: 247 unit tests across 7 test files (extensions, statistics, risk, DCA, performance)
-3. ~~**Large Files**~~ - Fixed: all files decomposed under 830 lines (11 files split across sessions)
-4. ~~**Unimplemented Services**~~ - Fixed: APIDCAService and APIPortfolioService fully implemented with Supabase
-5. ~~**Bypassable Lockout**~~ - Fixed: lockout state stored in Keychain (persists across reinstalls)
-5. ~~**No SSL Certificate Pinning**~~ - Fixed: NSPinnedDomains in Info.plist for supabase.co and web.arkline.io
-6. ~~**API Keys in URL Query Params**~~ - Fixed: moved to HTTP headers in FMPService and APINewsService
-7. ~~**Debug Print Statements / API Key Logging**~~ - Fixed: only intentional `#if DEBUG` print remains in Logger
-
-### Use `/audit-fix` command
-
-Run `/audit-fix` for guided assistance with fixing these issues.
+### Medium
+8. **Debug Print Statements** - Unified logger, only `#if DEBUG` prints remain
+9. **API Keys Logged** - All credential logging removed
+10. **Large Monolithic Files** - All files under 830 lines (HomeView 4,208→580, PortfolioView 1,406→177)
+11. **Input Validation** - URLComponents used throughout
+12. **Bypassable Lockout** - Lockout state stored in Keychain
 
 ## Coding Standards
 
