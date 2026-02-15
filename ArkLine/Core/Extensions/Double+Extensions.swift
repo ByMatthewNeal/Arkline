@@ -30,17 +30,18 @@ extension Double {
 
     /// Compact currency format with specific currency code
     func asCurrencyCompact(code: String) -> String {
-        if abs(self) >= 1_000_000_000 {
-            return formatAsCurrency(currencyCode: code, maximumFractionDigits: 1)
-                .replacingOccurrences(of: ",000,000,000", with: "B")
-                .replacingOccurrences(of: "000,000,000", with: "B")
+        if abs(self) >= 1_000_000_000_000 {
+            let trillions = self / 1_000_000_000_000
+            return "$\(String(format: "%.2f", trillions))T"
+        } else if abs(self) >= 1_000_000_000 {
+            let billions = self / 1_000_000_000
+            return "$\(String(format: "%.1f", billions))B"
         } else if abs(self) >= 1_000_000 {
-            return formatAsCurrency(currencyCode: code, maximumFractionDigits: 1)
-                .replacingOccurrences(of: ",000,000", with: "M")
-                .replacingOccurrences(of: "000,000", with: "M")
+            let millions = self / 1_000_000
+            return "$\(String(format: "%.1f", millions))M"
         } else if abs(self) >= 1_000 {
-            return formatAsCurrency(currencyCode: code, maximumFractionDigits: 1)
-                .replacingOccurrences(of: ",000", with: "K")
+            let thousands = self / 1_000
+            return "$\(String(format: "%.1f", thousands))K"
         }
         return formatAsCurrency(currencyCode: code)
     }

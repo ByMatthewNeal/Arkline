@@ -66,8 +66,8 @@ class SentimentViewModel {
 
     // Market Overview Data
     var bitcoinSearchIndex: Int = 66
-    var totalMarketCap: Double = 3_320_000_000_000
-    var marketCapChange24h: Double = 2.29
+    var totalMarketCap: Double = 0
+    var marketCapChange24h: Double = 0
     var marketCapHistory: [Double] = []
 
     // Historical Data
@@ -266,6 +266,9 @@ class SentimentViewModel {
         let allRiskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
         async let allRiskResultsTask = fetchAllRiskLevels(coins: allRiskCoins)
 
+        // Market Overview (market cap from CoinGecko global)
+        async let marketOverviewTask = fetchMarketOverviewSafe()
+
         // Macro Indicators (VIX, DXY, Global M2)
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
@@ -278,6 +281,7 @@ class SentimentViewModel {
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
         let allRiskResults = await allRiskResultsTask
+        let marketOverview = await marketOverviewTask
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
         let zScores = await zScoresTask
 
@@ -285,6 +289,12 @@ class SentimentViewModel {
             // Core indicators (only update if we got data)
             if let fg = fg { self.fearGreedIndex = fg }
             if let btc = btc { self.btcDominance = btc }
+
+            // Market cap from global data
+            if let overview = marketOverview {
+                self.totalMarketCap = overview.totalMarketCap
+                self.marketCapChange24h = overview.marketCapChange24h
+            }
             self.etfNetFlow = etf
             self.fundingRate = funding
             self.liquidations = liq
@@ -469,6 +479,10 @@ class SentimentViewModel {
             }
             return results
         }
+    }
+
+    private func fetchMarketOverviewSafe() async -> MarketOverview? {
+        try? await sentimentService.fetchMarketOverview()
     }
 
     private func fetchVIXSafe() async -> VIXData? {
