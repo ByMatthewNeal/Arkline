@@ -1,15 +1,20 @@
 import SwiftUI
 
 // MARK: - Precious Metals Section
+/// Self-loading section that fetches gold/silver prices via FMP (GLD/SLV ETFs).
+/// Falls back to metalAssets from MarketViewModel if available.
 struct PreciousMetalsSection: View {
-    let metalAssets: [MetalAsset]
+    var metalAssets: [MetalAsset] = []
     @Environment(\.colorScheme) var colorScheme
+    @State private var metals: [MetalAsset] = []
+    @State private var hasLoaded = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
-    // Only show Gold and Silver
+    /// Use passed-in metals if available, otherwise use self-loaded FMP data
     private var displayMetals: [MetalAsset] {
-        metalAssets.filter { ["XAU", "XAG"].contains($0.symbol.uppercased()) }
+        let source = metalAssets.filter { ["XAU", "XAG"].contains($0.symbol.uppercased()) }
+        return source.isEmpty ? metals : source
     }
 
     var body: some View {
@@ -35,6 +40,66 @@ struct PreciousMetalsSection: View {
                 }
                 .padding(.horizontal)
             }
+        } else if !hasLoaded {
+            // Show nothing while loading (avoids flash)
+            Color.clear
+                .frame(height: 0)
+                .task { await loadFromFMP() }
+        }
+    }
+
+    /// Fetch gold/silver prices from FMP using ETF proxies
+    private func loadFromFMP() async {
+        defer { hasLoaded = true }
+
+        do {
+            let quotes = try await withThrowingTaskGroup(of: (String, FMPQuote).self) { group in
+                let etfMap = [("GLD", "XAU", "Gold"), ("SLV", "XAG", "Silver")]
+
+                for (etf, _, _) in etfMap {
+                    group.addTask {
+                        let quote = try await FMPService.shared.fetchStockQuote(symbol: etf)
+                        return (etf, quote)
+                    }
+                }
+
+                var results: [(String, FMPQuote)] = []
+                for try await result in group {
+                    results.append(result)
+                }
+                return results
+            }
+
+            // Convert ETF prices to approximate spot prices
+            // GLD ≈ 1/10th gold spot, SLV ≈ silver spot
+            let etfToMetal: [(etf: String, symbol: String, name: String, multiplier: Double)] = [
+                ("GLD", "XAU", "Gold", 10.73),   // GLD share ≈ 0.0932 oz gold
+                ("SLV", "XAG", "Silver", 1.075),  // SLV share ≈ 0.93 oz silver
+            ]
+
+            var loaded: [MetalAsset] = []
+            for mapping in etfToMetal {
+                if let (_, quote) = quotes.first(where: { $0.0 == mapping.etf }) {
+                    let spotPrice = quote.price * mapping.multiplier
+                    let spotChange = quote.change * mapping.multiplier
+                    loaded.append(MetalAsset(
+                        id: mapping.symbol.lowercased(),
+                        symbol: mapping.symbol,
+                        name: mapping.name,
+                        currentPrice: spotPrice,
+                        priceChange24h: spotChange,
+                        priceChangePercentage24h: quote.changePercentage,
+                        iconUrl: nil,
+                        unit: "oz",
+                        currency: "USD",
+                        timestamp: Date()
+                    ))
+                }
+            }
+
+            metals = loaded
+        } catch {
+            // Silent failure — section just won't show
         }
     }
 }
