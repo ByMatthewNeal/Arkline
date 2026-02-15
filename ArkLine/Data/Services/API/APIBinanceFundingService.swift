@@ -80,7 +80,7 @@ final class APIBinanceFundingService {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 10
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw AppError.invalidResponse

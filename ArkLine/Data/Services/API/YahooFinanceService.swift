@@ -166,7 +166,7 @@ final class YahooFinanceService {
         request.setValue("Mozilla/5.0", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 10
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw YahooFinanceError.invalidResponse

@@ -11,6 +11,7 @@ enum AppError: Error, LocalizedError {
     case encodingError(underlying: Error?)
     case timeout
     case noInternetConnection
+    case sslPinningFailure(domain: String)
 
     // MARK: - Authentication Errors
     case authenticationRequired
@@ -73,6 +74,8 @@ enum AppError: Error, LocalizedError {
             return "Request timed out"
         case .noInternetConnection:
             return "No internet connection"
+        case .sslPinningFailure(let domain):
+            return "Connection security verification failed for \(domain)"
 
         // Authentication
         case .authenticationRequired:
@@ -159,6 +162,8 @@ enum AppError: Error, LocalizedError {
             return "Please check your connection and try again"
         case .biometricNotAvailable:
             return "Please use your passcode instead"
+        case .sslPinningFailure:
+            return "Please ensure you are on a trusted network and try again"
         case .notImplemented:
             return "This feature is coming soon"
         default:

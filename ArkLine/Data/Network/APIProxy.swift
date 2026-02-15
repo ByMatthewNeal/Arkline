@@ -212,7 +212,7 @@ final class APIProxy {
         let config = directConfig(for: service)
         let request = try buildDirectRequest(config: config, path: path, method: method, queryItems: queryItems)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
@@ -245,7 +245,7 @@ final class APIProxy {
         }
         request.httpBody = bodyData
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {

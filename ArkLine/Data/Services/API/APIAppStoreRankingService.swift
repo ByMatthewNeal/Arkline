@@ -36,7 +36,7 @@ final class APIAppStoreRankingService {
             var request = URLRequest(url: url)
             request.timeoutInterval = 15
 
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {

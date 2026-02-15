@@ -20,13 +20,9 @@ actor NetworkManager {
 
     // MARK: - Init
     private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
-        configuration.waitsForConnectivity = true
-        configuration.requestCachePolicy = .returnCacheDataElseLoad
-
-        self.session = URLSession(configuration: configuration)
+        // Use the app-wide pinned URLSession for SSL certificate pinning.
+        // Pinned domains get SPKI hash verification; others use standard TLS.
+        self.session = PinnedURLSession.shared
     }
 
     // MARK: - Retry Config
@@ -290,6 +286,19 @@ actor NetworkManager {
             return .timeout
         case .badURL:
             return .invalidURL
+        case .cancelled:
+            // SSLPinningDelegate cancels the auth challenge on pin mismatch,
+            // which surfaces as URLError.cancelled
+            if let host = error.failingURL?.host,
+               SSLPinningConfiguration.pins(for: host) != nil {
+                return .sslPinningFailure(domain: host)
+            }
+            return .networkError(underlying: error)
+        case .serverCertificateUntrusted,
+             .serverCertificateHasBadDate,
+             .serverCertificateHasUnknownRoot,
+             .serverCertificateNotYetValid:
+            return .sslPinningFailure(domain: error.failingURL?.host ?? "unknown")
         default:
             return .networkError(underlying: error)
         }

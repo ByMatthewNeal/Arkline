@@ -68,7 +68,7 @@ final class FarsideETFScraper {
 
         logDebug("Fetching Farside ETF data from \(baseURL)", category: .network)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ScraperError.invalidResponse

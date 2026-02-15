@@ -329,6 +329,9 @@
 		S3TT1NG5APP3AR000002 /* SettingsAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5APP3AR000001 /* SettingsAppearance.swift */; };
 		S3TT1NG5SUBV13W500002 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */; };
 		STRKT00BUILDFIL000000001 /* ArkLineProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = STRKT00FILEREF000000001 /* ArkLineProducts.storekit */; };
+		FF7A8B1002 /* SSLPinningConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B1001 /* SSLPinningConfiguration.swift */; };
+		FF7A8B2002 /* SSLPinningDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B2001 /* SSLPinningDelegate.swift */; };
+		FF7A8B3002 /* PinnedURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B3001 /* PinnedURLSession.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -656,6 +659,9 @@
 		S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSubviews.swift; sourceTree = "<group>"; };
 		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
 		STRKT00FILEREF000000001 /* ArkLineProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = ArkLineProducts.storekit; path = Resources/ArkLineProducts.storekit; sourceTree = "<group>"; };
+		FF7A8B1001 /* SSLPinningConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSLPinningConfiguration.swift; sourceTree = "<group>"; };
+		FF7A8B2001 /* SSLPinningDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSLPinningDelegate.swift; sourceTree = "<group>"; };
+		FF7A8B3001 /* PinnedURLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedURLSession.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1603,6 +1609,9 @@
 				B235140A3BEE72D20E513F81 /* APIEndpoint.swift */,
 				D5E0FC7CA101BBA281BE5F25 /* NetworkManager.swift */,
 				BCBF4C0FD7FA0D9C50427165 /* APIProxy.swift */,
+				FF7A8B3001 /* PinnedURLSession.swift */,
+				FF7A8B1001 /* SSLPinningConfiguration.swift */,
+				FF7A8B2001 /* SSLPinningDelegate.swift */,
 			);
 			path = Network;
 			sourceTree = "<group>";
@@ -2094,6 +2103,9 @@
 				8C5C3B248351250E78D35AC6 /* SentimentRetailCards.swift in Sources */,
 				D45CA1F56ADCB5F63AD04B62 /* GoogleTrendsDetailView.swift in Sources */,
 				BA6371D635D6C2D3E75D98FF /* APIProxy.swift in Sources */,
+				FF7A8B1002 /* SSLPinningConfiguration.swift in Sources */,
+				FF7A8B2002 /* SSLPinningDelegate.swift in Sources */,
+				FF7A8B3002 /* PinnedURLSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
