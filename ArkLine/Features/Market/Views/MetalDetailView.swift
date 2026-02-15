@@ -20,14 +20,14 @@ struct MetalDetailView: View {
         return last >= first
     }
 
-    /// ETF proxy symbol for historical chart data
-    private var etfSymbol: String {
+    /// FMP commodity futures symbol for historical chart data
+    private var futuresSymbol: String {
         switch asset.symbol.uppercased() {
-        case "XAU": return "GLD"
-        case "XAG": return "SLV"
-        case "XPT": return "PPLT"
-        case "XPD": return "PALL"
-        default: return "GLD"
+        case "XAU": return "GCUSD"
+        case "XAG": return "SIUSD"
+        case "XPT": return "PLUSD"
+        case "XPD": return "PAUSD"
+        default: return "GCUSD"
         }
     }
 
@@ -71,8 +71,8 @@ struct MetalDetailView: View {
 
                     StockTimeframeSelector(selected: $selectedTimeframe)
 
-                    // ETF proxy note
-                    Text("Chart: \(etfSymbol) ETF (proxy for \(asset.symbol.uppercased()) spot price)")
+                    // Futures data note
+                    Text("Chart: \(futuresSymbol) futures data")
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
@@ -132,7 +132,7 @@ struct MetalDetailView: View {
 
         do {
             let prices = try await FMPService.shared.fetchHistoricalPrices(
-                symbol: etfSymbol,
+                symbol: futuresSymbol,
                 limit: selectedTimeframe.tradingDays
             )
             chartData = prices.compactMap { price in
@@ -143,7 +143,7 @@ struct MetalDetailView: View {
             // Calculate 52-week high/low from 1Y data
             if selectedTimeframe == .year || week52High == nil {
                 let yearPrices = try await FMPService.shared.fetchHistoricalPrices(
-                    symbol: etfSymbol,
+                    symbol: futuresSymbol,
                     limit: 252
                 )
                 if !yearPrices.isEmpty {
