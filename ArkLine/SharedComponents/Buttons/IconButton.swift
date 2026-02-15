@@ -8,14 +8,16 @@ struct IconButton: View {
     var style: IconButtonStyle = .default
     var badge: Int? = nil
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: icon)
                     .font(.system(size: size.iconSize, weight: .medium))
-                    .foregroundColor(style.foregroundColor)
+                    .foregroundColor(style.foregroundColor(colorScheme))
                     .frame(width: size.buttonSize, height: size.buttonSize)
-                    .background(style.backgroundColor)
+                    .background(style.backgroundColor(colorScheme))
                     .cornerRadius(size.cornerRadius)
 
                 if let badge = badge, badge > 0 {
@@ -24,7 +26,7 @@ struct IconButton: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
-                        .background(Color(hex: "EF4444"))
+                        .background(AppColors.error)
                         .cornerRadius(8)
                         .offset(x: 4, y: -4)
                 }
@@ -71,20 +73,20 @@ enum IconButtonStyle {
     case destructive
     case ghost
 
-    var foregroundColor: Color {
+    func foregroundColor(_ colorScheme: ColorScheme) -> Color {
         switch self {
-        case .default: return .white
+        case .default: return AppColors.textPrimary(colorScheme)
         case .primary: return .white
         case .destructive: return .white
-        case .ghost: return Color(hex: "A1A1AA")
+        case .ghost: return AppColors.textSecondary
         }
     }
 
-    var backgroundColor: Color {
+    func backgroundColor(_ colorScheme: ColorScheme) -> Color {
         switch self {
-        case .default: return Color(hex: "1F1F1F")
-        case .primary: return Color(hex: "6366F1")
-        case .destructive: return Color(hex: "EF4444")
+        case .default: return AppColors.cardBackground(colorScheme)
+        case .primary: return AppColors.accent
+        case .destructive: return AppColors.error
         case .ghost: return .clear
         }
     }
@@ -100,5 +102,5 @@ enum IconButtonStyle {
         IconButton(icon: "bell.fill", action: {}, badge: 5)
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

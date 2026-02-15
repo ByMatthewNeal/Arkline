@@ -454,6 +454,47 @@ class SentimentViewModel {
         await fetchGoogleTrendsHistory()
     }
 
+    // MARK: - Individual Retry Methods
+
+    func retryFearGreed() async {
+        if let result = try? await sentimentService.fetchFearGreedIndex() {
+            await MainActor.run { self.fearGreedIndex = result }
+        }
+    }
+
+    func retryBTCDominance() async {
+        if let result = try? await sentimentService.fetchBTCDominance() {
+            await MainActor.run { self.btcDominance = result }
+        }
+    }
+
+    func retryAltcoinSeason() async {
+        if let result = try? await sentimentService.fetchAltcoinSeason() {
+            await MainActor.run { self.altcoinSeason = result }
+        }
+    }
+
+    func retryArkLineScore() async {
+        if let result = try? await sentimentService.fetchArkLineRiskScore() {
+            await MainActor.run { self.arkLineRiskScore = result }
+        }
+    }
+
+    func retryAppStoreRankings() async {
+        if let result = try? await sentimentService.fetchAppStoreRankings() {
+            await MainActor.run {
+                self.appStoreRankings = result
+                self.appStoreRanking = result.first
+            }
+        }
+    }
+
+    func retryFundingRate() async {
+        if let result = try? await sentimentService.fetchFundingRate() {
+            await MainActor.run { self.fundingRate = result }
+        }
+    }
+
     // MARK: - Failure Notifications
 
     @MainActor

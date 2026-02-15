@@ -42,14 +42,14 @@ struct GradientCard<Content: View>: View {
 // MARK: - Accent Card (with border gradient)
 struct AccentCard<Content: View>: View {
     let content: () -> Content
-    var backgroundColor: Color = Color(hex: "1F1F1F")
+    var backgroundColor: Color = AppColors.cardBackground(.dark)
     var borderColors: [Color] = [Color(hex: "6366F1"), Color(hex: "8B5CF6")]
     var borderWidth: CGFloat = 1.5
     var cornerRadius: CGFloat = 12
     var padding: CGFloat = 16
 
     init(
-        backgroundColor: Color = Color(hex: "1F1F1F"),
+        backgroundColor: Color = AppColors.cardBackground(.dark),
         borderColors: [Color] = [Color(hex: "6366F1"), Color(hex: "8B5CF6")],
         borderWidth: CGFloat = 1.5,
         cornerRadius: CGFloat = 12,
@@ -147,5 +147,5 @@ struct GlassCard<Content: View>: View {
         }
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

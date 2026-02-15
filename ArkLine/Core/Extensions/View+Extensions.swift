@@ -50,7 +50,7 @@ extension View {
 
     // MARK: - Card Style
     func cardStyle(
-        backgroundColor: Color = Color(hex: "1F1F1F"),
+        backgroundColor: Color = AppColors.cardBackground(.dark),
         cornerRadius: CGFloat = ArkSpacing.Radius.card,
         padding: CGFloat = ArkSpacing.Component.cardPadding
     ) -> some View {
@@ -273,4 +273,27 @@ extension Animation {
     static let arkEaseOut = Animation.easeOut(duration: 0.3)
     static let arkEaseIn = Animation.easeIn(duration: 0.3)
     static let arkLinear = Animation.linear(duration: 0.3)
+}
+
+// MARK: - Staggered Card Appearance
+struct CardAppearanceModifier: ViewModifier {
+    let delay: Int
+    @State private var appeared = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared ? 0 : 8)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.35).delay(Double(delay) * 0.06)) {
+                    appeared = true
+                }
+            }
+    }
+}
+
+extension View {
+    func cardAppearance(delay: Int) -> some View {
+        modifier(CardAppearanceModifier(delay: delay))
+    }
 }

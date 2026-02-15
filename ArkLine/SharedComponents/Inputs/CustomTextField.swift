@@ -51,7 +51,7 @@ struct CustomTextField: View {
                     Button(action: { isShowingPassword.toggle() }) {
                         Image(systemName: isShowingPassword ? "eye.slash.fill" : "eye.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "71717A"))
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
 
@@ -59,13 +59,13 @@ struct CustomTextField: View {
                     Button(action: { text = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "71717A"))
+                            .foregroundColor(AppColors.textSecondary)
                     }
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "F5F5F5"))
+            .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -85,13 +85,13 @@ struct CustomTextField: View {
     private var iconColor: Color {
         if errorMessage != nil { return AppColors.error }
         if isFocused { return AppColors.focusRing }
-        return Color(hex: "71717A")
+        return AppColors.textSecondary
     }
 
     private var borderColor: Color {
         if errorMessage != nil { return AppColors.error }
         if isFocused { return AppColors.accent }
-        return colorScheme == .dark ? Color.clear : Color(hex: "E2E8F0")
+        return AppColors.cardBorder(colorScheme)
     }
 }
 
@@ -103,24 +103,26 @@ struct CustomTextArea: View {
     var maxHeight: CGFloat = 200
     var characterLimit: Int? = nil
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             ZStack(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder)
-                        .foregroundColor(Color(hex: "71717A"))
+                        .foregroundColor(AppColors.textSecondary)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 8)
                 }
 
                 TextEditor(text: $text)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                     .frame(minHeight: minHeight, maxHeight: maxHeight)
             }
             .padding(12)
-            .background(Color(hex: "1F1F1F"))
+            .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(10)
             .onChange(of: text) { _, newValue in
                 if let limit = characterLimit, newValue.count > limit {
@@ -131,7 +133,7 @@ struct CustomTextArea: View {
             if let limit = characterLimit {
                 Text("\(text.count)/\(limit)")
                     .font(.caption)
-                    .foregroundColor(Color(hex: "71717A"))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
     }
@@ -166,5 +168,5 @@ struct CustomTextArea: View {
         )
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

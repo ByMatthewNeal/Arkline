@@ -10,6 +10,8 @@ struct SecondaryButton: View {
     var size: ButtonSize = .large
     var style: SecondaryButtonStyle = .outlined
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         Button(action: {
             if !isLoading && !isDisabled {
@@ -19,7 +21,7 @@ struct SecondaryButton: View {
             HStack(spacing: ArkSpacing.xs) {
                 if isLoading {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: style.foregroundColor))
+                        .progressViewStyle(CircularProgressViewStyle(tint: style.foregroundColor(colorScheme)))
                         .scaleEffect(0.8)
                 } else {
                     if let icon = icon {
@@ -33,8 +35,8 @@ struct SecondaryButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: size.height)
-            .foregroundColor(style.foregroundColor)
-            .background(style.backgroundColor)
+            .foregroundColor(style.foregroundColor(colorScheme))
+            .background(style.backgroundColor(colorScheme))
             .overlay(
                 RoundedRectangle(cornerRadius: ArkSpacing.Radius.button)
                     .stroke(style.borderColor, lineWidth: style.borderWidth)
@@ -52,25 +54,25 @@ enum SecondaryButtonStyle {
     case filled
     case ghost
 
-    var foregroundColor: Color {
+    func foregroundColor(_ colorScheme: ColorScheme) -> Color {
         switch self {
-        case .outlined: return Color(hex: "6366F1")
-        case .filled: return .white
-        case .ghost: return Color(hex: "A1A1AA")
+        case .outlined: return AppColors.accent
+        case .filled: return AppColors.textPrimary(colorScheme)
+        case .ghost: return AppColors.textSecondary
         }
     }
 
-    var backgroundColor: Color {
+    func backgroundColor(_ colorScheme: ColorScheme) -> Color {
         switch self {
         case .outlined: return .clear
-        case .filled: return Color(hex: "1F1F1F")
+        case .filled: return AppColors.cardBackground(colorScheme)
         case .ghost: return .clear
         }
     }
 
     var borderColor: Color {
         switch self {
-        case .outlined: return Color(hex: "6366F1")
+        case .outlined: return AppColors.accent
         case .filled: return .clear
         case .ghost: return .clear
         }
@@ -98,5 +100,5 @@ enum SecondaryButtonStyle {
         SecondaryButton(title: "With Icon", action: {}, icon: "plus")
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

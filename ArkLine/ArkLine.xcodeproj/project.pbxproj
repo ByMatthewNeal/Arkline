@@ -343,6 +343,8 @@
 		FF7A8B1002 /* SSLPinningConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B1001 /* SSLPinningConfiguration.swift */; };
 		FF7A8B2002 /* SSLPinningDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B2001 /* SSLPinningDelegate.swift */; };
 		FF7A8B3002 /* PinnedURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B3001 /* PinnedURLSession.swift */; };
+		F2E1D0C9B8A7F6E5D4C3B2A1 /* ReorderableWidgetStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* ReorderableWidgetStack.swift */; };
+		A4F3E2D1C0B9A8F7E6D5C4B3 /* StaleDataBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F7A8B9C0D1E2F3A4 /* StaleDataBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -684,6 +686,8 @@
 		FF7A8B1001 /* SSLPinningConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSLPinningConfiguration.swift; sourceTree = "<group>"; };
 		FF7A8B2001 /* SSLPinningDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSLPinningDelegate.swift; sourceTree = "<group>"; };
 		FF7A8B3001 /* PinnedURLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedURLSession.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* ReorderableWidgetStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderableWidgetStack.swift; sourceTree = "<group>"; };
+		B3C4D5E6F7A8B9C0D1E2F3A4 /* StaleDataBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleDataBanner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -958,6 +962,7 @@
 			children = (
 				440FC32555A994CF7B6FD757 /* AssetRowView.swift */,
 				DAD95D54C81F435AFABAE82A /* EventRowView.swift */,
+				B3C4D5E6F7A8B9C0D1E2F3A4 /* StaleDataBanner.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -1295,6 +1300,7 @@
 				DC89DF198D092E66D2A9440C /* TechnicalScoreCards.swift */,
 				225593D759C7AC730D64DB0F /* TechnicalIndicatorCards.swift */,
 				F5665DE61C432589AB9CD08A /* TechnicalTrendCards.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* ReorderableWidgetStack.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2158,6 +2164,8 @@
 				FF7A8B1002 /* SSLPinningConfiguration.swift in Sources */,
 				FF7A8B2002 /* SSLPinningDelegate.swift in Sources */,
 				FF7A8B3002 /* PinnedURLSession.swift in Sources */,
+				F2E1D0C9B8A7F6E5D4C3B2A1 /* ReorderableWidgetStack.swift in Sources */,
+				A4F3E2D1C0B9A8F7E6D5C4B3 /* StaleDataBanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

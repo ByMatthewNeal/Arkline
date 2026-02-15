@@ -39,8 +39,10 @@ struct FMPMarketMoversSection: View {
 
             // Content
             if let error = errorMessage {
-                ErrorCard(message: error)
-                    .padding(.horizontal, 20)
+                ErrorCard(message: error) {
+                    Task { await loadMovers() }
+                }
+                .padding(.horizontal, 20)
             } else if isLoading {
                 LoadingCard()
                     .padding(.horizontal, 20)
@@ -54,6 +56,7 @@ struct FMPMarketMoversSection: View {
                     VStack(spacing: 0) {
                         ForEach(Array(movers.prefix(5).enumerated()), id: \.element.id) { index, mover in
                             MoverRow(mover: mover, isGainer: selectedTab == 0)
+                                .cardAppearance(delay: index)
 
                             if index < min(movers.count, 5) - 1 {
                                 Divider()
@@ -167,6 +170,7 @@ private struct LoadingCard: View {
 // MARK: - Error Card
 private struct ErrorCard: View {
     let message: String
+    var onRetry: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -177,9 +181,23 @@ private struct ErrorCard: View {
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
+
+            if let onRetry {
+                Button(action: onRetry) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Retry")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(AppColors.accent)
+                }
+                .padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 100)
+        .frame(minHeight: 100)
         .glassCard(cornerRadius: 16)
     }
 }

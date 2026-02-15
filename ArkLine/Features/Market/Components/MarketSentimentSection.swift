@@ -23,22 +23,31 @@ struct MarketSentimentSection: View {
                     // ArkLine Risk Score (Proprietary)
                     if let arkLineScore = viewModel.arkLineRiskScore {
                         ArkLineScoreCard(score: arkLineScore)
+                            .cardAppearance(delay: 0)
                     } else {
-                        ShimmerPlaceholderCard(title: "ArkLine Score", icon: "sparkles", isLoading: viewModel.isLoading)
+                        ShimmerPlaceholderCard(title: "ArkLine Score", icon: "sparkles", isLoading: viewModel.isLoading) {
+                            await viewModel.retryArkLineScore()
+                        }
                     }
 
                     // Fear & Greed Index
                     if let fearGreed = viewModel.fearGreedIndex {
                         FearGreedSentimentCard(index: fearGreed)
+                            .cardAppearance(delay: 1)
                     } else {
-                        ShimmerPlaceholderCard(title: "Fear & Greed", icon: "gauge.with.needle", isLoading: viewModel.isLoading)
+                        ShimmerPlaceholderCard(title: "Fear & Greed", icon: "gauge.with.needle", isLoading: viewModel.isLoading) {
+                            await viewModel.retryFearGreed()
+                        }
                     }
 
                     // Bitcoin/Altcoin Season
                     if let altcoin = viewModel.altcoinSeason {
                         BitcoinSeasonCard(index: altcoin)
+                            .cardAppearance(delay: 2)
                     } else {
-                        ShimmerPlaceholderCard(title: "Season Indicator", icon: "bitcoinsign.circle", isLoading: viewModel.isLoading)
+                        ShimmerPlaceholderCard(title: "Season Indicator", icon: "bitcoinsign.circle", isLoading: viewModel.isLoading) {
+                            await viewModel.retryAltcoinSeason()
+                        }
                     }
 
                     // Market Cap
@@ -47,12 +56,16 @@ struct MarketSentimentSection: View {
                         change: viewModel.marketCapChange24h,
                         sparklineData: viewModel.marketCapHistory
                     )
+                    .cardAppearance(delay: 3)
 
                     // BTC Dominance
                     if let btcDom = viewModel.btcDominance {
                         BTCDominanceCard(dominance: btcDom)
+                            .cardAppearance(delay: 4)
                     } else {
-                        ShimmerPlaceholderCard(title: "BTC Dominance", icon: "chart.pie", isLoading: viewModel.isLoading)
+                        ShimmerPlaceholderCard(title: "BTC Dominance", icon: "chart.pie", isLoading: viewModel.isLoading) {
+                            await viewModel.retryBTCDominance()
+                        }
                     }
 
                     // Liquidations hidden - requires paid Coinglass subscription
@@ -92,7 +105,9 @@ struct MarketSentimentSection: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // App Store Rankings (Multiple Apps)
                     if viewModel.appStoreRankings.isEmpty {
-                        ShimmerPlaceholderCard(title: "App Store Rankings", icon: "arrow.down.app", isLoading: viewModel.isLoading)
+                        ShimmerPlaceholderCard(title: "App Store Rankings", icon: "arrow.down.app", isLoading: viewModel.isLoading) {
+                            await viewModel.retryAppStoreRankings()
+                        }
                     } else {
                         NavigationLink(destination: AppStoreRankingDetailView(viewModel: viewModel)) {
                             AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
@@ -119,7 +134,9 @@ struct MarketSentimentSection: View {
                 if let funding = viewModel.fundingRate {
                     FundingRateCard(fundingRate: funding)
                 } else {
-                    ShimmerPlaceholderCard(title: "Funding Rate", icon: "percent", isLoading: viewModel.isLoading)
+                    ShimmerPlaceholderCard(title: "Funding Rate", icon: "percent", isLoading: viewModel.isLoading) {
+                        await viewModel.retryFundingRate()
+                    }
                 }
             }
         }
@@ -264,12 +281,13 @@ struct PlaceholderCard: View {
     }
 }
 
-// MARK: - Shimmer Placeholder Card (Loading vs No Data)
+// MARK: - Shimmer Placeholder Card (Loading vs No Data with Retry)
 struct ShimmerPlaceholderCard: View {
     @Environment(\.colorScheme) var colorScheme
     let title: String
     let icon: String
     let isLoading: Bool
+    var onRetry: (() async -> Void)? = nil
 
     var body: some View {
         if isLoading {
@@ -293,8 +311,38 @@ struct ShimmerPlaceholderCard: View {
             .padding(16)
             .frame(maxWidth: .infinity, minHeight: 120)
             .glassCard(cornerRadius: 16)
+        } else if let onRetry {
+            // Tappable "No Data" with retry
+            Button {
+                Task { await onRetry() }
+            } label: {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Spacer()
+
+                    VStack(spacing: 8) {
+                        Image(systemName: "arrow.clockwise.circle")
+                            .font(.system(size: 24))
+                            .foregroundColor(AppColors.accent.opacity(0.7))
+
+                        Text("Tap to retry")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.accent.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Spacer()
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, minHeight: 120)
+                .glassCard(cornerRadius: 16)
+                .opacity(0.7)
+            }
+            .buttonStyle(PlainButtonStyle())
         } else {
-            // Static "No Data" after loading completes
             PlaceholderCard(title: title, icon: icon)
         }
     }

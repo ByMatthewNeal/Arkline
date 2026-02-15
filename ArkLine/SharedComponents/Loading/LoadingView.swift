@@ -5,20 +5,22 @@ struct LoadingView: View {
     var message: String? = nil
     var size: LoadingSize = .medium
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "6366F1")))
+                .progressViewStyle(CircularProgressViewStyle(tint: AppColors.accent))
                 .scaleEffect(size.scale)
 
             if let message = message {
                 Text(message)
                     .font(size.font)
-                    .foregroundColor(Color(hex: "A1A1AA"))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: "0F0F0F"))
+        .background(AppColors.background(colorScheme))
     }
 }
 
@@ -49,16 +51,25 @@ struct SkeletonView: View {
     var height: CGFloat = 20
     var cornerRadius: CGFloat = 4
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isAnimating = false
+
+    private var baseColor: Color {
+        AppColors.divider(colorScheme)
+    }
+
+    private var highlightColor: Color {
+        colorScheme == .dark ? Color(hex: "3A3A3A") : Color(hex: "E8E8E8")
+    }
 
     var body: some View {
         Rectangle()
             .fill(
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(hex: "2A2A2A"),
-                        Color(hex: "3A3A3A"),
-                        Color(hex: "2A2A2A")
+                        baseColor,
+                        highlightColor,
+                        baseColor
                     ]),
                     startPoint: isAnimating ? .trailing : .leading,
                     endPoint: isAnimating ? .leading : .trailing
@@ -79,6 +90,8 @@ struct SkeletonView: View {
 
 // MARK: - Skeleton Card
 struct SkeletonCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SkeletonView(height: 16, cornerRadius: 4)
@@ -91,7 +104,7 @@ struct SkeletonCard: View {
                 .frame(width: 200)
         }
         .padding(16)
-        .background(Color(hex: "1F1F1F"))
+        .background(AppColors.cardBackground(colorScheme))
         .cornerRadius(12)
     }
 }
@@ -147,5 +160,5 @@ struct SkeletonListItem: View {
 
         SkeletonList(itemCount: 3)
     }
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

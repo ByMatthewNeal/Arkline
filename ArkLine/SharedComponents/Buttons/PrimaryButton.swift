@@ -86,5 +86,5 @@ enum ButtonSize {
         PrimaryButton(title: "Small", action: {}, size: .small)
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }

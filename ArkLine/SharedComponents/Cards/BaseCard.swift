@@ -3,13 +3,13 @@ import SwiftUI
 // MARK: - Base Card
 struct BaseCard<Content: View>: View {
     let content: () -> Content
-    var backgroundColor: Color = Color(hex: "1F1F1F")
+    var backgroundColor: Color = AppColors.cardBackground(.dark)
     var cornerRadius: CGFloat = 16
     var padding: CGFloat = ArkSpacing.Component.cardPadding
     var hasShadow: Bool = false
 
     init(
-        backgroundColor: Color = Color(hex: "1F1F1F"),
+        backgroundColor: Color = AppColors.cardBackground(.dark),
         cornerRadius: CGFloat = 16,
         padding: CGFloat = 16,
         hasShadow: Bool = false,
@@ -35,16 +35,16 @@ struct BaseCard<Content: View>: View {
 struct TappableCard<Content: View>: View {
     let action: () -> Void
     let content: () -> Content
-    var backgroundColor: Color = Color(hex: "1F1F1F")
-    var pressedBackgroundColor: Color = Color(hex: "2A2A2A")
+    var backgroundColor: Color = AppColors.cardBackground(.dark)
+    var pressedBackgroundColor: Color = AppColors.divider(.dark)
     var cornerRadius: CGFloat = 16
     var padding: CGFloat = 16
 
     @State private var isPressed = false
 
     init(
-        backgroundColor: Color = Color(hex: "1F1F1F"),
-        pressedBackgroundColor: Color = Color(hex: "2A2A2A"),
+        backgroundColor: Color = AppColors.cardBackground(.dark),
+        pressedBackgroundColor: Color = AppColors.divider(.dark),
         cornerRadius: CGFloat = 16,
         padding: CGFloat = 16,
         action: @escaping () -> Void,
@@ -78,11 +78,11 @@ struct TappableCard<Content: View>: View {
 struct SectionCard<Header: View, Content: View>: View {
     let header: () -> Header
     let content: () -> Content
-    var backgroundColor: Color = Color(hex: "1F1F1F")
+    var backgroundColor: Color = AppColors.cardBackground(.dark)
     var headerSpacing: CGFloat = 12
 
     init(
-        backgroundColor: Color = Color(hex: "1F1F1F"),
+        backgroundColor: Color = AppColors.cardBackground(.dark),
         headerSpacing: CGFloat = 12,
         @ViewBuilder header: @escaping () -> Header,
         @ViewBuilder content: @escaping () -> Content
@@ -139,5 +139,5 @@ struct SectionCard<Header: View, Content: View>: View {
         }
     }
     .padding()
-    .background(Color(hex: "0F0F0F"))
+    .background(AppColors.background(.dark))
 }
