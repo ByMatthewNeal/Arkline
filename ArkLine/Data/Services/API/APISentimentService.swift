@@ -51,17 +51,39 @@ final class APISentimentService: SentimentServiceProtocol {
         }
     }
 
+    private static let dominanceDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f
+    }()
+
     func fetchBTCDominance() async throws -> BTCDominance {
         return try await sharedCache.getOrFetch(CacheKey.btcDominance, ttl: APICache.TTL.medium) { [networkManager] in
-            // Use CoinGecko global data for BTC dominance
             let endpoint = CoinGeckoEndpoint.globalData
             let response: CoinGeckoGlobalData = try await networkManager.request(endpoint)
 
             let dominance = response.data.marketCapPercentage["btc"] ?? 0
+            let todayStr = Self.dominanceDateFormatter.string(from: Date())
+
+            // Compute 24h change from previously stored value
+            let previousValue = UserDefaults.standard.double(forKey: "btcDominance_previousValue")
+            let previousDate = UserDefaults.standard.string(forKey: "btcDominance_previousDate") ?? ""
+
+            var change24h: Double = 0
+            if previousValue > 0, previousDate != todayStr {
+                change24h = dominance - previousValue
+            }
+
+            // Store today's value for next comparison
+            if previousDate != todayStr {
+                UserDefaults.standard.set(dominance, forKey: "btcDominance_previousValue")
+                UserDefaults.standard.set(todayStr, forKey: "btcDominance_previousDate")
+            }
 
             return BTCDominance(
                 value: dominance,
-                change24h: 0, // Would need historical data to calculate
+                change24h: change24h,
                 timestamp: Date()
             )
         }

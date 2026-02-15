@@ -5,6 +5,7 @@ import SwiftUI
 class SentimentViewModel {
     // MARK: - Dependencies
     private let sentimentService: SentimentServiceProtocol
+    private let marketService: MarketServiceProtocol
     private let itcRiskService: ITCRiskServiceProtocol
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
@@ -227,6 +228,7 @@ class SentimentViewModel {
     // MARK: - Initialization
     init(
         sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
+        marketService: MarketServiceProtocol = ServiceContainer.shared.marketService,
         itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService,
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
@@ -234,6 +236,7 @@ class SentimentViewModel {
         macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService
     ) {
         self.sentimentService = sentimentService
+        self.marketService = marketService
         self.itcRiskService = itcRiskService
         self.vixService = vixService
         self.dxyService = dxyService
@@ -269,6 +272,9 @@ class SentimentViewModel {
         // Market Overview (market cap from CoinGecko global)
         async let marketOverviewTask = fetchMarketOverviewSafe()
 
+        // Market cap sparkline (7-day BTC market cap as proxy)
+        async let marketCapHistoryTask = fetchMarketCapHistorySafe()
+
         // Macro Indicators (VIX, DXY, Global M2)
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
@@ -282,6 +288,7 @@ class SentimentViewModel {
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
         let allRiskResults = await allRiskResultsTask
         let marketOverview = await marketOverviewTask
+        let marketCapSparkline = await marketCapHistoryTask
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
         let zScores = await zScoresTask
 
@@ -294,6 +301,9 @@ class SentimentViewModel {
             if let overview = marketOverview {
                 self.totalMarketCap = overview.totalMarketCap
                 self.marketCapChange24h = overview.marketCapChange24h
+            }
+            if let sparkline = marketCapSparkline {
+                self.marketCapHistory = sparkline
             }
             self.etfNetFlow = etf
             self.fundingRate = funding
@@ -483,6 +493,17 @@ class SentimentViewModel {
 
     private func fetchMarketOverviewSafe() async -> MarketOverview? {
         try? await sentimentService.fetchMarketOverview()
+    }
+
+    private func fetchMarketCapHistorySafe() async -> [Double]? {
+        guard let chart = try? await marketService.fetchCoinMarketChart(id: "bitcoin", currency: "usd", days: 7) else {
+            return nil
+        }
+        let values = chart.marketCaps.compactMap { pair -> Double? in
+            guard pair.count >= 2 else { return nil }
+            return pair[1]
+        }
+        return values.isEmpty ? nil : values
     }
 
     private func fetchVIXSafe() async -> VIXData? {
