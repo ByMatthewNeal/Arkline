@@ -39,16 +39,17 @@ final class CMEFedWatchScraper {
         logDebug("FedWatch: Today is \(today)", category: .network)
         logDebug("FedWatch: Year is \(calendar.component(.year, from: today))", category: .network)
 
-        // 2026 FOMC Meeting Dates (approximate)
+        // 2026 FOMC Meeting Dates (decision day = second day of 2-day meeting)
+        // Source: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
         let fomcDates: [(month: Int, day: Int)] = [
-            (1, 29),   // Jan 28-29
-            (3, 19),   // Mar 18-19
-            (5, 7),    // May 6-7
-            (6, 18),   // Jun 17-18
-            (7, 30),   // Jul 29-30
-            (9, 17),   // Sep 16-17
-            (11, 5),   // Nov 4-5
-            (12, 17)   // Dec 16-17
+            (1, 28),   // Jan 27-28
+            (3, 18),   // Mar 17-18
+            (4, 29),   // Apr 28-29
+            (6, 17),   // Jun 16-17
+            (7, 29),   // Jul 28-29
+            (9, 16),   // Sep 15-16
+            (10, 28),  // Oct 27-28
+            (12, 9)    // Dec 8-9
         ]
 
         var meetings: [FedWatchData] = []
@@ -74,8 +75,8 @@ final class CMEFedWatchScraper {
                 lastUpdated: today
             ))
 
-            // Only include next 4 meetings
-            if meetings.count >= 4 { break }
+            // Show up to 6 upcoming meetings
+            if meetings.count >= 6 { break }
         }
 
         return meetings
