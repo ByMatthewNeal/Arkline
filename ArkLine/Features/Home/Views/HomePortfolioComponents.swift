@@ -511,7 +511,7 @@ struct CompactRiskCard: View {
 
                     // Days at level indicator
                     if let days = daysAtLevel {
-                        Text("\(days) days at this level")
+                        Text("\(days) day\(days == 1 ? "" : "s") at this level")
                             .font(.system(size: 9))
                             .foregroundColor(textPrimary.opacity(0.5))
                             .padding(.top, 2)

@@ -181,7 +181,7 @@
 		91252ECC56160C486655563C /* CareerIndustryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */; };
 		933D2871520E6D18D9470079 /* FMPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A2248CF31FBE81B04E09E5 /* FMPService.swift */; };
 		944895C52A483A1C1759D6A4 /* RiskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C78A85B7A5997E03B244FB /* RiskModels.swift */; };
-		944A5B5DB83D6A621E58DAF1 /* SentimentRiskCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE2DD9BE22EC503BFD189D0 /* SentimentRiskCards.swift */; };
+
 		95DCC179469B65E518BAA33F /* StringExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */; };
 		988EB2790776DAFBE8325BE6 /* EmbeddedWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F9C3C06B9A6670869424CC /* EmbeddedWidgetView.swift */; };
 		988EB2790776DAFBE8325BE7 /* EmbeddedPortfolioWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58F9C3C06B9A6670869424CD /* EmbeddedPortfolioWidget.swift */; };
@@ -500,7 +500,7 @@
 		87CF0E5EC762D968DCBE4F7D /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinglassData.swift; sourceTree = "<group>"; };
 		8AAAF40361CD29C51A718DFC /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		8AE2DD9BE22EC503BFD189D0 /* SentimentRiskCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentimentRiskCards.swift; sourceTree = "<group>"; };
+
 		8AE42B1F64D053FD667B857C /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		8C9F2BB5F78AF614F347490F /* BroadcastService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastService.swift; sourceTree = "<group>"; };
 		8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SupplyInProfitWidget.swift; path = Features/Home/Views/SupplyInProfitWidget.swift; sourceTree = "<group>"; };
@@ -1357,7 +1357,6 @@
 				0EE37B0AF46F26C1EBB5BCE9 /* SentimentMarketCards.swift */,
 				B9945832BAAEB3194B052824 /* SentimentRetailCards.swift */,
 				91682101CBACB8AFAFBF1334 /* GoogleTrendsDetailView.swift */,
-				8AE2DD9BE22EC503BFD189D0 /* SentimentRiskCards.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -2094,7 +2093,6 @@
 				9DEF657529A70C40EA674110 /* SentimentMarketCards.swift in Sources */,
 				8C5C3B248351250E78D35AC6 /* SentimentRetailCards.swift in Sources */,
 				D45CA1F56ADCB5F63AD04B62 /* GoogleTrendsDetailView.swift in Sources */,
-				944A5B5DB83D6A621E58DAF1 /* SentimentRiskCards.swift in Sources */,
 				BA6371D635D6C2D3E75D98FF /* APIProxy.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

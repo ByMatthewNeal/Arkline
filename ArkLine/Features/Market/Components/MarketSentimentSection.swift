@@ -129,15 +129,17 @@ struct MarketSentimentSection: View {
         let history = viewModel.riskHistories[coin] ?? []
         guard !history.isEmpty else { return nil }
         let currentCategory = current.riskCategory
+        let currentRisk = current.riskLevel
         var count = 0
         for level in history.reversed() {
-            if level.riskCategory == currentCategory {
+            if level.riskCategory == currentCategory ||
+                abs(level.riskLevel - currentRisk) < 0.05 {
                 count += 1
             } else {
                 break
             }
         }
-        return count > 0 ? count : nil
+        return count >= 1 ? count : nil
     }
 }
 

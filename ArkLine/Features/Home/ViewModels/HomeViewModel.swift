@@ -269,19 +269,24 @@ class HomeViewModel {
         guard let current = current, !history.isEmpty else { return nil }
 
         let currentCategory = current.riskCategory
+        let currentRisk = current.riskLevel
         var count = 0
 
-        // Count backwards from end of history
+        // Count backwards from end of history.
+        // Uses tolerance-based matching: the live price (current) and daily close
+        // (history) can land in different categories when risk is near a boundary
+        // (e.g. 0.40). A 0.05 tolerance bridges this live-vs-close gap without
+        // masking genuine risk level changes.
         for level in history.reversed() {
-            if level.riskCategory == currentCategory {
+            if level.riskCategory == currentCategory ||
+                abs(level.riskLevel - currentRisk) < 0.05 {
                 count += 1
             } else {
                 break
             }
         }
 
-        // Only return if we have at least 2 days (meaningful streak)
-        return count >= 2 ? count : nil
+        return count >= 1 ? count : nil
     }
 
     // Top Movers
