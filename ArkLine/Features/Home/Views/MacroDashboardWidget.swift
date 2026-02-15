@@ -406,6 +406,8 @@ struct MacroIndicatorColumn: View {
                     .font(.system(size: valueFontSize, weight: .semibold, design: .default))
                     .foregroundColor(textPrimary)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
 
                 if let zScore = zScoreData, size != .compact {
                     ZScoreIndicator(zScore: zScore.zScore.zScore, size: .small)
@@ -413,6 +415,8 @@ struct MacroIndicatorColumn: View {
                     Text(String(format: "%+.1f%%", change))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
             }
 
