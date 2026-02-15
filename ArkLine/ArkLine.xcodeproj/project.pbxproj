@@ -162,6 +162,8 @@
 		AA110001AABB00110001BB01 /* PortfolioCommonComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */; };
 		AA110002AABB00110002BB02 /* PortfolioHeaderComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */; };
 		AA110003AABB00110003BB03 /* PortfolioTabComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */; };
+		AA1122334455667788990033 /* StockDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1122334455667788990011 /* StockDetailView.swift */; };
+		AA1122334455667788990044 /* MetalDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1122334455667788990022 /* MetalDetailView.swift */; };
 		7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BFE18532B42396BDE06325 /* KeychainManager.swift */; };
 		80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */; };
 		81173E2E4A51178EFA18143F /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AAAF40361CD29C51A718DFC /* LoginView.swift */; };
@@ -524,6 +526,8 @@
 		8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SupplyInProfitWidget.swift; path = Features/Home/Views/SupplyInProfitWidget.swift; sourceTree = "<group>"; };
 		8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		8FCD088B0831263C159A5269 /* MarketOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketOverviewView.swift; sourceTree = "<group>"; };
+		AA1122334455667788990011 /* StockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockDetailView.swift; sourceTree = "<group>"; };
+		AA1122334455667788990022 /* MetalDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalDetailView.swift; sourceTree = "<group>"; };
 		90DF84B086A9E9DDB80DDC05 /* String+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extensions.swift"; sourceTree = "<group>"; };
 		91682101CBACB8AFAFBF1334 /* GoogleTrendsDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleTrendsDetailView.swift; sourceTree = "<group>"; };
 		93E515D0E6990FFEF0DA3183 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
@@ -1067,6 +1071,8 @@
 				69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */,
 				86AA2774D5757CF06C791EEC /* AssetDetailView.swift */,
 				8FCD088B0831263C159A5269 /* MarketOverviewView.swift */,
+				AA1122334455667788990022 /* MetalDetailView.swift */,
+				AA1122334455667788990011 /* StockDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2001,6 +2007,7 @@
 				1652EDF9F5840922C777B78C /* MarketServiceProtocol.swift in Sources */,
 				4B72ED4396687C6142BCE540 /* MarketViewModel.swift in Sources */,
 				238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */,
+				AA1122334455667788990044 /* MetalDetailView.swift in Sources */,
 				C55880EFEC7735E41C3B4912 /* MockCoinglassService.swift in Sources */,
 				85030D9B4F243212B135BC23 /* MockDCAService.swift in Sources */,
 				B24FD06E35351A9ED1362F35 /* MockDXYService.swift in Sources */,
@@ -2091,6 +2098,7 @@
 				FB54B74554486F93282A5F64 /* SplashView.swift in Sources */,
 				1D7DC43A6391750FB169A43B /* StatisticsCalculator.swift in Sources */,
 				545C051C03241BD5FFF79E29 /* StockAsset.swift in Sources */,
+				AA1122334455667788990033 /* StockDetailView.swift in Sources */,
 				6C5AAC0E3DF77DEDFC6D58E9 /* String+Extensions.swift in Sources */,
 				FC5266219EBEEC65406B533B /* SupabaseAuth.swift in Sources */,
 				68B776510F6F799948F81E99 /* SupabaseClient.swift in Sources */,

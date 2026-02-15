@@ -47,7 +47,10 @@ struct MarketAssetsSection: View {
                     }
                 case .stocks:
                     ForEach(viewModel.stockAssets) { asset in
-                        StockAssetRow(asset: asset)
+                        NavigationLink(destination: StockDetailView(asset: asset)) {
+                            StockAssetRow(asset: asset)
+                        }
+                        .buttonStyle(PlainButtonStyle())
 
                         if asset.id != viewModel.stockAssets.last?.id {
                             Divider()
@@ -57,7 +60,10 @@ struct MarketAssetsSection: View {
                     }
                 case .metals:
                     ForEach(viewModel.metalAssets) { asset in
-                        MetalAssetRow(asset: asset)
+                        NavigationLink(destination: MetalDetailView(asset: asset)) {
+                            MetalAssetRow(asset: asset)
+                        }
+                        .buttonStyle(PlainButtonStyle())
 
                         if asset.id != viewModel.metalAssets.last?.id {
                             Divider()
