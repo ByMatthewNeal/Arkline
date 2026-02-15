@@ -4,56 +4,53 @@ import SwiftUI
 /// Self-loading section that fetches gold/silver prices via FMP commodity futures (GCUSD/SIUSD).
 /// Falls back to metalAssets from MarketViewModel if available.
 struct PreciousMetalsSection: View {
-    var metalAssets: [MetalAsset] = []
     @Environment(\.colorScheme) var colorScheme
     @State private var metals: [MetalAsset] = []
-    @State private var hasLoaded = false
+    @State private var isLoading = true
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
-    /// Use passed-in metals if available, otherwise use self-loaded FMP data
-    private var displayMetals: [MetalAsset] {
-        let source = metalAssets.filter { ["XAU", "XAG"].contains($0.symbol.uppercased()) }
-        return source.isEmpty ? metals : source
-    }
-
     var body: some View {
-        Group {
-            if !displayMetals.isEmpty {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Section Header
-                    HStack {
-                        Image(systemName: "cube.fill")
-                            .foregroundColor(Color(hex: "F59E0B"))
-                        Text("Precious Metals")
-                            .font(.headline)
-                            .foregroundColor(textPrimary)
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack {
+                Image(systemName: "cube.fill")
+                    .foregroundColor(Color(hex: "F59E0B"))
+                Text("Precious Metals")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+                Spacer()
+            }
+            .padding(.horizontal)
 
-                        Spacer()
+            if isLoading {
+                // Shimmer placeholder while loading
+                VStack(spacing: 12) {
+                    ForEach(0..<2, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                            .frame(height: 72)
                     }
-                    .padding(.horizontal)
-
-                    // Metal Cards
-                    VStack(spacing: 12) {
-                        ForEach(displayMetals) { metal in
-                            PreciousMetalCard(metal: metal)
-                        }
-                    }
-                    .padding(.horizontal)
                 }
+                .padding(.horizontal)
+                .redacted(reason: .placeholder)
+            } else {
+                // Metal Cards
+                VStack(spacing: 12) {
+                    ForEach(metals) { metal in
+                        PreciousMetalCard(metal: metal)
+                    }
+                }
+                .padding(.horizontal)
             }
         }
         .task {
-            if displayMetals.isEmpty && !hasLoaded {
-                await loadFromFMP()
-            }
+            await loadFromFMP()
         }
     }
 
     /// Fetch gold/silver prices from FMP commodity futures (GCUSD/SIUSD)
     private func loadFromFMP() async {
-        defer { hasLoaded = true }
-
         // Commodity futures symbols available on FMP free tier
         let futuresMap: [(futures: String, symbol: String, name: String)] = [
             ("GCUSD", "XAU", "Gold"),
@@ -83,6 +80,7 @@ struct PreciousMetalsSection: View {
         }
 
         metals = loaded
+        isLoading = false
     }
 }
 

@@ -42,7 +42,7 @@ struct MarketOverviewView: View {
                         )
 
                         // 3.5 Precious Metals Section
-                        PreciousMetalsSection(metalAssets: viewModel.metalAssets)
+                        PreciousMetalsSection()
 
                         // 4. Market Sentiment Section
                         MarketSentimentSection(
