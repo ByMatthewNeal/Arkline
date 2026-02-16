@@ -527,6 +527,7 @@ struct RegimeIndicatorSnapshot: Equatable {
     var appStoreScore: Double?        // 0-100 (composite retail interest)
     var searchInterest: Int?          // 0-100 (Google Trends)
     var realizedVolScore: Double?     // 0-100 (vol expansion/compression regime)
+    var capitalRotation: Double?      // 0-100 (capital flow: 0=risk-off, 100=alt rotation)
 }
 
 /// Complete regime data for the quadrant chart
@@ -545,6 +546,43 @@ struct RegimeMilestones: Equatable {
     let oneWeekAgo: SentimentRegimePoint?
     let oneMonthAgo: SentimentRegimePoint?
     let threeMonthsAgo: SentimentRegimePoint?
+}
+
+// MARK: - Capital Rotation
+
+/// Snapshot of all dominance metrics from a single CoinGecko /global call
+struct DominanceSnapshot: Equatable, Codable {
+    let btcDominance: Double      // e.g. 58.5 (percentage)
+    let ethDominance: Double      // e.g. 11.2
+    let usdtDominance: Double     // e.g. 5.1
+    let totalMarketCap: Double    // USD
+    let altMarketCap: Double      // totalMarketCap * (1 - btcDom/100) = TOTAL2
+    let timestamp: Date
+}
+
+/// Capital rotation signal derived from multi-dominance analysis
+struct CapitalRotationSignal: Equatable {
+    let score: Double             // 0-100 (0 = full risk-off/stables, 100 = full alt rotation)
+    let phase: RotationPhase
+    let dominance: DominanceSnapshot
+    let timestamp: Date
+}
+
+/// Market cycle phase based on capital flow patterns
+enum RotationPhase: String, CaseIterable {
+    case riskOff = "Risk Off"
+    case btcAccumulation = "BTC Accumulation"
+    case altRotation = "Alt Rotation"
+    case peakSpeculation = "Peak Speculation"
+
+    static func from(score: Double) -> RotationPhase {
+        switch score {
+        case ..<25: return .riskOff
+        case 25..<50: return .btcAccumulation
+        case 50..<75: return .altRotation
+        default: return .peakSpeculation
+        }
+    }
 }
 
 // MARK: - Sentiment History

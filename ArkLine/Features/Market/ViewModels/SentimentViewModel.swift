@@ -75,6 +75,10 @@ class SentimentViewModel {
     var fearGreedHistory: [FearGreedIndex] = []
     var googleTrendsHistory: [GoogleTrendsDTO] = []
 
+    // Capital Rotation
+    var dominanceSnapshot: DominanceSnapshot?
+    var capitalRotation: CapitalRotationSignal?
+
     // Sentiment Regime Quadrant
     var sentimentRegimeData: SentimentRegimeData?
     var isLoadingRegimeData = false
@@ -474,7 +478,8 @@ class SentimentViewModel {
                 altcoinSeason: altcoinSeason?.value,
                 btcDominance: btcDominance?.value,
                 appStoreScore: appStoreRankings.isEmpty ? nil : appStoreCompositeSentiment.score,
-                searchInterest: googleTrends?.currentIndex ?? (bitcoinSearchIndex != 66 ? bitcoinSearchIndex : nil)
+                searchInterest: googleTrends?.currentIndex ?? (bitcoinSearchIndex != 66 ? bitcoinSearchIndex : nil),
+                capitalRotation: capitalRotation?.score
             )
 
             let data = SentimentRegimeService.computeRegimeData(
@@ -486,6 +491,22 @@ class SentimentViewModel {
             await MainActor.run { self.sentimentRegimeData = data }
         } catch {
             logWarning("Failed to compute sentiment regime: \(error.localizedDescription)", category: .data)
+        }
+    }
+
+    /// Fetches multi-dominance data and computes the capital rotation signal.
+    func fetchCapitalRotation() async {
+        do {
+            let snapshot = try await sentimentService.fetchDominanceSnapshot()
+            let previous = CapitalRotationService.loadPreviousSnapshot()
+            let rotation = CapitalRotationService.computeRotationSignal(current: snapshot, previous: previous)
+            CapitalRotationService.savePreviousSnapshot(snapshot)
+            await MainActor.run {
+                self.dominanceSnapshot = snapshot
+                self.capitalRotation = rotation
+            }
+        } catch {
+            logWarning("Failed to fetch capital rotation: \(error.localizedDescription)", category: .data)
         }
     }
 
@@ -501,6 +522,7 @@ class SentimentViewModel {
         await refresh()
         await fetchFearGreedHistory(days: 90)
         await fetchGoogleTrendsHistory()
+        await fetchCapitalRotation()
         await fetchSentimentRegime()
     }
 

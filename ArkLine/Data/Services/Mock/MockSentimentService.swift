@@ -47,6 +47,18 @@ final class MockSentimentService: SentimentServiceProtocol {
         )
     }
 
+    func fetchDominanceSnapshot() async throws -> DominanceSnapshot {
+        try await simulateNetworkDelay()
+        return DominanceSnapshot(
+            btcDominance: 61.9,
+            ethDominance: 11.2,
+            usdtDominance: 5.1,
+            totalMarketCap: 2_450_000_000_000,
+            altMarketCap: 934_450_000_000,
+            timestamp: Date()
+        )
+    }
+
     func fetchETFNetFlow() async throws -> ETFNetFlow {
         try await simulateNetworkDelay()
         return ETFNetFlow(

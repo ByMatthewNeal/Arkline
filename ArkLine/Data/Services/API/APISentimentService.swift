@@ -89,6 +89,26 @@ final class APISentimentService: SentimentServiceProtocol {
         }
     }
 
+    func fetchDominanceSnapshot() async throws -> DominanceSnapshot {
+        let endpoint = CoinGeckoEndpoint.globalData
+        let response: CoinGeckoGlobalData = try await networkManager.request(endpoint)
+
+        let btcDom = response.data.marketCapPercentage["btc"] ?? 0
+        let ethDom = response.data.marketCapPercentage["eth"] ?? 0
+        let usdtDom = response.data.marketCapPercentage["usdt"] ?? 0
+        let totalMcap = response.data.totalMarketCap["usd"] ?? 0
+        let altMcap = totalMcap * (1.0 - btcDom / 100.0)
+
+        return DominanceSnapshot(
+            btcDominance: btcDom,
+            ethDominance: ethDom,
+            usdtDominance: usdtDom,
+            totalMarketCap: totalMcap,
+            altMarketCap: altMcap,
+            timestamp: Date()
+        )
+    }
+
     func fetchETFNetFlow() async throws -> ETFNetFlow {
         // Scrape ETF net flow data from Farside Investors
         let scraper = FarsideETFScraper()
@@ -370,6 +390,7 @@ final class APISentimentService: SentimentServiceProtocol {
         // Fetch all data in parallel for performance
         async let fearGreedTask = fetchFearGreedIndex()
         async let btcDomTask = fetchBTCDominance()
+        async let domSnapshotTask = try? fetchDominanceSnapshot()
         async let fundingTask = try? fetchFundingRate()
         async let altcoinTask = try? fetchAltcoinSeason()
         async let appStoreTask = try? fetchAppStoreRankings()
@@ -388,6 +409,7 @@ final class APISentimentService: SentimentServiceProtocol {
         // Await all results
         let fg = try await fearGreedTask
         let btc = try await btcDomTask
+        let domSnapshot = await domSnapshotTask
         let funding = await fundingTask
         let altcoin = await altcoinTask
         let appStore = await appStoreTask
@@ -492,15 +514,29 @@ final class APISentimentService: SentimentServiceProtocol {
             totalWeight += 0.10
         }
 
-        // 8. BTC Dominance (8% weight) - Lower dominance = altcoin speculation/greed
-        let btcDomValue = 1.0 - (btc.value / 100.0)  // Invert: low dominance = greed
-        components.append(RiskScoreComponent(
-            name: "BTC Dominance",
-            value: btcDomValue,
-            weight: 0.08,
-            signal: btcDomSignalTier(btc.value)
-        ))
-        totalWeight += 0.08
+        // 8. Capital Flow (8% weight) - Multi-dominance rotation signal
+        if let snapshot = domSnapshot {
+            let previous = CapitalRotationService.loadPreviousSnapshot()
+            let rotation = CapitalRotationService.computeRotationSignal(current: snapshot, previous: previous)
+            CapitalRotationService.savePreviousSnapshot(snapshot)
+            components.append(RiskScoreComponent(
+                name: "Capital Flow",
+                value: rotation.score / 100.0,
+                weight: 0.08,
+                signal: rotationSignalTier(rotation.score)
+            ))
+            totalWeight += 0.08
+        } else {
+            // Fallback to raw BTC dominance if snapshot unavailable
+            let btcDomValue = 1.0 - (btc.value / 100.0)
+            components.append(RiskScoreComponent(
+                name: "Capital Flow",
+                value: btcDomValue,
+                weight: 0.08,
+                signal: btcDomSignalTier(btc.value)
+            ))
+            totalWeight += 0.08
+        }
 
         // 9. Altcoin Season (8% weight) - Higher = altcoin greed
         if let alt = altcoin {
@@ -600,6 +636,16 @@ final class APISentimentService: SentimentServiceProtocol {
         if dominance < 55 { return .neutral }
         if dominance < 60 { return .bearish }
         return .extremelyBearish
+    }
+
+    private func rotationSignalTier(_ score: Double) -> SentimentTier {
+        switch score {
+        case ..<20: return .extremelyBearish   // Risk off
+        case 20..<40: return .bearish          // BTC accumulation
+        case 40..<60: return .neutral
+        case 60..<80: return .bullish          // Alt rotation
+        default: return .extremelyBullish      // Peak speculation
+        }
     }
 
     private func altcoinSignalTier(_ value: Int) -> SentimentTier {

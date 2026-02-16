@@ -16,6 +16,9 @@ protocol SentimentServiceProtocol {
     /// - Returns: BTCDominance data
     func fetchBTCDominance() async throws -> BTCDominance
 
+    /// Fetches multi-dominance snapshot (BTC, ETH, USDT + total/alt market cap)
+    func fetchDominanceSnapshot() async throws -> DominanceSnapshot
+
     /// Fetches ETF net flow data
     /// - Returns: ETFNetFlow data
     func fetchETFNetFlow() async throws -> ETFNetFlow

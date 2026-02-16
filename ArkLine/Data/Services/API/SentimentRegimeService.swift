@@ -8,7 +8,7 @@ import Foundation
 ///   - BTC Risk Level (20%) — cycle position from ITC model
 ///   - Funding Rates (15%) — leverage sentiment (positive = greedy longs)
 ///   - Altcoin Season Index (15%) — alt speculation = greed
-///   - BTC Dominance (10%) — falling dominance = risk-on speculation
+///   - Capital Rotation (10%) — multi-dominance flow signal (BTC/ETH/USDT dom + alt share)
 ///
 /// **Engagement axis** (Low → High) composites:
 ///   - BTC Volume vs 30d SMA (35%) — core trading activity
@@ -32,7 +32,7 @@ enum SentimentRegimeService {
         static let btcRisk: Double = 0.20
         static let fundingRate: Double = 0.15
         static let altcoinSeason: Double = 0.15
-        static let btcDominance: Double = 0.10
+        static let capitalRotation: Double = 0.10
     }
 
     private struct EngagementWeights {
@@ -195,11 +195,9 @@ enum SentimentRegimeService {
             components.append((Double(alt), EmotionWeights.altcoinSeason, "Altcoin Season"))
         }
 
-        // BTC Dominance — inverted: lower dominance = more speculation = greed
-        // Typical range: 40-70%, map to 0-100 inverted
-        if let dom = indicators.btcDominance {
-            let inverted = max(0, min(100, (70.0 - dom) / 30.0 * 100.0))
-            components.append((inverted, EmotionWeights.btcDominance, "BTC Dominance"))
+        // Capital Rotation — multi-dominance flow signal (0-100, higher = more risk-on)
+        if let rotation = indicators.capitalRotation {
+            components.append((rotation, EmotionWeights.capitalRotation, "Capital Flow"))
         }
 
         return weightedAverage(components)
