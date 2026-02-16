@@ -110,51 +110,62 @@ private struct ValuePill: View {
 struct SentimentQuadrantChart: View {
     @Environment(\.colorScheme) var colorScheme
     let data: SentimentRegimeData
+    @State private var showFullscreen = false
 
     private let chartPadding: CGFloat = 36
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Regime Quadrant")
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-                .padding(.horizontal, 20)
+            HStack {
+                Text("Regime Quadrant")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            GeometryReader { geometry in
-                let chartWidth = geometry.size.width - chartPadding * 2
-                let chartHeight: CGFloat = 260
+                Spacer()
 
-                ZStack(alignment: .topLeading) {
-                    // Quadrant backgrounds
-                    quadrantBackgrounds(width: chartWidth, height: chartHeight)
-                        .offset(x: chartPadding, y: 0)
-
-                    // Crosshair lines
-                    crosshairLines(width: chartWidth, height: chartHeight)
-                        .offset(x: chartPadding, y: 0)
-
-                    // Quadrant labels
-                    quadrantLabels(width: chartWidth, height: chartHeight)
-                        .offset(x: chartPadding, y: 0)
-
-                    // Trajectory path
-                    trajectoryPath(width: chartWidth, height: chartHeight)
-                        .offset(x: chartPadding, y: 0)
-
-                    // Milestone dots
-                    milestoneDots(width: chartWidth, height: chartHeight)
-                        .offset(x: chartPadding, y: 0)
-
-                    // Axis labels
-                    axisLabels(width: chartWidth, height: chartHeight)
-                }
-                .frame(height: chartHeight + 24)
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.textSecondary)
             }
-            .frame(height: 284)
-            .padding(16)
-            .glassCard(cornerRadius: 16)
             .padding(.horizontal, 20)
+
+            chartContent(chartHeight: 260)
+                .padding(16)
+                .glassCard(cornerRadius: 16)
+                .padding(.horizontal, 20)
+                .onTapGesture { showFullscreen = true }
         }
+        .fullScreenCover(isPresented: $showFullscreen) {
+            FullscreenQuadrantView(data: data)
+        }
+    }
+
+    @ViewBuilder
+    func chartContent(chartHeight: CGFloat) -> some View {
+        GeometryReader { geometry in
+            let chartWidth = geometry.size.width - chartPadding * 2
+
+            ZStack(alignment: .topLeading) {
+                quadrantBackgrounds(width: chartWidth, height: chartHeight)
+                    .offset(x: chartPadding, y: 0)
+
+                crosshairLines(width: chartWidth, height: chartHeight)
+                    .offset(x: chartPadding, y: 0)
+
+                quadrantLabels(width: chartWidth, height: chartHeight)
+                    .offset(x: chartPadding, y: 0)
+
+                trajectoryPath(width: chartWidth, height: chartHeight)
+                    .offset(x: chartPadding, y: 0)
+
+                milestoneDots(width: chartWidth, height: chartHeight)
+                    .offset(x: chartPadding, y: 0)
+
+                axisLabels(width: chartWidth, height: chartHeight)
+            }
+            .frame(height: chartHeight + 24)
+        }
+        .frame(height: chartHeight + 24)
     }
 
     // MARK: - Quadrant Backgrounds
@@ -529,5 +540,44 @@ private struct RegimeGuideSection: View {
         .padding(20)
         .glassCard(cornerRadius: 16)
         .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Fullscreen Quadrant View
+private struct FullscreenQuadrantView: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+    let data: SentimentRegimeData
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            (colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F7"))
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Text("Regime Quadrant")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .padding(.top, 60)
+
+                SentimentQuadrantChart(data: data)
+                    .chartContent(chartHeight: UIScreen.main.bounds.height * 0.55)
+                    .padding(16)
+                    .glassCard(cornerRadius: 16)
+                    .padding(.horizontal, 16)
+
+                Spacer()
+            }
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(20)
+            }
+            .padding(.top, 44)
+        }
     }
 }
