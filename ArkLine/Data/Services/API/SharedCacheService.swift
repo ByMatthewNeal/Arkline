@@ -19,6 +19,7 @@ actor SharedCacheService {
     // MARK: - Main Entry Point
 
     /// Get or fetch with three-tier caching: L1 (local) → L2 (Supabase) → L3 (API fetch)
+    /// Falls back to stale L2 data when L3 fails, so the UI never shows $0 prices.
     func getOrFetch<T: Codable>(
         _ key: String,
         ttl: TimeInterval = APICache.TTL.medium,
@@ -31,20 +32,27 @@ actor SharedCacheService {
         }
 
         // L2: Check Supabase shared cache (~50ms)
+        var l2Fallback: T?
         if supabase.isConfigured {
             do {
                 let result = try await readFromL2(key: key, ttl: ttl, as: T.self)
                 if let value = result.value {
-                    localCache.set(key, value: value, ttl: ttl)
-                    logDebug("SharedCache L2 HIT\(result.isStale ? " (stale-while-revalidate)" : ""): \(key)", category: .network)
+                    if !result.isVeryStale {
+                        localCache.set(key, value: value, ttl: ttl)
+                        logDebug("SharedCache L2 HIT\(result.isStale ? " (stale-while-revalidate)" : ""): \(key)", category: .network)
 
-                    // Stale-while-revalidate: return stale data, refresh in background
-                    if result.isStale {
-                        Task { [fetch] in
-                            await self.backgroundRefresh(key: key, ttl: ttl, fetch: fetch)
+                        // Stale-while-revalidate: return stale data, refresh in background
+                        if result.isStale {
+                            Task { [fetch] in
+                                await self.backgroundRefresh(key: key, ttl: ttl, fetch: fetch)
+                            }
                         }
+                        return value
+                    } else {
+                        // Very stale — save as fallback in case L3 fails
+                        l2Fallback = value
+                        logDebug("SharedCache L2 VERY STALE (saved as fallback): \(key)", category: .network)
                     }
-                    return value
                 }
             } catch {
                 logWarning("SharedCache L2 read failed for \(key): \(error.localizedDescription)", category: .network)
@@ -54,19 +62,29 @@ actor SharedCacheService {
 
         // L3: Fetch from external API
         logDebug("SharedCache L3 FETCH: \(key)", category: .network)
-        let value = try await fetch()
+        do {
+            let value = try await fetch()
 
-        // Write back to L1
-        localCache.set(key, value: value, ttl: ttl)
+            // Write back to L1
+            localCache.set(key, value: value, ttl: ttl)
 
-        // Write back to L2 (fire-and-forget)
-        if supabase.isConfigured {
-            Task {
-                await self.writeToL2(key: key, value: value, ttl: ttl)
+            // Write back to L2 (fire-and-forget)
+            if supabase.isConfigured {
+                Task {
+                    await self.writeToL2(key: key, value: value, ttl: ttl)
+                }
             }
-        }
 
-        return value
+            return value
+        } catch {
+            // L3 failed — return very stale L2 data rather than showing $0.00
+            if let fallback = l2Fallback {
+                localCache.set(key, value: fallback, ttl: ttl / 2)
+                logWarning("SharedCache L3 FAILED, returning stale L2 fallback: \(key)", category: .network)
+                return fallback
+            }
+            throw error
+        }
     }
 
     // MARK: - L2 Operations
@@ -74,6 +92,7 @@ actor SharedCacheService {
     private struct L2Result<T> {
         let value: T?
         let isStale: Bool
+        let isVeryStale: Bool
     }
 
     private func readFromL2<T: Decodable>(key: String, ttl: TimeInterval, as type: T.Type) async throws -> L2Result<T> {
@@ -86,7 +105,7 @@ actor SharedCacheService {
             .value
 
         guard let row = rows.first else {
-            return L2Result(value: nil, isStale: false)
+            return L2Result(value: nil, isStale: false, isVeryStale: false)
         }
 
         // Check freshness using server timestamp
@@ -95,14 +114,9 @@ actor SharedCacheService {
         let isExpired = age > effectiveTTL
         let isVeryStale = age > effectiveTTL * 2
 
-        // If very stale (>2× TTL), treat as miss
-        if isVeryStale {
-            return L2Result(value: nil, isStale: false)
-        }
-
         // Decode the JSON string back to the target type
         guard let jsonData = row.data.data(using: .utf8) else {
-            return L2Result(value: nil, isStale: false)
+            return L2Result(value: nil, isStale: false, isVeryStale: false)
         }
 
         let decoder = JSONDecoder()
@@ -126,7 +140,7 @@ actor SharedCacheService {
         }
         let decoded = try decoder.decode(type, from: jsonData)
 
-        return L2Result(value: decoded, isStale: isExpired)
+        return L2Result(value: decoded, isStale: isExpired, isVeryStale: isVeryStale)
     }
 
     private func writeToL2<T: Encodable>(key: String, value: T, ttl: TimeInterval) async {
