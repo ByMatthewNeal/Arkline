@@ -402,7 +402,7 @@ struct SentimentRegimeCard: View {
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text("F&G: \(regimeData.currentPoint.fearGreedValue)")
+                    Text("Emotion: \(String(format: "%.0f", regimeData.currentPoint.emotionScore))")
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary)
                 }

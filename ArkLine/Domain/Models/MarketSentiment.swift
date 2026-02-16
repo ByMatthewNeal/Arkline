@@ -505,17 +505,27 @@ enum SentimentRegime: String, CaseIterable {
 struct SentimentRegimePoint: Identifiable, Equatable {
     let id: UUID
     let date: Date
-    let fearGreedValue: Int       // 0-100 (X-axis: Fear → Greed)
-    let engagementScore: Double   // 0-100 (Y-axis: Low → High volume)
+    let emotionScore: Double      // 0-100 (X-axis: Fear → Greed) — composite
+    let engagementScore: Double   // 0-100 (Y-axis: Low → High volume) — composite
     let regime: SentimentRegime
 
-    init(date: Date, fearGreedValue: Int, engagementScore: Double) {
+    init(date: Date, emotionScore: Double, engagementScore: Double) {
         self.id = UUID()
         self.date = date
-        self.fearGreedValue = fearGreedValue
+        self.emotionScore = emotionScore
         self.engagementScore = engagementScore
-        self.regime = SentimentRegime.classify(fearGreed: fearGreedValue, engagement: engagementScore)
+        self.regime = SentimentRegime.classify(fearGreed: Int(emotionScore), engagement: engagementScore)
     }
+}
+
+/// Live indicator snapshot for computing composite scores on the "Now" point
+struct RegimeIndicatorSnapshot: Equatable {
+    var fundingRate: Double?          // e.g. 0.0005 (raw rate)
+    var btcRiskLevel: Double?         // 0.0-1.0 (ITC risk)
+    var altcoinSeason: Int?           // 0-100
+    var btcDominance: Double?         // e.g. 58.5 (percentage)
+    var appStoreScore: Double?        // 0-100 (composite retail interest)
+    var searchInterest: Int?          // 0-100 (Google Trends)
 }
 
 /// Complete regime data for the quadrant chart
@@ -524,6 +534,8 @@ struct SentimentRegimeData: Equatable {
     let currentPoint: SentimentRegimePoint
     let milestones: RegimeMilestones
     let trajectory: [SentimentRegimePoint] // all daily points, oldest-first
+    let emotionComponents: [String]        // labels of data sources used in emotion axis
+    let engagementComponents: [String]     // labels of data sources used in engagement axis
 }
 
 /// Key time milestone positions on the quadrant

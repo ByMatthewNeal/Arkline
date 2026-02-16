@@ -454,8 +454,8 @@ class SentimentViewModel {
         }
     }
 
-    /// Fetches BTC volume data and computes the sentiment regime quadrant.
-    /// Requires fearGreedHistory to be loaded first.
+    /// Fetches BTC volume data and computes the sentiment regime quadrant
+    /// using composite scores from all available live indicators.
     func fetchSentimentRegime() async {
         guard !fearGreedHistory.isEmpty else { return }
 
@@ -466,9 +466,21 @@ class SentimentViewModel {
             let chart = try await marketService.fetchCoinMarketChart(
                 id: "bitcoin", currency: "usd", days: 90
             )
+
+            // Build live indicator snapshot for composite "Now" point
+            let liveIndicators = RegimeIndicatorSnapshot(
+                fundingRate: fundingRate?.averageRate,
+                btcRiskLevel: riskLevels["BTC"]?.riskLevel,
+                altcoinSeason: altcoinSeason?.value,
+                btcDominance: btcDominance?.value,
+                appStoreScore: appStoreRankings.isEmpty ? nil : appStoreCompositeSentiment.score,
+                searchInterest: googleTrends?.currentIndex ?? (bitcoinSearchIndex != 66 ? bitcoinSearchIndex : nil)
+            )
+
             let data = SentimentRegimeService.computeRegimeData(
                 fearGreedHistory: fearGreedHistory,
-                volumeData: chart.totalVolumes
+                volumeData: chart.totalVolumes,
+                liveIndicators: liveIndicators
             )
             await MainActor.run { self.sentimentRegimeData = data }
         } catch {
