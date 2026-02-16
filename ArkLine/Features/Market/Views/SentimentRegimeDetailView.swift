@@ -174,7 +174,7 @@ struct SentimentQuadrantChart: View {
     private func quadrantBackgrounds(width: CGFloat, height: CGFloat) -> some View {
         let halfW = width / 2
         let halfH = height / 2
-        let opacity = colorScheme == .dark ? 0.08 : 0.06
+        let opacity = colorScheme == .dark ? 0.12 : 0.10
 
         ZStack(alignment: .topLeading) {
             // Panic (top-left)
@@ -228,7 +228,7 @@ struct SentimentQuadrantChart: View {
 
     @ViewBuilder
     private func quadrantLabels(width: CGFloat, height: CGFloat) -> some View {
-        let labelOpacity = 0.35
+        let labelOpacity = 0.55
 
         // Panic (top-left)
         Text("PANIC")
@@ -282,7 +282,7 @@ struct SentimentQuadrantChart: View {
         // Subtle scatter dots for daily data points
         ForEach(data.trajectory) { point in
             Circle()
-                .fill(AppColors.accent.opacity(0.12))
+                .fill(AppColors.accent.opacity(0.22))
                 .frame(width: 3, height: 3)
                 .position(
                     x: point.emotionScore / 100.0 * width,
@@ -318,7 +318,7 @@ struct SentimentQuadrantChart: View {
                 }
             }
             .stroke(
-                AppColors.accent.opacity(0.5),
+                AppColors.accent.opacity(0.7),
                 style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
             )
         }
