@@ -12,9 +12,6 @@ struct SentimentRegimeDetailView: View {
                     // Current Regime Header
                     RegimeHeaderSection(data: data)
 
-                    // Data Sources
-                    DataSourcesSection(data: data)
-
                     // Quadrant Chart
                     SentimentQuadrantChart(data: data)
 
@@ -106,49 +103,6 @@ private struct ValuePill: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
         )
-    }
-}
-
-// MARK: - Data Sources Section
-private struct DataSourcesSection: View {
-    @Environment(\.colorScheme) var colorScheme
-    let data: SentimentRegimeData
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            axisColumn(title: "Emotion", icon: "brain.head.profile", components: data.emotionComponents)
-            axisColumn(title: "Engagement", icon: "waveform.path.ecg", components: data.engagementComponents)
-        }
-        .padding(16)
-        .glassCard(cornerRadius: 16)
-        .padding(.horizontal, 20)
-    }
-
-    @ViewBuilder
-    private func axisColumn(title: String, icon: String, components: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                    .foregroundColor(AppColors.accent)
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-            }
-
-            ForEach(components, id: \.self) { component in
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(AppColors.accent.opacity(0.5))
-                        .frame(width: 4, height: 4)
-                    Text(component)
-                        .font(.caption2)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

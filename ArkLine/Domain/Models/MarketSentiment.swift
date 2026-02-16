@@ -526,6 +526,7 @@ struct RegimeIndicatorSnapshot: Equatable {
     var btcDominance: Double?         // e.g. 58.5 (percentage)
     var appStoreScore: Double?        // 0-100 (composite retail interest)
     var searchInterest: Int?          // 0-100 (Google Trends)
+    var realizedVolScore: Double?     // 0-100 (vol expansion/compression regime)
 }
 
 /// Complete regime data for the quadrant chart

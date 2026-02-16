@@ -11,10 +11,15 @@ import Foundation
 ///   - BTC Dominance (10%) — falling dominance = risk-on speculation
 ///
 /// **Engagement axis** (Low → High) composites:
-///   - BTC Volume vs 30d SMA (40%) — core trading activity
-///   - Funding Rate magnitude (20%) — high absolute rate = active market
-///   - App Store Rankings (20%) — retail FOMO/interest
+///   - BTC Volume vs 30d SMA (35%) — core trading activity
+///   - Funding Rate magnitude (15%) — high absolute rate = active market
+///   - App Store Rankings (15%) — retail FOMO/interest
 ///   - Search Interest (20%) — public attention
+///   - BTC Realized Vol (15%) — vol expansion/compression regime
+///
+/// **Regime gating**: Caps emotion score during vol extremes to prevent false signals.
+///   - Vol score > 80 (crash-level expansion): emotion capped at 55 (no false greed)
+///   - Vol score < 20 (extreme compression): emotion floored at 45 (no false fear)
 ///
 /// Historical trajectory uses Fear & Greed + Volume (both have 90-day API history).
 /// The current "Now" point uses the full composite from all live indicators.
@@ -31,10 +36,11 @@ enum SentimentRegimeService {
     }
 
     private struct EngagementWeights {
-        static let volume: Double = 0.40
-        static let fundingMagnitude: Double = 0.20
-        static let appStore: Double = 0.20
+        static let volume: Double = 0.35
+        static let fundingMagnitude: Double = 0.15
+        static let appStore: Double = 0.15
         static let searchInterest: Double = 0.20
+        static let realizedVol: Double = 0.15
     }
 
     // MARK: - Public API
@@ -48,6 +54,7 @@ enum SentimentRegimeService {
     static func computeRegimeData(
         fearGreedHistory: [FearGreedIndex],
         volumeData: [[Double]],
+        priceData: [[Double]] = [],
         liveIndicators: RegimeIndicatorSnapshot? = nil
     ) -> SentimentRegimeData? {
         guard !fearGreedHistory.isEmpty, !volumeData.isEmpty else { return nil }
@@ -96,21 +103,38 @@ enum SentimentRegimeService {
             let latestVolumeKey = dayKey(for: latestFG.timestamp, calendar: calendar)
             let baseVolume = volumeNormalized[latestVolumeKey] ?? 50.0
 
+            // Compute realized vol from price data and enrich indicators
+            let volResult = computeRealizedVol(priceData: priceData)
+            var enrichedIndicators = live
+            enrichedIndicators.realizedVolScore = volResult?.volRegimeScore
+
             let (compositeEmotion, emoLabels) = computeCompositeEmotion(
                 fearGreed: latestFG.value,
-                indicators: live
+                indicators: enrichedIndicators
             )
             let (compositeEngagement, engLabels) = computeCompositeEngagement(
                 volumeScore: baseVolume,
-                indicators: live
+                indicators: enrichedIndicators
             )
 
             emotionComponents = emoLabels
             engagementComponents = engLabels
 
+            // Regime gating: cap emotion during vol extremes
+            var gatedEmotion = compositeEmotion
+            if let volScore = volResult?.volRegimeScore {
+                if volScore > 80 && gatedEmotion > 55 {
+                    // Extreme vol expansion (crash conditions) — cap greed
+                    gatedEmotion = 55
+                } else if volScore < 20 && gatedEmotion < 45 {
+                    // Extreme vol compression (dead calm) — floor fear
+                    gatedEmotion = 45
+                }
+            }
+
             let compositePoint = SentimentRegimePoint(
                 date: latestFG.timestamp,
-                emotionScore: compositeEmotion,
+                emotionScore: gatedEmotion,
                 engagementScore: compositeEngagement
             )
 
@@ -212,7 +236,79 @@ enum SentimentRegimeService {
             components.append((Double(search), EngagementWeights.searchInterest, "Search Trends"))
         }
 
+        // Realized Volatility — vol expansion/compression regime
+        if let volScore = indicators.realizedVolScore {
+            components.append((volScore, EngagementWeights.realizedVol, "BTC Volatility"))
+        }
+
         return weightedAverage(components)
+    }
+
+    // MARK: - Realized Volatility
+
+    /// Computes a realized volatility regime score (0-100) from daily BTC prices.
+    /// Compares 7-day realized vol to 30-day realized vol (expansion vs compression).
+    /// - Parameter priceData: Array of [timestamp_ms, price_usd] from CoinGecko
+    /// - Returns: Vol regime score and annualized vols, or nil if insufficient data
+    static func computeRealizedVol(
+        priceData: [[Double]]
+    ) -> (volRegimeScore: Double, annualized7d: Double, annualized30d: Double)? {
+        let calendar = Calendar(identifier: .gregorian)
+
+        // 1. Parse into daily prices, sorted chronologically
+        var dailyPrices: [(date: Date, price: Double)] = []
+        for entry in priceData {
+            guard entry.count >= 2, entry[1] > 0 else { continue }
+            let date = Date(timeIntervalSince1970: entry[0] / 1000.0)
+            dailyPrices.append((date, entry[1]))
+        }
+        dailyPrices.sort { $0.date < $1.date }
+
+        // Deduplicate to one price per day (keep last entry per day)
+        var deduped: [(date: Date, price: Double)] = []
+        for dp in dailyPrices {
+            let key = dayKey(for: dp.date, calendar: calendar)
+            if let last = deduped.last, dayKey(for: last.date, calendar: calendar) == key {
+                deduped[deduped.count - 1] = dp
+            } else {
+                deduped.append(dp)
+            }
+        }
+
+        // Need at least 31 daily prices for 30-day rolling vol
+        guard deduped.count >= 31 else { return nil }
+
+        // 2. Compute daily log returns
+        var logReturns: [Double] = []
+        for i in 1..<deduped.count {
+            logReturns.append(log(deduped[i].price / deduped[i - 1].price))
+        }
+
+        // 3. Rolling standard deviations (sample stdev with Bessel's correction)
+        func rollingStdDev(_ data: [Double], window: Int) -> Double? {
+            guard data.count >= window else { return nil }
+            let slice = Array(data.suffix(window))
+            let mean = slice.reduce(0, +) / Double(slice.count)
+            let variance = slice.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(slice.count - 1)
+            return sqrt(variance)
+        }
+
+        guard let stdev7 = rollingStdDev(logReturns, window: 7),
+              let stdev30 = rollingStdDev(logReturns, window: 30) else {
+            return nil
+        }
+
+        // 4. Annualize (crypto trades 365 days/year)
+        let sqrt365 = sqrt(365.0)
+        let annualized7d = stdev7 * sqrt365
+        let annualized30d = stdev30 * sqrt365
+
+        // 5. Vol regime score: 7d/30d ratio via sigmoid
+        // ratio > 1 = vol expanding, < 1 = compressing
+        guard annualized30d > 0 else { return nil }
+        let volRegimeScore = sigmoidNormalize(value: annualized7d / annualized30d, average: 1.0, k: 3.0)
+
+        return (volRegimeScore, annualized7d, annualized30d)
     }
 
     // MARK: - Helpers

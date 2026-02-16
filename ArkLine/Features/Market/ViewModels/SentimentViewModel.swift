@@ -480,6 +480,7 @@ class SentimentViewModel {
             let data = SentimentRegimeService.computeRegimeData(
                 fearGreedHistory: fearGreedHistory,
                 volumeData: chart.totalVolumes,
+                priceData: chart.prices,
                 liveIndicators: liveIndicators
             )
             await MainActor.run { self.sentimentRegimeData = data }
