@@ -28,6 +28,7 @@ struct RiskLevelChartView: View {
     @State private var showChart = true
     @State private var showFullscreenChart = false
     @State private var showPaywall = false
+    @State private var adaptiveConfidence: Int?
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -144,6 +145,19 @@ struct RiskLevelChartView: View {
         }
     }
 
+    private func loadAdaptiveConfidence() {
+        let coin = selectedCoin
+        Task {
+            let result = await ConfidenceTracker.shared
+                .computeAdaptiveConfidence(for: coin.rawValue)
+            await MainActor.run {
+                if self.selectedCoin == coin {
+                    self.adaptiveConfidence = result.adaptiveConfidence
+                }
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -217,12 +231,14 @@ struct RiskLevelChartView: View {
                 }
                 loadEnhancedHistory()
                 loadMultiFactorRisk()
+                loadAdaptiveConfidence()
                 Task { await AnalyticsService.shared.trackScreenView("risk_chart", coin: initialCoin.rawValue) }
             }
             .onChange(of: selectedCoin) { _, _ in
                 selectedDate = nil
                 loadEnhancedHistory()
                 loadMultiFactorRisk()
+                loadAdaptiveConfidence()
             }
             .onChange(of: selectedTimeRange) { _, _ in
                 selectedDate = nil
@@ -721,12 +737,13 @@ struct RiskLevelChartView: View {
 
             // Confidence indicator with tooltip
             if let config = AssetRiskConfig.forCoin(selectedCoin.rawValue) {
+                let displayLevel = adaptiveConfidence ?? config.confidenceLevel
                 Button(action: { showConfidenceInfo.toggle() }) {
                     HStack(spacing: 4) {
                         HStack(spacing: 2) {
                             ForEach(0..<9, id: \.self) { index in
                                 Circle()
-                                    .fill(index < config.confidenceLevel
+                                    .fill(index < displayLevel
                                         ? AppColors.accent.opacity(0.7)
                                         : textSecondary.opacity(0.2))
                                     .frame(width: 4, height: 4)

@@ -206,8 +206,15 @@ struct RiskScoreCard: View {
         .sheet(isPresented: $showingDetail) {
             if let itc = itcRiskLevel {
                 ITCRiskDetailView(riskLevel: itc)
-            } else {
-                RiskScoreDetailView(riskScore: riskScore, score: score)
+            } else if let riskScore = riskScore {
+                NavigationStack {
+                    ArkLineScoreDetailView(riskScore: riskScore)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") { showingDetail = false }
+                            }
+                        }
+                }
             }
         }
     }
@@ -563,7 +570,14 @@ struct HomeArkLineScoreWidget: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
-            RiskScoreDetailView(riskScore: score, score: score.score)
+            NavigationStack {
+                ArkLineScoreDetailView(riskScore: score)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { showingDetail = false }
+                        }
+                    }
+            }
         }
     }
 }

@@ -528,6 +528,7 @@ struct RegimeIndicatorSnapshot: Equatable {
     var searchInterest: Int?          // 0-100 (Google Trends)
     var realizedVolScore: Double?     // 0-100 (vol expansion/compression regime)
     var capitalRotation: Double?      // 0-100 (capital flow: 0=risk-off, 100=alt rotation)
+    var openInterestChangePct: Double? // e.g. 3.5 (BTC OI 24h change %)
 }
 
 /// Complete regime data for the quadrant chart

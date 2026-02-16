@@ -11,11 +11,12 @@ import Foundation
 ///   - Capital Rotation (10%) — multi-dominance flow signal (BTC/ETH/USDT dom + alt share)
 ///
 /// **Engagement axis** (Low → High) composites:
-///   - BTC Volume vs 30d SMA (35%) — core trading activity
-///   - Funding Rate magnitude (15%) — high absolute rate = active market
+///   - BTC Volume vs 30d SMA (25%) — core trading activity
+///   - BTC Open Interest change (20%) — derivatives leverage activity
+///   - Search Interest (15%) — public attention
 ///   - App Store Rankings (15%) — retail FOMO/interest
-///   - Search Interest (20%) — public attention
 ///   - BTC Realized Vol (15%) — vol expansion/compression regime
+///   - Funding Rate magnitude (10%) — high absolute rate = active market
 ///
 /// **Regime gating**: Caps emotion score during vol extremes to prevent false signals.
 ///   - Vol score > 80 (crash-level expansion): emotion capped at 55 (no false greed)
@@ -36,11 +37,12 @@ enum SentimentRegimeService {
     }
 
     private struct EngagementWeights {
-        static let volume: Double = 0.35
-        static let fundingMagnitude: Double = 0.15
+        static let volume: Double = 0.25
+        static let openInterest: Double = 0.20
+        static let searchInterest: Double = 0.15
         static let appStore: Double = 0.15
-        static let searchInterest: Double = 0.20
         static let realizedVol: Double = 0.15
+        static let fundingMagnitude: Double = 0.10
     }
 
     // MARK: - Public API
@@ -216,17 +218,12 @@ enum SentimentRegimeService {
         // Volume vs SMA (always available) — already 0-100 sigmoid
         components.append((volumeScore, EngagementWeights.volume, "BTC Volume"))
 
-        // Funding Rate magnitude — high absolute rate = active market
-        if let rate = indicators.fundingRate {
-            let magnitude = abs(rate)
-            // abs rate typically 0-0.005, map via sigmoid: 0.001 avg
-            let normalized = sigmoidNormalize(value: magnitude, average: 0.001, k: 1500)
-            components.append((normalized, EngagementWeights.fundingMagnitude, "Funding Activity"))
-        }
-
-        // App Store Rankings — higher score = more retail interest/engagement
-        if let score = indicators.appStoreScore {
-            components.append((score, EngagementWeights.appStore, "App Store"))
+        // Open Interest change magnitude — large absolute OI moves = active derivatives market
+        if let oiChange = indicators.openInterestChangePct {
+            // abs(OI change %) typically 0-10%, normalize via sigmoid: 2% avg
+            let magnitude = abs(oiChange)
+            let normalized = sigmoidNormalize(value: magnitude, average: 2.0, k: 1.5)
+            components.append((normalized, EngagementWeights.openInterest, "Open Interest"))
         }
 
         // Search Interest — 0-100 direct
@@ -234,9 +231,22 @@ enum SentimentRegimeService {
             components.append((Double(search), EngagementWeights.searchInterest, "Search Trends"))
         }
 
+        // App Store Rankings — higher score = more retail interest/engagement
+        if let score = indicators.appStoreScore {
+            components.append((score, EngagementWeights.appStore, "App Store"))
+        }
+
         // Realized Volatility — vol expansion/compression regime
         if let volScore = indicators.realizedVolScore {
             components.append((volScore, EngagementWeights.realizedVol, "BTC Volatility"))
+        }
+
+        // Funding Rate magnitude — high absolute rate = active market
+        if let rate = indicators.fundingRate {
+            let magnitude = abs(rate)
+            // abs rate typically 0-0.005, map via sigmoid: 0.001 avg
+            let normalized = sigmoidNormalize(value: magnitude, average: 0.001, k: 1500)
+            components.append((normalized, EngagementWeights.fundingMagnitude, "Funding Activity"))
         }
 
         return weightedAverage(components)

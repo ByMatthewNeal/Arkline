@@ -132,6 +132,28 @@ actor MarketDataCollector {
         }
     }
 
+    // MARK: - Record Regime Snapshot
+
+    /// Archives daily sentiment regime quadrant position
+    func recordRegimeSnapshot(_ data: SentimentRegimeData) async {
+        guard SupabaseManager.shared.isConfigured else { return }
+        let date = todayString
+        let key = "regime_\(date)"
+        guard !alreadySaved(key) else { return }
+
+        let dto = RegimeSnapshotDTO(from: data, date: date)
+        do {
+            try await SupabaseManager.shared.client
+                .from(SupabaseTable.regimeSnapshots.rawValue)
+                .upsert([dto], onConflict: "recorded_date")
+                .execute()
+            markSaved(key)
+            logInfo("Archived regime snapshot: \(data.currentRegime.rawValue) (E:\(Int(data.currentPoint.emotionScore)) A:\(Int(data.currentPoint.engagementScore)))", category: .network)
+        } catch {
+            logError("Failed to archive regime snapshot: \(error.localizedDescription)", category: .network)
+        }
+    }
+
     // MARK: - Batch Record Indicators
 
     /// Convenience method to record multiple indicators at once

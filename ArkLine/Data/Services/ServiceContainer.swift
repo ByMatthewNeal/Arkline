@@ -54,6 +54,10 @@ final class ServiceContainer {
     private lazy var _yahooVIXService = YahooVIXService()
     private lazy var _yahooDXYService = YahooDXYService()
 
+    // MARK: - Lazy Services - Coinglass (Derivatives)
+    private lazy var _apiCoinglassService = APICoinglassService()
+    private lazy var _mockCoinglassService = MockCoinglassService()
+
     // MARK: - Lazy Services - Statistics
     private lazy var _macroStatisticsService = MacroStatisticsService()
     private lazy var _historicalContextService = HistoricalContextService()
@@ -125,6 +129,11 @@ final class ServiceContainer {
         useMockMacroServices ? _mockSantimentOnChainService : _apiSantimentOnChainService
     }
 
+    /// Coinglass derivatives service - OI, funding rates, liquidations, L/S ratios
+    var coinglassService: CoinglassServiceProtocol {
+        useRealMarketData ? _apiCoinglassService : _mockCoinglassService
+    }
+
     /// Macro Statistics service - calculates z-scores for VIX, DXY, M2
     var macroStatisticsService: MacroStatisticsServiceProtocol {
         _macroStatisticsService
@@ -157,6 +166,7 @@ final class ServiceContainer {
         _mockRainbowChartService = MockRainbowChartService()
         _mockGlobalLiquidityService = MockGlobalLiquidityService()
         _mockSantimentOnChainService = MockSantimentService()
+        _mockCoinglassService = MockCoinglassService()
         _apiMarketService = APIMarketService()
         _apiSentimentService = APISentimentService()
         _apiPortfolioService = APIPortfolioService()
@@ -167,5 +177,6 @@ final class ServiceContainer {
         _apiRainbowChartService = APIRainbowChartService()
         _apiGlobalLiquidityService = APIGlobalLiquidityService()
         _apiSantimentOnChainService = APISantimentService()
+        _apiCoinglassService = APICoinglassService()
     }
 }

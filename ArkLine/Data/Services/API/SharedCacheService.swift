@@ -106,7 +106,24 @@ actor SharedCacheService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+
+            // Try fractional seconds first (CoinGecko format)
+            let fractionalFormatter = ISO8601DateFormatter()
+            fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = fractionalFormatter.date(from: dateString) { return date }
+
+            // Fall back to standard ISO 8601
+            let standardFormatter = ISO8601DateFormatter()
+            if let date = standardFormatter.date(from: dateString) { return date }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Cannot decode date: \(dateString)"
+            )
+        }
         let decoded = try decoder.decode(type, from: jsonData)
 
         return L2Result(value: decoded, isStale: isExpired)
@@ -115,7 +132,12 @@ actor SharedCacheService {
     private func writeToL2<T: Encodable>(key: String, value: T, ttl: TimeInterval) async {
         do {
             let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
+            let fractionalFormatter = ISO8601DateFormatter()
+            fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            encoder.dateEncodingStrategy = .custom { date, encoder in
+                var container = encoder.singleValueContainer()
+                try container.encode(fractionalFormatter.string(from: date))
+            }
             let jsonData = try encoder.encode(value)
 
             guard let jsonString = String(data: jsonData, encoding: .utf8) else {

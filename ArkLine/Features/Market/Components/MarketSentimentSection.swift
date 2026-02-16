@@ -22,8 +22,11 @@ struct MarketSentimentSection: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // ArkLine Risk Score (Proprietary)
                     if let arkLineScore = viewModel.arkLineRiskScore {
-                        ArkLineScoreCard(score: arkLineScore)
-                            .cardAppearance(delay: 0)
+                        NavigationLink(destination: ArkLineScoreDetailView(riskScore: arkLineScore)) {
+                            ArkLineScoreCard(score: arkLineScore)
+                                .cardAppearance(delay: 0)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     } else {
                         ShimmerPlaceholderCard(title: "ArkLine Score", icon: "sparkles", isLoading: viewModel.isLoading) {
                             await viewModel.retryArkLineScore()

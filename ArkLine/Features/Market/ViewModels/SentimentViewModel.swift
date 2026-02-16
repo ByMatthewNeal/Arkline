@@ -11,6 +11,7 @@ class SentimentViewModel {
     private let dxyService: DXYServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
     private let macroStatisticsService: MacroStatisticsServiceProtocol
+    private let coinglassService: CoinglassServiceProtocol
 
     // MARK: - Properties
     var isLoading = false
@@ -78,6 +79,9 @@ class SentimentViewModel {
     // Capital Rotation
     var dominanceSnapshot: DominanceSnapshot?
     var capitalRotation: CapitalRotationSignal?
+
+    // Derivatives (Coinglass)
+    var btcOpenInterest: OpenInterestData?
 
     // Sentiment Regime Quadrant
     var sentimentRegimeData: SentimentRegimeData?
@@ -241,7 +245,8 @@ class SentimentViewModel {
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
-        macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService
+        macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService,
+        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -250,6 +255,7 @@ class SentimentViewModel {
         self.dxyService = dxyService
         self.globalLiquidityService = globalLiquidityService
         self.macroStatisticsService = macroStatisticsService
+        self.coinglassService = coinglassService
         Task { await loadInitialData() }
     }
 
@@ -294,6 +300,9 @@ class SentimentViewModel {
         // Macro Z-Scores (statistical analysis)
         async let zScoresTask = fetchMacroZScoresSafe()
 
+        // Derivatives (Coinglass)
+        async let btcOITask = fetchBTCOpenInterestSafe()
+
         // Await all results (none will throw since they use safe wrappers)
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
@@ -302,6 +311,7 @@ class SentimentViewModel {
         let marketCapSparkline = await marketCapHistoryTask
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
         let zScores = await zScoresTask
+        let btcOI = await btcOITask
 
         await MainActor.run {
             // Core indicators (only update if we got data)
@@ -341,6 +351,9 @@ class SentimentViewModel {
 
             // Macro Z-Scores
             self.macroZScores = zScores
+
+            // Derivatives
+            self.btcOpenInterest = btcOI
 
             // Check for extreme moves and trigger alerts
             ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
@@ -433,6 +446,15 @@ class SentimentViewModel {
                     metadata: rankMeta
                 )
             }
+            if let oi = btcOI {
+                await collector.recordIndicator(
+                    name: "btc_open_interest", value: oi.openInterest,
+                    metadata: [
+                        "change_24h": .double(oi.openInterestChange24h),
+                        "change_pct_24h": .double(oi.openInterestChangePercent24h)
+                    ]
+                )
+            }
         }
     }
 
@@ -479,7 +501,8 @@ class SentimentViewModel {
                 btcDominance: btcDominance?.value,
                 appStoreScore: appStoreRankings.isEmpty ? nil : appStoreCompositeSentiment.score,
                 searchInterest: googleTrends?.currentIndex ?? (bitcoinSearchIndex != 66 ? bitcoinSearchIndex : nil),
-                capitalRotation: capitalRotation?.score
+                capitalRotation: capitalRotation?.score,
+                openInterestChangePct: btcOpenInterest?.openInterestChangePercent24h
             )
 
             let data = SentimentRegimeService.computeRegimeData(
@@ -489,6 +512,12 @@ class SentimentViewModel {
                 liveIndicators: liveIndicators
             )
             await MainActor.run { self.sentimentRegimeData = data }
+
+            // Archive regime snapshot and check for shift (fire-and-forget)
+            if let data = data {
+                Task { await MarketDataCollector.shared.recordRegimeSnapshot(data) }
+                SentimentRegimeAlertManager.shared.checkRegimeShift(newRegime: data.currentRegime)
+            }
         } catch {
             logWarning("Failed to compute sentiment regime: \(error.localizedDescription)", category: .data)
         }
@@ -692,6 +721,10 @@ class SentimentViewModel {
 
     private func fetchMacroZScoresSafe() async -> [MacroIndicatorType: MacroZScoreData] {
         (try? await macroStatisticsService.fetchAllZScores()) ?? [:]
+    }
+
+    private func fetchBTCOpenInterestSafe() async -> OpenInterestData? {
+        try? await coinglassService.fetchOpenInterest(symbol: "BTC")
     }
 
     // MARK: - Enhanced Risk Methods

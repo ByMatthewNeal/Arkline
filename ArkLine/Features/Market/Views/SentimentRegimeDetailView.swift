@@ -4,6 +4,7 @@ import SwiftUI
 struct SentimentRegimeDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: SentimentViewModel
+    @StateObject private var alertManager = SentimentRegimeAlertManager.shared
 
     var body: some View {
         ScrollView {
@@ -20,6 +21,9 @@ struct SentimentRegimeDetailView: View {
 
                     // Regime Guide
                     RegimeGuideSection()
+
+                    // Notification Toggle
+                    RegimeNotificationToggle(alertManager: alertManager)
                 } else {
                     ProgressView()
                         .frame(maxWidth: .infinity, minHeight: 300)
@@ -34,6 +38,13 @@ struct SentimentRegimeDetailView: View {
         )
         .navigationTitle("Sentiment Regime")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Sentiment Regime Shifted", isPresented: $alertManager.showRegimeShiftAlert) {
+            Button("OK") { alertManager.dismissAlert() }
+        } message: {
+            if let info = alertManager.regimeShiftInfo {
+                Text("Market shifted from \(info.from.rawValue) to \(info.to.rawValue). \(info.to.description)")
+            }
+        }
     }
 }
 
@@ -538,6 +549,49 @@ private struct RegimeGuideSection: View {
             }
         }
         .padding(20)
+        .glassCard(cornerRadius: 16)
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Regime Notification Toggle
+private struct RegimeNotificationToggle: View {
+    @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var alertManager: SentimentRegimeAlertManager
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bell.badge.fill")
+                .font(.system(size: 16))
+                .foregroundColor(AppColors.accent)
+                .frame(width: 32, height: 32)
+                .background(AppColors.accent.opacity(0.12))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Regime Shift Alerts")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("Get notified when the quadrant changes")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
+
+            Toggle("", isOn: Binding(
+                get: { alertManager.notificationsEnabled },
+                set: { newValue in
+                    alertManager.notificationsEnabled = newValue
+                    if newValue {
+                        alertManager.requestNotificationPermissions()
+                    }
+                }
+            ))
+            .labelsHidden()
+        }
+        .padding(16)
         .glassCard(cornerRadius: 16)
         .padding(.horizontal, 20)
     }

@@ -99,6 +99,7 @@ enum SupabaseTable: String {
     case indicatorSnapshots = "indicator_snapshots"
     case technicalsSnapshots = "technicals_snapshots"
     case riskSnapshots = "risk_snapshots"
+    case regimeSnapshots = "regime_snapshots"
     case analyticsEvents = "analytics_events"
     case dailyActiveUsers = "daily_active_users"
 }

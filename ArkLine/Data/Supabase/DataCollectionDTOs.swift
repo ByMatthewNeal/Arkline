@@ -235,6 +235,42 @@ struct RiskComponentDTO: Codable {
     let signal: String
 }
 
+// MARK: - Regime Snapshot DTO
+
+/// Daily snapshot of the sentiment regime quadrant position
+struct RegimeSnapshotDTO: Codable {
+    let id: UUID
+    let recordedDate: String
+    let regime: String            // Panic, FOMO, Apathy, Complacency
+    let emotionScore: Double      // 0-100 (Fear → Greed)
+    let engagementScore: Double   // 0-100 (Low → High)
+    let emotionComponents: [String]?
+    let engagementComponents: [String]?
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case recordedDate = "recorded_date"
+        case regime
+        case emotionScore = "emotion_score"
+        case engagementScore = "engagement_score"
+        case emotionComponents = "emotion_components"
+        case engagementComponents = "engagement_components"
+        case createdAt = "created_at"
+    }
+
+    init(from data: SentimentRegimeData, date: String) {
+        self.id = UUID()
+        self.recordedDate = date
+        self.regime = data.currentRegime.rawValue
+        self.emotionScore = data.currentPoint.emotionScore
+        self.engagementScore = data.currentPoint.engagementScore
+        self.emotionComponents = data.emotionComponents
+        self.engagementComponents = data.engagementComponents
+        self.createdAt = nil
+    }
+}
+
 // MARK: - Analytics Event DTO
 
 /// Generic user behavior event
