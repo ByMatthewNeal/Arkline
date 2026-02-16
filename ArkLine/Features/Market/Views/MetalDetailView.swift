@@ -8,6 +8,9 @@ struct MetalDetailView: View {
     @State private var isLoadingChart = false
     @State private var week52High: Double?
     @State private var week52Low: Double?
+    @State private var technicalAnalysis: TechnicalAnalysis?
+    @State private var isLoadingTA = false
+    @State private var multiTimeframeTrends: [AnalysisTimeframe: TrendAnalysis] = [:]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
@@ -78,6 +81,17 @@ struct MetalDetailView: View {
                 }
                 .padding(.horizontal, 20)
 
+                // Technical Analysis
+                if technicalAnalysis != nil || isLoadingTA {
+                    MetalTechnicalAnalysisSection(
+                        analysis: technicalAnalysis,
+                        multiTimeframeTrends: multiTimeframeTrends,
+                        isLoading: isLoadingTA,
+                        colorScheme: colorScheme
+                    )
+                    .padding(.horizontal, 20)
+                }
+
                 // Key Levels
                 if week52High != nil || week52Low != nil {
                     MetalKeyLevelsSection(
@@ -110,7 +124,10 @@ struct MetalDetailView: View {
         }
         .background(AppColors.background(colorScheme))
         .navigationBarBackButtonHidden()
-        .task { await loadChart() }
+        .task {
+            await loadChart()
+            await loadTechnicalAnalysis()
+        }
         .onChange(of: selectedTimeframe) { _, _ in
             Task { await loadChart() }
         }
@@ -153,6 +170,130 @@ struct MetalDetailView: View {
             }
         } catch {
             chartData = []
+        }
+    }
+
+    private func loadTechnicalAnalysis() async {
+        guard ["XAU", "XAG"].contains(asset.symbol.uppercased()) else { return }
+
+        isLoadingTA = true
+        defer { isLoadingTA = false }
+
+        do {
+            let analysis = try await MetalTechnicalAnalysisService.shared
+                .fetchTechnicalAnalysis(
+                    metalSymbol: asset.symbol,
+                    currentPrice: asset.currentPrice
+                )
+            technicalAnalysis = analysis
+
+            // Derive multi-timeframe trends
+            let dailyTrend = analysis.trend
+            let weeklyTrend = deriveWeeklyTrend(from: dailyTrend, sma: analysis.smaAnalysis)
+            let monthlyTrend = deriveMonthlyTrend(from: dailyTrend, sma: analysis.smaAnalysis)
+            multiTimeframeTrends = [
+                .daily: dailyTrend,
+                .weekly: weeklyTrend,
+                .monthly: monthlyTrend
+            ]
+        } catch {
+            logWarning("Metal TA error: \(error.localizedDescription)", category: .network)
+        }
+    }
+
+    private func deriveWeeklyTrend(from daily: TrendAnalysis, sma: SMAAnalysis) -> TrendAnalysis {
+        let direction: AssetTrendDirection
+        if sma.above50SMA && sma.above200SMA {
+            direction = daily.direction == .strongUptrend ? .strongUptrend : .uptrend
+        } else if !sma.above50SMA && !sma.above200SMA {
+            direction = daily.direction == .strongDowntrend ? .strongDowntrend : .downtrend
+        } else {
+            direction = .sideways
+        }
+        return TrendAnalysis(
+            direction: direction,
+            strength: daily.strength,
+            daysInTrend: daily.daysInTrend * 7,
+            higherHighs: daily.higherHighs,
+            higherLows: daily.higherLows
+        )
+    }
+
+    private func deriveMonthlyTrend(from daily: TrendAnalysis, sma: SMAAnalysis) -> TrendAnalysis {
+        let direction: AssetTrendDirection
+        if sma.above200SMA && sma.goldenCross { direction = .strongUptrend }
+        else if sma.above200SMA { direction = .uptrend }
+        else if !sma.above200SMA && sma.deathCross { direction = .strongDowntrend }
+        else if !sma.above200SMA { direction = .downtrend }
+        else { direction = .sideways }
+
+        return TrendAnalysis(
+            direction: direction,
+            strength: sma.above200SMA == sma.above50SMA ? .strong : .moderate,
+            daysInTrend: daily.daysInTrend * 30,
+            higherHighs: sma.above200SMA,
+            higherLows: sma.above200SMA
+        )
+    }
+}
+
+// MARK: - Metal Technical Analysis Section
+struct MetalTechnicalAnalysisSection: View {
+    let analysis: TechnicalAnalysis?
+    let multiTimeframeTrends: [AnalysisTimeframe: TrendAnalysis]
+    let isLoading: Bool
+    let colorScheme: ColorScheme
+
+    var body: some View {
+        VStack(spacing: 16) {
+            if isLoading {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("Analyzing trend data...")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .padding(.vertical, 24)
+            } else if let analysis = analysis {
+                // Trend + Valuation gauges
+                DualScoreCard(
+                    trendScore: analysis.trendScore,
+                    opportunityScore: analysis.opportunityScore,
+                    colorScheme: colorScheme
+                )
+
+                // Market Outlook (short/long term)
+                MarketOutlookCard(
+                    sentiment: analysis.sentiment,
+                    colorScheme: colorScheme
+                )
+
+                // RSI gauge
+                RSIIndicatorCard(
+                    rsi: analysis.rsi,
+                    colorScheme: colorScheme
+                )
+
+                // Multi-timeframe trend overview
+                MultiTimeframeTrendCard(
+                    trends: multiTimeframeTrends,
+                    isLoading: false,
+                    colorScheme: colorScheme
+                )
+
+                // Key Levels (SMA positions)
+                KeyLevelsCard(
+                    sma: analysis.smaAnalysis,
+                    currentPrice: analysis.currentPrice,
+                    colorScheme: colorScheme
+                )
+
+                // Price Position (Bollinger Bands)
+                PricePositionCard(
+                    bollinger: analysis.bollingerBands.daily,
+                    colorScheme: colorScheme
+                )
+            }
         }
     }
 }
