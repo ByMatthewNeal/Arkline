@@ -65,7 +65,7 @@ private struct RegimeHeaderSection: View {
                     Text(data.currentRegime.description)
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
