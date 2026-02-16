@@ -320,6 +320,8 @@
 		EFF4BC54B77EB7E54288D98A /* MacroStatisticsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EA65CDF83C3D1BA4B5E6E4 /* MacroStatisticsServiceProtocol.swift */; };
 		F01FE94D4879AC67E00D0369 /* APITechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */; };
 		38403ADBC04AB8CD95F00E3E /* MetalTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4477F7D7272D23B31C4B0199 /* MetalTechnicalAnalysisService.swift */; };
+		A3B4C5D6E7F80192A3B4C5D6 /* SentimentRegimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E7A9B3C1D2F4E6A8B0C3D5E /* SentimentRegimeService.swift */; };
+		D7E8F9A0B1C2D3E4F5A6B7C8 /* SentimentRegimeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */; };
 		F028D46763B28837C63AF7D4 /* SentimentCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9997D8052D5270DC5237E5E6 /* SentimentCard.swift */; };
 		F127FC028818445B43404988 /* GradientCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC34A1FDFF566C6A0501418 /* GradientCard.swift */; };
 		F1NANC1ALD15CLA1M3R02 /* FinancialDisclaimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1NANC1ALD15CLA1M3R01 /* FinancialDisclaimer.swift */; };
@@ -696,6 +698,8 @@
 		FF7A8B3001 /* PinnedURLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedURLSession.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* ReorderableWidgetStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderableWidgetStack.swift; sourceTree = "<group>"; };
 		B3C4D5E6F7A8B9C0D1E2F3A4 /* StaleDataBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleDataBanner.swift; sourceTree = "<group>"; };
+		5E7A9B3C1D2F4E6A8B0C3D5E /* SentimentRegimeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentRegimeService.swift; sourceTree = "<group>"; };
+		7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentRegimeDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -898,6 +902,7 @@
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
 				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
 				4477F7D7272D23B31C4B0199 /* MetalTechnicalAnalysisService.swift */,
+				5E7A9B3C1D2F4E6A8B0C3D5E /* SentimentRegimeService.swift */,
 				03A2248CF31FBE81B04E09E5 /* FMPService.swift */,
 				10A686812E99010957F5176C /* HistoricalContextService.swift */,
 				B6268CFEC85C00257A9DE85B /* MacroStatisticsService.swift */,
@@ -1077,6 +1082,7 @@
 				86AA2774D5757CF06C791EEC /* AssetDetailView.swift */,
 				8FCD088B0831263C159A5269 /* MarketOverviewView.swift */,
 				AA1122334455667788990022 /* MetalDetailView.swift */,
+				7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */,
 				AA1122334455667788990011 /* StockDetailView.swift */,
 			);
 			path = Views;
@@ -2182,6 +2188,8 @@
 				FF7A8B3002 /* PinnedURLSession.swift in Sources */,
 				F2E1D0C9B8A7F6E5D4C3B2A1 /* ReorderableWidgetStack.swift in Sources */,
 				A4F3E2D1C0B9A8F7E6D5C4B3 /* StaleDataBanner.swift in Sources */,
+				A3B4C5D6E7F80192A3B4C5D6 /* SentimentRegimeService.swift in Sources */,
+				D7E8F9A0B1C2D3E4F5A6B7C8 /* SentimentRegimeDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

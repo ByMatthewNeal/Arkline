@@ -375,6 +375,83 @@ struct AltcoinSeasonBar: View {
     }
 }
 
+// MARK: - Sentiment Regime Card (Compact)
+struct SentimentRegimeCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    let regimeData: SentimentRegimeData
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Sentiment Regime")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                Image(systemName: regimeData.currentRegime.icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(Color(hex: regimeData.currentRegime.colorHex))
+            }
+
+            Spacer()
+
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(regimeData.currentRegime.rawValue)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    Text("F&G: \(regimeData.currentPoint.fearGreedValue)")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                MiniQuadrantIndicator(activeRegime: regimeData.currentRegime)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 120)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
+// MARK: - Mini Quadrant Indicator
+/// A tiny 2x2 grid showing which quadrant is currently active
+struct MiniQuadrantIndicator: View {
+    @Environment(\.colorScheme) var colorScheme
+    let activeRegime: SentimentRegime
+
+    private let regimeLayout: [[SentimentRegime]] = [
+        [.panic, .fomo],      // top row: high volume
+        [.apathy, .complacency] // bottom row: low volume
+    ]
+
+    var body: some View {
+        VStack(spacing: 2) {
+            ForEach(0..<2, id: \.self) { row in
+                HStack(spacing: 2) {
+                    ForEach(0..<2, id: \.self) { col in
+                        let regime = regimeLayout[row][col]
+                        let isActive = regime == activeRegime
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(
+                                isActive
+                                    ? Color(hex: regime.colorHex)
+                                    : (colorScheme == .dark
+                                        ? Color.white.opacity(0.08)
+                                        : Color.black.opacity(0.06))
+                            )
+                            .frame(width: 20, height: 20)
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Risk Level Card
 struct RiskLevelCard: View {
     @Environment(\.colorScheme) var colorScheme

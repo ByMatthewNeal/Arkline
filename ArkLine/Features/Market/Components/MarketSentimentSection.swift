@@ -68,6 +68,23 @@ struct MarketSentimentSection: View {
                         }
                     }
 
+                    // Sentiment Regime Quadrant
+                    if let regimeData = viewModel.sentimentRegimeData {
+                        NavigationLink(destination: SentimentRegimeDetailView(viewModel: viewModel)) {
+                            SentimentRegimeCard(regimeData: regimeData)
+                                .cardAppearance(delay: 5)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        ShimmerPlaceholderCard(
+                            title: "Sentiment Regime",
+                            icon: "square.grid.2x2",
+                            isLoading: viewModel.isLoadingRegimeData
+                        ) {
+                            await viewModel.retrySentimentRegime()
+                        }
+                    }
+
                     // Liquidations hidden - requires paid Coinglass subscription
                 }
             }

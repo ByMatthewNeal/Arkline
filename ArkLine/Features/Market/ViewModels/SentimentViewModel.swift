@@ -75,6 +75,10 @@ class SentimentViewModel {
     var fearGreedHistory: [FearGreedIndex] = []
     var googleTrendsHistory: [GoogleTrendsDTO] = []
 
+    // Sentiment Regime Quadrant
+    var sentimentRegimeData: SentimentRegimeData?
+    var isLoadingRegimeData = false
+
     // MARK: - Computed Properties for UI
 
     /// Overall market sentiment tier based on ArkLine Risk Score
@@ -450,11 +454,41 @@ class SentimentViewModel {
         }
     }
 
+    /// Fetches BTC volume data and computes the sentiment regime quadrant.
+    /// Requires fearGreedHistory to be loaded first.
+    func fetchSentimentRegime() async {
+        guard !fearGreedHistory.isEmpty else { return }
+
+        await MainActor.run { isLoadingRegimeData = true }
+        defer { Task { @MainActor in isLoadingRegimeData = false } }
+
+        do {
+            let chart = try await marketService.fetchCoinMarketChart(
+                id: "bitcoin", currency: "usd", days: 90
+            )
+            let data = SentimentRegimeService.computeRegimeData(
+                fearGreedHistory: fearGreedHistory,
+                volumeData: chart.totalVolumes
+            )
+            await MainActor.run { self.sentimentRegimeData = data }
+        } catch {
+            logWarning("Failed to compute sentiment regime: \(error.localizedDescription)", category: .data)
+        }
+    }
+
+    func retrySentimentRegime() async {
+        if fearGreedHistory.isEmpty {
+            await fetchFearGreedHistory(days: 90)
+        }
+        await fetchSentimentRegime()
+    }
+
     // MARK: - Private Methods
     private func loadInitialData() async {
         await refresh()
-        await fetchFearGreedHistory()
+        await fetchFearGreedHistory(days: 90)
         await fetchGoogleTrendsHistory()
+        await fetchSentimentRegime()
     }
 
     // MARK: - Individual Retry Methods

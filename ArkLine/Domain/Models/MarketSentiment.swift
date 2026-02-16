@@ -453,6 +453,87 @@ struct LiquidityComponent: Codable, Identifiable, Equatable {
     let change: Double
 }
 
+// MARK: - Sentiment Regime Quadrant
+
+/// The four market regimes based on emotion (Fear/Greed) vs volume engagement
+enum SentimentRegime: String, CaseIterable {
+    case panic = "Panic"
+    case fomo = "FOMO"
+    case apathy = "Apathy"
+    case complacency = "Complacency"
+
+    var description: String {
+        switch self {
+        case .panic: return "High volume selling pressure. Markets are fearful with heavy trading activity, often near capitulation events."
+        case .fomo: return "High volume buying frenzy. Markets are greedy with euphoric participation — historically near local tops."
+        case .apathy: return "Low volume and fearful. Markets are disinterested with minimal participation — often a bottoming signal."
+        case .complacency: return "Low volume and greedy. Quiet confidence with thin markets — vulnerable to sudden moves."
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .panic: return "exclamationmark.triangle.fill"
+        case .fomo: return "flame.fill"
+        case .apathy: return "zzz"
+        case .complacency: return "sun.max.fill"
+        }
+    }
+
+    var colorHex: String {
+        switch self {
+        case .panic: return "#EF4444"
+        case .fomo: return "#F97316"
+        case .apathy: return "#6366F1"
+        case .complacency: return "#22C55E"
+        }
+    }
+
+    static func classify(fearGreed: Int, engagement: Double) -> SentimentRegime {
+        let isFear = fearGreed < 50
+        let isHighVolume = engagement >= 50
+        switch (isFear, isHighVolume) {
+        case (true, true): return .panic
+        case (false, true): return .fomo
+        case (true, false): return .apathy
+        case (false, false): return .complacency
+        }
+    }
+}
+
+/// A single data point on the 2D sentiment regime quadrant
+struct SentimentRegimePoint: Identifiable, Equatable {
+    let id: UUID
+    let date: Date
+    let fearGreedValue: Int       // 0-100 (X-axis: Fear → Greed)
+    let engagementScore: Double   // 0-100 (Y-axis: Low → High volume)
+    let regime: SentimentRegime
+
+    init(date: Date, fearGreedValue: Int, engagementScore: Double) {
+        self.id = UUID()
+        self.date = date
+        self.fearGreedValue = fearGreedValue
+        self.engagementScore = engagementScore
+        self.regime = SentimentRegime.classify(fearGreed: fearGreedValue, engagement: engagementScore)
+    }
+}
+
+/// Complete regime data for the quadrant chart
+struct SentimentRegimeData: Equatable {
+    let currentRegime: SentimentRegime
+    let currentPoint: SentimentRegimePoint
+    let milestones: RegimeMilestones
+    let trajectory: [SentimentRegimePoint] // all daily points, oldest-first
+}
+
+/// Key time milestone positions on the quadrant
+struct RegimeMilestones: Equatable {
+    let today: SentimentRegimePoint
+    let oneWeekAgo: SentimentRegimePoint?
+    let oneMonthAgo: SentimentRegimePoint?
+    let threeMonthsAgo: SentimentRegimePoint?
+}
+
 // MARK: - Sentiment History
 struct SentimentHistory: Codable, Identifiable {
     let id: UUID
