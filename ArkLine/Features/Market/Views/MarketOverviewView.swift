@@ -51,8 +51,8 @@ struct MarketOverviewView: View {
                             isPro: appState.isPro
                         )
 
-                        // 5. Market Movers Section (FMP)
-                        FMPMarketMoversSection()
+                        // 5. Altcoin Screener (30D returns)
+                        AltcoinScreenerSection()
 
                         // Disclaimer
                         FinancialDisclaimer()
