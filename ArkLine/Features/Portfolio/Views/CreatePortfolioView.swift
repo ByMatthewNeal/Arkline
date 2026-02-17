@@ -155,7 +155,7 @@ struct CreatePortfolioView: View {
             } catch {
                 await MainActor.run {
                     isCreating = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = AppError.from(error).userMessage
                     showError = true
                 }
             }

@@ -53,7 +53,7 @@ class BroadcastViewModel: ObservableObject {
             broadcasts = try await broadcastService.fetchAllBroadcasts()
             logInfo("Loaded \(broadcasts.count) broadcasts", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError("Failed to load broadcasts: \(error)", category: .data)
         }
 
@@ -73,7 +73,7 @@ class BroadcastViewModel: ObservableObject {
             )
             logInfo("Loaded \(broadcasts.count) published broadcasts", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError("Failed to load published broadcasts: \(error)", category: .data)
         }
 

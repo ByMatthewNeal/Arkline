@@ -291,7 +291,7 @@ struct FeatureRequestFormView: View {
             } catch {
                 await MainActor.run {
                     isSubmitting = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = AppError.from(error).userMessage
                     showError = true
                 }
             }

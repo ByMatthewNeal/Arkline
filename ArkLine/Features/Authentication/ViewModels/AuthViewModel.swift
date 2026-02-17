@@ -139,8 +139,9 @@ class AuthViewModel {
                         self.showFaceID = false
                         self.authState = .idle
                     default:
-                        self.authState = .failed(error.localizedDescription)
-                        self.errorMessage = error.localizedDescription
+                        let message = AppError.from(error).userMessage
+                        self.authState = .failed(message)
+                        self.errorMessage = message
                     }
                 }
             }

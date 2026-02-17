@@ -186,7 +186,7 @@ class OnboardingViewModel {
             try await SupabaseAuthManager.shared.signInWithOTP(email: email)
             nextStep()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
         }
 
         isLoading = false
@@ -205,7 +205,7 @@ class OnboardingViewModel {
             _ = try await SupabaseAuthManager.shared.verifyOTP(email: email, token: verificationCode)
             nextStep()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
         }
 
         isLoading = false
@@ -350,7 +350,7 @@ class OnboardingViewModel {
                 createdUser = user
                 isOnboardingComplete = true
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = AppError.from(error).userMessage
             }
 
             isLoading = false

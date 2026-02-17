@@ -427,7 +427,7 @@ struct PaywallView: View {
                     dismiss()
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = AppError.from(error).userMessage
             }
         } else if let product = selectedProduct {
             // StoreKit 2 direct purchase fallback
@@ -448,7 +448,7 @@ struct PaywallView: View {
                     break
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = AppError.from(error).userMessage
             }
         }
     }
@@ -468,7 +468,7 @@ struct PaywallView: View {
                 errorMessage = "No active subscription found."
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
         }
     }
 }

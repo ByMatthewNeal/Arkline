@@ -71,7 +71,7 @@ final class FeatureRequestViewModel {
             requests = try await service.fetchAllRequests()
             logInfo("Loaded \(requests.count) feature requests", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError(error, context: "Load feature requests", category: .data)
         }
 
@@ -96,7 +96,7 @@ final class FeatureRequestViewModel {
 
             logInfo("Updated request status to \(status.rawValue)", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError(error, context: "Update request status", category: .data)
         }
     }
@@ -114,7 +114,7 @@ final class FeatureRequestViewModel {
 
             logInfo("Updated request priority to \(priority.rawValue)", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError(error, context: "Update request priority", category: .data)
         }
     }
@@ -132,7 +132,7 @@ final class FeatureRequestViewModel {
 
             logInfo("Updated admin notes", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError(error, context: "Update admin notes", category: .data)
         }
     }
@@ -147,7 +147,7 @@ final class FeatureRequestViewModel {
 
             logInfo("Saved request changes", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError(error, context: "Save request", category: .data)
         }
     }
@@ -160,7 +160,7 @@ final class FeatureRequestViewModel {
             requests.removeAll { $0.id == request.id }
             logInfo("Deleted request: \(request.title)", category: .data)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             logError(error, context: "Delete request", category: .data)
         }
     }

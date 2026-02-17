@@ -600,7 +600,7 @@ class HomeViewModel {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = AppError.from(error).userMessage
             }
         }
     }

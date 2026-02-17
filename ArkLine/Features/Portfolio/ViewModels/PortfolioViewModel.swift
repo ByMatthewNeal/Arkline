@@ -229,7 +229,7 @@ final class PortfolioViewModel {
             }
         } catch {
             await MainActor.run {
-                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+                self.error = AppError.from(error)
                 self.isLoading = false
             }
         }
@@ -598,7 +598,7 @@ final class PortfolioViewModel {
             }
         } catch {
             await MainActor.run {
-                self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+                self.error = AppError.from(error)
             }
         }
     }

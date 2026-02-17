@@ -166,7 +166,7 @@ struct ShowcaseExportPreview: View {
             shareImage(uiImage)
 
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
             showError = true
             logError("Export failed: \(error)", category: .ui)
         }

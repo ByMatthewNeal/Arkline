@@ -151,7 +151,7 @@ struct EditPortfolioView: View {
             } catch {
                 await MainActor.run {
                     isSaving = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = AppError.from(error).userMessage
                     showError = true
                 }
             }

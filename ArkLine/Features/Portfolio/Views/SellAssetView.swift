@@ -306,7 +306,7 @@ struct SellAssetView: View {
             } catch {
                 await MainActor.run {
                     isSaving = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = AppError.from(error).userMessage
                     showingError = true
                 }
             }

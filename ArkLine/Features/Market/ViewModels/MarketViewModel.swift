@@ -163,7 +163,7 @@ class MarketViewModel {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = AppError.from(error).userMessage
             }
         }
     }
@@ -197,7 +197,7 @@ class MarketViewModel {
                 // Search was cancelled, ignore
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = AppError.from(error).userMessage
                 }
             }
         }

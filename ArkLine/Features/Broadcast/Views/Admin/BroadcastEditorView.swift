@@ -818,7 +818,7 @@ struct BroadcastEditorView: View {
                 dismiss()
             } catch {
                 isSaving = false
-                errorMessage = error.localizedDescription
+                errorMessage = AppError.from(error).userMessage
                 showingError = true
                 logError("Failed to save broadcast: \(error)", category: .data)
             }

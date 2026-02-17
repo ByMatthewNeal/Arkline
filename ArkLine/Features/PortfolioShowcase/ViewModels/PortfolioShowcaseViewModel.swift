@@ -79,7 +79,7 @@ final class PortfolioShowcaseViewModel {
             portfolios = try await portfolioService.fetchPortfolios(userId: userId)
             logInfo("Loaded \(portfolios.count) portfolios for showcase", category: .data)
         } catch {
-            self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            self.error = AppError.from(error)
             logError("Failed to load portfolios: \(error)", category: .data)
         }
 
@@ -159,7 +159,7 @@ final class PortfolioShowcaseViewModel {
 
             logInfo("Generated \(position) snapshot for portfolio \(portfolio.name)", category: .data)
         } catch {
-            self.error = error as? AppError ?? .unknown(message: error.localizedDescription)
+            self.error = AppError.from(error)
             logError("Failed to generate snapshot: \(error)", category: .data)
         }
     }

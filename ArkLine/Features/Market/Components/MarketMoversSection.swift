@@ -93,7 +93,7 @@ struct FMPMarketMoversSection: View {
             gainers = g
             losers = l
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = AppError.from(error).userMessage
         }
 
         isLoading = false

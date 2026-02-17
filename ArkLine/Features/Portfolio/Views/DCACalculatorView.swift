@@ -296,7 +296,7 @@ struct DCACalculatorView: View {
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = error.localizedDescription
+                    errorMessage = AppError.from(error).userMessage
                     showError = true
                 }
             }
