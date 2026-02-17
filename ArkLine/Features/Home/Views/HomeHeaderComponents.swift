@@ -23,22 +23,24 @@ struct GlassHeader: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            // Profile Avatar - refined style
-            ProfessionalAvatar(imageUrl: avatarUrl, name: userName, size: 52)
+            // Profile Avatar + Name → navigates to Profile
+            NavigationLink(destination: ProfileView()) {
+                HStack(spacing: 16) {
+                    ProfessionalAvatar(imageUrl: avatarUrl, name: userName, size: 52)
 
-            // Greeting and name with date
-            VStack(alignment: .leading, spacing: 4) {
-                // Date line - subtle, professional
-                Text(currentDateFormatted.uppercased())
-                    .font(AppFonts.caption12Medium)
-                    .foregroundColor(textPrimary.opacity(0.4))
-                    .tracking(1.2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(currentDateFormatted.uppercased())
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(textPrimary.opacity(0.4))
+                            .tracking(1.2)
 
-                // Name - prominent, using Urbanist
-                Text(userName.isEmpty ? "Welcome" : userName)
-                    .font(AppFonts.title24)
-                    .foregroundColor(textPrimary)
+                        Text(userName.isEmpty ? "Welcome" : userName)
+                            .font(AppFonts.title24)
+                            .foregroundColor(textPrimary)
+                    }
+                }
             }
+            .buttonStyle(PlainButtonStyle())
 
             Spacer()
 
