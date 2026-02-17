@@ -229,6 +229,9 @@ struct RiskLevelChart: View {
                         ? Color.white.opacity(0.02)
                         : Color.black.opacity(0.015)
                 )
+                .overlay {
+                    ChartLogoWatermark()
+                }
         }
     }
 }

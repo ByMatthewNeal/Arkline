@@ -207,6 +207,7 @@
 		AA1B2C3D06 /* GoogleNewsRSSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1B2C3D05 /* GoogleNewsRSSService.swift */; };
 		AAAADB3FD54B0AAB558FFD6F /* MockGlobalLiquidityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E08551BAC46315B29293E7 /* MockGlobalLiquidityService.swift */; };
 		AB0UTV13W000000000002 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0UTV13W000000000001 /* AboutView.swift */; };
+		F61544EDBB29AB824683C437 /* ArkLineLogoShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9430188723426BB7F6C20A98 /* ArkLineLogoShape.swift */; };
 		AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE42B1F64D053FD667B857C /* AvatarView.swift */; };
 		ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA3DE47F563466AB15A7AEA /* APICache.swift */; };
 		ADD1TRAN51CT10N5V13W0002 /* AddTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD1TRAN51CT10N5V13W0001 /* AddTransactionView.swift */; };
@@ -521,6 +522,7 @@
 		87CF0E5EC762D968DCBE4F7D /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinglassData.swift; sourceTree = "<group>"; };
 		8AAAF40361CD29C51A718DFC /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		9430188723426BB7F6C20A98 /* ArkLineLogoShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineLogoShape.swift; sourceTree = "<group>"; };
 		8AE42B1F64D053FD667B857C /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
 		8C9F2BB5F78AF614F347490F /* BroadcastService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastService.swift; sourceTree = "<group>"; };
 		8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SupplyInProfitWidget.swift; path = Features/Home/Views/SupplyInProfitWidget.swift; sourceTree = "<group>"; };
@@ -1583,6 +1585,7 @@
 		D0E14F1F2D37C117302D315D /* Misc */ = {
 			isa = PBXGroup;
 			children = (
+				9430188723426BB7F6C20A98 /* ArkLineLogoShape.swift */,
 				8AE42B1F64D053FD667B857C /* AvatarView.swift */,
 				F1NANC1ALD15CLA1M3R01 /* FinancialDisclaimer.swift */,
 				F78845800D59A83C7C923898 /* PercentageChangeView.swift */,
@@ -1924,6 +1927,7 @@
 				1229BB7C45A6A74F5082A32F /* AssetRowView.swift in Sources */,
 				F309CE4A58D0C80FC87CACF1 /* AssetTechnicalDetailSheet.swift in Sources */,
 				5F4B99B5C4891DD601F0FF5B /* AuthViewModel.swift in Sources */,
+				F61544EDBB29AB824683C437 /* ArkLineLogoShape.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
 				77273323CF240C251C222AAF /* BaseCard.swift in Sources */,
 				C6D58AAA96B8FBB851F1D0F0 /* CMEFedWatchScraper.swift in Sources */,
