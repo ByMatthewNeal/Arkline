@@ -147,10 +147,15 @@ enum SentimentRegimeService {
         }
 
         // 4. Extract milestones
-        let today = points.last!
-        let oneWeekAgo = findClosestPoint(to: calendar.date(byAdding: .day, value: -7, to: today.date)!, in: points, tolerance: 2)
-        let oneMonthAgo = findClosestPoint(to: calendar.date(byAdding: .day, value: -30, to: today.date)!, in: points, tolerance: 3)
-        let threeMonthsAgo = findClosestPoint(to: calendar.date(byAdding: .day, value: -90, to: today.date)!, in: points, tolerance: 5)
+        guard let today = points.last else {
+            return nil
+        }
+        let oneWeekAgo = calendar.date(byAdding: .day, value: -7, to: today.date)
+            .flatMap { findClosestPoint(to: $0, in: points, tolerance: 2) }
+        let oneMonthAgo = calendar.date(byAdding: .day, value: -30, to: today.date)
+            .flatMap { findClosestPoint(to: $0, in: points, tolerance: 3) }
+        let threeMonthsAgo = calendar.date(byAdding: .day, value: -90, to: today.date)
+            .flatMap { findClosestPoint(to: $0, in: points, tolerance: 5) }
 
         return SentimentRegimeData(
             currentRegime: today.regime,
@@ -349,7 +354,7 @@ enum SentimentRegimeService {
 
     private static func dayKey(for date: Date, calendar: Calendar) -> String {
         let components = calendar.dateComponents([.year, .month, .day], from: date)
-        return "\(components.year!)-\(components.month!)-\(components.day!)"
+        return "\(components.year ?? 0)-\(components.month ?? 0)-\(components.day ?? 0)"
     }
 
     private static func findClosestPoint(

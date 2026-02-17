@@ -93,7 +93,8 @@ final class PasscodeManager: PasscodeVerifying {
     private func generateSalt() -> Data {
         var salt = Data(count: Self.saltLength)
         let result = salt.withUnsafeMutableBytes { saltPtr -> OSStatus in
-            SecRandomCopyBytes(kSecRandomDefault, Self.saltLength, saltPtr.baseAddress!)
+            guard let baseAddress = saltPtr.baseAddress else { return errSecParam }
+            return SecRandomCopyBytes(kSecRandomDefault, Self.saltLength, baseAddress)
         }
 
         // If secure random fails, fall back to arc4random (still secure on Apple platforms)

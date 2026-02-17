@@ -11,7 +11,7 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
         static let world = "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en"
 
         static func search(_ query: String) -> String {
-            var components = URLComponents(string: "https://news.google.com/rss/search")!
+            guard var components = URLComponents(string: "https://news.google.com/rss/search") else { return "" }
             components.queryItems = [
                 URLQueryItem(name: "q", value: query),
                 URLQueryItem(name: "hl", value: "en-US"),
@@ -40,7 +40,7 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
 
             // Join with OR — URLComponents handles encoding
             let combinedQuery = queryParts.joined(separator: " OR ")
-            var components = URLComponents(string: "https://news.google.com/rss/search")!
+            guard var components = URLComponents(string: "https://news.google.com/rss/search") else { return "" }
             components.queryItems = [
                 URLQueryItem(name: "q", value: combinedQuery),
                 URLQueryItem(name: "hl", value: "en-US"),

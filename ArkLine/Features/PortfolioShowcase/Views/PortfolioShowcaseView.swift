@@ -46,10 +46,12 @@ struct PortfolioShowcaseView: View {
                     )
 
                     // Comparison Summary (when both selected)
-                    if viewModel.hasBothPortfolios {
+                    if viewModel.hasBothPortfolios,
+                       let left = viewModel.leftSnapshot,
+                       let right = viewModel.rightSnapshot {
                         ComparisonSummaryView(
-                            left: viewModel.leftSnapshot!,
-                            right: viewModel.rightSnapshot!
+                            left: left,
+                            right: right
                         )
                     }
 
