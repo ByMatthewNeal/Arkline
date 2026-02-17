@@ -61,7 +61,7 @@ actor NetworkManager {
 
         let urlRequest = try endpoint.asURLRequest()
 
-        var lastError: Error?
+        var lastError: Error = AppError.networkError(underlying: nil)
         for attempt in 0..<maxRetries {
             AppLogger.shared.logRequest(urlRequest)
 
@@ -79,7 +79,17 @@ actor NetworkManager {
                     let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After")
                         .flatMap(Double.init) ?? (baseRetryDelay * pow(2, Double(attempt)))
                     logWarning("Rate limited (429), retrying in \(retryAfter)s (attempt \(attempt + 1)/\(maxRetries))", category: .network)
+                    lastError = AppError.rateLimitExceeded
                     try await Task.sleep(nanoseconds: UInt64(retryAfter * 1_000_000_000))
+                    continue
+                }
+
+                // Retry on 5xx server errors
+                if (500...599).contains(httpResponse.statusCode) && attempt < maxRetries - 1 {
+                    let delay = baseRetryDelay * pow(2, Double(attempt))
+                    logWarning("Server error (\(httpResponse.statusCode)), retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))", category: .network)
+                    lastError = AppError.apiUnavailable
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                     continue
                 }
 
@@ -94,20 +104,28 @@ actor NetworkManager {
                 }
 
                 return try decode(data, as: responseType)
-            } catch let error as AppError {
+            } catch let error as AppError where !error.isRecoverable {
                 throw error
+            } catch let error as URLError where isRetryableURLError(error) {
+                AppLogger.shared.logResponse(nil, data: nil, error: error)
+                lastError = mapURLError(error)
+                if attempt < maxRetries - 1 {
+                    let delay = baseRetryDelay * pow(2, Double(attempt))
+                    logWarning("Network error, retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries)): \(error.code.rawValue)", category: .network)
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    continue
+                }
             } catch let error as URLError {
                 AppLogger.shared.logResponse(nil, data: nil, error: error)
                 throw mapURLError(error)
             } catch {
-                lastError = error
                 AppLogger.shared.logResponse(nil, data: nil, error: error)
-                throw AppError.networkError(underlying: error)
+                throw AppError.from(error)
             }
         }
 
-        // All retries exhausted (only reachable for 429s)
-        throw lastError ?? AppError.rateLimitExceeded
+        // All retries exhausted
+        throw lastError
     }
 
     // MARK: - Request with Raw Data Response
@@ -122,22 +140,55 @@ actor NetworkManager {
             )
         }
 
-        let request = try endpoint.asURLRequest()
-        AppLogger.shared.logRequest(request)
+        let urlRequest = try endpoint.asURLRequest()
+        var lastError: Error = AppError.networkError(underlying: nil)
 
-        let (data, response) = try await session.data(for: request)
+        for attempt in 0..<maxRetries {
+            AppLogger.shared.logRequest(urlRequest)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AppError.invalidResponse
+            do {
+                let (data, response) = try await session.data(for: urlRequest)
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw AppError.invalidResponse
+                }
+
+                AppLogger.shared.logResponse(httpResponse, data: data, error: nil)
+
+                // Retry on 5xx server errors
+                if (500...599).contains(httpResponse.statusCode) && attempt < maxRetries - 1 {
+                    let delay = baseRetryDelay * pow(2, Double(attempt))
+                    logWarning("Server error (\(httpResponse.statusCode)), retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries))", category: .network)
+                    lastError = AppError.apiUnavailable
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    continue
+                }
+
+                guard (200...299).contains(httpResponse.statusCode) else {
+                    throw AppError.from(httpStatusCode: httpResponse.statusCode)
+                }
+
+                return data
+            } catch let error as AppError where !error.isRecoverable {
+                throw error
+            } catch let error as URLError where isRetryableURLError(error) {
+                AppLogger.shared.logResponse(nil, data: nil, error: error)
+                lastError = mapURLError(error)
+                if attempt < maxRetries - 1 {
+                    let delay = baseRetryDelay * pow(2, Double(attempt))
+                    logWarning("Network error, retrying in \(delay)s (attempt \(attempt + 1)/\(maxRetries)): \(error.code.rawValue)", category: .network)
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    continue
+                }
+            } catch let error as URLError {
+                AppLogger.shared.logResponse(nil, data: nil, error: error)
+                throw mapURLError(error)
+            } catch {
+                throw AppError.from(error)
+            }
         }
 
-        AppLogger.shared.logResponse(httpResponse, data: data, error: nil)
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw AppError.from(httpStatusCode: httpResponse.statusCode)
-        }
-
-        return data
+        throw lastError
     }
 
     // MARK: - Proxy Request (with caching and retry)
@@ -275,6 +326,17 @@ actor NetworkManager {
         } catch {
             logError("Decoding error for \(type): \(error)", category: .network)
             throw AppError.decodingError(underlying: error)
+        }
+    }
+
+    /// Transient network errors worth retrying (brief drops, timeouts, DNS hiccups)
+    private func isRetryableURLError(_ error: URLError) -> Bool {
+        switch error.code {
+        case .timedOut, .networkConnectionLost, .cannotFindHost,
+             .cannotConnectToHost, .dnsLookupFailed, .secureConnectionFailed:
+            return true
+        default:
+            return false
         }
     }
 
