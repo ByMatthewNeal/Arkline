@@ -24,57 +24,44 @@ struct InviteCodeView: View {
                             .fill(
                                 RadialGradient(
                                     colors: [
-                                        AppColors.fillPrimary.opacity(0.3),
+                                        AppColors.fillPrimary.opacity(0.2),
                                         AppColors.fillPrimary.opacity(0)
                                     ],
                                     center: .center,
-                                    startRadius: 20,
-                                    endRadius: 80
+                                    startRadius: 30,
+                                    endRadius: 90
                                 )
                             )
-                            .frame(width: 160, height: 160)
+                            .frame(width: 240, height: 240)
 
-                        ZStack {
-                            Circle()
-                                .fill(AppColors.glassBackground(colorScheme))
-                                .frame(width: 100, height: 100)
-
-                            Circle()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.2),
-                                            Color.white.opacity(0.05)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [AppColors.fillPrimary, AppColors.accentLight],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
                                 )
-                                .frame(width: 100, height: 100)
-
-                            Image(systemName: "key.fill")
-                                .font(.system(size: 40, weight: .medium))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [AppColors.fillPrimary, AppColors.accentLight],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                        }
+                            )
+                            .mask(
+                                Image("ArkLineLogo")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            )
+                            .frame(width: 120, height: 120)
                     }
 
                     VStack(spacing: ArkSpacing.sm) {
-                        Text("Enter Your Invite Code")
+                        Text("You're Early.")
                             .font(AppFonts.title30)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                             .multilineTextAlignment(.center)
 
-                        Text("ArkLine is available by invitation only")
+                        Text("Arkline is invite-only. You're getting access to sentiment intelligence most investors don't know exists.")
                             .font(AppFonts.body14)
                             .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                            .padding(.horizontal, ArkSpacing.md)
                     }
                 }
 
