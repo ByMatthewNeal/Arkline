@@ -1,9 +1,21 @@
 import Foundation
 import CommonCrypto
 
+// MARK: - PasscodeVerifying Protocol
+/// Abstraction for passcode verification, enabling dependency injection in tests.
+protocol PasscodeVerifying {
+    func verify(_ passcode: String) -> Bool
+    func resetFailedAttempts()
+    func recordFailedAttempt() -> Int?
+    var isLockedOut: Bool { get }
+    var lockoutTimeRemaining: String { get }
+    var isBiometricEnabled: Bool { get }
+    var lockoutEndTime: Date? { get }
+}
+
 // MARK: - Passcode Manager
 /// Secure passcode management using PBKDF2 hashing
-final class PasscodeManager {
+final class PasscodeManager: PasscodeVerifying {
 
     // MARK: - Configuration
 

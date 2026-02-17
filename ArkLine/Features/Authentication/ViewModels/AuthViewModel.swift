@@ -21,7 +21,7 @@ class AuthViewModel {
     var isAuthenticated: Bool = false
     var user: User?
 
-    private let passcodeManager = PasscodeManager.shared
+    private let passcodeManager: PasscodeVerifying
 
     // MARK: - Computed Properties from PasscodeManager
     var remainingAttempts: Int {
@@ -75,7 +75,8 @@ class AuthViewModel {
     }
 
     // MARK: - Initialization
-    init() {
+    init(passcodeManager: PasscodeVerifying = PasscodeManager.shared) {
+        self.passcodeManager = passcodeManager
         loadUserSettings()
     }
 

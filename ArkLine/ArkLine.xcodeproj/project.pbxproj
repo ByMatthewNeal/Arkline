@@ -20,6 +20,9 @@
 		07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */; };
 		0ABDC16775229FAEB1DC2E18 /* MacroStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6268CFEC85C00257A9DE85B /* MacroStatisticsService.swift */; };
 		0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */; };
+		DD1111111111111111111101 /* HomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1111111111111111111102 /* HomeViewModelTests.swift */; };
+		DD2222222222222222222201 /* SentimentViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2222222222222222222202 /* SentimentViewModelTests.swift */; };
+		DD3333333333333333333301 /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3333333333333333333302 /* AuthViewModelTests.swift */; };
 		0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */; };
 		0BB9196B1B6620C4C16FA8DA /* DateExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BC257F981A64B96EC641B0 /* DateExtensionsTests.swift */; };
 		0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */; };
@@ -686,6 +689,9 @@
 		FAQV13W0000000000001 /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
 		FBEE2AB1904E9E24D7B1229D /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = StatisticsCalculatorTests.swift; path = ../ArkLineTests/StatisticsCalculatorTests.swift; sourceTree = "<group>"; };
+		DD1111111111111111111102 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HomeViewModelTests.swift; path = ../ArkLineTests/ViewModels/HomeViewModelTests.swift; sourceTree = "<group>"; };
+		DD2222222222222222222202 /* SentimentViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SentimentViewModelTests.swift; path = ../ArkLineTests/ViewModels/SentimentViewModelTests.swift; sourceTree = "<group>"; };
+		DD3333333333333333333302 /* AuthViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthViewModelTests.swift; path = ../ArkLineTests/ViewModels/AuthViewModelTests.swift; sourceTree = "<group>"; };
 		FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TechnicalAnalysisServiceProtocol.swift; sourceTree = "<group>"; };
 		FE0000000000000000000011 /* FeatureRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequest.swift; sourceTree = "<group>"; };
 		FE0000000000000000000012 /* FeatureRequestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestService.swift; sourceTree = "<group>"; };
@@ -1337,6 +1343,9 @@
 				CC0000000000000000000004 /* ConfidenceTrackerTests.swift */,
 				FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */,
 				C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */,
+				DD1111111111111111111102 /* HomeViewModelTests.swift */,
+				DD2222222222222222222202 /* SentimentViewModelTests.swift */,
+				DD3333333333333333333302 /* AuthViewModelTests.swift */,
 			);
 			name = ArkLineTests;
 			sourceTree = "<group>";
@@ -1874,6 +1883,9 @@
 				CC0000000000000000000003 /* ConfidenceTrackerTests.swift in Sources */,
 				0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */,
 				95DCC179469B65E518BAA33F /* StringExtensionsTests.swift in Sources */,
+				DD1111111111111111111101 /* HomeViewModelTests.swift in Sources */,
+				DD2222222222222222222201 /* SentimentViewModelTests.swift in Sources */,
+				DD3333333333333333333301 /* AuthViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
