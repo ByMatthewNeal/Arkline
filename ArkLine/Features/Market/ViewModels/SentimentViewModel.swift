@@ -58,13 +58,18 @@ class SentimentViewModel {
     var riskLevels: [String: ITCRiskLevel] = [:]
     var riskHistories: [String: [ITCRiskLevel]] = [:]
 
-    // Enhanced Risk History (per-coin)
+    // Enhanced Risk History (per-coin) with TTL
     var riskHistoryCache: [String: [RiskHistoryPoint]] = [:]
+    private var riskHistoryCacheTimestamps: [String: Date] = [:]
 
-    // Multi-Factor Risk (enhanced model)
+    // Multi-Factor Risk (enhanced model) with TTL
     var multiFactorRisk: MultiFactorRiskPoint?
     var multiFactorRiskCache: [String: MultiFactorRiskPoint] = [:]
+    private var multiFactorRiskCacheTimestamps: [String: Date] = [:]
     var isLoadingMultiFactorRisk = false
+
+    /// Cache TTL for risk data (5 minutes)
+    private let riskCacheTTL: TimeInterval = 300
 
     // Market Overview Data
     var bitcoinSearchIndex: Int = 66
@@ -313,9 +318,9 @@ class SentimentViewModel {
         let btcOI = await btcOITask
 
         await MainActor.run {
-            // Core indicators (only update if we got data)
-            if let fg = fg { self.fearGreedIndex = fg }
-            if let btc = btc { self.btcDominance = btc }
+            // Core indicators (set unconditionally so stale data clears on failure)
+            self.fearGreedIndex = fg
+            self.btcDominance = btc
 
             // Market cap from global data
             if let overview = marketOverview {
@@ -734,9 +739,11 @@ class SentimentViewModel {
     ///   - days: Number of days of history (nil for all available)
     /// - Returns: Array of enhanced risk history points
     func fetchEnhancedRiskHistory(coin: String, days: Int? = nil) async -> [RiskHistoryPoint] {
-        // Check cache first
+        // Check cache with TTL
         let cacheKey = "\(coin)_\(days ?? 0)"
-        if let cached = riskHistoryCache[cacheKey] {
+        if let cached = riskHistoryCache[cacheKey],
+           let timestamp = riskHistoryCacheTimestamps[cacheKey],
+           Date().timeIntervalSince(timestamp) < riskCacheTTL {
             return cached
         }
 
@@ -744,6 +751,7 @@ class SentimentViewModel {
             let history = try await itcRiskService.fetchRiskHistory(coin: coin, days: days)
             await MainActor.run {
                 self.riskHistoryCache[cacheKey] = history
+                self.riskHistoryCacheTimestamps[cacheKey] = Date()
             }
             return history
         } catch {
@@ -760,6 +768,7 @@ class SentimentViewModel {
     /// Clear risk history cache
     func clearRiskHistoryCache() {
         riskHistoryCache.removeAll()
+        riskHistoryCacheTimestamps.removeAll()
     }
 
     // MARK: - Multi-Factor Risk Methods
@@ -768,8 +777,10 @@ class SentimentViewModel {
     /// - Parameter coin: Coin symbol (BTC, ETH)
     /// - Returns: Multi-factor risk point with full breakdown
     func fetchMultiFactorRisk(coin: String) async -> MultiFactorRiskPoint? {
-        // Check cache first
-        if let cached = multiFactorRiskCache[coin] {
+        // Check cache with TTL
+        if let cached = multiFactorRiskCache[coin],
+           let timestamp = multiFactorRiskCacheTimestamps[coin],
+           Date().timeIntervalSince(timestamp) < riskCacheTTL {
             return cached
         }
 
@@ -782,6 +793,7 @@ class SentimentViewModel {
             await MainActor.run {
                 self.multiFactorRisk = riskPoint
                 self.multiFactorRiskCache[coin] = riskPoint
+                self.multiFactorRiskCacheTimestamps[coin] = Date()
                 self.isLoadingMultiFactorRisk = false
             }
             return riskPoint
@@ -801,6 +813,7 @@ class SentimentViewModel {
     /// Clear multi-factor risk cache
     func clearMultiFactorRiskCache() {
         multiFactorRiskCache.removeAll()
+        multiFactorRiskCacheTimestamps.removeAll()
         multiFactorRisk = nil
     }
 

@@ -54,12 +54,16 @@ struct MarketSentimentSection: View {
                     }
 
                     // Market Cap
-                    MarketCapCard(
-                        marketCap: viewModel.totalMarketCap,
-                        change: viewModel.marketCapChange24h,
-                        sparklineData: viewModel.marketCapHistory
-                    )
-                    .cardAppearance(delay: 3)
+                    if viewModel.totalMarketCap > 0 {
+                        MarketCapCard(
+                            marketCap: viewModel.totalMarketCap,
+                            change: viewModel.marketCapChange24h,
+                            sparklineData: viewModel.marketCapHistory
+                        )
+                        .cardAppearance(delay: 3)
+                    } else {
+                        ShimmerPlaceholderCard(title: "Market Cap", icon: "chart.bar", isLoading: viewModel.isLoading)
+                    }
 
                     // BTC Dominance
                     if let btcDom = viewModel.btcDominance {
@@ -102,13 +106,14 @@ struct MarketSentimentSection: View {
                     let visibleCoins = isPro
                         ? Array(viewModel.riskLevels.keys.sorted())
                         : viewModel.riskLevels.keys.sorted().filter { $0 == "BTC" }
+                    let daysCache = consecutiveDaysCache
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(visibleCoins, id: \.self) { coin in
                             if let riskLevel = viewModel.riskLevels[coin] {
                                 RiskCard(
                                     riskLevel: riskLevel,
                                     coinSymbol: coin,
-                                    daysAtLevel: consecutiveDays(for: coin, current: riskLevel)
+                                    daysAtLevel: daysCache[coin]
                                 )
                             }
                         }
@@ -162,21 +167,26 @@ struct MarketSentimentSection: View {
         }
     }
 
-    private func consecutiveDays(for coin: String, current: ITCRiskLevel) -> Int? {
-        let history = viewModel.riskHistories[coin] ?? []
-        guard !history.isEmpty else { return nil }
-        let currentCategory = current.riskCategory
-        let currentRisk = current.riskLevel
-        var count = 0
-        for level in history.reversed() {
-            if level.riskCategory == currentCategory ||
-                abs(level.riskLevel - currentRisk) < 0.05 {
-                count += 1
-            } else {
-                break
+    /// Pre-compute consecutive days at current risk level for all coins
+    private var consecutiveDaysCache: [String: Int] {
+        var cache: [String: Int] = [:]
+        for (coin, current) in viewModel.riskLevels {
+            let history = viewModel.riskHistories[coin] ?? []
+            guard !history.isEmpty else { continue }
+            let currentCategory = current.riskCategory
+            let currentRisk = current.riskLevel
+            var count = 0
+            for level in history.reversed() {
+                if level.riskCategory == currentCategory ||
+                    abs(level.riskLevel - currentRisk) < 0.05 {
+                    count += 1
+                } else {
+                    break
+                }
             }
+            if count >= 1 { cache[coin] = count }
         }
-        return count >= 1 ? count : nil
+        return cache
     }
 }
 

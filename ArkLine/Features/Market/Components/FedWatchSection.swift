@@ -42,7 +42,7 @@ struct FedWatchSection: View {
                 HStack(spacing: 8) {
                     Image(systemName: "building.columns.fill")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "3B82F6"))
+                        .foregroundColor(AppColors.accent)
 
                     Text("Fed Watch")
                         .font(.subheadline)
@@ -148,7 +148,7 @@ struct MeetingDateChip: View {
                 if isNext {
                     Text("NEXT")
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(isSelected ? .white : Color(hex: "3B82F6"))
+                        .foregroundColor(isSelected ? .white : AppColors.accent)
                 }
 
                 Text(monthString)
@@ -162,13 +162,13 @@ struct MeetingDateChip: View {
             .frame(width: 52, height: isNext ? 58 : 48)
             .background(
                 isSelected
-                    ? Color(hex: "3B82F6")
-                    : (colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "F0F0F0"))
+                    ? AppColors.accent
+                    : AppColors.cardBackground(colorScheme)
             )
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.clear : Color(hex: "2A2A2A").opacity(0.3), lineWidth: 1)
+                    .stroke(isSelected ? Color.clear : AppColors.cardBorder(colorScheme), lineWidth: 1)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -246,7 +246,7 @@ struct FedWatchCard: View {
             }
 
             Divider()
-                .background(Color(hex: "2A2A2A"))
+                .background(AppColors.divider(colorScheme))
 
             // Probabilities - simplified with accent blue for all
             HStack(spacing: 12) {
@@ -535,7 +535,7 @@ struct ImpactCard: View {
             }
         }
         .padding(16)
-        .background(Color(hex: colorScheme == .dark ? "1F1F1F" : "F5F5F5"))
+        .background(AppColors.cardBackground(colorScheme))
         .cornerRadius(12)
     }
 }
@@ -567,5 +567,5 @@ struct ImpactCard: View {
             ]
         )
     }
-    .background(Color(hex: "0F0F0F"))
+    .background(Color(hex: "0F0F0F")) // Preview only
 }

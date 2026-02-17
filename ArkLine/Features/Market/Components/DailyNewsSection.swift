@@ -50,16 +50,33 @@ struct DailyNewsSection: View {
             .padding(.horizontal, 20)
 
             // Horizontal News Carousel
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(news) { item in
-                        NavigationLink(destination: NewsDetailView(news: item)) {
-                            DailyNewsCard(news: item)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+            if news.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "newspaper")
+                            .font(.title2)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("No news available")
+                            .font(.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
                     }
+                    .padding(.vertical, 24)
+                    Spacer()
                 }
                 .padding(.horizontal, 20)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(news) { item in
+                            NavigationLink(destination: NewsDetailView(news: item)) {
+                                DailyNewsCard(news: item)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
             }
         }
     }

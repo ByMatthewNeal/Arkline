@@ -762,8 +762,8 @@ final class APISentimentService: SentimentServiceProtocol {
             totalMarketCap: globalData.data.totalMarketCap["usd"] ?? 0,
             marketCapChange24h: globalData.data.marketCapChangePercentage24hUsd,
             totalVolume24h: globalData.data.totalVolume["usd"] ?? 0,
-            btcPrice: 0, // Would need separate call
-            ethPrice: 0, // Would need separate call
+            btcPrice: 0, // Not available from global endpoint; unused
+            ethPrice: 0, // Not available from global endpoint; unused
             timestamp: Date()
         )
     }

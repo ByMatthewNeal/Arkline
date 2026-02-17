@@ -7,6 +7,7 @@ struct PreciousMetalsSection: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var metals: [MetalAsset] = []
     @State private var isLoading = true
+    @State private var loadFailed = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -34,6 +35,29 @@ struct PreciousMetalsSection: View {
                 }
                 .padding(.horizontal)
                 .redacted(reason: .placeholder)
+            } else if metals.isEmpty {
+                // Error / empty state
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: loadFailed ? "exclamationmark.triangle" : "cube")
+                            .font(.title2)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text(loadFailed ? "Failed to load metals" : "No data available")
+                            .font(.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
+                        if loadFailed {
+                            Button("Retry") {
+                                Task { await loadFromFMP() }
+                            }
+                            .font(.caption)
+                            .foregroundColor(AppColors.accent)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                    Spacer()
+                }
+                .padding(.horizontal)
             } else {
                 // Metal Cards
                 VStack(spacing: 12) {
@@ -80,6 +104,7 @@ struct PreciousMetalsSection: View {
         }
 
         metals = loaded
+        loadFailed = loaded.isEmpty
         isLoading = false
     }
 }
