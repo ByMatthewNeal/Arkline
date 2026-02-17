@@ -178,6 +178,10 @@ class OnboardingViewModel {
         currentStep = OnboardingStep.allCases[currentIndex - 1]
     }
 
+    func skipToLogin() {
+        currentStep = .email
+    }
+
     func skipStep() {
         nextStep()
     }

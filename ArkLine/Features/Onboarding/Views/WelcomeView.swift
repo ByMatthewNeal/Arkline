@@ -67,7 +67,7 @@ struct WelcomeView: View {
                         icon: "arrow.right"
                     )
 
-                    Button(action: { viewModel.nextStep() }) {
+                    Button(action: { viewModel.skipToLogin() }) {
                         Text("I already have an account")
                             .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textSecondary)
