@@ -224,6 +224,9 @@ struct RiskLevelChartView: View {
                 )
             }
             #endif
+            .task {
+                await viewModel.loadInitialData()
+            }
             .onAppear {
                 if !hasInitialized {
                     selectedCoin = initialCoin

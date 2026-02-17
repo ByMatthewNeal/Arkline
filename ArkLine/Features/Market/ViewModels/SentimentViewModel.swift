@@ -256,7 +256,6 @@ class SentimentViewModel {
         self.globalLiquidityService = globalLiquidityService
         self.macroStatisticsService = macroStatisticsService
         self.coinglassService = coinglassService
-        Task { await loadInitialData() }
     }
 
     // MARK: - Public Methods
@@ -547,7 +546,7 @@ class SentimentViewModel {
     }
 
     // MARK: - Private Methods
-    private func loadInitialData() async {
+    func loadInitialData() async {
         await refresh()
         await fetchFearGreedHistory(days: 90)
         await fetchGoogleTrendsHistory()

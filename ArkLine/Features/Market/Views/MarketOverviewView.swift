@@ -64,14 +64,16 @@ struct MarketOverviewView: View {
                     .padding(.top, 16)
                 }
                 .refreshable {
-                    await viewModel.refresh()
-                    await sentimentViewModel.refresh()
+                    async let market: () = viewModel.refresh()
+                    async let sentiment: () = sentimentViewModel.refresh()
+                    _ = await (market, sentiment)
                 }
             }
             .navigationTitle("Market Overview")
             .task {
-                await viewModel.refresh()
-                await sentimentViewModel.refresh()
+                async let market: () = viewModel.refresh()
+                async let sentiment: () = sentimentViewModel.loadInitialData()
+                _ = await (market, sentiment)
             }
             .onAppear {
                 Task { await AnalyticsService.shared.trackScreenView("market") }
@@ -302,8 +304,6 @@ struct FundingRateDetailView: View {
                                 .foregroundColor(textPrimary)
 
                             FundingRateExchangeRow(exchange: "Binance", rate: rate.averageRate, isMain: true)
-                            FundingRateExchangeRow(exchange: "Bybit", rate: rate.averageRate * 0.95, isMain: false)
-                            FundingRateExchangeRow(exchange: "OKX", rate: rate.averageRate * 1.02, isMain: false)
                         }
                         .padding()
                         .background(Color(.systemGray6))

@@ -87,43 +87,17 @@ class MarketViewModel {
         isLoading = true
         errorMessage = nil
 
-        // Fetch Fed Watch independently (doesn't depend on other APIs)
-        let meetings = await fetchFedWatchMeetingsSafe()
-        await MainActor.run {
-            self.fedWatchMeetings = meetings ?? []
-            self.fedWatchData = meetings?.first
-        }
+        // Fetch news and Fed Watch in parallel (only data used by MarketOverviewView)
+        async let newsTask = fetchNewsSafe()
+        async let meetingsTask = fetchFedWatchMeetingsSafe()
 
-        // Fetch news independently (doesn't depend on other APIs)
-        let news = await fetchNewsSafe()
+        let (news, meetings) = await (newsTask, meetingsTask)
+
         await MainActor.run {
             self.newsItems = news
-        }
-
-        do {
-            async let cryptoTask = marketService.fetchCryptoAssets(page: 1, perPage: 50)
-            async let stocksTask = marketService.fetchStockAssets(symbols: ["AAPL", "NVDA"])
-            async let metalsTask = marketService.fetchMetalAssets(symbols: ["XAU", "XAG", "XPT", "XPD"])
-            async let globalTask = marketService.fetchGlobalMarketData()
-
-            let (crypto, stocks, metals, global) = try await (cryptoTask, stocksTask, metalsTask, globalTask)
-
-            await MainActor.run {
-                self.cryptoAssets = crypto
-                self.stockAssets = stocks
-                self.metalAssets = metals
-                self.updateDerivedData()
-                self.totalMarketCap = global.data.totalMarketCap["usd"] ?? 0
-                self.total24hVolume = global.data.totalVolume["usd"] ?? 0
-                self.btcDominance = global.data.marketCapPercentage["btc"] ?? 0
-                self.marketCapChange24h = global.data.marketCapChangePercentage24hUsd
-                self.isLoading = false
-            }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.isLoading = false
-            }
+            self.fedWatchMeetings = meetings ?? []
+            self.fedWatchData = meetings?.first
+            self.isLoading = false
         }
     }
 

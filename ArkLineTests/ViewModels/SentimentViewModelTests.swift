@@ -59,18 +59,16 @@ final class SentimentViewModelTests: XCTestCase {
         )
     }
 
-    /// Wait for the auto-loading init Task to settle
-    private func waitForInit() async {
-        // SentimentViewModel.init() fires Task { await loadInitialData() }
-        // Give it time to complete with zero-delay mocks
-        try? await Task.sleep(nanoseconds: 500_000_000)
+    /// Explicitly load data (init no longer auto-loads)
+    private func loadData(_ vm: SentimentViewModel) async {
+        await vm.refresh()
     }
 
     // MARK: - Group A: Happy Path
 
     func testRefresh_populatesFearGreedIndex() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         XCTAssertNotNil(vm.fearGreedIndex, "Fear & Greed should be populated after refresh")
         XCTAssertEqual(vm.fearGreedIndex?.value, 49, "Value should be 49 from MockSentimentService")
@@ -79,14 +77,14 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testRefresh_populatesBTCDominance() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         XCTAssertNotNil(vm.btcDominance, "BTC dominance should be populated")
     }
 
     func testRefresh_populatesMacroIndicators() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         XCTAssertNotNil(vm.vixData, "VIX data should be populated")
         XCTAssertNotNil(vm.dxyData, "DXY data should be populated")
@@ -94,7 +92,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testRefresh_populatesArkLineRiskScore() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         XCTAssertNotNil(vm.arkLineRiskScore, "ArkLine risk score should be populated")
         if let score = vm.arkLineRiskScore {
@@ -108,7 +106,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testOverallSentiment_neutral() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         // MockSentimentService returns value=49, which maps to neutral range (41-60)
         let tier = vm.overallSentimentTier
@@ -120,7 +118,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testOverallSentiment_nilWhenNoData() async {
         let vm = makeVM(sentimentService: FailingSentimentService())
-        await waitForInit()
+        await loadData(vm)
 
         // With failing service, fearGreedIndex should be nil
         XCTAssertNil(vm.fearGreedIndex, "Fear & Greed should be nil when service fails")
@@ -128,7 +126,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testOverallSentiment_extremelyBearish() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         // Override arkLineRiskScore directly with a low score
         vm.arkLineRiskScore = ArkLineRiskScore(
@@ -146,7 +144,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testFetchEnhancedRiskHistory_cachesResults() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         let history1 = await vm.fetchEnhancedRiskHistory(coin: "BTC")
         let history2 = await vm.fetchEnhancedRiskHistory(coin: "BTC")
@@ -157,7 +155,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testFetchMultiFactorRisk_cachesPerCoin() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         let btcRisk = await vm.fetchMultiFactorRisk(coin: "BTC")
         XCTAssertNotNil(btcRisk, "Should return multi-factor risk for BTC")
@@ -171,7 +169,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testRefresh_sentimentFails_macroStillLoaded() async {
         let vm = makeVM(sentimentService: FailingSentimentService())
-        await waitForInit()
+        await loadData(vm)
 
         XCTAssertNil(vm.fearGreedIndex, "Fear & Greed should be nil when sentiment fails")
         XCTAssertNil(vm.btcDominance, "BTC dominance should be nil when sentiment fails")
@@ -182,7 +180,7 @@ final class SentimentViewModelTests: XCTestCase {
 
     func testRefresh_isLoadingFalseAfterCompletion() async {
         let vm = makeVM()
-        await waitForInit()
+        await loadData(vm)
 
         XCTAssertFalse(vm.isLoading, "isLoading should be false after init completes")
     }
