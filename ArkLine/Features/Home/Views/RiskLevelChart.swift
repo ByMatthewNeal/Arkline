@@ -392,7 +392,7 @@ struct ITCRiskChart: View {
 /// Uniformly downsample an array to at most maxPoints, preserving first and last elements.
 /// Reduces Swift Charts mark count from thousands to ~250 for smooth drag interaction.
 func downsampled<T>(_ items: [T], maxPoints: Int = 250) -> [T] {
-    guard items.count > maxPoints, maxPoints >= 2 else { return items }
+    guard !items.isEmpty, items.count > maxPoints, maxPoints >= 2 else { return items }
     var result = [items[0]]
     let step = Double(items.count - 1) / Double(maxPoints - 1)
     for i in 1..<(maxPoints - 1) {

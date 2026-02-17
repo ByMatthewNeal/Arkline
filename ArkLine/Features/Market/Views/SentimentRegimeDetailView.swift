@@ -303,9 +303,9 @@ struct SentimentQuadrantChart: View {
 
         // Smooth curve connecting milestones only
         let pts = milestonePoints(width: width, height: height)
-        if pts.count >= 2 {
+        if pts.count >= 2, let first = pts.first {
             Path { path in
-                path.move(to: pts[0])
+                path.move(to: first)
                 if pts.count == 2 {
                     path.addLine(to: pts[1])
                 } else {

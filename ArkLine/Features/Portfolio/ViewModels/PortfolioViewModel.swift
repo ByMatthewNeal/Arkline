@@ -133,7 +133,10 @@ final class PortfolioViewModel {
         isRefreshing = true
         isLoading = true
         error = nil
-        defer { isRefreshing = false }
+        defer {
+            isRefreshing = false
+            Task { @MainActor in self.isLoading = false }
+        }
 
         do {
             // Get userId from Supabase auth
@@ -203,13 +206,17 @@ final class PortfolioViewModel {
                     self.isLoading = false
                 }
 
-                // Record daily portfolio snapshot for history charts
+                // Record daily portfolio snapshot for history charts (non-blocking)
                 let snapshotValue = holdingsWithPrices.reduce(0) { $0 + $1.currentValue }
                 if snapshotValue > 0 {
-                    try await portfolioService.recordPortfolioSnapshot(
-                        portfolioId: portfolio.id,
-                        totalValue: snapshotValue
-                    )
+                    do {
+                        try await portfolioService.recordPortfolioSnapshot(
+                            portfolioId: portfolio.id,
+                            totalValue: snapshotValue
+                        )
+                    } catch {
+                        logError("Snapshot recording failed: \(error)", category: .data)
+                    }
                 }
             } else {
                 await MainActor.run {

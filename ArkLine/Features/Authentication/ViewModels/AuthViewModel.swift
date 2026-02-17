@@ -122,7 +122,7 @@ class AuthViewModel {
             .deviceOwnerAuthenticationWithBiometrics,
             localizedReason: "Unlock ArkLine"
         ) { [weak self] success, error in
-            DispatchQueue.main.async {
+            Task { @MainActor [weak self] in
                 guard let self = self else { return }
 
                 if success {
