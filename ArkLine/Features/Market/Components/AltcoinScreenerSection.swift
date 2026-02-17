@@ -18,11 +18,31 @@ struct CoinScreenerData: Identifiable {
     let vsBTC: Double?
 }
 
+// MARK: - Time Range
+
+enum ScreenerTimeRange: String, CaseIterable {
+    case sevenDays = "7D"
+    case thirtyDays = "30D"
+    case ninetyDays = "90D"
+
+    var days: Int {
+        switch self {
+        case .sevenDays: 7
+        case .thirtyDays: 30
+        case .ninetyDays: 90
+        }
+    }
+
+    var columnLabel: String {
+        "\(rawValue) %"
+    }
+}
+
 // MARK: - Curated Coin List
 
 private struct ScreenerCoin {
-    let id: String      // CoinGecko ID
-    let symbol: String  // Display symbol
+    let id: String
+    let symbol: String
 }
 
 private let curatedCoins: [ScreenerCoin] = [
@@ -51,13 +71,17 @@ struct AltcoinScreenerSection: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var selectedDate: Date?
-    @State private var lastFetchedAt: Date?
+    @State private var highlightedCoinId: String?
+    @State private var timeRange: ScreenerTimeRange = .thirtyDays
     @State private var showFullscreen = false
 
-    private let marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
-    private let cacheTTL: TimeInterval = 600 // 10 minutes
+    // Per-range cache
+    @State private var dataCache: [ScreenerTimeRange: (data: [CoinScreenerData], fetchedAt: Date)] = [:]
 
-    private static let screenerColors: [Color] = [
+    private let marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
+    private let cacheTTL: TimeInterval = 600
+
+    static let screenerColors: [Color] = [
         .pink, .orange, .yellow, .green, .mint, .teal,
         .cyan, .blue, .indigo, .purple, .brown, .red,
         .gray, Color(red: 1, green: 0.4, blue: 0.4), Color(red: 0.4, green: 0.8, blue: 1)
@@ -78,16 +102,10 @@ struct AltcoinScreenerSection: View {
                     .fontWeight(.bold)
                     .foregroundColor(textPrimary)
 
-                Text("30D")
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppColors.accent)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(AppColors.accent.opacity(0.15))
-                    .cornerRadius(6)
-
                 Spacer()
+
+                // Time range picker
+                timeRangePicker
 
                 if !screenData.isEmpty {
                     Button {
@@ -115,9 +133,6 @@ struct AltcoinScreenerSection: View {
                 VStack(spacing: 16) {
                     screenerChart
                         .padding(.horizontal, 20)
-                        .onTapGesture {
-                            showFullscreen = true
-                        }
 
                     rankedTable
                         .padding(.horizontal, 20)
@@ -128,47 +143,133 @@ struct AltcoinScreenerSection: View {
             await loadIfNeeded()
         }
         .fullScreenCover(isPresented: $showFullscreen) {
-            AltcoinScreenerFullscreenView(screenData: screenData)
+            AltcoinScreenerFullscreenView(
+                screenData: screenData,
+                timeRange: $timeRange,
+                onTimeRangeChange: { newRange in
+                    Task { await switchTimeRange(to: newRange) }
+                }
+            )
         }
+    }
+
+    // MARK: - Time Range Picker
+
+    private var timeRangePicker: some View {
+        HStack(spacing: 4) {
+            ForEach(ScreenerTimeRange.allCases, id: \.self) { range in
+                Button {
+                    Task { await switchTimeRange(to: range) }
+                } label: {
+                    Text(range.rawValue)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(timeRange == range ? .white : AppColors.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            timeRange == range
+                                ? AppColors.accent
+                                : AppColors.accent.opacity(0.08)
+                        )
+                        .cornerRadius(6)
+                }
+            }
+        }
+    }
+
+    private func switchTimeRange(to newRange: ScreenerTimeRange) async {
+        guard newRange != timeRange else { return }
+
+        // Clear interaction state
+        withAnimation(.easeOut(duration: 0.15)) {
+            selectedDate = nil
+            highlightedCoinId = nil
+            timeRange = newRange
+        }
+
+        // Check cache
+        if let cached = dataCache[newRange],
+           Date().timeIntervalSince(cached.fetchedAt) < cacheTTL {
+            withAnimation(.easeOut(duration: 0.2)) {
+                screenData = cached.data
+            }
+            return
+        }
+
+        await loadData()
     }
 
     // MARK: - Chart
 
     private var screenerChart: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Tooltip
-            if let selectedDate, case let nearest = nearestPoints(for: selectedDate), !nearest.isEmpty {
-                HStack(spacing: 10) {
-                    Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(AppColors.textSecondary)
-
-                    ForEach(nearest.prefix(3)) { coin in
-                        HStack(spacing: 3) {
-                            Circle().fill(coin.color).frame(width: 5, height: 5)
-                            Text("\(coin.symbol) \(coin.returnPct, specifier: "%+.1f")%")
-                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                                .foregroundColor(coin.returnPct >= 0 ? AppColors.success : AppColors.error)
-                        }
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 4)
-                .transition(.opacity)
-            }
+            screenerTooltip
 
             AltcoinScreenerChartContent(
                 screenData: screenData,
                 selectedDate: $selectedDate,
+                highlightedCoinId: $highlightedCoinId,
                 colorScheme: colorScheme,
-                chartHeight: 280
+                chartHeight: 280,
+                onExpandTap: { showFullscreen = true }
             )
 
-            // Endpoint labels (coin symbols at right edge)
             endpointLabels
         }
         .padding(16)
         .glassCard(cornerRadius: 16)
+    }
+
+    @ViewBuilder
+    private var screenerTooltip: some View {
+        if let highlightedCoinId,
+           let coin = screenData.first(where: { $0.id == highlightedCoinId }) {
+            HStack(spacing: 8) {
+                Circle().fill(coin.color).frame(width: 8, height: 8)
+                Text(coin.symbol)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(textPrimary)
+                Text(String(format: "%+.2f%%", coin.totalReturn))
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+                if let vs = coin.vsBTC {
+                    Text("vs BTC \(String(format: "%+.1f%%", vs))")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(vs >= 0 ? AppColors.success.opacity(0.7) : AppColors.error.opacity(0.7))
+                }
+                Spacer()
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        self.highlightedCoinId = nil
+                        self.selectedDate = nil
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+            .padding(.horizontal, 4)
+            .transition(.opacity)
+        } else if let selectedDate, case let nearest = nearestPoints(for: selectedDate), !nearest.isEmpty {
+            HStack(spacing: 10) {
+                Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
+
+                ForEach(nearest.prefix(3)) { coin in
+                    HStack(spacing: 3) {
+                        Circle().fill(coin.color).frame(width: 5, height: 5)
+                        Text("\(coin.symbol) \(coin.returnPct, specifier: "%+.1f")%")
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundColor(coin.returnPct >= 0 ? AppColors.success : AppColors.error)
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+            .transition(.opacity)
+        }
     }
 
     // MARK: - Endpoint Labels
@@ -199,13 +300,12 @@ struct AltcoinScreenerSection: View {
         let sorted = screenData.sorted { $0.totalReturn > $1.totalReturn }
 
         return VStack(spacing: 0) {
-            // Header row
             HStack(spacing: 0) {
                 Text("#")
                     .frame(width: 28, alignment: .center)
                 Text("Symbol")
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("30D %")
+                Text(timeRange.columnLabel)
                     .frame(width: 80, alignment: .trailing)
                 Text("vs BTC")
                     .frame(width: 72, alignment: .trailing)
@@ -219,45 +319,56 @@ struct AltcoinScreenerSection: View {
                 .background(AppColors.textSecondary.opacity(0.15))
                 .padding(.horizontal, 14)
 
-            // Data rows
             ForEach(Array(sorted.enumerated()), id: \.element.id) { index, coin in
-                HStack(spacing: 0) {
-                    // Rank with color dot
-                    HStack(spacing: 4) {
-                        Circle().fill(coin.color).frame(width: 8, height: 8)
-                        Text("\(index + 1)")
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        if highlightedCoinId == coin.id {
+                            highlightedCoinId = nil
+                        } else {
+                            highlightedCoinId = coin.id
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 0) {
+                        HStack(spacing: 4) {
+                            Circle().fill(coin.color).frame(width: 8, height: 8)
+                            Text("\(index + 1)")
+                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .foregroundColor(textPrimary.opacity(0.6))
+                        }
+                        .frame(width: 28, alignment: .center)
+
+                        Text(coin.symbol)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(textPrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text(String(format: "%+.2f%%", coin.totalReturn))
                             .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                            .foregroundColor(textPrimary.opacity(0.6))
+                            .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+                            .frame(width: 80, alignment: .trailing)
+
+                        if let vs = coin.vsBTC {
+                            Text(String(format: "%+.2f%%", vs))
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(vs >= 0 ? AppColors.success : AppColors.error)
+                                .frame(width: 72, alignment: .trailing)
+                        } else {
+                            Text("—")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppColors.textSecondary)
+                                .frame(width: 72, alignment: .trailing)
+                        }
                     }
-                    .frame(width: 28, alignment: .center)
-
-                    // Symbol
-                    Text(coin.symbol)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(textPrimary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    // 30D change
-                    Text(String(format: "%+.2f%%", coin.totalReturn))
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
-                        .frame(width: 80, alignment: .trailing)
-
-                    // vs BTC
-                    if let vs = coin.vsBTC {
-                        Text(String(format: "%+.2f%%", vs))
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundColor(vs >= 0 ? AppColors.success : AppColors.error)
-                            .frame(width: 72, alignment: .trailing)
-                    } else {
-                        Text("—")
-                            .font(.system(size: 11))
-                            .foregroundColor(AppColors.textSecondary)
-                            .frame(width: 72, alignment: .trailing)
-                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(
+                        highlightedCoinId == coin.id
+                            ? coin.color.opacity(0.1)
+                            : Color.clear
+                    )
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
+                .buttonStyle(.plain)
             }
         }
         .glassCard(cornerRadius: 16)
@@ -340,9 +451,10 @@ struct AltcoinScreenerSection: View {
     // MARK: - Data Loading
 
     private func loadIfNeeded() async {
-        if let lastFetch = lastFetchedAt,
-           Date().timeIntervalSince(lastFetch) < cacheTTL,
-           !screenData.isEmpty {
+        if let cached = dataCache[timeRange],
+           Date().timeIntervalSince(cached.fetchedAt) < cacheTTL {
+            screenData = cached.data
+            isLoading = false
             return
         }
         await loadData()
@@ -353,7 +465,7 @@ struct AltcoinScreenerSection: View {
         errorMessage = nil
 
         do {
-            let chartResults = try await fetchChartsThrottled(for: curatedCoins)
+            let chartResults = try await fetchChartsThrottled(for: curatedCoins, days: timeRange.days)
 
             guard !chartResults.isEmpty else {
                 errorMessage = "No coin data available"
@@ -361,10 +473,8 @@ struct AltcoinScreenerSection: View {
                 return
             }
 
-            // Find BTC return for "vs BTC" column
             let btcReturn = chartResults.first { $0.symbol == "BTC" }?.totalReturn ?? 0
 
-            // Assign colors and build screen data
             var result: [CoinScreenerData] = []
             for (index, item) in chartResults.enumerated() {
                 let color = Self.screenerColors[index % Self.screenerColors.count]
@@ -380,7 +490,7 @@ struct AltcoinScreenerSection: View {
             }
 
             screenData = result
-            lastFetchedAt = Date()
+            dataCache[timeRange] = (data: result, fetchedAt: Date())
         } catch {
             if screenData.isEmpty {
                 errorMessage = "Failed to load screener data"
@@ -397,20 +507,19 @@ struct AltcoinScreenerSection: View {
         let totalReturn: Double
     }
 
-    private func fetchChartsThrottled(for coins: [ScreenerCoin]) async throws -> [ChartResult] {
+    private func fetchChartsThrottled(for coins: [ScreenerCoin], days: Int) async throws -> [ChartResult] {
         try await withThrowingTaskGroup(of: ChartResult?.self) { group in
             var results: [ChartResult] = []
             var index = 0
 
             for coin in coins {
                 group.addTask { [index] in
-                    // Stagger requests to avoid rate limiting
                     if index >= 3 {
                         try await Task.sleep(nanoseconds: UInt64(index / 3) * 500_000_000)
                     }
                     do {
                         let chart = try await marketService.fetchCoinMarketChart(
-                            id: coin.id, currency: "usd", days: 30
+                            id: coin.id, currency: "usd", days: days
                         )
                         let history = chart.priceHistory
                         guard let firstPrice = history.first?.price, firstPrice > 0 else { return nil }
@@ -430,7 +539,7 @@ struct AltcoinScreenerSection: View {
                             totalReturn: totalReturn
                         )
                     } catch {
-                        return nil // Skip coins that fail
+                        return nil
                     }
                 }
                 index += 1
@@ -459,12 +568,31 @@ private struct TooltipCoin: Identifiable {
 private struct AltcoinScreenerChartContent: View {
     let screenData: [CoinScreenerData]
     @Binding var selectedDate: Date?
+    @Binding var highlightedCoinId: String?
     let colorScheme: ColorScheme
     var chartHeight: CGFloat = 280
+    var onExpandTap: (() -> Void)?
+
+    private func nearestCoin(atDate date: Date, yValue: Double) -> CoinScreenerData? {
+        var closest: CoinScreenerData?
+        var closestDist = Double.infinity
+
+        for coin in screenData {
+            guard let nearestPoint = coin.returnSeries.min(by: {
+                abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
+            }) else { continue }
+
+            let dist = abs(nearestPoint.returnPct - yValue)
+            if dist < closestDist {
+                closestDist = dist
+                closest = coin
+            }
+        }
+        return closest
+    }
 
     var body: some View {
         Chart {
-            // Baseline at 0%
             RuleMark(y: .value("Baseline", 0))
                 .foregroundStyle(
                     colorScheme == .dark
@@ -473,7 +601,6 @@ private struct AltcoinScreenerChartContent: View {
                 )
                 .lineStyle(StrokeStyle(lineWidth: 0.8, dash: [5, 4]))
 
-            // Selection crosshair
             if let selectedDate {
                 RuleMark(x: .value("Selected", selectedDate))
                     .foregroundStyle(
@@ -484,21 +611,74 @@ private struct AltcoinScreenerChartContent: View {
                     .lineStyle(StrokeStyle(lineWidth: 0.5))
             }
 
-            // Lines for each coin
             ForEach(screenData) { coin in
+                let isHighlighted = highlightedCoinId == nil || highlightedCoinId == coin.id
+                let lineWidth: CGFloat = highlightedCoinId == coin.id ? 3.0 : (highlightedCoinId == nil ? 1.8 : 0.8)
+                let opacity: Double = isHighlighted ? 1.0 : 0.15
+
                 ForEach(coin.returnSeries) { point in
                     LineMark(
                         x: .value("Date", point.date),
                         y: .value("Return", point.returnPct),
                         series: .value("Coin", coin.symbol)
                     )
-                    .foregroundStyle(coin.color)
-                    .lineStyle(StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .foregroundStyle(coin.color.opacity(opacity))
+                    .lineStyle(StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
                     .interpolationMethod(.catmullRom)
                 }
             }
+
+            if let highlightedCoinId,
+               let coin = screenData.first(where: { $0.id == highlightedCoinId }),
+               let selectedDate,
+               let nearest = coin.returnSeries.min(by: {
+                   abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+               }) {
+                PointMark(x: .value("Date", nearest.date), y: .value("Return", nearest.returnPct))
+                    .foregroundStyle(coin.color.opacity(0.3))
+                    .symbolSize(100)
+                PointMark(x: .value("Date", nearest.date), y: .value("Return", nearest.returnPct))
+                    .foregroundStyle(coin.color)
+                    .symbolSize(40)
+                PointMark(x: .value("Date", nearest.date), y: .value("Return", nearest.returnPct))
+                    .foregroundStyle(Color.white)
+                    .symbolSize(12)
+            }
         }
-        .chartXSelection(value: $selectedDate)
+        .chartOverlay { proxy in
+            GeometryReader { _ in
+                Rectangle()
+                    .fill(Color.clear)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                guard let date: Date = proxy.value(atX: value.location.x),
+                                      let returnVal: Double = proxy.value(atY: value.location.y) else { return }
+                                selectedDate = date
+                                if let nearest = nearestCoin(atDate: date, yValue: returnVal) {
+                                    withAnimation(.easeOut(duration: 0.15)) {
+                                        highlightedCoinId = nearest.id
+                                    }
+                                }
+                            }
+                            .onEnded { _ in }
+                    )
+                    .onTapGesture(count: 2) {
+                        onExpandTap?()
+                    }
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            if highlightedCoinId != nil {
+                                highlightedCoinId = nil
+                                selectedDate = nil
+                            } else {
+                                onExpandTap?()
+                            }
+                        }
+                    }
+            }
+        }
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
@@ -561,9 +741,17 @@ private struct AltcoinScreenerChartContent: View {
 
 struct AltcoinScreenerFullscreenView: View {
     let screenData: [CoinScreenerData]
+    @Binding var timeRange: ScreenerTimeRange
+    var onTimeRangeChange: ((ScreenerTimeRange) -> Void)?
 
     @Environment(\.dismiss) var dismiss
     @State private var selectedDate: Date?
+    @State private var highlightedCoinId: String?
+
+    private var highlightedCoin: CoinScreenerData? {
+        guard let highlightedCoinId else { return nil }
+        return screenData.first { $0.id == highlightedCoinId }
+    }
 
     private var selectedPoints: [TooltipCoin] {
         guard let selectedDate else { return [] }
@@ -584,11 +772,42 @@ struct AltcoinScreenerFullscreenView: View {
                 // Top bar
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Altcoin Screener · 30D")
+                        Text("Altcoin Screener · \(timeRange.rawValue)")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.white)
 
-                        if let selectedDate, !selectedPoints.isEmpty {
+                        if let coin = highlightedCoin {
+                            HStack(spacing: 6) {
+                                Circle().fill(coin.color).frame(width: 8, height: 8)
+                                Text(coin.symbol)
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                Text(String(format: "%+.2f%%", coin.totalReturn))
+                                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+                                if let vs = coin.vsBTC {
+                                    Text("·").foregroundColor(.white.opacity(0.4))
+                                    Text("vs BTC \(String(format: "%+.1f%%", vs))")
+                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .foregroundColor(vs >= 0 ? AppColors.success.opacity(0.8) : AppColors.error.opacity(0.8))
+                                }
+
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        highlightedCoinId = nil
+                                        selectedDate = nil
+                                    }
+                                } label: {
+                                    Text("Clear")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.5))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(Color.white.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
+                            }
+                        } else if let selectedDate, !selectedPoints.isEmpty {
                             HStack(spacing: 8) {
                                 Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
                                     .font(.system(size: 12, weight: .medium))
@@ -604,7 +823,7 @@ struct AltcoinScreenerFullscreenView: View {
                                 }
                             }
                         } else {
-                            Text("Drag to explore")
+                            Text("Drag on chart to explore · Tap a line to isolate")
                                 .font(.system(size: 13))
                                 .foregroundColor(.white.opacity(0.4))
                         }
@@ -631,10 +850,11 @@ struct AltcoinScreenerFullscreenView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
-                // Chart — fills remaining space
+                // Chart
                 AltcoinScreenerChartContent(
                     screenData: screenData,
                     selectedDate: $selectedDate,
+                    highlightedCoinId: $highlightedCoinId,
                     colorScheme: .dark,
                     chartHeight: .infinity
                 )
@@ -642,22 +862,73 @@ struct AltcoinScreenerFullscreenView: View {
                 .padding(.bottom, 8)
                 .frame(maxHeight: .infinity)
 
-                // Legend row
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(screenData.sorted { $0.totalReturn > $1.totalReturn }) { coin in
-                            HStack(spacing: 4) {
-                                Circle().fill(coin.color).frame(width: 7, height: 7)
-                                Text(coin.symbol)
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.7))
-                                Text(String(format: "%+.1f%%", coin.totalReturn))
-                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                    .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+                // Bottom controls: time range + legend
+                VStack(spacing: 10) {
+                    // Time range picker
+                    HStack(spacing: 8) {
+                        ForEach(ScreenerTimeRange.allCases, id: \.self) { range in
+                            Button {
+                                selectedDate = nil
+                                highlightedCoinId = nil
+                                onTimeRangeChange?(range)
+                            } label: {
+                                Text(range.rawValue)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(timeRange == range ? .white : .white.opacity(0.5))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 7)
+                                    .background(
+                                        Capsule()
+                                            .fill(timeRange == range ? AppColors.accent : Color.white.opacity(0.1))
+                                    )
                             }
                         }
                     }
-                    .padding(.horizontal, 20)
+
+                    // Legend row
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(screenData.sorted { $0.totalReturn > $1.totalReturn }) { coin in
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        if highlightedCoinId == coin.id {
+                                            highlightedCoinId = nil
+                                        } else {
+                                            highlightedCoinId = coin.id
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Circle().fill(coin.color).frame(width: 7, height: 7)
+                                        Text(coin.symbol)
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundColor(
+                                                highlightedCoinId == nil || highlightedCoinId == coin.id
+                                                    ? .white.opacity(0.9)
+                                                    : .white.opacity(0.3)
+                                            )
+                                        Text(String(format: "%+.1f%%", coin.totalReturn))
+                                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                            .foregroundColor(
+                                                highlightedCoinId == nil || highlightedCoinId == coin.id
+                                                    ? (coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+                                                    : .white.opacity(0.2)
+                                            )
+                                    }
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(
+                                        highlightedCoinId == coin.id
+                                            ? coin.color.opacity(0.2)
+                                            : Color.clear
+                                    )
+                                    .cornerRadius(6)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
                 }
                 .padding(.bottom, 16)
             }
