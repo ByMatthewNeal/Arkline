@@ -354,6 +354,13 @@
 		S3TT1NG5APP3AR000002 /* SettingsAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5APP3AR000001 /* SettingsAppearance.swift */; };
 		S3TT1NG5SUBV13W500002 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */; };
 		STRKT00BUILDFIL000000001 /* ArkLineProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = STRKT00FILEREF000000001 /* ArkLineProducts.storekit */; };
+		1BAE45B0ADC5A674BD8B7C79 /* InviteCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */; };
+		581C2AB056474B7FBA017E4E /* InviteCodeServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */; };
+		479B368F35B1F01D543CB749 /* InviteCodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E19F3731EAF433D80B2B6F1F /* InviteCodeService.swift */; };
+		E16993EBCB896E7B14B7A7D4 /* InviteCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62FCF02D77EC39B0B422CAA /* InviteCodeView.swift */; };
+		ABC5BF8C2864FD576A61F29D /* InviteCodeAdminViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2577E07104640FD669F8F3 /* InviteCodeAdminViewModel.swift */; };
+		FF481E74F4541C46F5048752 /* InviteCodeManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9734AF1A5FA75EB44F0C74B /* InviteCodeManagementView.swift */; };
+		FC8C003F9476588510C39A33 /* CreateInviteCodeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 604A203FE3FF13EF63B715EF /* CreateInviteCodeSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -714,6 +721,13 @@
 		S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSubviews.swift; sourceTree = "<group>"; };
 		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
 		STRKT00FILEREF000000001 /* ArkLineProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = ArkLineProducts.storekit; path = Resources/ArkLineProducts.storekit; sourceTree = "<group>"; };
+		A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCode.swift; sourceTree = "<group>"; };
+		5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeServiceProtocol.swift; sourceTree = "<group>"; };
+		E19F3731EAF433D80B2B6F1F /* InviteCodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeService.swift; sourceTree = "<group>"; };
+		C62FCF02D77EC39B0B422CAA /* InviteCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeView.swift; sourceTree = "<group>"; };
+		4C2577E07104640FD669F8F3 /* InviteCodeAdminViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeAdminViewModel.swift; sourceTree = "<group>"; };
+		D9734AF1A5FA75EB44F0C74B /* InviteCodeManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeManagementView.swift; sourceTree = "<group>"; };
+		604A203FE3FF13EF63B715EF /* CreateInviteCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateInviteCodeSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -753,6 +767,7 @@
 				7A08DD726AF228BC408BCFB2 /* Profile */,
 				C0E3F9D506C02C2311728BCE /* Settings */,
 				CACF014E7133B509C7F2990B /* Broadcast */,
+				1E1806C79CB8964C6DCB8500 /* InviteManagement */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -919,6 +934,7 @@
 				FE0000000000000000000012 /* FeatureRequestService.swift */,
 				EF6DC4B590B15208F84C18F4 /* MarketDataCollector.swift */,
 				E6F2557597AC24FAC8868E19 /* AnalyticsService.swift */,
+				E19F3731EAF433D80B2B6F1F /* InviteCodeService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1012,6 +1028,7 @@
 				FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */,
 				E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */,
 				23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */,
+				5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */,
 			);
 			path = Protocols;
 			sourceTree = "<group>";
@@ -1059,6 +1076,7 @@
 				5938799B40563800647E30C4 /* Broadcast.swift */,
 				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
 				FE0000000000000000000011 /* FeatureRequest.swift */,
+				A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1614,6 +1632,7 @@
 				07A3D4FB06E03FA228047903 /* SplashView.swift */,
 				3F22EBA12E1763457DF0D385 /* VerificationCodeView.swift */,
 				8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */,
+				C62FCF02D77EC39B0B422CAA /* InviteCodeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1762,6 +1781,32 @@
 			children = (
 				FE0000000000000000000015 /* FeatureBacklogView.swift */,
 				FE0000000000000000000016 /* FeatureRequestDetailView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		1E1806C79CB8964C6DCB8500 /* InviteManagement */ = {
+			isa = PBXGroup;
+			children = (
+				886263CA73BC8AD9BADB7E3A /* ViewModels */,
+				BFDC847DC22679A61C87DE2A /* Views */,
+			);
+			path = InviteManagement;
+			sourceTree = "<group>";
+		};
+		886263CA73BC8AD9BADB7E3A /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				4C2577E07104640FD669F8F3 /* InviteCodeAdminViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		BFDC847DC22679A61C87DE2A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				D9734AF1A5FA75EB44F0C74B /* InviteCodeManagementView.swift */,
+				604A203FE3FF13EF63B715EF /* CreateInviteCodeSheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2220,6 +2265,13 @@
 				C1A2B3D4E5F60718A9B0C1D2 /* CapitalRotationService.swift in Sources */,
 				D1E2F3A4B5C6D7E8F9A0B1C2 /* ArkLineScoreDetailView.swift in Sources */,
 				D7E8F9A0B1C2D3E4F5A6B7C8 /* SentimentRegimeDetailView.swift in Sources */,
+				1BAE45B0ADC5A674BD8B7C79 /* InviteCode.swift in Sources */,
+				581C2AB056474B7FBA017E4E /* InviteCodeServiceProtocol.swift in Sources */,
+				479B368F35B1F01D543CB749 /* InviteCodeService.swift in Sources */,
+				E16993EBCB896E7B14B7A7D4 /* InviteCodeView.swift in Sources */,
+				ABC5BF8C2864FD576A61F29D /* InviteCodeAdminViewModel.swift in Sources */,
+				FF481E74F4541C46F5048752 /* InviteCodeManagementView.swift in Sources */,
+				FC8C003F9476588510C39A33 /* CreateInviteCodeSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -202,6 +202,7 @@ struct ProfileQuickActionButton: View {
 struct AdminQuickActions: View {
     @Environment(\.colorScheme) var colorScheme
     let onFeatureBacklog: () -> Void
+    let onInviteCodes: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
@@ -220,6 +221,12 @@ struct AdminQuickActions: View {
                     title: "Feature Backlog",
                     color: AppColors.warning,
                     action: onFeatureBacklog
+                )
+                ProfileQuickActionButton(
+                    icon: "ticket.fill",
+                    title: "Invite Codes",
+                    color: AppColors.accent,
+                    action: onInviteCodes
                 )
             }
         }

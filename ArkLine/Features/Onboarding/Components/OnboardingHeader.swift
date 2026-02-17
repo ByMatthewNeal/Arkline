@@ -102,13 +102,13 @@ struct OnboardingContainer<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Progress bar (skip for welcome)
-            if step != .welcome {
+            // Progress bar (skip for gate steps)
+            if step != .welcome && step != .inviteCode {
                 OnboardingProgressBar(progress: step.progress)
             }
 
             // Step indicator
-            if showStepIndicator && step != .welcome {
+            if showStepIndicator && step != .welcome && step != .inviteCode {
                 OnboardingStepIndicator(step: step)
             }
 

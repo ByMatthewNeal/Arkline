@@ -142,6 +142,8 @@ struct OnboardingFlowView: View {
             switch viewModel.currentStep {
             case .welcome:
                 WelcomeView(viewModel: viewModel)
+            case .inviteCode:
+                InviteCodeView(viewModel: viewModel)
             case .email:
                 EnterEmailView(viewModel: viewModel)
             case .verification:

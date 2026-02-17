@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Onboarding Step
 enum OnboardingStep: Int, CaseIterable {
     case welcome
+    case inviteCode
     case email
     case verification
     case username
@@ -15,31 +16,34 @@ enum OnboardingStep: Int, CaseIterable {
     case confirmPasscode
     case faceIDSetup
 
-    /// Progress excluding the welcome step (0.0 to 1.0)
+    /// Gate steps excluded from progress tracking
+    private static let gateSteps: Set<OnboardingStep> = [.welcome, .inviteCode]
+
+    /// Progress excluding gate steps (0.0 to 1.0)
     var progress: Double {
-        guard self != .welcome else { return 0 }
-        // Exclude welcome from progress calculation
-        let stepsWithoutWelcome = OnboardingStep.allCases.filter { $0 != .welcome }
-        guard let index = stepsWithoutWelcome.firstIndex(of: self) else { return 0 }
-        return Double(index + 1) / Double(stepsWithoutWelcome.count)
+        guard !Self.gateSteps.contains(self) else { return 0 }
+        let numberedSteps = OnboardingStep.allCases.filter { !Self.gateSteps.contains($0) }
+        guard let index = numberedSteps.firstIndex(of: self) else { return 0 }
+        return Double(index + 1) / Double(numberedSteps.count)
     }
 
-    /// Current step number (1-based, excludes welcome)
+    /// Current step number (1-based, excludes gate steps)
     var stepNumber: Int {
-        guard self != .welcome else { return 0 }
-        let stepsWithoutWelcome = OnboardingStep.allCases.filter { $0 != .welcome }
-        guard let index = stepsWithoutWelcome.firstIndex(of: self) else { return 0 }
+        guard !Self.gateSteps.contains(self) else { return 0 }
+        let numberedSteps = OnboardingStep.allCases.filter { !Self.gateSteps.contains($0) }
+        guard let index = numberedSteps.firstIndex(of: self) else { return 0 }
         return index + 1
     }
 
-    /// Total steps (excludes welcome)
+    /// Total steps (excludes gate steps)
     static var totalSteps: Int {
-        OnboardingStep.allCases.filter { $0 != .welcome }.count
+        OnboardingStep.allCases.filter { !gateSteps.contains($0) }.count
     }
 
     var title: String {
         switch self {
         case .welcome: return "Welcome"
+        case .inviteCode: return "Invite Code"
         case .email: return "Enter Email"
         case .verification: return "Verify Email"
         case .username: return "Your Name"
@@ -67,7 +71,7 @@ enum OnboardingStep: Int, CaseIterable {
     /// Category for grouping steps in UI
     var category: StepCategory {
         switch self {
-        case .welcome:
+        case .welcome, .inviteCode:
             return .intro
         case .email, .verification:
             return .authentication
@@ -115,6 +119,12 @@ class OnboardingViewModel {
     var passcode = ""
     var confirmPasscode = ""
     var isFaceIDEnabled = false
+
+    // MARK: - Invite Code
+    var inviteCode = ""
+    var inviteCodeError: String?
+    var validatedInviteCode: InviteCode?
+    private let inviteCodeService: InviteCodeServiceProtocol = InviteCodeService()
 
     // MARK: - Created User
     var createdUser: User?
@@ -170,6 +180,36 @@ class OnboardingViewModel {
 
     func skipStep() {
         nextStep()
+    }
+
+    // MARK: - Invite Code Validation
+
+    var isInviteCodeFormatValid: Bool {
+        let cleaned = inviteCode.uppercased().trimmingCharacters(in: .whitespaces)
+        return cleaned.count >= 10 && cleaned.hasPrefix("ARK-")
+    }
+
+    func validateInviteCode() async {
+        guard isInviteCodeFormatValid else {
+            inviteCodeError = "Please enter a valid invite code (ARK-XXXXXX)"
+            return
+        }
+
+        isLoading = true
+        inviteCodeError = nil
+
+        do {
+            if let code = try await inviteCodeService.validateCode(inviteCode) {
+                validatedInviteCode = code
+                nextStep()
+            } else {
+                inviteCodeError = "This invite code is invalid, expired, or has already been used"
+            }
+        } catch {
+            inviteCodeError = AppError.from(error).userMessage
+        }
+
+        isLoading = false
     }
 
     // MARK: - Actions
@@ -342,6 +382,15 @@ class OnboardingViewModel {
                     // Create default portfolio
                     let portfolio = Portfolio(userId: userId, name: "Main Portfolio")
                     try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
+
+                    // Redeem the invite code
+                    if validatedInviteCode != nil {
+                        do {
+                            try await inviteCodeService.redeemCode(inviteCode, userId: userId)
+                        } catch {
+                            AppLogger.shared.error("Failed to redeem invite code: \(error.localizedDescription)")
+                        }
+                    }
                 } catch {
                     // Log error but don't block onboarding - tables may not exist yet
                     AppLogger.shared.error("Database insert failed (tables may not exist): \(error.localizedDescription)")
