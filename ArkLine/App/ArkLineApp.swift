@@ -159,8 +159,8 @@ class AppState: ObservableObject {
     @Published var insightsNavigationReset = UUID()
     @Published var profileNavigationReset = UUID()
 
-    // Subscription
-    @Published var isPro = false
+    // Subscription (set to true for testing; revert before release)
+    @Published var isPro = true
 
     // Tab navigation
     @Published var selectedTab: AppTab = .home
@@ -181,11 +181,15 @@ class AppState: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] notification in
+            #if DEBUG
+            // Testing override — ignore subscription changes in debug
+            #else
             if let isPro = notification.userInfo?["isPro"] as? Bool {
                 MainActor.assumeIsolated {
                     self?.isPro = isPro
                 }
             }
+            #endif
         }
     }
 
@@ -382,8 +386,13 @@ class AppState: ObservableObject {
     // MARK: - Subscription
 
     func refreshSubscriptionStatus() async {
+        #if DEBUG
+        // Testing override — always Pro in debug builds
+        isPro = true
+        #else
         let pro = await SubscriptionService.shared.refreshStatus()
         isPro = pro
+        #endif
     }
 
     func signOut() {
