@@ -61,6 +61,58 @@ struct CryptoAsset: Asset, Hashable, Codable, Identifiable {
         case lastUpdated = "last_updated"
     }
 
+    init(
+        id: String, symbol: String, name: String,
+        currentPrice: Double, priceChange24h: Double, priceChangePercentage24h: Double,
+        iconUrl: String? = nil, marketCap: Double? = nil, marketCapRank: Int? = nil,
+        fullyDilutedValuation: Double? = nil, totalVolume: Double? = nil,
+        high24h: Double? = nil, low24h: Double? = nil,
+        circulatingSupply: Double? = nil, totalSupply: Double? = nil, maxSupply: Double? = nil,
+        ath: Double? = nil, athChangePercentage: Double? = nil, athDate: Date? = nil,
+        atl: Double? = nil, atlChangePercentage: Double? = nil, atlDate: Date? = nil,
+        sparklineIn7d: SparklineData? = nil, lastUpdated: Date? = nil
+    ) {
+        self.id = id; self.symbol = symbol; self.name = name
+        self.currentPrice = currentPrice
+        self.priceChange24h = priceChange24h
+        self.priceChangePercentage24h = priceChangePercentage24h
+        self.iconUrl = iconUrl; self.marketCap = marketCap; self.marketCapRank = marketCapRank
+        self.fullyDilutedValuation = fullyDilutedValuation; self.totalVolume = totalVolume
+        self.high24h = high24h; self.low24h = low24h
+        self.circulatingSupply = circulatingSupply; self.totalSupply = totalSupply; self.maxSupply = maxSupply
+        self.ath = ath; self.athChangePercentage = athChangePercentage; self.athDate = athDate
+        self.atl = atl; self.atlChangePercentage = atlChangePercentage; self.atlDate = atlDate
+        self.sparklineIn7d = sparklineIn7d; self.lastUpdated = lastUpdated
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        symbol = try c.decode(String.self, forKey: .symbol)
+        name = try c.decode(String.self, forKey: .name)
+        currentPrice = try c.decodeIfPresent(Double.self, forKey: .currentPrice) ?? 0
+        priceChange24h = try c.decodeIfPresent(Double.self, forKey: .priceChange24h) ?? 0
+        priceChangePercentage24h = try c.decodeIfPresent(Double.self, forKey: .priceChangePercentage24h) ?? 0
+        iconUrl = try c.decodeIfPresent(String.self, forKey: .iconUrl)
+        marketCap = try c.decodeIfPresent(Double.self, forKey: .marketCap)
+        marketCapRank = try c.decodeIfPresent(Int.self, forKey: .marketCapRank)
+        fullyDilutedValuation = try c.decodeIfPresent(Double.self, forKey: .fullyDilutedValuation)
+        totalVolume = try c.decodeIfPresent(Double.self, forKey: .totalVolume)
+        high24h = try c.decodeIfPresent(Double.self, forKey: .high24h)
+        low24h = try c.decodeIfPresent(Double.self, forKey: .low24h)
+        circulatingSupply = try c.decodeIfPresent(Double.self, forKey: .circulatingSupply)
+        totalSupply = try c.decodeIfPresent(Double.self, forKey: .totalSupply)
+        maxSupply = try c.decodeIfPresent(Double.self, forKey: .maxSupply)
+        ath = try c.decodeIfPresent(Double.self, forKey: .ath)
+        athChangePercentage = try c.decodeIfPresent(Double.self, forKey: .athChangePercentage)
+        athDate = try c.decodeIfPresent(Date.self, forKey: .athDate)
+        atl = try c.decodeIfPresent(Double.self, forKey: .atl)
+        atlChangePercentage = try c.decodeIfPresent(Double.self, forKey: .atlChangePercentage)
+        atlDate = try c.decodeIfPresent(Date.self, forKey: .atlDate)
+        sparklineIn7d = try c.decodeIfPresent(SparklineData.self, forKey: .sparklineIn7d)
+        lastUpdated = try c.decodeIfPresent(Date.self, forKey: .lastUpdated)
+    }
+
     // Convenience accessor for sparkline prices
     var sparklinePrices: [Double]? {
         sparklineIn7d?.price
