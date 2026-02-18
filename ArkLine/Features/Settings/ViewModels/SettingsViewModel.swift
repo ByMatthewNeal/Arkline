@@ -22,6 +22,8 @@ final class SettingsViewModel {
     var isLoading = false
     var showSignOutAlert = false
     var showDeleteAccountAlert = false
+    var isLoadingBillingPortal = false
+    var billingPortalError: String?
 
     // MARK: - Currency Options
     let currencyOptions = [
@@ -165,6 +167,40 @@ final class SettingsViewModel {
             riskCoins.append(coin)
         }
         UserDefaults.standard.set(riskCoins, forKey: Constants.UserDefaults.riskCoins)
+    }
+
+    func openBillingPortal(email: String?) async {
+        guard let email = email, !email.isEmpty else {
+            billingPortalError = "No email associated with your account."
+            return
+        }
+
+        isLoadingBillingPortal = true
+        billingPortalError = nil
+        defer { isLoadingBillingPortal = false }
+
+        do {
+            struct PortalRequest: Encodable {
+                let customer_email: String
+            }
+            struct PortalResponse: Decodable {
+                let url: String
+            }
+
+            let response: PortalResponse = try await SupabaseManager.shared.functions.invoke(
+                "billing-portal",
+                options: .init(body: PortalRequest(customer_email: email))
+            )
+
+            if let url = URL(string: response.url) {
+                #if canImport(UIKit)
+                await UIApplication.shared.open(url)
+                #endif
+            }
+        } catch {
+            billingPortalError = "Unable to open billing portal. Please try again."
+            logError(error, context: "Billing Portal", category: .network)
+        }
     }
 
     func signOut() async {

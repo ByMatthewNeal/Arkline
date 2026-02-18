@@ -161,6 +161,39 @@ struct SettingsView: View {
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
+                // Subscription Section
+                if let status = appState.currentUser?.subscriptionStatus,
+                   status == .active || status == .pastDue || status == .trialing {
+                    Section {
+                        Button {
+                            Task { await viewModel.openBillingPortal(email: appState.currentUser?.email) }
+                        } label: {
+                            HStack {
+                                SettingsRow(
+                                    icon: "creditcard.fill",
+                                    iconColor: AppColors.accent,
+                                    title: "Manage Subscription"
+                                )
+                                if viewModel.isLoadingBillingPortal {
+                                    Spacer()
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
+                            }
+                        }
+                        .disabled(viewModel.isLoadingBillingPortal)
+
+                        if let error = viewModel.billingPortalError {
+                            Text(error)
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.error)
+                        }
+                    } header: {
+                        Text("Subscription")
+                    }
+                    .listRowBackground(AppColors.cardBackground(colorScheme))
+                }
+
                 // Support Section
                 Section {
                     NavigationLink(destination: FAQView()) {

@@ -19,6 +19,7 @@ struct InviteCode: Codable, Identifiable, Equatable {
     var paymentStatus: String
     var stripeCheckoutSessionId: String?
     var trialDays: Int?
+    var tier: String?
 
     enum CodingKeys: String, CodingKey {
         case id, code, note, email
@@ -32,6 +33,7 @@ struct InviteCode: Codable, Identifiable, Equatable {
         case paymentStatus = "payment_status"
         case stripeCheckoutSessionId = "stripe_checkout_session_id"
         case trialDays = "trial_days"
+        case tier
     }
 
     // MARK: - Computed Properties
@@ -45,6 +47,8 @@ struct InviteCode: Codable, Identifiable, Equatable {
     var isPaid: Bool { paymentStatus == "paid" }
 
     var isFreeTrial: Bool { paymentStatus == "free_trial" }
+
+    var isFounding: Bool { tier == "founding" }
 
     var statusLabel: String {
         if isRevoked { return "Revoked" }

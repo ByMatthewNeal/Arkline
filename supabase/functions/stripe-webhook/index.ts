@@ -10,6 +10,13 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 )
 
+// Founding member price IDs
+const FOUNDING_PRICE_IDS = new Set([
+  "price_1T28pXIkKaS0zcmX7aKIiT2P", // founding monthly
+  "price_1T28pXIkKaS0zcmXx8NpKPQr", // founding annual
+])
+const FOUNDING_MEMBER_CAP = 50
+
 // Matches iOS InviteCode.generateCode()
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 function generateCode(): string {
@@ -81,6 +88,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
+  // Determine tier from checkout session line items
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 })
+  const priceId = lineItems.data[0]?.price?.id ?? ""
+  const tier = FOUNDING_PRICE_IDS.has(priceId) ? "founding" : "standard"
+
   // Generate a unique invite code
   let code = ""
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -103,6 +115,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     email,
     payment_status: "paid",
     stripe_checkout_session_id: session.id,
+    tier,
   })
 
   if (error) {
@@ -110,7 +123,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  console.log(`Generated invite code ${code} for ${email}`)
+  console.log(`Generated invite code ${code} (${tier}) for ${email}`)
+
+  // Check founding member cap
+  if (tier === "founding") {
+    const { count } = await supabase
+      .from("invite_codes")
+      .select("id", { count: "exact", head: true })
+      .eq("tier", "founding")
+
+    if (count !== null && count >= FOUNDING_MEMBER_CAP) {
+      console.log(`Founding member cap reached (${count}/${FOUNDING_MEMBER_CAP}) — deactivating founding prices`)
+      for (const priceId of FOUNDING_PRICE_IDS) {
+        try {
+          await stripe.prices.update(priceId, { active: false })
+          console.log(`Deactivated founding price: ${priceId}`)
+        } catch (err) {
+          console.error(`Failed to deactivate price ${priceId}:`, err)
+        }
+      }
+    } else {
+      console.log(`Founding members: ${count}/${FOUNDING_MEMBER_CAP}`)
+    }
+  }
 
   // Create/update subscription record if this is a subscription checkout
   if (session.subscription) {

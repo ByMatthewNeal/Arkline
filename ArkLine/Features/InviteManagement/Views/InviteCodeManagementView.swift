@@ -194,6 +194,16 @@ struct InviteCodeRow: View {
                 Spacer()
 
                 // Badges
+                if code.isFounding {
+                    Text("Founding")
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(Color.orange)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+
                 if code.isFreeTrial, let days = code.trialDays {
                     Text("\(days)d trial")
                         .font(AppFonts.footnote10)
