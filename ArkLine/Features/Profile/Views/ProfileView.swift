@@ -8,8 +8,6 @@ struct ProfileView: View {
     @State private var showPortfolio = false
 
     @State private var showEditProfile = false
-    @State private var showFeatureBacklog = false
-    @State private var showInviteCodes = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -37,10 +35,9 @@ struct ProfileView: View {
 
                     // Admin Section (only for admins)
                     if appState.currentUser?.isAdmin == true {
-                        AdminQuickActions(
-                            onFeatureBacklog: { showFeatureBacklog = true },
-                            onInviteCodes: { showInviteCodes = true }
-                        )
+                        NavigationLink(destination: AdminDashboardView()) {
+                            AdminPanelCard()
+                        }
                         .padding(.horizontal, 20)
                     }
 
@@ -79,26 +76,6 @@ struct ProfileView: View {
                 EditProfileView(user: viewModel.user) { updatedUser in
                     viewModel.user = updatedUser
                     appState.setAuthenticated(true, user: updatedUser)
-                }
-            }
-            .sheet(isPresented: $showFeatureBacklog) {
-                NavigationStack {
-                    FeatureBacklogView()
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Done") { showFeatureBacklog = false }
-                            }
-                        }
-                }
-            }
-            .sheet(isPresented: $showInviteCodes) {
-                NavigationStack {
-                    InviteCodeManagementView()
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Done") { showInviteCodes = false }
-                            }
-                        }
                 }
             }
             .onAppear {

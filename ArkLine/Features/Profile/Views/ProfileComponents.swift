@@ -198,38 +198,36 @@ struct ProfileQuickActionButton: View {
     }
 }
 
-// MARK: - Admin Quick Actions
-struct AdminQuickActions: View {
+// MARK: - Admin Panel Card
+struct AdminPanelCard: View {
     @Environment(\.colorScheme) var colorScheme
-    let onFeatureBacklog: () -> Void
-    let onInviteCodes: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            HStack {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.warning)
-                Text("Admin")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.warning)
+        HStack(spacing: ArkSpacing.sm) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 20))
+                .foregroundColor(AppColors.warning)
+                .frame(width: 36, height: 36)
+                .background(AppColors.warning.opacity(0.15))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Admin Panel")
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                Text("Quick Share, Invites, Backlog")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
             }
 
-            HStack(spacing: 12) {
-                ProfileQuickActionButton(
-                    icon: "lightbulb.fill",
-                    title: "Feature Backlog",
-                    color: AppColors.warning,
-                    action: onFeatureBacklog
-                )
-                ProfileQuickActionButton(
-                    icon: "ticket.fill",
-                    title: "Invite Codes",
-                    color: AppColors.accent,
-                    action: onInviteCodes
-                )
-            }
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(AppColors.textTertiary)
         }
+        .padding(ArkSpacing.md)
+        .glassCard(cornerRadius: 12)
     }
 }
 

@@ -12,14 +12,18 @@ enum QRCodeGenerator {
     /// Encodes: `arkline://invite?code=ARK-XXXXXX`
     static func generate(for code: String, size: CGFloat = 250) -> UIImage? {
         let deepLink = "arkline://invite?code=\(code)"
-        guard let data = deepLink.data(using: .utf8) else { return nil }
+        return generate(forURL: deepLink, size: size)
+    }
+
+    /// Generates a QR code UIImage for an arbitrary URL string.
+    static func generate(forURL urlString: String, size: CGFloat = 250) -> UIImage? {
+        guard let data = urlString.data(using: .utf8) else { return nil }
 
         filter.message = data
         filter.correctionLevel = "M"
 
         guard let outputImage = filter.outputImage else { return nil }
 
-        // Scale to desired size
         let scale = size / outputImage.extent.width
         let scaledImage = outputImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
 
