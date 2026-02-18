@@ -94,7 +94,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 30) // 30 days to redeem
+  expiresAt.setDate(expiresAt.getDate() + 15) // 15 days to redeem
 
   const { error } = await supabase.from("invite_codes").insert({
     code,
@@ -284,7 +284,7 @@ async function sendInviteEmail(email: string, code: string) {
             <div style="border-top: 1px solid #eee; padding-top: 20px;">
               <p style="font-size: 13px; color: #999; text-align: center; margin: 0;">
                 Enter this code in the Arkline app to activate your membership.<br>
-                This code expires in 30 days.
+                This code expires in 15 days.
               </p>
             </div>
           </div>
