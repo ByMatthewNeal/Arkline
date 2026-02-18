@@ -112,6 +112,7 @@ struct OnboardingCoordinator: View {
             if isComplete {
                 appState.setOnboarded(true)
                 appState.setAuthenticated(true, user: viewModel.createdUser)
+                Task { await appState.refreshUserProfile() }
             }
         }
     }
@@ -128,7 +129,9 @@ struct AuthenticationCoordinator: View {
         }
         .onChange(of: viewModel.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
-                appState.setAuthenticated(true, user: viewModel.user)
+                // Keep existing cached user if viewModel.user is nil (passcode/biometric-only auth)
+                appState.setAuthenticated(true, user: viewModel.user ?? appState.currentUser)
+                Task { await appState.refreshUserProfile() }
             }
         }
     }
