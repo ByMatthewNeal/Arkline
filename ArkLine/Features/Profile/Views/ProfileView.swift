@@ -83,6 +83,13 @@ struct ProfileView: View {
                 if let currentUser = appState.currentUser {
                     viewModel.user = currentUser
                 }
+                Task {
+                    await appState.refreshUserProfile()
+                    // Update viewModel after refresh
+                    if let updatedUser = appState.currentUser {
+                        viewModel.user = updatedUser
+                    }
+                }
                 Task { await AnalyticsService.shared.trackScreenView("profile") }
             }
         }
