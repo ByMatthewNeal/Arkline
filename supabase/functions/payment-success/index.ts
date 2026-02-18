@@ -182,8 +182,10 @@ Deno.serve((req) => {
 </body>
 </html>`
 
-  return new Response(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  })
+  const headers = new Headers()
+  headers.set("Content-Type", "text/html; charset=utf-8")
+  headers.set("X-Content-Type-Options", "nosniff")
+  headers.set("Cache-Control", "no-cache")
+
+  return new Response(html, { status: 200, headers })
 })

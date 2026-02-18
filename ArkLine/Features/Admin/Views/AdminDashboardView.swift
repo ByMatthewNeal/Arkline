@@ -49,6 +49,24 @@ struct AdminDashboardView: View {
                             subtitle: "Review feature requests"
                         )
                     }
+
+                    NavigationLink(destination: MemberManagementView()) {
+                        AdminDashboardRow(
+                            icon: "person.2.fill",
+                            iconColor: AppColors.info,
+                            title: "Members",
+                            subtitle: "View & manage members"
+                        )
+                    }
+
+                    NavigationLink(destination: RevenueDashboardView()) {
+                        AdminDashboardRow(
+                            icon: "chart.bar.fill",
+                            iconColor: AppColors.success,
+                            title: "Revenue",
+                            subtitle: "MRR, ARR & metrics"
+                        )
+                    }
                 } header: {
                     Text("Management")
                 }
@@ -56,22 +74,6 @@ struct AdminDashboardView: View {
 
                 // Coming Soon
                 Section {
-                    AdminDashboardRow(
-                        icon: "person.2.fill",
-                        iconColor: AppColors.textTertiary,
-                        title: "Members",
-                        subtitle: "Coming soon"
-                    )
-                    .opacity(0.5)
-
-                    AdminDashboardRow(
-                        icon: "chart.bar.fill",
-                        iconColor: AppColors.textTertiary,
-                        title: "Revenue",
-                        subtitle: "Coming soon"
-                    )
-                    .opacity(0.5)
-
                     AdminDashboardRow(
                         icon: "person.badge.plus",
                         iconColor: AppColors.textTertiary,
