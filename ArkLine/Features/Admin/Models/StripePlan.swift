@@ -47,4 +47,13 @@ enum StripePlan: String, CaseIterable, Identifiable {
     var isFounder: Bool {
         self == .foundingMonthly || self == .foundingAnnual
     }
+
+    var priceId: String {
+        switch self {
+        case .foundingMonthly: return "price_1T28pXIkKaS0zcmX7aKIiT2P"
+        case .foundingAnnual: return "price_1T28pXIkKaS0zcmXx8NpKPQr"
+        case .standardMonthly: return "price_1T28pYIkKaS0zcmX5iNFEZxi"
+        case .standardAnnual: return "price_1T28pZIkKaS0zcmXOsgwiMH5"
+        }
+    }
 }

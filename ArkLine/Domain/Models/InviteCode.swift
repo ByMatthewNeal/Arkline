@@ -20,6 +20,7 @@ struct InviteCode: Codable, Identifiable, Equatable {
     var stripeCheckoutSessionId: String?
     var trialDays: Int?
     var tier: String?
+    var checkoutUrl: String?
 
     enum CodingKeys: String, CodingKey {
         case id, code, note, email
@@ -34,6 +35,7 @@ struct InviteCode: Codable, Identifiable, Equatable {
         case stripeCheckoutSessionId = "stripe_checkout_session_id"
         case trialDays = "trial_days"
         case tier
+        case checkoutUrl = "checkout_url"
     }
 
     // MARK: - Computed Properties
@@ -42,17 +44,22 @@ struct InviteCode: Codable, Identifiable, Equatable {
 
     var isExpired: Bool { expiresAt < Date() }
 
-    var isValid: Bool { !isUsed && !isExpired && !isRevoked }
+    var isValid: Bool { !isUsed && !isExpired && !isRevoked && !isPendingPayment }
 
     var isPaid: Bool { paymentStatus == "paid" }
 
     var isFreeTrial: Bool { paymentStatus == "free_trial" }
+
+    var isPendingPayment: Bool { paymentStatus == "pending_payment" }
+
+    var isComped: Bool { paymentStatus == "comped" }
 
     var isFounding: Bool { tier == "founding" }
 
     var statusLabel: String {
         if isRevoked { return "Revoked" }
         if isUsed { return "Used" }
+        if isPendingPayment { return "Pending" }
         if isExpired { return "Expired" }
         return "Active"
     }

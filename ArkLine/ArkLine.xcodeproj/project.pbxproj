@@ -246,6 +246,7 @@
 		BB220002CCDD00220002BB02 /* DCAResultComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220002CCDD00220002AA02 /* DCAResultComponents.swift */; };
 		BB220003CCDD00220003BB03 /* DCAStrategyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220003CCDD00220003AA03 /* DCAStrategyComponents.swift */; };
 		BB2C3D4E02 /* MacroDashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2C3D4E01 /* MacroDashboardComponents.swift */; };
+		BC10DB23701A8497F1ACDEEF /* SendInviteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 380C4363FDF5D78A85D7FA46 /* SendInviteViewModel.swift */; };
 		BC96D22F01376C054BC47DC2 /* MarketSentimentSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */; };
 		BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */; };
 		BE518BD133BCA4B82F9178E4 /* SupplyInProfitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */; };
@@ -308,6 +309,7 @@
 		D58AF3584BA0350D9DB9CBF2 /* ToastOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E575776F504266A437D822D8 /* ToastOverlay.swift */; };
 		D753B579F81758E62F04E4B9 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153A4CDBB8CF61BA375BD929 /* ProfileView.swift */; };
 		D7E8F9A0B1C2D3E4F5A6B7C8 /* SentimentRegimeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */; };
+		D7FA11028D257E313490ED5F /* SendInviteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E44D4880603DBCA1BA814B /* SendInviteView.swift */; };
 		D8AF87D5A1447E9A0DAE4A44 /* QRScannerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE2665720A65FC3925637A9 /* QRScannerSheet.swift */; };
 		D950DFBED705ACD245EF485F /* MockRainbowChartService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */; };
 		DA8CF466635746C18BE84FA6 /* PortfolioViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D30A48AF5A8E952C86ABB4 /* PortfolioViewModel.swift */; };
@@ -457,6 +459,7 @@
 		350231142836357F1140D465 /* CorrelationBars.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CorrelationBars.swift; sourceTree = "<group>"; };
 		36F9A053EE94F27B45371F78 /* CommunityPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPost.swift; sourceTree = "<group>"; };
 		3734A6788EEBE7830A322555 /* APINewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINewsService.swift; sourceTree = "<group>"; };
+		380C4363FDF5D78A85D7FA46 /* SendInviteViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendInviteViewModel.swift; sourceTree = "<group>"; };
 		3882181D1C76831A5D00FA28 /* SupabaseAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuth.swift; sourceTree = "<group>"; };
 		39C8FCB67EB0F84F74E18CFE /* DataCollectionDTOs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DataCollectionDTOs.swift; sourceTree = "<group>"; };
 		3A1FE2D91AB0739602DBFA45 /* SubscriptionBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionBannerView.swift; sourceTree = "<group>"; };
@@ -612,6 +615,7 @@
 		ADD1TRAN51CT10N5V13W0001 /* AddTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTransactionView.swift; sourceTree = "<group>"; };
 		ALL0CAT10NP13CHART0001 /* AllocationPieChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationPieChart.swift; sourceTree = "<group>"; };
 		ASSETSCATALOGREF000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		B1E44D4880603DBCA1BA814B /* SendInviteView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendInviteView.swift; sourceTree = "<group>"; };
 		B235140A3BEE72D20E513F81 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		B2C3D4E5F6A7B8C9D0E1F2A3 /* SentimentRegimeAlertManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentRegimeAlertManager.swift; sourceTree = "<group>"; };
 		B3C4D5E6F7A8B9C0D1E2F3A4 /* StaleDataBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleDataBanner.swift; sourceTree = "<group>"; };
@@ -1148,6 +1152,7 @@
 				0C22DD319B73C871D34DC38B /* MemberManagementView.swift */,
 				CE653C2A2305A887530EDE39 /* MemberDetailView.swift */,
 				C9BAD54F6D3B27761770763F /* RevenueDashboardView.swift */,
+				B1E44D4880603DBCA1BA814B /* SendInviteView.swift */,
 			);
 			name = Views;
 			path = Views;
@@ -1334,6 +1339,7 @@
 			children = (
 				0DF054E82E4F2D3BBA256BD2 /* AdminQuickShareViewModel.swift */,
 				C1B238D0F6B1FA66A8B02D04 /* MemberManagementViewModel.swift */,
+				380C4363FDF5D78A85D7FA46 /* SendInviteViewModel.swift */,
 			);
 			name = ViewModels;
 			path = ViewModels;
@@ -2380,6 +2386,8 @@
 				8D962BC74BA6DD232464EFE7 /* RevenueDashboardView.swift in Sources */,
 				AB183F5994D8572A80CD9138 /* AdminServiceProtocol.swift in Sources */,
 				EF65599A27FB2467E06546A4 /* AdminService.swift in Sources */,
+				BC10DB23701A8497F1ACDEEF /* SendInviteViewModel.swift in Sources */,
+				D7FA11028D257E313490ED5F /* SendInviteView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

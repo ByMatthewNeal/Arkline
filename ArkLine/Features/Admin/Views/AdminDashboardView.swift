@@ -17,6 +17,15 @@ struct AdminDashboardView: View {
             List {
                 // Quick Actions
                 Section {
+                    NavigationLink(destination: SendInviteView()) {
+                        AdminDashboardRow(
+                            icon: "paperplane.fill",
+                            iconColor: AppColors.success,
+                            title: "Send Invite",
+                            subtitle: "Payment or comped invite"
+                        )
+                    }
+
                     NavigationLink(destination: AdminQuickShareView()) {
                         AdminDashboardRow(
                             icon: "qrcode",

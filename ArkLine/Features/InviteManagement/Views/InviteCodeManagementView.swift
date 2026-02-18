@@ -224,6 +224,26 @@ struct InviteCodeRow: View {
                         .clipShape(Capsule())
                 }
 
+                if code.isPendingPayment {
+                    Text("Pending")
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.warning)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.warning.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+
+                if code.isComped {
+                    Text("Comped")
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.info)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.info.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+
                 Text(code.statusLabel)
                     .font(AppFonts.caption12Medium)
                     .foregroundColor(statusColor)
@@ -326,6 +346,7 @@ struct InviteCodeRow: View {
         switch code.statusLabel {
         case "Active": return AppColors.accent
         case "Used": return AppColors.success
+        case "Pending": return AppColors.warning
         case "Expired": return AppColors.textSecondary
         case "Revoked": return AppColors.error
         default: return AppColors.textSecondary

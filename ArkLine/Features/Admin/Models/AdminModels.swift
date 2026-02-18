@@ -183,3 +183,48 @@ struct PaymentHistoryResponse: Decodable {
 struct AdminActionResponse: Decodable {
     let success: Bool
 }
+
+// MARK: - Checkout Session DTOs
+
+struct CreateCheckoutSessionRequest: Encodable {
+    let email: String
+    let recipient_name: String?
+    let note: String?
+    let price_id: String
+}
+
+struct CheckoutSessionResponse: Decodable {
+    let success: Bool
+    let checkoutUrl: String
+    let inviteId: String
+    let code: String
+
+    enum CodingKeys: String, CodingKey {
+        case success, code
+        case checkoutUrl = "checkout_url"
+        case inviteId = "invite_id"
+    }
+}
+
+// MARK: - Comped Invite DTOs
+
+struct CreateCompedInviteRequest: Encodable {
+    let email: String
+    let recipient_name: String?
+    let note: String?
+    let comped: Bool
+    let send_email: Bool
+    let tier: String?
+    let expiration_days: Int
+}
+
+struct GenerateInviteResponse: Decodable {
+    let success: Bool
+    let code: String
+    let deepLink: String
+
+    enum CodingKeys: String, CodingKey {
+        case success, code
+        case deepLink = "deep_link"
+    }
+}

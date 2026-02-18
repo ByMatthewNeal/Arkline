@@ -83,4 +83,35 @@ final class AdminService: AdminServiceProtocol {
             .eq("id", value: userId.uuidString)
             .execute()
     }
+
+    func createCheckoutSession(email: String, recipientName: String?, note: String?, priceId: String) async throws -> CheckoutSessionResponse {
+        let request = CreateCheckoutSessionRequest(
+            email: email,
+            recipient_name: recipientName,
+            note: note,
+            price_id: priceId
+        )
+        let response: CheckoutSessionResponse = try await supabase.functions.invoke(
+            "create-checkout-session",
+            options: .init(body: request)
+        )
+        return response
+    }
+
+    func createCompedInvite(email: String, recipientName: String?, note: String?, sendEmail: Bool, tier: String) async throws -> GenerateInviteResponse {
+        let request = CreateCompedInviteRequest(
+            email: email,
+            recipient_name: recipientName,
+            note: note,
+            comped: true,
+            send_email: sendEmail,
+            tier: tier,
+            expiration_days: 15
+        )
+        let response: GenerateInviteResponse = try await supabase.functions.invoke(
+            "generate-invite",
+            options: .init(body: request)
+        )
+        return response
+    }
 }

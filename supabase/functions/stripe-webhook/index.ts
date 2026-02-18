@@ -93,37 +93,47 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const priceId = lineItems.data[0]?.price?.id ?? ""
   const tier = FOUNDING_PRICE_IDS.has(priceId) ? "founding" : "standard"
 
-  // Generate a unique invite code
-  let code = ""
-  for (let attempt = 0; attempt < 5; attempt++) {
-    code = generateCode()
-    const { data } = await supabase
+  let code: string
+
+  // Check if this is an admin-initiated checkout (has client_reference_id)
+  const inviteId = session.client_reference_id
+  if (inviteId) {
+    const { data: existingInvite } = await supabase
       .from("invite_codes")
-      .select("id")
-      .eq("code", code)
-      .limit(1)
-    if (!data || data.length === 0) break
+      .select("id, code, payment_status")
+      .eq("id", inviteId)
+      .single()
+
+    if (existingInvite && existingInvite.payment_status === "pending_payment") {
+      // Admin-initiated: activate the pending invite
+      code = existingInvite.code
+
+      const { error } = await supabase
+        .from("invite_codes")
+        .update({
+          payment_status: "paid",
+          stripe_checkout_session_id: session.id,
+          tier,
+        })
+        .eq("id", inviteId)
+
+      if (error) {
+        console.error("Failed to update pending invite code:", error)
+        return
+      }
+
+      console.log(`Activated pending invite ${code} (${tier}) for ${email}`)
+    } else {
+      // client_reference_id present but invite not found or not pending — create new
+      console.warn(`client_reference_id ${inviteId} not found or not pending, creating new code`)
+      code = await createNewInviteCode(email, session.id, tier)
+      if (!code) return
+    }
+  } else {
+    // Organic purchase (no admin initiation) — create new code
+    code = await createNewInviteCode(email, session.id, tier)
+    if (!code) return
   }
-
-  const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 15) // 15 days to redeem
-
-  const { error } = await supabase.from("invite_codes").insert({
-    code,
-    created_by: Deno.env.get("SYSTEM_ADMIN_UUID"),
-    expires_at: expiresAt.toISOString(),
-    email,
-    payment_status: "paid",
-    stripe_checkout_session_id: session.id,
-    tier,
-  })
-
-  if (error) {
-    console.error("Failed to create invite code:", error)
-    return
-  }
-
-  console.log(`Generated invite code ${code} (${tier}) for ${email}`)
 
   // Check founding member cap
   if (tier === "founding") {
@@ -190,6 +200,42 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   await syncProfileStatus(subscription.id, status)
 
   console.log(`Subscription ${subscription.id} updated to ${status}`)
+}
+
+// --- Invite Code Helpers ---
+
+async function createNewInviteCode(email: string, sessionId: string, tier: string): Promise<string> {
+  let code = ""
+  for (let attempt = 0; attempt < 5; attempt++) {
+    code = generateCode()
+    const { data } = await supabase
+      .from("invite_codes")
+      .select("id")
+      .eq("code", code)
+      .limit(1)
+    if (!data || data.length === 0) break
+  }
+
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + 15)
+
+  const { error } = await supabase.from("invite_codes").insert({
+    code,
+    created_by: Deno.env.get("SYSTEM_ADMIN_UUID"),
+    expires_at: expiresAt.toISOString(),
+    email,
+    payment_status: "paid",
+    stripe_checkout_session_id: sessionId,
+    tier,
+  })
+
+  if (error) {
+    console.error("Failed to create invite code:", error)
+    return ""
+  }
+
+  console.log(`Generated invite code ${code} (${tier}) for ${email}`)
+  return code
 }
 
 // --- Helpers ---
