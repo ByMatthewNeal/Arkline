@@ -442,17 +442,23 @@ class HomeViewModel {
         let riskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
         async let riskResultsTask = fetchAllRiskLevels(coins: riskCoins)
 
-        // Await macro indicators and events first (these use safe wrappers, won't throw)
+        // Await events immediately (hardcoded data, instant)
+        let upcoming = await upcomingEventsTask
+        let todaysEvts = await todaysEventsTask
+        await MainActor.run {
+            self.upcomingEvents = upcoming
+            self.todaysEvents = todaysEvts
+            self.eventsLastUpdated = Date()
+        }
+
+        // Await network-dependent indicators (may be slower)
         let vix = await vixTask
         let dxy = await dxyTask
         let liquidity = await liquidityTask
         let supplyProfit = await supplyProfitTask
         let fedMeetings = await fedWatchTask
         let riskResults = await riskResultsTask
-        let upcoming = await upcomingEventsTask
-        let todaysEvts = await todaysEventsTask
 
-        // Update macro indicators and events immediately (before slow network calls)
         await MainActor.run {
             self.vixData = vix
             self.dxyData = dxy
@@ -463,9 +469,6 @@ class HomeViewModel {
                 self.riskLevels[coin] = level
                 self.riskHistories[coin] = history
             }
-            self.upcomingEvents = upcoming
-            self.todaysEvents = todaysEvts
-            self.eventsLastUpdated = Date()
         }
 
         // Archive macro indicators (fire-and-forget)

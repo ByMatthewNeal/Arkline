@@ -81,9 +81,7 @@ struct UpcomingEventsSection: View {
                     if events.isEmpty {
                         HStack {
                             Spacer()
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Loading events...")
+                            Text("No upcoming events")
                                 .font(.caption)
                                 .foregroundColor(AppColors.textSecondary)
                             Spacer()

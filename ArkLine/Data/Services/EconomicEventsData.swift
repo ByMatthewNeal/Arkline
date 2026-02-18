@@ -168,6 +168,40 @@ enum EconomicEventsData {
         makeEvent(title: "NY Empire State Manufacturing Index", currency: "USD", dateString: "2026-02-17", timeString: "08:30", impact: .medium, previous: "7.70"),
         makeEvent(title: "NAHB Housing Market Index", currency: "USD", dateString: "2026-02-17", timeString: "10:00", impact: .medium, previous: "37"),
 
+        // Feb 18, 2026 (Wednesday)
+        makeEvent(title: "FOMC Minutes", currency: "USD", dateString: "2026-02-18", timeString: "14:00", impact: .high),
+        makeEvent(title: "Housing Starts", currency: "USD", dateString: "2026-02-18", timeString: "08:30", impact: .medium),
+        makeEvent(title: "Building Permits", currency: "USD", dateString: "2026-02-18", timeString: "08:30", impact: .medium),
+
+        // Feb 19, 2026 (Thursday)
+        makeEvent(title: "Initial Jobless Claims", currency: "USD", dateString: "2026-02-19", timeString: "08:30", impact: .high),
+        makeEvent(title: "Philadelphia Fed Manufacturing Index", currency: "USD", dateString: "2026-02-19", timeString: "08:30", impact: .high),
+
+        // Feb 20, 2026 (Friday)
+        makeEvent(title: "S&P Global Manufacturing PMI (Flash)", currency: "USD", dateString: "2026-02-20", timeString: "09:45", impact: .medium),
+        makeEvent(title: "S&P Global Services PMI (Flash)", currency: "USD", dateString: "2026-02-20", timeString: "09:45", impact: .medium),
+        makeEvent(title: "Existing Home Sales", currency: "USD", dateString: "2026-02-20", timeString: "10:00", impact: .high),
+        makeEvent(title: "Michigan Consumer Sentiment (Final)", currency: "USD", dateString: "2026-02-20", timeString: "10:00", impact: .high),
+
+        // Feb 24, 2026 (Tuesday)
+        makeEvent(title: "CB Consumer Confidence", currency: "USD", dateString: "2026-02-24", timeString: "10:00", impact: .high),
+
+        // Feb 25, 2026 (Wednesday)
+        makeEvent(title: "New Home Sales", currency: "USD", dateString: "2026-02-25", timeString: "10:00", impact: .high),
+
+        // Feb 26, 2026 (Thursday)
+        makeEvent(title: "GDP (QoQ) (Q4 2nd Est.)", currency: "USD", dateString: "2026-02-26", timeString: "08:30", impact: .high),
+        makeEvent(title: "Durable Goods Orders (MoM)", currency: "USD", dateString: "2026-02-26", timeString: "08:30", impact: .high),
+        makeEvent(title: "Initial Jobless Claims", currency: "USD", dateString: "2026-02-26", timeString: "08:30", impact: .high),
+
+        // Feb 27, 2026 (Friday) - PCE DAY
+        makeEvent(title: "PCE Price Index (YoY)", currency: "USD", dateString: "2026-02-27", timeString: "08:30", impact: .high),
+        makeEvent(title: "PCE Price Index (MoM)", currency: "USD", dateString: "2026-02-27", timeString: "08:30", impact: .high),
+        makeEvent(title: "Core PCE Price Index (YoY)", currency: "USD", dateString: "2026-02-27", timeString: "08:30", impact: .high),
+        makeEvent(title: "Core PCE Price Index (MoM)", currency: "USD", dateString: "2026-02-27", timeString: "08:30", impact: .high),
+        makeEvent(title: "Personal Income (MoM)", currency: "USD", dateString: "2026-02-27", timeString: "08:30", impact: .medium),
+        makeEvent(title: "Personal Spending (MoM)", currency: "USD", dateString: "2026-02-27", timeString: "08:30", impact: .high),
+
         // ==================== MARCH 2026 ====================
 
         // Mar 6, 2026 (Friday) - NFP DAY
