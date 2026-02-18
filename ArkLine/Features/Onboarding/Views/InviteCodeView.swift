@@ -9,6 +9,7 @@ struct InviteCodeView: View {
     @FocusState private var isCodeFocused: Bool
     @Environment(\.colorScheme) private var colorScheme
     @State private var showRequestAccess = false
+    @State private var showQRScanner = false
 
     var body: some View {
         ZStack {
@@ -79,6 +80,18 @@ struct InviteCodeView: View {
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
                     .focused($isCodeFocused)
+
+                    Button {
+                        isCodeFocused = false
+                        showQRScanner = true
+                    } label: {
+                        HStack(spacing: ArkSpacing.xs) {
+                            Image(systemName: "qrcode.viewfinder")
+                            Text("Scan QR Code")
+                        }
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(AppColors.accent)
+                    }
                 }
                 .padding(.horizontal, ArkSpacing.xl)
 
@@ -113,6 +126,12 @@ struct InviteCodeView: View {
         .onAppear { isCodeFocused = true }
         .sheet(isPresented: $showRequestAccess) {
             RequestAccessSheet()
+        }
+        .sheet(isPresented: $showQRScanner) {
+            QRScannerSheet { code in
+                viewModel.inviteCode = code
+                Task { await viewModel.validateInviteCode() }
+            }
         }
     }
 }

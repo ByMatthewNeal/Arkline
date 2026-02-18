@@ -22,8 +22,10 @@ class InviteCodeAdminViewModel {
 
     // MARK: - Create Form State
     var recipientName = ""
+    var recipientEmail = ""
     var note = ""
     var expirationDays = 7
+    var trialDays: Int? = nil
     var isCreating = false
     var lastCreatedCode: InviteCode?
 
@@ -81,13 +83,17 @@ class InviteCodeAdminViewModel {
                 createdBy: createdBy,
                 expirationDays: expirationDays,
                 recipientName: recipientName.nilIfEmpty,
-                note: note.nilIfEmpty
+                note: note.nilIfEmpty,
+                email: recipientEmail.nilIfEmpty,
+                trialDays: trialDays
             )
             codes.insert(newCode, at: 0)
             lastCreatedCode = newCode
             recipientName = ""
+            recipientEmail = ""
             note = ""
             expirationDays = 7
+            trialDays = nil
         } catch {
             errorMessage = AppError.from(error).userMessage
         }

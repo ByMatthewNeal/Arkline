@@ -17,6 +17,27 @@ enum UserRole: String, Codable, CaseIterable {
     }
 }
 
+// MARK: - Subscription Status
+
+/// Tracks the user's Stripe subscription state
+enum SubscriptionStatus: String, Codable, CaseIterable {
+    case active
+    case pastDue = "past_due"
+    case canceled
+    case trialing
+    case none
+
+    var displayName: String {
+        switch self {
+        case .active: return "Active"
+        case .pastDue: return "Past Due"
+        case .canceled: return "Canceled"
+        case .trialing: return "Trial"
+        case .none: return "None"
+        }
+    }
+}
+
 // MARK: - User Model
 struct User: Codable, Identifiable, Equatable {
     let id: UUID
@@ -36,6 +57,7 @@ struct User: Codable, Identifiable, Equatable {
     var passcodeHash: String?
     var faceIdEnabled: Bool
     var role: UserRole
+    var subscriptionStatus: SubscriptionStatus
     var createdAt: Date
     var updatedAt: Date
 
@@ -58,8 +80,35 @@ struct User: Codable, Identifiable, Equatable {
         case passcodeHash = "passcode_hash"
         case faceIdEnabled = "face_id_enabled"
         case role
+        case subscriptionStatus = "subscription_status"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+
+    // MARK: - Decodable (backwards-compatible)
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        username = try container.decode(String.self, forKey: .username)
+        email = try container.decode(String.self, forKey: .email)
+        fullName = try container.decodeIfPresent(String.self, forKey: .fullName)
+        avatarUrl = try container.decodeIfPresent(String.self, forKey: .avatarUrl)
+        usePhotoAvatar = try container.decodeIfPresent(Bool.self, forKey: .usePhotoAvatar) ?? true
+        dateOfBirth = try container.decodeIfPresent(Date.self, forKey: .dateOfBirth)
+        careerIndustry = try container.decodeIfPresent(String.self, forKey: .careerIndustry)
+        experienceLevel = try container.decodeIfPresent(String.self, forKey: .experienceLevel)
+        socialLinks = try container.decodeIfPresent(SocialLinks.self, forKey: .socialLinks)
+        preferredCurrency = try container.decodeIfPresent(String.self, forKey: .preferredCurrency) ?? "USD"
+        riskCoins = try container.decodeIfPresent([String].self, forKey: .riskCoins) ?? ["BTC", "ETH"]
+        darkMode = try container.decodeIfPresent(String.self, forKey: .darkMode) ?? "automatic"
+        notifications = try container.decodeIfPresent(NotificationSettings.self, forKey: .notifications)
+        passcodeHash = try container.decodeIfPresent(String.self, forKey: .passcodeHash)
+        faceIdEnabled = try container.decodeIfPresent(Bool.self, forKey: .faceIdEnabled) ?? false
+        role = try container.decodeIfPresent(UserRole.self, forKey: .role) ?? .user
+        subscriptionStatus = try container.decodeIfPresent(SubscriptionStatus.self, forKey: .subscriptionStatus) ?? .none
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
     }
 
     // MARK: - Default Values
@@ -81,6 +130,7 @@ struct User: Codable, Identifiable, Equatable {
         passcodeHash: String? = nil,
         faceIdEnabled: Bool = false,
         role: UserRole = .user,
+        subscriptionStatus: SubscriptionStatus = .none,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -101,6 +151,7 @@ struct User: Codable, Identifiable, Equatable {
         self.passcodeHash = passcodeHash
         self.faceIdEnabled = faceIdEnabled
         self.role = role
+        self.subscriptionStatus = subscriptionStatus
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -221,6 +272,13 @@ extension User {
     /// Whether the user has premium access
     var isPremium: Bool {
         role == .premium || role == .admin
+    }
+
+    /// Whether the user has active access (active subscription, trial, or admin)
+    var isAccessGranted: Bool {
+        role == .admin ||
+        subscriptionStatus == .active ||
+        subscriptionStatus == .trialing
     }
 }
 

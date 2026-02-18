@@ -63,18 +63,25 @@ final class InviteCodeService: InviteCodeServiceProtocol {
         createdBy: UUID,
         expirationDays: Int = 7,
         recipientName: String?,
-        note: String?
+        note: String?,
+        email: String? = nil,
+        trialDays: Int? = nil
     ) async throws -> InviteCode {
         guard supabase.isConfigured else {
             throw AppError.custom(message: "Service unavailable")
         }
+
+        let paymentStatus: String = trialDays != nil ? "free_trial" : "none"
 
         let request = CreateInviteCodeRequest(
             code: InviteCode.generateCode(),
             createdBy: createdBy,
             expiresAt: Calendar.current.date(byAdding: .day, value: expirationDays, to: Date()) ?? Date(),
             recipientName: recipientName,
-            note: note
+            note: note,
+            email: email,
+            paymentStatus: paymentStatus,
+            trialDays: trialDays
         )
 
         let created: [InviteCode] = try await supabase.database

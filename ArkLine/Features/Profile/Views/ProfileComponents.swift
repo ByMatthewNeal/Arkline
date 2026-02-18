@@ -62,13 +62,13 @@ struct ProfileHeader: View {
                         .font(AppFonts.title24)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    if appState.isPro {
-                        Text("PRO")
+                    if appState.currentUser?.isAdmin == true {
+                        Text("ADMIN")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color(hex: "F59E0B"))
+                            .foregroundColor(AppColors.warning)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Color(hex: "F59E0B").opacity(0.15))
+                            .background(AppColors.warning.opacity(0.15))
                             .cornerRadius(ArkSpacing.Radius.xs)
                     }
                 }

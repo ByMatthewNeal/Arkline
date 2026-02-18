@@ -1,6 +1,5 @@
 import SwiftUI
 import UserNotifications
-import RevenueCat
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -19,8 +18,10 @@ struct ArkLineApp: App {
                 .onAppear {
                     setupAppearance()
                     setupNotifications()
-                    setupRevenueCat()
-                    Task { await AnalyticsService.shared.trackAppOpen() }
+                    Task {
+                        await appState.refreshUserProfile()
+                        await AnalyticsService.shared.trackAppOpen()
+                    }
                 }
                 .onOpenURL { url in
                     Task {
@@ -32,7 +33,7 @@ struct ArkLineApp: App {
             if newPhase == .background {
                 Task { await AnalyticsService.shared.flush() }
             } else if newPhase == .active {
-                Task { await appState.refreshSubscriptionStatus() }
+                Task { await appState.refreshUserProfile() }
             }
         }
     }
@@ -46,14 +47,24 @@ struct ArkLineApp: App {
     }
 
     private func handleDeepLink(_ url: URL) async {
-        // Handle Supabase auth callback
         guard url.scheme == "arkline" else { return }
 
-        if url.host == "auth" || url.path.contains("callback") {
-            // Let Supabase handle the auth callback
+        if url.host == "invite" {
+            // Handle invite deep link: arkline://invite?code=ARK-XXXXXX
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value else { return }
+
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: .inviteCodeDeepLink,
+                    object: nil,
+                    userInfo: ["code": code]
+                )
+            }
+        } else if url.host == "auth" || url.path.contains("callback") {
+            // Handle Supabase auth callback
             do {
                 let session = try await SupabaseManager.shared.client.auth.session(from: url)
-                // Notify that auth succeeded via deep link
                 await MainActor.run {
                     NotificationCenter.default.post(
                         name: Notification.Name("DeepLinkAuthSuccess"),
@@ -64,16 +75,6 @@ struct ArkLineApp: App {
             } catch {
                 logError("Error handling auth callback: \(error)", category: .network)
             }
-        }
-    }
-
-    private func setupRevenueCat() {
-        Task {
-            await SubscriptionService.shared.configure()
-            if Purchases.isConfigured {
-                Purchases.shared.delegate = appDelegate
-            }
-            await appState.refreshSubscriptionStatus()
         }
     }
 
@@ -91,6 +92,12 @@ struct ArkLineApp: App {
         UITableViewCell.appearance().backgroundColor = .clear
         #endif
     }
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    static let inviteCodeDeepLink = Notification.Name("InviteCodeDeepLink")
 }
 
 // MARK: - App State
@@ -159,8 +166,8 @@ class AppState: ObservableObject {
     @Published var insightsNavigationReset = UUID()
     @Published var profileNavigationReset = UUID()
 
-    // Subscription (set to true for testing; revert before release)
-    @Published var isPro = true
+    // All users get full access (invite-only app, no subscription)
+    var isPro: Bool { true }
 
     // Tab navigation
     @Published var selectedTab: AppTab = .home
@@ -176,21 +183,6 @@ class AppState: ObservableObject {
 
     init() {
         loadPersistedState()
-        NotificationCenter.default.addObserver(
-            forName: Constants.Notifications.subscriptionStatusChanged,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            #if DEBUG
-            // Testing override — ignore subscription changes in debug
-            #else
-            if let isPro = notification.userInfo?["isPro"] as? Bool {
-                MainActor.assumeIsolated {
-                    self?.isPro = isPro
-                }
-            }
-            #endif
-        }
     }
 
     private func loadPersistedState() {
@@ -279,13 +271,6 @@ class AppState: ObservableObject {
             sanitized.passcodeHash = nil
             if let data = try? JSONEncoder().encode(sanitized) {
                 UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
-            }
-            // Sync RevenueCat user identity
-            if authenticated {
-                Task {
-                    try? await SubscriptionService.shared.login(userId: user.id.uuidString)
-                    await refreshSubscriptionStatus()
-                }
             }
         } else if !authenticated {
             UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
@@ -383,24 +368,47 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Subscription
-
-    func refreshSubscriptionStatus() async {
-        #if DEBUG
-        // Testing override — always Pro in debug builds
-        isPro = true
-        #else
-        let pro = await SubscriptionService.shared.refreshStatus()
-        isPro = pro
-        #endif
-    }
-
     func signOut() {
         isAuthenticated = false
         currentUser = nil
-        isPro = false
-        Task { try? await SubscriptionService.shared.logout() }
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
+    }
+
+    // MARK: - Profile Refresh
+
+    func refreshUserProfile() async {
+        guard let currentUser = currentUser else { return }
+        guard SupabaseManager.shared.isConfigured else { return }
+
+        do {
+            guard let profile = try await SupabaseDatabase.shared.getProfile(userId: currentUser.id) else { return }
+
+            var updatedUser = currentUser
+            if let role = profile.role {
+                updatedUser.role = UserRole(rawValue: role) ?? currentUser.role
+            }
+            if let subStatus = profile.subscriptionStatus {
+                updatedUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? currentUser.subscriptionStatus
+            }
+            if let fullName = profile.fullName {
+                updatedUser.fullName = fullName
+            }
+            if let username = profile.username {
+                updatedUser.username = username
+            }
+            if let avatarUrl = profile.avatarUrl {
+                updatedUser.avatarUrl = avatarUrl
+            }
+
+            self.currentUser = updatedUser
+            var sanitized = updatedUser
+            sanitized.passcodeHash = nil
+            if let data = try? JSONEncoder().encode(sanitized) {
+                UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
+            }
+        } catch {
+            logError("Failed to refresh profile: \(error.localizedDescription)", category: .auth)
+        }
     }
 }
 
@@ -468,20 +476,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         BroadcastNotificationService.shared.clearBadge()
 
         completionHandler()
-    }
-}
-
-// MARK: - RevenueCat Delegate
-extension AppDelegate: PurchasesDelegate {
-    nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
-        let isPro = customerInfo.entitlements["premium"]?.isActive == true
-        Task { @MainActor in
-            NotificationCenter.default.post(
-                name: Constants.Notifications.subscriptionStatusChanged,
-                object: nil,
-                userInfo: ["isPro": isPro]
-            )
-        }
     }
 }
 #else

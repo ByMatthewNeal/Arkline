@@ -181,6 +181,7 @@ struct InviteCodeRow: View {
     let onDelete: () -> Void
 
     @Environment(\.colorScheme) var colorScheme
+    @State private var showQR = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
@@ -192,6 +193,27 @@ struct InviteCodeRow: View {
 
                 Spacer()
 
+                // Badges
+                if code.isFreeTrial, let days = code.trialDays {
+                    Text("\(days)d trial")
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.warning)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.warning.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+
+                if code.isPaid {
+                    Text("Paid")
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.success)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.success.opacity(0.15))
+                        .clipShape(Capsule())
+                }
+
                 Text(code.statusLabel)
                     .font(AppFonts.caption12Medium)
                     .foregroundColor(statusColor)
@@ -199,6 +221,17 @@ struct InviteCodeRow: View {
                     .padding(.vertical, 2)
                     .background(statusColor.opacity(0.15))
                     .clipShape(Capsule())
+            }
+
+            // Email
+            if let email = code.email, !email.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "envelope.fill")
+                        .font(.system(size: 10))
+                    Text(email)
+                }
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.accent)
             }
 
             // Recipient
@@ -244,6 +277,12 @@ struct InviteCodeRow: View {
                             .foregroundColor(AppColors.accent)
                     }
 
+                    Button { showQR.toggle() } label: {
+                        Label("QR", systemImage: "qrcode")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.accent)
+                    }
+
                     Button(action: onRevoke) {
                         Label("Revoke", systemImage: "xmark.circle")
                             .font(AppFonts.caption12Medium)
@@ -253,7 +292,21 @@ struct InviteCodeRow: View {
                     Spacer()
                 }
             }
+
+            // QR code (expandable)
+            if showQR {
+                HStack {
+                    Spacer()
+                    QRCodeView(code: code.code, size: 160)
+                        .padding(ArkSpacing.sm)
+                        .background(Color.white)
+                        .cornerRadius(ArkSpacing.sm)
+                    Spacer()
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
         }
+        .animation(.easeInOut(duration: 0.2), value: showQR)
         .padding(ArkSpacing.md)
         .background(AppColors.cardBackground(colorScheme))
         .cornerRadius(ArkSpacing.sm)

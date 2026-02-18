@@ -15,9 +15,13 @@ struct InviteCode: Codable, Identifiable, Equatable {
     var recipientName: String?
     var note: String?
     var isRevoked: Bool
+    var email: String?
+    var paymentStatus: String
+    var stripeCheckoutSessionId: String?
+    var trialDays: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id, code, note
+        case id, code, note, email
         case createdBy = "created_by"
         case createdAt = "created_at"
         case expiresAt = "expires_at"
@@ -25,6 +29,9 @@ struct InviteCode: Codable, Identifiable, Equatable {
         case usedAt = "used_at"
         case recipientName = "recipient_name"
         case isRevoked = "is_revoked"
+        case paymentStatus = "payment_status"
+        case stripeCheckoutSessionId = "stripe_checkout_session_id"
+        case trialDays = "trial_days"
     }
 
     // MARK: - Computed Properties
@@ -34,6 +41,10 @@ struct InviteCode: Codable, Identifiable, Equatable {
     var isExpired: Bool { expiresAt < Date() }
 
     var isValid: Bool { !isUsed && !isExpired && !isRevoked }
+
+    var isPaid: Bool { paymentStatus == "paid" }
+
+    var isFreeTrial: Bool { paymentStatus == "free_trial" }
 
     var statusLabel: String {
         if isRevoked { return "Revoked" }
@@ -61,12 +72,17 @@ struct CreateInviteCodeRequest: Encodable {
     let expiresAt: Date
     let recipientName: String?
     let note: String?
+    let email: String?
+    let paymentStatus: String
+    let trialDays: Int?
 
     enum CodingKeys: String, CodingKey {
-        case code, note
+        case code, note, email
         case createdBy = "created_by"
         case expiresAt = "expires_at"
         case recipientName = "recipient_name"
+        case paymentStatus = "payment_status"
+        case trialDays = "trial_days"
     }
 }
 

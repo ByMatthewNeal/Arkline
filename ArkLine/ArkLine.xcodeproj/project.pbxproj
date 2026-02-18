@@ -144,6 +144,7 @@
 		7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */; };
 		7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */; };
 		7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BFE18532B42396BDE06325 /* KeychainManager.swift */; };
+		82A14A8136FCD48655B7A305 /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92616793BB6A8D055197B7AD /* QRCodeGenerator.swift */; };
 		80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */; };
 		81173E2E4A51178EFA18143F /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AAAF40361CD29C51A718DFC /* LoginView.swift */; };
 		81C072BFFD8B887035D2B021 /* RiskCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D98C62D2451E41B463D1AD /* RiskCalculator.swift */; };
@@ -210,6 +211,9 @@
 		AB0UTV13W000000000002 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0UTV13W000000000001 /* AboutView.swift */; };
 		F61544EDBB29AB824683C437 /* ArkLineLogoShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9430188723426BB7F6C20A98 /* ArkLineLogoShape.swift */; };
 		AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE42B1F64D053FD667B857C /* AvatarView.swift */; };
+		D8AF87D5A1447E9A0DAE4A44 /* QRScannerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE2665720A65FC3925637A9 /* QRScannerSheet.swift */; };
+		81B2D0ABA4818E5E08471B8D /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F680C4AEAFF9E750D43FE85A /* QRScannerView.swift */; };
+		DFBF1D1241B9AFEC2DCB15AC /* SubscriptionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1FE2D91AB0739602DBFA45 /* SubscriptionBannerView.swift */; };
 		ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA3DE47F563466AB15A7AEA /* APICache.swift */; };
 		ADD1TRAN51CT10N5V13W0002 /* AddTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD1TRAN51CT10N5V13W0001 /* AddTransactionView.swift */; };
 		AFB03EBBC5378A973BB88170 /* SupplyInProfitHistorical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130AFC1808DDE23C84A31C0B /* SupplyInProfitHistorical.swift */; };
@@ -355,6 +359,7 @@
 		S3TT1NG5SUBV13W500002 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */; };
 		STRKT00BUILDFIL000000001 /* ArkLineProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = STRKT00FILEREF000000001 /* ArkLineProducts.storekit */; };
 		1BAE45B0ADC5A674BD8B7C79 /* InviteCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */; };
+		4E8F2C6A1D5B9730E8A4C2F6 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A3D9E1F4C8520A6D9B3E71 /* Subscription.swift */; };
 		581C2AB056474B7FBA017E4E /* InviteCodeServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */; };
 		479B368F35B1F01D543CB749 /* InviteCodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E19F3731EAF433D80B2B6F1F /* InviteCodeService.swift */; };
 		E16993EBCB896E7B14B7A7D4 /* InviteCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62FCF02D77EC39B0B422CAA /* InviteCodeView.swift */; };
@@ -412,6 +417,7 @@
 		225593D759C7AC730D64DB0F /* TechnicalIndicatorCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TechnicalIndicatorCards.swift; sourceTree = "<group>"; };
 		226992D4574D4FB6A57D1757 /* EnterEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterEmailView.swift; sourceTree = "<group>"; };
 		22BFE18532B42396BDE06325 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		92616793BB6A8D055197B7AD /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
 		23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastServiceProtocol.swift; sourceTree = "<group>"; };
 		2435855BCB0DC6452F414E3A /* NewsServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsServiceProtocol.swift; sourceTree = "<group>"; };
 		261CB564B75128AA955811D5 /* RiskLevelDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RiskLevelDetailView.swift; sourceTree = "<group>"; };
@@ -533,6 +539,9 @@
 		8AAAF40361CD29C51A718DFC /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		9430188723426BB7F6C20A98 /* ArkLineLogoShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineLogoShape.swift; sourceTree = "<group>"; };
 		8AE42B1F64D053FD667B857C /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
+		3EE2665720A65FC3925637A9 /* QRScannerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSheet.swift; sourceTree = "<group>"; };
+		F680C4AEAFF9E750D43FE85A /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		3A1FE2D91AB0739602DBFA45 /* SubscriptionBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionBannerView.swift; sourceTree = "<group>"; };
 		8C9F2BB5F78AF614F347490F /* BroadcastService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastService.swift; sourceTree = "<group>"; };
 		8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SupplyInProfitWidget.swift; path = Features/Home/Views/SupplyInProfitWidget.swift; sourceTree = "<group>"; };
 		8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -722,6 +731,7 @@
 		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
 		STRKT00FILEREF000000001 /* ArkLineProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = ArkLineProducts.storekit; path = Resources/ArkLineProducts.storekit; sourceTree = "<group>"; };
 		A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCode.swift; sourceTree = "<group>"; };
+		B7A3D9E1F4C8520A6D9B3E71 /* Subscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subscription.swift; sourceTree = "<group>"; };
 		5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeServiceProtocol.swift; sourceTree = "<group>"; };
 		E19F3731EAF433D80B2B6F1F /* InviteCodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeService.swift; sourceTree = "<group>"; };
 		C62FCF02D77EC39B0B422CAA /* InviteCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCodeView.swift; sourceTree = "<group>"; };
@@ -1077,6 +1087,7 @@
 				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
 				FE0000000000000000000011 /* FeatureRequest.swift */,
 				A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */,
+				B7A3D9E1F4C8520A6D9B3E71 /* Subscription.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1611,6 +1622,9 @@
 				F1NANC1ALD15CLA1M3R01 /* FinancialDisclaimer.swift */,
 				F78845800D59A83C7C923898 /* PercentageChangeView.swift */,
 				6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */,
+				3EE2665720A65FC3925637A9 /* QRScannerSheet.swift */,
+				F680C4AEAFF9E750D43FE85A /* QRScannerView.swift */,
+				3A1FE2D91AB0739602DBFA45 /* SubscriptionBannerView.swift */,
 				E1AC9D0CE4380523D648DC8E /* ZScoreIndicator.swift */,
 			);
 			path = Misc;
@@ -1734,6 +1748,7 @@
 				2EEF32D24CEC66662543D000 /* Logger.swift */,
 				E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */,
 				22BFE18532B42396BDE06325 /* KeychainManager.swift */,
+				92616793BB6A8D055197B7AD /* QRCodeGenerator.swift */,
 				82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */,
 				AD814640FCA732E1097598F2 /* StatisticsCalculator.swift */,
 			);
@@ -1977,6 +1992,9 @@
 				5F4B99B5C4891DD601F0FF5B /* AuthViewModel.swift in Sources */,
 				F61544EDBB29AB824683C437 /* ArkLineLogoShape.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
+				D8AF87D5A1447E9A0DAE4A44 /* QRScannerSheet.swift in Sources */,
+				81B2D0ABA4818E5E08471B8D /* QRScannerView.swift in Sources */,
+				DFBF1D1241B9AFEC2DCB15AC /* SubscriptionBannerView.swift in Sources */,
 				77273323CF240C251C222AAF /* BaseCard.swift in Sources */,
 				C6D58AAA96B8FBB851F1D0F0 /* CMEFedWatchScraper.swift in Sources */,
 				91252ECC56160C486655563C /* CareerIndustryView.swift in Sources */,
@@ -2078,6 +2096,7 @@
 				7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */,
 				C985CEFF2F3B827C00E10778 /* SubscriptionService.swift in Sources */,
 				7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */,
+				82A14A8136FCD48655B7A305 /* QRCodeGenerator.swift in Sources */,
 				81173E2E4A51178EFA18143F /* LoginView.swift in Sources */,
 				C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */,
 				C985CF072F3B82C600E10778 /* PaywallView.swift in Sources */,
@@ -2266,6 +2285,7 @@
 				D1E2F3A4B5C6D7E8F9A0B1C2 /* ArkLineScoreDetailView.swift in Sources */,
 				D7E8F9A0B1C2D3E4F5A6B7C8 /* SentimentRegimeDetailView.swift in Sources */,
 				1BAE45B0ADC5A674BD8B7C79 /* InviteCode.swift in Sources */,
+				4E8F2C6A1D5B9730E8A4C2F6 /* Subscription.swift in Sources */,
 				581C2AB056474B7FBA017E4E /* InviteCodeServiceProtocol.swift in Sources */,
 				479B368F35B1F01D543CB749 /* InviteCodeService.swift in Sources */,
 				E16993EBCB896E7B14B7A7D4 /* InviteCodeView.swift in Sources */,

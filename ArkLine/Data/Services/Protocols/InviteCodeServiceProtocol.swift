@@ -16,7 +16,9 @@ protocol InviteCodeServiceProtocol {
         createdBy: UUID,
         expirationDays: Int,
         recipientName: String?,
-        note: String?
+        note: String?,
+        email: String?,
+        trialDays: Int?
     ) async throws -> InviteCode
 
     /// Fetches all invite codes (admin only).
@@ -27,4 +29,24 @@ protocol InviteCodeServiceProtocol {
 
     /// Deletes an invite code (admin only).
     func deleteCode(id: UUID) async throws
+}
+
+// MARK: - Default Parameters
+
+extension InviteCodeServiceProtocol {
+    func createCode(
+        createdBy: UUID,
+        expirationDays: Int,
+        recipientName: String?,
+        note: String?
+    ) async throws -> InviteCode {
+        try await createCode(
+            createdBy: createdBy,
+            expirationDays: expirationDays,
+            recipientName: recipientName,
+            note: note,
+            email: nil,
+            trialDays: nil
+        )
+    }
 }

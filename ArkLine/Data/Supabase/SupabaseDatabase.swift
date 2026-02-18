@@ -336,11 +336,14 @@ struct ProfileDTO: Codable {
     let email: String?
     let fullName: String?
     let avatarUrl: String?
+    let role: String?
+    let subscriptionStatus: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, username, email
+        case id, username, email, role
         case fullName = "full_name"
         case avatarUrl = "avatar_url"
+        case subscriptionStatus = "subscription_status"
     }
 }
 

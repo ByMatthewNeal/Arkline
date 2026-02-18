@@ -8,7 +8,6 @@ struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var viewModel = SettingsViewModel()
     @State private var analyticsEnabled = UserDefaults.standard.bool(forKey: "analyticsConsentGranted")
-    @State private var showPaywall = false
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -114,48 +113,6 @@ struct SettingsView: View {
                     }
                 } header: {
                     Text("Notifications")
-                }
-                .listRowBackground(AppColors.cardBackground(colorScheme))
-
-                // Subscription Section
-                Section {
-                    if appState.isPro {
-                        HStack {
-                            SettingsRow(
-                                icon: "crown.fill",
-                                iconColor: Color(hex: "F59E0B"),
-                                title: "ArkLine Pro"
-                            )
-                            Spacer()
-                            Text("Active")
-                                .font(AppFonts.caption12Medium)
-                                .foregroundColor(AppColors.success)
-                        }
-
-                        Button(action: { openSubscriptionManagement() }) {
-                            SettingsRow(
-                                icon: "creditcard",
-                                iconColor: AppColors.info,
-                                title: "Manage Subscription"
-                            )
-                        }
-                    } else {
-                        Button(action: { showPaywall = true }) {
-                            HStack {
-                                SettingsRow(
-                                    icon: "crown.fill",
-                                    iconColor: Color(hex: "F59E0B"),
-                                    title: "Upgrade to Pro"
-                                )
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(AppColors.textSecondary)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Subscription")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
@@ -288,9 +245,6 @@ struct SettingsView: View {
             } message: {
                 Text("Are you sure you want to sign out?")
             }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
-            }
             .alert("Delete Account", isPresented: $viewModel.showDeleteAccountAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete", role: .destructive) {
@@ -303,14 +257,6 @@ struct SettingsView: View {
                 Text("This action cannot be undone. All your data will be permanently deleted.")
             }
         }
-    }
-
-    private func openSubscriptionManagement() {
-        #if canImport(UIKit)
-        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-            UIApplication.shared.open(url)
-        }
-        #endif
     }
 
     private func openSupportEmail() {

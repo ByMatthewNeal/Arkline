@@ -74,7 +74,8 @@ struct ContentView: View {
                 experienceLevel: "advanced",
                 socialLinks: nil,
                 passcodeHash: nil,
-                faceIdEnabled: false
+                faceIdEnabled: false,
+                role: .admin
             )
 
             withAnimation {

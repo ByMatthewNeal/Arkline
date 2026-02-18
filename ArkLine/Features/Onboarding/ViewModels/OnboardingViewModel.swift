@@ -205,6 +205,10 @@ class OnboardingViewModel {
         do {
             if let code = try await inviteCodeService.validateCode(inviteCode) {
                 validatedInviteCode = code
+                // Pre-fill email if the code has one
+                if let codeEmail = code.email, !codeEmail.isEmpty, email.isEmpty {
+                    email = codeEmail
+                }
                 nextStep()
             } else {
                 inviteCodeError = "This invite code is invalid, expired, or has already been used"
@@ -214,6 +218,15 @@ class OnboardingViewModel {
         }
 
         isLoading = false
+    }
+
+    /// Handle an invite code received via deep link.
+    func handleDeepLinkCode(_ code: String) {
+        inviteCode = code
+        if currentStep != .inviteCode {
+            currentStep = .inviteCode
+        }
+        Task { await validateInviteCode() }
     }
 
     // MARK: - Actions

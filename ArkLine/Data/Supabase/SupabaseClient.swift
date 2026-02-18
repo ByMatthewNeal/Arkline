@@ -103,6 +103,7 @@ enum SupabaseTable: String {
     case analyticsEvents = "analytics_events"
     case dailyActiveUsers = "daily_active_users"
     case inviteCodes = "invite_codes"
+    case subscriptions
 }
 
 // MARK: - Storage Buckets
