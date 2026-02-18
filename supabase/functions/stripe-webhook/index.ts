@@ -118,8 +118,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     await upsertSubscription(subscription, email)
   }
 
-  // TODO: Send invite code email via Resend/SendGrid
-  // For now, admin can view codes in the management panel
+  // Send invite code email
+  await sendInviteEmail(email, code)
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -240,5 +240,65 @@ async function syncProfileStatus(stripeSubId: string, status: string) {
       .from("profiles")
       .update({ subscription_status: status })
       .eq("id", data.user_id)
+  }
+}
+
+// --- Email ---
+
+async function sendInviteEmail(email: string, code: string) {
+  const resendKey = Deno.env.get("RESEND_API_KEY")
+  if (!resendKey) {
+    console.warn("RESEND_API_KEY not set — skipping invite email")
+    return
+  }
+
+  const deepLink = `arkline://invite?code=${code}`
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendKey}`,
+      },
+      body: JSON.stringify({
+        from: "Arkline <onboarding@resend.dev>",
+        to: [email],
+        subject: "Your Arkline Invite Code",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <h1 style="font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0;">Welcome to Arkline</h1>
+              <p style="font-size: 16px; color: #666; margin-top: 8px;">Your payment was successful. Here's your invite code.</p>
+            </div>
+
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+              <p style="font-size: 14px; color: #888; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Your Invite Code</p>
+              <p style="font-size: 36px; font-weight: 700; color: #3369FF; margin: 0; letter-spacing: 3px;">${code}</p>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 32px;">
+              <a href="${deepLink}" style="display: inline-block; background: #3369FF; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Open in Arkline</a>
+            </div>
+
+            <div style="border-top: 1px solid #eee; padding-top: 20px;">
+              <p style="font-size: 13px; color: #999; text-align: center; margin: 0;">
+                Enter this code in the Arkline app to activate your membership.<br>
+                This code expires in 30 days.
+              </p>
+            </div>
+          </div>
+        `,
+      }),
+    })
+
+    if (res.ok) {
+      console.log(`Invite email sent to ${email}`)
+    } else {
+      const err = await res.text()
+      console.error(`Failed to send invite email: ${err}`)
+    }
+  } catch (err) {
+    console.error("Error sending invite email:", err)
   }
 }
