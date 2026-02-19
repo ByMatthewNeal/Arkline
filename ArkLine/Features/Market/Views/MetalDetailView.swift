@@ -6,6 +6,7 @@ struct MetalDetailView: View {
     @State private var selectedTimeframe: StockChartTimeframe = .month
     @State private var chartData: [PricePoint] = []
     @State private var isLoadingChart = false
+    @State private var chartAnimationId = UUID()
     @State private var week52High: Double?
     @State private var week52Low: Double?
     @State private var technicalAnalysis: TechnicalAnalysis?
@@ -71,6 +72,8 @@ struct MetalDetailView: View {
                         isLoading: isLoadingChart
                     )
                     .frame(height: 200)
+                    .id(chartAnimationId)
+                    .transition(.opacity)
 
                     StockTimeframeSelector(selected: $selectedTimeframe)
 
@@ -80,6 +83,7 @@ struct MetalDetailView: View {
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
                 .padding(.horizontal, 20)
+                .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
 
                 // Technical Analysis
                 if technicalAnalysis != nil || isLoadingTA {
@@ -152,10 +156,14 @@ struct MetalDetailView: View {
                 symbol: futuresSymbol,
                 limit: selectedTimeframe.tradingDays
             )
-            chartData = prices.compactMap { price in
-                guard let date = price.dateValue else { return nil }
+            let newData = prices.compactMap { price in
+                guard let date = price.dateValue else { return nil as PricePoint? }
                 return PricePoint(date: date, price: price.close)
             }.sorted { $0.date < $1.date }
+            withAnimation(.easeInOut(duration: 0.3)) {
+                chartAnimationId = UUID()
+                chartData = newData
+            }
 
             // Calculate 52-week high/low from 1Y data
             if selectedTimeframe == .year || week52High == nil {
@@ -169,7 +177,10 @@ struct MetalDetailView: View {
                 }
             }
         } catch {
-            chartData = []
+            withAnimation(.easeInOut(duration: 0.3)) {
+                chartAnimationId = UUID()
+                chartData = []
+            }
         }
     }
 

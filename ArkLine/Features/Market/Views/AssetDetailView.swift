@@ -8,7 +8,9 @@ struct AssetDetailView: View {
     @State private var isFavorite = false
     @State private var chartData: [PricePoint] = []
     @State private var isLoadingChart = false
+    @State private var chartAnimationId = UUID()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     private let marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
 
@@ -31,7 +33,7 @@ struct AssetDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(asset.currentPrice.asCurrency)
                         .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     HStack(spacing: 8) {
                         Image(systemName: isPositive ? "arrow.up" : "arrow.down")
@@ -40,7 +42,7 @@ struct AssetDetailView: View {
                         Text("\(abs(asset.priceChange24h).asCurrency) (\(abs(asset.priceChangePercentage24h), specifier: "%.2f")%)")
                             .font(.subheadline)
                     }
-                    .foregroundColor(isPositive ? Color(hex: "22C55E") : Color(hex: "EF4444"))
+                    .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -53,11 +55,14 @@ struct AssetDetailView: View {
                         isLoading: isLoadingChart
                     )
                     .frame(height: 200)
+                    .id(chartAnimationId)
+                    .transition(.opacity)
 
                     // Timeframe Selector
                     TimeframeSelector(selected: $selectedTimeframe)
                 }
                 .padding(.horizontal, 20)
+                .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
 
                 // Stats
                 AssetStatsSection(asset: asset)
@@ -71,7 +76,7 @@ struct AssetDetailView: View {
             }
             .padding(.top, 16)
         }
-        .background(Color(hex: "0F0F0F"))
+        .background(AppColors.background(colorScheme))
         .refreshable { await loadChart() }
         .navigationBarBackButtonHidden()
         .task { await loadChart() }
@@ -87,14 +92,14 @@ struct AssetDetailView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(.white)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
                 }
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { toggleFavorite() }) {
                     Image(systemName: isFavorite ? "star.fill" : "star")
-                        .foregroundColor(isFavorite ? Color(hex: "EAB308") : .white)
+                        .foregroundColor(isFavorite ? Color(hex: "F59E0B") : AppColors.textPrimary(colorScheme))
                 }
             }
         }
@@ -111,17 +116,23 @@ struct AssetDetailView: View {
                 currency: "usd",
                 days: selectedTimeframe.days
             )
-            chartData = chart.priceHistory
+            withAnimation(.easeInOut(duration: 0.3)) {
+                chartAnimationId = UUID()
+                chartData = chart.priceHistory
+            }
         } catch {
             // Fall back to 7d sparkline if available
             if let sparkline = asset.sparklinePrices, !sparkline.isEmpty {
                 let now = Date()
                 let interval = (7.0 * 24 * 3600) / Double(sparkline.count)
-                chartData = sparkline.enumerated().map { index, price in
-                    PricePoint(
-                        date: now.addingTimeInterval(-Double(sparkline.count - 1 - index) * interval),
-                        price: price
-                    )
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    chartAnimationId = UUID()
+                    chartData = sparkline.enumerated().map { index, price in
+                        PricePoint(
+                            date: now.addingTimeInterval(-Double(sparkline.count - 1 - index) * interval),
+                            price: price
+                        )
+                    }
                 }
             }
         }
@@ -165,23 +176,24 @@ struct AssetPriceChart: View {
     let data: [PricePoint]
     let isPositive: Bool
     let isLoading: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     private var lineColor: Color {
-        isPositive ? Color(hex: "22C55E") : Color(hex: "EF4444")
+        isPositive ? AppColors.success : AppColors.error
     }
 
     var body: some View {
         if isLoading && data.isEmpty {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "1F1F1F"))
+                .fill(AppColors.cardBackground(colorScheme))
                 .overlay(ProgressView().tint(.gray))
         } else if data.isEmpty {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(hex: "1F1F1F"))
+                .fill(AppColors.cardBackground(colorScheme))
                 .overlay(
                     Text("No chart data")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                        .foregroundColor(AppColors.textSecondary)
                 )
         } else {
             Chart(data) { point in
@@ -212,7 +224,7 @@ struct AssetPriceChart: View {
                         if let price = value.as(Double.self) {
                             Text(price.asCryptoPrice)
                                 .font(.system(size: 9))
-                                .foregroundColor(Color(hex: "A1A1AA"))
+                                .foregroundColor(AppColors.textSecondary)
                         }
                     }
                 }
@@ -220,7 +232,7 @@ struct AssetPriceChart: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "1F1F1F"))
+                    .fill(AppColors.cardBackground(colorScheme))
             )
             .overlay {
                 if isLoading {
@@ -236,6 +248,7 @@ struct AssetPriceChart: View {
 struct AssetDetailHeader: View {
     let asset: CryptoAsset
     @Binding var isFavorite: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -268,11 +281,11 @@ struct AssetDetailHeader: View {
                 Text(asset.name)
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 Text(asset.symbol.uppercased())
                     .font(.subheadline)
-                    .foregroundColor(Color(hex: "A1A1AA"))
+                    .foregroundColor(AppColors.textSecondary)
             }
 
             Spacer()
@@ -281,10 +294,10 @@ struct AssetDetailHeader: View {
             Text("#\(asset.marketCapRank ?? 0)")
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(Color(hex: "A1A1AA"))
+                .foregroundColor(AppColors.textSecondary)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color(hex: "2A2A2A"))
+                .background(AppColors.divider(colorScheme))
                 .cornerRadius(8)
         }
         .padding(.horizontal, 20)
@@ -294,24 +307,35 @@ struct AssetDetailHeader: View {
 // MARK: - Timeframe Selector
 struct TimeframeSelector: View {
     @Binding var selected: ChartTimeframe
+    @Namespace private var timeframeAnimation
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(ChartTimeframe.allCases, id: \.self) { timeframe in
-                Button(action: { selected = timeframe }) {
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selected = timeframe
+                    }
+                }) {
                     Text(timeframe.rawValue)
-                        .font(.caption)
+                        .font(AppFonts.caption12Medium)
                         .fontWeight(selected == timeframe ? .semibold : .regular)
-                        .foregroundColor(selected == timeframe ? .white : Color(hex: "A1A1AA"))
+                        .foregroundColor(selected == timeframe ? .white : AppColors.textSecondary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(selected == timeframe ? Color(hex: "6366F1") : Color.clear)
-                        .cornerRadius(8)
+                        .background {
+                            if selected == timeframe {
+                                Capsule()
+                                    .fill(AppColors.accent)
+                                    .matchedGeometryEffect(id: "cryptoTimeframe", in: timeframeAnimation)
+                            }
+                        }
                 }
             }
         }
         .padding(4)
-        .background(Color(hex: "1F1F1F"))
+        .background(AppColors.cardBackground(colorScheme))
         .cornerRadius(12)
     }
 }
@@ -319,12 +343,13 @@ struct TimeframeSelector: View {
 // MARK: - Asset Stats Section
 struct AssetStatsSection: View {
     let asset: CryptoAsset
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Statistics")
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
             VStack(spacing: 12) {
                 StatRow(label: "Market Cap", value: (asset.marketCap ?? 0).asCurrencyCompact)
@@ -335,7 +360,7 @@ struct AssetStatsSection: View {
                 StatRow(label: "Circulating Supply", value: "\((asset.circulatingSupply ?? 0).formattedCompact) \(asset.symbol.uppercased())")
             }
             .padding(16)
-            .background(Color(hex: "1F1F1F"))
+            .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(12)
         }
     }
@@ -344,19 +369,20 @@ struct AssetStatsSection: View {
 struct StatRow: View {
     let label: String
     let value: String
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack {
             Text(label)
                 .font(.subheadline)
-                .foregroundColor(Color(hex: "A1A1AA"))
+                .foregroundColor(AppColors.textSecondary)
 
             Spacer()
 
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.medium)
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
         }
     }
 }
@@ -365,28 +391,29 @@ struct StatRow: View {
 struct AboutSection: View {
     let asset: CryptoAsset
     @State private var isExpanded = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("About \(asset.name)")
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(assetDescription)
                     .font(.subheadline)
-                    .foregroundColor(Color(hex: "A1A1AA"))
+                    .foregroundColor(AppColors.textSecondary)
                     .lineLimit(isExpanded ? nil : 3)
 
                 Button(action: { isExpanded.toggle() }) {
                     Text(isExpanded ? "Show Less" : "Read More")
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(Color(hex: "6366F1"))
+                        .foregroundColor(AppColors.accent)
                 }
             }
             .padding(16)
-            .background(Color(hex: "1F1F1F"))
+            .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(12)
         }
     }

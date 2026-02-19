@@ -42,6 +42,7 @@ struct MacroIndicatorChart: View {
     var primaryLabel: String = ""
 
     @Environment(\.colorScheme) var colorScheme
+    @Namespace private var macroTimeframeAnimation
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -211,10 +212,12 @@ struct MacroIndicatorChart: View {
                 overlayChartView
                     .frame(height: 200)
                     .clipped()
+                    .animation(.easeInOut(duration: 0.3), value: selectedTimeRange)
             } else {
                 chartView
                     .frame(height: 200)
                     .clipped()
+                    .animation(.easeInOut(duration: 0.3), value: selectedTimeRange)
             }
 
             // Legend (only in overlay mode)
@@ -291,8 +294,10 @@ struct MacroIndicatorChart: View {
         HStack(spacing: ArkSpacing.xs) {
             ForEach(MacroChartTimeRange.allCases, id: \.self) { range in
                 Button(action: {
-                    selectedTimeRange = range
-                    selectedDate = nil
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedTimeRange = range
+                        selectedDate = nil
+                    }
                 }) {
                     Text(range.rawValue)
                         .font(.subheadline)
@@ -302,12 +307,16 @@ struct MacroIndicatorChart: View {
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, ArkSpacing.sm)
-                        .background(
-                            selectedTimeRange == range
-                                ? AppColors.accent
-                                : (colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
-                        )
-                        .cornerRadius(ArkSpacing.Radius.sm)
+                        .background {
+                            if selectedTimeRange == range {
+                                RoundedRectangle(cornerRadius: ArkSpacing.Radius.sm)
+                                    .fill(AppColors.accent)
+                                    .matchedGeometryEffect(id: "macroTimeframe", in: macroTimeframeAnimation)
+                            } else {
+                                RoundedRectangle(cornerRadius: ArkSpacing.Radius.sm)
+                                    .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
+                            }
+                        }
                 }
                 .buttonStyle(PlainButtonStyle())
             }

@@ -7,6 +7,7 @@ struct StockDetailView: View {
     @State private var selectedTimeframe: StockChartTimeframe = .month
     @State private var chartData: [PricePoint] = []
     @State private var isLoadingChart = false
+    @State private var chartAnimationId = UUID()
     @State private var profile: FMPCompanyProfile?
     @State private var isLoadingProfile = false
     @Environment(\.dismiss) private var dismiss
@@ -53,11 +54,14 @@ struct StockDetailView: View {
                         isLoading: isLoadingChart
                     )
                     .frame(height: 200)
+                    .id(chartAnimationId)
+                    .transition(.opacity)
 
                     // Timeframe Selector
                     StockTimeframeSelector(selected: $selectedTimeframe)
                 }
                 .padding(.horizontal, 20)
+                .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
 
                 // Stats
                 StockStatsSection(asset: asset)
@@ -111,12 +115,19 @@ struct StockDetailView: View {
                 symbol: asset.symbol,
                 limit: selectedTimeframe.tradingDays
             )
-            chartData = prices.compactMap { price in
-                guard let date = price.dateValue else { return nil }
+            let newData = prices.compactMap { price in
+                guard let date = price.dateValue else { return nil as PricePoint? }
                 return PricePoint(date: date, price: price.close)
             }.sorted { $0.date < $1.date }
+            withAnimation(.easeInOut(duration: 0.3)) {
+                chartAnimationId = UUID()
+                chartData = newData
+            }
         } catch {
-            chartData = []
+            withAnimation(.easeInOut(duration: 0.3)) {
+                chartAnimationId = UUID()
+                chartData = []
+            }
         }
     }
 
@@ -156,19 +167,29 @@ enum StockChartTimeframe: String, CaseIterable {
 struct StockTimeframeSelector: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var selected: StockChartTimeframe
+    @Namespace private var timeframeAnimation
 
     var body: some View {
         HStack(spacing: 4) {
             ForEach(StockChartTimeframe.allCases, id: \.self) { timeframe in
-                Button(action: { selected = timeframe }) {
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selected = timeframe
+                    }
+                }) {
                     Text(timeframe.rawValue)
-                        .font(.caption)
+                        .font(AppFonts.caption12Medium)
                         .fontWeight(selected == timeframe ? .semibold : .regular)
                         .foregroundColor(selected == timeframe ? .white : AppColors.textSecondary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(selected == timeframe ? AppColors.accent : Color.clear)
-                        .cornerRadius(8)
+                        .background {
+                            if selected == timeframe {
+                                Capsule()
+                                    .fill(AppColors.accent)
+                                    .matchedGeometryEffect(id: "stockTimeframe", in: timeframeAnimation)
+                            }
+                        }
                 }
             }
         }
