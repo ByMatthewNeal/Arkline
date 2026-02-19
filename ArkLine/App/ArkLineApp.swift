@@ -90,6 +90,7 @@ struct ArkLineApp: App {
         ]
         UITableView.appearance().backgroundColor = .clear
         UITableViewCell.appearance().backgroundColor = .clear
+        UIRefreshControl.appearance().tintColor = UIColor(AppColors.accent)
         #endif
     }
 }
