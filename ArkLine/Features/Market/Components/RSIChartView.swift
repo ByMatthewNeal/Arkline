@@ -21,23 +21,23 @@ struct RSIChartView: View {
         }
 
         return Chart {
-            // Overbought zone fill (70-100)
+            // Overbought zone fill (70-100) — subtle brand-tinted red
             RectangleMark(
                 xStart: .value("Start", rsiSeries.first?.date ?? Date()),
                 xEnd: .value("End", rsiSeries.last?.date ?? Date()),
                 yStart: .value("OB Low", 70),
                 yEnd: .value("OB High", 100)
             )
-            .foregroundStyle(AppColors.error.opacity(0.06))
+            .foregroundStyle(AppColors.error.opacity(0.08))
 
-            // Oversold zone fill (0-30)
+            // Oversold zone fill (0-30) — subtle brand-tinted green
             RectangleMark(
                 xStart: .value("Start", rsiSeries.first?.date ?? Date()),
                 xEnd: .value("End", rsiSeries.last?.date ?? Date()),
                 yStart: .value("OS Low", 0),
                 yEnd: .value("OS High", 30)
             )
-            .foregroundStyle(AppColors.success.opacity(0.06))
+            .foregroundStyle(AppColors.accent.opacity(0.06))
 
             // Reference lines
             RuleMark(y: .value("OB", 70))
@@ -50,14 +50,14 @@ struct RSIChartView: View {
                 .foregroundStyle(AppColors.success.opacity(0.3))
                 .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
 
-            // RSI line
+            // RSI line — brand accent blue with subtle color shift at extremes
             ForEach(rsiSeries) { point in
                 LineMark(
                     x: .value("Date", point.date),
                     y: .value("RSI", point.value),
                     series: .value("Series", "rsi")
                 )
-                .foregroundStyle(rsiColor(for: point.value))
+                .foregroundStyle(AppColors.accent)
                 .lineStyle(StrokeStyle(lineWidth: 1.5, lineCap: .round))
                 .interpolationMethod(.catmullRom)
             }
@@ -101,18 +101,14 @@ struct RSIChartView: View {
             // Selection crosshair
             if let point = nearest {
                 RuleMark(x: .value("Selected", point.date))
-                    .foregroundStyle(
-                        colorScheme == .dark
-                            ? Color.white.opacity(0.25)
-                            : Color.black.opacity(0.15)
-                    )
+                    .foregroundStyle(AppColors.accent.opacity(0.35))
                     .lineStyle(StrokeStyle(lineWidth: 0.5))
 
                 PointMark(x: .value("Date", point.date), y: .value("RSI", point.value))
-                    .foregroundStyle(rsiColor(for: point.value))
+                    .foregroundStyle(AppColors.accent.opacity(0.25))
                     .symbolSize(25)
                 PointMark(x: .value("Date", point.date), y: .value("RSI", point.value))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AppColors.accent)
                     .symbolSize(8)
             }
         }

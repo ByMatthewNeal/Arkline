@@ -125,7 +125,7 @@ struct TrendChannelChart: View {
         }
     }
 
-    /// Price line
+    /// Price line — uses brand accent blue for on-brand consistency
     @ChartContentBuilder
     private var priceLine: some ChartContent {
         ForEach(points) { point in
@@ -134,7 +134,7 @@ struct TrendChannelChart: View {
                 y: .value("Price", point.close),
                 series: .value("Series", "price")
             )
-            .foregroundStyle(colorScheme == .dark ? Color.white : Color.black)
+            .foregroundStyle(AppColors.accent)
             .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
         }
     }
@@ -144,40 +144,35 @@ struct TrendChannelChart: View {
     private var selectionMarks: some ChartContent {
         if let date = selectedDate, let point = nearestPoint(to: date, in: points) {
             RuleMark(x: .value("Selected", point.date))
-                .foregroundStyle(
-                    colorScheme == .dark
-                        ? Color.white.opacity(0.3)
-                        : Color.black.opacity(0.2)
-                )
+                .foregroundStyle(AppColors.accent.opacity(0.4))
                 .lineStyle(StrokeStyle(lineWidth: 0.5))
 
             PointMark(x: .value("Date", point.date), y: .value("Price", point.close))
-                .foregroundStyle(point.zone.color.opacity(0.3))
+                .foregroundStyle(AppColors.accent.opacity(0.25))
                 .symbolSize(100)
             PointMark(x: .value("Date", point.date), y: .value("Price", point.close))
-                .foregroundStyle(point.zone.color)
+                .foregroundStyle(AppColors.accent)
                 .symbolSize(30)
         }
     }
 
     // MARK: - Zone Color Logic
 
-    /// Returns a prominent background color based on where price sits in the channel.
-    /// Green = price in lower half (value), Red = price in upper zone (overextended),
-    /// Yellow/amber = transition zones
+    /// Returns a background color blending brand blue with green/red zone tinting.
+    /// Value zones get a blue-green tint, overextended zones get a blue-red tint.
     private func zoneBackgroundColor(_ zone: TrendChannelZone) -> Color {
-        let opacity = colorScheme == .dark ? 0.15 : 0.12
+        let base = colorScheme == .dark ? 0.12 : 0.10
         switch zone {
         case .deepValue:
-            return AppColors.success.opacity(opacity * 1.3)
+            return Color(hex: "22C55E").opacity(base * 1.2)
         case .value:
-            return AppColors.success.opacity(opacity)
+            return Color(hex: "3B82F6").opacity(base * 0.8)
         case .fair:
-            return AppColors.success.opacity(opacity * 0.6)
+            return Color(hex: "3B82F6").opacity(base * 0.4)
         case .elevated:
-            return AppColors.error.opacity(opacity * 0.7)
+            return Color(hex: "F59E0B").opacity(base * 0.7)
         case .overextended:
-            return AppColors.error.opacity(opacity * 1.3)
+            return Color(hex: "DC2626").opacity(base * 1.1)
         }
     }
 
