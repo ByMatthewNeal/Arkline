@@ -55,21 +55,12 @@ struct ShowcasePortfolioPicker: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: ArkSpacing.md) {
-            Image(systemName: "wallet.pass")
-                .font(.system(size: 48))
-                .foregroundColor(AppColors.textTertiary)
-
-            Text("No Portfolios Available")
-                .font(ArkFonts.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-            Text("Create a portfolio first to use the showcase feature")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, ArkSpacing.xl)
-        }
+        EmptyStateView(
+            icon: "wallet.pass",
+            title: "No Portfolios Available",
+            message: "Create a portfolio first to use the showcase feature",
+            style: .compact
+        )
     }
 }
 

@@ -153,25 +153,12 @@ struct MessagesContent: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
-
-            Image(systemName: "message.badge")
-                .font(.system(size: 60))
-                .foregroundColor(AppColors.textSecondary)
-
-            Text("No Messages Yet")
-                .font(AppFonts.title20)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-            Text("Start a conversation with other traders")
-                .font(AppFonts.body14)
-                .foregroundColor(AppColors.textSecondary)
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 100)
+        EmptyStateView(
+            icon: "message.badge",
+            title: "No Messages Yet",
+            message: "Start a conversation with other traders"
+        )
+        .padding(.top, 60)
     }
 }
 

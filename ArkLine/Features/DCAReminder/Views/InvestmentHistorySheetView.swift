@@ -59,21 +59,12 @@ struct InvestmentHistorySheetView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 48))
-                .foregroundColor(textPrimary.opacity(0.3))
-
-            Text("No Investment History")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(textPrimary)
-
-            Text("Your investment history will appear here\nonce you start investing")
-                .font(.system(size: 14))
-                .foregroundColor(textPrimary.opacity(0.6))
-                .multilineTextAlignment(.center)
-        }
-        .padding(40)
+        EmptyStateView(
+            icon: "clock.arrow.circlepath",
+            title: "No Investment History",
+            message: "Your investment history will appear here once you start investing",
+            style: .compact
+        )
     }
 }
 

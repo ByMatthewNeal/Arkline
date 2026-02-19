@@ -256,23 +256,12 @@ struct BroadcastFeedView: View {
     // MARK: - No Results View
 
     private var noResultsView: some View {
-        VStack(spacing: ArkSpacing.sm) {
-            Spacer().frame(height: 40)
-
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 40))
-                .foregroundColor(AppColors.textTertiary)
-
-            Text("No Results Found")
-                .font(ArkFonts.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-            Text("Try adjusting your search or filters")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textSecondary)
-
-            Spacer()
-        }
+        EmptyStateView(
+            icon: "magnifyingglass",
+            title: "No Results Found",
+            message: "Try adjusting your search or filters",
+            style: .compact
+        )
     }
 
     // MARK: - Notification Prompt Banner
@@ -389,26 +378,11 @@ struct BroadcastFeedView: View {
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        VStack(spacing: ArkSpacing.md) {
-            Spacer()
-                .frame(height: 60)
-
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 56))
-                .foregroundColor(AppColors.textTertiary)
-
-            Text("No Insights Yet")
-                .font(ArkFonts.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-            Text("Market insights and analysis will appear here when published")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, ArkSpacing.xl)
-
-            Spacer()
-        }
+        EmptyStateView(
+            icon: "antenna.radiowaves.left.and.right",
+            title: "No Insights Yet",
+            message: "Market insights and analysis will appear here when published"
+        )
     }
 }
 

@@ -44,32 +44,13 @@ struct NotificationsSheet: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(textPrimary.opacity(0.05))
-                    .frame(width: 80, height: 80)
-
-                Image(systemName: "bell.slash")
-                    .font(.system(size: 32, weight: .light))
-                    .foregroundColor(textPrimary.opacity(0.3))
-            }
-
-            VStack(spacing: 8) {
-                Text("No Notifications")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(textPrimary)
-
-                Text("You're all caught up")
-                    .font(.system(size: 14))
-                    .foregroundColor(textPrimary.opacity(0.5))
-            }
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyStateView(
+            icon: "bell.slash",
+            title: "No Notifications",
+            message: "You're all caught up",
+            style: .compact
+        )
+        .frame(maxHeight: .infinity)
     }
 
     private var notificationsList: some View {

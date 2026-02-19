@@ -185,33 +185,13 @@ struct BroadcastStudioView: View {
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        VStack(spacing: ArkSpacing.md) {
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 48))
-                .foregroundColor(AppColors.textTertiary)
-
-            Text("No Broadcasts Yet")
-                .font(ArkFonts.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-            Text("Tap the + button to create your first broadcast")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-
-            Button {
-                showingEditor = true
-            } label: {
-                Text("Create Broadcast")
-                    .font(ArkFonts.bodySemibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, ArkSpacing.lg)
-                    .padding(.vertical, ArkSpacing.sm)
-                    .background(AppColors.accent)
-                    .cornerRadius(ArkSpacing.sm)
-            }
-        }
-        .padding(.vertical, ArkSpacing.xxl)
+        EmptyStateView(
+            icon: "antenna.radiowaves.left.and.right",
+            title: "No Broadcasts Yet",
+            message: "Tap the + button to create your first broadcast",
+            actionTitle: "Create Broadcast",
+            action: { showingEditor = true }
+        )
     }
 }
 

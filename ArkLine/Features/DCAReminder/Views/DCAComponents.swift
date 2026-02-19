@@ -1,45 +1,5 @@
 import SwiftUI
 
-// MARK: - Empty State
-struct EmptyDCAState: View {
-    let onCreateTap: () -> Void
-    @Environment(\.colorScheme) var colorScheme
-
-    private var textPrimary: Color {
-        AppColors.textPrimary(colorScheme)
-    }
-
-    var body: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "calendar.badge.clock")
-                .font(.system(size: 56))
-                .foregroundColor(AppColors.accent.opacity(0.6))
-
-            VStack(spacing: 8) {
-                Text("No DCA Reminders")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(textPrimary)
-
-                Text("Create your first DCA reminder to start\nbuilding your investment strategy")
-                    .font(.system(size: 14))
-                    .foregroundColor(textPrimary.opacity(0.6))
-                    .multilineTextAlignment(.center)
-            }
-
-            Button(action: onCreateTap) {
-                Text("Create Reminder")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 14)
-                    .background(AppColors.accent)
-                    .cornerRadius(12)
-            }
-        }
-        .padding(40)
-    }
-}
-
 // MARK: - Unified DCA Card
 struct DCAUnifiedCard: View {
     let reminder: DCAReminder

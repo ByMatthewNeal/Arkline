@@ -36,7 +36,13 @@ struct DCAListView: View {
 
                     // Empty state
                     if viewModel.reminders.isEmpty && viewModel.riskBasedReminders.isEmpty {
-                        EmptyDCAState(onCreateTap: { showCreateSheet = true })
+                        EmptyStateView(
+                            icon: "calendar.badge.clock",
+                            title: "No DCA Reminders",
+                            message: "Create your first DCA reminder to start building your investment strategy",
+                            actionTitle: "Create Reminder",
+                            action: { showCreateSheet = true }
+                        )
                     }
 
                     Spacer(minLength: 100)
