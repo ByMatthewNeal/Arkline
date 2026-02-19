@@ -35,14 +35,30 @@ struct MetalDetailView: View {
         }
     }
 
+    private var metalGradientColors: (Color, Color) {
+        switch asset.symbol.uppercased() {
+        case "XAU": return (Color(hex: "F59E0B"), Color(hex: "D97706"))
+        case "XAG": return (Color(hex: "94A3B8"), Color(hex: "64748B"))
+        case "XPT": return (Color(hex: "E2E8F0"), Color(hex: "94A3B8"))
+        case "XPD": return (Color(hex: "A78BFA"), Color(hex: "7C3AED"))
+        default: return (Color(hex: "F59E0B"), Color(hex: "D97706"))
+        }
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                MetalDetailHeader(asset: asset)
+            ZStack(alignment: .top) {
+                DetailHeaderGradient(
+                    primaryColor: metalGradientColors.0,
+                    secondaryColor: metalGradientColors.1
+                )
 
-                // Price
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(spacing: 24) {
+                    // Header
+                    MetalDetailHeader(asset: asset)
+
+                    // Price
+                    VStack(alignment: .leading, spacing: 8) {
                     Text(asset.currentPrice.asCurrency)
                         .font(.system(size: 36, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
@@ -124,9 +140,10 @@ struct MetalDetailView: View {
                 MetalTradingInsightSection(asset: asset)
                     .padding(.horizontal, 20)
 
-                Spacer(minLength: 100)
+                    Spacer(minLength: 100)
+                }
+                .padding(.top, 16)
             }
-            .padding(.top, 16)
         }
         .background(AppColors.background(colorScheme))
         .navigationBarBackButtonHidden()

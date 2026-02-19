@@ -24,63 +24,70 @@ struct StockDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                StockDetailHeader(asset: asset, profile: profile)
+            ZStack(alignment: .top) {
+                DetailHeaderGradient(
+                    primaryColor: Color(hex: "3B82F6"),
+                    secondaryColor: Color(hex: "1D4ED8")
+                )
 
-                // Price
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(asset.currentPrice.asCurrency)
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                        .contentTransition(.numericText())
+                VStack(spacing: 24) {
+                    // Header
+                    StockDetailHeader(asset: asset, profile: profile)
 
-                    HStack(spacing: 8) {
-                        Image(systemName: isPositive ? "arrow.up" : "arrow.down")
-                            .font(.caption)
-
-                        Text("\(abs(asset.priceChange24h).asCurrency) (\(abs(asset.priceChangePercentage24h), specifier: "%.2f")%)")
-                            .font(.subheadline)
+                    // Price
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(asset.currentPrice.asCurrency)
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
                             .contentTransition(.numericText())
+
+                        HStack(spacing: 8) {
+                            Image(systemName: isPositive ? "arrow.up" : "arrow.down")
+                                .font(.caption)
+
+                            Text("\(abs(asset.priceChange24h).asCurrency) (\(abs(asset.priceChangePercentage24h), specifier: "%.2f")%)")
+                                .font(.subheadline)
+                                .contentTransition(.numericText())
+                        }
+                        .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                     }
-                    .foregroundColor(isPositive ? AppColors.success : AppColors.error)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-
-                // Chart
-                VStack(spacing: 16) {
-                    AssetPriceChart(
-                        data: chartData,
-                        isPositive: chartIsPositive,
-                        isLoading: isLoadingChart
-                    )
-                    .frame(height: 200)
-                    .id(chartAnimationId)
-                    .transition(.opacity)
-
-                    // Timeframe Selector
-                    StockTimeframeSelector(selected: $selectedTimeframe)
-                }
-                .padding(.horizontal, 20)
-                .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
-
-                // Stats
-                StockStatsSection(asset: asset)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
 
-                // About
-                if let profile = profile {
-                    StockAboutSection(profile: profile)
-                        .padding(.horizontal, 20)
-                } else if isLoadingProfile {
-                    SkeletonCard()
-                        .padding(.horizontal, 20)
-                }
+                    // Chart
+                    VStack(spacing: 16) {
+                        AssetPriceChart(
+                            data: chartData,
+                            isPositive: chartIsPositive,
+                            isLoading: isLoadingChart
+                        )
+                        .frame(height: 200)
+                        .id(chartAnimationId)
+                        .transition(.opacity)
 
-                Spacer(minLength: 100)
+                        // Timeframe Selector
+                        StockTimeframeSelector(selected: $selectedTimeframe)
+                    }
+                    .padding(.horizontal, 20)
+                    .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
+
+                    // Stats
+                    StockStatsSection(asset: asset)
+                        .padding(.horizontal, 20)
+
+                    // About
+                    if let profile = profile {
+                        StockAboutSection(profile: profile)
+                            .padding(.horizontal, 20)
+                    } else if isLoadingProfile {
+                        SkeletonCard()
+                            .padding(.horizontal, 20)
+                    }
+
+                    Spacer(minLength: 100)
+                }
+                .padding(.top, 16)
             }
-            .padding(.top, 16)
         }
         .background(AppColors.background(colorScheme))
         .refreshable { await loadData() }

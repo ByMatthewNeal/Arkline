@@ -25,58 +25,65 @@ struct AssetDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // Header
-                AssetDetailHeader(asset: asset, isFavorite: $isFavorite)
+            ZStack(alignment: .top) {
+                DetailHeaderGradient(
+                    primaryColor: Color(hex: "6366F1"),
+                    secondaryColor: Color(hex: "8B5CF6")
+                )
 
-                // Price
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(asset.currentPrice.asCurrency)
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                        .contentTransition(.numericText())
+                VStack(spacing: 24) {
+                    // Header
+                    AssetDetailHeader(asset: asset, isFavorite: $isFavorite)
 
-                    HStack(spacing: 8) {
-                        Image(systemName: isPositive ? "arrow.up" : "arrow.down")
-                            .font(.caption)
-
-                        Text("\(abs(asset.priceChange24h).asCurrency) (\(abs(asset.priceChangePercentage24h), specifier: "%.2f")%)")
-                            .font(.subheadline)
+                    // Price
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(asset.currentPrice.asCurrency)
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
                             .contentTransition(.numericText())
+
+                        HStack(spacing: 8) {
+                            Image(systemName: isPositive ? "arrow.up" : "arrow.down")
+                                .font(.caption)
+
+                            Text("\(abs(asset.priceChange24h).asCurrency) (\(abs(asset.priceChangePercentage24h), specifier: "%.2f")%)")
+                                .font(.subheadline)
+                                .contentTransition(.numericText())
+                        }
+                        .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                     }
-                    .foregroundColor(isPositive ? AppColors.success : AppColors.error)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-
-                // Chart
-                VStack(spacing: 16) {
-                    AssetPriceChart(
-                        data: chartData,
-                        isPositive: chartIsPositive,
-                        isLoading: isLoadingChart
-                    )
-                    .frame(height: 200)
-                    .id(chartAnimationId)
-                    .transition(.opacity)
-
-                    // Timeframe Selector
-                    TimeframeSelector(selected: $selectedTimeframe)
-                }
-                .padding(.horizontal, 20)
-                .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
-
-                // Stats
-                AssetStatsSection(asset: asset)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
 
-                // About
-                AboutSection(asset: asset)
-                    .padding(.horizontal, 20)
+                    // Chart
+                    VStack(spacing: 16) {
+                        AssetPriceChart(
+                            data: chartData,
+                            isPositive: chartIsPositive,
+                            isLoading: isLoadingChart
+                        )
+                        .frame(height: 200)
+                        .id(chartAnimationId)
+                        .transition(.opacity)
 
-                Spacer(minLength: 100)
+                        // Timeframe Selector
+                        TimeframeSelector(selected: $selectedTimeframe)
+                    }
+                    .padding(.horizontal, 20)
+                    .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
+
+                    // Stats
+                    AssetStatsSection(asset: asset)
+                        .padding(.horizontal, 20)
+
+                    // About
+                    AboutSection(asset: asset)
+                        .padding(.horizontal, 20)
+
+                    Spacer(minLength: 100)
+                }
+                .padding(.top, 16)
             }
-            .padding(.top, 16)
         }
         .background(AppColors.background(colorScheme))
         .refreshable { await loadChart() }

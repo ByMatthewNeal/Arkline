@@ -456,6 +456,39 @@ struct MeshGradientBackground: View {
     }
 }
 
+// MARK: - Detail Header Gradient
+struct DetailHeaderGradient: View {
+    let primaryColor: Color
+    let secondaryColor: Color
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(RadialGradient(
+                    colors: [primaryColor.opacity(blobOpacity(0.25)), primaryColor.opacity(0)],
+                    center: .center, startRadius: 0, endRadius: 200
+                ))
+                .frame(width: 400, height: 400)
+                .offset(x: -100, y: -120)
+
+            Circle()
+                .fill(RadialGradient(
+                    colors: [secondaryColor.opacity(blobOpacity(0.2)), secondaryColor.opacity(0)],
+                    center: .center, startRadius: 0, endRadius: 160
+                ))
+                .frame(width: 320, height: 320)
+                .offset(x: 120, y: -60)
+        }
+        .frame(height: 280)
+        .clipped()
+    }
+
+    private func blobOpacity(_ base: CGFloat) -> CGFloat {
+        colorScheme == .dark ? base : base * 0.5
+    }
+}
+
 // MARK: - View Extensions
 // MARK: - Glass List Row Background
 struct GlassListRowBackground: View {
