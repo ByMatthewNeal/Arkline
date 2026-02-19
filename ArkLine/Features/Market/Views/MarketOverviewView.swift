@@ -130,19 +130,18 @@ struct StatColumn: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(label)
-                .font(.caption)
+                .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 
             Text(value)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+                .font(AppFonts.body14Bold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             if let change = change {
                 Text("\(change >= 0 ? "+" : "")\(change, specifier: "%.2f")%")
-                    .font(.caption2)
+                    .font(AppFonts.footnote10)
                     .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                     .lineLimit(1)
             }
@@ -159,7 +158,7 @@ struct CompactFearGreedCard: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Fear & Greed Index")
-                    .font(.subheadline)
+                    .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textSecondary)
 
                 HStack(spacing: 8) {
@@ -171,7 +170,7 @@ struct CompactFearGreedCard: View {
 
                     // Simplified: neutral badge, no color
                     Text(index.level.rawValue)
-                        .font(.caption)
+                        .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -202,7 +201,7 @@ struct SectionHeader: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.headline)
+                .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Spacer()
@@ -210,7 +209,7 @@ struct SectionHeader: View {
             if let action = action {
                 Button(action: action) {
                     Text("See All")
-                        .font(.caption)
+                        .font(AppFonts.caption12)
                         .foregroundColor(AppColors.accent)
                 }
             }
@@ -228,18 +227,18 @@ struct TrendingAssetCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(asset.symbol.uppercased())
-                    .font(.headline)
+                    .font(AppFonts.title18SemiBold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 Spacer()
 
                 Text("\(isPositive ? "+" : "")\(asset.priceChangePercentage24h, specifier: "%.2f")%")
-                    .font(.caption)
+                    .font(AppFonts.caption12)
                     .foregroundColor(isPositive ? AppColors.success : AppColors.error)
             }
 
             Text(asset.currentPrice.asCurrency)
-                .font(.subheadline)
+                .font(AppFonts.body14Medium)
                 .foregroundColor(AppColors.textSecondary)
         }
         .padding(16)
@@ -257,8 +256,7 @@ struct CategoryChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(AppFonts.caption12Medium)
                 .foregroundColor(isSelected ? .white : AppColors.textSecondary)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)

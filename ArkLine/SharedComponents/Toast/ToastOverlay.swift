@@ -17,13 +17,13 @@ struct ToastOverlay: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(toast.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppFonts.body14Bold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
                     .lineLimit(1)
 
                 if let message = toast.message {
                     Text(message)
-                        .font(.system(size: 12))
+                        .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
                         .lineLimit(2)
                 }

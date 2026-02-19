@@ -76,7 +76,7 @@ struct CustomTextField: View {
 
             if let error = errorMessage {
                 Text(error)
-                    .font(.caption)
+                    .font(AppFonts.caption12)
                     .foregroundColor(AppColors.error)
             }
         }
@@ -132,7 +132,7 @@ struct CustomTextArea: View {
 
             if let limit = characterLimit {
                 Text("\(text.count)/\(limit)")
-                    .font(.caption)
+                    .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
         }
