@@ -40,7 +40,8 @@ final class ConfidenceTrackerTests: XCTestCase {
 
     func testDataPointBonus_oneYear() {
         // 365 points → 0.0 (threshold not exceeded)
-        let bonus: Double = 365 > 365 ? min(1.0, log2(365.0 / 365.0) / 4.0) : 0.0
+        let points = 365
+        let bonus: Double = points > 365 ? min(1.0, log2(Double(points) / 365.0) / 4.0) : 0.0
         XCTAssertEqual(bonus, 0.0, accuracy: 0.001)
     }
 
@@ -65,7 +66,8 @@ final class ConfidenceTrackerTests: XCTestCase {
 
     func testDataPointBonus_belowThreshold() {
         // 200 points → 0.0
-        let bonus: Double = 200 > 365 ? min(1.0, log2(200.0 / 365.0) / 4.0) : 0.0
+        let points = 200
+        let bonus: Double = points > 365 ? min(1.0, log2(Double(points) / 365.0) / 4.0) : 0.0
         XCTAssertEqual(bonus, 0.0)
     }
 

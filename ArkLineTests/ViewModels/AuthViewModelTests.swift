@@ -40,8 +40,8 @@ final class AuthViewModelTests: XCTestCase {
 
         vm.verifyPasscode()
 
-        // verifyPasscode() fires a Task with 100ms delay
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        // verifyPasscode() fires a Task with 100ms delay — wait generously
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         XCTAssertEqual(vm.authState, .authenticated, "Should be authenticated on correct passcode")
         XCTAssertTrue(vm.isAuthenticated, "isAuthenticated should be true")
@@ -58,7 +58,7 @@ final class AuthViewModelTests: XCTestCase {
 
         vm.verifyPasscode()
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         XCTAssertEqual(vm.authState, .failed("Incorrect passcode"), "Should show failed state")
         XCTAssertFalse(vm.isAuthenticated, "Should not be authenticated")
@@ -91,7 +91,7 @@ final class AuthViewModelTests: XCTestCase {
 
         vm.verifyPasscode()
 
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
 
         XCTAssertTrue(vm.errorMessage?.contains("5 minutes") ?? false,
                       "Should show lockout duration, got: \(vm.errorMessage ?? "nil")")

@@ -24,6 +24,7 @@ private final class FailingSentimentService: SentimentServiceProtocol {
 
 // MARK: - SentimentViewModel Tests
 
+@MainActor
 final class SentimentViewModelTests: XCTestCase {
 
     // MARK: - Factory

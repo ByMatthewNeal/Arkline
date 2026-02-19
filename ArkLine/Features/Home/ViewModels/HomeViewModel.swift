@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 // MARK: - Home View Model
+@MainActor
 @Observable
 class HomeViewModel {
     // MARK: - Dependencies
@@ -352,8 +353,12 @@ class HomeViewModel {
         startAutoRefresh()
     }
 
-    deinit {
-        stopAutoRefresh()
+    nonisolated deinit {
+        // Timer cleanup — access stored property directly since deinit is nonisolated
+        MainActor.assumeIsolated {
+            refreshTimer?.invalidate()
+            refreshTimer = nil
+        }
     }
 
     // MARK: - Auto-Refresh Methods

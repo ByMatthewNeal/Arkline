@@ -43,6 +43,7 @@ private final class FailingSentimentService: SentimentServiceProtocol {
 
 // MARK: - HomeViewModel Tests
 
+@MainActor
 final class HomeViewModelTests: XCTestCase {
 
     // MARK: - Factory

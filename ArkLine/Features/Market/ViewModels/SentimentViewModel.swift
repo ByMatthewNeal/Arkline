@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - Sentiment View Model
+@MainActor
 @Observable
 class SentimentViewModel {
     // MARK: - Dependencies

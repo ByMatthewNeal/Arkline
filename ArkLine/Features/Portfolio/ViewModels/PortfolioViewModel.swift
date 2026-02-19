@@ -12,6 +12,7 @@ enum PortfolioTab: String, CaseIterable {
 }
 
 // MARK: - Portfolio View Model
+@MainActor
 @Observable
 final class PortfolioViewModel {
     // MARK: - Dependencies

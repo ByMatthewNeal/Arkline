@@ -2036,12 +2036,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F12C4D8F7DC0EF456265086D /* LogRegressionChannel.swift in Sources */,
-				3222BA09B6DB929C621846B6 /* LogRegressionService.swift in Sources */,
-				1D8F5623C015119E257E7763 /* TrendChannelViewModel.swift in Sources */,
-				0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */,
-				8089EA5E1420BCF937B425AB /* RSIChartView.swift in Sources */,
-				AA6E3961FA310002651BFB96 /* TrendChannelDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

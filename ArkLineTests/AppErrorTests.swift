@@ -150,7 +150,8 @@ final class AppErrorTests: XCTestCase {
         XCTAssertFalse(AppError.notImplemented.isRecoverable)
         XCTAssertFalse(AppError.invalidURL.isRecoverable)
         XCTAssertFalse(AppError.invalidCredentials.isRecoverable)
-        XCTAssertFalse(AppError.dataNotFound.isRecoverable)
+        // dataNotFound is now recoverable (pull to refresh)
+        XCTAssertTrue(AppError.dataNotFound.isRecoverable)
         XCTAssertFalse(AppError.sslPinningFailure(domain: "test.com").isRecoverable)
     }
 
@@ -164,21 +165,24 @@ final class AppErrorTests: XCTestCase {
         XCTAssertNotNil(AppError.timeout.recoverySuggestion)
         XCTAssertNotNil(AppError.biometricNotAvailable.recoverySuggestion)
         XCTAssertNotNil(AppError.sslPinningFailure(domain: "test.com").recoverySuggestion)
-        XCTAssertNotNil(AppError.notImplemented.recoverySuggestion)
+        // notImplemented falls through to default (nil) now
     }
 
     func testRecoverySuggestion_nilForMostErrors() {
         XCTAssertNil(AppError.invalidURL.recoverySuggestion)
         XCTAssertNil(AppError.invalidCredentials.recoverySuggestion)
-        XCTAssertNil(AppError.dataNotFound.recoverySuggestion)
-        XCTAssertNil(AppError.invalidData.recoverySuggestion)
+        // dataNotFound and invalidData now have recovery suggestions (pull to refresh)
+        XCTAssertNotNil(AppError.dataNotFound.recoverySuggestion)
+        XCTAssertNotNil(AppError.invalidData.recoverySuggestion)
     }
 
     // MARK: - Specific Error Messages
 
-    func testSSLPinningFailure_containsDomain() {
+    func testSSLPinningFailure_hasDescription() {
         let error = AppError.sslPinningFailure(domain: "api.binance.com")
-        XCTAssertTrue(error.errorDescription!.contains("api.binance.com"))
+        // Error description is now user-friendly and doesn't expose the domain
+        XCTAssertNotNil(error.errorDescription)
+        XCTAssertTrue(error.errorDescription!.contains("Secure connection"))
     }
 
     func testCustomMessage_passthrough() {
@@ -192,13 +196,14 @@ final class AppErrorTests: XCTestCase {
     }
 
     func testUnknown_withMessage() {
+        // unknown now always returns the same user-friendly message regardless of input
         let error = AppError.unknown(message: "Unexpected failure")
-        XCTAssertEqual(error.errorDescription, "Unexpected failure")
+        XCTAssertEqual(error.errorDescription, "Something went wrong. Pull to refresh or try again.")
     }
 
     func testUnknown_nilMessage() {
         let error = AppError.unknown(message: nil)
-        XCTAssertEqual(error.errorDescription, "An unknown error occurred")
+        XCTAssertEqual(error.errorDescription, "Something went wrong. Pull to refresh or try again.")
     }
 
     func testHTTPError_withMessage() {
@@ -208,6 +213,7 @@ final class AppErrorTests: XCTestCase {
 
     func testHTTPError_nilMessage() {
         let error = AppError.httpError(statusCode: 422, message: nil)
-        XCTAssertTrue(error.errorDescription!.contains("422"))
+        // Unmapped status codes now return generic user-friendly message
+        XCTAssertEqual(error.errorDescription, "Something went wrong. Please try again.")
     }
 }
