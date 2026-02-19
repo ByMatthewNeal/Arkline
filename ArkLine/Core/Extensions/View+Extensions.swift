@@ -306,3 +306,20 @@ struct ScaleButtonStyle: ButtonStyle {
             .animation(.arkSpring, value: configuration.isPressed)
     }
 }
+
+// MARK: - Zoom Transition Helpers (iOS 18+)
+extension View {
+    @ViewBuilder
+    func zoomSource(id: some Hashable, in namespace: Namespace.ID) -> some View {
+        if #available(iOS 18.0, *) {
+            self.matchedTransitionSource(id: id, in: namespace)
+        } else { self }
+    }
+
+    @ViewBuilder
+    func zoomDestination(id: some Hashable, in namespace: Namespace.ID) -> some View {
+        if #available(iOS 18.0, *) {
+            self.navigationTransition(.zoom(sourceID: id, in: namespace))
+        } else { self }
+    }
+}

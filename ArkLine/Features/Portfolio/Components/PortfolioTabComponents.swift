@@ -5,6 +5,7 @@ struct PortfolioOverviewContent: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+    @Namespace private var zoomNamespace
 
     private var currency: String {
         appState.preferredCurrency
@@ -54,9 +55,10 @@ struct PortfolioOverviewContent: View {
 
                         VStack(spacing: 8) {
                             ForEach(viewModel.topPerformers) { holding in
-                                NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel)) {
+                                NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel).zoomDestination(id: holding.id, in: zoomNamespace)) {
                                     HoldingRowCompact(holding: holding)
                                 }
+                                .zoomSource(id: holding.id, in: zoomNamespace)
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(holding.name), \(holding.profitLossPercentage >= 0 ? "up" : "down") \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
                             }
@@ -75,9 +77,10 @@ struct PortfolioOverviewContent: View {
 
                         VStack(spacing: 8) {
                             ForEach(viewModel.worstPerformers) { holding in
-                                NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel)) {
+                                NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel).zoomDestination(id: holding.id, in: zoomNamespace)) {
                                     HoldingRowCompact(holding: holding)
                                 }
+                                .zoomSource(id: holding.id, in: zoomNamespace)
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(holding.name), \(holding.profitLossPercentage >= 0 ? "up" : "down") \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
                             }
@@ -95,6 +98,7 @@ struct PortfolioOverviewContent: View {
 struct PortfolioHoldingsContent: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: PortfolioViewModel
+    @Namespace private var zoomNamespace
 
     var body: some View {
         VStack(spacing: 16) {
@@ -136,9 +140,10 @@ struct PortfolioHoldingsContent: View {
                 // Holdings List
                 LazyVStack(spacing: 8) {
                     ForEach(viewModel.filteredHoldings) { holding in
-                        NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel)) {
+                        NavigationLink(destination: HoldingDetailView(holding: holding, viewModel: viewModel).zoomDestination(id: holding.id, in: zoomNamespace)) {
                             HoldingRow(holding: holding)
                         }
+                        .zoomSource(id: holding.id, in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
                         .accessibilityLabel("\(holding.name), value \(holding.currentValue.asCurrency), \(holding.isProfit ? "profit" : "loss") of \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
                     }

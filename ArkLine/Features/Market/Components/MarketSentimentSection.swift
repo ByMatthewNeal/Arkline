@@ -6,6 +6,7 @@ struct MarketSentimentSection: View {
     @Bindable var viewModel: SentimentViewModel
     let lastUpdated: Date
     var isPro: Bool = false
+    @Namespace private var zoomNamespace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -22,10 +23,11 @@ struct MarketSentimentSection: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // ArkLine Risk Score (Proprietary)
                     if let arkLineScore = viewModel.arkLineRiskScore {
-                        NavigationLink(destination: ArkLineScoreDetailView(riskScore: arkLineScore)) {
+                        NavigationLink(destination: ArkLineScoreDetailView(riskScore: arkLineScore).zoomDestination(id: "arkline-score", in: zoomNamespace)) {
                             ArkLineScoreCard(score: arkLineScore)
                                 .cardAppearance(delay: 0)
                         }
+                        .zoomSource(id: "arkline-score", in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
                     } else {
                         ShimmerPlaceholderCard(title: "ArkLine Score", icon: "sparkles", isLoading: viewModel.isLoading) {
@@ -77,10 +79,11 @@ struct MarketSentimentSection: View {
 
                     // Sentiment Regime Quadrant
                     if let regimeData = viewModel.sentimentRegimeData {
-                        NavigationLink(destination: SentimentRegimeDetailView(viewModel: viewModel)) {
+                        NavigationLink(destination: SentimentRegimeDetailView(viewModel: viewModel).zoomDestination(id: "sentiment-regime", in: zoomNamespace)) {
                             SentimentRegimeCard(regimeData: regimeData)
                                 .cardAppearance(delay: 5)
                         }
+                        .zoomSource(id: "sentiment-regime", in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
                     } else {
                         ShimmerPlaceholderCard(
@@ -134,9 +137,10 @@ struct MarketSentimentSection: View {
                             await viewModel.retryAppStoreRankings()
                         }
                     } else {
-                        NavigationLink(destination: AppStoreRankingDetailView(viewModel: viewModel)) {
+                        NavigationLink(destination: AppStoreRankingDetailView(viewModel: viewModel).zoomDestination(id: "app-store-rankings", in: zoomNamespace)) {
                             AppStoreRankingsCard(rankings: viewModel.appStoreRankings)
                         }
+                        .zoomSource(id: "app-store-rankings", in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
                     }
 

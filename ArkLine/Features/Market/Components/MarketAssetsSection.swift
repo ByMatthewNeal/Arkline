@@ -13,6 +13,7 @@ struct MarketAssetsSection: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: MarketViewModel
     @State private var selectedSegment: AssetSegment = .crypto
+    @Namespace private var zoomNamespace
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -31,9 +32,10 @@ struct MarketAssetsSection: View {
                 switch selectedSegment {
                 case .crypto:
                     ForEach(viewModel.cryptoAssets) { asset in
-                        NavigationLink(destination: AssetDetailView(asset: asset)) {
+                        NavigationLink(destination: AssetDetailView(asset: asset).zoomDestination(id: asset.id, in: zoomNamespace)) {
                             CryptoAssetRow(asset: asset)
                         }
+                        .zoomSource(id: asset.id, in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
                         .simultaneousGesture(TapGesture().onEnded {
                             Task { await AnalyticsService.shared.trackCoinTap(asset.id, source: "market_list") }
@@ -47,9 +49,10 @@ struct MarketAssetsSection: View {
                     }
                 case .stocks:
                     ForEach(viewModel.stockAssets) { asset in
-                        NavigationLink(destination: StockDetailView(asset: asset)) {
+                        NavigationLink(destination: StockDetailView(asset: asset).zoomDestination(id: asset.id, in: zoomNamespace)) {
                             StockAssetRow(asset: asset)
                         }
+                        .zoomSource(id: asset.id, in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
 
                         if asset.id != viewModel.stockAssets.last?.id {
@@ -60,9 +63,10 @@ struct MarketAssetsSection: View {
                     }
                 case .metals:
                     ForEach(viewModel.metalAssets) { asset in
-                        NavigationLink(destination: MetalDetailView(asset: asset)) {
+                        NavigationLink(destination: MetalDetailView(asset: asset).zoomDestination(id: asset.id, in: zoomNamespace)) {
                             MetalAssetRow(asset: asset)
                         }
+                        .zoomSource(id: asset.id, in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
 
                         if asset.id != viewModel.metalAssets.last?.id {
