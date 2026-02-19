@@ -171,6 +171,7 @@ class OnboardingViewModel {
             return
         }
         isMovingForward = true
+        Haptics.light()
         currentStep = OnboardingStep.allCases[nextIndex + 1]
     }
 
@@ -178,6 +179,7 @@ class OnboardingViewModel {
         guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
               currentIndex > 0 else { return }
         isMovingForward = false
+        Haptics.light()
         currentStep = OnboardingStep.allCases[currentIndex - 1]
     }
 
@@ -337,6 +339,7 @@ class OnboardingViewModel {
 
     func confirmPasscodeEntry() {
         guard doPasscodesMatch else {
+            Haptics.error()
             errorMessage = "Passcodes do not match"
             confirmPasscode = ""
             return
@@ -427,6 +430,7 @@ class OnboardingViewModel {
                 }
 
                 createdUser = user
+                Haptics.success()
                 isOnboardingComplete = true
             } catch {
                 errorMessage = AppError.from(error).userMessage

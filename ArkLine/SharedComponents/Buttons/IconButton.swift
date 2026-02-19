@@ -11,7 +11,10 @@ struct IconButton: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            Haptics.light()
+            action()
+        }) {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: icon)
                     .font(.system(size: size.iconSize, weight: .medium))

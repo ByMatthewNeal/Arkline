@@ -76,11 +76,7 @@ struct PasscodeKeypad: View {
         guard code.count < length else { return }
         code += digit
 
-        // Haptic feedback
-        #if os(iOS)
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-        #endif
+        Haptics.light()
 
         if code.count == length {
             onComplete?(code)
@@ -91,11 +87,7 @@ struct PasscodeKeypad: View {
         guard !code.isEmpty else { return }
         code.removeLast()
 
-        // Haptic feedback
-        #if os(iOS)
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
-        #endif
+        Haptics.light()
     }
 }
 

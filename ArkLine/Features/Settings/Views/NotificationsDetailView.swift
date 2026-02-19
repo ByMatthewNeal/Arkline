@@ -40,6 +40,7 @@ struct NotificationsDetailView: View {
                         )
                     }
                     .onChange(of: dcaReminders) { _, newValue in
+                        Haptics.selection()
                         Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyDCAReminders)
                     }
 
@@ -52,6 +53,7 @@ struct NotificationsDetailView: View {
                         )
                     }
                     .onChange(of: priceAlerts) { _, newValue in
+                        Haptics.selection()
                         Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyPriceAlerts)
                     }
 
@@ -64,6 +66,7 @@ struct NotificationsDetailView: View {
                         )
                     }
                     .onChange(of: marketNews) { _, newValue in
+                        Haptics.selection()
                         Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyMarketNews)
                     }
 
@@ -76,6 +79,7 @@ struct NotificationsDetailView: View {
                         )
                     }
                     .onChange(of: communityUpdates) { _, newValue in
+                        Haptics.selection()
                         Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyCommunityUpdates)
                     }
                 } header: {
@@ -93,6 +97,7 @@ struct NotificationsDetailView: View {
                         )
                     }
                     .onChange(of: emailNotifications) { _, newValue in
+                        Haptics.selection()
                         Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyEmail)
                     }
                 } header: {

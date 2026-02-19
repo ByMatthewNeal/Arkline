@@ -67,6 +67,7 @@ struct PortfolioSwitcherSheet: View {
                             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
+                                    Haptics.warning()
                                     portfolioToDelete = portfolio
                                     showDeleteConfirmation = true
                                 } label: {
@@ -234,6 +235,9 @@ struct PortfolioSwitcherRow: View {
                 )
         )
         .contentShape(Rectangle())
-        .onTapGesture { onSelect() }
+        .onTapGesture {
+            Haptics.medium()
+            onSelect()
+        }
     }
 }

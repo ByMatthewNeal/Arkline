@@ -95,7 +95,10 @@ struct SettingsView: View {
                 Section {
                     Toggle(isOn: Binding(
                         get: { viewModel.notificationsEnabled },
-                        set: { viewModel.toggleNotifications($0) }
+                        set: {
+                            Haptics.selection()
+                            viewModel.toggleNotifications($0)
+                        }
                     )) {
                         SettingsRow(
                             icon: "bell.fill",
@@ -120,7 +123,10 @@ struct SettingsView: View {
                 Section {
                     Toggle(isOn: Binding(
                         get: { viewModel.biometricEnabled },
-                        set: { viewModel.toggleBiometric($0) }
+                        set: {
+                            Haptics.selection()
+                            viewModel.toggleBiometric($0)
+                        }
                     )) {
                         SettingsRow(
                             icon: "faceid",
@@ -152,6 +158,7 @@ struct SettingsView: View {
                         )
                     }
                     .onChange(of: analyticsEnabled) { _, newValue in
+                        Haptics.selection()
                         Task { await AnalyticsService.shared.setConsent(newValue) }
                     }
                 } header: {

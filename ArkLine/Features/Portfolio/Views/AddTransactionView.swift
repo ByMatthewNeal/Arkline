@@ -57,6 +57,9 @@ struct AddTransactionView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    .onChange(of: transactionType) { _, _ in
+                        Haptics.selection()
+                    }
                 }
 
                 // Asset Details
@@ -297,6 +300,7 @@ struct AddTransactionView: View {
         Task {
             await viewModel.addTransaction(transaction)
             await MainActor.run {
+                Haptics.success()
                 isSaving = false
                 dismiss()
             }
