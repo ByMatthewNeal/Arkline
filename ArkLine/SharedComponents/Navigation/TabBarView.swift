@@ -35,6 +35,7 @@ struct CustomTabBar: View {
     @EnvironmentObject var appState: AppState
     @Binding var selectedTab: AppTab
     var badges: [AppTab: Int] = [:]
+    @Namespace private var tabAnimation
 
     var body: some View {
         HStack(spacing: 0) {
@@ -42,7 +43,8 @@ struct CustomTabBar: View {
                 TabBarItem(
                     tab: tab,
                     isSelected: selectedTab == tab,
-                    badge: badges[tab]
+                    badge: badges[tab],
+                    namespace: tabAnimation
                 ) {
                     if selectedTab == tab {
                         // Already on this tab - trigger pop to root
@@ -61,10 +63,14 @@ struct CustomTabBar: View {
         .padding(.vertical, 10)
         .background(
             Capsule()
-                .fill(
-                    colorScheme == .dark
-                        ? Color(hex: "1A1A1A").opacity(0.95)
-                        : Color.white.opacity(0.95)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Capsule()
+                        .fill(
+                            colorScheme == .dark
+                                ? Color(hex: "1A1A1A").opacity(0.4)
+                                : Color.white.opacity(0.3)
+                        )
                 )
                 .overlay(
                     Capsule()
@@ -107,6 +113,7 @@ struct TabBarItem: View {
     let tab: AppTab
     let isSelected: Bool
     var badge: Int? = nil
+    var namespace: Namespace.ID
     let action: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
@@ -122,6 +129,8 @@ struct TabBarItem: View {
                     if isSelected {
                         Capsule()
                             .fill(pillColor)
+                            .shadow(color: AppColors.accent.opacity(0.4), radius: 8, x: 0, y: 2)
+                            .matchedGeometryEffect(id: "activeTab", in: namespace)
                             .frame(width: max(44, min(56, UIScreen.main.bounds.width / 8)), height: 36)
                     }
 
