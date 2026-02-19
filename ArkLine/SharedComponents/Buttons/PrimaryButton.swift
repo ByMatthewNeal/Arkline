@@ -39,6 +39,7 @@ struct PrimaryButton: View {
             .opacity(isDisabled ? 0.5 : 1)
         }
         .disabled(isDisabled || isLoading)
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 

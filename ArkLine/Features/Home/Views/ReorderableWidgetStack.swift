@@ -54,6 +54,7 @@ struct ReorderableWidgetStack: View {
                 ) {
                     widgetView(for: widgetType)
                 }
+                .cardAppearance(delay: index)
                 .onDrag {
                     self.draggingWidget = widgetType
                     return NSItemProvider(object: widgetType.rawValue as NSString)

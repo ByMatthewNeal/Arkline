@@ -64,6 +64,8 @@ struct TappableCard<Content: View>: View {
                 .padding(padding)
                 .background(isPressed ? pressedBackgroundColor : backgroundColor)
                 .cornerRadius(cornerRadius)
+                .scaleEffect(isPressed ? 0.98 : 1.0)
+                .animation(.arkSpring, value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(

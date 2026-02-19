@@ -297,3 +297,12 @@ extension View {
         modifier(CardAppearanceModifier(delay: delay))
     }
 }
+
+// MARK: - Press-Scale Button Style
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.arkSpring, value: configuration.isPressed)
+    }
+}
