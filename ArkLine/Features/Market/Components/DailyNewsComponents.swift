@@ -311,7 +311,7 @@ struct NewsDetailView: View {
     var body: some View {
         TabView(selection: $currentIndex) {
             ForEach(Array(allNews.enumerated()), id: \.element.id) { index, item in
-                NewsArticlePage(news: item)
+                NewsArticlePage(news: item, articleCount: allNews.count)
                     .tag(index)
             }
         }
@@ -328,6 +328,7 @@ struct NewsDetailView: View {
 // MARK: - Single Article Page
 private struct NewsArticlePage: View {
     let news: NewsItem
+    var articleCount: Int = 1
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @Environment(\.openURL) var openURL
@@ -349,23 +350,6 @@ private struct NewsArticlePage: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMM d, yyyy 'at' h:mm a"
         return formatter.string(from: news.publishedAt)
-    }
-
-    /// Clean description: remove duplicate title text and source names
-    private var cleanedDescription: String? {
-        guard let desc = news.description, !desc.isEmpty else { return nil }
-        var cleaned = desc
-        // Remove the title if it appears at the start of the description
-        if cleaned.hasPrefix(news.title) {
-            cleaned = String(cleaned.dropFirst(news.title.count))
-            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        // Remove leading source names (e.g. "The New York Times" at the start)
-        if cleaned.hasPrefix(news.source) {
-            cleaned = String(cleaned.dropFirst(news.source.count))
-            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return cleaned.isEmpty ? nil : cleaned
     }
 
     var body: some View {
@@ -429,15 +413,6 @@ private struct NewsArticlePage: View {
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                             .lineSpacing(4)
-
-                        if let description = cleanedDescription {
-                            Divider()
-
-                            Text(description)
-                                .font(.body)
-                                .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.9))
-                                .lineSpacing(6)
-                        }
                     }
                     .padding(20)
                     .background(cardBackground)
@@ -471,6 +446,21 @@ private struct NewsArticlePage: View {
                             .cornerRadius(12)
                         }
                         .padding(.horizontal, 20)
+                    }
+
+                    // Swipe hint
+                    if articleCount > 1 {
+                        HStack(spacing: 8) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 11, weight: .medium))
+                            Text("Swipe for more articles")
+                                .font(.caption)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
                     }
 
                     Spacer(minLength: 100)
