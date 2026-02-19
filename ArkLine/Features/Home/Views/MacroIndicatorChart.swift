@@ -188,15 +188,7 @@ struct MacroIndicatorChart: View {
 
             // Chart
             if isLoading {
-                VStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("Loading...")
-                        .font(.caption)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .frame(height: 200)
-                .frame(maxWidth: .infinity)
+                SkeletonChartView()
             } else if data.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "chart.line.uptrend.xyaxis")

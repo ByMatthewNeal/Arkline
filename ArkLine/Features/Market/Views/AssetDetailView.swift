@@ -184,9 +184,7 @@ struct AssetPriceChart: View {
 
     var body: some View {
         if isLoading && data.isEmpty {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(AppColors.cardBackground(colorScheme))
-                .overlay(ProgressView().tint(.gray))
+            SkeletonChartView()
         } else if data.isEmpty {
             RoundedRectangle(cornerRadius: 12)
                 .fill(AppColors.cardBackground(colorScheme))

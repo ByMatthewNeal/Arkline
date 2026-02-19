@@ -72,9 +72,8 @@ struct StockDetailView: View {
                     StockAboutSection(profile: profile)
                         .padding(.horizontal, 20)
                 } else if isLoadingProfile {
-                    ProgressView()
-                        .tint(.gray)
-                        .padding(40)
+                    SkeletonCard()
+                        .padding(.horizontal, 20)
                 }
 
                 Spacer(minLength: 100)

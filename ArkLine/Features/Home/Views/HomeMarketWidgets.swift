@@ -613,13 +613,18 @@ struct HomeDerivativesWidget: View {
             }
 
             if isLoading {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: AppColors.accent))
-                    Spacer()
+                VStack(spacing: 8) {
+                    ForEach(0..<(size == .compact ? 2 : 3), id: \.self) { _ in
+                        HStack {
+                            SkeletonView(height: 12, cornerRadius: 4)
+                                .frame(width: 80)
+                            Spacer()
+                            SkeletonView(height: 12, cornerRadius: 4)
+                                .frame(width: 60)
+                        }
+                    }
                 }
-                .frame(height: size == .compact ? 40 : 60)
+                .padding(.vertical, 4)
             } else if let overview = overview {
                 VStack(spacing: size == .compact ? 6 : 10) {
                     if size == .compact {
