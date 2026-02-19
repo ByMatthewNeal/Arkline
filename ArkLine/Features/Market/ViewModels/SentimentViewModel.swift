@@ -836,6 +836,18 @@ class SentimentViewModel {
         return await fetchMultiFactorRisk(coin: coin)
     }
 
+    // MARK: - Regime Schedule Info
+
+    /// When the current regime snapshot was computed (nil if never)
+    var regimeLastUpdated: Date? {
+        Self.loadCachedRegimeData()?.computedAt
+    }
+
+    /// Next scheduled regime update (the upcoming Sunday or Wednesday 00:15 UTC)
+    var regimeNextUpdate: Date {
+        Self.nextScheduledUpdate(after: Date())
+    }
+
     // MARK: - Regime Schedule Cache
 
     /// Wrapper for persisted regime data with computation timestamp
@@ -883,6 +895,32 @@ class SentimentViewModel {
             let weekday = cal.component(.weekday, from: candidate)
             if weekday == 1 || weekday == 4 { return candidate }
             candidate = cal.date(byAdding: .day, value: -1, to: candidate)!
+        }
+        return candidate
+    }
+
+    /// Returns the next scheduled update time (Sunday or Wednesday 00:15 UTC)
+    /// on or after the given date.
+    static func nextScheduledUpdate(after date: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+
+        var comps = cal.dateComponents([.year, .month, .day], from: date)
+        comps.hour = 0
+        comps.minute = 15
+        comps.second = 0
+        var candidate = cal.date(from: comps)!
+
+        // If today's 00:15 UTC has already passed, start from tomorrow
+        if date >= candidate {
+            candidate = cal.date(byAdding: .day, value: 1, to: candidate)!
+        }
+
+        // Walk forward (up to 7 days) to find Sunday(1) or Wednesday(4)
+        for _ in 0..<7 {
+            let weekday = cal.component(.weekday, from: candidate)
+            if weekday == 1 || weekday == 4 { return candidate }
+            candidate = cal.date(byAdding: .day, value: 1, to: candidate)!
         }
         return candidate
     }

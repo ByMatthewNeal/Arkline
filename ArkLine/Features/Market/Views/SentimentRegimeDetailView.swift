@@ -22,6 +22,12 @@ struct SentimentRegimeDetailView: View {
                     // Regime Guide
                     RegimeGuideSection()
 
+                    // Update Schedule Info
+                    RegimeUpdateInfoSection(
+                        lastUpdated: viewModel.regimeLastUpdated,
+                        nextUpdate: viewModel.regimeNextUpdate
+                    )
+
                     // Notification Toggle
                     RegimeNotificationToggle(alertManager: alertManager)
                 } else {
@@ -551,6 +557,71 @@ private struct RegimeGuideSection: View {
         .padding(20)
         .glassCard(cornerRadius: 16)
         .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Regime Update Info Section
+private struct RegimeUpdateInfoSection: View {
+    @Environment(\.colorScheme) var colorScheme
+    let lastUpdated: Date?
+    let nextUpdate: Date
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "EEE, MMM d 'at' HH:mm"
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "clock.arrow.2.circlepath")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppColors.textSecondary)
+
+                Text("Updated twice weekly")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            }
+
+            Text("Sundays & Wednesdays at 00:15 UTC")
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            Divider()
+                .opacity(0.4)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Last updated")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text(lastUpdatedText)
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Next update")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text(Self.dateFormatter.string(from: nextUpdate) + " UTC")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                }
+            }
+        }
+        .padding(16)
+        .glassCard(cornerRadius: 16)
+        .padding(.horizontal, 20)
+    }
+
+    private var lastUpdatedText: String {
+        guard let date = lastUpdated else { return "—" }
+        return Self.dateFormatter.string(from: date) + " UTC"
     }
 }
 
