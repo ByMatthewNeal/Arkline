@@ -8,6 +8,7 @@ struct PortfolioView: View {
     @State private var showCreatePortfolio = false
     @State private var showPortfolioPicker = false
     @State private var showShowcase = false
+    @State private var navigationPath = NavigationPath()
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -15,7 +16,7 @@ struct PortfolioView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 // Gradient background with subtle blue glow
                 MeshGradientBackground()
@@ -88,6 +89,9 @@ struct PortfolioView: View {
                     }
                 }
                 }
+            }
+            .onChange(of: appState.portfolioNavigationReset) { _, _ in
+                navigationPath = NavigationPath()
             }
             .navigationTitle(viewModel.selectedPortfolio?.name ?? "Portfolio")
             #if os(iOS)

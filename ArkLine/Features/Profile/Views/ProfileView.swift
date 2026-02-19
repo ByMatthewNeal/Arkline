@@ -8,6 +8,7 @@ struct ProfileView: View {
     @State private var showPortfolio = false
 
     @State private var showEditProfile = false
+    @State private var navigationPath = NavigationPath()
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -15,7 +16,7 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 // Gradient background with subtle blue glow
                 MeshGradientBackground()
@@ -77,6 +78,9 @@ struct ProfileView: View {
                     viewModel.user = updatedUser
                     appState.setAuthenticated(true, user: updatedUser)
                 }
+            }
+            .onChange(of: appState.profileNavigationReset) { _, _ in
+                navigationPath = NavigationPath()
             }
             .onAppear {
                 // Use the actual user from AppState if available

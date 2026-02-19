@@ -3,6 +3,7 @@ import SwiftUI
 struct MarketOverviewView: View {
     @State private var viewModel = MarketViewModel()
     @State private var sentimentViewModel = SentimentViewModel()
+    @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
@@ -12,7 +13,7 @@ struct MarketOverviewView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 // Animated mesh gradient background
                 MeshGradientBackground()
@@ -77,6 +78,9 @@ struct MarketOverviewView: View {
                 async let market: () = viewModel.refresh()
                 async let sentiment: () = sentimentViewModel.loadInitialData()
                 _ = await (market, sentiment)
+            }
+            .onChange(of: appState.marketNavigationReset) { _, _ in
+                navigationPath = NavigationPath()
             }
             .onAppear {
                 Task { await AnalyticsService.shared.trackScreenView("market") }
