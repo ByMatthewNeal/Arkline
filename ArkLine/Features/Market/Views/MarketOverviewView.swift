@@ -41,6 +41,9 @@ struct MarketOverviewView: View {
                             macroZScores: sentimentViewModel.macroZScores
                         )
 
+                        // 3.25 Indexes (S&P 500 & Nasdaq)
+                        IndexesSection()
+
                         // 3.5 Precious Metals Section
                         PreciousMetalsSection()
 

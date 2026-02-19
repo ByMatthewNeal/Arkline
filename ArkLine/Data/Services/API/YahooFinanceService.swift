@@ -16,7 +16,75 @@ final class YahooFinanceService {
     // MARK: - Base URL
     private let baseURL = "https://query1.finance.yahoo.com/v8/finance/chart"
 
-    // MARK: - Public Methods
+    // MARK: - Generic Chart Data
+
+    /// Fetch OHLC chart data for any symbol with configurable interval and range
+    func fetchChartBars(symbol: String, interval: String, range: String) async throws -> (bars: [OHLCBar], currentPrice: Double, previousClose: Double?) {
+        let data = try await fetchQuote(symbol: symbol, range: range, interval: interval)
+
+        guard let result = data.chart.result?.first,
+              let timestamps = result.timestamp,
+              let quote = result.indicators.quote.first,
+              let meta = result.meta else {
+            throw YahooFinanceError.noData
+        }
+
+        var bars: [OHLCBar] = []
+
+        for (index, timestamp) in timestamps.enumerated() {
+            let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+            let close = quote.close?[safe: index] ?? nil
+            let open = quote.open?[safe: index] ?? nil
+            let high = quote.high?[safe: index] ?? nil
+            let low = quote.low?[safe: index] ?? nil
+
+            if let c = close, let o = open, let h = high, let l = low, c > 0 {
+                bars.append(OHLCBar(date: date, open: o, high: h, low: l, close: c))
+            }
+        }
+
+        return (bars, meta.regularMarketPrice, meta.previousClose ?? meta.chartPreviousClose)
+    }
+
+    /// Aggregate hourly bars into 4-hour bars
+    func aggregate4HBars(from hourlyBars: [OHLCBar]) -> [OHLCBar] {
+        let sorted = hourlyBars.sorted { $0.date < $1.date }
+        guard !sorted.isEmpty else { return [] }
+
+        var result: [OHLCBar] = []
+        var chunk: [OHLCBar] = []
+
+        for bar in sorted {
+            chunk.append(bar)
+            if chunk.count == 4 {
+                let aggregated = OHLCBar(
+                    date: chunk.last!.date,
+                    open: chunk.first!.open,
+                    high: chunk.map(\.high).max()!,
+                    low: chunk.map(\.low).min()!,
+                    close: chunk.last!.close
+                )
+                result.append(aggregated)
+                chunk = []
+            }
+        }
+
+        // Include remaining bars as a partial 4H candle
+        if !chunk.isEmpty {
+            let aggregated = OHLCBar(
+                date: chunk.last!.date,
+                open: chunk.first!.open,
+                high: chunk.map(\.high).max()!,
+                low: chunk.map(\.low).min()!,
+                close: chunk.last!.close
+            )
+            result.append(aggregated)
+        }
+
+        return result
+    }
+
+    // MARK: - VIX / DXY Methods
 
     /// Fetch latest VIX data
     func fetchVIX() async throws -> VIXData? {
