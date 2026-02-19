@@ -23,6 +23,7 @@ struct PortfolioHeader: View {
             Text(totalValue.asCurrency(code: currency))
                 .font(AppFonts.number44)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
+                .contentTransition(.numericText())
 
             HStack(spacing: 16) {
                 // Day Change
@@ -36,8 +37,10 @@ struct PortfolioHeader: View {
                             .font(.system(size: 10))
                         Text("\(dayChange >= 0 ? "+" : "")\(dayChange.asCurrency(code: currency))")
                             .font(AppFonts.body14Medium)
+                            .contentTransition(.numericText())
                         Text("(\(dayChangePercentage >= 0 ? "+" : "")\(dayChangePercentage, specifier: "%.2f")%)")
                             .font(AppFonts.caption12)
+                            .contentTransition(.numericText())
                     }
                     .foregroundColor(dayChange >= 0 ? AppColors.success : AppColors.error)
                 }
@@ -55,8 +58,10 @@ struct PortfolioHeader: View {
                             .font(.system(size: 10))
                         Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency(code: currency))")
                             .font(AppFonts.body14Medium)
+                            .contentTransition(.numericText())
                         Text("(\(profitLossPercentage >= 0 ? "+" : "")\(profitLossPercentage, specifier: "%.2f")%)")
                             .font(AppFonts.caption12)
+                            .contentTransition(.numericText())
                     }
                     .foregroundColor(profitLoss >= 0 ? AppColors.success : AppColors.error)
                 }

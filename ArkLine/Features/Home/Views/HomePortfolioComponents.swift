@@ -115,6 +115,7 @@ struct PortfolioHeroCard: View {
                 Text(totalValue.asCurrency)
                     .font(.system(size: 42, weight: .bold))
                     .foregroundColor(textPrimary)
+                    .contentTransition(.numericText())
 
                 HStack(spacing: 6) {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
@@ -122,10 +123,12 @@ struct PortfolioHeroCard: View {
 
                     Text("\(isPositive ? "+" : "")\(change.asCurrency)")
                         .font(.system(size: 16, weight: .semibold))
+                        .contentTransition(.numericText())
 
                     Text("(\(isPositive ? "+" : "")\(changePercent, specifier: "%.2f")%)")
                         .font(.system(size: 14))
                         .opacity(0.8)
+                        .contentTransition(.numericText())
                 }
                 .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                 .padding(.horizontal, 12)

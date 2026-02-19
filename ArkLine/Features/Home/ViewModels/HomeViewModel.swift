@@ -413,14 +413,16 @@ class HomeViewModel {
         let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
         let sol = crypto.first { $0.symbol.uppercased() == "SOL" }
 
-        // Set prices on main actor immediately
+        // Set prices on main actor immediately (animated for numeric transitions)
         await MainActor.run {
-            self.btcPrice = btc?.currentPrice ?? 0
-            self.ethPrice = eth?.currentPrice ?? 0
-            self.solPrice = sol?.currentPrice ?? 0
-            self.btcChange24h = btc?.priceChangePercentage24h ?? 0
-            self.ethChange24h = eth?.priceChangePercentage24h ?? 0
-            self.solChange24h = sol?.priceChangePercentage24h ?? 0
+            withAnimation(.easeInOut(duration: 0.4)) {
+                self.btcPrice = btc?.currentPrice ?? 0
+                self.ethPrice = eth?.currentPrice ?? 0
+                self.solPrice = sol?.currentPrice ?? 0
+                self.btcChange24h = btc?.priceChangePercentage24h ?? 0
+                self.ethChange24h = eth?.priceChangePercentage24h ?? 0
+                self.solChange24h = sol?.priceChangePercentage24h ?? 0
+            }
             self.favoriteAssets = Array(crypto.prefix(3))
 
             // Calculate top gainers and losers
@@ -648,9 +650,11 @@ class HomeViewModel {
             let change = totalValue - totalCost
             let changePercent = totalCost > 0 ? (change / totalCost) * 100 : 0
 
-            portfolioValue = totalValue
-            basePortfolioChange = change
-            basePortfolioChangePercent = changePercent
+            withAnimation(.easeInOut(duration: 0.4)) {
+                portfolioValue = totalValue
+                basePortfolioChange = change
+                basePortfolioChangePercent = changePercent
+            }
         } else {
             // Use mock values based on portfolio name for demo
             // Change values are computed dynamically based on time period

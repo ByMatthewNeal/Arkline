@@ -33,6 +33,7 @@ struct StockDetailView: View {
                     Text(asset.currentPrice.asCurrency)
                         .font(.system(size: 36, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .contentTransition(.numericText())
 
                     HStack(spacing: 8) {
                         Image(systemName: isPositive ? "arrow.up" : "arrow.down")
@@ -40,6 +41,7 @@ struct StockDetailView: View {
 
                         Text("\(abs(asset.priceChange24h).asCurrency) (\(abs(asset.priceChangePercentage24h), specifier: "%.2f")%)")
                             .font(.subheadline)
+                            .contentTransition(.numericText())
                     }
                     .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                 }
