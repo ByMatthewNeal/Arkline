@@ -28,6 +28,7 @@ class TrendChannelViewModel {
     private let yahooService = YahooFinanceService.shared
     private let regressionService = LogRegressionService.shared
     private var cachedBars: [String: [OHLCBar]] = [:]
+    private var cachedDailyQuote: [String: (price: Double, change: Double)] = [:]
 
     // MARK: - Cache Key
 
@@ -47,6 +48,28 @@ class TrendChannelViewModel {
             let symbol = selectedIndex.rawValue
             let range = selectedTimeRange
             let key = cacheKey(symbol: symbol, range: range)
+
+            // Always fetch a 1-day quote for accurate daily price change
+            if cachedDailyQuote[symbol] == nil {
+                let dailyResult = try await yahooService.fetchChartBars(
+                    symbol: symbol,
+                    interval: "1d",
+                    range: "5d"
+                )
+                let price = dailyResult.currentPrice
+                var change = 0.0
+                if let prevClose = dailyResult.previousClose, prevClose > 0 {
+                    change = ((price - prevClose) / prevClose) * 100
+                }
+                cachedDailyQuote[symbol] = (price: price, change: change)
+            }
+
+            if let quote = cachedDailyQuote[symbol] {
+                await MainActor.run {
+                    self.currentPrice = quote.price
+                    self.priceChange = quote.change
+                }
+            }
 
             let bars: [OHLCBar]
 
@@ -68,13 +91,6 @@ class TrendChannelViewModel {
 
                 cachedBars[key] = rawBars
                 bars = rawBars
-
-                await MainActor.run {
-                    self.currentPrice = result.currentPrice
-                    if let prevClose = result.previousClose, prevClose > 0 {
-                        self.priceChange = ((result.currentPrice - prevClose) / prevClose) * 100
-                    }
-                }
             }
 
             // Run calculations
