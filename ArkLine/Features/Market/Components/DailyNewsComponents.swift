@@ -278,8 +278,8 @@ struct NewsListRow: View {
         }
         .padding(16)
         .background(cardBackground)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .cornerRadius(ArkSpacing.Radius.card)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 
@@ -416,8 +416,8 @@ private struct NewsArticlePage: View {
                     }
                     .padding(20)
                     .background(cardBackground)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .cornerRadius(ArkSpacing.Radius.card)
+                    .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
 
                     // Quick Summary card
@@ -443,7 +443,7 @@ private struct NewsArticlePage: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(AppColors.accent)
-                            .cornerRadius(12)
+                            .cornerRadius(ArkSpacing.Radius.md)
                         }
                         .padding(.horizontal, 20)
                     }
@@ -529,8 +529,8 @@ private struct NewsArticlePage: View {
         }
         .padding(20)
         .background(cardBackground)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .cornerRadius(ArkSpacing.Radius.card)
+        .arkShadow(ArkSpacing.Shadow.card)
         .padding(.horizontal, 20)
     }
 

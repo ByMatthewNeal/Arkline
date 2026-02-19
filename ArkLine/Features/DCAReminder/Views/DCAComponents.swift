@@ -88,7 +88,7 @@ struct DCAUnifiedCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 
     private func riskColorFor(_ category: RiskCategory) -> Color {

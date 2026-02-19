@@ -131,6 +131,6 @@ struct GlassFavoriteCard: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }

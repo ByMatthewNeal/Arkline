@@ -102,7 +102,7 @@ struct UpcomingEventsSection: View {
                     RoundedRectangle(cornerRadius: size == .compact ? 12 : 16)
                         .fill(cardBackground)
                 )
-                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                .arkShadow(ArkSpacing.Shadow.card)
             }
         }
         .buttonStyle(PlainButtonStyle())
@@ -360,8 +360,8 @@ struct AllEventsView: View {
                                 }
                             }
                             .background(cardBackground)
-                            .cornerRadius(16)
-                            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                            .cornerRadius(ArkSpacing.Radius.card)
+                            .arkShadow(ArkSpacing.Shadow.card)
                             .padding(.horizontal, 20)
                         }
                     }
@@ -565,8 +565,8 @@ struct EventInfoView: View {
                     }
                     .padding(20)
                     .background(cardBackground)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .cornerRadius(ArkSpacing.Radius.card)
+                    .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
 
                     // Data Card
@@ -585,8 +585,8 @@ struct EventInfoView: View {
                     }
                     .padding(20)
                     .background(cardBackground)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .cornerRadius(ArkSpacing.Radius.card)
+                    .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
 
                     // Description Card
@@ -603,8 +603,8 @@ struct EventInfoView: View {
                         }
                         .padding(20)
                         .background(cardBackground)
-                        .cornerRadius(16)
-                        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                        .cornerRadius(ArkSpacing.Radius.card)
+                        .arkShadow(ArkSpacing.Shadow.card)
                         .padding(.horizontal, 20)
                     }
 
@@ -621,8 +621,8 @@ struct EventInfoView: View {
                     }
                     .padding(20)
                     .background(cardBackground)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .cornerRadius(ArkSpacing.Radius.card)
+                    .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
 
                     Spacer(minLength: 100)

@@ -117,7 +117,7 @@ struct HomeFedWatchWidget: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
         .sheet(isPresented: $showInfoSheet) {
             FedWatchInfoSheet()
         }
@@ -251,7 +251,7 @@ struct HomeDailyNewsWidget: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 
@@ -533,7 +533,7 @@ struct HomeMarketSentimentWidget: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 
@@ -732,7 +732,7 @@ struct HomeDerivativesWidget: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 

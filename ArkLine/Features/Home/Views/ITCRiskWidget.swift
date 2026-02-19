@@ -115,7 +115,7 @@ struct RiskLevelWidget: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 
     // MARK: - Placeholder View
@@ -154,7 +154,7 @@ struct RiskLevelWidget: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 

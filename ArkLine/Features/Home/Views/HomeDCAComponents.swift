@@ -104,7 +104,7 @@ struct GlassDCACard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 
@@ -190,7 +190,7 @@ struct DCARemindersEntrySection: View {
                         RoundedRectangle(cornerRadius: size == .compact ? 12 : 16)
                             .fill(cardBackground)
                     )
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+                    .arkShadow(ArkSpacing.Shadow.card)
                 }
                 .buttonStyle(.plain)
             } else {
@@ -308,7 +308,7 @@ struct HomeDCACard: View {
             RoundedRectangle(cornerRadius: isCompact ? 12 : 16)
                 .fill(cardBackground)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 
     private var todayDateBadge: String {

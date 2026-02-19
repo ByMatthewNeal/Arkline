@@ -4,14 +4,14 @@ import SwiftUI
 struct BaseCard<Content: View>: View {
     let content: () -> Content
     var backgroundColor: Color = AppColors.cardBackground(.dark)
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = ArkSpacing.Radius.card
     var padding: CGFloat = ArkSpacing.Component.cardPadding
     var hasShadow: Bool = false
 
     init(
         backgroundColor: Color = AppColors.cardBackground(.dark),
-        cornerRadius: CGFloat = 16,
-        padding: CGFloat = 16,
+        cornerRadius: CGFloat = ArkSpacing.Radius.card,
+        padding: CGFloat = ArkSpacing.Component.cardPadding,
         hasShadow: Bool = false,
         @ViewBuilder content: @escaping () -> Content
     ) {
@@ -27,7 +27,7 @@ struct BaseCard<Content: View>: View {
             .padding(padding)
             .background(backgroundColor)
             .cornerRadius(cornerRadius)
-            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+            .arkShadow(ArkSpacing.Shadow.card)
     }
 }
 
@@ -37,16 +37,16 @@ struct TappableCard<Content: View>: View {
     let content: () -> Content
     var backgroundColor: Color = AppColors.cardBackground(.dark)
     var pressedBackgroundColor: Color = AppColors.divider(.dark)
-    var cornerRadius: CGFloat = 16
-    var padding: CGFloat = 16
+    var cornerRadius: CGFloat = ArkSpacing.Radius.card
+    var padding: CGFloat = ArkSpacing.Component.cardPadding
 
     @State private var isPressed = false
 
     init(
         backgroundColor: Color = AppColors.cardBackground(.dark),
         pressedBackgroundColor: Color = AppColors.divider(.dark),
-        cornerRadius: CGFloat = 16,
-        padding: CGFloat = 16,
+        cornerRadius: CGFloat = ArkSpacing.Radius.card,
+        padding: CGFloat = ArkSpacing.Component.cardPadding,
         action: @escaping () -> Void,
         @ViewBuilder content: @escaping () -> Content
     ) {
@@ -98,9 +98,9 @@ struct SectionCard<Header: View, Content: View>: View {
             header()
             content()
         }
-        .padding(16)
+        .padding(ArkSpacing.Component.cardPadding)
         .background(backgroundColor)
-        .cornerRadius(16)
+        .cornerRadius(ArkSpacing.Radius.card)
     }
 }
 

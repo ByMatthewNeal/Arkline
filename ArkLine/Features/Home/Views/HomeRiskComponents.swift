@@ -200,7 +200,7 @@ struct RiskScoreCard: View {
                 RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                     .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
             )
-            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+            .arkShadow(ArkSpacing.Shadow.card)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
@@ -566,7 +566,7 @@ struct HomeArkLineScoreWidget: View {
                 RoundedRectangle(cornerRadius: size == .compact ? 14 : 16)
                     .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
             )
-            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+            .arkShadow(ArkSpacing.Shadow.card)
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {

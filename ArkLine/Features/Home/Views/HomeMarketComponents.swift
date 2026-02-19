@@ -105,7 +105,7 @@ struct GlassFearGreedCard: View {
             RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fear and Greed Index, \(index.value) out of 100, \(index.level.rawValue)")
     }
@@ -394,7 +394,7 @@ struct GlassCoinCard: View {
             RoundedRectangle(cornerRadius: isExpanded ? 20 : 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
-        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .arkShadow(ArkSpacing.Shadow.card)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(symbol), \(price.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.1f", abs(change))) percent")
     }

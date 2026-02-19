@@ -62,6 +62,13 @@ struct ArkSpacing {
 
     // MARK: - Shadow
     struct Shadow {
+        static let card = ShadowStyle(
+            color: Color.black.opacity(0.06),
+            radius: 8,
+            x: 0,
+            y: 2
+        )
+
         static let small = ShadowStyle(
             color: Color.black.opacity(0.1),
             radius: 4,
