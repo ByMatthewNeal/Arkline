@@ -97,6 +97,7 @@ enum StepCategory: String {
 class OnboardingViewModel {
     // MARK: - State
     var currentStep: OnboardingStep = .welcome
+    var isMovingForward = true
     var isLoading = false
     var errorMessage: String?
     var isOnboardingComplete = false
@@ -169,16 +170,19 @@ class OnboardingViewModel {
             completeOnboarding()
             return
         }
+        isMovingForward = true
         currentStep = OnboardingStep.allCases[nextIndex + 1]
     }
 
     func previousStep() {
         guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
               currentIndex > 0 else { return }
+        isMovingForward = false
         currentStep = OnboardingStep.allCases[currentIndex - 1]
     }
 
     func skipToLogin() {
+        isMovingForward = true
         currentStep = .email
     }
 

@@ -141,6 +141,13 @@ struct AuthenticationCoordinator: View {
 struct OnboardingFlowView: View {
     @Bindable var viewModel: OnboardingViewModel
 
+    private var stepTransition: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: viewModel.isMovingForward ? .trailing : .leading).combined(with: .opacity),
+            removal: .move(edge: viewModel.isMovingForward ? .leading : .trailing).combined(with: .opacity)
+        )
+    }
+
     var body: some View {
         Group {
             switch viewModel.currentStep {
@@ -172,6 +179,9 @@ struct OnboardingFlowView: View {
                 FaceIDSetupView(viewModel: viewModel)
             }
         }
+        .id(viewModel.currentStep)
+        .transition(stepTransition)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.currentStep)
     }
 }
 

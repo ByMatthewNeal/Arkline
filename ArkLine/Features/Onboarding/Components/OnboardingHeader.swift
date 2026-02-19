@@ -10,6 +10,7 @@ struct OnboardingHeader: View {
     var isOptional: Bool = false
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var appeared = false
 
     var body: some View {
         VStack(spacing: ArkSpacing.sm) {
@@ -23,12 +24,18 @@ struct OnboardingHeader: View {
                         endPoint: .bottomTrailing
                     )
                 )
+                .opacity(appeared ? 1 : 0)
+                .scaleEffect(appeared ? 1 : 0.8)
+                .animation(.easeOut(duration: 0.4).delay(0.1), value: appeared)
 
             // Title
             Text(title)
                 .font(AppFonts.title30)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .multilineTextAlignment(.center)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 12)
+                .animation(.easeOut(duration: 0.35).delay(0.2), value: appeared)
 
             // Subtitle (if provided)
             if let subtitle = subtitle {
@@ -43,9 +50,13 @@ struct OnboardingHeader: View {
                 .font(AppFonts.body14)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 12)
+                .animation(.easeOut(duration: 0.35).delay(0.3), value: appeared)
             }
         }
         .padding(.top, ArkSpacing.xxxl)
+        .onAppear { appeared = true }
     }
 }
 
@@ -126,15 +137,16 @@ struct OnboardingProgressBar: View {
     let progress: Double
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var shimmerOffset: CGFloat = -1
 
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                Rectangle()
+                Capsule()
                     .fill(AppColors.divider(colorScheme))
-                    .frame(height: 4)
+                    .frame(height: 5)
 
-                Rectangle()
+                Capsule()
                     .fill(
                         LinearGradient(
                             colors: [AppColors.fillPrimary, AppColors.accentLight],
@@ -142,11 +154,28 @@ struct OnboardingProgressBar: View {
                             endPoint: .trailing
                         )
                     )
-                    .frame(width: geometry.size.width * progress, height: 4)
+                    .frame(width: geometry.size.width * progress, height: 5)
+                    .overlay(
+                        // Shimmer effect
+                        LinearGradient(
+                            colors: [.clear, Color.white.opacity(0.3), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 60)
+                        .offset(x: shimmerOffset * geometry.size.width * progress)
+                        .clipShape(Capsule())
+                    )
+                    .clipShape(Capsule())
                     .animation(.easeInOut(duration: 0.3), value: progress)
             }
         }
-        .frame(height: 4)
+        .frame(height: 5)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.5)) {
+                shimmerOffset = 1
+            }
+        }
     }
 }
 
@@ -162,6 +191,7 @@ struct OnboardingBottomActions: View {
     var errorMessage: String? = nil
 
     @Environment(\.colorScheme) private var colorScheme
+    @State private var appeared = false
 
     var body: some View {
         VStack(spacing: ArkSpacing.sm) {
@@ -180,6 +210,9 @@ struct OnboardingBottomActions: View {
                 isLoading: isLoading,
                 isDisabled: isDisabled
             )
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared ? 0 : 16)
+            .animation(.easeOut(duration: 0.35).delay(0.35), value: appeared)
 
             // Skip button
             if showSkip, let skipAction = skipAction {
@@ -189,10 +222,13 @@ struct OnboardingBottomActions: View {
                         .foregroundColor(AppColors.textSecondary)
                 }
                 .padding(.top, ArkSpacing.xxs)
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.3).delay(0.45), value: appeared)
             }
         }
         .padding(.horizontal, ArkSpacing.xl)
         .padding(.bottom, ArkSpacing.xxl)
+        .onAppear { appeared = true }
     }
 }
 
