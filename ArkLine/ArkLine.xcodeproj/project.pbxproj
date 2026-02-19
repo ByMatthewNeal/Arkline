@@ -390,6 +390,8 @@
 		0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD3282515B7877788D18601 /* TrendChannelChart.swift */; };
 		8089EA5E1420BCF937B425AB /* RSIChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50533F2F531F5D45D8710237 /* RSIChartView.swift */; };
 		AA6E3961FA310002651BFB96 /* TrendChannelDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */; };
+		7EC0A3B4D5F6289301C4E5A6 /* ShareCardKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */; };
+		8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -786,6 +788,8 @@
 		2AD3282515B7877788D18601 /* TrendChannelChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChannelChart.swift; sourceTree = "<group>"; };
 		50533F2F531F5D45D8710237 /* RSIChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSIChartView.swift; sourceTree = "<group>"; };
 		891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChannelDetailView.swift; sourceTree = "<group>"; };
+		5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardKit.swift; sourceTree = "<group>"; };
+		6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardContent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1566,6 +1570,7 @@
 				0B3232120C68509C6A086EDB /* Loading */,
 				D0E14F1F2D37C117302D315D /* Misc */,
 				4303F7BE033EE7B7B0E2950F /* Navigation */,
+				9AE2C5D6F7B840A523E6A7C8 /* Share */,
 				EC439D6BB8FB7D4F521E6AF0 /* Toast */,
 			);
 			path = SharedComponents;
@@ -1744,6 +1749,15 @@
 				0EA31B110EE79F3F817D8509 /* ViewModels */,
 			);
 			path = Broadcast;
+			sourceTree = "<group>";
+		};
+		9AE2C5D6F7B840A523E6A7C8 /* Share */ = {
+			isa = PBXGroup;
+			children = (
+				5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */,
+				6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */,
+			);
+			path = Share;
 			sourceTree = "<group>";
 		};
 		D0E14F1F2D37C117302D315D /* Misc */ = {
@@ -2112,6 +2126,8 @@
 				F309CE4A58D0C80FC87CACF1 /* AssetTechnicalDetailSheet.swift in Sources */,
 				5F4B99B5C4891DD601F0FF5B /* AuthViewModel.swift in Sources */,
 				F61544EDBB29AB824683C437 /* ArkLineLogoShape.swift in Sources */,
+				7EC0A3B4D5F6289301C4E5A6 /* ShareCardKit.swift in Sources */,
+				8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
 				E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */,
 				D8AF87D5A1447E9A0DAE4A44 /* QRScannerSheet.swift in Sources */,

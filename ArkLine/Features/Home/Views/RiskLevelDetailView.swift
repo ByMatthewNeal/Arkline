@@ -28,6 +28,7 @@ struct RiskLevelChartView: View {
     @State private var showChart = true
     @State private var showFullscreenChart = false
     @State private var showPaywall = false
+    @State private var showShareCard = false
     @State private var adaptiveConfidence: Int?
 
     private var isDarkMode: Bool {
@@ -205,12 +206,31 @@ struct RiskLevelChartView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundColor(AppColors.accent)
+                    HStack(spacing: 16) {
+                        Button(action: { showShareCard = true }) {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundColor(AppColors.accent)
+                        }
+
+                        Button("Done") { dismiss() }
+                            .foregroundColor(AppColors.accent)
+                    }
                 }
             }
             .sheet(isPresented: $showInfoSheet) {
                 RiskLevelInfoSheet()
+            }
+            .sheet(isPresented: $showShareCard) {
+                if let risk = currentRiskLevel {
+                    ShareCardSheet(title: "Share \(selectedCoin.rawValue) Risk", cardHeight: 400) { _, _ in
+                        RiskShareCardContent(
+                            coinSymbol: selectedCoin.rawValue,
+                            riskLevel: risk,
+                            history: filteredHistory,
+                            timeRange: selectedTimeRange
+                        )
+                    }
+                }
             }
             .sheet(isPresented: $showPaywall) {
                 PaywallView(feature: .allCoinRisk)

@@ -9,6 +9,8 @@ struct AssetDetailView: View {
     @State private var chartData: [PricePoint] = []
     @State private var isLoadingChart = false
     @State private var chartAnimationId = UUID()
+    @State private var showShareCard = false
+    @State private var shareIconImage: UIImage?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
@@ -106,10 +108,25 @@ struct AssetDetailView: View {
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { toggleFavorite() }) {
-                    Image(systemName: isFavorite ? "star.fill" : "star")
-                        .foregroundColor(isFavorite ? Color(hex: "F59E0B") : AppColors.textPrimary(colorScheme))
+                HStack(spacing: 16) {
+                    Button(action: { showShareCard = true }) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                    }
+
+                    Button(action: { toggleFavorite() }) {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                            .foregroundColor(isFavorite ? Color(hex: "F59E0B") : AppColors.textPrimary(colorScheme))
+                    }
                 }
+            }
+        }
+        .sheet(isPresented: $showShareCard) {
+            ShareCardSheet(title: "Share \(asset.symbol.uppercased())", cardHeight: 420) { showBranding, showTimestamp in
+                AssetShareCardContent(asset: asset, iconImage: shareIconImage)
+            }
+            .task {
+                shareIconImage = await ShareCardIconLoader.loadIcon(from: asset.iconUrl)
             }
         }
         #endif
