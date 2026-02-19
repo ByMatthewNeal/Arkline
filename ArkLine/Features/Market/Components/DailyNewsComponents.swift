@@ -289,6 +289,10 @@ struct NewsDetailView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.openURL) var openURL
 
+    @State private var summary: String?
+    @State private var isSummaryLoading = false
+    @State private var summaryError: String?
+
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
         (appState.darkModePreference == .automatic && colorScheme == .dark)
@@ -406,6 +410,11 @@ struct NewsDetailView: View {
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
                     .padding(.horizontal, 20)
 
+                    // Quick Summary card
+                    if !news.url.isEmpty {
+                        summaryCard
+                    }
+
                     // Open in Browser button
                     if !news.url.isEmpty {
                         Button(action: {
@@ -416,7 +425,7 @@ struct NewsDetailView: View {
                             HStack {
                                 Image(systemName: "safari")
                                     .font(.system(size: 16))
-                                Text("Open in Browser")
+                                Text("Read Full Article")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                             }
@@ -438,5 +447,82 @@ struct NewsDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .task {
+            await loadSummary()
+        }
+    }
+
+    // MARK: - Summary Card
+
+    private var summaryCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Quick Summary")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Spacer()
+            }
+
+            if isSummaryLoading {
+                // Loading state
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Generating summary...")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .padding(.vertical, 8)
+            } else if let summary = summary {
+                // Summary content
+                Text(summary)
+                    .font(.body)
+                    .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.9))
+                    .lineSpacing(6)
+
+                // Disclaimer
+                Text("AI-generated summary")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                    .padding(.top, 4)
+            } else if let error = summaryError {
+                // Error state
+                Text(error)
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineSpacing(4)
+            }
+        }
+        .padding(20)
+        .background(cardBackground)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Load Summary
+
+    private func loadSummary() async {
+        guard !news.url.isEmpty else { return }
+
+        isSummaryLoading = true
+        defer { isSummaryLoading = false }
+
+        do {
+            let result = try await ArticleSummaryService.shared.fetchSummary(
+                url: news.url,
+                title: news.title
+            )
+            summary = result
+        } catch {
+            summaryError = "Summary unavailable for this article. Tap below to read the full article in your browser."
+        }
     }
 }
