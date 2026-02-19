@@ -191,6 +191,7 @@ struct CreateCheckoutSessionRequest: Encodable {
     let recipient_name: String?
     let note: String?
     let price_id: String
+    let trial_days: Int?
 }
 
 struct CheckoutSessionResponse: Decodable {
@@ -226,5 +227,23 @@ struct GenerateInviteResponse: Decodable {
     enum CodingKeys: String, CodingKey {
         case success, code
         case deepLink = "deep_link"
+    }
+}
+
+// MARK: - Activate Subscription DTOs
+
+struct ActivateSubscriptionRequest: Encodable {
+    let invite_code: String
+}
+
+struct ActivateSubscriptionResponse: Decodable {
+    let success: Bool
+    let linked: Bool
+    let status: String?
+    let trialEnd: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case success, linked, status
+        case trialEnd = "trial_end"
     }
 }

@@ -58,6 +58,7 @@ struct User: Codable, Identifiable, Equatable {
     var faceIdEnabled: Bool
     var role: UserRole
     var subscriptionStatus: SubscriptionStatus
+    var trialEnd: Date?
     var createdAt: Date
     var updatedAt: Date
 
@@ -81,6 +82,7 @@ struct User: Codable, Identifiable, Equatable {
         case faceIdEnabled = "face_id_enabled"
         case role
         case subscriptionStatus = "subscription_status"
+        case trialEnd = "trial_end"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -107,6 +109,7 @@ struct User: Codable, Identifiable, Equatable {
         faceIdEnabled = try container.decodeIfPresent(Bool.self, forKey: .faceIdEnabled) ?? false
         role = try container.decodeIfPresent(UserRole.self, forKey: .role) ?? .user
         subscriptionStatus = try container.decodeIfPresent(SubscriptionStatus.self, forKey: .subscriptionStatus) ?? .none
+        trialEnd = try container.decodeIfPresent(Date.self, forKey: .trialEnd)
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
     }
@@ -131,6 +134,7 @@ struct User: Codable, Identifiable, Equatable {
         faceIdEnabled: Bool = false,
         role: UserRole = .user,
         subscriptionStatus: SubscriptionStatus = .none,
+        trialEnd: Date? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -152,6 +156,7 @@ struct User: Codable, Identifiable, Equatable {
         self.faceIdEnabled = faceIdEnabled
         self.role = role
         self.subscriptionStatus = subscriptionStatus
+        self.trialEnd = trialEnd
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -279,6 +284,12 @@ extension User {
         role == .admin ||
         subscriptionStatus == .active ||
         subscriptionStatus == .trialing
+    }
+
+    /// Days remaining in trial, nil if not trialing
+    var trialDaysRemaining: Int? {
+        guard subscriptionStatus == .trialing, let end = trialEnd else { return nil }
+        return max(0, Calendar.current.dateComponents([.day], from: Date(), to: end).day ?? 0)
     }
 }
 

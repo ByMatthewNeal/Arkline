@@ -404,6 +404,15 @@ class OnboardingViewModel {
                     if validatedInviteCode != nil {
                         do {
                             try await inviteCodeService.redeemCode(inviteCode, userId: userId)
+
+                            // If this was a paid invite (trial or full), link the Stripe subscription
+                            if validatedInviteCode?.paymentStatus == "paid" {
+                                do {
+                                    let _ = try await AdminService().activateSubscription(inviteCode: inviteCode)
+                                } catch {
+                                    AppLogger.shared.error("Failed to activate subscription: \(error.localizedDescription)")
+                                }
+                            }
                         } catch {
                             AppLogger.shared.error("Failed to redeem invite code: \(error.localizedDescription)")
                         }

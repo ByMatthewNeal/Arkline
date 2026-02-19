@@ -30,6 +30,7 @@ interface CreateCheckoutRequest {
   recipient_name?: string
   note?: string
   price_id: string
+  trial_days?: number
 }
 
 Deno.serve(async (req) => {
@@ -131,6 +132,7 @@ Deno.serve(async (req) => {
       recipient_name: body.recipient_name ?? null,
       note: body.note ?? null,
       payment_status: "pending_payment",
+      trial_days: body.trial_days ?? null,
       tier,
     })
     .select("id")
@@ -151,7 +153,7 @@ Deno.serve(async (req) => {
 
   let session: Stripe.Checkout.Session
   try {
-    session = await stripe.checkout.sessions.create({
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       customer_email: body.email,
       client_reference_id: invite.id,
@@ -162,8 +164,18 @@ Deno.serve(async (req) => {
         invite_id: invite.id,
         recipient_name: body.recipient_name ?? "",
         admin_initiated: "true",
+        is_trial: body.trial_days ? "true" : "false",
       },
-    })
+    }
+
+    // Add trial period if specified
+    if (body.trial_days && body.trial_days > 0) {
+      checkoutParams.subscription_data = {
+        trial_period_days: body.trial_days,
+      }
+    }
+
+    session = await stripe.checkout.sessions.create(checkoutParams)
   } catch (err) {
     console.error("Failed to create Stripe checkout session:", err)
     // Clean up the invite record
@@ -183,7 +195,8 @@ Deno.serve(async (req) => {
     })
     .eq("id", invite.id)
 
-  console.log(`Created checkout session for ${body.email} (${tier}), invite ${invite.id}, code ${code}`)
+  const trialLabel = body.trial_days ? ` with ${body.trial_days}-day trial` : ""
+  console.log(`Created checkout session for ${body.email} (${tier}${trialLabel}), invite ${invite.id}, code ${code}`)
 
   return new Response(JSON.stringify({
     success: true,

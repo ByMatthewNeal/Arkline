@@ -63,17 +63,20 @@ struct SubscriptionBannerView: View {
                 backgroundColor: AppColors.error.opacity(0.85)
             )
         case .trialing:
-            if let days = trialDaysRemaining, days <= 7 {
-                return BannerConfig(
-                    icon: "clock.fill",
-                    message: days <= 1
-                        ? "Your trial ends today."
-                        : "Your trial ends in \(days) days.",
-                    textColor: colorScheme == .dark ? .white.opacity(0.9) : .black.opacity(0.8),
-                    backgroundColor: AppColors.accent.opacity(0.15)
-                )
+            let message: String
+            if let days = trialDaysRemaining {
+                message = days <= 1
+                    ? "Free trial ends today."
+                    : "Free trial \u{2014} \(days) days remaining."
+            } else {
+                message = "You\u{2019}re on a free trial."
             }
-            return nil
+            return BannerConfig(
+                icon: "clock.fill",
+                message: message,
+                textColor: colorScheme == .dark ? .white.opacity(0.9) : .black.opacity(0.8),
+                backgroundColor: AppColors.accent.opacity(0.15)
+            )
         case .active, .none:
             return nil
         }

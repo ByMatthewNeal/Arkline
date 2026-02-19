@@ -9,6 +9,7 @@ protocol AdminServiceProtocol {
     func updateSubscription(stripeSubscriptionId: String, newPlan: String) async throws
     func refundPayment(paymentIntentId: String, amount: Int?, reason: String?) async throws
     func deactivateAccount(userId: UUID, isActive: Bool) async throws
-    func createCheckoutSession(email: String, recipientName: String?, note: String?, priceId: String) async throws -> CheckoutSessionResponse
+    func createCheckoutSession(email: String, recipientName: String?, note: String?, priceId: String, trialDays: Int?) async throws -> CheckoutSessionResponse
     func createCompedInvite(email: String, recipientName: String?, note: String?, sendEmail: Bool, tier: String) async throws -> GenerateInviteResponse
+    func activateSubscription(inviteCode: String) async throws -> ActivateSubscriptionResponse
 }

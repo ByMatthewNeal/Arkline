@@ -391,6 +391,7 @@ class AppState: ObservableObject {
             if let subStatus = profile.subscriptionStatus {
                 updatedUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? currentUser.subscriptionStatus
             }
+            updatedUser.trialEnd = profile.trialEnd
             if let fullName = profile.fullName {
                 updatedUser.fullName = fullName
             }

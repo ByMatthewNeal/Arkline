@@ -188,6 +188,24 @@ struct SettingsView: View {
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.error)
                         }
+                        if status == .trialing {
+                            HStack(spacing: ArkSpacing.xs) {
+                                Image(systemName: "clock.fill")
+                                    .font(.system(size: 12))
+                                if let days = appState.currentUser?.trialDaysRemaining {
+                                    Text(days <= 1 ? "Trial ends today" : "\(days) days left in trial")
+                                        .font(AppFonts.caption12)
+                                } else {
+                                    Text("Free trial active")
+                                        .font(AppFonts.caption12)
+                                }
+                            }
+                            .foregroundColor(AppColors.accent)
+                            .padding(.horizontal, ArkSpacing.md)
+                            .padding(.vertical, ArkSpacing.xs)
+                            .background(AppColors.accent.opacity(0.1))
+                            .cornerRadius(ArkSpacing.Radius.sm)
+                        }
                     } header: {
                         Text("Subscription")
                     }

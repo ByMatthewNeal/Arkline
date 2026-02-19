@@ -48,8 +48,11 @@ struct HomeView: View {
                         // Subscription status banner
                         if let status = appState.currentUser?.subscriptionStatus,
                            status != .active && status != .none {
-                            SubscriptionBannerView(status: status)
-                                .padding(.horizontal, 20)
+                            SubscriptionBannerView(
+                                status: status,
+                                trialDaysRemaining: appState.currentUser?.trialDaysRemaining
+                            )
+                            .padding(.horizontal, 20)
                         }
 
                         // Portfolio Value Card (Hero) - Always visible

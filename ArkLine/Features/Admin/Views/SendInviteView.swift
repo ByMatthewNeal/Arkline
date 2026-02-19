@@ -20,8 +20,12 @@ struct SendInviteView: View {
                     modePicker
                     formSection
 
-                    if viewModel.inviteMode == .payment {
+                    if viewModel.inviteMode == .payment || viewModel.inviteMode == .trial {
                         planPicker
+                    }
+
+                    if viewModel.inviteMode == .trial {
+                        trialInfoCard
                     }
 
                     sendButton
@@ -133,12 +137,20 @@ struct SendInviteView: View {
 
     private var sendButton: some View {
         PrimaryButton(
-            title: viewModel.inviteMode == .payment ? "Create Checkout Link" : "Send Comped Invite",
+            title: sendButtonTitle,
             action: { Task { await viewModel.sendInvite() } },
             isLoading: viewModel.isSending,
             isDisabled: !viewModel.canSend,
-            icon: viewModel.inviteMode == .payment ? "link" : "paperplane.fill"
+            icon: viewModel.inviteMode == .comped ? "paperplane.fill" : "link"
         )
+    }
+
+    private var sendButtonTitle: String {
+        switch viewModel.inviteMode {
+        case .payment: return "Create Checkout Link"
+        case .trial: return "Create Trial Link"
+        case .comped: return "Send Comped Invite"
+        }
     }
 
     // MARK: - Result Section
@@ -147,7 +159,9 @@ struct SendInviteView: View {
     private var resultSection: some View {
         switch viewModel.state {
         case .successPayment(let url):
-            successPaymentView(url)
+            successPaymentView(url, isTrial: false)
+        case .successTrial(let url):
+            successPaymentView(url, isTrial: true)
         case .successComped(let code):
             successCompedView(code)
         case .error(let message):
@@ -160,13 +174,30 @@ struct SendInviteView: View {
         }
     }
 
-    private func successPaymentView(_ url: String) -> some View {
+    private var trialInfoCard: some View {
+        HStack(spacing: ArkSpacing.sm) {
+            Image(systemName: "clock.badge.checkmark")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(AppColors.accent)
+
+            Text("7-day free trial. Card collected upfront. Auto-converts to paid on day 8.")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+
+            Spacer()
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.accent.opacity(0.1))
+        .cornerRadius(ArkSpacing.Radius.sm)
+    }
+
+    private func successPaymentView(_ url: String, isTrial: Bool) -> some View {
         VStack(spacing: ArkSpacing.md) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 48))
                 .foregroundColor(AppColors.success)
 
-            Text("Checkout link created!")
+            Text(isTrial ? "7-day trial link created!" : "Checkout link created!")
                 .font(AppFonts.title16)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 

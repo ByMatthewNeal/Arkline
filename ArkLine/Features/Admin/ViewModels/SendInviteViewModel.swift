@@ -5,6 +5,7 @@ import UIKit
 
 enum InviteMode: String, CaseIterable {
     case payment = "Payment"
+    case trial = "Trial"
     case comped = "Comped"
 }
 
@@ -12,6 +13,7 @@ enum SendInviteState: Equatable {
     case idle
     case loading
     case successPayment(checkoutURL: String)
+    case successTrial(checkoutURL: String)
     case successComped(code: String)
     case error(String)
 
@@ -19,6 +21,7 @@ enum SendInviteState: Equatable {
         switch (lhs, rhs) {
         case (.idle, .idle), (.loading, .loading): return true
         case (.successPayment(let a), .successPayment(let b)): return a == b
+        case (.successTrial(let a), .successTrial(let b)): return a == b
         case (.successComped(let a), .successComped(let b)): return a == b
         case (.error(let a), .error(let b)): return a == b
         default: return false
@@ -73,9 +76,20 @@ class SendInviteViewModel {
                     email: email.trimmingCharacters(in: .whitespaces),
                     recipientName: recipientName.nilIfEmpty,
                     note: note.nilIfEmpty,
-                    priceId: selectedPlan.priceId
+                    priceId: selectedPlan.priceId,
+                    trialDays: nil
                 )
                 state = .successPayment(checkoutURL: response.checkoutUrl)
+
+            case .trial:
+                let response = try await adminService.createCheckoutSession(
+                    email: email.trimmingCharacters(in: .whitespaces),
+                    recipientName: recipientName.nilIfEmpty,
+                    note: note.nilIfEmpty,
+                    priceId: selectedPlan.priceId,
+                    trialDays: 7
+                )
+                state = .successTrial(checkoutURL: response.checkoutUrl)
 
             case .comped:
                 let response = try await adminService.createCompedInvite(
@@ -93,9 +107,24 @@ class SendInviteViewModel {
     }
 
     func shareCheckoutLink() {
-        guard case .successPayment(let url) = state else { return }
+        let url: String
+        let isTrial: Bool
+
+        switch state {
+        case .successPayment(let checkoutURL):
+            url = checkoutURL
+            isTrial = false
+        case .successTrial(let checkoutURL):
+            url = checkoutURL
+            isTrial = true
+        default:
+            return
+        }
+
         let name = recipientName.isEmpty ? "" : " \(recipientName)"
-        let text = "Hey\(name), here's your exclusive invite to Arkline. Complete your membership here: \(url)"
+        let text = isTrial
+            ? "Hey\(name), try Arkline free for 7 days. Enter your card to start your trial \u{2014} you won't be charged until day 8: \(url)"
+            : "Hey\(name), here's your exclusive invite to Arkline. Complete your membership here: \(url)"
 
         #if canImport(UIKit)
         let activityVC = UIActivityViewController(

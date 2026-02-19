@@ -84,15 +84,25 @@ final class AdminService: AdminServiceProtocol {
             .execute()
     }
 
-    func createCheckoutSession(email: String, recipientName: String?, note: String?, priceId: String) async throws -> CheckoutSessionResponse {
+    func createCheckoutSession(email: String, recipientName: String?, note: String?, priceId: String, trialDays: Int? = nil) async throws -> CheckoutSessionResponse {
         let request = CreateCheckoutSessionRequest(
             email: email,
             recipient_name: recipientName,
             note: note,
-            price_id: priceId
+            price_id: priceId,
+            trial_days: trialDays
         )
         let response: CheckoutSessionResponse = try await supabase.functions.invoke(
             "create-checkout-session",
+            options: .init(body: request)
+        )
+        return response
+    }
+
+    func activateSubscription(inviteCode: String) async throws -> ActivateSubscriptionResponse {
+        let request = ActivateSubscriptionRequest(invite_code: inviteCode)
+        let response: ActivateSubscriptionResponse = try await supabase.functions.invoke(
+            "activate-subscription",
             options: .init(body: request)
         )
         return response

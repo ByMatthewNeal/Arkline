@@ -164,7 +164,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Send invite code email
-  await sendInviteEmail(email, code)
+  const isTrial = session.metadata?.is_trial === "true"
+  await sendInviteEmail(email, code, isTrial)
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -312,21 +313,28 @@ async function updateSubscriptionStatus(stripeSubId: string, status: string) {
 async function syncProfileStatus(stripeSubId: string, status: string) {
   const { data } = await supabase
     .from("subscriptions")
-    .select("user_id")
+    .select("user_id, trial_end")
     .eq("stripe_subscription_id", stripeSubId)
     .single()
 
   if (data?.user_id) {
+    const profileUpdate: Record<string, unknown> = { subscription_status: status }
+    if (data.trial_end) {
+      profileUpdate.trial_end = data.trial_end
+    } else if (status !== "trialing") {
+      // Clear trial_end when no longer trialing
+      profileUpdate.trial_end = null
+    }
     await supabase
       .from("profiles")
-      .update({ subscription_status: status })
+      .update(profileUpdate)
       .eq("id", data.user_id)
   }
 }
 
 // --- Email ---
 
-async function sendInviteEmail(email: string, code: string) {
+async function sendInviteEmail(email: string, code: string, isTrial = false) {
   const resendKey = Deno.env.get("RESEND_API_KEY")
   if (!resendKey) {
     console.warn("RESEND_API_KEY not set — skipping invite email")
@@ -334,6 +342,22 @@ async function sendInviteEmail(email: string, code: string) {
   }
 
   const deepLink = `arkline://invite?code=${code}`
+
+  const subject = isTrial
+    ? "Your Arkline Free Trial Has Started"
+    : "Your Arkline Invite Code"
+
+  const headline = isTrial
+    ? "Your 7-Day Free Trial"
+    : "Welcome to Arkline"
+
+  const subtitle = isTrial
+    ? "Your trial is active. Download the app and use the code below to get started. You won't be charged until day 8."
+    : "Your payment was successful. Here's your invite code."
+
+  const footer = isTrial
+    ? "Your 7-day free trial has started. Your card will be charged automatically on day 8 unless you cancel."
+    : "Enter this code in the Arkline app to activate your membership.<br>This code expires in 15 days."
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -345,12 +369,12 @@ async function sendInviteEmail(email: string, code: string) {
       body: JSON.stringify({
         from: "Arkline <onboarding@resend.dev>",
         to: [email],
-        subject: "Your Arkline Invite Code",
+        subject,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
             <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0;">Welcome to Arkline</h1>
-              <p style="font-size: 16px; color: #666; margin-top: 8px;">Your payment was successful. Here's your invite code.</p>
+              <h1 style="font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0;">${headline}</h1>
+              <p style="font-size: 16px; color: #666; margin-top: 8px;">${subtitle}</p>
             </div>
 
             <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
@@ -364,8 +388,7 @@ async function sendInviteEmail(email: string, code: string) {
 
             <div style="border-top: 1px solid #eee; padding-top: 20px;">
               <p style="font-size: 13px; color: #999; text-align: center; margin: 0;">
-                Enter this code in the Arkline app to activate your membership.<br>
-                This code expires in 15 days.
+                ${footer}
               </p>
             </div>
           </div>
@@ -374,7 +397,7 @@ async function sendInviteEmail(email: string, code: string) {
     })
 
     if (res.ok) {
-      console.log(`Invite email sent to ${email}`)
+      console.log(`Invite email sent to ${email} (trial: ${isTrial})`)
     } else {
       const err = await res.text()
       console.error(`Failed to send invite email: ${err}`)
