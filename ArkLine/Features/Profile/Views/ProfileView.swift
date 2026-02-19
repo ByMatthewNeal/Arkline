@@ -22,8 +22,10 @@ struct ProfileView: View {
                 MeshGradientBackground()
 
                 // Content
+                ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(spacing: 24) {
+                        Color.clear.frame(height: 0).id("scrollTop")
                     // Profile Header
                     ProfileHeader(viewModel: viewModel, onEditTap: { showEditProfile = true })
 
@@ -54,6 +56,13 @@ struct ProfileView: View {
                     }
                     .padding(.top, 20)
                 }
+                .onChange(of: appState.profileNavigationReset) { _, _ in
+                    navigationPath = NavigationPath()
+                    withAnimation(.arkSpring) {
+                        scrollProxy.scrollTo("scrollTop", anchor: .top)
+                    }
+                }
+            } // ScrollViewReader
             }
             .navigationTitle("Profile")
             #if os(iOS)
@@ -78,9 +87,6 @@ struct ProfileView: View {
                     viewModel.user = updatedUser
                     appState.setAuthenticated(true, user: updatedUser)
                 }
-            }
-            .onChange(of: appState.profileNavigationReset) { _, _ in
-                navigationPath = NavigationPath()
             }
             .onAppear {
                 // Use the actual user from AppState if available

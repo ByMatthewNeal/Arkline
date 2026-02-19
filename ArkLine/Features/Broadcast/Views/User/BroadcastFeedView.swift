@@ -35,6 +35,7 @@ struct BroadcastFeedView: View {
     @State private var searchText = ""
     @State private var selectedDateFilter: BroadcastDateFilter = .all
     @State private var selectedTags: Set<String> = []
+    @State private var navigationPath = NavigationPath()
 
     // MARK: - Filtered Broadcasts
 
@@ -117,7 +118,7 @@ struct BroadcastFeedView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             if appState.isPro {
                 broadcastContent
             } else {
@@ -127,8 +128,10 @@ struct BroadcastFeedView: View {
     }
 
     private var broadcastContent: some View {
+            ScrollViewReader { scrollProxy in
             ScrollView {
                 VStack(spacing: ArkSpacing.md) {
+                    Color.clear.frame(height: 0).id("scrollTop")
                     // Notification prompt banner
                     if showNotificationPrompt {
                         notificationPromptBanner
@@ -167,6 +170,13 @@ struct BroadcastFeedView: View {
                 await viewModel.loadBroadcasts()
                 await checkNotificationStatus()
             }
+            .onChange(of: appState.insightsNavigationReset) { _, _ in
+                navigationPath = NavigationPath()
+                withAnimation(.arkSpring) {
+                    scrollProxy.scrollTo("scrollTop", anchor: .top)
+                }
+            }
+            } // ScrollViewReader
     }
 
     // MARK: - Filter Bar

@@ -21,8 +21,10 @@ struct HomeView: View {
                 MeshGradientBackground()
 
                 // Content
+                ScrollViewReader { scrollProxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
+                        Color.clear.frame(height: 0).id("scrollTop")
                         // Header
                         GlassHeader(
                             greeting: viewModel.greeting,
@@ -92,6 +94,13 @@ struct HomeView: View {
                 .refreshable {
                     await viewModel.refresh()
                 }
+                .onChange(of: appState.homeNavigationReset) { _, _ in
+                    navigationPath = NavigationPath()
+                    withAnimation(.arkSpring) {
+                        scrollProxy.scrollTo("scrollTop", anchor: .top)
+                    }
+                }
+            } // ScrollViewReader
             }
             .sheet(isPresented: $showPortfolioPicker) {
                 PortfolioPickerSheet(
@@ -115,10 +124,6 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showNotificationsSheet) {
                 NotificationsSheet()
-            }
-            .onChange(of: appState.homeNavigationReset) { _, _ in
-                // Pop to root when home tab is tapped while already on home
-                navigationPath = NavigationPath()
             }
             .task {
                 await viewModel.loadPortfolios()

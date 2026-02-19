@@ -24,8 +24,10 @@ struct MarketOverviewView: View {
                 }
 
                 // Content
+                ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(spacing: 24) {
+                        Color.clear.frame(height: 0).id("scrollTop")
                         // 1. Daily News Section
                         DailyNewsSection(
                             news: viewModel.newsItems
@@ -72,15 +74,19 @@ struct MarketOverviewView: View {
                     async let sentiment: () = sentimentViewModel.refresh()
                     _ = await (market, sentiment)
                 }
+                .onChange(of: appState.marketNavigationReset) { _, _ in
+                    navigationPath = NavigationPath()
+                    withAnimation(.arkSpring) {
+                        scrollProxy.scrollTo("scrollTop", anchor: .top)
+                    }
+                }
+            } // ScrollViewReader
             }
             .navigationTitle("Market Overview")
             .task {
                 async let market: () = viewModel.refresh()
                 async let sentiment: () = sentimentViewModel.loadInitialData()
                 _ = await (market, sentiment)
-            }
-            .onChange(of: appState.marketNavigationReset) { _, _ in
-                navigationPath = NavigationPath()
             }
             .onAppear {
                 Task { await AnalyticsService.shared.trackScreenView("market") }

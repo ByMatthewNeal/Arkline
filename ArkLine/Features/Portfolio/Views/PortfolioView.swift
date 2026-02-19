@@ -50,7 +50,9 @@ struct PortfolioView: View {
 
                 // Content
                 ZStack {
+                    ScrollViewReader { scrollProxy in
                     ScrollView {
+                        Color.clear.frame(height: 0).id("scrollTop")
                         switch viewModel.selectedTab {
                         case .overview:
                             PortfolioOverviewContent(viewModel: viewModel)
@@ -82,6 +84,13 @@ struct PortfolioView: View {
                     .onAppear {
                         Task { await AnalyticsService.shared.trackScreenView("portfolio") }
                     }
+                    .onChange(of: appState.portfolioNavigationReset) { _, _ in
+                        navigationPath = NavigationPath()
+                        withAnimation(.arkSpring) {
+                            scrollProxy.scrollTo("scrollTop", anchor: .top)
+                        }
+                    }
+                    } // ScrollViewReader
 
                     // Loading Overlay
                     if viewModel.isLoading {
@@ -89,9 +98,6 @@ struct PortfolioView: View {
                     }
                 }
                 }
-            }
-            .onChange(of: appState.portfolioNavigationReset) { _, _ in
-                navigationPath = NavigationPath()
             }
             .navigationTitle(viewModel.selectedPortfolio?.name ?? "Portfolio")
             #if os(iOS)
