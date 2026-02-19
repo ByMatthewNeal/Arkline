@@ -456,7 +456,7 @@ struct LiquidityComponent: Codable, Identifiable, Equatable {
 // MARK: - Sentiment Regime Quadrant
 
 /// The four market regimes based on emotion (Fear/Greed) vs volume engagement
-enum SentimentRegime: String, CaseIterable {
+enum SentimentRegime: String, CaseIterable, Codable {
     case panic = "Panic"
     case fomo = "FOMO"
     case apathy = "Apathy"
@@ -502,7 +502,7 @@ enum SentimentRegime: String, CaseIterable {
 }
 
 /// A single data point on the 2D sentiment regime quadrant
-struct SentimentRegimePoint: Identifiable, Equatable {
+struct SentimentRegimePoint: Identifiable, Equatable, Codable {
     let id: UUID
     let date: Date
     let emotionScore: Double      // 0-100 (X-axis: Fear → Greed) — composite
@@ -515,6 +515,26 @@ struct SentimentRegimePoint: Identifiable, Equatable {
         self.emotionScore = emotionScore
         self.engagementScore = engagementScore
         self.regime = SentimentRegime.classify(fearGreed: Int(emotionScore), engagement: engagementScore)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case date, emotionScore, engagementScore
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            date: try container.decode(Date.self, forKey: .date),
+            emotionScore: try container.decode(Double.self, forKey: .emotionScore),
+            engagementScore: try container.decode(Double.self, forKey: .engagementScore)
+        )
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(date, forKey: .date)
+        try container.encode(emotionScore, forKey: .emotionScore)
+        try container.encode(engagementScore, forKey: .engagementScore)
     }
 }
 
@@ -532,7 +552,7 @@ struct RegimeIndicatorSnapshot: Equatable {
 }
 
 /// Complete regime data for the quadrant chart
-struct SentimentRegimeData: Equatable {
+struct SentimentRegimeData: Equatable, Codable {
     let currentRegime: SentimentRegime
     let currentPoint: SentimentRegimePoint
     let milestones: RegimeMilestones
@@ -542,7 +562,7 @@ struct SentimentRegimeData: Equatable {
 }
 
 /// Key time milestone positions on the quadrant
-struct RegimeMilestones: Equatable {
+struct RegimeMilestones: Equatable, Codable {
     let today: SentimentRegimePoint
     let oneWeekAgo: SentimentRegimePoint?
     let oneMonthAgo: SentimentRegimePoint?

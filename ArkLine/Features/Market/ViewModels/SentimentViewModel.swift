@@ -486,7 +486,19 @@ class SentimentViewModel {
 
     /// Fetches BTC volume data and computes the sentiment regime quadrant
     /// using composite scores from all available live indicators.
+    ///
+    /// Updates are scheduled for **Sunday and Wednesday at 00:15 UTC** only.
+    /// Between windows the cached result is reused from disk.
     func fetchSentimentRegime() async {
+        // Check schedule: only recompute after a new Sunday/Wednesday 00:15 UTC window
+        if let cached = Self.loadCachedRegimeData() {
+            let lastWindow = Self.mostRecentScheduledUpdate(before: Date())
+            if cached.computedAt >= lastWindow {
+                await MainActor.run { self.sentimentRegimeData = cached.data }
+                return
+            }
+        }
+
         guard !fearGreedHistory.isEmpty else { return }
 
         await MainActor.run { isLoadingRegimeData = true }
@@ -517,8 +529,9 @@ class SentimentViewModel {
             )
             await MainActor.run { self.sentimentRegimeData = data }
 
-            // Archive regime snapshot and check for shift (fire-and-forget)
+            // Persist to disk and archive
             if let data = data {
+                Self.saveCachedRegimeData(data)
                 Task { await MarketDataCollector.shared.recordRegimeSnapshot(data) }
                 SentimentRegimeAlertManager.shared.checkRegimeShift(newRegime: data.currentRegime)
             }
@@ -821,6 +834,57 @@ class SentimentViewModel {
     func refreshMultiFactorRisk(coin: String) async -> MultiFactorRiskPoint? {
         multiFactorRiskCache.removeValue(forKey: coin)
         return await fetchMultiFactorRisk(coin: coin)
+    }
+
+    // MARK: - Regime Schedule Cache
+
+    /// Wrapper for persisted regime data with computation timestamp
+    private struct CachedRegimeData: Codable {
+        let data: SentimentRegimeData
+        let computedAt: Date
+    }
+
+    private static var regimeCacheURL: URL {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return caches.appendingPathComponent("sentiment_regime_cache.json")
+    }
+
+    private static func loadCachedRegimeData() -> CachedRegimeData? {
+        guard let raw = try? Data(contentsOf: regimeCacheURL) else { return nil }
+        return try? JSONDecoder().decode(CachedRegimeData.self, from: raw)
+    }
+
+    private static func saveCachedRegimeData(_ regimeData: SentimentRegimeData) {
+        let cached = CachedRegimeData(data: regimeData, computedAt: Date())
+        if let raw = try? JSONEncoder().encode(cached) {
+            try? raw.write(to: regimeCacheURL)
+        }
+    }
+
+    /// Returns the most recent scheduled update time (Sunday or Wednesday at 00:15 UTC)
+    /// before the given date.
+    static func mostRecentScheduledUpdate(before date: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+
+        var comps = cal.dateComponents([.year, .month, .day], from: date)
+        comps.hour = 0
+        comps.minute = 15
+        comps.second = 0
+        var candidate = cal.date(from: comps)!
+
+        // If we haven't passed today's 00:15 UTC yet, start from yesterday
+        if date < candidate {
+            candidate = cal.date(byAdding: .day, value: -1, to: candidate)!
+        }
+
+        // Walk backwards (up to 7 days) to find Sunday(1) or Wednesday(4)
+        for _ in 0..<7 {
+            let weekday = cal.component(.weekday, from: candidate)
+            if weekday == 1 || weekday == 4 { return candidate }
+            candidate = cal.date(byAdding: .day, value: -1, to: candidate)!
+        }
+        return candidate
     }
 }
 
