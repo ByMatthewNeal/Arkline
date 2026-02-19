@@ -339,6 +339,7 @@
 		E121534029046575AA751496 /* RiskGaugeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7F134462B3F6014226E87D /* RiskGaugeViews.swift */; };
 		E16993EBCB896E7B14B7A7D4 /* InviteCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C62FCF02D77EC39B0B422CAA /* InviteCodeView.swift */; };
 		E2BB1EB5D67959A37F288456 /* FavoritesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */; };
+		B5D4C3E2A1F0E9D8C7B6A5F4 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E5D4F3B2A1C0D9E8F7A6B5 /* HapticManager.swift */; };
 		E42AD0E11FB19C0D446A3F51 /* IncrementalPriceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */; };
 		E44EDD8D9EA83E2822F9DF65 /* MockPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92D28E4D3A8673A58AC2262 /* MockPortfolioService.swift */; };
 		E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */; };
@@ -526,6 +527,7 @@
 		604A203FE3FF13EF63B715EF /* CreateInviteCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateInviteCodeSheet.swift; sourceTree = "<group>"; };
 		608A536AA089EA6F8D512468 /* DCAReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminder.swift; sourceTree = "<group>"; };
 		6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
+		C6E5D4F3B2A1C0D9E8F7A6B5 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		664FD2E2B7EC92200D5DE579 /* AdminService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdminService.swift; sourceTree = "<group>"; };
 		676F589E22B9827D0CF8ECA3 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreRankingDetailView.swift; sourceTree = "<group>"; };
@@ -1875,6 +1877,7 @@
 				3C61F540DDA869CAAFC93657 /* Constants.swift */,
 				0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */,
 				6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */,
+				C6E5D4F3B2A1C0D9E8F7A6B5 /* HapticManager.swift */,
 				BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */,
 				2EEF32D24CEC66662543D000 /* Logger.swift */,
 				E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */,
@@ -2170,6 +2173,7 @@
 				1028E8CBB796AA676788323E /* FaceIDSetupView.swift in Sources */,
 				0F4CC45089337035918EB194 /* FarsideETFScraper.swift in Sources */,
 				E2BB1EB5D67959A37F288456 /* FavoritesStore.swift in Sources */,
+				B5D4C3E2A1F0E9D8C7B6A5F4 /* HapticManager.swift in Sources */,
 				7383D460E1983C30AD7C1A4D /* FavoritesWidget.swift in Sources */,
 				2C64471C1DA2261CE83B3164 /* FearGreedWidget.swift in Sources */,
 				FE0000000000000000000005 /* FeatureBacklogView.swift in Sources */,

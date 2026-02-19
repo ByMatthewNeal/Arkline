@@ -143,6 +143,7 @@ struct AssetDetailView: View {
     }
 
     private func toggleFavorite() {
+        Haptics.medium()
         isFavorite.toggle()
         FavoritesStore.shared.setFavorite(asset.id, isFavorite: isFavorite)
     }
@@ -312,6 +313,7 @@ struct TimeframeSelector: View {
         HStack(spacing: 4) {
             ForEach(ChartTimeframe.allCases, id: \.self) { timeframe in
                 Button(action: {
+                    Haptics.selection()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selected = timeframe
                     }

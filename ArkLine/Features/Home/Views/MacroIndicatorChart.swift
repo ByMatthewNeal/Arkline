@@ -286,6 +286,7 @@ struct MacroIndicatorChart: View {
         HStack(spacing: ArkSpacing.xs) {
             ForEach(MacroChartTimeRange.allCases, id: \.self) { range in
                 Button(action: {
+                    Haptics.selection()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedTimeRange = range
                         selectedDate = nil

@@ -48,6 +48,7 @@ struct CustomTabBar: View {
                         // Already on this tab - trigger pop to root
                         triggerNavigationReset(for: tab)
                     } else {
+                        Haptics.light()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             selectedTab = tab
                         }

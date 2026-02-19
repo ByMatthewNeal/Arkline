@@ -172,6 +172,7 @@ struct StockTimeframeSelector: View {
         HStack(spacing: 4) {
             ForEach(StockChartTimeframe.allCases, id: \.self) { timeframe in
                 Button(action: {
+                    Haptics.selection()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selected = timeframe
                     }

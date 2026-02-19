@@ -365,6 +365,7 @@ struct PaywallView: View {
                     subtitle: monthlyEquivalent(for: annual),
                     isSelected: selectedPackage?.identifier == annual.identifier
                 ) {
+                    Haptics.medium()
                     selectedPackage = annual
                     selectedProduct = nil
                 }
@@ -376,6 +377,7 @@ struct PaywallView: View {
                     price: monthly.storeProduct.localizedPriceString + "/mo",
                     isSelected: selectedPackage?.identifier == monthly.identifier
                 ) {
+                    Haptics.medium()
                     selectedPackage = monthly
                     selectedProduct = nil
                 }
@@ -679,6 +681,7 @@ struct PaywallView: View {
             do {
                 let success = try await SubscriptionService.shared.purchase(package: package)
                 if success {
+                    Haptics.success()
                     withAnimation { purchaseSuccess = true }
                     try? await Task.sleep(for: .seconds(1.5))
                     dismiss()
@@ -694,6 +697,7 @@ struct PaywallView: View {
                 case .success:
                     // Sync with RevenueCat if available
                     await SubscriptionService.shared.refreshStatus()
+                    Haptics.success()
                     withAnimation { purchaseSuccess = true }
                     try? await Task.sleep(for: .seconds(1.5))
                     dismiss()

@@ -12,6 +12,7 @@ struct PrimaryButton: View {
     var body: some View {
         Button(action: {
             if !isLoading && !isDisabled {
+                Haptics.light()
                 action()
             }
         }) {
