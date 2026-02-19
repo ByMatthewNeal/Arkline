@@ -68,8 +68,8 @@ struct DailyNewsSection: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(news) { item in
-                            NavigationLink(destination: NewsDetailView(news: item)) {
+                        ForEach(Array(news.enumerated()), id: \.element.id) { index, item in
+                            NavigationLink(destination: NewsDetailView(allNews: news, initialIndex: index)) {
                                 DailyNewsCard(news: item)
                             }
                             .buttonStyle(PlainButtonStyle())

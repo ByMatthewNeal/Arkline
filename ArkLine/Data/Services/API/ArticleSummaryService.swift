@@ -1,4 +1,5 @@
 import Foundation
+import Supabase
 
 // MARK: - Article Summary Service
 /// Fetches AI-generated summaries of news articles via the article-summary edge function.
@@ -40,21 +41,33 @@ final class ArticleSummaryService {
         let request = SummaryRequest(url: url, title: title)
 
         do {
-            let response: SummaryResponse = try await SupabaseManager.shared.functions.invoke(
+            // Use raw Data approach for better error visibility
+            let data: Data = try await SupabaseManager.shared.functions.invoke(
                 "article-summary",
-                options: .init(body: request)
+                options: FunctionInvokeOptions(body: request),
+                decode: { data, _ in data }
             )
+
+            logDebug("Article summary response: \(data.count) bytes", category: .network)
+
+            let response = try JSONDecoder().decode(SummaryResponse.self, from: data)
 
             if let summary = response.summary, !summary.isEmpty {
                 cache[url] = summary
                 return summary
             }
 
+            let errorMsg = response.error ?? "empty"
+            logWarning("Article summary returned no summary, error: \(errorMsg)", category: .network)
             throw ArticleSummaryError.emptyResponse
+        } catch let error as FunctionsError {
+            // Auth or relay errors from Supabase — log details
+            logWarning("Article summary function error: \(error)", category: .network)
+            throw ArticleSummaryError.networkError(error)
         } catch let error as ArticleSummaryError {
             throw error
         } catch {
-            logWarning("Article summary failed: \(error.localizedDescription)", category: .network)
+            logWarning("Article summary failed: \(error)", category: .network)
             throw ArticleSummaryError.networkError(error)
         }
     }

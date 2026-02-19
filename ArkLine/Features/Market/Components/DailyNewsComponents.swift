@@ -145,8 +145,8 @@ struct AllNewsView: View {
                                     .padding(.horizontal, 20)
 
                                     // News items for this topic
-                                    ForEach(group.items) { item in
-                                        NavigationLink(destination: NewsDetailView(news: item)) {
+                                    ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
+                                        NavigationLink(destination: NewsDetailView(allNews: group.items, initialIndex: index)) {
                                             NewsListRow(news: item)
                                         }
                                         .buttonStyle(PlainButtonStyle())
@@ -157,9 +157,10 @@ struct AllNewsView: View {
                         }
                     } else {
                         // Flat list sorted by time (original behavior)
+                        let sortedNews = filteredNews.sorted { $0.publishedAt > $1.publishedAt }
                         LazyVStack(spacing: 12) {
-                            ForEach(filteredNews.sorted { $0.publishedAt > $1.publishedAt }) { item in
-                                NavigationLink(destination: NewsDetailView(news: item)) {
+                            ForEach(Array(sortedNews.enumerated()), id: \.element.id) { index, item in
+                                NavigationLink(destination: NewsDetailView(allNews: sortedNews, initialIndex: index)) {
                                     NewsListRow(news: item)
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -284,6 +285,48 @@ struct NewsListRow: View {
 
 // MARK: - News Detail View
 struct NewsDetailView: View {
+    let allNews: [NewsItem]
+    let initialIndex: Int
+    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
+    @Environment(\.openURL) var openURL
+    @State private var currentIndex: Int = 0
+
+    // Single-article convenience init
+    init(news: NewsItem) {
+        self.allNews = [news]
+        self.initialIndex = 0
+    }
+
+    init(allNews: [NewsItem], initialIndex: Int) {
+        self.allNews = allNews
+        self.initialIndex = initialIndex
+    }
+
+    private var isDarkMode: Bool {
+        appState.darkModePreference == .dark ||
+        (appState.darkModePreference == .automatic && colorScheme == .dark)
+    }
+
+    var body: some View {
+        TabView(selection: $currentIndex) {
+            ForEach(Array(allNews.enumerated()), id: \.element.id) { index, item in
+                NewsArticlePage(news: item)
+                    .tag(index)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: allNews.count > 1 ? .automatic : .never))
+        .indexViewStyle(.page(backgroundDisplayMode: .automatic))
+        .navigationTitle("\(currentIndex + 1) of \(allNews.count)")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .onAppear { currentIndex = initialIndex }
+    }
+}
+
+// MARK: - Single Article Page
+private struct NewsArticlePage: View {
     let news: NewsItem
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
@@ -308,6 +351,23 @@ struct NewsDetailView: View {
         return formatter.string(from: news.publishedAt)
     }
 
+    /// Clean description: remove duplicate title text and source names
+    private var cleanedDescription: String? {
+        guard let desc = news.description, !desc.isEmpty else { return nil }
+        var cleaned = desc
+        // Remove the title if it appears at the start of the description
+        if cleaned.hasPrefix(news.title) {
+            cleaned = String(cleaned.dropFirst(news.title.count))
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        // Remove leading source names (e.g. "The New York Times" at the start)
+        if cleaned.hasPrefix(news.source) {
+            cleaned = String(cleaned.dropFirst(news.source.count))
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return cleaned.isEmpty ? nil : cleaned
+    }
+
     var body: some View {
         ZStack {
             MeshGradientBackground()
@@ -317,85 +377,60 @@ struct NewsDetailView: View {
             }
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Source card
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            // Source icon and name
-                            HStack(spacing: 10) {
-                                ZStack {
-                                    Circle()
-                                        .fill(AppColors.accent.opacity(0.15))
-                                        .frame(width: 44, height: 44)
+                VStack(alignment: .leading, spacing: 20) {
+                    // Source + date header
+                    HStack {
+                        HStack(spacing: 10) {
+                            ZStack {
+                                Circle()
+                                    .fill(AppColors.accent.opacity(0.15))
+                                    .frame(width: 40, height: 40)
 
-                                    Image(systemName: news.sourceType.icon)
-                                        .font(.system(size: 18))
-                                        .foregroundColor(AppColors.accent)
-                                }
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 6) {
-                                        if news.sourceType == .twitter, let handle = news.twitterHandle {
-                                            Text("@\(handle)")
-                                                .font(.headline)
-                                                .foregroundColor(AppColors.textPrimary(colorScheme))
-                                        } else {
-                                            Text(news.source)
-                                                .font(.headline)
-                                                .foregroundColor(AppColors.textPrimary(colorScheme))
-                                        }
-
-                                        if news.isVerified {
-                                            Image(systemName: "checkmark.seal.fill")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(AppColors.accent)
-                                        }
-                                    }
-
-                                    Text(news.sourceType.displayName)
-                                        .font(.caption)
-                                        .foregroundColor(AppColors.textSecondary)
-                                }
+                                Image(systemName: news.sourceType.icon)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(AppColors.accent)
                             }
 
-                            Spacer()
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    if news.sourceType == .twitter, let handle = news.twitterHandle {
+                                        Text("@\(handle)")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                                    } else {
+                                        Text(news.source)
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                                    }
 
-                            // Source type badge
-                            Text(news.sourceType.displayName)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(
-                                    colorScheme == .dark
-                                        ? Color.white.opacity(0.1)
-                                        : Color.black.opacity(0.05)
-                                )
-                                .cornerRadius(8)
+                                    if news.isVerified {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(AppColors.accent)
+                                    }
+                                }
+
+                                Text(formattedDate)
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
                         }
 
-                        // Timestamp
-                        Text(formattedDate)
-                            .font(.caption)
-                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
                     }
-                    .padding(20)
-                    .background(cardBackground)
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
                     .padding(.horizontal, 20)
 
-                    // Content card
-                    VStack(alignment: .leading, spacing: 16) {
+                    // Title card
+                    VStack(alignment: .leading, spacing: 12) {
                         Text(news.title)
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                             .lineSpacing(4)
 
-                        // If there's additional content/description
-                        if let description = news.description, !description.isEmpty {
+                        if let description = cleanedDescription {
                             Divider()
 
                             Text(description)
@@ -440,13 +475,9 @@ struct NewsDetailView: View {
 
                     Spacer(minLength: 100)
                 }
-                .padding(.top, 16)
+                .padding(.top, 12)
             }
         }
-        .navigationTitle("News")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
         .task {
             await loadSummary()
         }
@@ -456,7 +487,7 @@ struct NewsDetailView: View {
 
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header
+            // Header with read time
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 14, weight: .semibold))
@@ -468,10 +499,19 @@ struct NewsDetailView: View {
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 Spacer()
+
+                if summary != nil {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10))
+                        Text("45 sec read")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(AppColors.textSecondary)
+                }
             }
 
             if isSummaryLoading {
-                // Loading state
                 HStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.small)
@@ -481,19 +521,16 @@ struct NewsDetailView: View {
                 }
                 .padding(.vertical, 8)
             } else if let summary = summary {
-                // Summary content
                 Text(summary)
                     .font(.body)
                     .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.9))
                     .lineSpacing(6)
 
-                // Disclaimer
                 Text("AI-generated summary")
                     .font(.caption2)
                     .foregroundColor(AppColors.textSecondary.opacity(0.6))
                     .padding(.top, 4)
             } else if let error = summaryError {
-                // Error state
                 Text(error)
                     .font(.subheadline)
                     .foregroundColor(AppColors.textSecondary)
