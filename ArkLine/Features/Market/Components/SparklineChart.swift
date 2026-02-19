@@ -6,6 +6,8 @@ struct SparklineChart: View {
     let isPositive: Bool
     let lineWidth: CGFloat
 
+    @State private var animationProgress: CGFloat = 0
+
     init(data: [Double], isPositive: Bool? = nil, lineWidth: CGFloat = 1.5) {
         self.data = data
         // If not specified, determine based on first vs last value
@@ -44,6 +46,7 @@ struct SparklineChart: View {
                         }
                     }
                 }
+                .trim(from: 0, to: animationProgress)
                 .stroke(lineColor, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
 
                 // Optional: Gradient fill under the line
@@ -69,6 +72,12 @@ struct SparklineChart: View {
                         endPoint: .bottom
                     )
                 )
+                .opacity(animationProgress)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6)) {
+                animationProgress = 1
             }
         }
     }

@@ -5,6 +5,8 @@ struct AllocationPieChart: View {
     let allocations: [PortfolioAllocation]
     let colorScheme: ColorScheme
 
+    @State private var animationProgress: CGFloat = 0
+
     private var sliceData: [(allocation: PortfolioAllocation, startAngle: Angle, endAngle: Angle)] {
         var currentAngle = Angle(degrees: -90)
         return allocations.map { allocation in
@@ -22,9 +24,12 @@ struct AllocationPieChart: View {
 
             ZStack {
                 ForEach(sliceData, id: \.allocation.id) { slice in
+                    let animatedEnd = Angle(
+                        degrees: slice.startAngle.degrees + (slice.endAngle.degrees - slice.startAngle.degrees) * animationProgress
+                    )
                     Path { path in
                         path.move(to: center)
-                        path.addArc(center: center, radius: radius, startAngle: slice.startAngle, endAngle: slice.endAngle, clockwise: false)
+                        path.addArc(center: center, radius: radius, startAngle: slice.startAngle, endAngle: animatedEnd, clockwise: false)
                     }
                     .fill(Color(hex: slice.allocation.color))
                 }
@@ -33,6 +38,12 @@ struct AllocationPieChart: View {
                 Circle()
                     .fill(AppColors.background(colorScheme))
                     .frame(width: radius * 1.2, height: radius * 1.2)
+                    .opacity(animationProgress)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                animationProgress = 1
             }
         }
     }

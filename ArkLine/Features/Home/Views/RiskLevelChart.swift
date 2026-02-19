@@ -233,6 +233,7 @@ struct RiskLevelChart: View {
                     ChartLogoWatermark()
                 }
         }
+        .animation(.easeInOut(duration: 0.4), value: timeRange)
     }
 }
 
