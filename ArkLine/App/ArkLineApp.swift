@@ -373,6 +373,7 @@ class AppState: ObservableObject {
         isAuthenticated = false
         currentUser = nil
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
+        PasscodeManager.shared.clearLockout()
     }
 
     // MARK: - Profile Refresh
