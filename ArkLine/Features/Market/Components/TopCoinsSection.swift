@@ -4,9 +4,26 @@ import Kingfisher
 // MARK: - Top Coins Section
 struct TopCoinsSection: View {
     @Bindable var viewModel: MarketViewModel
+    @State private var visibleCount: Int = 5
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    /// When searching, show all results; otherwise respect visibleCount
+    private var displayedCoins: [CryptoAsset] {
+        if !viewModel.topCoinsSearchQuery.isEmpty {
+            return viewModel.topCoins
+        }
+        return Array(viewModel.topCoins.prefix(visibleCount))
+    }
+
+    private var canShowMore: Bool {
+        viewModel.topCoinsSearchQuery.isEmpty && visibleCount < viewModel.topCoins.count
+    }
+
+    private var canShowLess: Bool {
+        viewModel.topCoinsSearchQuery.isEmpty && visibleCount > 5
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -21,6 +38,12 @@ struct TopCoinsSection: View {
                     .foregroundColor(textPrimary)
 
                 Spacer()
+
+                if !viewModel.topCoins.isEmpty && viewModel.topCoinsSearchQuery.isEmpty {
+                    Text("\(min(visibleCount, viewModel.topCoins.count)) of \(viewModel.topCoins.count)")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
             }
             .padding(.horizontal, 20)
 
@@ -59,7 +82,6 @@ struct TopCoinsSection: View {
 
             // Coin List
             if viewModel.isSearchingTopCoins {
-                // Loading state
                 VStack(spacing: 0) {
                     ForEach(0..<5, id: \.self) { _ in
                         TopCoinShimmerRow()
@@ -71,7 +93,6 @@ struct TopCoinsSection: View {
                 .glassCard(cornerRadius: 16)
                 .padding(.horizontal, 20)
             } else if viewModel.topCoins.isEmpty {
-                // Empty state
                 VStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
                         .font(.title2)
@@ -86,17 +107,67 @@ struct TopCoinsSection: View {
                 .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(viewModel.topCoins) { asset in
+                    ForEach(displayedCoins) { asset in
                         NavigationLink(destination: AssetDetailView(asset: asset)) {
                             CryptoAssetRow(asset: asset)
                         }
                         .buttonStyle(PlainButtonStyle())
 
-                        if asset.id != viewModel.topCoins.last?.id {
+                        if asset.id != displayedCoins.last?.id {
                             Divider()
                                 .background(Color(hex: "2A2A2A"))
                                 .padding(.horizontal, 20)
                         }
+                    }
+
+                    // Show More / Show Less controls
+                    if canShowMore || canShowLess {
+                        Divider()
+                            .background(Color(hex: "2A2A2A"))
+                            .padding(.horizontal, 20)
+
+                        HStack(spacing: 16) {
+                            if canShowMore {
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        visibleCount = min(visibleCount + 10, viewModel.topCoins.count)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "plus.circle")
+                                            .font(.system(size: 13))
+                                        Text("Show More")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundColor(AppColors.accent)
+                                }
+                            }
+
+                            if canShowMore && canShowLess {
+                                Circle()
+                                    .fill(AppColors.textSecondary.opacity(0.3))
+                                    .frame(width: 3, height: 3)
+                            }
+
+                            if canShowLess {
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        visibleCount = 5
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "minus.circle")
+                                            .font(.system(size: 13))
+                                        Text("Show Less")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 12)
                     }
                 }
                 .glassCard(cornerRadius: 16)

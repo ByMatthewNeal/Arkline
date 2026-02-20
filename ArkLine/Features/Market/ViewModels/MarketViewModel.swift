@@ -149,7 +149,7 @@ class MarketViewModel {
 
     private func fetchTopCoinsSafe() async -> [CryptoAsset] {
         do {
-            return try await marketService.fetchCryptoAssets(page: 1, perPage: 20)
+            return try await marketService.fetchCryptoAssets(page: 1, perPage: 100)
         } catch {
             logError("Top coins fetch failed: \(error)")
             return []
