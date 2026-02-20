@@ -429,7 +429,20 @@ class OnboardingViewModel {
                     AppLogger.shared.error("Database insert failed (tables may not exist): \(error.localizedDescription)")
                 }
 
-                createdUser = user
+                // Fetch the authoritative profile from DB to get server-managed fields
+                // (e.g. admin role set via migration, subscription status from Stripe)
+                var finalUser = user
+                if let profile = try? await SupabaseDatabase.shared.getProfile(userId: userId) {
+                    if let role = profile.role {
+                        finalUser.role = UserRole(rawValue: role) ?? .user
+                    }
+                    if let subStatus = profile.subscriptionStatus {
+                        finalUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? .none
+                    }
+                    finalUser.trialEnd = profile.trialEnd
+                }
+
+                createdUser = finalUser
                 Haptics.success()
                 isOnboardingComplete = true
             } catch {
