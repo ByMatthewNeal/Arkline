@@ -150,6 +150,7 @@
 		7A9C2B0E2516699150C161D4 /* ZScoreIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AC9D0CE4380523D648DC8E /* ZScoreIndicator.swift */; };
 		7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */; };
 		7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */; };
+		F1CAFE0002A1B2C3D4E5F602 /* HomeFavoritesComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CAFE0001A1B2C3D4E5F601 /* HomeFavoritesComponents.swift */; };
 		7E6E8A0F3212962EE3236A16 /* HoldingRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */; };
 		7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BFE18532B42396BDE06325 /* KeychainManager.swift */; };
 		80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */; };
@@ -533,6 +534,7 @@
 		676F589E22B9827D0CF8ECA3 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreRankingDetailView.swift; sourceTree = "<group>"; };
 		69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeEventsComponents.swift; sourceTree = "<group>"; };
+		F1CAFE0001A1B2C3D4E5F601 /* HomeFavoritesComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFavoritesComponents.swift; sourceTree = "<group>"; };
 		6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminderWidget.swift; sourceTree = "<group>"; };
 		6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeView.swift; sourceTree = "<group>"; };
 		6ACF7C2AD9CD10450F3D8442 /* BroadcastStudioView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastStudioView.swift; sourceTree = "<group>"; };
@@ -1448,6 +1450,7 @@
 				5690746804883DD3637B36A6 /* HomeNotifications.swift */,
 				C0525EDAE18EC96DFEECAAB8 /* HomeMacroWidgets.swift */,
 				69B43E11EEFB9796ED1EB794 /* HomeEventsComponents.swift */,
+				F1CAFE0001A1B2C3D4E5F601 /* HomeFavoritesComponents.swift */,
 				A6AC5E0E4BBC995EA18E94FF /* HomeHeaderComponents.swift */,
 				049CD12B81D2D7863DA67B24 /* ITCRiskWidget.swift */,
 				485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */,
@@ -2215,6 +2218,7 @@
 				7A25211C40B68B1D0D097B32 /* HomeNotifications.swift in Sources */,
 				82F96FA708990F52E2245B80 /* HomeMacroWidgets.swift in Sources */,
 				7DD5FE46C021FC878711BCC9 /* HomeEventsComponents.swift in Sources */,
+				F1CAFE0002A1B2C3D4E5F602 /* HomeFavoritesComponents.swift in Sources */,
 				4FE5B6C69341426C63DE16EC /* HomeHeaderComponents.swift in Sources */,
 				D228AC880FFF603048A50D81 /* HomeViewModel.swift in Sources */,
 				BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */,

@@ -137,6 +137,8 @@ struct ReorderableWidgetStack: View {
             let hasDxy = viewModel.dxyData != nil
             let hasM2 = viewModel.globalLiquidityChanges != nil
             return [hasVix, hasDxy, hasM2].filter { $0 }.count >= 2
+        case .favorites:
+            return true
         }
     }
 
@@ -230,6 +232,12 @@ struct ReorderableWidgetStack: View {
                 liquidityData: viewModel.globalLiquidityChanges,
                 macroZScores: viewModel.macroZScores,
                 size: appState.widgetSize(.macroDashboard)
+            )
+
+        case .favorites:
+            FavoritesSection(
+                assets: viewModel.favoriteAssets,
+                size: appState.widgetSize(.favorites)
             )
         }
     }

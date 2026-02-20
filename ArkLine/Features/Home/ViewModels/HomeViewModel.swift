@@ -287,6 +287,16 @@ class HomeViewModel {
         return count >= 1 ? count : nil
     }
 
+    // Cached crypto assets for favorites filtering
+    private(set) var cachedCryptoAssets: [CryptoAsset] = []
+
+    /// Favorite assets computed from FavoritesStore + cached crypto data
+    var favoriteAssets: [CryptoAsset] {
+        let favoriteIds = FavoritesStore.shared.allFavoriteIds()
+        guard !favoriteIds.isEmpty else { return [] }
+        return cachedCryptoAssets.filter { favoriteIds.contains($0.id) }
+    }
+
     // Top Movers
     var topGainers: [CryptoAsset] = []
     var topLosers: [CryptoAsset] = []
@@ -408,6 +418,11 @@ class HomeViewModel {
         // Archive crypto market data (fire-and-forget)
         if !crypto.isEmpty {
             Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) }
+        }
+
+        // Cache for favorites filtering
+        if !crypto.isEmpty {
+            cachedCryptoAssets = crypto
         }
 
         // Extract BTC, ETH, and SOL prices immediately
