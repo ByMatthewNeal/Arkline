@@ -35,7 +35,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case fearGreedIndex = "fear_greed"
     case marketMovers = "market_movers"
     case dcaReminders = "dca_reminders"
-    case favorites = "favorites"
     // Market widgets (from Market tab)
     case fedWatch = "fed_watch"
     case dailyNews = "daily_news"
@@ -55,7 +54,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .fearGreedIndex: return "Fear & Greed Index"
         case .marketMovers: return "Core"
         case .dcaReminders: return "DCA Reminders"
-        case .favorites: return "Favorites"
         case .fedWatch: return "Fed Watch"
         case .dailyNews: return "Daily News"
         case .assetRiskLevel: return "Asset Risk Level"
@@ -74,7 +72,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .fearGreedIndex: return "Market sentiment gauge from 0-100"
         case .marketMovers: return "BTC, ETH, and SOL prices at a glance"
         case .dcaReminders: return "Your dollar-cost averaging reminders"
-        case .favorites: return "Your favorite assets at a glance"
         case .fedWatch: return "Fed interest rate probability from CME"
         case .dailyNews: return "Latest crypto and market news"
         case .assetRiskLevel: return "BTC risk level based on cycle analysis"
@@ -93,7 +90,6 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .fearGreedIndex: return "speedometer"
         case .marketMovers: return "chart.line.uptrend.xyaxis"
         case .dcaReminders: return "bell.badge"
-        case .favorites: return "star.fill"
         case .fedWatch: return "building.columns"
         case .dailyNews: return "newspaper"
         case .assetRiskLevel: return "gauge.with.needle"
@@ -113,7 +109,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .favorites, .dailyNews, .assetRiskLevel:
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit:
             return true
@@ -122,7 +118,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .favorites]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders]
     }
 
     /// Widgets enabled by default

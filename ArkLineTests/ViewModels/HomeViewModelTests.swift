@@ -248,10 +248,4 @@ final class HomeViewModelTests: XCTestCase {
         XCTAssertEqual(vm.btcPrice, 0, "Fresh VM should have btcPrice = 0 before refresh")
     }
 
-    func testFavoriteAssetsLimitedToThree() async {
-        let vm = makeVM()
-        await vm.refresh()
-
-        XCTAssertEqual(vm.favoriteAssets.count, 3, "Favorite assets should be limited to 3")
-    }
 }

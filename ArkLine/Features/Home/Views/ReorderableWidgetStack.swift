@@ -116,8 +116,6 @@ struct ReorderableWidgetStack: View {
             return true
         case .dcaReminders:
             return true
-        case .favorites:
-            return !viewModel.favoriteAssets.isEmpty
         case .fedWatch:
             return !viewModel.fedWatchMeetings.isEmpty
         case .dailyNews:
@@ -193,12 +191,6 @@ struct ReorderableWidgetStack: View {
                 todayReminders: viewModel.todayReminders,
                 onComplete: { reminder in Task { await viewModel.markReminderComplete(reminder) } },
                 size: appState.widgetSize(.dcaReminders)
-            )
-
-        case .favorites:
-            FavoritesSection(
-                assets: viewModel.favoriteAssets,
-                size: appState.widgetSize(.favorites)
             )
 
         case .assetRiskLevel:

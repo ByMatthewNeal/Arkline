@@ -135,7 +135,6 @@
 		70E7B2637E86A37D296F7598 /* NewsTopicsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC91A4E48942F70D01846899 /* NewsTopicsSettingsView.swift */; };
 		71267FC1966FBDC98EE41CD0 /* AdminDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08F1D4288443D12FDAF0F0F8 /* AdminDashboardView.swift */; };
 		71383B9AE0D2387BA7C1019B /* AdminModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F52FDC8EDA389FE3DB928F38 /* AdminModels.swift */; };
-		730F82B9852ACAAD5852DB0B /* HomeFavoritesComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152FE6D7EF1AA3A40A0FF69D /* HomeFavoritesComponents.swift */; };
 		7315E035C2C0BFD44CEDC052 /* DCAListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F759895BAB16CAE9827A96 /* DCAListView.swift */; };
 		7383D460E1983C30AD7C1A4D /* FavoritesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */; };
 		74342987C2189339E31FAA64 /* FaceIDPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B715ECC590E3EEB1884878D5 /* FaceIDPromptView.swift */; };
@@ -244,6 +243,7 @@
 		BB0000000000000000000015 /* RiskHistoryPointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000015 /* RiskHistoryPointTests.swift */; };
 		BB0000000000000000000016 /* SSLPinningConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000016 /* SSLPinningConfigurationTests.swift */; };
 		BB1122334455667788990022 /* PreciousMetalsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1122334455667788990011 /* PreciousMetalsSection.swift */; };
+		CC0A1B2C3D4E5F6071829304 /* TopCoinsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0A1B2C3D4E5F6071829303 /* TopCoinsSection.swift */; };
 		BB220001CCDD00220001BB01 /* DCAInputCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220001CCDD00220001AA01 /* DCAInputCards.swift */; };
 		BB220002CCDD00220002BB02 /* DCAResultComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220002CCDD00220002AA02 /* DCAResultComponents.swift */; };
 		BB220003CCDD00220003BB03 /* DCAStrategyComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB220003CCDD00220003AA03 /* DCAStrategyComponents.swift */; };
@@ -429,7 +429,6 @@
 		113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalAsset.swift; sourceTree = "<group>"; };
 		1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITechnicalAnalysisService.swift; sourceTree = "<group>"; };
 		130AFC1808DDE23C84A31C0B /* SupplyInProfitHistorical.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SupplyInProfitHistorical.swift; path = Data/StaticData/SupplyInProfitHistorical.swift; sourceTree = "<group>"; };
-		152FE6D7EF1AA3A40A0FF69D /* HomeFavoritesComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFavoritesComponents.swift; sourceTree = "<group>"; };
 		153A4CDBB8CF61BA375BD929 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		15B357FD7402C8C699282690 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDCAComponents.swift; sourceTree = "<group>"; };
@@ -644,6 +643,7 @@
 		BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooFinanceService.swift; sourceTree = "<group>"; };
 		BB0F0FEA85B18DD7302A2CE7 /* HoldingRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingRow.swift; sourceTree = "<group>"; };
 		BB1122334455667788990011 /* PreciousMetalsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreciousMetalsSection.swift; sourceTree = "<group>"; };
+		CC0A1B2C3D4E5F6071829303 /* TopCoinsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopCoinsSection.swift; sourceTree = "<group>"; };
 		BB220001CCDD00220001AA01 /* DCAInputCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAInputCards.swift; sourceTree = "<group>"; };
 		BB220002CCDD00220002AA02 /* DCAResultComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAResultComponents.swift; sourceTree = "<group>"; };
 		BB220003CCDD00220003AA03 /* DCAStrategyComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAStrategyComponents.swift; sourceTree = "<group>"; };
@@ -1443,7 +1443,6 @@
 				7A1C05960B8B6F9455FAE91A /* HomeView.swift */,
 				AC7551915A761FBD11F4A866 /* HomeRiskComponents.swift */,
 				1C39D88A8D207BF39F8B272E /* HomePortfolioComponents.swift */,
-				152FE6D7EF1AA3A40A0FF69D /* HomeFavoritesComponents.swift */,
 				161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */,
 				E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */,
 				5690746804883DD3637B36A6 /* HomeNotifications.swift */,
@@ -1588,6 +1587,7 @@
 				2BF75F6804B0EEA5772F8BEE /* MarketMoversSection.swift */,
 				1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */,
 				BB1122334455667788990011 /* PreciousMetalsSection.swift */,
+				CC0A1B2C3D4E5F6071829303 /* TopCoinsSection.swift */,
 				C1C9947884BDE4102F110274 /* NewsCard.swift */,
 				9997D8052D5270DC5237E5E6 /* SentimentCard.swift */,
 				5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */,
@@ -2210,7 +2210,6 @@
 				58758A7C9170D7678030686C /* HomeView.swift in Sources */,
 				03511C8F239A1869BE9FCF6B /* HomeRiskComponents.swift in Sources */,
 				9CF38AE112C1EA8A9BB5A4EC /* HomePortfolioComponents.swift in Sources */,
-				730F82B9852ACAAD5852DB0B /* HomeFavoritesComponents.swift in Sources */,
 				868D5A79BD5FE7A55B6D82AA /* HomeDCAComponents.swift in Sources */,
 				D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */,
 				7A25211C40B68B1D0D097B32 /* HomeNotifications.swift in Sources */,
@@ -2243,6 +2242,7 @@
 				F374FD71053262F2670E0F46 /* MarketSentiment.swift in Sources */,
 				BC96D22F01376C054BC47DC2 /* MarketSentimentSection.swift in Sources */,
 				BB1122334455667788990022 /* PreciousMetalsSection.swift in Sources */,
+				CC0A1B2C3D4E5F6071829304 /* TopCoinsSection.swift in Sources */,
 				1652EDF9F5840922C777B78C /* MarketServiceProtocol.swift in Sources */,
 				4B72ED4396687C6142BCE540 /* MarketViewModel.swift in Sources */,
 				238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */,

@@ -39,9 +39,6 @@ class HomeViewModel {
     // Fear & Greed
     var fearGreedIndex: FearGreedIndex?
 
-    // Favorites
-    var favoriteAssets: [CryptoAsset] = []
-
     // DCA Reminders
     var activeReminders: [DCAReminder] = []
     var todayReminders: [DCAReminder] = []
@@ -428,8 +425,6 @@ class HomeViewModel {
                 self.ethChange24h = eth?.priceChangePercentage24h ?? 0
                 self.solChange24h = sol?.priceChangePercentage24h ?? 0
             }
-            self.favoriteAssets = Array(crypto.prefix(3))
-
             // Calculate top gainers and losers
             let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
             self.topGainers = Array(sortedByGain.prefix(3))

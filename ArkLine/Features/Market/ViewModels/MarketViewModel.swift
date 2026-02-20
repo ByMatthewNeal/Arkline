@@ -27,6 +27,13 @@ class MarketViewModel {
     private var searchTask: Task<Void, Never>?
     private let searchDebounceInterval: UInt64 = 500_000_000 // 500ms in nanoseconds
 
+    // MARK: - Top Coins
+    /// Cached top coins list (restored when search is cleared)
+    private var cachedTopCoins: [CryptoAsset] = []
+    var topCoins: [CryptoAsset] = []
+    var topCoinsSearchQuery: String = ""
+    var isSearchingTopCoins = false
+
     // MARK: - Properties
     var selectedTab: MarketTab = .overview
     var selectedCategory: AssetCategoryFilter = .all
@@ -87,16 +94,19 @@ class MarketViewModel {
         isLoading = true
         errorMessage = nil
 
-        // Fetch news and Fed Watch in parallel (only data used by MarketOverviewView)
+        // Fetch news, Fed Watch, and top coins in parallel
         async let newsTask = fetchNewsSafe()
         async let meetingsTask = fetchFedWatchMeetingsSafe()
+        async let topCoinsTask = fetchTopCoinsSafe()
 
-        let (news, meetings) = await (newsTask, meetingsTask)
+        let (news, meetings, coins) = await (newsTask, meetingsTask, topCoinsTask)
 
         await MainActor.run {
             self.newsItems = news
             self.fedWatchMeetings = meetings ?? []
             self.fedWatchData = meetings?.first
+            self.cachedTopCoins = coins
+            self.topCoins = coins
             self.isLoading = false
         }
     }
@@ -137,12 +147,59 @@ class MarketViewModel {
         }
     }
 
+    private func fetchTopCoinsSafe() async -> [CryptoAsset] {
+        do {
+            return try await marketService.fetchCryptoAssets(page: 1, perPage: 20)
+        } catch {
+            logError("Top coins fetch failed: \(error)")
+            return []
+        }
+    }
+
     private func fetchFedWatchMeetingsSafe() async -> [FedWatchData]? {
         do {
             return try await newsService.fetchFedWatchMeetings()
         } catch {
             logError("Fed Watch fetch failed: \(error)")
             return nil
+        }
+    }
+
+    /// Updates the top coins search query with debounced API search
+    func updateTopCoinsSearch(_ query: String) {
+        topCoinsSearchQuery = query
+
+        // Cancel any pending search
+        searchTask?.cancel()
+
+        guard !query.isEmpty else {
+            // Restore cached list when search is cleared
+            topCoins = cachedTopCoins
+            isSearchingTopCoins = false
+            return
+        }
+
+        isSearchingTopCoins = true
+
+        searchTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: searchDebounceInterval)
+                guard !Task.isCancelled else { return }
+
+                let results = try await marketService.searchCrypto(query: query)
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    self.topCoins = results
+                    self.isSearchingTopCoins = false
+                }
+            } catch is CancellationError {
+                // Cancelled, ignore
+            } catch {
+                await MainActor.run {
+                    self.isSearchingTopCoins = false
+                }
+            }
         }
     }
 

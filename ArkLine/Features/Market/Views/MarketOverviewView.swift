@@ -50,6 +50,9 @@ struct MarketOverviewView: View {
                         // 3.5 Precious Metals Section
                         PreciousMetalsSection()
 
+                        // 3.75 Top Coins Browser
+                        TopCoinsSection(viewModel: viewModel)
+
                         // 4. Market Sentiment Section
                         MarketSentimentSection(
                             viewModel: sentimentViewModel,
