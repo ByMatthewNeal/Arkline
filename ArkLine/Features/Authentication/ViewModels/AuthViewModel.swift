@@ -173,7 +173,7 @@ class AuthViewModel {
             errorMessage = "Incorrect passcode. \(remaining) attempts remaining."
         } else {
             // Locked out
-            errorMessage = "Too many failed attempts. Try again in 5 minutes."
+            errorMessage = "Too many failed attempts. Try again in 15 minutes."
             authState = .failed("Account locked")
         }
     }

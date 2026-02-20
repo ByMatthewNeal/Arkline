@@ -165,8 +165,8 @@ extension PasscodeManager {
     /// Maximum number of failed attempts before lockout
     private static let maxAttempts = 5
 
-    /// Lockout duration in seconds (5 minutes)
-    private static let lockoutDuration: TimeInterval = 300
+    /// Lockout duration in seconds (15 minutes)
+    private static let lockoutDuration: TimeInterval = 900
 
     /// Record a failed passcode attempt
     /// - Returns: Number of remaining attempts, or nil if locked out
@@ -217,7 +217,7 @@ extension PasscodeManager {
 
         let minutes = Int(remaining) / 60
         let seconds = Int(remaining) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        return String(format: "%d:%02d min", minutes, seconds)
     }
 
     /// Clear lockout state
