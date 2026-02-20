@@ -159,6 +159,7 @@ class AppState: ObservableObject {
     @Published var preferredCurrency: String = "USD"
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
     @Published var enabledCoreAssets: Set<CoreAsset> = CoreAsset.defaultEnabled
+    @Published var didJustSignOut = false
 
     // Navigation reset triggers - increment to pop to root
     @Published var homeNavigationReset = UUID()
@@ -372,6 +373,7 @@ class AppState: ObservableObject {
     func signOut() {
         isAuthenticated = false
         currentUser = nil
+        didJustSignOut = true
         UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
         PasscodeManager.shared.clearLockout()
     }

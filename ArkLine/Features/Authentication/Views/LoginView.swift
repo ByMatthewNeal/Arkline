@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     @Bindable var viewModel: AuthViewModel
+    @EnvironmentObject var appState: AppState
     @State private var showPasscodeEntry = false
     @State private var isAnimating = false
     @Environment(\.colorScheme) private var colorScheme
@@ -105,12 +106,13 @@ struct LoginView: View {
                 isAnimating = true
             }
 
-            // Auto-trigger Face ID if available and enabled
-            if viewModel.canUseBiometrics && viewModel.showFaceID {
+            // Auto-trigger Face ID if available, enabled, and not returning from sign-out
+            if viewModel.canUseBiometrics && viewModel.showFaceID && !appState.didJustSignOut {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     viewModel.authenticateWithBiometrics()
                 }
             }
+            appState.didJustSignOut = false
         }
     }
 }
@@ -176,9 +178,11 @@ struct PasscodeButton: View {
 
 #Preview {
     LoginView(viewModel: AuthViewModel())
+        .environmentObject(AppState())
 }
 
 #Preview("Light Mode") {
     LoginView(viewModel: AuthViewModel())
+        .environmentObject(AppState())
         .preferredColorScheme(.light)
 }
