@@ -378,18 +378,32 @@ class AppState: ObservableObject {
     // MARK: - Profile Refresh
 
     func refreshUserProfile() async {
-        guard let currentUser = currentUser else { return }
         guard SupabaseManager.shared.isConfigured else { return }
 
-        do {
-            guard let profile = try await SupabaseDatabase.shared.getProfile(userId: currentUser.id) else { return }
+        // Determine the user ID: prefer cached user, fall back to Supabase auth session
+        let userId: UUID
+        if let existingId = currentUser?.id {
+            userId = existingId
+        } else if let authId = SupabaseAuthManager.shared.currentUserId {
+            userId = authId
+        } else {
+            return
+        }
 
-            var updatedUser = currentUser
+        do {
+            guard let profile = try await SupabaseDatabase.shared.getProfile(userId: userId) else { return }
+
+            // Build user from existing cached user or create a new one from the DB profile
+            var updatedUser = currentUser ?? User(
+                id: userId,
+                username: profile.username ?? "user",
+                email: profile.email ?? ""
+            )
             if let role = profile.role {
-                updatedUser.role = UserRole(rawValue: role) ?? currentUser.role
+                updatedUser.role = UserRole(rawValue: role) ?? updatedUser.role
             }
             if let subStatus = profile.subscriptionStatus {
-                updatedUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? currentUser.subscriptionStatus
+                updatedUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? updatedUser.subscriptionStatus
             }
             updatedUser.trialEnd = profile.trialEnd
             if let fullName = profile.fullName {
