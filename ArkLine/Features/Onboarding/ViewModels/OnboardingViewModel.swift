@@ -247,7 +247,10 @@ class OnboardingViewModel {
 
         do {
             try await SupabaseAuthManager.shared.signInWithOTP(email: email)
-            nextStep()
+            // Only advance if we're not already on the verification step (i.e. not a resend)
+            if currentStep != .verification {
+                nextStep()
+            }
         } catch {
             errorMessage = AppError.from(error).userMessage
         }
