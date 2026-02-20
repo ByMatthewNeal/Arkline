@@ -259,23 +259,30 @@ class AppState: ObservableObject {
         if let userData = UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser),
            let user = try? JSONDecoder().decode(User.self, from: userData) {
             currentUser = user
-            isAuthenticated = true
+            // Only auto-authenticate if the user didn't explicitly sign out
+            if !UserDefaults.standard.bool(forKey: Constants.UserDefaults.didSignOut) {
+                isAuthenticated = true
+            }
         }
     }
 
     func setAuthenticated(_ authenticated: Bool, user: User? = nil) {
         isAuthenticated = authenticated
-        currentUser = user
 
-        // Persist user to UserDefaults (strip sensitive fields)
+        if authenticated {
+            // Clear the sign-out flag so next app launch auto-authenticates
+            UserDefaults.standard.set(false, forKey: Constants.UserDefaults.didSignOut)
+        }
+
+        // Update user if provided; keep existing cached user otherwise (passcode re-login)
         if let user = user {
+            currentUser = user
+            // Persist user to UserDefaults (strip sensitive fields)
             var sanitized = user
             sanitized.passcodeHash = nil
             if let data = try? JSONEncoder().encode(sanitized) {
                 UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
             }
-        } else if !authenticated {
-            UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
         }
     }
 
@@ -372,9 +379,11 @@ class AppState: ObservableObject {
 
     func signOut() {
         isAuthenticated = false
-        currentUser = nil
         didJustSignOut = true
-        UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
+        // Mark as signed out so loadPersistedState won't auto-authenticate on next launch
+        UserDefaults.standard.set(true, forKey: Constants.UserDefaults.didSignOut)
+        // Keep currentUser and its UserDefaults cache — the login screen hides the UI,
+        // and passcode re-login needs the cached user to restore the correct profile.
         PasscodeManager.shared.clearLockout()
     }
 

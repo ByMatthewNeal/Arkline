@@ -117,6 +117,7 @@ enum Constants {
         static let isOnboarded = "isOnboarded"
         static let userId = "userId"
         static let currentUser = "currentUser"
+        static let didSignOut = "didSignOut"
         static let preferredCurrency = "preferredCurrency"
         static let darkModePreference = "darkModePreference"
         static let avatarColorTheme = "avatarColorTheme"
