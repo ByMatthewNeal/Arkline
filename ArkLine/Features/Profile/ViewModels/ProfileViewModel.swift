@@ -71,41 +71,7 @@ final class ProfileViewModel {
 
     // MARK: - Initialization
     init(user: User? = nil) {
-        self.user = user ?? createMockUser()
-    }
-
-    private func createMockUser() -> User {
-        User(
-            id: UUID(),
-            username: "matt",
-            email: "matt@arkline.app",
-            fullName: "Matt",
-            avatarUrl: nil,
-            dateOfBirth: Calendar.current.date(byAdding: .year, value: -30, to: Date()),
-            careerIndustry: "Technology",
-            experienceLevel: "advanced",
-            socialLinks: SocialLinks(
-                twitter: "cryptotrader",
-                linkedin: nil,
-                telegram: nil,
-                website: nil
-            ),
-            preferredCurrency: "USD",
-            riskCoins: ["BTC", "ETH"],
-            darkMode: "automatic",
-            notifications: NotificationSettings(
-                pushEnabled: true,
-                emailEnabled: true,
-                dcaReminders: true,
-                priceAlerts: true,
-                communityUpdates: false,
-                marketNews: true
-            ),
-            passcodeHash: nil,
-            faceIdEnabled: true,
-            createdAt: Date().addingTimeInterval(-86400 * 180),
-            updatedAt: Date()
-        )
+        self.user = user
     }
 
     // MARK: - Actions

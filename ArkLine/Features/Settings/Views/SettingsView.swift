@@ -297,10 +297,10 @@ struct SettingsView: View {
             .alert("Sign Out", isPresented: $viewModel.showSignOutAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
-                    Task {
-                        await viewModel.signOut()
-                        appState.signOut()
-                    }
+                    // Don't sign out of Supabase — keep session active so
+                    // refreshUserProfile() works after passcode re-login.
+                    // The passcode/FaceID lock screen protects app access.
+                    appState.signOut()
                 }
             } message: {
                 Text("Are you sure you want to sign out?")
