@@ -304,6 +304,7 @@ struct CreateUserRequest: Encodable {
     let experienceLevel: String?
     let socialLinks: SocialLinks?
     let avatarUrl: String?
+    let faceIdEnabled: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -315,6 +316,7 @@ struct CreateUserRequest: Encodable {
         case experienceLevel = "experience_level"
         case socialLinks = "social_links"
         case avatarUrl = "avatar_url"
+        case faceIdEnabled = "face_id_enabled"
     }
 }
 

@@ -399,13 +399,32 @@ class OnboardingViewModel {
                     faceIdEnabled: isFaceIDEnabled
                 )
 
-                // Try to create profile in database (non-blocking if tables don't exist yet)
-                do {
-                    try await SupabaseDatabase.shared.insert(into: .profiles, values: user)
+                // Upsert profile in database — uses CreateUserRequest which excludes
+                // server-managed fields (role, subscription_status, trial_end) so
+                // returning users get their new info saved without clobbering admin role.
+                let profileRequest = CreateUserRequest(
+                    id: userId,
+                    username: generatedUsername,
+                    email: email,
+                    fullName: fullName,
+                    dateOfBirth: dateOfBirth,
+                    careerIndustry: careerIndustry?.rawValue,
+                    experienceLevel: experienceLevel?.rawValue,
+                    socialLinks: socialLinks,
+                    avatarUrl: uploadedAvatarUrl,
+                    faceIdEnabled: isFaceIDEnabled
+                )
 
-                    // Create default portfolio
+                do {
+                    try await SupabaseDatabase.shared.upsert(into: .profiles, values: profileRequest)
+
+                    // Create default portfolio (ignore conflict if it already exists)
                     let portfolio = Portfolio(userId: userId, name: "Main Portfolio")
-                    try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
+                    do {
+                        try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
+                    } catch {
+                        // Portfolio already exists for returning users — expected
+                    }
 
                     // Redeem the invite code
                     if validatedInviteCode != nil {
@@ -426,7 +445,7 @@ class OnboardingViewModel {
                     }
                 } catch {
                     // Log error but don't block onboarding - tables may not exist yet
-                    AppLogger.shared.error("Database insert failed (tables may not exist): \(error.localizedDescription)")
+                    AppLogger.shared.error("Database upsert failed (tables may not exist): \(error.localizedDescription)")
                 }
 
                 // Fetch the authoritative profile from DB to get server-managed fields

@@ -53,6 +53,19 @@ actor SupabaseDatabase {
             .execute()
     }
 
+    // MARK: - Upsert
+    func upsert<T: Encodable>(
+        into table: SupabaseTable,
+        values: T,
+        onConflict column: String = "id"
+    ) async throws {
+        let client = SupabaseManager.shared.client
+        try await client
+            .from(table.rawValue)
+            .upsert(values, onConflict: column)
+            .execute()
+    }
+
     // MARK: - Update
     func update<T: Encodable>(
         in table: SupabaseTable,
