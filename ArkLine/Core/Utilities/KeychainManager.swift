@@ -199,6 +199,7 @@ extension KeychainManager {
     enum Keys {
         static let passcodeHash = "arkline.passcodeHash"
         static let passcodeSalt = "arkline.passcodeSalt"
+        static let passcodeLength = "arkline.passcodeLength"
         static let lockoutEndTime = "arkline.lockoutEndTime"
         static let failedAttempts = "arkline.failedAttempts"
         static let biometricEnabled = "arkline.biometricEnabled"

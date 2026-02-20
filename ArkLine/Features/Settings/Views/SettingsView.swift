@@ -280,6 +280,7 @@ struct SettingsView: View {
                     Text("Account")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
+
             }
             #if os(iOS)
             .listStyle(.insetGrouped)
@@ -287,6 +288,7 @@ struct SettingsView: View {
             .listStyle(.sidebar)
             #endif
             .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, 80, for: .scrollContent)
             }
             .navigationTitle("Settings")
             #if os(iOS)

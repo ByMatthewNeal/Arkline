@@ -11,6 +11,7 @@ protocol PasscodeVerifying {
     var lockoutTimeRemaining: String { get }
     var isBiometricEnabled: Bool { get }
     var lockoutEndTime: Date? { get }
+    var storedPasscodeLength: Int { get }
 }
 
 // MARK: - Passcode Manager
@@ -47,6 +48,11 @@ final class PasscodeManager: PasscodeVerifying {
 
         try keychain.save(hash, forKey: KeychainManager.Keys.passcodeHash)
         try keychain.save(salt, forKey: KeychainManager.Keys.passcodeSalt)
+
+        // Store length so the login screen knows how many dots to show
+        var length = passcode.count
+        let lengthData = Data(bytes: &length, count: MemoryLayout<Int>.size)
+        try keychain.save(lengthData, forKey: KeychainManager.Keys.passcodeLength)
     }
 
     /// Verify a passcode against the stored hash
@@ -65,6 +71,15 @@ final class PasscodeManager: PasscodeVerifying {
     /// Check if a passcode has been set
     var hasPasscode: Bool {
         keychain.exists(forKey: KeychainManager.Keys.passcodeHash)
+    }
+
+    /// The length of the stored passcode (4 or 6), defaults to 6 if unknown
+    var storedPasscodeLength: Int {
+        guard let data = keychain.loadOptional(forKey: KeychainManager.Keys.passcodeLength),
+              data.count == MemoryLayout<Int>.size else {
+            return 6
+        }
+        return data.withUnsafeBytes { $0.load(as: Int.self) }
     }
 
     /// Remove the stored passcode

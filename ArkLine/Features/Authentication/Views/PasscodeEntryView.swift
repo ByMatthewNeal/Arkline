@@ -84,7 +84,7 @@ struct PasscodeEntryView: View {
                     // Passcode Dots
                     PasscodeDots(
                         code: viewModel.passcode,
-                        length: 6,
+                        length: viewModel.passcodeLength,
                         shake: shake
                     )
 
@@ -98,7 +98,7 @@ struct PasscodeEntryView: View {
                     // Keypad
                     PasscodeKeypadGrid(
                         code: $viewModel.passcode,
-                        maxLength: 6,
+                        maxLength: viewModel.passcodeLength,
                         disabled: viewModel.isLocked || viewModel.authState == .authenticating
                     )
 
@@ -107,7 +107,7 @@ struct PasscodeEntryView: View {
             }
         }
         .onChange(of: viewModel.passcode) { _, newValue in
-            if newValue.count == 6 {
+            if newValue.count == viewModel.passcodeLength {
                 viewModel.verifyPasscode()
             }
         }

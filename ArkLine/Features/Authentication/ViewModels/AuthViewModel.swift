@@ -32,6 +32,10 @@ class AuthViewModel {
         passcodeManager.isLockedOut
     }
 
+    var passcodeLength: Int {
+        passcodeManager.storedPasscodeLength
+    }
+
     var lockoutEndTime: Date? {
         passcodeManager.lockoutEndTime
     }

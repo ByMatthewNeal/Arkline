@@ -10,6 +10,7 @@ private class MockPasscodeVerifier: PasscodeVerifying {
     var lockoutTimeRemainingValue = ""
     var isBiometricEnabledValue = false
     var lockoutEndTimeValue: Date? = nil
+    var storedPasscodeLengthValue = 6
     var resetFailedAttemptsCalled = false
 
     func verify(_ passcode: String) -> Bool { verifyResult }
@@ -24,6 +25,7 @@ private class MockPasscodeVerifier: PasscodeVerifying {
     var lockoutTimeRemaining: String { lockoutTimeRemainingValue }
     var isBiometricEnabled: Bool { isBiometricEnabledValue }
     var lockoutEndTime: Date? { lockoutEndTimeValue }
+    var storedPasscodeLength: Int { storedPasscodeLengthValue }
 }
 
 // MARK: - AuthViewModel Tests

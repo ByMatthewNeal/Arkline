@@ -15,8 +15,8 @@ struct ContentView: View {
                     .transition(.opacity)
             }
 
-            #if DEBUG
-            // Dev button to skip login (top right)
+            #if DEBUG && targetEnvironment(simulator)
+            // Dev button to skip login (simulator only)
             VStack {
                 HStack {
                     Spacer()
@@ -50,7 +50,7 @@ struct ContentView: View {
         }
     }
 
-    #if DEBUG
+    #if DEBUG && targetEnvironment(simulator)
     private func skipToMainApp() {
         Task {
             // Try anonymous Supabase auth so the api-proxy Edge Function
@@ -85,7 +85,7 @@ struct ContentView: View {
             }
         }
     }
-    #endif
+    #endif // DEBUG && targetEnvironment(simulator)
 
     @ViewBuilder
     private var mainContent: some View {
