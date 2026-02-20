@@ -112,6 +112,8 @@ struct TopCoinsSection: View {
                             CryptoAssetRow(asset: asset)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
                         .contextMenu {
                             Button {
                                 Haptics.medium()
@@ -123,6 +125,8 @@ struct TopCoinsSection: View {
                                     systemImage: FavoritesStore.shared.isFavorite(asset.id) ? "star.fill" : "star"
                                 )
                             }
+                        } preview: {
+                            CryptoAssetRow(asset: asset)
                         }
 
                         if asset.id != displayedCoins.last?.id {

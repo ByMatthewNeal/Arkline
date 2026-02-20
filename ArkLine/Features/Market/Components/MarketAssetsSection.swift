@@ -37,9 +37,11 @@ struct MarketAssetsSection: View {
                         }
                         .zoomSource(id: asset.id, in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
+                        .contentShape(Rectangle())
                         .simultaneousGesture(TapGesture().onEnded {
                             Task { await AnalyticsService.shared.trackCoinTap(asset.id, source: "market_list") }
                         })
+                        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
                         .contextMenu {
                             Button {
                                 Haptics.medium()
@@ -51,6 +53,8 @@ struct MarketAssetsSection: View {
                                     systemImage: FavoritesStore.shared.isFavorite(asset.id) ? "star.fill" : "star"
                                 )
                             }
+                        } preview: {
+                            CryptoAssetRow(asset: asset)
                         }
 
                         if asset.id != viewModel.cryptoAssets.last?.id {

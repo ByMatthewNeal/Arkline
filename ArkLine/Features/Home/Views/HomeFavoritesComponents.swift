@@ -45,6 +45,7 @@ struct FavoritesSection: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
                             .contextMenu {
                                 Button(role: .destructive) {
                                     Haptics.medium()
@@ -52,6 +53,12 @@ struct FavoritesSection: View {
                                 } label: {
                                     Label("Remove from Favorites", systemImage: "star.slash")
                                 }
+                            } preview: {
+                                FavoriteAssetCard(
+                                    asset: asset,
+                                    isExpanded: size == .expanded,
+                                    isCompact: size == .compact
+                                )
                             }
                         }
                     }
