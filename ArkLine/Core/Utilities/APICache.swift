@@ -25,7 +25,7 @@ final class APICache {
     // MARK: - Default TTLs (in seconds)
     struct TTL {
         static let short: TimeInterval = 30      // 30 seconds - for rapidly changing data
-        static let medium: TimeInterval = 120    // 2 minutes - for market prices (reduced API calls)
+        static let medium: TimeInterval = 300    // 5 minutes - for market prices (investing app, cache-friendly)
         static let long: TimeInterval = 300      // 5 minutes - for slower changing data
         static let veryLong: TimeInterval = 900  // 15 minutes - for relatively static data
     }

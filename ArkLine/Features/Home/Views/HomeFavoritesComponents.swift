@@ -45,6 +45,14 @@ struct FavoritesSection: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    Haptics.medium()
+                                    FavoritesStore.shared.setFavorite(asset.id, isFavorite: false)
+                                } label: {
+                                    Label("Remove from Favorites", systemImage: "star.slash")
+                                }
+                            }
                         }
                     }
                 }

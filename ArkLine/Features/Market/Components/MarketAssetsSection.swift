@@ -40,6 +40,18 @@ struct MarketAssetsSection: View {
                         .simultaneousGesture(TapGesture().onEnded {
                             Task { await AnalyticsService.shared.trackCoinTap(asset.id, source: "market_list") }
                         })
+                        .contextMenu {
+                            Button {
+                                Haptics.medium()
+                                let isCurrentlyFavorite = FavoritesStore.shared.isFavorite(asset.id)
+                                FavoritesStore.shared.setFavorite(asset.id, isFavorite: !isCurrentlyFavorite)
+                            } label: {
+                                Label(
+                                    FavoritesStore.shared.isFavorite(asset.id) ? "Remove from Favorites" : "Add to Favorites",
+                                    systemImage: FavoritesStore.shared.isFavorite(asset.id) ? "star.fill" : "star"
+                                )
+                            }
+                        }
 
                         if asset.id != viewModel.cryptoAssets.last?.id {
                             Divider()

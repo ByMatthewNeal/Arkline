@@ -112,6 +112,18 @@ struct TopCoinsSection: View {
                             CryptoAssetRow(asset: asset)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .contextMenu {
+                            Button {
+                                Haptics.medium()
+                                let isCurrentlyFavorite = FavoritesStore.shared.isFavorite(asset.id)
+                                FavoritesStore.shared.setFavorite(asset.id, isFavorite: !isCurrentlyFavorite)
+                            } label: {
+                                Label(
+                                    FavoritesStore.shared.isFavorite(asset.id) ? "Remove from Favorites" : "Add to Favorites",
+                                    systemImage: FavoritesStore.shared.isFavorite(asset.id) ? "star.fill" : "star"
+                                )
+                            }
+                        }
 
                         if asset.id != displayedCoins.last?.id {
                             Divider()
