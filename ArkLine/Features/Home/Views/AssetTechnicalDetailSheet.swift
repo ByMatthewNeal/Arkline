@@ -127,6 +127,9 @@ struct AssetTechnicalDetailSheet: View {
                         // Price Position - simplified Bollinger
                         PricePositionCard(bollinger: analysis.bollingerBands.daily, colorScheme: colorScheme)
 
+                        // Investment Insight - dynamic summary + educational guide
+                        InvestmentInsightCard(analysis: analysis, colorScheme: colorScheme)
+
                         // Data source attribution
                         HStack {
                             Spacer()
@@ -289,6 +292,106 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Investment Insight Card
+private struct InvestmentInsightCard: View {
+    let analysis: TechnicalAnalysis
+    let colorScheme: ColorScheme
+    @State private var showGuide = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack(spacing: ArkSpacing.sm) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.warning)
+                Text("Investment Insight")
+                    .font(.subheadline.bold())
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                Spacer()
+            }
+
+            Text(generateInsight())
+                .font(.subheadline)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+
+            DisclosureGroup("Understanding the Indicators", isExpanded: $showGuide) {
+                VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                    guideRow(title: "Trend Score", description: "Measures price direction & momentum (0-100). Higher = stronger uptrend.")
+                    guideRow(title: "Valuation Score", description: "Measures entry opportunity (0-100). Higher = more oversold/better value.")
+                    guideRow(title: "RSI", description: "Below 30 = oversold (potential buy zone). Above 70 = overbought (potential sell zone).")
+                    guideRow(title: "Market Outlook", description: "Short-term vs long-term sentiment alignment signals conviction.")
+
+                    Text("This is not financial advice. Always do your own research.")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        .padding(.top, ArkSpacing.xs)
+                }
+                .padding(.top, ArkSpacing.sm)
+            }
+            .font(.caption.bold())
+            .foregroundColor(AppColors.textSecondary)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+    }
+
+    private func guideRow(title: String, description: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption.bold())
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+            Text(description)
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+        }
+    }
+
+    private func generateInsight() -> String {
+        let trend = analysis.trendScore
+        let valuation = analysis.opportunityScore
+        let rsiZone = analysis.rsi.zone
+        let shortTerm = analysis.sentiment.shortTerm
+        let bands = analysis.bullMarketBands.position
+
+        // Oversold opportunity
+        if rsiZone == .oversold || (valuation >= 70 && trend >= 40) {
+            return "Oversold conditions suggest a potential bounce — watch for trend confirmation before adding exposure."
+        }
+
+        // Overbought with strong trend
+        if rsiZone == .overbought && trend >= 60 {
+            return "Trend is strong but entry is stretched — waiting for a pullback may offer better risk/reward."
+        }
+
+        // Bullish aligned
+        if trend >= 60 && valuation >= 50 && (shortTerm == .bullish || shortTerm == .stronglyBullish) {
+            return "Momentum and valuation both favor accumulation. Trend support and sentiment are aligned to the upside."
+        }
+
+        // Bearish aligned
+        if trend <= 40 && valuation <= 40 && (shortTerm == .bearish || shortTerm == .stronglyBearish) {
+            return "Indicators suggest caution — consider reducing exposure or waiting for a reversal signal before entering."
+        }
+
+        // Above support bands with decent trend
+        if bands == .aboveBoth && trend >= 50 {
+            return "Price is holding above bull market support bands. The broader trend remains constructive for long-term positioning."
+        }
+
+        // Below support bands
+        if bands == .belowBoth && trend <= 50 {
+            return "Price has broken below bull market support bands. Risk is elevated — patience may be warranted until support is reclaimed."
+        }
+
+        // Default: mixed/neutral
+        return "Signals are mixed — a wait-and-see approach is reasonable until clearer trend alignment emerges."
+    }
 }
 
 // MARK: - Preview
