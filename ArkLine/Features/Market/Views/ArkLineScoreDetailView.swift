@@ -374,18 +374,14 @@ private struct HowItWorksSection: View {
                 .foregroundColor(AppColors.textSecondary)
                 .lineSpacing(4)
 
-            HStack(spacing: ArkSpacing.md) {
+            HStack(spacing: ArkSpacing.sm) {
                 ScoreLegendItem(range: "81-100", label: "Extreme Greed", color: "#DC2626")
                 ScoreLegendItem(range: "61-80", label: "Greed", color: "#F59E0B")
                 ScoreLegendItem(range: "41-60", label: "Neutral", color: "#64748B")
-            }
-            .padding(.top, 4)
-
-            HStack(spacing: ArkSpacing.md) {
                 ScoreLegendItem(range: "21-40", label: "Fear", color: "#0EA5E9")
                 ScoreLegendItem(range: "0-20", label: "Extreme Fear", color: "#3B82F6")
-                Spacer()
             }
+            .padding(.top, 4)
         }
         .padding(ArkSpacing.md)
         .background(
@@ -403,18 +399,13 @@ private struct ScoreLegendItem: View {
     let color: String
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 3) {
             Circle()
                 .fill(Color(hex: color))
-                .frame(width: 8, height: 8)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(range)
-                    .font(.caption2.weight(.semibold).monospacedDigit())
-                    .foregroundColor(Color(hex: color))
-                Text(label)
-                    .font(.caption2)
-                    .foregroundColor(AppColors.textSecondary)
-            }
+                .frame(width: 6, height: 6)
+            Text(range)
+                .font(.system(size: 9, weight: .semibold).monospacedDigit())
+                .foregroundColor(Color(hex: color))
         }
     }
 }
