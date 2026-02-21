@@ -165,7 +165,7 @@ private struct TierSpectrumBar: View {
                             let fraction = Double(tier.range.count) / 101.0
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(Color(hex: tier.color))
-                                .frame(width: totalWidth * fraction - 2)
+                                .frame(width: max(totalWidth * fraction - 2, 0))
                         }
                     }
                     .frame(height: 8)
@@ -339,7 +339,7 @@ private struct ScoreComponentRow: View {
 
                     RoundedRectangle(cornerRadius: 3)
                         .fill(barColor)
-                        .frame(width: geo.size.width * component.value)
+                        .frame(width: geo.size.width * min(max(component.value, 0), 1))
                 }
             }
             .frame(width: 72, height: 6)

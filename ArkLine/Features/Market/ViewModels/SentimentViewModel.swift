@@ -216,7 +216,7 @@ class SentimentViewModel {
         }
 
         if let liq = liquidations {
-            let longPercent = (liq.longLiquidations / liq.total24h) * 100
+            let longPercent = liq.total24h > 0 ? (liq.longLiquidations / liq.total24h) * 100 : 50
             cards.append(SentimentCardData(
                 id: "liquidations",
                 title: "24h Liquidations",
@@ -858,7 +858,8 @@ class SentimentViewModel {
     }
 
     private static var regimeCacheURL: URL {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
         return caches.appendingPathComponent("sentiment_regime_cache.json")
     }
 
@@ -878,24 +879,24 @@ class SentimentViewModel {
     /// before the given date.
     static func mostRecentScheduledUpdate(before date: Date) -> Date {
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
+        cal.timeZone = TimeZone(identifier: "UTC") ?? .current
 
         var comps = cal.dateComponents([.year, .month, .day], from: date)
         comps.hour = 0
         comps.minute = 15
         comps.second = 0
-        var candidate = cal.date(from: comps)!
+        var candidate = cal.date(from: comps) ?? date
 
         // If we haven't passed today's 00:15 UTC yet, start from yesterday
         if date < candidate {
-            candidate = cal.date(byAdding: .day, value: -1, to: candidate)!
+            candidate = cal.date(byAdding: .day, value: -1, to: candidate) ?? candidate
         }
 
         // Walk backwards (up to 7 days) to find Sunday(1) or Wednesday(4)
         for _ in 0..<7 {
             let weekday = cal.component(.weekday, from: candidate)
             if weekday == 1 || weekday == 4 { return candidate }
-            candidate = cal.date(byAdding: .day, value: -1, to: candidate)!
+            candidate = cal.date(byAdding: .day, value: -1, to: candidate) ?? candidate
         }
         return candidate
     }
@@ -904,24 +905,24 @@ class SentimentViewModel {
     /// on or after the given date.
     static func nextScheduledUpdate(after date: Date) -> Date {
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
+        cal.timeZone = TimeZone(identifier: "UTC") ?? .current
 
         var comps = cal.dateComponents([.year, .month, .day], from: date)
         comps.hour = 0
         comps.minute = 15
         comps.second = 0
-        var candidate = cal.date(from: comps)!
+        var candidate = cal.date(from: comps) ?? date
 
         // If today's 00:15 UTC has already passed, start from tomorrow
         if date >= candidate {
-            candidate = cal.date(byAdding: .day, value: 1, to: candidate)!
+            candidate = cal.date(byAdding: .day, value: 1, to: candidate) ?? candidate
         }
 
         // Walk forward (up to 7 days) to find Sunday(1) or Wednesday(4)
         for _ in 0..<7 {
             let weekday = cal.component(.weekday, from: candidate)
             if weekday == 1 || weekday == 4 { return candidate }
-            candidate = cal.date(byAdding: .day, value: 1, to: candidate)!
+            candidate = cal.date(byAdding: .day, value: 1, to: candidate) ?? candidate
         }
         return candidate
     }

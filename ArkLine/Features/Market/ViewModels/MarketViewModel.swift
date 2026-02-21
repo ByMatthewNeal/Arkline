@@ -17,6 +17,7 @@ enum AssetCategoryFilter: String, CaseIterable {
 }
 
 // MARK: - Market View Model
+@MainActor
 @Observable
 class MarketViewModel {
     // MARK: - Dependencies
@@ -24,7 +25,8 @@ class MarketViewModel {
     private let newsService: NewsServiceProtocol
 
     // MARK: - Search Debouncing
-    private var searchTask: Task<Void, Never>?
+    private var topCoinsSearchTask: Task<Void, Never>?
+    private var assetsSearchTask: Task<Void, Never>?
     private let searchDebounceInterval: UInt64 = 500_000_000 // 500ms in nanoseconds
 
     // MARK: - Top Coins
@@ -101,14 +103,12 @@ class MarketViewModel {
 
         let (news, meetings, coins) = await (newsTask, meetingsTask, topCoinsTask)
 
-        await MainActor.run {
-            self.newsItems = news
-            self.fedWatchMeetings = meetings ?? []
-            self.fedWatchData = meetings?.first
-            self.cachedTopCoins = coins
-            self.topCoins = coins
-            self.isLoading = false
-        }
+        self.newsItems = news
+        self.fedWatchMeetings = meetings ?? []
+        self.fedWatchData = meetings?.first
+        self.cachedTopCoins = coins
+        self.topCoins = coins
+        self.isLoading = false
     }
 
     /// Safely fetches news without throwing errors
@@ -170,7 +170,7 @@ class MarketViewModel {
         topCoinsSearchQuery = query
 
         // Cancel any pending search
-        searchTask?.cancel()
+        topCoinsSearchTask?.cancel()
 
         guard !query.isEmpty else {
             // Restore cached list when search is cleared
@@ -181,7 +181,7 @@ class MarketViewModel {
 
         isSearchingTopCoins = true
 
-        searchTask = Task {
+        topCoinsSearchTask = Task {
             do {
                 try await Task.sleep(nanoseconds: searchDebounceInterval)
                 guard !Task.isCancelled else { return }
@@ -189,16 +189,12 @@ class MarketViewModel {
                 let results = try await marketService.searchCrypto(query: query)
                 guard !Task.isCancelled else { return }
 
-                await MainActor.run {
-                    self.topCoins = results
-                    self.isSearchingTopCoins = false
-                }
+                self.topCoins = results
+                self.isSearchingTopCoins = false
             } catch is CancellationError {
                 // Cancelled, ignore
             } catch {
-                await MainActor.run {
-                    self.isSearchingTopCoins = false
-                }
+                self.isSearchingTopCoins = false
             }
         }
     }
@@ -214,20 +210,15 @@ class MarketViewModel {
 
         do {
             let moreAssets = try await marketService.fetchCryptoAssets(page: nextPage, perPage: 50)
-
-            await MainActor.run {
-                self.cryptoAssets.append(contentsOf: moreAssets)
-            }
+            self.cryptoAssets.append(contentsOf: moreAssets)
         } catch {
-            await MainActor.run {
-                self.errorMessage = AppError.from(error).userMessage
-            }
+            self.errorMessage = AppError.from(error).userMessage
         }
     }
 
     func searchAssets(query: String) {
         // Cancel any pending search
-        searchTask?.cancel()
+        assetsSearchTask?.cancel()
 
         guard !query.isEmpty else {
             searchText = ""
@@ -235,7 +226,7 @@ class MarketViewModel {
         }
 
         // Debounce: wait before executing search
-        searchTask = Task {
+        assetsSearchTask = Task {
             do {
                 try await Task.sleep(nanoseconds: searchDebounceInterval)
 
@@ -246,16 +237,12 @@ class MarketViewModel {
 
                 guard !Task.isCancelled else { return }
 
-                await MainActor.run {
-                    self.cryptoAssets = results
-                }
+                self.cryptoAssets = results
                 Task { await AnalyticsService.shared.trackSearch(query: query, resultCount: results.count) }
             } catch is CancellationError {
                 // Search was cancelled, ignore
             } catch {
-                await MainActor.run {
-                    self.errorMessage = AppError.from(error).userMessage
-                }
+                self.errorMessage = AppError.from(error).userMessage
             }
         }
     }

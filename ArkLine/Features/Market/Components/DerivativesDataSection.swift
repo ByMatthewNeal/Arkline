@@ -415,10 +415,10 @@ struct LSRow: View {
                     HStack(spacing: 1) {
                         RoundedRectangle(cornerRadius: 2)
                             .fill(AppColors.success)
-                            .frame(width: geo.size.width * (longPercent / 100))
+                            .frame(width: max(geo.size.width * (min(max(longPercent, 0), 100) / 100), 0))
                         RoundedRectangle(cornerRadius: 2)
                             .fill(AppColors.error)
-                            .frame(width: geo.size.width * (shortPercent / 100))
+                            .frame(width: max(geo.size.width * (min(max(shortPercent, 0), 100) / 100), 0))
                     }
                 }
                 .frame(height: 6)
