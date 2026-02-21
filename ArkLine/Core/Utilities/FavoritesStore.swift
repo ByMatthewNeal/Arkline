@@ -1,6 +1,8 @@
 import Foundation
+import Observation
 
 /// Persists user's favorite asset IDs via UserDefaults.
+@Observable
 final class FavoritesStore {
     static let shared = FavoritesStore()
 
