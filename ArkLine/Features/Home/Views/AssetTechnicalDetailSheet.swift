@@ -129,25 +129,7 @@ struct AssetTechnicalDetailSheet: View {
 
                         // Investment Insight - dynamic summary + educational guide
                         InvestmentInsightCard(analysis: analysis, colorScheme: colorScheme)
-
-                        // Data source attribution
-                        HStack {
-                            Spacer()
-                            Text("Taapi.io")
-                                .font(.caption2)
-                                .foregroundColor(AppColors.textSecondary.opacity(0.4))
-                        }
-                        .padding(.top, ArkSpacing.xs)
                     }
-
-                    // Branding for shared screenshots
-                    HStack {
-                        Spacer()
-                        Text("ArkLine")
-                            .font(.caption2.bold())
-                            .foregroundColor(AppColors.textSecondary.opacity(0.3))
-                    }
-                    .padding(.top, ArkSpacing.xs)
 
                     Spacer(minLength: ArkSpacing.xxl)
                 }
@@ -302,15 +284,9 @@ private struct InvestmentInsightCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
-            HStack(spacing: ArkSpacing.sm) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(AppColors.warning)
-                Text("Investment Insight")
-                    .font(.subheadline.bold())
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-                Spacer()
-            }
+            Text("Investment Insight")
+                .font(.subheadline.bold())
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Text(generateInsight())
                 .font(.subheadline)
@@ -318,20 +294,20 @@ private struct InvestmentInsightCard: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             DisclosureGroup("Understanding the Indicators", isExpanded: $showGuide) {
-                VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-                    guideRow(title: "Trend Score", description: "Measures price direction & momentum (0-100). Higher = stronger uptrend.")
-                    guideRow(title: "Valuation Score", description: "Measures entry opportunity (0-100). Higher = more oversold/better value.")
-                    guideRow(title: "RSI", description: "Below 30 = oversold (potential buy zone). Above 70 = overbought (potential sell zone).")
-                    guideRow(title: "Market Outlook", description: "Short-term vs long-term sentiment alignment signals conviction.")
+                VStack(alignment: .leading, spacing: ArkSpacing.md) {
+                    guideRow(title: "Trend Score", description: "Measures price direction and momentum on a 0-100 scale using moving average alignment and trend strength. Scores above 60 indicate a healthy uptrend; below 40 suggests bearish pressure.")
+                    guideRow(title: "Valuation Score", description: "Gauges how attractive the current entry point is (0-100). Higher scores mean price is oversold or near support — a potentially better value. Lower scores suggest price is extended.")
+                    guideRow(title: "RSI (Relative Strength Index)", description: "A momentum oscillator ranging from 0-100. Readings below 30 indicate oversold conditions (potential buy zone), while above 70 signals overbought territory (potential sell zone). Mid-range values suggest neutral momentum.")
+                    guideRow(title: "Market Outlook", description: "Compares short-term and long-term sentiment. When both align bullish or bearish, conviction is higher. Divergence between timeframes often signals a trend transition.")
 
                     Text("This is not financial advice. Always do your own research.")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                         .padding(.top, ArkSpacing.xs)
                 }
                 .padding(.top, ArkSpacing.sm)
             }
-            .font(.caption.bold())
+            .font(.subheadline.weight(.medium))
             .foregroundColor(AppColors.textSecondary)
         }
         .padding()
@@ -342,12 +318,12 @@ private struct InvestmentInsightCard: View {
     }
 
     private func guideRow(title: String, description: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(title)
-                .font(.caption.bold())
+                .font(.footnote.bold())
                 .foregroundColor(AppColors.textPrimary(colorScheme))
             Text(description)
-                .font(.caption)
+                .font(.footnote)
                 .foregroundColor(AppColors.textSecondary)
         }
     }
