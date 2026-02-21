@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import UserNotifications
 
 // MARK: - DCA Tab Selection
 enum DCAViewTab: String, CaseIterable {
@@ -179,6 +180,7 @@ final class DCAViewModel {
 
     // MARK: - Actions
     func createReminder(_ reminder: DCAReminder) async {
+        await MainActor.run { self.error = nil }
         do {
             let request = CreateDCARequest(
                 userId: reminder.userId,
@@ -233,6 +235,10 @@ final class DCAViewModel {
         do {
             try await dcaService.deleteReminder(id: reminder.id)
 
+            UNUserNotificationCenter.current().removePendingNotificationRequests(
+                withIdentifiers: ["dca_reminder_\(reminder.id.uuidString)"]
+            )
+
             await MainActor.run {
                 self.reminders.removeAll { $0.id == reminder.id }
             }
@@ -247,6 +253,12 @@ final class DCAViewModel {
         var updatedReminder = reminder
         updatedReminder.isActive.toggle()
         await updateReminder(updatedReminder)
+
+        if !updatedReminder.isActive {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(
+                withIdentifiers: ["dca_reminder_\(reminder.id.uuidString)"]
+            )
+        }
     }
 
     func markAsInvested(_ reminder: DCAReminder) async {

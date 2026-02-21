@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 // MARK: - Create DCA Sheet
 struct CreateDCASheetView: View {
@@ -16,6 +17,9 @@ struct CreateDCASheetView: View {
     @State private var customPeriod: CustomPeriod = .month
     @State private var selectedDays: Set<Int> = [1]
     @State private var notificationTime = Date()
+    @State private var isCreating = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage: String?
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -80,6 +84,11 @@ struct CreateDCASheetView: View {
             }
             .sheet(isPresented: $showCoinPicker) {
                 CoinPickerView(selectedCoin: $selectedCoin, viewModel: viewModel)
+            }
+            .alert("Error", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage ?? "Something went wrong")
             }
         }
     }
@@ -406,7 +415,13 @@ struct CreateDCASheetView: View {
             }
 
             Button(action: createReminder) {
-                Text("Create Reminder")
+                HStack(spacing: 8) {
+                    if isCreating {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    Text(isCreating ? "Creating..." : "Create Reminder")
+                }
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -416,8 +431,8 @@ struct CreateDCASheetView: View {
                             .fill(AppColors.accent)
                     )
             }
-            .disabled(selectedCoin == nil || amount.isEmpty)
-            .opacity(selectedCoin == nil || amount.isEmpty ? 0.5 : 1)
+            .disabled(selectedCoin == nil || amount.isEmpty || isCreating)
+            .opacity(selectedCoin == nil || amount.isEmpty || isCreating ? 0.5 : 1)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -460,9 +475,13 @@ struct CreateDCASheetView: View {
     private func createReminder() {
         guard let coin = selectedCoin, let amountValue = Double(amount) else { return }
         guard let userId = SupabaseAuthManager.shared.currentUserId else {
-            viewModel.error = .custom(message: "You must be signed in to create a reminder")
+            errorMessage = "You must be signed in to create a reminder"
+            showErrorAlert = true
             return
         }
+
+        isCreating = true
+        viewModel.error = nil
 
         let frequency: DCAFrequency = selectedFrequency.toDCAFrequency
 
@@ -482,9 +501,56 @@ struct CreateDCASheetView: View {
 
         Task {
             await viewModel.createReminder(reminder)
-            if viewModel.error == nil {
+
+            if let error = viewModel.error {
+                isCreating = false
+                errorMessage = error.localizedDescription
+                showErrorAlert = true
+            } else {
+                // Schedule local notification for this reminder
+                await scheduleDCANotification(for: reminder)
                 dismiss()
             }
+        }
+    }
+
+    private func scheduleDCANotification(for reminder: DCAReminder) async {
+        let center = UNUserNotificationCenter.current()
+
+        // Request permission if needed
+        let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .notDetermined {
+            _ = try? await center.requestAuthorization(options: [.alert, .badge, .sound])
+        }
+
+        guard await center.notificationSettings().authorizationStatus == .authorized else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "DCA Reminder: \(reminder.name)"
+        content.body = "Time to invest \(reminder.amount.asCurrency) in \(reminder.symbol)"
+        content.sound = .default
+        content.categoryIdentifier = "DCA_REMINDER"
+        content.userInfo = [
+            "type": "dca_reminder",
+            "reminder_id": reminder.id.uuidString,
+            "symbol": reminder.symbol
+        ]
+
+        // Build trigger from the user's chosen notification time
+        let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: reminder.notificationTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: timeComponents, repeats: true)
+
+        let request = UNNotificationRequest(
+            identifier: "dca_reminder_\(reminder.id.uuidString)",
+            content: content,
+            trigger: trigger
+        )
+
+        do {
+            try await center.add(request)
+            logInfo("Scheduled DCA notification for \(reminder.name) at \(timeComponents.hour ?? 0):\(timeComponents.minute ?? 0)", category: .data)
+        } catch {
+            logError("Failed to schedule DCA notification: \(error)", category: .data)
         }
     }
 }
