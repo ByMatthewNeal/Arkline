@@ -56,7 +56,7 @@ struct MarketOverviewView: View {
                         // 4. Market Sentiment Section
                         MarketSentimentSection(
                             viewModel: sentimentViewModel,
-                            lastUpdated: Date(),
+                            lastUpdated: sentimentViewModel.lastRefreshed ?? Date(),
                             isPro: appState.isPro
                         )
 

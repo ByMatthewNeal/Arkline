@@ -147,7 +147,8 @@ struct AssetDetailView: View {
                 chartData = chart.priceHistory
             }
         } catch {
-            // Fall back to 7d sparkline if available
+            // Clear stale data from previous timeframe, then fall back to sparkline
+            chartData = []
             if let sparkline = asset.sparklinePrices, !sparkline.isEmpty {
                 let now = Date()
                 let interval = (7.0 * 24 * 3600) / Double(sparkline.count)

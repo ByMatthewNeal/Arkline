@@ -17,6 +17,7 @@ class SentimentViewModel {
     // MARK: - Properties
     var isLoading = false
     var errorMessage: String?
+    var lastRefreshed: Date?
 
     // Sentiment Indicators
     var fearGreedIndex: FearGreedIndex?
@@ -369,6 +370,7 @@ class SentimentViewModel {
             }
 
             self.isLoading = false
+            self.lastRefreshed = Date()
         }
 
         // Surface failures via toast (only when multiple core indicators fail)

@@ -87,6 +87,9 @@ struct FedWatchSection: View {
         .sheet(isPresented: $showInfoSheet) {
             FedWatchInfoSheet()
         }
+        .onChange(of: meetings.count) { _, _ in
+            selectedMeetingIndex = 0
+        }
     }
 }
 

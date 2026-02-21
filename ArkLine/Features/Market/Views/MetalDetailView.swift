@@ -148,8 +148,14 @@ struct MetalDetailView: View {
         .background(AppColors.background(colorScheme))
         .navigationBarBackButtonHidden()
         .task {
-            await loadChart()
-            await loadTechnicalAnalysis()
+            async let chartTask: () = loadChart()
+            async let techTask: () = loadTechnicalAnalysis()
+            _ = await (chartTask, techTask)
+        }
+        .refreshable {
+            async let chartTask: () = loadChart()
+            async let techTask: () = loadTechnicalAnalysis()
+            _ = await (chartTask, techTask)
         }
         .onChange(of: selectedTimeframe) { _, _ in
             Task { await loadChart() }

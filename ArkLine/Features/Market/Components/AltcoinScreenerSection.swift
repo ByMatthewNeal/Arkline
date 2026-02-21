@@ -570,7 +570,7 @@ private struct AltcoinScreenerChartContent: View {
     @Binding var selectedDate: Date?
     @Binding var highlightedCoinId: String?
     let colorScheme: ColorScheme
-    var chartHeight: CGFloat = 280
+    var chartHeight: CGFloat? = 280
     var onExpandTap: (() -> Void)?
 
     private func nearestCoin(atDate date: Date, yValue: Double) -> CoinScreenerData? {
@@ -732,7 +732,8 @@ private struct AltcoinScreenerChartContent: View {
                     ChartLogoWatermark()
                 }
         }
-        .frame(height: chartHeight)
+        .frame(height: chartHeight ?? nil)
+        .frame(maxHeight: chartHeight == nil ? .infinity : nil)
         .clipped()
     }
 }
@@ -856,7 +857,7 @@ struct AltcoinScreenerFullscreenView: View {
                     selectedDate: $selectedDate,
                     highlightedCoinId: $highlightedCoinId,
                     colorScheme: .dark,
-                    chartHeight: .infinity
+                    chartHeight: nil
                 )
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)

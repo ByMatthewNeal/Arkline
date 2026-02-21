@@ -285,44 +285,54 @@ struct StockStatsSection: View {
     @Environment(\.colorScheme) var colorScheme
     let asset: StockAsset
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Statistics")
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
+    private var hasAnyStats: Bool {
+        (asset.marketCap ?? 0) > 0 || (asset.peRatio ?? 0) > 0 ||
+        (asset.volume ?? 0) > 0 || (asset.high ?? 0) > 0 ||
+        (asset.low ?? 0) > 0 || (asset.week52High ?? 0) > 0 ||
+        (asset.week52Low ?? 0) > 0 || (asset.previousClose ?? 0) > 0 ||
+        (asset.dividendYield ?? 0) > 0
+    }
 
-            VStack(spacing: 12) {
-                if let marketCap = asset.marketCap, marketCap > 0 {
-                    StatRow(label: "Market Cap", value: marketCap.asCurrencyCompact)
+    var body: some View {
+        if hasAnyStats {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Statistics")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                VStack(spacing: 12) {
+                    if let marketCap = asset.marketCap, marketCap > 0 {
+                        StatRow(label: "Market Cap", value: marketCap.asCurrencyCompact)
+                    }
+                    if let pe = asset.peRatio, pe > 0 {
+                        StatRow(label: "P/E Ratio", value: String(format: "%.2f", pe))
+                    }
+                    if let volume = asset.volume, volume > 0 {
+                        StatRow(label: "Volume", value: Double(volume).formattedCompact)
+                    }
+                    if let high = asset.high, high > 0 {
+                        StatRow(label: "Day High", value: high.asCurrency)
+                    }
+                    if let low = asset.low, low > 0 {
+                        StatRow(label: "Day Low", value: low.asCurrency)
+                    }
+                    if let high52 = asset.week52High, high52 > 0 {
+                        StatRow(label: "52-Week High", value: high52.asCurrency)
+                    }
+                    if let low52 = asset.week52Low, low52 > 0 {
+                        StatRow(label: "52-Week Low", value: low52.asCurrency)
+                    }
+                    if let prevClose = asset.previousClose, prevClose > 0 {
+                        StatRow(label: "Previous Close", value: prevClose.asCurrency)
+                    }
+                    if let divYield = asset.dividendYield, divYield > 0 {
+                        StatRow(label: "Dividend Yield", value: String(format: "%.2f%%", divYield))
+                    }
                 }
-                if let pe = asset.peRatio, pe > 0 {
-                    StatRow(label: "P/E Ratio", value: String(format: "%.2f", pe))
-                }
-                if let volume = asset.volume, volume > 0 {
-                    StatRow(label: "Volume", value: Double(volume).formattedCompact)
-                }
-                if let high = asset.high, high > 0 {
-                    StatRow(label: "Day High", value: high.asCurrency)
-                }
-                if let low = asset.low, low > 0 {
-                    StatRow(label: "Day Low", value: low.asCurrency)
-                }
-                if let high52 = asset.week52High, high52 > 0 {
-                    StatRow(label: "52-Week High", value: high52.asCurrency)
-                }
-                if let low52 = asset.week52Low, low52 > 0 {
-                    StatRow(label: "52-Week Low", value: low52.asCurrency)
-                }
-                if let prevClose = asset.previousClose, prevClose > 0 {
-                    StatRow(label: "Previous Close", value: prevClose.asCurrency)
-                }
-                if let divYield = asset.dividendYield, divYield > 0 {
-                    StatRow(label: "Dividend Yield", value: String(format: "%.2f%%", divYield))
-                }
+                .padding(16)
+                .background(AppColors.cardBackground(colorScheme))
+                .cornerRadius(12)
             }
-            .padding(16)
-            .background(AppColors.cardBackground(colorScheme))
-            .cornerRadius(12)
         }
     }
 }

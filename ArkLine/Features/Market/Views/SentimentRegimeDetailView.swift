@@ -428,19 +428,19 @@ struct SentimentQuadrantChart: View {
         Text("Fear")
             .font(.system(size: 9, weight: .medium))
             .foregroundColor(AppColors.textSecondary)
-            .position(x: chartPadding + 20, y: 260 + 14)
+            .position(x: chartPadding + 20, y: height + 14)
 
         Text("Greed")
             .font(.system(size: 9, weight: .medium))
             .foregroundColor(AppColors.textSecondary)
-            .position(x: chartPadding + width - 20, y: 260 + 14)
+            .position(x: chartPadding + width - 20, y: height + 14)
 
         // Y-axis labels (rotated)
         Text("Low Vol")
             .font(.system(size: 9, weight: .medium))
             .foregroundColor(AppColors.textSecondary)
             .rotationEffect(.degrees(-90))
-            .position(x: 12, y: 260 - 24)
+            .position(x: 12, y: height - 24)
 
         Text("High Vol")
             .font(.system(size: 9, weight: .medium))
