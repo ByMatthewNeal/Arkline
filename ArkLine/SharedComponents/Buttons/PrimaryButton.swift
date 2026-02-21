@@ -40,6 +40,7 @@ struct PrimaryButton: View {
         }
         .disabled(isDisabled || isLoading)
         .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel(isLoading ? "Loading, \(title)" : title)
     }
 }
 

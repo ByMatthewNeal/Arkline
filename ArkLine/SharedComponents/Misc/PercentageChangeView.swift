@@ -18,6 +18,8 @@ struct PercentageChangeView: View {
                 .fontWeight(.medium)
         }
         .foregroundColor(color)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value >= 0 ? "Up" : "Down") \(formattedValue)")
     }
 
     private var formattedValue: String {
@@ -83,6 +85,8 @@ struct PriceChangeView: View {
 
             PercentageChangeView(value: percentageChange, showIcon: true, size: size)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(absoluteChangeFormatted), \(percentageChange >= 0 ? "up" : "down") \(String(format: "%.2f", abs(percentageChange))) percent")
     }
 
     private var absoluteChangeFormatted: String {

@@ -34,6 +34,7 @@ struct SubscriptionBannerView: View {
             .padding(.vertical, ArkSpacing.sm)
             .background(config.backgroundColor)
             .cornerRadius(ArkSpacing.sm)
+            .accessibilityElement(children: .combine)
         }
     }
 

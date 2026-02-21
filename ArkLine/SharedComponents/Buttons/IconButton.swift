@@ -7,8 +7,17 @@ struct IconButton: View {
     var size: IconButtonSize = .medium
     var style: IconButtonStyle = .default
     var badge: Int? = nil
+    var label: String? = nil
 
     @Environment(\.colorScheme) private var colorScheme
+
+    private var accessibilityText: String {
+        let base = label ?? icon
+        if let badge = badge, badge > 0 {
+            return "\(base), \(badge) notification\(badge == 1 ? "" : "s")"
+        }
+        return base
+    }
 
     var body: some View {
         Button(action: {
@@ -35,6 +44,7 @@ struct IconButton: View {
                 }
             }
         }
+        .accessibilityLabel(accessibilityText)
     }
 }
 

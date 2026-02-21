@@ -53,6 +53,7 @@ struct AvatarView: View {
                     lineWidth: showBorder ? 2 : 0
                 )
         )
+        .accessibilityHidden(true)
     }
 
     private var placeholderView: some View {
