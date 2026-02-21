@@ -908,7 +908,7 @@ class SentimentViewModel {
     }
 
     private static func saveCachedRegimeData(_ regimeData: SentimentRegimeData) {
-        let cached = CachedRegimeData(data: regimeData, computedAt: Date())
+        let cached = CachedRegimeData(data: regimeData, computedAt: Self.mostRecentScheduledUpdate(before: Date()))
         if let raw = try? JSONEncoder().encode(cached) {
             try? raw.write(to: regimeCacheURL)
         }

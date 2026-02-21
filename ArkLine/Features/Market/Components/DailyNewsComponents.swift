@@ -218,6 +218,8 @@ struct NewsListRow: View {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
     }
 
+    private var isRead: Bool { ReadArticlesStore.shared.isRead(news.url) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with source
@@ -248,6 +250,12 @@ struct NewsListRow: View {
 
                 Spacer()
 
+                if isRead {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.success)
+                }
+
                 Text(news.timeAgo)
                     .font(.caption2)
                     .foregroundColor(AppColors.textSecondary)
@@ -258,6 +266,7 @@ struct NewsListRow: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
+                .opacity(isRead ? 0.6 : 1.0)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
 
@@ -329,6 +338,8 @@ private struct NewsArticlePage: View {
     @State private var summary: String?
     @State private var isSummaryLoading = false
     @State private var summaryError: String?
+
+    private var readStore: ReadArticlesStore { ReadArticlesStore.shared }
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -439,6 +450,27 @@ private struct NewsArticlePage: View {
                             .cornerRadius(ArkSpacing.Radius.md)
                         }
                         .padding(.horizontal, 20)
+
+                        // Mark as Read toggle
+                        Button(action: { readStore.toggleRead(news.url) }) {
+                            HStack {
+                                Image(systemName: readStore.isRead(news.url) ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 16))
+                                Text(readStore.isRead(news.url) ? "Marked as Read" : "Mark as Read")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundColor(readStore.isRead(news.url) ? AppColors.success : AppColors.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.06)
+                                    : Color.black.opacity(0.04)
+                            )
+                            .cornerRadius(ArkSpacing.Radius.md)
+                        }
+                        .padding(.horizontal, 20)
                     }
 
                     // Swipe hint
@@ -460,6 +492,9 @@ private struct NewsArticlePage: View {
                 }
                 .padding(.top, 12)
             }
+        }
+        .onAppear {
+            readStore.markRead(news.url)
         }
         .task {
             await loadSummary()

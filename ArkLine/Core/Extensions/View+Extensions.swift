@@ -307,6 +307,37 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Swipe-Back Gesture (re-enable interactive pop when back button is hidden)
+#if canImport(UIKit)
+private struct SwipeBackModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content.background(SwipeBackHelper())
+    }
+}
+
+private struct SwipeBackHelper: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController { UIViewController() }
+    func updateUIViewController(_ vc: UIViewController, context: Context) {
+        DispatchQueue.main.async {
+            if let nav = vc.navigationController {
+                nav.interactivePopGestureRecognizer?.isEnabled = true
+                nav.interactivePopGestureRecognizer?.delegate = nil
+            }
+        }
+    }
+}
+
+extension View {
+    func enableSwipeBack() -> some View {
+        modifier(SwipeBackModifier())
+    }
+}
+#else
+extension View {
+    func enableSwipeBack() -> some View { self }
+}
+#endif
+
 // MARK: - Zoom Transition Helpers (iOS 18+)
 extension View {
     @ViewBuilder

@@ -147,6 +147,7 @@ struct MetalDetailView: View {
         }
         .background(AppColors.background(colorScheme))
         .navigationBarBackButtonHidden()
+        .enableSwipeBack()
         .task {
             async let chartTask: () = loadChart()
             async let techTask: () = loadTechnicalAnalysis()

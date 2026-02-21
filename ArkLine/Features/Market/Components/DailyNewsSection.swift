@@ -108,6 +108,8 @@ struct DailyNewsCard: View {
     let news: NewsItem
     @Environment(\.colorScheme) var colorScheme
 
+    private var isRead: Bool { ReadArticlesStore.shared.isRead(news.url) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Source Type Badge with Icon - monochrome
@@ -155,6 +157,7 @@ struct DailyNewsCard: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
+                .opacity(isRead ? 0.6 : 1.0)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
         }
@@ -175,6 +178,14 @@ struct DailyNewsCard: View {
                 )
         )
         .cornerRadius(16)
+        .overlay(alignment: .topTrailing) {
+            if isRead {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.success)
+                    .padding(10)
+            }
+        }
     }
 }
 

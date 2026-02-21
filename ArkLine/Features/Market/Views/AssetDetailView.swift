@@ -90,6 +90,7 @@ struct AssetDetailView: View {
         .background(AppColors.background(colorScheme))
         .refreshable { await loadChart() }
         .navigationBarBackButtonHidden()
+        .enableSwipeBack()
         .task { await loadChart() }
         .onChange(of: selectedTimeframe) { _, _ in
             Task { await loadChart() }

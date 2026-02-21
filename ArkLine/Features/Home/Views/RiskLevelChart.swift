@@ -9,6 +9,7 @@ struct RiskLevelChart: View {
 
     var enhancedHistory: [RiskHistoryPoint]?
     @Binding var selectedDate: Date?
+    @State private var lastHapticDate: Date?
 
     // Backwards-compatible init
     init(history: [ITCRiskLevel], timeRange: RiskTimeRange, colorScheme: ColorScheme) {
@@ -173,10 +174,16 @@ struct RiskLevelChart: View {
                                 let x = value.location.x
                                 if let date: Date = proxy.value(atX: x),
                                    let closest = nearestByDate(in: data, to: date, dateOf: { $0.date }) {
+                                    if closest.date != lastHapticDate {
+                                        Haptics.selection()
+                                        lastHapticDate = closest.date
+                                    }
                                     selectedDate = closest.date
                                 }
                             }
-                            .onEnded { _ in }
+                            .onEnded { _ in
+                                lastHapticDate = nil
+                            }
                     )
             }
         }

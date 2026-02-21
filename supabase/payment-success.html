@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Arkline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+      background: #0A0A0F;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 480px;
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .checkmark {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(51, 105, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 32px;
+    }
+    .checkmark svg {
+      width: 36px;
+      height: 36px;
+      color: #3369FF;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .plan-badge {
+      display: inline-block;
+      background: rgba(51, 105, 255, 0.12);
+      color: #6B9AFF;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      letter-spacing: 0.3px;
+    }
+    .message {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+    .message strong {
+      color: #fff;
+    }
+    .steps {
+      text-align: left;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .steps h3 {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+    }
+    .step-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #3369FF;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-text {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.4;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #3369FF;
+      color: #fff;
+      text-decoration: none;
+      padding: 16px 40px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 600;
+      transition: background 0.2s;
+      margin-bottom: 16px;
+    }
+    .cta-button:hover { background: #2855D6; }
+    .footer {
+      margin-top: 48px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="checkmark">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+    </div>
+
+    <h1>Payment Successful</h1>
+
+    <div class="plan-badge" id="plan-badge">Arkline Membership</div>
+
+    <p class="message">
+      Your invite code is on its way.<br>
+      Check your <strong>email</strong> for your unique code and instructions.
+    </p>
+
+    <div class="steps">
+      <h3>Next Steps</h3>
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-text">Check your email for your invite code (ARK-XXXXXX)</div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-text">Open the Arkline app and enter your code</div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-text">Create your account and start tracking</div>
+      </div>
+    </div>
+
+    <a href="arkline://invite" class="cta-button">Open Arkline</a>
+
+    <p class="footer">
+      Didn't get the email? Check your spam folder or contact support@arkline.app
+    </p>
+  </div>
+
+  <script>
+    const plans = {
+      'founding-monthly': 'Founding Member \u2014 Monthly',
+      'founding-annual': 'Founding Member \u2014 Annual',
+      'standard-monthly': 'Standard \u2014 Monthly',
+      'standard-annual': 'Standard \u2014 Annual'
+    };
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get('plan');
+    if (plan && plans[plan]) {
+      document.getElementById('plan-badge').textContent = plans[plan];
+    }
+  </script>
+</body>
+</html>

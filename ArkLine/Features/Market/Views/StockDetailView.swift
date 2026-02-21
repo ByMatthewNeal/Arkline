@@ -92,6 +92,7 @@ struct StockDetailView: View {
         .background(AppColors.background(colorScheme))
         .refreshable { await loadData() }
         .navigationBarBackButtonHidden()
+        .enableSwipeBack()
         .task { await loadData() }
         .onChange(of: selectedTimeframe) { _, _ in
             Task { await loadChart() }
