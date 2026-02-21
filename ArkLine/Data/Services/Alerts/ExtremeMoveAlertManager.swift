@@ -3,6 +3,7 @@ import SwiftUI
 import UserNotifications
 
 /// Manages detection and alerting of extreme moves in macro indicators
+@MainActor
 class ExtremeMoveAlertManager: ObservableObject {
     // MARK: - Singleton
 

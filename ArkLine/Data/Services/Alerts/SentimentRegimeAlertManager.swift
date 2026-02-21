@@ -4,6 +4,7 @@ import UserNotifications
 // MARK: - Sentiment Regime Alert Manager
 /// Detects and alerts when the sentiment regime quadrant changes
 /// (e.g., Apathy → FOMO, Complacency → Panic).
+@MainActor
 class SentimentRegimeAlertManager: ObservableObject {
     static let shared = SentimentRegimeAlertManager()
 

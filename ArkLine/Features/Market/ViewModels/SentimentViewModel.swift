@@ -14,6 +14,9 @@ class SentimentViewModel {
     private let macroStatisticsService: MacroStatisticsServiceProtocol
     private let coinglassService: CoinglassServiceProtocol
 
+    /// When false, skips fire-and-forget archival/alerting (for unit tests)
+    private let enableSideEffects: Bool
+
     // MARK: - Properties
     var isLoading = false
     var errorMessage: String?
@@ -254,7 +257,8 @@ class SentimentViewModel {
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
         macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService,
-        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService
+        coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService,
+        enableSideEffects: Bool = true
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -264,6 +268,7 @@ class SentimentViewModel {
         self.globalLiquidityService = globalLiquidityService
         self.macroStatisticsService = macroStatisticsService
         self.coinglassService = coinglassService
+        self.enableSideEffects = enableSideEffects
     }
 
     // MARK: - Public Methods
@@ -272,7 +277,9 @@ class SentimentViewModel {
         errorMessage = nil
 
         // Trigger Wikipedia pageview collection (fire-and-forget, rate limited to 1x/hour)
-        Task { await sentimentService.refreshTrendsData() }
+        if enableSideEffects {
+            Task { await sentimentService.refreshTrendsData() }
+        }
 
         // Fetch all indicators independently using safe wrappers
         // This ensures one failure doesn't block others
@@ -320,68 +327,71 @@ class SentimentViewModel {
         let zScores = await zScoresTask
         let btcOI = await btcOITask
 
-        await MainActor.run {
-            // Core indicators (set unconditionally so stale data clears on failure)
-            self.fearGreedIndex = fg
-            self.btcDominance = btc
+        // Core indicators (set unconditionally so stale data clears on failure)
+        self.fearGreedIndex = fg
+        self.btcDominance = btc
 
-            // Market cap from global data
-            if let overview = marketOverview {
-                self.totalMarketCap = overview.totalMarketCap
-                self.marketCapChange24h = overview.marketCapChange24h
-            }
-            if let sparkline = marketCapSparkline {
-                self.marketCapHistory = sparkline
-            }
-            self.etfNetFlow = etf
-            self.fundingRate = funding
-            self.liquidations = liq
-            self.altcoinSeason = alt
-            self.riskLevel = risk
+        // Market cap from global data
+        if let overview = marketOverview {
+            self.totalMarketCap = overview.totalMarketCap
+            self.marketCapChange24h = overview.marketCapChange24h
+        }
+        if let sparkline = marketCapSparkline {
+            self.marketCapHistory = sparkline
+        }
+        self.etfNetFlow = etf
+        self.fundingRate = funding
+        self.liquidations = liq
+        self.altcoinSeason = alt
+        self.riskLevel = risk
 
-            // Enhanced indicators
-            self.appStoreRankings = appRankings ?? []
-            self.appStoreRanking = appRankings?.first // Legacy compatibility
-            self.arkLineRiskScore = arkLineScore
-            self.googleTrends = trends
+        // Enhanced indicators
+        self.appStoreRankings = appRankings ?? []
+        self.appStoreRanking = appRankings?.first // Legacy compatibility
+        self.arkLineRiskScore = arkLineScore
+        self.googleTrends = trends
 
-            // ITC Risk Levels (all coins)
-            for (coin, level, history) in allRiskResults {
-                if let level = level { self.riskLevels[coin] = level }
-                self.riskHistories[coin] = history
-            }
-            self.consecutiveDays = computeConsecutiveDays()
+        // ITC Risk Levels (all coins)
+        for (coin, level, history) in allRiskResults {
+            if let level = level { self.riskLevels[coin] = level }
+            self.riskHistories[coin] = history
+        }
+        self.consecutiveDays = computeConsecutiveDays()
 
-            // Macro Indicators
-            self.vixData = vix
-            self.dxyData = dxy
-            self.globalM2Data = globalM2
+        // Macro Indicators
+        self.vixData = vix
+        self.dxyData = dxy
+        self.globalM2Data = globalM2
 
-            // Macro Z-Scores
-            self.macroZScores = zScores
+        // Macro Z-Scores
+        self.macroZScores = zScores
 
-            // Derivatives
-            self.btcOpenInterest = btcOI
+        // Derivatives
+        self.btcOpenInterest = btcOI
 
-            // Check for extreme moves and trigger alerts
+        // Check for extreme moves and trigger alerts
+        if enableSideEffects {
             ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
-
-            // Update search index from Google Trends
-            if let trends = trends {
-                self.bitcoinSearchIndex = trends.currentIndex
-            }
-
-            self.isLoading = false
-            self.lastRefreshed = Date()
         }
 
+        // Update search index from Google Trends
+        if let trends = trends {
+            self.bitcoinSearchIndex = trends.currentIndex
+        }
+
+        self.isLoading = false
+        self.lastRefreshed = Date()
+
         // Surface failures via toast (only when multiple core indicators fail)
-        await notifyFailures(
-            fg: fg, btc: btc, marketOverview: marketOverview,
-            vix: vix, dxy: dxy, globalM2: globalM2
-        )
+        if enableSideEffects {
+            notifyFailures(
+                fg: fg, btc: btc, marketOverview: marketOverview,
+                vix: vix, dxy: dxy, globalM2: globalM2
+            )
+        }
 
         // Archive all sentiment/macro indicators (fire-and-forget)
+        guard enableSideEffects else { return }
         Task {
             let collector = MarketDataCollector.shared
             if let fg = fg {
@@ -499,15 +509,15 @@ class SentimentViewModel {
         if let cached = Self.loadCachedRegimeData() {
             let lastWindow = Self.mostRecentScheduledUpdate(before: Date())
             if cached.computedAt >= lastWindow {
-                await MainActor.run { self.sentimentRegimeData = cached.data }
+                self.sentimentRegimeData = cached.data
                 return
             }
         }
 
         guard !fearGreedHistory.isEmpty else { return }
 
-        await MainActor.run { isLoadingRegimeData = true }
-        defer { Task { @MainActor in isLoadingRegimeData = false } }
+        isLoadingRegimeData = true
+        defer { isLoadingRegimeData = false }
 
         do {
             let chart = try await marketService.fetchCoinMarketChart(
@@ -532,13 +542,15 @@ class SentimentViewModel {
                 priceData: chart.prices,
                 liveIndicators: liveIndicators
             )
-            await MainActor.run { self.sentimentRegimeData = data }
+            self.sentimentRegimeData = data
 
             // Persist to disk and archive
             if let data = data {
                 Self.saveCachedRegimeData(data)
-                Task { await MarketDataCollector.shared.recordRegimeSnapshot(data) }
-                SentimentRegimeAlertManager.shared.checkRegimeShift(newRegime: data.currentRegime)
+                if enableSideEffects {
+                    Task { await MarketDataCollector.shared.recordRegimeSnapshot(data) }
+                    SentimentRegimeAlertManager.shared.checkRegimeShift(newRegime: data.currentRegime)
+                }
             }
         } catch {
             logWarning("Failed to compute sentiment regime: \(error.localizedDescription)", category: .data)

@@ -56,7 +56,8 @@ final class SentimentViewModelTests: XCTestCase {
             dxyService: mockDXY,
             globalLiquidityService: mockLiquidity,
             macroStatisticsService: macroStats,
-            coinglassService: mockCoinglass
+            coinglassService: mockCoinglass,
+            enableSideEffects: false
         )
     }
 
