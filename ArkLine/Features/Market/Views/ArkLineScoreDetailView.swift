@@ -375,15 +375,15 @@ private struct HowItWorksSection: View {
                 .lineSpacing(4)
 
             HStack(spacing: ArkSpacing.md) {
-                ScoreLegendItem(range: "0-20", label: "Extreme Fear", color: "#3B82F6")
-                ScoreLegendItem(range: "21-40", label: "Fear", color: "#0EA5E9")
+                ScoreLegendItem(range: "81-100", label: "Extreme Greed", color: "#DC2626")
+                ScoreLegendItem(range: "61-80", label: "Greed", color: "#F59E0B")
                 ScoreLegendItem(range: "41-60", label: "Neutral", color: "#64748B")
             }
             .padding(.top, 4)
 
             HStack(spacing: ArkSpacing.md) {
-                ScoreLegendItem(range: "61-80", label: "Greed", color: "#F59E0B")
-                ScoreLegendItem(range: "81-100", label: "Extreme Greed", color: "#DC2626")
+                ScoreLegendItem(range: "21-40", label: "Fear", color: "#0EA5E9")
+                ScoreLegendItem(range: "0-20", label: "Extreme Fear", color: "#3B82F6")
                 Spacer()
             }
         }
