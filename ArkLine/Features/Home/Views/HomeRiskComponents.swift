@@ -558,7 +558,7 @@ struct HomeArkLineScoreWidget: View {
 
                         Circle()
                             .trim(from: 0, to: progress)
-                            .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .stroke(Color(hex: score.tier.color), style: StrokeStyle(lineWidth: 6, lineCap: .round))
                             .frame(width: gaugeSize, height: gaugeSize)
                             .rotationEffect(.degrees(-90))
                     }
