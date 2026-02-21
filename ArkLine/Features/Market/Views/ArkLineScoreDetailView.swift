@@ -399,12 +399,12 @@ private struct ScoreLegendItem: View {
     let color: String
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             Circle()
                 .fill(Color(hex: color))
-                .frame(width: 6, height: 6)
+                .frame(width: 8, height: 8)
             Text(range)
-                .font(.system(size: 9, weight: .semibold).monospacedDigit())
+                .font(.system(size: 11, weight: .semibold).monospacedDigit())
                 .foregroundColor(Color(hex: color))
         }
     }
