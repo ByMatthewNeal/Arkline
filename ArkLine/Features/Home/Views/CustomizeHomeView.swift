@@ -148,6 +148,7 @@ struct CustomizeHomeView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
+                    .accessibilityLabel("Reset widgets to defaults")
 
                     Spacer(minLength: 40)
                 }
@@ -264,6 +265,7 @@ struct WidgetConfigRow: View {
                     }
                     .animation(.spring(response: 0.3), value: isEnabled)
                 }
+                .accessibilityLabel("Toggle \(widget.displayName), currently \(isEnabled ? "on" : "off")")
             }
             .padding(14)
             .contentShape(Rectangle())
@@ -350,6 +352,7 @@ struct SizeOptionButton: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(size.displayName) size\(isSelected ? ", selected" : "")")
     }
 
     private var sizePreviewHeight: CGFloat {
@@ -424,6 +427,7 @@ struct CoreAssetToggleRow: View {
                     }
                     .animation(.spring(response: 0.3), value: isEnabled)
                 }
+                .accessibilityLabel("Toggle \(asset.name), currently \(isEnabled ? "on" : "off")")
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)

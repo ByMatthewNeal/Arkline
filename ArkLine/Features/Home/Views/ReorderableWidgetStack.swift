@@ -33,6 +33,7 @@ struct ReorderableWidgetStack: View {
                         .font(AppFonts.caption12Medium)
                         .foregroundColor(AppColors.accent)
                 }
+                .accessibilityLabel(isEditMode ? "Done editing widgets" : "Edit widget order")
             }
             .padding(.horizontal, 4)
 
@@ -274,6 +275,7 @@ struct WidgetRowContainer<Content: View>: View {
                             )
                     }
                     .disabled(isFirst)
+                    .accessibilityLabel("Move \(widgetType.displayName) up")
 
                     Button(action: onMoveDown) {
                         Image(systemName: "chevron.down")
@@ -288,6 +290,7 @@ struct WidgetRowContainer<Content: View>: View {
                             )
                     }
                     .disabled(isLast)
+                    .accessibilityLabel("Move \(widgetType.displayName) down")
                 }
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }

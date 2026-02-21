@@ -97,6 +97,7 @@ struct GlassDCACard: View {
                         }
                     )
             }
+            .accessibilityLabel("Mark \(reminder.name) as invested")
             .scaleEffect(isPressed ? 0.95 : 1.0)
         }
         .padding(16)
@@ -193,6 +194,7 @@ struct DCARemindersEntrySection: View {
                     .arkShadow(ArkSpacing.Shadow.card)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Manage DCA strategies")
             } else {
                 if size != .compact {
                     // Today's Reminders header
@@ -269,6 +271,7 @@ struct HomeDCACard: View {
                             .font(.system(size: 24))
                             .foregroundColor(AppColors.accent)
                     }
+                    .accessibilityLabel("Mark \(reminder.name) as invested")
                 }
             }
 
@@ -287,6 +290,7 @@ struct HomeDCACard: View {
                                     .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
                             )
                     }
+                    .accessibilityLabel("View \(reminder.name) investment history")
 
                     // Mark as Invested button
                     Button(action: onInvest) {
@@ -300,6 +304,7 @@ struct HomeDCACard: View {
                                     .fill(AppColors.accent.opacity(0.15))
                             )
                     }
+                    .accessibilityLabel("Mark \(reminder.name) as invested")
                 }
             }
         }

@@ -41,7 +41,8 @@ struct HomeFedWatchWidget: View {
                         .font(.system(size: 14))
                         .foregroundColor(textPrimary.opacity(0.4))
                 }
-            }
+                .accessibilityLabel("Info about Fed Watch")
+}
 
             if let meeting = nextMeeting {
                 VStack(alignment: .leading, spacing: size == .compact ? 6 : 10) {
@@ -203,6 +204,7 @@ struct HomeDailyNewsWidget: View {
                     }
                     .foregroundColor(AppColors.accent)
                 }
+                .accessibilityLabel("See all news")
             }
 
             // News items
@@ -232,6 +234,9 @@ struct HomeDailyNewsWidget: View {
                             HomeNewsRow(item: item, isCompact: size == .compact)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(item.title), \(item.source), \(item.publishedAt.timeAgoDisplay())")
+                        .accessibilityAddTraits(.isButton)
 
                         if index < min(maxItems, news.count) - 1 {
                             Divider()
@@ -361,6 +366,9 @@ struct FullNewsListView: View {
                         .background(cardBackground)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(item.title), \(item.source)")
+                    .accessibilityAddTraits(.isButton)
 
                     Divider()
                         .background(textPrimary.opacity(0.1))
@@ -385,6 +393,7 @@ struct FullNewsListView: View {
                         }
                     }
                     .disabled(isLoadingMore)
+                    .accessibilityLabel(isLoadingMore ? "Loading more news" : "Load more news")
                 }
             }
         }
