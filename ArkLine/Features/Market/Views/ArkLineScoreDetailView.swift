@@ -144,11 +144,11 @@ private struct TierSpectrumBar: View {
     let score: Int
 
     private let tiers: [(label: String, color: String, range: ClosedRange<Int>)] = [
-        ("Extreme Fear", "#EF4444", 0...20),
-        ("Fear", "#F97316", 21...40),
-        ("Neutral", "#EAB308", 41...60),
-        ("Greed", "#84CC16", 61...80),
-        ("Extreme Greed", "#22C55E", 81...100)
+        ("Extreme Fear", "#3B82F6", 0...20),
+        ("Fear", "#0EA5E9", 21...40),
+        ("Neutral", "#64748B", 41...60),
+        ("Greed", "#F59E0B", 61...80),
+        ("Extreme Greed", "#DC2626", 81...100)
     ]
 
     var body: some View {
@@ -375,15 +375,15 @@ private struct HowItWorksSection: View {
                 .lineSpacing(4)
 
             HStack(spacing: ArkSpacing.md) {
-                ScoreLegendItem(range: "0-20", label: "Extreme Fear", color: "#EF4444")
-                ScoreLegendItem(range: "21-40", label: "Fear", color: "#F97316")
-                ScoreLegendItem(range: "41-60", label: "Neutral", color: "#EAB308")
+                ScoreLegendItem(range: "0-20", label: "Extreme Fear", color: "#3B82F6")
+                ScoreLegendItem(range: "21-40", label: "Fear", color: "#0EA5E9")
+                ScoreLegendItem(range: "41-60", label: "Neutral", color: "#64748B")
             }
             .padding(.top, 4)
 
             HStack(spacing: ArkSpacing.md) {
-                ScoreLegendItem(range: "61-80", label: "Greed", color: "#84CC16")
-                ScoreLegendItem(range: "81-100", label: "Extreme Greed", color: "#22C55E")
+                ScoreLegendItem(range: "61-80", label: "Greed", color: "#F59E0B")
+                ScoreLegendItem(range: "81-100", label: "Extreme Greed", color: "#DC2626")
                 Spacer()
             }
         }

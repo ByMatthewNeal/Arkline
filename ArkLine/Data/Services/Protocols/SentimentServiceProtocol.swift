@@ -99,11 +99,11 @@ enum SentimentTier: String, CaseIterable {
 
     var color: String {
         switch self {
-        case .extremelyBullish: return "#22C55E"
-        case .bullish: return "#84CC16"
-        case .neutral: return "#EAB308"
-        case .bearish: return "#F97316"
-        case .extremelyBearish: return "#EF4444"
+        case .extremelyBullish: return "#DC2626"
+        case .bullish: return "#F59E0B"
+        case .neutral: return "#64748B"
+        case .bearish: return "#0EA5E9"
+        case .extremelyBearish: return "#3B82F6"
         }
     }
 
