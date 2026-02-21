@@ -151,6 +151,9 @@ struct EventDateGroup: View {
                 }
             }
             .padding(.bottom, isCompact ? 2 : 4)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Events for \(displayDateKey)")
+            .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: 0) {
                 ForEach(events) { event in

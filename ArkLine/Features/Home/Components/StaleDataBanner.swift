@@ -20,6 +20,7 @@ struct StaleDataBanner: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 12))
                 .foregroundColor(AppColors.warning)
+                .accessibilityHidden(true)
 
             Text("Some data couldn't be updated")
                 .font(.system(size: 12, weight: .medium))
@@ -32,6 +33,7 @@ struct StaleDataBanner: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(AppColors.accent)
             }
+            .accessibilityLabel("Retry updating data")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

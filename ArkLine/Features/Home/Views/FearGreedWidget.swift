@@ -44,6 +44,9 @@ struct FearGreedWidget: View {
             .glassCard(cornerRadius: 16)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Fear and Greed Index, \(index.value) out of 100, \(index.level.rawValue)")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -111,6 +114,9 @@ struct FearGreedGauge: View {
             }
             .frame(height: 100)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Fear and Greed gauge, \(value) out of 100")
+        .accessibilityAddTraits(.isImage)
     }
 }
 

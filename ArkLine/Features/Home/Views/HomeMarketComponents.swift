@@ -108,6 +108,7 @@ struct GlassFearGreedCard: View {
         .arkShadow(ArkSpacing.Shadow.card)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fear and Greed Index, \(index.value) out of 100, \(index.level.rawValue)")
+        .accessibilityAddTraits(.isButton)
     }
 }
 

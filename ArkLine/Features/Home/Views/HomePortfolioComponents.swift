@@ -138,6 +138,8 @@ struct PortfolioHeroCard: View {
                         .fill((isPositive ? AppColors.success : AppColors.error).opacity(0.15))
                 )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(portfolioName) portfolio, \(totalValue.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
 
             PortfolioSparkline(
                 dataPoints: chartData,
@@ -202,6 +204,7 @@ struct TimePeriodPill: View {
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(period.displayName)\(isSelected ? ", selected" : "")")
     }
 }
 
@@ -351,6 +354,9 @@ struct PortfolioPickerRow: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(portfolio.name)\(isSelected ? ", selected" : "")")
+        .accessibilityAddTraits(.isButton)
     }
 
     private var portfolioIcon: String {
@@ -539,6 +545,9 @@ struct CompactRiskCard: View {
             .arkShadow(ArkSpacing.Shadow.card)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(riskLevel.map { "\(coinSymbol), risk \(String(format: "%.3f", $0.riskLevel)), \(RiskColors.category(for: $0.riskLevel))" } ?? "\(coinSymbol), loading")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             RiskLevelChartView(initialCoin: RiskCoin(rawValue: coinSymbol) ?? .btc)
         }

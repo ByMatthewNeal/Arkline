@@ -41,6 +41,8 @@ struct GlassHeader: View {
                 }
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Profile, \(userName.isEmpty ? "Welcome" : userName)")
 
             Spacer()
 
@@ -94,6 +96,7 @@ struct HeaderIconButton: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(icon.contains("bell") ? (hasNotification ? "Notifications, unread" : "Notifications") : "Customize")
     }
 }
 

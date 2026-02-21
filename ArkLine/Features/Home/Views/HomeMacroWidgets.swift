@@ -63,6 +63,9 @@ struct VIXWidget: View {
             .glassCard(cornerRadius: 12)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("VIX Volatility Index, \(vixData.map { String(format: "%.2f", $0.value) } ?? "loading"), \(levelDescription)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             VIXDetailView(vixData: vixData)
         }
@@ -139,6 +142,9 @@ struct DXYWidget: View {
             .glassCard(cornerRadius: 12)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("DXY Dollar Index, \(dxyData.map { String(format: "%.2f", $0.value) } ?? "loading"), \(trendDescription)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             DXYDetailView(dxyData: dxyData)
         }
@@ -223,6 +229,9 @@ struct GlobalLiquidityWidget: View {
             .glassCard(cornerRadius: 12)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Global M2 Money Supply, \(liquidityChanges.map { formatLiquidity($0.current) } ?? "loading"), \(trendDescription)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             GlobalM2DetailView(liquidityChanges: liquidityChanges)
         }

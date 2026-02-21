@@ -19,6 +19,7 @@ struct DualScoreCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
+                .accessibilityLabel("Info about trend score")
 
                 Spacer()
 
@@ -29,6 +30,7 @@ struct DualScoreCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
+                .accessibilityLabel("Info about valuation score")
             }
             .padding(.horizontal, 24)
             .padding(.top, 12)
@@ -165,6 +167,9 @@ struct ScoreGauge: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) score, \(score) out of 100, \(subtitle)")
+        .accessibilityAddTraits(.isImage)
     }
 }
 

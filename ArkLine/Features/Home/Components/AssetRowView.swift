@@ -68,6 +68,8 @@ struct AssetRowView: View {
         }
         .padding(12)
         .glassCard(cornerRadius: 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
 }
 

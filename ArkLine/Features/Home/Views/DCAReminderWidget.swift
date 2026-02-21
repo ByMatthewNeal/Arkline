@@ -82,6 +82,8 @@ struct DCAReminderCard: View {
         }
         .padding(12)
         .glassCard(cornerRadius: 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(reminder.name), \(reminder.amount.asCurrency) \(reminder.frequency.displayName)")
     }
 }
 

@@ -61,6 +61,9 @@ struct RiskGauge: View {
                 .font(.system(size: size * 0.28, weight: .bold, design: .rounded))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Risk gauge, \(displayValue)")
+        .accessibilityAddTraits(.isImage)
     }
 }
 
@@ -97,6 +100,9 @@ struct CompactRiskGauge: View {
                 .frame(width: 50, height: 50)
                 .rotationEffect(.degrees(-90))
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Risk gauge, \(String(format: "%.2f", riskLevel))")
+        .accessibilityAddTraits(.isImage)
     }
 }
 

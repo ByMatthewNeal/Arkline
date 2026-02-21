@@ -95,6 +95,9 @@ struct SupplyInProfitWidget: View {
             .glassCard(cornerRadius: 12)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("BTC Supply in Profit, \(supplyData?.formattedValue ?? "loading"), \(levelDescription)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             SupplyInProfitDetailView(supplyData: supplyData)
         }

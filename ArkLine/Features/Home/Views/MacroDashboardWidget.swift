@@ -293,6 +293,9 @@ struct MacroDashboardWidget: View {
             .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.06), radius: 12, x: 0, y: 4)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Macro Dashboard, \(marketRegime.rawValue), \(marketRegime.description)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             if appState.isPro {
                 MacroDashboardDetailView(

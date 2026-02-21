@@ -83,6 +83,8 @@ struct EventRowView: View {
             }
         }
         .padding(.vertical, isCompact ? 4 : 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(event.title), \(event.date.formatted(date: .omitted, time: .shortened)), \(event.impact.rawValue) impact\(event.actual.map { ", actual \($0)" } ?? "")\(event.forecast.map { ", forecast \($0)" } ?? "")")
     }
 }
 
@@ -112,6 +114,8 @@ struct EventDataBadge: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(value)")
     }
 }
 
@@ -127,6 +131,9 @@ struct ImpactBadge: View {
                     .frame(width: 6, height: 6)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(impact.rawValue) impact")
+        .accessibilityAddTraits(.isImage)
     }
 }
 
