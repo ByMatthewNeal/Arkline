@@ -38,6 +38,7 @@ struct PasscodeEntryView: View {
                                     .stroke(AppColors.divider(colorScheme), lineWidth: 1)
                             )
                     }
+                    .accessibilityLabel("Dismiss")
 
                     Spacer()
 
@@ -52,6 +53,7 @@ struct PasscodeEntryView: View {
                                 .background(AppColors.fillPrimary.opacity(0.1))
                                 .clipShape(Circle())
                         }
+                        .accessibilityLabel("Authenticate with \(viewModel.biometricName)")
                     }
                 }
                 .padding(.horizontal, ArkSpacing.xl)
@@ -68,6 +70,7 @@ struct PasscodeEntryView: View {
                                     endPoint: .bottomTrailing
                                 )
                             )
+                            .accessibilityHidden(true)
 
                         Text("Enter Passcode")
                             .font(AppFonts.title24)
@@ -152,6 +155,8 @@ struct PasscodeDots: View {
             shake ? Animation.default.repeatCount(4, autoreverses: true).speed(6) : .default,
             value: shake
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(code.count) of \(length) digits entered")
     }
 }
 
@@ -236,6 +241,7 @@ struct KeypadButton: View {
             }
         }
         .buttonStyle(KeypadButtonStyle())
+        .accessibilityLabel(title ?? (icon == "delete.left.fill" ? "Delete" : ""))
     }
 }
 

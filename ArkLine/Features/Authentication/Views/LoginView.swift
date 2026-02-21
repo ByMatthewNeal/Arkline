@@ -60,6 +60,7 @@ struct LoginView: View {
                                 )
                             )
                     }
+                    .accessibilityHidden(true)
 
                     VStack(spacing: ArkSpacing.xs) {
                         Text("Welcome back")
@@ -146,6 +147,7 @@ struct FaceIDButton: View {
         }
         .disabled(viewModel.authState == .authenticating)
         .opacity(viewModel.authState == .authenticating ? 0.6 : 1)
+        .accessibilityLabel("Sign in with \(viewModel.biometricName)")
     }
 }
 
@@ -173,6 +175,7 @@ struct PasscodeButton: View {
                     .stroke(AppColors.divider(colorScheme), lineWidth: 1)
             )
         }
+        .accessibilityLabel("Use Passcode")
     }
 }
 

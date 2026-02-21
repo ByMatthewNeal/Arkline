@@ -46,6 +46,7 @@ struct FaceIDPromptView: View {
                         )
                         .scaleEffect(animateIcon ? 1.05 : 1.0)
                 }
+                .accessibilityHidden(true)
 
                 VStack(spacing: 8) {
                     Text("\(viewModel.biometricName)")
@@ -96,6 +97,7 @@ struct FaceIDPromptView: View {
                         .cornerRadius(14)
                     }
                     .disabled(viewModel.authState == .authenticating)
+                    .accessibilityLabel("Unlock with \(viewModel.biometricName)")
 
                     Button(action: onUsePasscode) {
                         Text("Use Passcode Instead")
