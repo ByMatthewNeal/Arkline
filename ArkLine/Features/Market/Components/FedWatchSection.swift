@@ -447,7 +447,6 @@ struct FedWatchInfoSheet: View {
                     .background(AppColors.accent.opacity(0.1))
                     .cornerRadius(12)
 
-                    Spacer(minLength: 40)
                 }
                 .padding(20)
             }

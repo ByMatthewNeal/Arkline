@@ -270,7 +270,7 @@ final class MockNewsService: NewsServiceProtocol {
                 publishedAt: Date().addingTimeInterval(-3600),
                 imageUrl: "https://example.com/bitcoin-surge.jpg",
                 url: "https://coindesk.com/bitcoin-surge",
-                sourceType: .traditional
+                sourceType: .googleNews
             ),
             NewsItem(
                 id: UUID(),
@@ -279,7 +279,7 @@ final class MockNewsService: NewsServiceProtocol {
                 publishedAt: Date().addingTimeInterval(-7200),
                 imageUrl: "https://example.com/ethereum-l2.jpg",
                 url: "https://theblock.co/ethereum-l2",
-                sourceType: .traditional
+                sourceType: .googleNews
             ),
             NewsItem(
                 id: UUID(),
@@ -288,7 +288,7 @@ final class MockNewsService: NewsServiceProtocol {
                 publishedAt: Date().addingTimeInterval(-14400),
                 imageUrl: "https://example.com/fed-rates.jpg",
                 url: "https://reuters.com/fed-rates",
-                sourceType: .traditional
+                sourceType: .googleNews
             ),
             NewsItem(
                 id: UUID(),
@@ -297,7 +297,7 @@ final class MockNewsService: NewsServiceProtocol {
                 publishedAt: Date().addingTimeInterval(-21600),
                 imageUrl: "https://example.com/solana-defi.jpg",
                 url: "https://defillama.com/solana",
-                sourceType: .traditional
+                sourceType: .googleNews
             ),
             NewsItem(
                 id: UUID(),
@@ -306,7 +306,7 @@ final class MockNewsService: NewsServiceProtocol {
                 publishedAt: Date().addingTimeInterval(-28800),
                 imageUrl: nil,
                 url: "https://bloomberg.com/blackrock-btc",
-                sourceType: .traditional
+                sourceType: .googleNews
             )
         ]
     }

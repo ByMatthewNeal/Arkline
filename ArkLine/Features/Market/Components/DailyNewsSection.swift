@@ -15,10 +15,6 @@ struct DailyNewsSection: View {
         news.filter { $0.sourceType == .googleNews }
     }
 
-    private var traditionalNews: [NewsItem] {
-        news.filter { $0.sourceType == .traditional }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -45,7 +41,6 @@ struct DailyNewsSection: View {
             HStack(spacing: 12) {
                 NewsSourceBadge(sourceType: .twitter, count: twitterNews.count)
                 NewsSourceBadge(sourceType: .googleNews, count: googleNews.count)
-                NewsSourceBadge(sourceType: .traditional, count: traditionalNews.count)
             }
             .padding(.horizontal, 20)
 
@@ -359,16 +354,6 @@ enum NewsViewMode: String, CaseIterable {
                     imageUrl: nil,
                     url: "",
                     sourceType: .googleNews
-                ),
-                // Traditional source
-                NewsItem(
-                    id: UUID(),
-                    title: "Federal Reserve signals potential rate changes in upcoming meeting",
-                    source: "Bloomberg",
-                    publishedAt: Date().addingTimeInterval(-3600), // 1 hr ago
-                    imageUrl: nil,
-                    url: "",
-                    sourceType: .traditional
                 ),
                 // Another Twitter source
                 NewsItem(

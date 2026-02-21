@@ -51,6 +51,7 @@ struct CustomTabBar: View {
                         triggerNavigationReset(for: tab)
                     } else {
                         Haptics.light()
+                        triggerNavigationReset(for: tab)
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             selectedTab = tab
                         }

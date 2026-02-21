@@ -275,7 +275,7 @@ struct NewsItem: Identifiable {
         publishedAt: Date,
         imageUrl: String? = nil,
         url: String,
-        sourceType: NewsSourceType = .traditional,
+        sourceType: NewsSourceType = .googleNews,
         twitterHandle: String? = nil,
         isVerified: Bool = false,
         description: String? = nil
@@ -297,13 +297,10 @@ struct NewsItem: Identifiable {
 enum NewsSourceType: String, CaseIterable {
     case twitter = "Twitter"
     case googleNews = "Google News"
-    case traditional = "News"
-
     var icon: String {
         switch self {
         case .twitter: return "bird" // X logo approximation
         case .googleNews: return "g.circle.fill"
-        case .traditional: return "newspaper"
         }
     }
 
@@ -311,7 +308,6 @@ enum NewsSourceType: String, CaseIterable {
         switch self {
         case .twitter: return "#1DA1F2" // Twitter blue
         case .googleNews: return "#4285F4" // Google blue
-        case .traditional: return "#6366F1"
         }
     }
 
@@ -319,7 +315,6 @@ enum NewsSourceType: String, CaseIterable {
         switch self {
         case .twitter: return "X"
         case .googleNews: return "Google"
-        case .traditional: return "News"
         }
     }
 }

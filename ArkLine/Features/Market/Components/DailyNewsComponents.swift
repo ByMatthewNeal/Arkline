@@ -81,13 +81,6 @@ struct AllNewsView: View {
                                 isSelected: selectedFilter == .googleNews,
                                 action: { selectedFilter = .googleNews }
                             )
-                            NewsFilterChip(
-                                title: "Traditional",
-                                icon: "newspaper",
-                                count: news.filter { $0.sourceType == .traditional }.count,
-                                isSelected: selectedFilter == .traditional,
-                                action: { selectedFilter = .traditional }
-                            )
                         }
                         .padding(.horizontal, 20)
                     }

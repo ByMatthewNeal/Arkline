@@ -459,11 +459,15 @@ struct CreateDCASheetView: View {
 
     private func createReminder() {
         guard let coin = selectedCoin, let amountValue = Double(amount) else { return }
+        guard let userId = SupabaseAuthManager.shared.currentUserId else {
+            viewModel.error = .custom(message: "You must be signed in to create a reminder")
+            return
+        }
 
         let frequency: DCAFrequency = selectedFrequency.toDCAFrequency
 
         let reminder = DCAReminder(
-            userId: UUID(),
+            userId: userId,
             symbol: coin.symbol,
             name: coin.name,
             amount: amountValue,
@@ -478,9 +482,10 @@ struct CreateDCASheetView: View {
 
         Task {
             await viewModel.createReminder(reminder)
+            if viewModel.error == nil {
+                dismiss()
+            }
         }
-
-        dismiss()
     }
 }
 
