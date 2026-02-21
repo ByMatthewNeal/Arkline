@@ -52,10 +52,12 @@ extension StockAsset {
     }
 
     var volumeFormatted: String {
-        Double(volume ?? 0).formattedCompact
+        guard let volume, volume > 0 else { return "–" }
+        return Double(volume).formattedCompact
     }
 
     var marketCapFormatted: String {
-        (marketCap ?? 0).formattedCompact
+        guard let marketCap, marketCap > 0 else { return "–" }
+        return marketCap.formattedCompact
     }
 }

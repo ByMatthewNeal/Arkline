@@ -317,14 +317,16 @@ struct AssetDetailHeader: View {
             Spacer()
 
             // Rank Badge
-            Text("#\(asset.marketCapRank ?? 0)")
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(AppColors.textSecondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(AppColors.divider(colorScheme))
-                .cornerRadius(8)
+            if let rank = asset.marketCapRank, rank > 0 {
+                Text("#\(rank)")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(AppColors.divider(colorScheme))
+                    .cornerRadius(8)
+            }
         }
         .padding(.horizontal, 20)
     }
@@ -379,12 +381,24 @@ struct AssetStatsSection: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             VStack(spacing: 12) {
-                StatRow(label: "Market Cap", value: (asset.marketCap ?? 0).asCurrencyCompact)
-                StatRow(label: "Market Cap Rank", value: "#\(asset.marketCapRank ?? 0)")
-                StatRow(label: "24h High", value: (asset.high24h ?? 0).asCurrency)
-                StatRow(label: "24h Low", value: (asset.low24h ?? 0).asCurrency)
-                StatRow(label: "24h Volume", value: (asset.totalVolume ?? 0).asCurrencyCompact)
-                StatRow(label: "Circulating Supply", value: "\((asset.circulatingSupply ?? 0).formattedCompact) \(asset.symbol.uppercased())")
+                if let marketCap = asset.marketCap, marketCap > 0 {
+                    StatRow(label: "Market Cap", value: marketCap.asCurrencyCompact)
+                }
+                if let rank = asset.marketCapRank, rank > 0 {
+                    StatRow(label: "Market Cap Rank", value: "#\(rank)")
+                }
+                if let high = asset.high24h, high > 0 {
+                    StatRow(label: "24h High", value: high.asCurrency)
+                }
+                if let low = asset.low24h, low > 0 {
+                    StatRow(label: "24h Low", value: low.asCurrency)
+                }
+                if let volume = asset.totalVolume, volume > 0 {
+                    StatRow(label: "24h Volume", value: volume.asCurrencyCompact)
+                }
+                if let supply = asset.circulatingSupply, supply > 0 {
+                    StatRow(label: "Circulating Supply", value: "\(supply.formattedCompact) \(asset.symbol.uppercased())")
+                }
             }
             .padding(16)
             .background(AppColors.cardBackground(colorScheme))

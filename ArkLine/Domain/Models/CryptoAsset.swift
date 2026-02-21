@@ -134,23 +134,28 @@ extension CryptoAsset {
     }
 
     var marketCapFormatted: String {
-        (marketCap ?? 0).formattedCompact
+        guard let marketCap, marketCap > 0 else { return "–" }
+        return marketCap.formattedCompact
     }
 
     var volumeFormatted: String {
-        (totalVolume ?? 0).formattedCompact
+        guard let totalVolume, totalVolume > 0 else { return "–" }
+        return totalVolume.formattedCompact
     }
 
     var supplyFormatted: String {
-        (circulatingSupply ?? 0).formattedCompact
+        guard let circulatingSupply, circulatingSupply > 0 else { return "–" }
+        return circulatingSupply.formattedCompact
     }
 
     var athFormatted: String {
-        (ath ?? 0).asCryptoPrice
+        guard let ath, ath > 0 else { return "–" }
+        return ath.asCryptoPrice
     }
 
     var atlFormatted: String {
-        (atl ?? 0).asCryptoPrice
+        guard let atl, atl > 0 else { return "–" }
+        return atl.asCryptoPrice
     }
 
     var fromATH: Double {
