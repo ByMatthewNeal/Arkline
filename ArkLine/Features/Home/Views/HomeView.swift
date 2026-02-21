@@ -126,8 +126,9 @@ struct HomeView: View {
                 NotificationsSheet()
             }
             .task {
-                await viewModel.loadPortfolios()
-                await viewModel.refresh()
+                async let portfolios: () = viewModel.loadPortfolios()
+                async let refresh: () = viewModel.refresh()
+                _ = await (portfolios, refresh)
             }
             .onAppear {
                 viewModel.userName = appState.currentUser?.firstName ?? "User"

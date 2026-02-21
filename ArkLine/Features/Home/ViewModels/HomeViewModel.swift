@@ -411,26 +411,78 @@ class HomeViewModel {
         errorMessage = nil
 
         let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
+        let riskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
 
-        // Fetch crypto prices first (critical for Core widget) - independent of other fetches
-        let crypto = await fetchCryptoAssetsSafe()
+        // Launch ALL fetches in parallel — crypto no longer blocks macro/sentiment
+        async let cryptoTask = fetchCryptoAssetsSafe()
+        async let vixTask = fetchVIXSafe()
+        async let dxyTask = fetchDXYSafe()
+        async let liquidityTask = fetchGlobalLiquiditySafe()
+        async let supplyProfitTask = fetchSupplyInProfitSafe()
+        async let fedWatchTask = fetchFedWatchMeetingsSafe()
+        async let upcomingEventsTask = fetchUpcomingEventsSafe()
+        async let todaysEventsTask = fetchTodaysEventsSafe()
+        async let riskResultsTask = fetchAllRiskLevels(coins: riskCoins)
+        async let zScoresTask = fetchMacroZScoresSafe()
 
-        // Archive crypto market data (fire-and-forget)
-        if !crypto.isEmpty {
-            Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) }
+        async let fgResult: FearGreedIndex? = {
+            do {
+                return try await sentimentService.fetchFearGreedIndex()
+            } catch {
+                logError("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
+                return nil
+            }
+        }()
+
+        async let riskScoreResult: ArkLineRiskScore? = {
+            do {
+                return try await sentimentService.fetchArkLineRiskScore()
+            } catch {
+                logError("ArkLine Risk Score fetch failed: \(error.localizedDescription)", category: .network)
+                return nil
+            }
+        }()
+
+        async let remindersResult: [DCAReminder] = {
+            guard let uid = userId else { return [] }
+            do {
+                return try await dcaService.fetchReminders(userId: uid)
+            } catch {
+                logError("Reminders fetch failed: \(error.localizedDescription)", category: .network)
+                return []
+            }
+        }()
+
+        async let newsResult: [NewsItem] = {
+            do {
+                return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
+            } catch {
+                logError("News fetch failed: \(error.localizedDescription)", category: .network)
+                return []
+            }
+        }()
+
+        // Process events first (hardcoded data, instant)
+        let upcoming = await upcomingEventsTask
+        let todaysEvts = await todaysEventsTask
+        await MainActor.run {
+            self.upcomingEvents = upcoming
+            self.todaysEvents = todaysEvts
+            self.eventsLastUpdated = Date()
         }
 
-        // Cache for favorites filtering
+        // Process crypto prices as soon as they arrive
+        let crypto = await cryptoTask
+
         if !crypto.isEmpty {
+            Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) }
             cachedCryptoAssets = crypto
         }
 
-        // Extract BTC, ETH, and SOL prices immediately
         let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
         let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
         let sol = crypto.first { $0.symbol.uppercased() == "SOL" }
 
-        // Set prices on main actor immediately (animated for numeric transitions)
         await MainActor.run {
             withAnimation(.easeInOut(duration: 0.4)) {
                 self.btcPrice = btc?.currentPrice ?? 0
@@ -440,35 +492,12 @@ class HomeViewModel {
                 self.ethChange24h = eth?.priceChangePercentage24h ?? 0
                 self.solChange24h = sol?.priceChangePercentage24h ?? 0
             }
-            // Calculate top gainers and losers
             let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
             self.topGainers = Array(sortedByGain.prefix(3))
             self.topLosers = Array(sortedByGain.suffix(3).reversed())
         }
 
-        // Fetch macro indicators and hardcoded events independently (these should always succeed quickly)
-        async let vixTask = fetchVIXSafe()
-        async let dxyTask = fetchDXYSafe()
-        async let liquidityTask = fetchGlobalLiquiditySafe()
-        async let supplyProfitTask = fetchSupplyInProfitSafe()
-        async let fedWatchTask = fetchFedWatchMeetingsSafe()
-        async let upcomingEventsTask = fetchUpcomingEventsSafe()
-        async let todaysEventsTask = fetchTodaysEventsSafe()
-
-        // Fetch risk levels for all supported coins in parallel
-        let riskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
-        async let riskResultsTask = fetchAllRiskLevels(coins: riskCoins)
-
-        // Await events immediately (hardcoded data, instant)
-        let upcoming = await upcomingEventsTask
-        let todaysEvts = await todaysEventsTask
-        await MainActor.run {
-            self.upcomingEvents = upcoming
-            self.todaysEvents = todaysEvts
-            self.eventsLastUpdated = Date()
-        }
-
-        // Await network-dependent indicators (may be slower)
+        // Process macro indicators
         let vix = await vixTask
         let dxy = await dxyTask
         let liquidity = await liquidityTask
@@ -514,51 +543,10 @@ class HomeViewModel {
             }
         }
 
-        // Fetch z-scores alongside other secondary data
-        async let zScoresTask = fetchMacroZScoresSafe()
-
-        // Fetch other data independently so each can succeed/fail on its own
-        async let fgResult: FearGreedIndex? = {
-            do {
-                return try await sentimentService.fetchFearGreedIndex()
-            } catch {
-                logError("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
-                return nil
-            }
-        }()
-
-        async let riskScoreResult: ArkLineRiskScore? = {
-            do {
-                return try await sentimentService.fetchArkLineRiskScore()
-            } catch {
-                logError("ArkLine Risk Score fetch failed: \(error.localizedDescription)", category: .network)
-                return nil
-            }
-        }()
-
-        async let remindersResult: [DCAReminder] = {
-            guard let uid = userId else { return [] }
-            do {
-                return try await dcaService.fetchReminders(userId: uid)
-            } catch {
-                logError("Reminders fetch failed: \(error.localizedDescription)", category: .network)
-                return []
-            }
-        }()
-
-        async let newsResult: [NewsItem] = {
-            do {
-                return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
-            } catch {
-                logError("News fetch failed: \(error.localizedDescription)", category: .network)
-                return []
-            }
-        }()
-
+        // Process secondary data (sentiment, news, reminders, z-scores)
         let (fg, riskScore, reminders, news) = await (fgResult, riskScoreResult, remindersResult, newsResult)
         let zScores = await zScoresTask
 
-        // Count failures after all fetches complete
         let failureCount = (crypto.isEmpty ? 1 : 0) + (fg == nil ? 1 : 0) + (riskScore == nil ? 1 : 0)
 
         await MainActor.run {
