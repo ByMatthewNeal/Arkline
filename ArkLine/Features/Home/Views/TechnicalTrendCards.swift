@@ -22,6 +22,7 @@ struct MultiTimeframeTrendCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
+                .accessibilityLabel("Info about Trend Overview")
 
                 Spacer()
             }
@@ -153,6 +154,7 @@ struct TimeframePicker: View {
                                 : Color.clear
                         )
                 }
+                .accessibilityLabel("\(timeframe.label) timeframe\(selectedTimeframe == timeframe ? ", selected" : "")")
             }
         }
         .background(

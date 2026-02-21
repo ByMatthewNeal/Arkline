@@ -57,6 +57,7 @@ struct TodaysEventsWidget: View {
                     }
                     .foregroundColor(AppColors.accent)
                 }
+                .accessibilityLabel("See all upcoming events")
             }
 
             // Events grouped by date

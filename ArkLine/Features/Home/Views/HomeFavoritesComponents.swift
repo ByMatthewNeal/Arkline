@@ -45,6 +45,7 @@ struct FavoritesSection: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .accessibilityAddTraits(.isButton)
                             .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 12))
                             .contextMenu {
                                 Button(role: .destructive) {

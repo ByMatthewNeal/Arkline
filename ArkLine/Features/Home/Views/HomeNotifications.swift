@@ -176,5 +176,7 @@ struct AppNotificationRow: View {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(notification.isRead ? Color.clear : AppColors.accent.opacity(0.2), lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(notification.title), \(notification.subtitle), \(notification.timeFormatted)\(notification.isRead ? "" : ", unread")")
     }
 }

@@ -146,6 +146,7 @@ struct RiskScoreCard: View {
                                             )
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    .accessibilityLabel("\(coin)\(selectedCoin == coin ? ", selected" : "")")
                                 }
                             }
                             .background(
@@ -203,6 +204,9 @@ struct RiskScoreCard: View {
             .arkShadow(ArkSpacing.Shadow.card)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(cardTitle), \(displayScore) out of 100, \(riskLabel)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             if let itc = itcRiskLevel {
                 ITCRiskDetailView(riskLevel: itc)
@@ -569,6 +573,9 @@ struct HomeArkLineScoreWidget: View {
             .arkShadow(ArkSpacing.Shadow.card)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("ArkLine Score, \(score.score) out of 100, \(score.tier.rawValue)")
+        .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             NavigationStack {
                 ArkLineScoreDetailView(riskScore: score)

@@ -220,6 +220,7 @@ struct BullMarketBandsCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
+                .accessibilityLabel("Info about Bull Market Bands")
 
                 Spacer()
 
@@ -330,6 +331,7 @@ struct KeyLevelsCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
+                .accessibilityLabel("Info about Key Levels")
 
                 Spacer()
 
@@ -437,6 +439,7 @@ struct PricePositionCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
+                .accessibilityLabel("Info about Price Position")
 
                 Spacer()
 
