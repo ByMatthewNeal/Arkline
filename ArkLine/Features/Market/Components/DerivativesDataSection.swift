@@ -34,31 +34,34 @@ struct DerivativesDataSection: View {
                 DerivativesLoadingView()
                     .padding(.horizontal, 20)
             } else if let overview = overview {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        // Open Interest Card
-                        OpenInterestCard(
-                            btcOI: overview.btcOpenInterest,
-                            ethOI: overview.ethOpenInterest
-                        )
+                GeometryReader { geo in
+                    let cardWidth = max(160, geo.size.width * 0.48)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            OpenInterestCard(
+                                btcOI: overview.btcOpenInterest,
+                                ethOI: overview.ethOpenInterest,
+                                cardWidth: cardWidth
+                            )
 
-                        // Liquidations Card
-                        LiquidationsCard(liquidations: overview.totalLiquidations24h)
+                            LiquidationsCard(liquidations: overview.totalLiquidations24h, cardWidth: cardWidth)
 
-                        // Funding Rates Card
-                        FundingRatesCard(
-                            btcFunding: overview.btcFundingRate,
-                            ethFunding: overview.ethFundingRate
-                        )
+                            FundingRatesCard(
+                                btcFunding: overview.btcFundingRate,
+                                ethFunding: overview.ethFundingRate,
+                                cardWidth: cardWidth
+                            )
 
-                        // Long/Short Ratio Card
-                        LongShortRatioCard(
-                            btcRatio: overview.btcLongShortRatio,
-                            ethRatio: overview.ethLongShortRatio
-                        )
+                            LongShortRatioCard(
+                                btcRatio: overview.btcLongShortRatio,
+                                ethRatio: overview.ethLongShortRatio,
+                                cardWidth: cardWidth
+                            )
+                        }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
                 }
+                .frame(height: 160)
             } else {
                 DerivativesEmptyView()
                     .padding(.horizontal, 20)
@@ -72,6 +75,7 @@ struct OpenInterestCard: View {
     @Environment(\.colorScheme) var colorScheme
     let btcOI: OpenInterestData
     let ethOI: OpenInterestData
+    var cardWidth: CGFloat = 180
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
@@ -109,7 +113,7 @@ struct OpenInterestCard: View {
             )
         }
         .padding(16)
-        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
+        .frame(width: cardWidth, height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -157,6 +161,7 @@ struct OIRow: View {
 struct LiquidationsCard: View {
     @Environment(\.colorScheme) var colorScheme
     let liquidations: CoinglassLiquidationData
+    var cardWidth: CGFloat = 180
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
@@ -220,7 +225,7 @@ struct LiquidationsCard: View {
             }
         }
         .padding(16)
-        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
+        .frame(width: cardWidth, height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -257,6 +262,7 @@ struct FundingRatesCard: View {
     @Environment(\.colorScheme) var colorScheme
     let btcFunding: CoinglassFundingRateData
     let ethFunding: CoinglassFundingRateData
+    var cardWidth: CGFloat = 180
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
@@ -301,7 +307,7 @@ struct FundingRatesCard: View {
             .foregroundColor(Color(hex: btcFunding.sentiment.color.replacingOccurrences(of: "#", with: "")))
         }
         .padding(16)
-        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
+        .frame(width: cardWidth, height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -340,6 +346,7 @@ struct LongShortRatioCard: View {
     @Environment(\.colorScheme) var colorScheme
     let btcRatio: LongShortRatioData
     let ethRatio: LongShortRatioData
+    var cardWidth: CGFloat = 180
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
@@ -384,7 +391,7 @@ struct LongShortRatioCard: View {
             }
         }
         .padding(16)
-        .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
+        .frame(width: cardWidth, height: 160)
         .background(cardBackground)
         .cornerRadius(16)
         .overlay(
@@ -440,7 +447,7 @@ struct DerivativesLoadingView: View {
             ForEach(0..<4) { _ in
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: max(160, UIScreen.main.bounds.width * 0.48), height: 160)
+                    .frame(width: 180, height: 160)
                     .shimmer(isLoading: true)
             }
         }

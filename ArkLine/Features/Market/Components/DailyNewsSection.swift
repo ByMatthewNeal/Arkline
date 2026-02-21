@@ -204,10 +204,14 @@ extension NewsItem {
         [title]
     }
 
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
     var timeAgo: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: publishedAt, relativeTo: Date())
+        Self.relativeFormatter.localizedString(for: publishedAt, relativeTo: Date())
     }
 
     /// Detect the topic of this news item based on title keywords

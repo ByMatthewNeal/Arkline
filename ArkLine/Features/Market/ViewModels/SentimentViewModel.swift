@@ -59,6 +59,7 @@ class SentimentViewModel {
     // ITC Risk Levels
     var riskLevels: [String: ITCRiskLevel] = [:]
     var riskHistories: [String: [ITCRiskLevel]] = [:]
+    var consecutiveDays: [String: Int] = [:]
 
     // Enhanced Risk History (per-coin) with TTL
     var riskHistoryCache: [String: [RiskHistoryPoint]] = [:]
@@ -349,6 +350,7 @@ class SentimentViewModel {
                 if let level = level { self.riskLevels[coin] = level }
                 self.riskHistories[coin] = history
             }
+            self.consecutiveDays = computeConsecutiveDays()
 
             // Macro Indicators
             self.vixData = vix
@@ -849,6 +851,29 @@ class SentimentViewModel {
     /// Next scheduled regime update (the upcoming Sunday or Wednesday 00:15 UTC)
     var regimeNextUpdate: Date {
         Self.nextScheduledUpdate(after: Date())
+    }
+
+    // MARK: - Consecutive Days Computation
+
+    private func computeConsecutiveDays() -> [String: Int] {
+        var cache: [String: Int] = [:]
+        for (coin, current) in riskLevels {
+            let history = riskHistories[coin] ?? []
+            guard !history.isEmpty else { continue }
+            let currentCategory = current.riskCategory
+            let currentRisk = current.riskLevel
+            var count = 0
+            for level in history.reversed() {
+                if level.riskCategory == currentCategory ||
+                    abs(level.riskLevel - currentRisk) < 0.05 {
+                    count += 1
+                } else {
+                    break
+                }
+            }
+            if count >= 1 { cache[coin] = count }
+        }
+        return cache
     }
 
     // MARK: - Regime Schedule Cache

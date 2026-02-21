@@ -109,7 +109,7 @@ struct MarketSentimentSection: View {
                     let visibleCoins = isPro
                         ? Array(viewModel.riskLevels.keys.sorted())
                         : viewModel.riskLevels.keys.sorted().filter { $0 == "BTC" }
-                    let daysCache = consecutiveDaysCache
+                    let daysCache = viewModel.consecutiveDays
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(visibleCoins, id: \.self) { coin in
                             if let riskLevel = viewModel.riskLevels[coin] {
@@ -171,27 +171,6 @@ struct MarketSentimentSection: View {
         }
     }
 
-    /// Pre-compute consecutive days at current risk level for all coins
-    private var consecutiveDaysCache: [String: Int] {
-        var cache: [String: Int] = [:]
-        for (coin, current) in viewModel.riskLevels {
-            let history = viewModel.riskHistories[coin] ?? []
-            guard !history.isEmpty else { continue }
-            let currentCategory = current.riskCategory
-            let currentRisk = current.riskLevel
-            var count = 0
-            for level in history.reversed() {
-                if level.riskCategory == currentCategory ||
-                    abs(level.riskLevel - currentRisk) < 0.05 {
-                    count += 1
-                } else {
-                    break
-                }
-            }
-            if count >= 1 { cache[coin] = count }
-        }
-        return cache
-    }
 }
 
 // MARK: - Sentiment Header with ArkLine Score

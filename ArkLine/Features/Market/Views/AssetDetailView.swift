@@ -213,11 +213,11 @@ struct AssetPriceChart: View {
     var body: some View {
         if isLoading && data.isEmpty {
             SkeletonChartView()
-        } else if data.isEmpty {
+        } else if data.count <= 1 {
             RoundedRectangle(cornerRadius: 12)
                 .fill(AppColors.cardBackground(colorScheme))
                 .overlay(
-                    Text("No chart data")
+                    Text(data.isEmpty ? "No chart data" : "Not enough data to chart")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
                 )

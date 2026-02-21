@@ -675,34 +675,36 @@ private struct FullscreenQuadrantView: View {
     let data: SentimentRegimeData
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            (colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F7"))
-                .ignoresSafeArea()
+        GeometryReader { geo in
+            ZStack(alignment: .topTrailing) {
+                (colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F7"))
+                    .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Text("Regime Quadrant")
-                    .font(.headline)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-                    .padding(.top, 60)
+                VStack(spacing: 16) {
+                    Text("Regime Quadrant")
+                        .font(.headline)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .padding(.top, 60)
 
-                SentimentQuadrantChart(data: data)
-                    .chartContent(chartHeight: UIScreen.main.bounds.height * 0.55)
-                    .padding(16)
-                    .glassCard(cornerRadius: 16)
-                    .padding(.horizontal, 16)
+                    SentimentQuadrantChart(data: data)
+                        .chartContent(chartHeight: geo.size.height * 0.55)
+                        .padding(16)
+                        .glassCard(cornerRadius: 16)
+                        .padding(.horizontal, 16)
 
-                Spacer()
+                    Spacer()
+                }
+
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(AppColors.textSecondary)
+                        .padding(20)
+                }
+                .padding(.top, 44)
             }
-
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(AppColors.textSecondary)
-                    .padding(20)
-            }
-            .padding(.top, 44)
         }
     }
 }
