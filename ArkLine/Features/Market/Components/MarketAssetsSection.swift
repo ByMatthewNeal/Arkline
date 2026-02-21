@@ -153,6 +153,7 @@ struct CryptoAssetRow: View {
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
+
                             )
 
                         Text(asset.symbol.prefix(1))
@@ -197,6 +198,7 @@ struct CryptoAssetRow: View {
             }
         }
         .padding(16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
@@ -261,6 +263,7 @@ struct StockAssetRow: View {
             }
         }
         .padding(16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
@@ -322,6 +325,7 @@ struct MetalAssetRow: View {
             }
         }
         .padding(16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(asset.name), \(asset.currentPrice.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(asset.priceChangePercentage24h))) percent")
     }
