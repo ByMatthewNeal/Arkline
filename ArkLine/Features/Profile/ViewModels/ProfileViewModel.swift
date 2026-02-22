@@ -31,6 +31,7 @@ struct ActivityItem: Identifiable {
 }
 
 // MARK: - Profile View Model
+@MainActor
 @Observable
 final class ProfileViewModel {
     // MARK: - State

@@ -10,6 +10,7 @@ enum AuthState: Equatable {
 }
 
 // MARK: - Auth View Model
+@MainActor
 @Observable
 class AuthViewModel {
     // MARK: - Properties

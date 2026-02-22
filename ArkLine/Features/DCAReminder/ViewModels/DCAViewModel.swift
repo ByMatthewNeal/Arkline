@@ -9,6 +9,7 @@ enum DCAViewTab: String, CaseIterable {
 }
 
 // MARK: - DCA View Model
+@MainActor
 @Observable
 final class DCAViewModel {
     // MARK: - Dependencies

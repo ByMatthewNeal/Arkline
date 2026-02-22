@@ -315,13 +315,27 @@ private struct SwipeBackModifier: ViewModifier {
     }
 }
 
+private class SwipeBackDelegate: NSObject, UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        true
+    }
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        false
+    }
+}
+
 private struct SwipeBackHelper: UIViewControllerRepresentable {
+    private static let delegate = SwipeBackDelegate()
+
     func makeUIViewController(context: Context) -> UIViewController { UIViewController() }
     func updateUIViewController(_ vc: UIViewController, context: Context) {
         DispatchQueue.main.async {
             if let nav = vc.navigationController {
                 nav.interactivePopGestureRecognizer?.isEnabled = true
-                nav.interactivePopGestureRecognizer?.delegate = nil
+                nav.interactivePopGestureRecognizer?.delegate = Self.delegate
             }
         }
     }

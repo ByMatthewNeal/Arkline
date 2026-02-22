@@ -57,26 +57,28 @@ final class YahooFinanceService {
         for bar in sorted {
             chunk.append(bar)
             if chunk.count == 4 {
-                let aggregated = OHLCBar(
-                    date: chunk.last!.date,
-                    open: chunk.first!.open,
-                    high: chunk.map(\.high).max()!,
-                    low: chunk.map(\.low).min()!,
-                    close: chunk.last!.close
-                )
-                result.append(aggregated)
+                if let last = chunk.last, let first = chunk.first {
+                    let aggregated = OHLCBar(
+                        date: last.date,
+                        open: first.open,
+                        high: chunk.map(\.high).max() ?? last.high,
+                        low: chunk.map(\.low).min() ?? last.low,
+                        close: last.close
+                    )
+                    result.append(aggregated)
+                }
                 chunk = []
             }
         }
 
         // Include remaining bars as a partial 4H candle
-        if !chunk.isEmpty {
+        if let last = chunk.last, let first = chunk.first {
             let aggregated = OHLCBar(
-                date: chunk.last!.date,
-                open: chunk.first!.open,
-                high: chunk.map(\.high).max()!,
-                low: chunk.map(\.low).min()!,
-                close: chunk.last!.close
+                date: last.date,
+                open: first.open,
+                high: chunk.map(\.high).max() ?? last.high,
+                low: chunk.map(\.low).min() ?? last.low,
+                close: last.close
             )
             result.append(aggregated)
         }

@@ -271,7 +271,9 @@ class AppState: ObservableObject {
 
         if authenticated {
             // Clear the sign-out flag so next app launch auto-authenticates
-            UserDefaults.standard.set(false, forKey: Constants.UserDefaults.didSignOut)
+            DispatchQueue.global(qos: .utility).async {
+                UserDefaults.standard.set(false, forKey: Constants.UserDefaults.didSignOut)
+            }
         }
 
         // Update user if provided; keep existing cached user otherwise (passcode re-login)
@@ -280,8 +282,11 @@ class AppState: ObservableObject {
             // Persist user to UserDefaults (strip sensitive fields)
             var sanitized = user
             sanitized.passcodeHash = nil
-            if let data = try? JSONEncoder().encode(sanitized) {
-                UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
+            let key = Constants.UserDefaults.currentUser
+            DispatchQueue.global(qos: .utility).async {
+                if let data = try? JSONEncoder().encode(sanitized) {
+                    UserDefaults.standard.set(data, forKey: key)
+                }
             }
         }
     }
@@ -313,8 +318,11 @@ class AppState: ObservableObject {
 
     func setWidgetConfiguration(_ config: WidgetConfiguration) {
         widgetConfiguration = config
-        if let data = try? JSONEncoder().encode(config) {
-            UserDefaults.standard.set(data, forKey: Constants.UserDefaults.widgetConfiguration)
+        let key = Constants.UserDefaults.widgetConfiguration
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(config) {
+                UserDefaults.standard.set(data, forKey: key)
+            }
         }
     }
 
@@ -372,8 +380,11 @@ class AppState: ObservableObject {
     }
 
     private func saveCoreAssets() {
-        if let data = try? JSONEncoder().encode(enabledCoreAssets) {
-            UserDefaults.standard.set(data, forKey: "enabledCoreAssets")
+        let snapshot = enabledCoreAssets
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(snapshot) {
+                UserDefaults.standard.set(data, forKey: "enabledCoreAssets")
+            }
         }
     }
 
@@ -431,8 +442,11 @@ class AppState: ObservableObject {
             self.currentUser = updatedUser
             var sanitized = updatedUser
             sanitized.passcodeHash = nil
-            if let data = try? JSONEncoder().encode(sanitized) {
-                UserDefaults.standard.set(data, forKey: Constants.UserDefaults.currentUser)
+            let userKey = Constants.UserDefaults.currentUser
+            DispatchQueue.global(qos: .utility).async {
+                if let data = try? JSONEncoder().encode(sanitized) {
+                    UserDefaults.standard.set(data, forKey: userKey)
+                }
             }
         } catch {
             logError("Failed to refresh profile: \(error.localizedDescription)", category: .auth)

@@ -9,6 +9,7 @@ enum CommunityTab: String, CaseIterable {
 }
 
 // MARK: - Community View Model
+@MainActor
 @Observable
 final class CommunityViewModel {
     // MARK: - State
