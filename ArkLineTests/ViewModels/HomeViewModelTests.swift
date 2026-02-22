@@ -49,6 +49,7 @@ final class HomeViewModelTests: XCTestCase {
     // MARK: - Factory
 
     /// Creates a HomeViewModel wired to zero-delay mock services.
+    /// Stops auto-refresh timer to prevent interference between tests.
     private func makeVM(
         sentimentService: SentimentServiceProtocol? = nil,
         marketService: MarketServiceProtocol? = nil
@@ -71,7 +72,7 @@ final class HomeViewModelTests: XCTestCase {
             globalLiquidityService: mockLiquidity
         )
 
-        return HomeViewModel(
+        let vm = HomeViewModel(
             sentimentService: sentimentService ?? mockSentiment,
             marketService: marketService ?? mockMarket,
             dcaService: mockDCA,
@@ -85,13 +86,22 @@ final class HomeViewModelTests: XCTestCase {
             macroStatisticsService: macroStats,
             santimentService: mockSantiment
         )
+        vm.stopAutoRefresh()
+        return vm
+    }
+
+    /// Calls refresh and yields to ensure all @MainActor work completes.
+    private func refreshAndSettle(_ vm: HomeViewModel) async {
+        await vm.refresh()
+        // Yield to allow any pending MainActor-dispatched work to complete
+        await Task.yield()
     }
 
     // MARK: - Group A: Happy Path
 
     func testRefresh_populatesBTCPrice() async {
         let vm = makeVM()
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertEqual(vm.btcPrice, 67234.50, accuracy: 0.01, "BTC price should match MockMarketService data")
         XCTAssertEqual(vm.ethPrice, 3456.78, accuracy: 0.01, "ETH price should match MockMarketService data")
@@ -100,7 +110,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_populatesTopGainersAndLosers() async {
         let vm = makeVM()
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertEqual(vm.topGainers.count, 3, "Should have 3 top gainers")
         XCTAssertEqual(vm.topLosers.count, 3, "Should have 3 top losers")
@@ -116,7 +126,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_populatesMacroIndicators() async {
         let vm = makeVM()
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertNotNil(vm.vixData, "VIX data should be populated from mock")
         XCTAssertNotNil(vm.dxyData, "DXY data should be populated from mock")
@@ -125,7 +135,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_populatesFearGreedAndRiskScore() async {
         let vm = makeVM()
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertNotNil(vm.fearGreedIndex, "Fear & Greed should be populated")
         XCTAssertEqual(vm.fearGreedIndex?.value, 49, "Fear & Greed value should be 49 from mock")
@@ -134,7 +144,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_setsLastRefreshedAndClearsLoading() async {
         let vm = makeVM()
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertNotNil(vm.lastRefreshed, "lastRefreshed should be set after refresh")
         XCTAssertFalse(vm.isLoading, "isLoading should be false after refresh completes")
@@ -146,7 +156,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_marketFails_pricesZeroButMacroStillLoaded() async {
         let vm = makeVM(marketService: FailingMarketService())
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertEqual(vm.btcPrice, 0, "BTC price should be 0 when market service fails")
         XCTAssertEqual(vm.ethPrice, 0, "ETH price should be 0 when market service fails")
@@ -156,7 +166,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_sentimentFails_fearGreedNilButPricesLoaded() async {
         let vm = makeVM(sentimentService: FailingSentimentService())
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertNil(vm.fearGreedIndex, "Fear & Greed should be nil when sentiment fails")
         XCTAssertNil(vm.arkLineRiskScore, "ArkLine score should be nil when sentiment fails")
@@ -165,7 +175,7 @@ final class HomeViewModelTests: XCTestCase {
 
     func testRefresh_failedFetchCount_countsCorrectly() async {
         let vm = makeVM(marketService: FailingMarketService())
-        await vm.refresh()
+        await refreshAndSettle(vm)
 
         XCTAssertGreaterThanOrEqual(vm.failedFetchCount, 1, "Should count at least 1 failure for empty crypto")
     }

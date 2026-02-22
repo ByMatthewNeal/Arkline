@@ -30,6 +30,7 @@ private class MockPasscodeVerifier: PasscodeVerifying {
 
 // MARK: - AuthViewModel Tests
 
+@MainActor
 final class AuthViewModelTests: XCTestCase {
 
     // MARK: - Passcode Verification
