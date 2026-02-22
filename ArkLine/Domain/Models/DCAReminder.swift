@@ -61,6 +61,33 @@ struct DCAReminder: Codable, Identifiable, Equatable {
         self.isActive = isActive
         self.createdAt = createdAt
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        userId = try container.decode(UUID.self, forKey: .userId)
+        symbol = try container.decode(String.self, forKey: .symbol)
+        name = try container.decode(String.self, forKey: .name)
+        amount = try container.decode(Double.self, forKey: .amount)
+        frequency = try container.decode(DCAFrequency.self, forKey: .frequency)
+        totalPurchases = try container.decodeIfPresent(Int.self, forKey: .totalPurchases)
+        completedPurchases = try container.decode(Int.self, forKey: .completedPurchases)
+
+        // notification_time comes as a bare "HH:mm:ss" string from PostgreSQL's time column
+        if let timeString = try? container.decode(String.self, forKey: .notificationTime) {
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            notificationTime = f.date(from: timeString) ?? Date()
+        } else {
+            notificationTime = try container.decode(Date.self, forKey: .notificationTime)
+        }
+
+        startDate = try container.decode(Date.self, forKey: .startDate)
+        nextReminderDate = try container.decodeIfPresent(Date.self, forKey: .nextReminderDate)
+        isActive = try container.decode(Bool.self, forKey: .isActive)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+    }
 }
 
 // MARK: - DCA Frequency
