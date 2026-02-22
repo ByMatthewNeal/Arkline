@@ -72,7 +72,8 @@ struct HomeView: View {
                             selectedTimePeriod: Binding(
                                 get: { viewModel.selectedTimePeriod },
                                 set: { viewModel.selectedTimePeriod = $0 }
-                            )
+                            ),
+                            hasLoadedPortfolios: viewModel.hasLoadedPortfolios
                         )
                         .padding(.horizontal, 20)
 

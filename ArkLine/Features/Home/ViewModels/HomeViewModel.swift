@@ -86,6 +86,7 @@ class HomeViewModel {
     var portfolios: [Portfolio] = []
     var selectedPortfolio: Portfolio?
     var selectedTimePeriod: TimePeriod = .day
+    var hasLoadedPortfolios = false
 
     // Portfolio Summary (real data from Supabase)
     var portfolioValue: Double = 0
@@ -573,6 +574,7 @@ class HomeViewModel {
             let resolvedUserId: UUID? = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
             guard let userId = resolvedUserId else {
                 logWarning("No authenticated user for portfolio fetch", category: .data)
+                await MainActor.run { self.hasLoadedPortfolios = true }
                 return
             }
             let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
@@ -582,6 +584,7 @@ class HomeViewModel {
                 if self.selectedPortfolio == nil, let first = fetchedPortfolios.first {
                     self.selectedPortfolio = first
                 }
+                self.hasLoadedPortfolios = true
             }
 
             // Load real holdings data for the selected portfolio
@@ -590,6 +593,7 @@ class HomeViewModel {
             }
         } catch {
             logError("Failed to load portfolios: \(error)", category: .data)
+            await MainActor.run { self.hasLoadedPortfolios = true }
         }
     }
 

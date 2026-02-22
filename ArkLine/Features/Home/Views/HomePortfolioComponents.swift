@@ -10,13 +10,15 @@ struct PortfolioHeroCard: View {
     let onPortfolioTap: () -> Void
     let onSetupTap: () -> Void
     @Binding var selectedTimePeriod: TimePeriod
+    var hasLoadedPortfolios: Bool = true
     @Environment(\.colorScheme) var colorScheme
 
     // Track time period changes to re-trigger animation
     @State private var chartAnimationId = UUID()
 
     var isPositive: Bool { change >= 0 }
-    private var isEmpty: Bool { totalValue == 0 }
+    private var isEmpty: Bool { totalValue == 0 && hasLoadedPortfolios }
+    private var isLoadingPortfolio: Bool { totalValue == 0 && !hasLoadedPortfolios }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -24,7 +26,9 @@ struct PortfolioHeroCard: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            if isEmpty {
+            if isLoadingPortfolio {
+                loadingStateContent
+            } else if isEmpty {
                 emptyStateContent
             } else {
                 portfolioContent
@@ -40,6 +44,20 @@ struct PortfolioHeroCard: View {
         .onChange(of: selectedTimePeriod) { _, _ in
             chartAnimationId = UUID()
         }
+    }
+
+    // MARK: - Loading State
+    private var loadingStateContent: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .controlSize(.regular)
+                .tint(AppColors.accent)
+
+            Text("Loading portfolio...")
+                .font(.system(size: 14))
+                .foregroundColor(textPrimary.opacity(0.5))
+        }
+        .padding(.vertical, 24)
     }
 
     // MARK: - Empty State
