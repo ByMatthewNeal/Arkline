@@ -62,6 +62,34 @@ struct DCAReminder: Codable, Identifiable, Equatable {
         self.createdAt = createdAt
     }
 
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        userId = try container.decode(UUID.self, forKey: .userId)
+        symbol = try container.decode(String.self, forKey: .symbol)
+        name = try container.decode(String.self, forKey: .name)
+        amount = try container.decode(Double.self, forKey: .amount)
+        frequency = try container.decode(DCAFrequency.self, forKey: .frequency)
+        totalPurchases = try container.decodeIfPresent(Int.self, forKey: .totalPurchases)
+        completedPurchases = try container.decode(Int.self, forKey: .completedPurchases)
+
+        // notification_time is a PostgreSQL `time` column — returned as "HH:mm:ss"
+        if let timeString = try? container.decode(String.self, forKey: .notificationTime) {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "HH:mm:ss"
+            notificationTime = f.date(from: timeString)
+                ?? f.date(from: String(timeString.prefix(8)))
+                ?? Date()
+        } else {
+            notificationTime = try container.decode(Date.self, forKey: .notificationTime)
+        }
+
+        startDate = try container.decode(Date.self, forKey: .startDate)
+        nextReminderDate = try container.decodeIfPresent(Date.self, forKey: .nextReminderDate)
+        isActive = try container.decode(Bool.self, forKey: .isActive)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+    }
 }
 
 // MARK: - DCA Frequency
@@ -188,9 +216,16 @@ struct CreateDCARequest: Encodable {
     let amount: Double
     let frequency: String
     let totalPurchases: Int?
-    let notificationTime: Date
+    let notificationTime: String
     let startDate: Date
     let nextReminderDate: Date
+
+    static func timeString(from date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f.string(from: date)
+    }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"

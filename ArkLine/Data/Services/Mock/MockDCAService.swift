@@ -51,7 +51,12 @@ final class MockDCAService: DCAServiceProtocol {
             frequency: DCAFrequency(rawValue: request.frequency) ?? .weekly,
             totalPurchases: request.totalPurchases,
             completedPurchases: 0,
-            notificationTime: request.notificationTime,
+            notificationTime: {
+                let f = DateFormatter()
+                f.dateFormat = "HH:mm:ss"
+                f.locale = Locale(identifier: "en_US_POSIX")
+                return f.date(from: request.notificationTime) ?? Date()
+            }(),
             startDate: request.startDate,
             nextReminderDate: request.nextReminderDate,
             isActive: true

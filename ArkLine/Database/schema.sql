@@ -214,7 +214,7 @@ CREATE TABLE dca_reminders (
     frequency           TEXT NOT NULL,
     total_purchases     INTEGER,
     completed_purchases INTEGER NOT NULL DEFAULT 0,
-    notification_time   TIMESTAMPTZ NOT NULL,
+    notification_time   TIME NOT NULL,
     start_date          TIMESTAMPTZ NOT NULL,
     next_reminder_date  TIMESTAMPTZ,
     is_active           BOOLEAN NOT NULL DEFAULT true,
