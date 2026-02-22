@@ -187,9 +187,17 @@ struct CreateDCARequest: Encodable {
     let amount: Double
     let frequency: String
     let totalPurchases: Int?
-    let notificationTime: Date
+    let notificationTime: String // PostgreSQL "time" column expects "HH:mm:ss"
     let startDate: Date
     let nextReminderDate: Date
+
+    /// Format a Date as a time-only string for PostgreSQL's `time` column.
+    static func timeString(from date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f.string(from: date)
+    }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
