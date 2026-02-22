@@ -288,12 +288,13 @@ struct CreateDCASheetView: View {
                         .foregroundColor(textPrimary.opacity(0.5))
                 }
                 .padding(14)
+                .frame(maxWidth: .infinity, minHeight: 48)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
                 )
+                .contentShape(Rectangle())
             }
-            .transaction { $0.animation = nil }
 
             // Custom settings
             if selectedFrequency == .custom {
