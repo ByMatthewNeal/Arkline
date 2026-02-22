@@ -3,6 +3,7 @@ import SwiftUI
 struct TrendChannelDetailView: View {
     let initialIndex: IndexSymbol
     @State private var viewModel = TrendChannelViewModel()
+    @State private var showFullscreenChart = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
 
@@ -84,9 +85,21 @@ struct TrendChannelDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(AppColors.accent)
+                    HStack(spacing: 16) {
+                        Button {
+                            showFullscreenChart = true
+                        } label: {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(AppColors.accent)
+                        }
+                        Button("Done") { dismiss() }
+                            .foregroundStyle(AppColors.accent)
+                    }
                 }
+            }
+            .fullScreenCover(isPresented: $showFullscreenChart) {
+                TrendChannelFullscreenView(viewModel: viewModel)
             }
             .task {
                 viewModel.selectedIndex = initialIndex

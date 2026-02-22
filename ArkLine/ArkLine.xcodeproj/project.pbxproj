@@ -394,6 +394,7 @@
 		0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD3282515B7877788D18601 /* TrendChannelChart.swift */; };
 		8089EA5E1420BCF937B425AB /* RSIChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50533F2F531F5D45D8710237 /* RSIChartView.swift */; };
 		AA6E3961FA310002651BFB96 /* TrendChannelDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */; };
+		C2EB8B4DAC0C80D048AD7DA9 /* TrendChannelFullscreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */; };
 		7EC0A3B4D5F6289301C4E5A6 /* ShareCardKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */; };
 		8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */; };
 /* End PBXBuildFile section */
@@ -796,6 +797,7 @@
 		2AD3282515B7877788D18601 /* TrendChannelChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChannelChart.swift; sourceTree = "<group>"; };
 		50533F2F531F5D45D8710237 /* RSIChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSIChartView.swift; sourceTree = "<group>"; };
 		891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChannelDetailView.swift; sourceTree = "<group>"; };
+		1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChannelFullscreenView.swift; sourceTree = "<group>"; };
 		5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardKit.swift; sourceTree = "<group>"; };
 		6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardContent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1213,6 +1215,7 @@
 				7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */,
 				AA1122334455667788990011 /* StockDetailView.swift */,
 				891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */,
+				1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2100,6 +2103,7 @@
 				0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */,
 				8089EA5E1420BCF937B425AB /* RSIChartView.swift in Sources */,
 				AA6E3961FA310002651BFB96 /* TrendChannelDetailView.swift in Sources */,
+				C2EB8B4DAC0C80D048AD7DA9 /* TrendChannelFullscreenView.swift in Sources */,
 				DBB8730372590CFDFDDEC5AB /* APIAppStoreRankingService.swift in Sources */,
 				3AAE62EC51CEE26B90FC075B /* APIBinanceFundingService.swift in Sources */,
 				ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */,
