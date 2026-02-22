@@ -34,6 +34,7 @@ struct ArkLineApp: App {
                 Task { await AnalyticsService.shared.flush() }
             } else if newPhase == .active {
                 Task { await appState.refreshUserProfile() }
+                BroadcastNotificationService.shared.clearBadge()
             }
         }
     }
