@@ -298,7 +298,7 @@ struct AddTransactionView: View {
         )
 
         Task {
-            await viewModel.addTransaction(transaction)
+            await viewModel.addTransaction(transaction, assetName: name)
             await MainActor.run {
                 Haptics.success()
                 isSaving = false

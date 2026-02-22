@@ -555,9 +555,86 @@ final class PortfolioViewModel {
         await refresh()
     }
 
-    func addTransaction(_ transaction: Transaction) async {
+    func addTransaction(_ transaction: Transaction, assetName: String? = nil) async {
         do {
-            let createdTransaction = try await portfolioService.addTransaction(transaction)
+            guard let portfolioId = portfolioId else {
+                await MainActor.run {
+                    self.error = .unknown(message: "No portfolio selected")
+                }
+                return
+            }
+
+            var transactionToSave = transaction
+
+            // Find or create a holding for this transaction
+            let existingHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+            let existingHolding = existingHoldings.first {
+                $0.symbol.uppercased() == transaction.symbol.uppercased() &&
+                $0.assetType == transaction.assetType
+            }
+
+            if let holding = existingHolding {
+                // Update existing holding based on transaction type
+                var updatedHolding = holding
+                switch transaction.type {
+                case .buy:
+                    let oldTotal = holding.quantity * (holding.averageBuyPrice ?? 0)
+                    let newTotal = transaction.quantity * transaction.pricePerUnit
+                    let newQuantity = holding.quantity + transaction.quantity
+                    updatedHolding.quantity = newQuantity
+                    updatedHolding.averageBuyPrice = newQuantity > 0 ? (oldTotal + newTotal) / newQuantity : 0
+                case .sell:
+                    updatedHolding.quantity = max(0, holding.quantity - transaction.quantity)
+                default:
+                    break
+                }
+                try await portfolioService.updateHolding(updatedHolding)
+                transactionToSave = Transaction(
+                    id: transaction.id,
+                    portfolioId: transaction.portfolioId,
+                    holdingId: holding.id,
+                    type: transaction.type,
+                    assetType: transaction.assetType,
+                    symbol: transaction.symbol,
+                    quantity: transaction.quantity,
+                    pricePerUnit: transaction.pricePerUnit,
+                    gasFee: transaction.gasFee,
+                    transactionDate: transaction.transactionDate,
+                    notes: transaction.notes,
+                    emotionalState: transaction.emotionalState,
+                    costBasisPerUnit: transaction.costBasisPerUnit,
+                    realizedProfitLoss: transaction.realizedProfitLoss
+                )
+            } else if transaction.type == .buy {
+                // Create a new holding for buy transactions
+                let newHolding = PortfolioHolding(
+                    portfolioId: portfolioId,
+                    assetType: transaction.assetType,
+                    symbol: transaction.symbol.uppercased(),
+                    name: assetName ?? transaction.symbol.uppercased(),
+                    quantity: transaction.quantity,
+                    averageBuyPrice: transaction.pricePerUnit
+                )
+                let createdHolding = try await portfolioService.addHolding(newHolding)
+                transactionToSave = Transaction(
+                    id: transaction.id,
+                    portfolioId: transaction.portfolioId,
+                    holdingId: createdHolding.id,
+                    type: transaction.type,
+                    assetType: transaction.assetType,
+                    symbol: transaction.symbol,
+                    quantity: transaction.quantity,
+                    pricePerUnit: transaction.pricePerUnit,
+                    gasFee: transaction.gasFee,
+                    transactionDate: transaction.transactionDate,
+                    notes: transaction.notes,
+                    emotionalState: transaction.emotionalState,
+                    costBasisPerUnit: transaction.costBasisPerUnit,
+                    realizedProfitLoss: transaction.realizedProfitLoss
+                )
+            }
+
+            let createdTransaction = try await portfolioService.addTransaction(transactionToSave)
 
             // Track portfolio action
             Task {
@@ -572,15 +649,13 @@ final class PortfolioViewModel {
                 self.transactions.append(createdTransaction)
             }
 
-            // Update holdings after transaction
-            if let portfolioId = portfolioId {
-                let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
-                let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
+            // Refresh holdings with live prices
+            let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+            let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
 
-                await MainActor.run {
-                    self.holdings = holdingsWithPrices
-                    self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
-                }
+            await MainActor.run {
+                self.holdings = holdingsWithPrices
+                self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
             }
         } catch {
             await MainActor.run {
