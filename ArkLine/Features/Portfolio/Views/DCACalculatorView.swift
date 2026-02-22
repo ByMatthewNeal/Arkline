@@ -202,7 +202,7 @@ struct DCACalculatorView: View {
             .disabled(!canProceed)
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 95)
+        .padding(.bottom, 120)
     }
 
     private var isLastStep: Bool {
