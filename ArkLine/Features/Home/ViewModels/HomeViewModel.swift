@@ -177,6 +177,16 @@ class HomeViewModel {
             relevantHistory.append(PortfolioHistoryPoint(date: Date(), value: portfolioValue))
         }
 
+        // If not enough history for the selected period, fall back to cost basis → current value
+        if relevantHistory.count < 2 && portfolioValue > 0 {
+            let totalCost = portfolioHoldings.reduce(0) { $0 + $1.totalCost }
+            if totalCost > 0 {
+                return [CGFloat(0), CGFloat(totalCost > portfolioValue ? 0 : 1)]
+            }
+            // No cost basis either — show a flat line so the chart area isn't empty
+            return [0.5, 0.5]
+        }
+
         guard relevantHistory.count >= 2 else { return [] }
 
         let values = relevantHistory.map { $0.value }
