@@ -22,6 +22,28 @@ enum DCAStrategyType: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - DCA Score Type (Risk Model Selection)
+enum DCAScoreType: String, CaseIterable, Identifiable {
+    case regression = "Regression Only"
+    case composite = "Composite (Multi-Factor)"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .regression: return "chart.line.uptrend.xyaxis"
+        case .composite: return "chart.bar.xaxis"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .regression: return "Uses logarithmic fair-value deviation only. Simple, time-tested model based on historical price trends."
+        case .composite: return "Combines 7 factors: regression, RSI, SMA, bull market bands, funding rate, fear & greed, and macro risk."
+        }
+    }
+}
+
 // MARK: - Risk Band for DCA
 enum DCABTCRiskBand: String, CaseIterable, Identifiable {
     case veryLow = "Very Low"
@@ -84,6 +106,7 @@ struct DCACalculation: Equatable {
 
     // Risk-based fields
     let riskBands: Set<DCABTCRiskBand>
+    let scoreType: DCAScoreType
 
     // Computed properties for time-based DCA
     var numberOfPurchases: Int {
@@ -324,6 +347,13 @@ extension DCAAsset {
         case .crypto: return cryptoAssets
         case .stock: return stockAssets
         case .commodity: return commodityAssets
+        }
+    }
+
+    /// Crypto assets with risk-level data (derived from AssetRiskConfig)
+    static var riskSupportedCryptoAssets: [DCAAsset] {
+        AssetRiskConfig.allConfigs.map { config in
+            DCAAsset(symbol: config.assetId, name: config.displayName, type: .crypto)
         }
     }
 }

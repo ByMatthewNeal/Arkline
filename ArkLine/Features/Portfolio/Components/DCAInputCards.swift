@@ -114,6 +114,7 @@ struct DCAAssetPickerCard: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedAsset: DCAAsset?
     @Binding var selectedType: DCAAssetType
+    var isRiskBased: Bool = false
     @State private var searchText = ""
     @State private var searchedAssets: [DCAAsset] = []
     @State private var topCryptoAssets: [DCAAsset] = []
@@ -127,6 +128,16 @@ struct DCAAssetPickerCard: View {
     }
 
     private var displayAssets: [DCAAsset] {
+        // Risk-based mode: only show supported crypto assets
+        if isRiskBased {
+            let assets = DCAAsset.riskSupportedCryptoAssets
+            if searchText.isEmpty { return assets }
+            return assets.filter {
+                $0.symbol.localizedCaseInsensitiveContains(searchText) ||
+                $0.name.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+
         // If we have search results, show them
         if !searchText.isEmpty && !searchedAssets.isEmpty {
             return searchedAssets
@@ -156,27 +167,45 @@ struct DCAAssetPickerCard: View {
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(textPrimary)
 
-            // Category tabs
-            HStack(spacing: 8) {
-                ForEach(DCAAssetType.allCases) { type in
-                    Button(action: {
-                        selectedType = type
-                        searchText = ""
-                        searchedAssets = []
-                    }) {
-                        Text(type.displayName)
-                            .font(AppFonts.body14Medium)
-                            .foregroundColor(selectedType == type ? .white : textPrimary)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(selectedType == type ? AppColors.accent : Color.clear)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .stroke(AppColors.textSecondary.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
+            if isRiskBased {
+                // Info banner for risk-based mode
+                HStack(spacing: 10) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("Risk-based DCA is only available for crypto assets with risk-level data.")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(AppColors.accent.opacity(0.08))
+                )
+            } else {
+                // Category tabs (only for time-based)
+                HStack(spacing: 8) {
+                    ForEach(DCAAssetType.allCases) { type in
+                        Button(action: {
+                            selectedType = type
+                            searchText = ""
+                            searchedAssets = []
+                        }) {
+                            Text(type.displayName)
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(selectedType == type ? .white : textPrimary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(selectedType == type ? AppColors.accent : Color.clear)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .stroke(AppColors.textSecondary.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                        }
                     }
                 }
             }
@@ -186,11 +215,13 @@ struct DCAAssetPickerCard: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(AppColors.textSecondary)
 
-                TextField("Search \(selectedType.displayName.lowercased())...", text: $searchText)
+                TextField(isRiskBased ? "Search supported assets..." : "Search \(selectedType.displayName.lowercased())...", text: $searchText)
                     .font(AppFonts.body14)
                     .foregroundColor(textPrimary)
                     .onChange(of: searchText) { _, newValue in
-                        performSearch(query: newValue)
+                        if !isRiskBased {
+                            performSearch(query: newValue)
+                        }
                     }
 
                 if isSearching || isLoadingTopCrypto {
@@ -221,7 +252,9 @@ struct DCAAssetPickerCard: View {
         .padding(20)
         .glassCard(cornerRadius: 16)
         .onAppear {
-            loadTopCryptoAssets()
+            if !isRiskBased {
+                loadTopCryptoAssets()
+            }
         }
     }
 

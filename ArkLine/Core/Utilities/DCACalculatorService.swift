@@ -150,7 +150,8 @@ struct DCACalculatorService {
             duration: duration,
             startDate: startDate,
             selectedDays: selectedDays,
-            riskBands: []
+            riskBands: [],
+            scoreType: .regression // Not used for time-based
         )
     }
 
@@ -159,6 +160,7 @@ struct DCACalculatorService {
         totalAmount: Double,
         asset: DCAAsset,
         riskBands: Set<DCABTCRiskBand>,
+        scoreType: DCAScoreType,
         targetPortfolioId: UUID?,
         targetPortfolioName: String?
     ) -> DCACalculation {
@@ -172,7 +174,8 @@ struct DCACalculatorService {
             duration: .oneYear, // Not used for risk-based
             startDate: Date(),
             selectedDays: [],
-            riskBands: riskBands
+            riskBands: riskBands,
+            scoreType: scoreType
         )
     }
 

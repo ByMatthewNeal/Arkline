@@ -186,6 +186,7 @@ struct DCACalculationSummaryCard: View {
         // Plan details
         VStack(spacing: 12) {
             SummaryRow(label: "Total Investment", value: calculation.formattedTotalAmount)
+            SummaryRow(label: "Risk Model", value: calculation.scoreType.rawValue)
             SummaryRow(label: "Risk Levels", value: calculation.riskBandDescription)
             SummaryRow(label: "Risk Range", value: calculation.riskRangeDescription)
         }

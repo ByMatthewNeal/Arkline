@@ -116,6 +116,120 @@ struct DCAStrategyOptionCard: View {
     }
 }
 
+// MARK: - Score Type Card
+struct DCAScoreTypeCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Binding var selectedScoreType: DCAScoreType
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Which risk model?")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            Text("Choose which scoring method should determine your risk levels. This affects when your DCA purchases are triggered.")
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textSecondary)
+
+            VStack(spacing: 12) {
+                ForEach(DCAScoreType.allCases) { scoreType in
+                    DCAScoreTypeOptionCard(
+                        scoreType: scoreType,
+                        isSelected: selectedScoreType == scoreType,
+                        onSelect: { selectedScoreType = scoreType }
+                    )
+                }
+            }
+
+            // Explanation
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "FFD600"))
+
+                Text("Regression is simpler and based on long-term fair value. Composite uses multiple market signals for a more nuanced view.")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+            )
+        }
+        .padding(20)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
+// MARK: - Score Type Option Card
+struct DCAScoreTypeOptionCard: View {
+    let scoreType: DCAScoreType
+    let isSelected: Bool
+    let onSelect: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? AppColors.accent.opacity(0.15) : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: scoreType.icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(isSelected ? AppColors.accent : AppColors.textSecondary)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(scoreType.rawValue)
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(textPrimary)
+
+                    Text(scoreType.description)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(3)
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+
+                    if isSelected {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? AppColors.accent.opacity(0.08) : (colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? AppColors.accent : Color.clear, lineWidth: 1.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Risk Band Card
 struct DCARiskBandCard: View {
     @Environment(\.colorScheme) var colorScheme

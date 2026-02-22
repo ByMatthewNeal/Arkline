@@ -14,7 +14,7 @@ struct DCACalculatorView: View {
     }
 
     private var totalSteps: Int {
-        calculatorState.strategyType == .timeBased ? 6 : 5
+        calculatorState.strategyType == .timeBased ? 6 : 6
     }
 
     var body: some View {
@@ -96,12 +96,13 @@ struct DCACalculatorView: View {
             // Step 3: Asset Selection
             DCAAssetPickerCard(
                 selectedAsset: $calculatorState.selectedAsset,
-                selectedType: $calculatorState.selectedAssetType
+                selectedType: $calculatorState.selectedAssetType,
+                isRiskBased: calculatorState.strategyType == .riskBased
             )
             .padding(.horizontal, 20)
 
         case 4:
-            // Step 4: Frequency (time-based) or Risk Bands (risk-based)
+            // Step 4: Frequency (time-based) or Score Type (risk-based)
             if calculatorState.strategyType == .timeBased {
                 DCAFrequencyCard(
                     selectedFrequency: $calculatorState.selectedFrequency,
@@ -109,17 +110,33 @@ struct DCACalculatorView: View {
                 )
                 .padding(.horizontal, 20)
             } else {
+                DCAScoreTypeCard(
+                    selectedScoreType: $calculatorState.selectedScoreType
+                )
+                .padding(.horizontal, 20)
+            }
+
+        case 5:
+            // Step 5: Duration (time-based) or Risk Bands (risk-based)
+            if calculatorState.strategyType == .timeBased {
+                DCADurationCard(selectedDuration: $calculatorState.selectedDuration)
+                    .padding(.horizontal, 20)
+            } else {
                 DCARiskBandCard(
                     selectedBands: $calculatorState.selectedRiskBands
                 )
                 .padding(.horizontal, 20)
             }
 
-        case 5:
-            // Step 5: Duration (time-based) or Portfolio (risk-based)
+        case 6:
+            // Step 6: Portfolio (time-based) or Portfolio (risk-based)
             if calculatorState.strategyType == .timeBased {
-                DCADurationCard(selectedDuration: $calculatorState.selectedDuration)
-                    .padding(.horizontal, 20)
+                DCAPortfolioPickerCard(
+                    selectedPortfolioId: $calculatorState.selectedPortfolioId,
+                    selectedPortfolioName: $calculatorState.selectedPortfolioName,
+                    availablePortfolios: calculatorState.availablePortfolios
+                )
+                .padding(.horizontal, 20)
             } else {
                 DCAPortfolioPickerCard(
                     selectedPortfolioId: $calculatorState.selectedPortfolioId,
@@ -129,22 +146,8 @@ struct DCACalculatorView: View {
                 .padding(.horizontal, 20)
             }
 
-        case 6:
-            // Step 6: Portfolio (time-based only) or Summary (risk-based)
-            if calculatorState.strategyType == .timeBased {
-                DCAPortfolioPickerCard(
-                    selectedPortfolioId: $calculatorState.selectedPortfolioId,
-                    selectedPortfolioName: $calculatorState.selectedPortfolioName,
-                    availablePortfolios: calculatorState.availablePortfolios
-                )
-                .padding(.horizontal, 20)
-            } else if let calculation = calculatorState.calculation {
-                DCACalculationSummaryCard(calculation: calculation)
-                    .padding(.horizontal, 20)
-            }
-
         case 7:
-            // Step 7: Summary (time-based only)
+            // Step 7: Summary (both strategies)
             if let calculation = calculatorState.calculation {
                 DCACalculationSummaryCard(calculation: calculation)
                     .padding(.horizontal, 20)
@@ -206,11 +209,7 @@ struct DCACalculatorView: View {
     }
 
     private var isLastStep: Bool {
-        if calculatorState.strategyType == .timeBased {
-            return calculatorState.currentStep == 7
-        } else {
-            return calculatorState.currentStep == 6
-        }
+        return calculatorState.currentStep == 7
     }
 
     // MARK: - Validation
@@ -233,22 +232,18 @@ struct DCACalculatorView: View {
                 }
                 return true
             } else {
-                return !calculatorState.selectedRiskBands.isEmpty
+                return true // Score type always has a default
             }
 
         case 5:
             if calculatorState.strategyType == .timeBased {
                 return calculatorState.selectedDuration != nil
             } else {
-                return calculatorState.selectedPortfolioId != nil
+                return !calculatorState.selectedRiskBands.isEmpty
             }
 
         case 6:
-            if calculatorState.strategyType == .timeBased {
-                return calculatorState.selectedPortfolioId != nil
-            } else {
-                return calculatorState.calculation != nil
-            }
+            return calculatorState.selectedPortfolioId != nil
 
         case 7:
             return calculatorState.calculation != nil
@@ -270,6 +265,20 @@ struct DCACalculatorView: View {
         if isLastStep {
             createReminder()
         } else {
+            // When leaving strategy step, validate asset selection
+            if calculatorState.currentStep == 2 {
+                if calculatorState.strategyType == .riskBased {
+                    // Clear asset if it's not a supported risk asset
+                    if let asset = calculatorState.selectedAsset {
+                        let supported = DCAAsset.riskSupportedCryptoAssets.map { $0.symbol }
+                        if !supported.contains(asset.symbol) {
+                            calculatorState.selectedAsset = nil
+                        }
+                    }
+                    calculatorState.selectedAssetType = .crypto
+                }
+            }
+
             withAnimation {
                 calculatorState.currentStep += 1
             }
@@ -365,7 +374,8 @@ class DCACalculatorState {
     var selectedFrequency: DCAFrequency = .weekly
     var selectedDays: Set<Weekday> = [.friday]
 
-    // Step 4 (risk-based): Risk Bands
+    // Step 4 (risk-based): Score Type & Risk Bands
+    var selectedScoreType: DCAScoreType = .regression
     var selectedRiskBands: Set<DCABTCRiskBand> = []
 
     // Step 5 (time-based): Duration
@@ -400,6 +410,7 @@ class DCACalculatorState {
                 totalAmount: amount,
                 asset: asset,
                 riskBands: selectedRiskBands,
+                scoreType: selectedScoreType,
                 targetPortfolioId: selectedPortfolioId,
                 targetPortfolioName: selectedPortfolioName
             )
