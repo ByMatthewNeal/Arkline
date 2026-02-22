@@ -351,6 +351,27 @@ final class APIPortfolioService: PortfolioServiceProtocol {
         }
     }
 
+    // MARK: - Update Transaction
+
+    func updateTransaction(_ transaction: Transaction) async throws {
+        guard supabase.isConfigured else {
+            throw AppError.networkError(underlying: NSError(domain: "SupabaseNotConfigured", code: 0))
+        }
+
+        do {
+            try await supabase.database
+                .from(SupabaseTable.transactions.rawValue)
+                .update(transaction)
+                .eq("id", value: transaction.id.uuidString)
+                .execute()
+
+            logInfo("Updated transaction: \(transaction.id)", category: .data)
+        } catch {
+            logError(error, context: "Update transaction", category: .data)
+            throw AppError.networkError(underlying: error)
+        }
+    }
+
     // MARK: - Delete Transaction
 
     func deleteTransaction(transactionId: UUID) async throws {

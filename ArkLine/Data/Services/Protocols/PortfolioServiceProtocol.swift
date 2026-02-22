@@ -61,6 +61,10 @@ protocol PortfolioServiceProtocol {
     /// - Returns: Created Transaction
     func addTransaction(_ transaction: Transaction) async throws -> Transaction
 
+    /// Updates an existing transaction
+    /// - Parameter transaction: Transaction with updated values
+    func updateTransaction(_ transaction: Transaction) async throws
+
     /// Deletes a transaction
     /// - Parameter transactionId: Transaction identifier to delete
     func deleteTransaction(transactionId: UUID) async throws

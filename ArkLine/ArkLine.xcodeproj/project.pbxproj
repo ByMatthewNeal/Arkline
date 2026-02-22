@@ -120,6 +120,7 @@
 		60BB9BA45A9AAD209518F05A /* VerificationCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F22EBA12E1763457DF0D385 /* VerificationCodeView.swift */; };
 		60FA4D7B2F1A36A021F57DEA /* DXYData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B6A3AE118E45271FE32F447 /* DXYData.swift */; };
 		628B818C69781D7CF29F53E0 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4910EA95756EA732F81117A /* TransactionDetailView.swift */; };
+		ED1TTRAN5ACT10N0002 /* EditTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1TTRAN5ACT10N0001 /* EditTransactionView.swift */; };
 		6381F7DC80B6158842FC7AE2 /* PercentageChangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78845800D59A83C7C923898 /* PercentageChangeView.swift */; };
 		667A5DC45682FDB0777B1C5A /* SentimentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5831D493E668A00494BC0398 /* SentimentViewModel.swift */; };
 		6733AADDD937D8717CF46DFF /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C7163E8A84CD6F7F613F75C /* AppError.swift */; };
@@ -602,6 +603,7 @@
 		A1F96E9F31319C54A3F5158D /* ImageAnnotationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImageAnnotationView.swift; sourceTree = "<group>"; };
 		A3AFC2989FCE10A165354DA1 /* ConfirmPasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmPasscodeView.swift; sourceTree = "<group>"; };
 		A4910EA95756EA732F81117A /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
+		ED1TTRAN5ACT10N0001 /* EditTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTransactionView.swift; sourceTree = "<group>"; };
 		A5323582A6D49F73210E861F /* CustomTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTextField.swift; sourceTree = "<group>"; };
 		A6AC5E0E4BBC995EA18E94FF /* HomeHeaderComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHeaderComponents.swift; sourceTree = "<group>"; };
 		A7B3C8D9E2F401568A3D7E01 /* AltcoinSeasonStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AltcoinSeasonStore.swift; sourceTree = "<group>"; };
@@ -949,6 +951,7 @@
 				ED1TP0RTF0L100001 /* EditPortfolioView.swift */,
 				2D81358145D7861C61D27013 /* SellAssetView.swift */,
 				A4910EA95756EA732F81117A /* TransactionDetailView.swift */,
+				ED1TTRAN5ACT10N0001 /* EditTransactionView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2362,6 +2365,7 @@
 				D58AF3584BA0350D9DB9CBF2 /* ToastOverlay.swift in Sources */,
 				8331DD57A5E7BAAC58068B76 /* Transaction.swift in Sources */,
 				628B818C69781D7CF29F53E0 /* TransactionDetailView.swift in Sources */,
+				ED1TTRAN5ACT10N0002 /* EditTransactionView.swift in Sources */,
 				8BA5B455BC87E71356E74F27 /* TransactionRow.swift in Sources */,
 				CE28F43A1DF2E58083FCF816 /* User.swift in Sources */,
 				BE89C92611163C89B015EF91 /* VIXData.swift in Sources */,

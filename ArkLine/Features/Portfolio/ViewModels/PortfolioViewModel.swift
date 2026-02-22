@@ -135,10 +135,7 @@ final class PortfolioViewModel {
         isRefreshing = true
         isLoading = true
         error = nil
-        defer {
-            isRefreshing = false
-            Task { @MainActor in self.isLoading = false }
-        }
+        defer { isRefreshing = false }
 
         do {
             // Get userId from Supabase auth
@@ -175,21 +172,21 @@ final class PortfolioViewModel {
                 do { fetchedHoldings = try await holdingsTask }
                 catch {
                     logError("Failed to fetch holdings: \(error)", category: .data)
-                    fetchedHoldings = []
+                    fetchedHoldings = self.holdings
                 }
 
                 let fetchedTransactions: [Transaction]
                 do { fetchedTransactions = try await transactionsTask }
                 catch {
                     logError("Failed to fetch transactions: \(error)", category: .data)
-                    fetchedTransactions = []
+                    fetchedTransactions = self.transactions
                 }
 
                 let history: [PortfolioHistoryPoint]
                 do { history = try await historyTask }
                 catch {
                     logError("Failed to fetch portfolio history: \(error)", category: .data)
-                    history = []
+                    history = self.historyPoints
                 }
 
                 // Refresh live prices for holdings
@@ -661,6 +658,42 @@ final class PortfolioViewModel {
         } catch {
             await MainActor.run {
                 self.error = error as? AppError ?? .transactionFailed
+            }
+        }
+    }
+
+    func deleteTransaction(_ transaction: Transaction) async {
+        do {
+            try await portfolioService.deleteTransaction(transactionId: transaction.id)
+
+            await MainActor.run {
+                self.transactions.removeAll { $0.id == transaction.id }
+            }
+
+            // Refresh holdings since removing a transaction affects quantity/avg price
+            await refresh()
+        } catch {
+            await MainActor.run {
+                self.error = AppError.from(error)
+            }
+        }
+    }
+
+    func updateTransaction(_ transaction: Transaction) async {
+        do {
+            try await portfolioService.updateTransaction(transaction)
+
+            await MainActor.run {
+                if let index = self.transactions.firstIndex(where: { $0.id == transaction.id }) {
+                    self.transactions[index] = transaction
+                }
+            }
+
+            // Refresh holdings since editing a transaction affects quantity/avg price
+            await refresh()
+        } catch {
+            await MainActor.run {
+                self.error = AppError.from(error)
             }
         }
     }

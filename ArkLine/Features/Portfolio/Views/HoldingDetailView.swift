@@ -9,9 +9,15 @@ struct HoldingDetailView: View {
     @State private var showSellSheet = false
     @State private var selectedTransaction: Transaction?
     @State private var showTransactionDetail = false
+    @State private var transactionToDelete: Transaction?
+    @State private var showDeleteConfirmation = false
 
     private var currency: String {
         appState.preferredCurrency
+    }
+
+    private var liveHolding: PortfolioHolding {
+        viewModel.holdings.first(where: { $0.id == holding.id }) ?? holding
     }
 
     var holdingTransactions: [Transaction] {
@@ -29,14 +35,14 @@ struct HoldingDetailView: View {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 12) {
-                    CoinIconView(symbol: holding.symbol, size: 64)
+                    CoinIconView(symbol: liveHolding.symbol, size: 64)
 
-                    Text(holding.name)
+                    Text(liveHolding.name)
                         .font(AppFonts.title24)
                         .fontWeight(.bold)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text(holding.symbol.uppercased())
+                    Text(liveHolding.symbol.uppercased())
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -50,7 +56,7 @@ struct HoldingDetailView: View {
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
 
-                        Text(holding.currentValue.asCurrency(code: currency))
+                        Text(liveHolding.currentValue.asCurrency(code: currency))
                             .font(AppFonts.number44)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                     }
@@ -59,11 +65,11 @@ struct HoldingDetailView: View {
 
                     // Stats Grid
                     HStack(spacing: 0) {
-                        StatItem(title: "Quantity", value: holding.quantity.asQuantity)
+                        StatItem(title: "Quantity", value: liveHolding.quantity.asQuantity)
                         Divider().frame(height: 40)
-                        StatItem(title: "Avg. Price", value: (holding.averageBuyPrice ?? 0).asCurrency(code: currency))
+                        StatItem(title: "Avg. Price", value: (liveHolding.averageBuyPrice ?? 0).asCurrency(code: currency))
                         Divider().frame(height: 40)
-                        StatItem(title: "Current Price", value: (holding.currentPrice ?? 0).asCurrency(code: currency))
+                        StatItem(title: "Current Price", value: (liveHolding.currentPrice ?? 0).asCurrency(code: currency))
                     }
 
                     Divider()
@@ -76,12 +82,12 @@ struct HoldingDetailView: View {
                                 .foregroundColor(AppColors.textSecondary)
 
                             HStack(spacing: 6) {
-                                Image(systemName: holding.isProfit ? "arrow.up.right" : "arrow.down.right")
+                                Image(systemName: liveHolding.isProfit ? "arrow.up.right" : "arrow.down.right")
                                     .font(.system(size: 14))
-                                Text(holding.profitLoss.asCurrency(code: currency))
+                                Text(liveHolding.profitLoss.asCurrency(code: currency))
                                     .font(AppFonts.title18SemiBold)
                             }
-                            .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+                            .foregroundColor(liveHolding.isProfit ? AppColors.success : AppColors.error)
                         }
 
                         Spacer()
@@ -91,14 +97,14 @@ struct HoldingDetailView: View {
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textSecondary)
 
-                            Text("\(holding.isProfit ? "+" : "")\(holding.profitLossPercentage, specifier: "%.2f")%")
+                            Text("\(liveHolding.isProfit ? "+" : "")\(liveHolding.profitLossPercentage, specifier: "%.2f")%")
                                 .font(AppFonts.title18SemiBold)
-                                .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+                                .foregroundColor(liveHolding.isProfit ? AppColors.success : AppColors.error)
                         }
                     }
 
                     // 24h Change
-                    if let change24h = holding.priceChangePercentage24h {
+                    if let change24h = liveHolding.priceChangePercentage24h {
                         Divider()
 
                         HStack {
@@ -126,11 +132,20 @@ struct HoldingDetailView: View {
                         .padding(.horizontal, 20)
 
                     if holdingTransactions.isEmpty {
-                        Text("No transactions for this asset")
-                            .font(AppFonts.body14)
-                            .foregroundColor(AppColors.textSecondary)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 20)
+                        if viewModel.isLoading {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding(.vertical, 20)
+                                Spacer()
+                            }
+                        } else {
+                            Text("No transactions for this asset")
+                                .font(AppFonts.body14)
+                                .foregroundColor(AppColors.textSecondary)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 20)
+                        }
                     } else {
                         VStack(spacing: 8) {
                             ForEach(holdingTransactions) { transaction in
@@ -141,6 +156,14 @@ struct HoldingDetailView: View {
                                     TransactionRow(transaction: transaction)
                                 }
                                 .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        transactionToDelete = transaction
+                                        showDeleteConfirmation = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                         .padding(.horizontal, 20)
@@ -151,7 +174,7 @@ struct HoldingDetailView: View {
             }
         }
         .background(AppColors.background(colorScheme))
-        .navigationTitle(holding.symbol.uppercased())
+        .navigationTitle(liveHolding.symbol.uppercased())
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -165,16 +188,32 @@ struct HoldingDetailView: View {
         }
         #endif
         .sheet(isPresented: $showSellSheet) {
-            SellAssetView(viewModel: viewModel, holding: holding)
+            SellAssetView(viewModel: viewModel, holding: liveHolding)
         }
         .sheet(isPresented: $showTransactionDetail) {
             if let transaction = selectedTransaction {
                 TransactionDetailView(
                     transaction: transaction,
                     portfolioName: viewModel.selectedPortfolio?.name,
-                    destinationPortfolioName: destinationPortfolioName(for: transaction)
+                    destinationPortfolioName: destinationPortfolioName(for: transaction),
+                    onDelete: { tx in
+                        Task { await viewModel.deleteTransaction(tx) }
+                    },
+                    onUpdate: { tx in
+                        Task { await viewModel.updateTransaction(tx) }
+                    }
                 )
             }
+        }
+        .alert("Delete Transaction", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                if let tx = transactionToDelete {
+                    Task { await viewModel.deleteTransaction(tx) }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure? This will recalculate your holdings.")
         }
     }
 }

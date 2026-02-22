@@ -87,6 +87,13 @@ final class MockPortfolioService: PortfolioServiceProtocol {
         return transaction
     }
 
+    func updateTransaction(_ transaction: Transaction) async throws {
+        try await simulateNetworkDelay()
+        if let index = mockTransactions.firstIndex(where: { $0.id == transaction.id }) {
+            mockTransactions[index] = transaction
+        }
+    }
+
     func deleteTransaction(transactionId: UUID) async throws {
         try await simulateNetworkDelay()
         mockTransactions.removeAll { $0.id == transactionId }

@@ -220,6 +220,8 @@ struct PortfolioTransactionsContent: View {
     @Bindable var viewModel: PortfolioViewModel
     @State private var selectedTransaction: Transaction?
     @State private var showTransactionDetail = false
+    @State private var transactionToDelete: Transaction?
+    @State private var showDeleteConfirmation = false
 
     private func destinationPortfolioName(for transaction: Transaction) -> String? {
         guard let destId = transaction.destinationPortfolioId else { return nil }
@@ -261,7 +263,7 @@ struct PortfolioTransactionsContent: View {
                 .padding(.top, 20)
             } else {
                 // Transaction List
-                LazyVStack(spacing: 8) {
+                List {
                     ForEach(viewModel.filteredTransactions) { transaction in
                         Button(action: {
                             selectedTransaction = transaction
@@ -270,10 +272,22 @@ struct PortfolioTransactionsContent: View {
                             TransactionRow(transaction: transaction)
                         }
                         .buttonStyle(.plain)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                transactionToDelete = transaction
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                         .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
                     }
                 }
-                .padding(.horizontal, 20)
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
         .padding(.top, 16)
@@ -282,9 +296,25 @@ struct PortfolioTransactionsContent: View {
                 TransactionDetailView(
                     transaction: transaction,
                     portfolioName: viewModel.selectedPortfolio?.name,
-                    destinationPortfolioName: destinationPortfolioName(for: transaction)
+                    destinationPortfolioName: destinationPortfolioName(for: transaction),
+                    onDelete: { tx in
+                        Task { await viewModel.deleteTransaction(tx) }
+                    },
+                    onUpdate: { tx in
+                        Task { await viewModel.updateTransaction(tx) }
+                    }
                 )
             }
+        }
+        .alert("Delete Transaction", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                if let tx = transactionToDelete {
+                    Task { await viewModel.deleteTransaction(tx) }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure? This will recalculate your holdings.")
         }
     }
 }

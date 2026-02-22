@@ -7,15 +7,24 @@ struct TransactionDetailView: View {
     let transaction: Transaction
     let portfolioName: String?
     let destinationPortfolioName: String?
+    var onDelete: ((Transaction) -> Void)?
+    var onUpdate: ((Transaction) -> Void)?
+
+    @State private var showDeleteConfirmation = false
+    @State private var showEditSheet = false
 
     init(
         transaction: Transaction,
         portfolioName: String? = nil,
-        destinationPortfolioName: String? = nil
+        destinationPortfolioName: String? = nil,
+        onDelete: ((Transaction) -> Void)? = nil,
+        onUpdate: ((Transaction) -> Void)? = nil
     ) {
         self.transaction = transaction
         self.portfolioName = portfolioName
         self.destinationPortfolioName = destinationPortfolioName
+        self.onDelete = onDelete
+        self.onUpdate = onUpdate
     }
 
     private var isRealEstate: Bool {
@@ -60,6 +69,24 @@ struct TransactionDetailView: View {
                         notesCard(notes)
                     }
 
+                    // Delete Button
+                    if onDelete != nil {
+                        Button(action: { showDeleteConfirmation = true }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                Text("Delete Transaction")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(AppColors.error)
+                            .frame(maxWidth: .infinity)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(AppColors.error.opacity(0.1))
+                            )
+                        }
+                    }
+
                     Spacer(minLength: 40)
                 }
                 .padding()
@@ -72,6 +99,27 @@ struct TransactionDetailView: View {
                     Button("Done") { dismiss() }
                         .foregroundColor(AppColors.accent)
                 }
+                if onUpdate != nil {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Edit") { showEditSheet = true }
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
+            .sheet(isPresented: $showEditSheet) {
+                EditTransactionView(transaction: transaction) { updated in
+                    onUpdate?(updated)
+                    dismiss()
+                }
+            }
+            .alert("Delete Transaction", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    onDelete?(transaction)
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to delete this transaction? This will recalculate your holdings.")
             }
         }
     }
