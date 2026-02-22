@@ -594,13 +594,15 @@ class HomeViewModel {
                 if self.selectedPortfolio == nil, let first = fetchedPortfolios.first {
                     self.selectedPortfolio = first
                 }
-                self.hasLoadedPortfolios = true
             }
 
             // Load real holdings data for the selected portfolio
             if let portfolio = selectedPortfolio {
                 await loadPortfolioData(for: portfolio)
             }
+
+            // Mark loaded AFTER portfolio data (value) has been fetched
+            await MainActor.run { self.hasLoadedPortfolios = true }
         } catch {
             logError("Failed to load portfolios: \(error)", category: .data)
             await MainActor.run { self.hasLoadedPortfolios = true }
