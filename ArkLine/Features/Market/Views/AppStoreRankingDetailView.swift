@@ -55,7 +55,6 @@ struct AppStoreRankingDetailView: View {
         .background {
             ZStack {
                 MeshGradientBackground()
-                if isDarkMode { BrushEffectOverlay() }
             }
             .ignoresSafeArea()
         }

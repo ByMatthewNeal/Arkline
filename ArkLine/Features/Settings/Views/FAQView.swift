@@ -22,7 +22,6 @@ struct FAQView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
                 ForEach(faqs) { faq in
                     FAQRow(faq: faq)

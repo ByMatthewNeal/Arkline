@@ -24,11 +24,6 @@ struct SettingsView: View {
                 // Animated mesh gradient background
                 MeshGradientBackground()
 
-                // Brush effect overlay for dark mode
-                if isDarkMode {
-                    BrushEffectOverlay()
-                }
-
                 // Content
                 List {
                 // General Section

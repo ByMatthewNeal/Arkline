@@ -12,7 +12,6 @@ struct AdminDashboardView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
 
             List {
                 // Quick Actions

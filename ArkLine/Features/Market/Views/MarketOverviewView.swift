@@ -18,11 +18,6 @@ struct MarketOverviewView: View {
                 // Animated mesh gradient background
                 MeshGradientBackground()
 
-                // Brush effect overlay for dark mode
-                if isDarkMode {
-                    BrushEffectOverlay()
-                }
-
                 // Content
                 ScrollViewReader { scrollProxy in
                 ScrollView {

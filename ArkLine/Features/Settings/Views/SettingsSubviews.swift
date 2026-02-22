@@ -46,7 +46,6 @@ struct CurrencySelectView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
             ForEach(viewModel.currencyOptions, id: \.0) { code, name in
                 Button(action: {
@@ -104,7 +103,6 @@ struct ModeSettingsView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
             ForEach(Constants.DarkModePreference.allCases, id: \.self) { mode in
                 Button(action: {
@@ -165,7 +163,6 @@ struct RiskLevelSelectView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
             Section {
                 ForEach(availableCoins, id: \.self) { coin in

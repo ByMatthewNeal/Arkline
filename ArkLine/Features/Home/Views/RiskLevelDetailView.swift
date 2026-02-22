@@ -164,7 +164,6 @@ struct RiskLevelChartView: View {
             ZStack {
                 // Background
                 MeshGradientBackground()
-                if isDarkMode { BrushEffectOverlay() }
 
                 ScrollView {
                     VStack(spacing: ArkSpacing.xl) {

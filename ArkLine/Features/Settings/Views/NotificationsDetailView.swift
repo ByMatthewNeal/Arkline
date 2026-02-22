@@ -28,7 +28,6 @@ struct NotificationsDetailView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
                 Section {
                     Toggle(isOn: $dcaReminders) {

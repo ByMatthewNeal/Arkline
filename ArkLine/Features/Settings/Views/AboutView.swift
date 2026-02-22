@@ -13,7 +13,6 @@ struct AboutView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             VStack(spacing: 20) {
                 Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
                     .font(.system(size: 80))

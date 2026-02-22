@@ -19,7 +19,6 @@ struct ChangePasscodeView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
             List {
             Section {
                 SecureField("Current Passcode", text: $currentPasscode)

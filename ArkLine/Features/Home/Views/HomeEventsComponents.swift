@@ -334,10 +334,6 @@ struct AllEventsView: View {
         ZStack {
             MeshGradientBackground()
 
-            if isDarkMode {
-                BrushEffectOverlay()
-            }
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     ForEach(groupedEvents, id: \.key) { group in
@@ -489,10 +485,6 @@ struct EventInfoView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-
-            if isDarkMode {
-                BrushEffectOverlay()
-            }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {

@@ -16,7 +16,6 @@ struct NewsTopicsSettingsView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
 
             ScrollView {
                 VStack(spacing: ArkSpacing.xl) {

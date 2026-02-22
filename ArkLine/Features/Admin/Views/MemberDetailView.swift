@@ -14,7 +14,6 @@ struct MemberDetailView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
 
             ScrollView {
                 VStack(spacing: ArkSpacing.lg) {

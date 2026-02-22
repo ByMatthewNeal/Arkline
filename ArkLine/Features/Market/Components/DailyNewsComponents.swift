@@ -52,10 +52,6 @@ struct AllNewsView: View {
         ZStack {
             MeshGradientBackground()
 
-            if isDarkMode {
-                BrushEffectOverlay()
-            }
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // Filter tabs
@@ -359,10 +355,6 @@ private struct NewsArticlePage: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-
-            if isDarkMode {
-                BrushEffectOverlay()
-            }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {

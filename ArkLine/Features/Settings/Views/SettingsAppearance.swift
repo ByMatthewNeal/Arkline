@@ -20,7 +20,6 @@ struct AvatarColorSelectView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
 
             ScrollView {
                 VStack(spacing: 24) {
@@ -113,7 +112,6 @@ struct ChartColorSelectView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
-            if isDarkMode { BrushEffectOverlay() }
 
             ScrollView {
                 VStack(spacing: 24) {
