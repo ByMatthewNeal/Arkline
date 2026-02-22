@@ -17,6 +17,7 @@ private final class FailingPortfolioService: PortfolioServiceProtocol {
     func updateHolding(_ holding: PortfolioHolding) async throws { throw AppError.apiUnavailable }
     func deleteHolding(holdingId: UUID) async throws { throw AppError.apiUnavailable }
     func addTransaction(_ transaction: Transaction) async throws -> Transaction { throw AppError.apiUnavailable }
+    func updateTransaction(_ transaction: Transaction) async throws { throw AppError.apiUnavailable }
     func deleteTransaction(transactionId: UUID) async throws { throw AppError.apiUnavailable }
     func refreshHoldingPrices(holdings: [PortfolioHolding]) async throws -> [PortfolioHolding] { throw AppError.apiUnavailable }
     func recordPortfolioSnapshot(portfolioId: UUID, totalValue: Double) async throws { throw AppError.apiUnavailable }

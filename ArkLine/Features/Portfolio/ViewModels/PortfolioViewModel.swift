@@ -670,6 +670,38 @@ final class PortfolioViewModel {
                 self.transactions.removeAll { $0.id == transaction.id }
             }
 
+            // Recalculate or remove the holding after deleting the transaction
+            if let holdingId = transaction.holdingId {
+                let remainingForHolding = await MainActor.run {
+                    self.transactions.filter { $0.holdingId == holdingId }
+                }
+
+                let hasBuys = remainingForHolding.contains { $0.type == .buy || $0.type == .transferIn }
+
+                if !hasBuys {
+                    // No buy transactions remain — delete the holding
+                    try await portfolioService.deleteHolding(holdingId: holdingId)
+                } else {
+                    // Recalculate quantity and weighted average buy price
+                    let buyTransactions = remainingForHolding.filter { $0.type == .buy || $0.type == .transferIn }
+                    let sellTransactions = remainingForHolding.filter { $0.type == .sell || $0.type == .transferOut }
+
+                    let totalBought = buyTransactions.reduce(0.0) { $0 + $1.quantity }
+                    let totalSold = sellTransactions.reduce(0.0) { $0 + $1.quantity }
+                    let newQuantity = max(0, totalBought - totalSold)
+
+                    let totalCost = buyTransactions.reduce(0.0) { $0 + ($1.quantity * $1.pricePerUnit) }
+                    let avgBuyPrice = totalBought > 0 ? totalCost / totalBought : 0
+
+                    if let holding = holdings.first(where: { $0.id == holdingId }) {
+                        var updatedHolding = holding
+                        updatedHolding.quantity = newQuantity
+                        updatedHolding.averageBuyPrice = avgBuyPrice
+                        try await portfolioService.updateHolding(updatedHolding)
+                    }
+                }
+            }
+
             // Refresh holdings since removing a transaction affects quantity/avg price
             await refresh()
         } catch {

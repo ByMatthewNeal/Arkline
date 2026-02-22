@@ -347,6 +347,7 @@ final class DCACalculatorTests: XCTestCase {
             totalAmount: 10000,
             asset: .bitcoin,
             riskBands: [.veryLow, .low],
+            scoreType: .regression,
             targetPortfolioId: nil,
             targetPortfolioName: nil
         )
