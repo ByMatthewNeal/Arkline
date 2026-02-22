@@ -329,6 +329,7 @@
 		DD1111111111111111111101 /* HomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1111111111111111111102 /* HomeViewModelTests.swift */; };
 		DD2222222222222222222201 /* SentimentViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2222222222222222222202 /* SentimentViewModelTests.swift */; };
 		DD3333333333333333333301 /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3333333333333333333302 /* AuthViewModelTests.swift */; };
+		DD4444444444444444444401 /* PortfolioViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4444444444444444444402 /* PortfolioViewModelTests.swift */; };
 		DD4E5F6001 /* ProfileComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4E5F6002 /* ProfileComponents.swift */; };
 		DD4E5F6003 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4E5F6004 /* EditProfileView.swift */; };
 		DD4E5F6005 /* BroadcastFeedComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4E5F6006 /* BroadcastFeedComponents.swift */; };
@@ -722,6 +723,7 @@
 		DD189DDCC3B8120CC26673EC /* VoiceRecordingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceRecordingService.swift; sourceTree = "<group>"; };
 		DD2222222222222222222202 /* SentimentViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SentimentViewModelTests.swift; path = ../ArkLineTests/ViewModels/SentimentViewModelTests.swift; sourceTree = "<group>"; };
 		DD3333333333333333333302 /* AuthViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AuthViewModelTests.swift; path = ../ArkLineTests/ViewModels/AuthViewModelTests.swift; sourceTree = "<group>"; };
+		DD4444444444444444444402 /* PortfolioViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = PortfolioViewModelTests.swift; path = ../ArkLineTests/ViewModels/PortfolioViewModelTests.swift; sourceTree = "<group>"; };
 		DD4E5F6002 /* ProfileComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileComponents.swift; sourceTree = "<group>"; };
 		DD4E5F6004 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		DD4E5F6006 /* BroadcastFeedComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastFeedComponents.swift; sourceTree = "<group>"; };
@@ -1497,6 +1499,7 @@
 				DD1111111111111111111102 /* HomeViewModelTests.swift */,
 				DD2222222222222222222202 /* SentimentViewModelTests.swift */,
 				DD3333333333333333333302 /* AuthViewModelTests.swift */,
+				DD4444444444444444444402 /* PortfolioViewModelTests.swift */,
 			);
 			name = ArkLineTests;
 			sourceTree = "<group>";
@@ -2080,6 +2083,7 @@
 				DD1111111111111111111101 /* HomeViewModelTests.swift in Sources */,
 				DD2222222222222222222201 /* SentimentViewModelTests.swift in Sources */,
 				DD3333333333333333333301 /* AuthViewModelTests.swift in Sources */,
+				DD4444444444444444444401 /* PortfolioViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
