@@ -7,6 +7,32 @@ final class APIDCAService: DCAServiceProtocol {
     // MARK: - Dependencies
     private let supabase = SupabaseManager.shared
 
+    /// Custom decoder that handles PostgreSQL `time` columns (returned as "HH:mm:ss")
+    /// alongside normal ISO 8601 timestamps for other date fields.
+    private static let dcaDecoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        let timeFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            return f
+        }()
+        let iso8601WithFrac = ISO8601DateFormatter()
+        iso8601WithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let iso8601 = ISO8601DateFormatter()
+        iso8601.formatOptions = [.withInternetDateTime]
+
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            if let d = timeFormatter.date(from: string) { return d }
+            if let d = iso8601WithFrac.date(from: string) { return d }
+            if let d = iso8601.date(from: string) { return d }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
+        }
+        return decoder
+    }()
+
     // MARK: - Time-Based DCA Methods
 
     func fetchReminders(userId: UUID) async throws -> [DCAReminder] {
@@ -16,15 +42,16 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
-            let reminders: [DCAReminder] = try await supabase.database
+            let data = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
                 .eq("user_id", value: userId.uuidString)
                 .order("created_at", ascending: false)
                 .limit(100)
                 .execute()
-                .value
+                .data
 
+            let reminders = try Self.dcaDecoder.decode([DCAReminder].self, from: data)
             logInfo("Fetched \(reminders.count) DCA reminders", category: .data)
             return reminders
         } catch {
@@ -40,16 +67,16 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
-            let reminders: [DCAReminder] = try await supabase.database
+            let data = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
                 .eq("user_id", value: userId.uuidString)
                 .eq("is_active", value: true)
                 .order("next_reminder_date", ascending: true)
                 .execute()
-                .value
+                .data
 
-            return reminders
+            return try Self.dcaDecoder.decode([DCAReminder].self, from: data)
         } catch {
             logError(error, context: "Fetch active DCA reminders", category: .data)
             throw AppError.networkError(underlying: error)
@@ -68,7 +95,7 @@ final class APIDCAService: DCAServiceProtocol {
                 return []
             }
 
-            let reminders: [DCAReminder] = try await supabase.database
+            let data = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
                 .eq("user_id", value: userId.uuidString)
@@ -76,9 +103,9 @@ final class APIDCAService: DCAServiceProtocol {
                 .gte("next_reminder_date", value: today.ISO8601Format())
                 .lt("next_reminder_date", value: tomorrow.ISO8601Format())
                 .execute()
-                .value
+                .data
 
-            return reminders
+            return try Self.dcaDecoder.decode([DCAReminder].self, from: data)
         } catch {
             logError(error, context: "Fetch today's DCA reminders", category: .data)
             throw AppError.networkError(underlying: error)
@@ -91,16 +118,33 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
-            let createdReminders: [DCAReminder] = try await supabase.database
+            // Insert without decoding — the `time` column can't round-trip through
+            // the Supabase SDK's ISO 8601 date decoder, so we skip .select().value
+            // and construct the result from the request data.
+            try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .insert(request)
-                .select()
                 .execute()
-                .value
 
-            guard let created = createdReminders.first else {
-                throw AppError.custom(message: "Failed to create DCA reminder")
-            }
+            // Parse the time string back to a Date for the local model
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            let notifDate = f.date(from: request.notificationTime) ?? Date()
+
+            let created = DCAReminder(
+                userId: request.userId,
+                symbol: request.symbol,
+                name: request.name,
+                amount: request.amount,
+                frequency: DCAFrequency(rawValue: request.frequency) ?? .daily,
+                totalPurchases: request.totalPurchases,
+                completedPurchases: 0,
+                notificationTime: notifDate,
+                startDate: request.startDate,
+                nextReminderDate: request.nextReminderDate,
+                isActive: true
+            )
 
             logInfo("Created DCA reminder: \(created.name)", category: .data)
             return created
