@@ -732,10 +732,17 @@ final class PortfolioViewModel {
 
     func deleteHolding(_ holding: PortfolioHolding) async {
         do {
+            // Delete associated transactions first
+            let holdingTransactions = transactions.filter { $0.holdingId == holding.id }
+            for tx in holdingTransactions {
+                try await portfolioService.deleteTransaction(transactionId: tx.id)
+            }
+
             try await portfolioService.deleteHolding(holdingId: holding.id)
 
             await MainActor.run {
                 self.holdings.removeAll { $0.id == holding.id }
+                self.transactions.removeAll { $0.holdingId == holding.id }
                 self.allocations = PortfolioAllocation.calculate(from: self.holdings)
             }
         } catch {

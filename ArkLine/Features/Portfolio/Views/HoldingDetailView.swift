@@ -11,6 +11,8 @@ struct HoldingDetailView: View {
     @State private var showTransactionDetail = false
     @State private var transactionToDelete: Transaction?
     @State private var showDeleteConfirmation = false
+    @State private var showDeleteHoldingConfirmation = false
+    @Environment(\.dismiss) private var dismiss
 
     private var currency: String {
         appState.preferredCurrency
@@ -179,10 +181,17 @@ struct HoldingDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showSellSheet = true }) {
-                    Text("Sell")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(AppColors.error)
+                HStack(spacing: 16) {
+                    Button(action: { showDeleteHoldingConfirmation = true }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.error)
+                    }
+                    Button(action: { showSellSheet = true }) {
+                        Text("Sell")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(AppColors.error)
+                    }
                 }
             }
         }
@@ -214,6 +223,17 @@ struct HoldingDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("Are you sure? This will recalculate your holdings.")
+        }
+        .alert("Delete \(liveHolding.symbol.uppercased())?", isPresented: $showDeleteHoldingConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task {
+                    await viewModel.deleteHolding(liveHolding)
+                    dismiss()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently remove \(liveHolding.name) and all its transactions from your portfolio.")
         }
     }
 }
