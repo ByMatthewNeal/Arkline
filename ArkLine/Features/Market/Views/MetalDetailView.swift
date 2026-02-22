@@ -80,7 +80,7 @@ struct MetalDetailView: View {
                     .foregroundColor(asset.priceChange24h != 0 ? (isPositive ? AppColors.success : AppColors.error) : AppColors.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
 
                 // Chart
                 VStack(spacing: 16) {
@@ -100,7 +100,7 @@ struct MetalDetailView: View {
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
                 .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
 
                 // Technical Analysis
@@ -142,7 +142,8 @@ struct MetalDetailView: View {
 
                     Spacer(minLength: 100)
                 }
-                .padding(.top, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 20)
             }
         }
         .background(AppColors.background(colorScheme))
@@ -383,7 +384,7 @@ struct MetalDetailHeader: View {
                 .background(AppColors.cardBackground(colorScheme))
                 .cornerRadius(8)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
     }
 
     private func metalElementSymbol(for symbol: String) -> String {
