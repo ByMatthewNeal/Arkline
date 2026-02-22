@@ -315,8 +315,7 @@ struct DCACalculatorView: View {
             totalPurchases: calculation.numberOfPurchases,
             notificationTime: Date(),
             startDate: calculation.startDate,
-            nextReminderDate: calculation.purchaseDates.first ?? Date(),
-            portfolioId: calculation.targetPortfolioId
+            nextReminderDate: calculation.purchaseDates.first ?? Date()
         )
 
         _ = try await dcaService.createReminder(request)
