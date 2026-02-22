@@ -87,10 +87,10 @@ class HomeViewModel {
     var selectedPortfolio: Portfolio?
     var selectedTimePeriod: TimePeriod = .day
 
-    // Portfolio Summary (base value for selected portfolio)
+    // Portfolio Summary (real data from Supabase)
     var portfolioValue: Double = 0
-    private var basePortfolioChange: Double = 0
-    private var basePortfolioChangePercent: Double = 0
+    private var portfolioHoldings: [PortfolioHolding] = []
+    private var portfolioHistory: [PortfolioHistoryPoint] = []
 
     // Time-period adjusted values (computed)
     var portfolioChange: Double {
@@ -101,137 +101,92 @@ class HomeViewModel {
         getChangeForTimePeriod(selectedTimePeriod).percent
     }
 
-    // Portfolio Chart Data - computed based on selected time period
+    // Portfolio Chart Data - computed from real portfolio history
     var portfolioChartData: [CGFloat] {
-        generateChartData(for: selectedTimePeriod, isPositive: portfolioChange >= 0)
+        generateChartData(for: selectedTimePeriod)
     }
 
-    /// Returns mock change data for each time period
-    /// In production, this would fetch historical data from an API
+    /// Returns real change data for each time period using holdings and portfolio history
     private func getChangeForTimePeriod(_ period: TimePeriod) -> (amount: Double, percent: Double) {
-        // Use portfolio name as seed for consistent data
-        // Use overflow addition (&+) to prevent arithmetic overflow crash
-        let seed = (selectedPortfolio?.name ?? "Main").hashValue &+ period.hashValue
-        srand48(seed)
+        guard portfolioValue > 0 else { return (0, 0) }
 
-        // Base the mock data on realistic scenarios
         switch period {
         case .hour:
-            // Small fluctuations for 1 hour
-            let percent = (drand48() - 0.4) * 0.8  // -0.32% to +0.48%
-            let amount = portfolioValue * percent / 100
-            return (amount, percent)
+            // Approximate: 1/24th of the daily change
+            let dayChange = calculateDayChange()
+            let hourChange = dayChange / 24.0
+            let previousValue = portfolioValue - hourChange
+            let hourPercent = previousValue > 0 ? (hourChange / previousValue) * 100 : 0
+            return (hourChange, hourPercent)
 
         case .day:
-            // Typical daily movement
-            let percent = (drand48() - 0.35) * 4.0  // -1.4% to +2.6%
-            let amount = portfolioValue * percent / 100
-            return (amount, percent)
-
-        case .week:
-            // Weekly movement - slightly larger
-            let percent = (drand48() - 0.3) * 8.0  // -2.4% to +5.6%
-            let amount = portfolioValue * percent / 100
-            return (amount, percent)
-
-        case .month:
-            // Monthly movement
-            let percent = (drand48() - 0.25) * 15.0  // -3.75% to +11.25%
-            let amount = portfolioValue * percent / 100
-            return (amount, percent)
-
-        case .ytd:
-            // Year-to-date - use current month to vary
-            let monthProgress = Double(Calendar.current.component(.month, from: Date())) / 12.0
-            let basePercent = (drand48() - 0.2) * 30.0 * monthProgress  // Scales with year progress
-            let amount = portfolioValue * basePercent / 100
-            return (amount, basePercent)
-
-        case .year:
-            // Full year - larger swings possible
-            let percent = (drand48() - 0.15) * 50.0  // -7.5% to +42.5%
-            let amount = portfolioValue * percent / 100
-            return (amount, percent)
+            // Use 24h price change from holdings
+            let dayChange = calculateDayChange()
+            let previousValue = portfolioValue - dayChange
+            let dayPercent = previousValue > 0 ? (dayChange / previousValue) * 100 : 0
+            return (dayChange, dayPercent)
 
         case .all:
-            // All time - typically positive for long-term holdings
-            let percent = (drand48() * 0.8 + 0.2) * 150.0  // +30% to +150%
-            let amount = portfolioValue * percent / 100
-            return (amount, percent)
+            // All-time: compare current value to total cost basis
+            let totalCost = portfolioHoldings.reduce(0) { $0 + $1.totalCost }
+            guard totalCost > 0 else { return (0, 0) }
+            let change = portfolioValue - totalCost
+            let percent = (change / totalCost) * 100
+            return (change, percent)
+
+        default:
+            // Use portfolio history for week/month/ytd/year
+            let days = period.days
+            let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+            let relevantHistory = portfolioHistory.filter { $0.date >= cutoff }.sorted { $0.date < $1.date }
+
+            guard let earliest = relevantHistory.first else {
+                // No history for this period — fall back to cost basis
+                let totalCost = portfolioHoldings.reduce(0) { $0 + $1.totalCost }
+                guard totalCost > 0 else { return (0, 0) }
+                let change = portfolioValue - totalCost
+                let percent = (change / totalCost) * 100
+                return (change, percent)
+            }
+
+            let change = portfolioValue - earliest.value
+            let percent = earliest.value > 0 ? (change / earliest.value) * 100 : 0
+            return (change, percent)
         }
     }
 
-    /// Generates mock chart data based on time period
-    /// In production, this would fetch from an API
-    private func generateChartData(for period: TimePeriod, isPositive: Bool) -> [CGFloat] {
-        // Different data point counts for different time periods
-        let dataPointCount: Int
-        let volatility: CGFloat
-        let trendStrength: CGFloat
+    /// Sum of 24h dollar changes across all holdings
+    private func calculateDayChange() -> Double {
+        portfolioHoldings.reduce(0.0) { total, holding in
+            guard let change = holding.priceChangePercentage24h else { return total }
+            return total + holding.currentValue * (change / 100)
+        }
+    }
 
-        switch period {
-        case .hour:
-            dataPointCount = 12  // Every 5 minutes
-            volatility = 0.02
-            trendStrength = 0.3
-        case .day:
-            dataPointCount = 24  // Hourly
-            volatility = 0.03
-            trendStrength = 0.5
-        case .week:
-            dataPointCount = 28  // 4x daily
-            volatility = 0.05
-            trendStrength = 0.6
-        case .month:
-            dataPointCount = 30  // Daily
-            volatility = 0.08
-            trendStrength = 0.7
-        case .ytd:
-            dataPointCount = 52  // Weekly-ish
-            volatility = 0.12
-            trendStrength = 0.8
-        case .year:
-            dataPointCount = 52  // Weekly
-            volatility = 0.15
-            trendStrength = 0.85
-        case .all:
-            dataPointCount = 60  // Monthly
-            volatility = 0.20
-            trendStrength = 0.9
+    /// Generates chart data from real portfolio history points
+    private func generateChartData(for period: TimePeriod) -> [CGFloat] {
+        let days = period.days
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        var relevantHistory = portfolioHistory
+            .filter { $0.date >= cutoff }
+            .sorted { $0.date < $1.date }
+
+        // Add current value as the latest point
+        if portfolioValue > 0 {
+            relevantHistory.append(PortfolioHistoryPoint(date: Date(), value: portfolioValue))
         }
 
-        // Generate data with a trend and some noise
-        var data: [CGFloat] = []
-        var currentValue: CGFloat = 0.3  // Start point
+        guard relevantHistory.count >= 2 else { return [] }
 
-        // Use portfolio name as seed for consistent data per portfolio
-        // Use overflow addition (&+) to prevent arithmetic overflow crash
-        let seed = (selectedPortfolio?.name.hashValue ?? 0) &+ period.hashValue
-        srand48(seed)
+        let values = relevantHistory.map { $0.value }
+        guard let minVal = values.min(), let maxVal = values.max() else { return [] }
+        let range = maxVal - minVal
 
-        for i in 0..<dataPointCount {
-            // Add trend direction
-            let progress = CGFloat(i) / CGFloat(dataPointCount - 1)
-            let trend = isPositive ? trendStrength * progress : -trendStrength * progress * 0.5
-
-            // Add some controlled randomness
-            let noise = CGFloat(drand48() - 0.5) * volatility
-
-            // Small dips and recoveries for realism
-            let cycleNoise = sin(CGFloat(i) * 0.5) * volatility * 0.5
-
-            currentValue = max(0.1, min(0.95, currentValue + trend * 0.05 + noise + cycleNoise))
-            data.append(currentValue)
+        if range < 0.01 {
+            return values.map { _ in CGFloat(0.5) }
         }
 
-        // Ensure end point reflects the trend direction
-        if isPositive {
-            data[data.count - 1] = max(data[data.count - 1], 0.85)
-        } else {
-            data[data.count - 1] = min(data[data.count - 1], 0.35)
-        }
-
-        return data
+        return values.map { CGFloat(($0 - minVal) / range) }
     }
 
     // Composite Risk Score (0-100)
@@ -624,11 +579,14 @@ class HomeViewModel {
 
             await MainActor.run {
                 self.portfolios = fetchedPortfolios
-                // Select first portfolio if none selected
                 if self.selectedPortfolio == nil, let first = fetchedPortfolios.first {
                     self.selectedPortfolio = first
-                    self.updatePortfolioValues(for: first)
                 }
+            }
+
+            // Load real holdings data for the selected portfolio
+            if let portfolio = selectedPortfolio {
+                await loadPortfolioData(for: portfolio)
             }
         } catch {
             logError("Failed to load portfolios: \(error)", category: .data)
@@ -637,7 +595,7 @@ class HomeViewModel {
 
     func selectPortfolio(_ portfolio: Portfolio) {
         selectedPortfolio = portfolio
-        updatePortfolioValues(for: portfolio)
+        Task { await loadPortfolioData(for: portfolio) }
     }
 
     func selectRiskCoin(_ coin: String) {
@@ -645,32 +603,37 @@ class HomeViewModel {
     }
 
     // MARK: - Private Methods
-    private func updatePortfolioValues(for portfolio: Portfolio) {
-        // Calculate portfolio value from holdings
-        if let holdings = portfolio.holdings {
-            let totalValue = holdings.reduce(0.0) { $0 + $1.currentValue }
-            let totalCost = holdings.reduce(0.0) { $0 + $1.totalCost }
-            let change = totalValue - totalCost
-            let changePercent = totalCost > 0 ? (change / totalCost) * 100 : 0
 
-            withAnimation(.easeInOut(duration: 0.4)) {
-                portfolioValue = totalValue
-                basePortfolioChange = change
-                basePortfolioChangePercent = changePercent
+    /// Fetches real holdings, live prices, and history for a portfolio
+    private func loadPortfolioData(for portfolio: Portfolio) async {
+        do {
+            // Fetch holdings and history concurrently
+            async let holdingsTask = portfolioService.fetchHoldings(portfolioId: portfolio.id)
+            async let historyTask = portfolioService.fetchPortfolioHistory(portfolioId: portfolio.id, days: 365 * 5)
+
+            let fetchedHoldings = try await holdingsTask
+            let history = (try? await historyTask) ?? []
+
+            // Refresh live prices
+            let holdingsWithPrices: [PortfolioHolding]
+            do {
+                holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: fetchedHoldings)
+            } catch {
+                logError("Home portfolio price refresh failed: \(error)", category: .data)
+                holdingsWithPrices = fetchedHoldings
             }
-        } else {
-            // Use mock values based on portfolio name for demo
-            // Change values are computed dynamically based on time period
-            switch portfolio.name {
-            case "Main Portfolio":
-                portfolioValue = 3_017_500.00
-            case "Crypto Only":
-                portfolioValue = 3_450_000.00
-            case "Long Term":
-                portfolioValue = 2_847_500.00
-            default:
-                portfolioValue = 2_500_000.00
+
+            let totalValue = holdingsWithPrices.reduce(0) { $0 + $1.currentValue }
+
+            await MainActor.run {
+                self.portfolioHoldings = holdingsWithPrices
+                self.portfolioHistory = history
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    self.portfolioValue = totalValue
+                }
             }
+        } catch {
+            logError("Failed to load portfolio data: \(error)", category: .data)
         }
     }
 
