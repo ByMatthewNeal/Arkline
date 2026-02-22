@@ -8,6 +8,7 @@ final class ReadArticlesStore {
 
     private let key = "user_read_article_urls"
     private var cache: Set<String>
+    private var saveTask: DispatchWorkItem?
 
     private init() {
         if let data = UserDefaults.standard.data(forKey: key),
@@ -23,9 +24,9 @@ final class ReadArticlesStore {
     }
 
     func markRead(_ url: String) {
-        guard !url.isEmpty else { return }
+        guard !url.isEmpty, !cache.contains(url) else { return }
         cache.insert(url)
-        save()
+        debouncedSave()
     }
 
     func toggleRead(_ url: String) {
@@ -35,12 +36,19 @@ final class ReadArticlesStore {
         } else {
             cache.insert(url)
         }
-        save()
+        debouncedSave()
     }
 
-    private func save() {
-        if let data = try? JSONEncoder().encode(cache) {
-            UserDefaults.standard.set(data, forKey: key)
+    private func debouncedSave() {
+        saveTask?.cancel()
+        let snapshot = cache
+        let key = self.key
+        let work = DispatchWorkItem {
+            if let data = try? JSONEncoder().encode(snapshot) {
+                UserDefaults.standard.set(data, forKey: key)
+            }
         }
+        saveTask = work
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.3, execute: work)
     }
 }

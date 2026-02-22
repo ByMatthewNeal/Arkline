@@ -452,15 +452,16 @@ private struct NewsArticlePage: View {
                         .padding(.horizontal, 20)
 
                         // Mark as Read toggle
+                        let isMarkedRead = readStore.isRead(news.url)
                         Button(action: { readStore.toggleRead(news.url) }) {
                             HStack {
-                                Image(systemName: readStore.isRead(news.url) ? "checkmark.circle.fill" : "circle")
+                                Image(systemName: isMarkedRead ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 16))
-                                Text(readStore.isRead(news.url) ? "Marked as Read" : "Mark as Read")
+                                Text(isMarkedRead ? "Marked as Read" : "Mark as Read")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                             }
-                            .foregroundColor(readStore.isRead(news.url) ? AppColors.success : AppColors.textSecondary)
+                            .foregroundColor(isMarkedRead ? AppColors.success : AppColors.textSecondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(
@@ -493,10 +494,8 @@ private struct NewsArticlePage: View {
                 .padding(.top, 12)
             }
         }
-        .onAppear {
-            readStore.markRead(news.url)
-        }
         .task {
+            readStore.markRead(news.url)
             await loadSummary()
         }
     }
