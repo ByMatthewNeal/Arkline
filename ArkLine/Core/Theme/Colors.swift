@@ -481,7 +481,7 @@ struct DetailHeaderGradient: View {
                 .offset(x: 120, y: -60)
         }
         .frame(height: 280)
-        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func blobOpacity(_ base: CGFloat) -> CGFloat {
