@@ -87,15 +87,11 @@ final class ExportService {
 
         let metricsText = [
             "Total Return: \(formatCurrency(metrics.totalReturn)) (\(formatPercent(metrics.totalReturnPercentage)))",
-            "Win Rate: \(String(format: "%.1f", metrics.winRate))%",
-            "Number of Trades: \(metrics.numberOfTrades)",
-            "Winning Trades: \(metrics.winningTrades) | Losing Trades: \(metrics.losingTrades)",
-            "Average Win: \(formatCurrency(metrics.averageWin))",
-            "Average Loss: \(formatCurrency(metrics.averageLoss))",
-            "Risk/Reward Ratio: \(metrics.riskRewardRatio)",
+            "Total Invested: \(formatCurrency(metrics.totalInvested))",
+            "Current Value: \(formatCurrency(metrics.currentValue))",
+            "Number of Assets: \(metrics.numberOfAssets)",
             "Max Drawdown: \(String(format: "%.2f", metrics.maxDrawdown))% (\(formatCurrency(metrics.maxDrawdownValue)))",
-            "Sharpe Ratio: \(String(format: "%.2f", metrics.sharpeRatio)) (\(metrics.sharpeRating))",
-            "Avg Holding Period: \(String(format: "%.1f", metrics.averageHoldingPeriodDays)) days (\(metrics.holdingPeriodDescription))"
+            "Sharpe Ratio: \(String(format: "%.2f", metrics.sharpeRatio)) (\(metrics.sharpeRating))"
         ]
 
         for metric in metricsText {
@@ -173,17 +169,12 @@ final class ExportService {
         csv += "Metric,Value\n"
         csv += "Total Return,$\(String(format: "%.2f", metrics.totalReturn))\n"
         csv += "Total Return %,\(String(format: "%.2f", metrics.totalReturnPercentage))%\n"
-        csv += "Win Rate,\(String(format: "%.1f", metrics.winRate))%\n"
-        csv += "Number of Trades,\(metrics.numberOfTrades)\n"
-        csv += "Winning Trades,\(metrics.winningTrades)\n"
-        csv += "Losing Trades,\(metrics.losingTrades)\n"
-        csv += "Average Win,$\(String(format: "%.2f", metrics.averageWin))\n"
-        csv += "Average Loss,$\(String(format: "%.2f", metrics.averageLoss))\n"
-        csv += "Risk/Reward Ratio,\(metrics.riskRewardRatio)\n"
+        csv += "Total Invested,$\(String(format: "%.2f", metrics.totalInvested))\n"
+        csv += "Current Value,$\(String(format: "%.2f", metrics.currentValue))\n"
+        csv += "Number of Assets,\(metrics.numberOfAssets)\n"
         csv += "Max Drawdown %,\(String(format: "%.2f", metrics.maxDrawdown))%\n"
         csv += "Max Drawdown Value,$\(String(format: "%.2f", metrics.maxDrawdownValue))\n"
-        csv += "Sharpe Ratio,\(String(format: "%.2f", metrics.sharpeRatio))\n"
-        csv += "Avg Holding Period (days),\(String(format: "%.1f", metrics.averageHoldingPeriodDays))\n\n"
+        csv += "Sharpe Ratio,\(String(format: "%.2f", metrics.sharpeRatio))\n\n"
 
         // Holdings section
         csv += "HOLDINGS\n"

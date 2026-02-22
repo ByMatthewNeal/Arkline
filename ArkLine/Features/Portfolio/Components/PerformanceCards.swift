@@ -1,7 +1,7 @@
 import SwiftUI
 
-// MARK: - Performance Summary Card
-struct PerformanceSummaryCard: View {
+// MARK: - Return Summary Card
+struct ReturnSummaryCard: View {
     @Environment(\.colorScheme) var colorScheme
     let metrics: PerformanceMetrics
 
@@ -30,11 +30,11 @@ struct PerformanceSummaryCard: View {
 
             // Quick Stats Row
             HStack(spacing: 0) {
-                QuickMetricItem(title: "Trades", value: "\(metrics.numberOfTrades)")
+                QuickMetricItem(title: "Invested", value: metrics.totalInvested.asCurrency)
                 Divider().frame(height: 40)
-                QuickMetricItem(title: "Win Rate", value: String(format: "%.1f%%", metrics.winRate))
+                QuickMetricItem(title: "Current", value: metrics.currentValue.asCurrency)
                 Divider().frame(height: 40)
-                QuickMetricItem(title: "Sharpe", value: String(format: "%.2f", metrics.sharpeRatio))
+                QuickMetricItem(title: "Assets", value: "\(metrics.numberOfAssets)")
             }
         }
         .padding(20)
@@ -42,134 +42,150 @@ struct PerformanceSummaryCard: View {
     }
 }
 
-// MARK: - Win/Loss Stats Card
-struct WinLossStatsCard: View {
+// MARK: - Asset Performance Card
+struct AssetPerformanceCard: View {
     @Environment(\.colorScheme) var colorScheme
-    let metrics: PerformanceMetrics
+    let holdings: [PortfolioHolding]
+    let totalValue: Double
+
+    private var sortedHoldings: [PortfolioHolding] {
+        holdings.sorted { $0.profitLossPercentage > $1.profitLossPercentage }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Win/Loss Analysis")
+            Text("Asset Performance")
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            HStack(spacing: 16) {
-                // Wins
-                VStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(AppColors.success.opacity(0.15))
-                            .frame(width: 50, height: 50)
-
-                        Text("\(metrics.winningTrades)")
-                            .font(AppFonts.number20)
-                            .foregroundColor(AppColors.success)
-                    }
-
-                    Text("Winning")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text(metrics.averageWin.asCurrency)
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(AppColors.success)
-
-                    Text("Avg Win")
-                        .font(AppFonts.footnote10)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .frame(maxWidth: .infinity)
-
-                // VS Divider
-                VStack {
-                    Text("VS")
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-
-                // Losses
-                VStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(AppColors.error.opacity(0.15))
-                            .frame(width: 50, height: 50)
-
-                        Text("\(metrics.losingTrades)")
-                            .font(AppFonts.number20)
-                            .foregroundColor(AppColors.error)
-                    }
-
-                    Text("Losing")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text(metrics.averageLoss.asCurrency)
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(AppColors.error)
-
-                    Text("Avg Loss")
-                        .font(AppFonts.footnote10)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-
-            // Risk/Reward Ratio
-            HStack {
-                Text("Risk/Reward Ratio")
+            if sortedHoldings.isEmpty {
+                Text("No holdings to display")
                     .font(AppFonts.body14)
                     .foregroundColor(AppColors.textSecondary)
-                Spacer()
-                Text(metrics.riskRewardRatio)
-                    .font(AppFonts.body14Bold)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(sortedHoldings.prefix(8)) { holding in
+                        AssetPerformanceRow(holding: holding, totalValue: totalValue)
+
+                        if holding.id != sortedHoldings.prefix(8).last?.id {
+                            Divider()
+                        }
+                    }
+
+                    if sortedHoldings.count > 8 {
+                        Text("+\(sortedHoldings.count - 8) more")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                }
             }
-            .padding(.top, 8)
         }
         .padding(20)
         .glassCard(cornerRadius: 16)
     }
 }
 
-// MARK: - Risk Metrics Card
-struct RiskMetricsCard: View {
+// MARK: - Asset Performance Row
+private struct AssetPerformanceRow: View {
     @Environment(\.colorScheme) var colorScheme
-    let metrics: PerformanceMetrics
+    let holding: PortfolioHolding
+    let totalValue: Double
+
+    private var contribution: Double {
+        guard totalValue > 0 else { return 0 }
+        return holding.currentValue / totalValue
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            CoinIconView(symbol: holding.symbol, size: 32, iconUrl: holding.iconUrl)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(holding.symbol.uppercased())
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                // Contribution bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(AppColors.textSecondary.opacity(0.15))
+                            .frame(height: 4)
+
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(holding.isProfit ? AppColors.success : AppColors.error)
+                            .frame(width: max(4, geometry.size.width * contribution), height: 4)
+                    }
+                }
+                .frame(height: 4)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(holding.profitLossPercentage >= 0 ? "+" : "")\(String(format: "%.1f", holding.profitLossPercentage))%")
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
+
+                Text(holding.profitLoss.asCurrency)
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+    }
+}
+
+// MARK: - Investment Activity Card
+struct InvestmentActivityCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    let monthlyInvestments: [MonthlyInvestment]
+
+    private var maxAmount: Double {
+        monthlyInvestments.map(\.amount).max() ?? 1
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Risk Metrics")
+            Text("Investment Activity")
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            VStack(spacing: 12) {
-                RiskMetricRow(
-                    title: "Maximum Drawdown",
-                    value: String(format: "%.2f%%", metrics.maxDrawdown),
-                    subtitle: metrics.maxDrawdownValue.asCurrency,
-                    icon: "chart.line.downtrend.xyaxis",
-                    color: AppColors.error
-                )
+            if monthlyInvestments.isEmpty {
+                Text("No buy transactions yet")
+                    .font(AppFonts.body14)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(monthlyInvestments) { month in
+                        HStack(spacing: 12) {
+                            Text(month.label)
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary)
+                                .frame(width: 55, alignment: .trailing)
 
-                Divider()
+                            GeometryReader { geometry in
+                                let barWidth = maxAmount > 0
+                                    ? max(4, geometry.size.width * (month.amount / maxAmount))
+                                    : 4
 
-                RiskMetricRow(
-                    title: "Sharpe Ratio",
-                    value: String(format: "%.2f", metrics.sharpeRatio),
-                    subtitle: metrics.sharpeRating,
-                    icon: "chart.bar.doc.horizontal",
-                    color: metrics.sharpeColor
-                )
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(AppColors.accent)
+                                    .frame(width: barWidth, height: 20)
+                            }
+                            .frame(height: 20)
 
-                Divider()
-
-                RiskMetricRow(
-                    title: "Avg Holding Period",
-                    value: String(format: "%.1f days", metrics.averageHoldingPeriodDays),
-                    subtitle: metrics.holdingPeriodDescription,
-                    icon: "clock",
-                    color: AppColors.accent
-                )
+                            Text(month.amount.asCurrency)
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                                .frame(width: 80, alignment: .trailing)
+                        }
+                    }
+                }
             }
         }
         .padding(20)
@@ -185,7 +201,7 @@ struct EquityCurveCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Equity Curve")
+                Text("Portfolio Value")
                     .font(AppFonts.title18SemiBold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -225,45 +241,6 @@ struct QuickMetricItem: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
         }
         .frame(maxWidth: .infinity)
-    }
-}
-
-struct RiskMetricRow: View {
-    @Environment(\.colorScheme) var colorScheme
-    let title: String
-    let value: String
-    let subtitle: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 40, height: 40)
-
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AppFonts.body14)
-                    .foregroundColor(AppColors.textSecondary)
-
-                Text(subtitle)
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary.opacity(0.7))
-            }
-
-            Spacer()
-
-            Text(value)
-                .font(AppFonts.body14Bold)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-        }
     }
 }
 
@@ -368,7 +345,7 @@ struct EmptyPerformanceState: View {
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            Text("Complete some trades to see your performance metrics and analytics.")
+            Text("Add holdings to your portfolio to see performance metrics and analytics.")
                 .font(AppFonts.body14)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
@@ -383,6 +360,7 @@ struct PerformanceExportView: View {
     let portfolioName: String
     let metrics: PerformanceMetrics
     let historyPoints: [PortfolioHistoryPoint]
+    let holdings: [PortfolioHolding]
 
     var body: some View {
         VStack(spacing: 16) {
@@ -402,17 +380,24 @@ struct PerformanceExportView: View {
             }
             .padding(.top, 20)
 
-            PerformanceSummaryCard(metrics: metrics)
+            ReturnSummaryCard(metrics: metrics)
                 .padding(.horizontal, 20)
 
-            WinLossStatsCard(metrics: metrics)
+            if !holdings.isEmpty {
+                AssetPerformanceCard(
+                    holdings: holdings,
+                    totalValue: metrics.currentValue
+                )
                 .padding(.horizontal, 20)
-
-            RiskMetricsCard(metrics: metrics)
-                .padding(.horizontal, 20)
+            }
 
             if !historyPoints.isEmpty {
                 EquityCurveCard(historyPoints: historyPoints)
+                    .padding(.horizontal, 20)
+            }
+
+            if !metrics.monthlyInvestments.isEmpty {
+                InvestmentActivityCard(monthlyInvestments: metrics.monthlyInvestments)
                     .padding(.horizontal, 20)
             }
 

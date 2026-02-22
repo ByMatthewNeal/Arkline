@@ -8,7 +8,7 @@ struct PerformanceView: View {
     @State private var isExporting = false
 
     private var hasData: Bool {
-        viewModel.performanceMetrics.numberOfTrades > 0 || !viewModel.historyPoints.isEmpty
+        !viewModel.holdings.isEmpty
     }
 
     var body: some View {
@@ -24,27 +24,28 @@ struct PerformanceView: View {
 
     private var performanceContent: some View {
         VStack(spacing: 20) {
-            // Summary Header Card
-            PerformanceSummaryCard(metrics: viewModel.performanceMetrics)
+            // Return Summary
+            ReturnSummaryCard(metrics: viewModel.performanceMetrics)
                 .padding(.horizontal, 20)
 
-            // Win/Loss Stats
-            if viewModel.performanceMetrics.numberOfTrades > 0 {
-                WinLossStatsCard(metrics: viewModel.performanceMetrics)
-                    .padding(.horizontal, 20)
-            }
-
-            // Risk Metrics
-            RiskMetricsCard(metrics: viewModel.performanceMetrics)
-                .padding(.horizontal, 20)
-                .premiumRequired(.advancedPortfolio)
-
-            // Equity Curve
+            // Portfolio Value Chart
             if !viewModel.historyPoints.isEmpty {
                 EquityCurveCard(historyPoints: viewModel.historyPoints)
                     .padding(.horizontal, 20)
                     .premiumRequired(.advancedPortfolio)
             }
+
+            // Per-Asset Performance
+            AssetPerformanceCard(
+                holdings: viewModel.holdings,
+                totalValue: viewModel.performanceMetrics.currentValue
+            )
+            .padding(.horizontal, 20)
+            .premiumRequired(.advancedPortfolio)
+
+            // Investment Activity
+            InvestmentActivityCard(monthlyInvestments: viewModel.performanceMetrics.monthlyInvestments)
+                .padding(.horizontal, 20)
 
             // Export Button
             Button(action: { showExportSheet = true }) {
@@ -124,7 +125,8 @@ struct PerformanceView: View {
                     of: PerformanceExportView(
                         portfolioName: portfolioName,
                         metrics: viewModel.performanceMetrics,
-                        historyPoints: viewModel.historyPoints
+                        historyPoints: viewModel.historyPoints,
+                        holdings: viewModel.holdings
                     ),
                     size: CGSize(width: 390, height: 844)
                 )

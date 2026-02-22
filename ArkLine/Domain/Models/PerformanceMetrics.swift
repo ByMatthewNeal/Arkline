@@ -1,36 +1,34 @@
 import Foundation
 import SwiftUI
 
-/// Comprehensive portfolio performance metrics
+/// Monthly investment amount for DCA tracking
+struct MonthlyInvestment: Identifiable, Equatable {
+    var id: String { monthKey }
+    let monthKey: String  // "2026-02"
+    let label: String     // "Feb '26"
+    let amount: Double
+}
+
+/// Comprehensive portfolio performance metrics (hold/DCA focused)
 struct PerformanceMetrics: Equatable {
     // Core returns
     let totalReturn: Double
     let totalReturnPercentage: Double
 
-    // Win/Loss metrics
-    let winRate: Double                    // % of profitable trades (0-100)
-    let averageWin: Double                 // Average profit on winning trades
-    let averageLoss: Double                // Average loss on losing trades
-    let profitFactor: Double               // averageWin / averageLoss ratio
+    // Portfolio summary
+    let totalInvested: Double
+    let currentValue: Double
+    let numberOfAssets: Int
 
     // Risk metrics
     let maxDrawdown: Double                // Maximum peak-to-trough decline (percentage)
     let maxDrawdownValue: Double           // Maximum drawdown in currency
     let sharpeRatio: Double                // Risk-adjusted return
 
-    // Trade statistics
-    let numberOfTrades: Int                // Total closed trades
-    let winningTrades: Int                 // Number of profitable trades
-    let losingTrades: Int                  // Number of losing trades
-    let averageHoldingPeriodDays: Double   // Average time holding positions
+    // DCA activity
+    let monthlyInvestments: [MonthlyInvestment]
 
     // Derived properties
-    var riskRewardRatio: String {
-        guard averageLoss != 0 else { return "N/A" }
-        let ratio = abs(averageWin / averageLoss)
-        return String(format: "1:%.1f", ratio)
-    }
-
     var sharpeRating: String {
         switch sharpeRatio {
         case ..<0: return "Poor"
@@ -49,30 +47,17 @@ struct PerformanceMetrics: Equatable {
         }
     }
 
-    var holdingPeriodDescription: String {
-        switch averageHoldingPeriodDays {
-        case ..<7: return "Day Trading"
-        case 7..<30: return "Swing Trading"
-        case 30..<90: return "Position Trading"
-        default: return "Long-term Holding"
-        }
-    }
-
     // Empty state for when no data is available
     static let empty = PerformanceMetrics(
         totalReturn: 0,
         totalReturnPercentage: 0,
-        winRate: 0,
-        averageWin: 0,
-        averageLoss: 0,
-        profitFactor: 0,
+        totalInvested: 0,
+        currentValue: 0,
+        numberOfAssets: 0,
         maxDrawdown: 0,
         maxDrawdownValue: 0,
         sharpeRatio: 0,
-        numberOfTrades: 0,
-        winningTrades: 0,
-        losingTrades: 0,
-        averageHoldingPeriodDays: 0
+        monthlyInvestments: []
     )
 }
 

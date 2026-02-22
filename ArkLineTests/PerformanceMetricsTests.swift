@@ -7,27 +7,6 @@ final class PerformanceMetricsTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeSellTransaction(
-        symbol: String = "BTC",
-        quantity: Double = 1.0,
-        pricePerUnit: Double = 50000,
-        costBasisPerUnit: Double? = nil,
-        realizedProfitLoss: Double? = nil,
-        date: Date = Date()
-    ) -> Transaction {
-        Transaction(
-            portfolioId: portfolioId,
-            type: .sell,
-            assetType: "crypto",
-            symbol: symbol,
-            quantity: quantity,
-            pricePerUnit: pricePerUnit,
-            transactionDate: date,
-            costBasisPerUnit: costBasisPerUnit,
-            realizedProfitLoss: realizedProfitLoss
-        )
-    }
-
     private func makeBuyTransaction(
         symbol: String = "BTC",
         quantity: Double = 1.0,
@@ -49,147 +28,63 @@ final class PerformanceMetricsTests: XCTestCase {
         PortfolioHistoryPoint(date: date, value: value)
     }
 
+    private func makeHolding(
+        symbol: String = "BTC",
+        name: String = "Bitcoin",
+        quantity: Double = 1.0,
+        averageBuyPrice: Double = 40000,
+        currentPrice: Double = 50000
+    ) -> PortfolioHolding {
+        var holding = PortfolioHolding(
+            portfolioId: portfolioId,
+            assetType: "crypto",
+            symbol: symbol,
+            name: name,
+            quantity: quantity,
+            averageBuyPrice: averageBuyPrice
+        )
+        holding.currentPrice = currentPrice
+        return holding
+    }
+
     // MARK: - Empty Input
 
-    func testCalculate_noTransactions() {
+    func testCalculate_noData() {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: [],
+            holdings: [],
             totalReturn: 0,
             totalReturnPercentage: 0
         )
-        XCTAssertEqual(metrics.numberOfTrades, 0)
-        XCTAssertEqual(metrics.winRate, 0)
-        XCTAssertEqual(metrics.profitFactor, 0)
+        XCTAssertEqual(metrics.totalInvested, 0)
+        XCTAssertEqual(metrics.currentValue, 0)
+        XCTAssertEqual(metrics.numberOfAssets, 0)
         XCTAssertEqual(metrics.maxDrawdown, 0)
         XCTAssertEqual(metrics.sharpeRatio, 0)
+        XCTAssertTrue(metrics.monthlyInvestments.isEmpty)
     }
 
-    // MARK: - Win Rate
+    // MARK: - Total Invested & Current Value
 
-    func testCalculate_allWinning() {
-        let transactions = [
-            makeSellTransaction(realizedProfitLoss: 1000),
-            makeSellTransaction(realizedProfitLoss: 500),
-            makeSellTransaction(realizedProfitLoss: 200),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 1700,
-            totalReturnPercentage: 10
-        )
-        XCTAssertEqual(metrics.winRate, 100.0, accuracy: 0.01)
-        XCTAssertEqual(metrics.winningTrades, 3)
-        XCTAssertEqual(metrics.losingTrades, 0)
-    }
-
-    func testCalculate_allLosing() {
-        let transactions = [
-            makeSellTransaction(realizedProfitLoss: -500),
-            makeSellTransaction(realizedProfitLoss: -300),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: -800,
-            totalReturnPercentage: -10
-        )
-        XCTAssertEqual(metrics.winRate, 0.0, accuracy: 0.01)
-        XCTAssertEqual(metrics.winningTrades, 0)
-        XCTAssertEqual(metrics.losingTrades, 2)
-    }
-
-    func testCalculate_mixedTrades() {
-        let transactions = [
-            makeSellTransaction(realizedProfitLoss: 1000),
-            makeSellTransaction(realizedProfitLoss: -500),
-            makeSellTransaction(realizedProfitLoss: 800),
-            makeSellTransaction(realizedProfitLoss: -200),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 1100,
-            totalReturnPercentage: 5
-        )
-        XCTAssertEqual(metrics.winRate, 50.0, accuracy: 0.01)
-        XCTAssertEqual(metrics.winningTrades, 2)
-        XCTAssertEqual(metrics.losingTrades, 2)
-    }
-
-    // MARK: - Average Win/Loss
-
-    func testCalculate_averageWinAndLoss() {
-        let transactions = [
-            makeSellTransaction(realizedProfitLoss: 1000),
-            makeSellTransaction(realizedProfitLoss: 2000),
-            makeSellTransaction(realizedProfitLoss: -500),
-            makeSellTransaction(realizedProfitLoss: -300),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 2200,
-            totalReturnPercentage: 10
-        )
-        XCTAssertEqual(metrics.averageWin, 1500.0, accuracy: 0.01)
-        XCTAssertEqual(metrics.averageLoss, 400.0, accuracy: 0.01)
-    }
-
-    // MARK: - Profit Factor
-
-    func testCalculate_profitFactor() {
-        let transactions = [
-            makeSellTransaction(realizedProfitLoss: 1500),
-            makeSellTransaction(realizedProfitLoss: -500),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 1000,
-            totalReturnPercentage: 5
-        )
-        // profitFactor = avgWin / avgLoss = 1500 / 500 = 3.0
-        XCTAssertEqual(metrics.profitFactor, 3.0, accuracy: 0.01)
-    }
-
-    // MARK: - Cost Basis Fallback
-
-    func testCalculate_costBasisFallback() {
-        let transactions = [
-            makeSellTransaction(
-                quantity: 1.0,
-                pricePerUnit: 60000,
-                costBasisPerUnit: 40000,
-                realizedProfitLoss: nil
-            ),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 20000,
-            totalReturnPercentage: 50
-        )
-        XCTAssertEqual(metrics.winningTrades, 1)
-        XCTAssertEqual(metrics.averageWin, 20000, accuracy: 0.01)
-    }
-
-    // MARK: - Only Sell Transactions Counted
-
-    func testCalculate_onlySellsAreTrades() {
+    func testCalculate_totalInvestedFromBuys() {
         let transactions = [
             makeBuyTransaction(quantity: 1.0, pricePerUnit: 40000),
-            makeBuyTransaction(quantity: 0.5, pricePerUnit: 45000),
-            makeSellTransaction(realizedProfitLoss: 5000),
+            makeBuyTransaction(quantity: 0.5, pricePerUnit: 50000),
         ]
+        let holdings = [makeHolding(quantity: 1.5, averageBuyPrice: 43333, currentPrice: 55000)]
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: transactions,
             historyPoints: [],
-            totalReturn: 5000,
-            totalReturnPercentage: 10
+            holdings: holdings,
+            totalReturn: 17500,
+            totalReturnPercentage: 26.9
         )
-        XCTAssertEqual(metrics.numberOfTrades, 1) // Only the sell
+        // 1 * 40000 + 0.5 * 50000 = 65000
+        XCTAssertEqual(metrics.totalInvested, 65000, accuracy: 0.01)
+        // 1.5 * 55000 = 82500
+        XCTAssertEqual(metrics.currentValue, 82500, accuracy: 0.01)
+        XCTAssertEqual(metrics.numberOfAssets, 1)
     }
 
     // MARK: - Maximum Drawdown
@@ -203,6 +98,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: history,
+            holdings: [],
             totalReturn: 200,
             totalReturnPercentage: 20
         )
@@ -219,6 +115,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: history,
+            holdings: [],
             totalReturn: 100,
             totalReturnPercentage: 10
         )
@@ -234,6 +131,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: history,
+            holdings: [],
             totalReturn: 0,
             totalReturnPercentage: 0
         )
@@ -253,6 +151,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: history,
+            holdings: [],
             totalReturn: value - 10000,
             totalReturnPercentage: ((value - 10000) / 10000) * 100
         )
@@ -268,6 +167,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: history,
+            holdings: [],
             totalReturn: 100,
             totalReturnPercentage: 10
         )
@@ -281,122 +181,101 @@ final class PerformanceMetricsTests: XCTestCase {
         let metrics = PerformanceMetricsCalculator.calculate(
             transactions: [],
             historyPoints: history,
+            holdings: [],
             totalReturn: 0,
             totalReturnPercentage: 0
         )
         XCTAssertEqual(metrics.sharpeRatio, 0)
     }
 
-    // MARK: - Holding Period
-
-    func testHoldingPeriod_basic() {
-        let buyDate = Date().adding(days: -30)
-        let sellDate = Date()
-        let transactions = [
-            makeBuyTransaction(symbol: "BTC", quantity: 1.0, pricePerUnit: 40000, date: buyDate),
-            makeSellTransaction(symbol: "BTC", quantity: 1.0, pricePerUnit: 50000, realizedProfitLoss: 10000, date: sellDate),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 10000,
-            totalReturnPercentage: 25
-        )
-        XCTAssertEqual(metrics.averageHoldingPeriodDays, 30, accuracy: 1)
-    }
-
-    func testHoldingPeriod_noMatchingPairs() {
-        let transactions = [
-            makeBuyTransaction(symbol: "BTC", quantity: 1.0, pricePerUnit: 40000),
-        ]
-        let metrics = PerformanceMetricsCalculator.calculate(
-            transactions: transactions,
-            historyPoints: [],
-            totalReturn: 0,
-            totalReturnPercentage: 0
-        )
-        XCTAssertEqual(metrics.averageHoldingPeriodDays, 0)
-    }
-
-    // MARK: - PerformanceMetrics Model Properties
+    // MARK: - Sharpe Rating
 
     func testSharpeRating() {
         let poor = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 0,
-            averageWin: 0, averageLoss: 0, profitFactor: 0,
+            totalReturn: 0, totalReturnPercentage: 0,
+            totalInvested: 0, currentValue: 0, numberOfAssets: 0,
             maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: -0.5,
-            numberOfTrades: 0, winningTrades: 0, losingTrades: 0,
-            averageHoldingPeriodDays: 0
+            monthlyInvestments: []
         )
         XCTAssertEqual(poor.sharpeRating, "Poor")
 
         let good = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 0,
-            averageWin: 0, averageLoss: 0, profitFactor: 0,
+            totalReturn: 0, totalReturnPercentage: 0,
+            totalInvested: 0, currentValue: 0, numberOfAssets: 0,
             maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 1.5,
-            numberOfTrades: 0, winningTrades: 0, losingTrades: 0,
-            averageHoldingPeriodDays: 0
+            monthlyInvestments: []
         )
         XCTAssertEqual(good.sharpeRating, "Good")
 
         let excellent = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 0,
-            averageWin: 0, averageLoss: 0, profitFactor: 0,
+            totalReturn: 0, totalReturnPercentage: 0,
+            totalInvested: 0, currentValue: 0, numberOfAssets: 0,
             maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 3.5,
-            numberOfTrades: 0, winningTrades: 0, losingTrades: 0,
-            averageHoldingPeriodDays: 0
+            monthlyInvestments: []
         )
         XCTAssertEqual(excellent.sharpeRating, "Excellent")
     }
 
-    func testHoldingPeriodDescription() {
-        let dayTrader = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 0,
-            averageWin: 0, averageLoss: 0, profitFactor: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 0,
-            numberOfTrades: 0, winningTrades: 0, losingTrades: 0,
-            averageHoldingPeriodDays: 3
-        )
-        XCTAssertEqual(dayTrader.holdingPeriodDescription, "Day Trading")
+    // MARK: - Monthly Investments
 
-        let swingTrader = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 0,
-            averageWin: 0, averageLoss: 0, profitFactor: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 0,
-            numberOfTrades: 0, winningTrades: 0, losingTrades: 0,
-            averageHoldingPeriodDays: 14
-        )
-        XCTAssertEqual(swingTrader.holdingPeriodDescription, "Swing Trading")
+    func testMonthlyInvestments_groupsByMonth() {
+        let now = Date()
+        let transactions = [
+            makeBuyTransaction(symbol: "BTC", quantity: 0.1, pricePerUnit: 50000, date: now),
+            makeBuyTransaction(symbol: "ETH", quantity: 2.0, pricePerUnit: 3000, date: now.adding(days: -5)),
+            makeBuyTransaction(symbol: "BTC", quantity: 0.05, pricePerUnit: 48000, date: now.adding(days: -2)),
+        ]
+        let result = PerformanceMetricsCalculator.calculateMonthlyInvestments(transactions)
 
-        let longTerm = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 0,
-            averageWin: 0, averageLoss: 0, profitFactor: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 0,
-            numberOfTrades: 0, winningTrades: 0, losingTrades: 0,
-            averageHoldingPeriodDays: 120
-        )
-        XCTAssertEqual(longTerm.holdingPeriodDescription, "Long-term Holding")
+        // All 3 buys are in the same month, so should be 1 entry
+        XCTAssertEqual(result.count, 1)
+
+        // Total = 0.1*50000 + 2*3000 + 0.05*48000 = 5000 + 6000 + 2400 = 13400
+        XCTAssertEqual(result.first?.amount ?? 0, 13400, accuracy: 0.01)
     }
 
-    func testRiskRewardRatio() {
-        let metrics = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 50,
-            averageWin: 1000, averageLoss: 500, profitFactor: 2,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 0,
-            numberOfTrades: 2, winningTrades: 1, losingTrades: 1,
-            averageHoldingPeriodDays: 0
-        )
-        XCTAssertEqual(metrics.riskRewardRatio, "1:2.0")
+    func testMonthlyInvestments_limitsToSixMonths() {
+        var transactions: [Transaction] = []
+        for i in 0..<10 {
+            transactions.append(
+                makeBuyTransaction(
+                    quantity: 0.1,
+                    pricePerUnit: 50000,
+                    date: Date().adding(months: -i)
+                )
+            )
+        }
+        let result = PerformanceMetricsCalculator.calculateMonthlyInvestments(transactions)
+        XCTAssertLessThanOrEqual(result.count, 6)
     }
 
-    func testRiskRewardRatio_zeroLoss() {
-        let metrics = PerformanceMetrics(
-            totalReturn: 0, totalReturnPercentage: 0, winRate: 100,
-            averageWin: 1000, averageLoss: 0, profitFactor: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 0,
-            numberOfTrades: 1, winningTrades: 1, losingTrades: 0,
-            averageHoldingPeriodDays: 0
-        )
-        XCTAssertEqual(metrics.riskRewardRatio, "N/A")
+    func testMonthlyInvestments_emptyForNoBuys() {
+        // Only sell transactions
+        let transactions = [
+            Transaction(
+                portfolioId: portfolioId,
+                type: .sell,
+                assetType: "crypto",
+                symbol: "BTC",
+                quantity: 1.0,
+                pricePerUnit: 50000,
+                transactionDate: Date()
+            )
+        ]
+        let result = PerformanceMetricsCalculator.calculateMonthlyInvestments(transactions)
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testMonthlyInvestments_orderedOldestFirst() {
+        let transactions = [
+            makeBuyTransaction(quantity: 0.1, pricePerUnit: 50000, date: Date().adding(months: -2)),
+            makeBuyTransaction(quantity: 0.1, pricePerUnit: 50000, date: Date().adding(months: -1)),
+            makeBuyTransaction(quantity: 0.1, pricePerUnit: 50000, date: Date()),
+        ]
+        let result = PerformanceMetricsCalculator.calculateMonthlyInvestments(transactions)
+
+        XCTAssertEqual(result.count, 3)
+        // First entry should be the oldest month
+        XCTAssertTrue(result.first!.monthKey < result.last!.monthKey)
     }
 }

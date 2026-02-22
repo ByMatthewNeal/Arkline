@@ -1,32 +1,31 @@
 import Foundation
 
-/// Calculates portfolio performance metrics from transactions and history
+/// Calculates portfolio performance metrics from transactions, holdings, and history
 struct PerformanceMetricsCalculator {
 
     /// Calculate all performance metrics
     /// - Parameters:
     ///   - transactions: All portfolio transactions
     ///   - historyPoints: Portfolio value history for drawdown/sharpe calculation
+    ///   - holdings: Current portfolio holdings
     ///   - totalReturn: Current total P/L amount
     ///   - totalReturnPercentage: Current total P/L percentage
     /// - Returns: Calculated PerformanceMetrics
     static func calculate(
         transactions: [Transaction],
         historyPoints: [PortfolioHistoryPoint],
+        holdings: [PortfolioHolding],
         totalReturn: Double,
         totalReturnPercentage: Double
     ) -> PerformanceMetrics {
 
-        // Filter to closed trades (sells only - these have realized P/L)
-        let closedTrades = transactions.filter { $0.type == .sell }
+        // Total invested (sum of all buy transaction values)
+        let totalInvested = transactions
+            .filter { $0.type == .buy }
+            .reduce(0.0) { $0 + ($1.quantity * $1.pricePerUnit) }
 
-        // Win/Loss calculation
-        let (winningTrades, losingTrades, avgWin, avgLoss) = calculateWinLoss(closedTrades)
-        let totalClosedTrades = winningTrades + losingTrades
-        let winRate = totalClosedTrades > 0 ? (Double(winningTrades) / Double(totalClosedTrades)) * 100 : 0
-
-        // Profit factor (avg win / avg loss)
-        let profitFactor = avgLoss != 0 ? abs(avgWin / avgLoss) : 0
+        // Current value from holdings
+        let currentValue = holdings.reduce(0.0) { $0 + $1.currentValue }
 
         // Maximum drawdown from portfolio history
         let (maxDrawdownPct, maxDrawdownValue) = calculateMaxDrawdown(historyPoints)
@@ -34,61 +33,20 @@ struct PerformanceMetricsCalculator {
         // Sharpe ratio (using daily returns from history)
         let sharpeRatio = calculateSharpeRatio(historyPoints)
 
-        // Average holding period
-        let avgHoldingPeriod = calculateAverageHoldingPeriod(transactions)
+        // Monthly investment activity
+        let monthlyInvestments = calculateMonthlyInvestments(transactions)
 
         return PerformanceMetrics(
             totalReturn: totalReturn,
             totalReturnPercentage: totalReturnPercentage,
-            winRate: winRate,
-            averageWin: avgWin,
-            averageLoss: avgLoss,
-            profitFactor: profitFactor,
+            totalInvested: totalInvested,
+            currentValue: currentValue,
+            numberOfAssets: holdings.count,
             maxDrawdown: maxDrawdownPct,
             maxDrawdownValue: maxDrawdownValue,
             sharpeRatio: sharpeRatio,
-            numberOfTrades: closedTrades.count,
-            winningTrades: winningTrades,
-            losingTrades: losingTrades,
-            averageHoldingPeriodDays: avgHoldingPeriod
+            monthlyInvestments: monthlyInvestments
         )
-    }
-
-    // MARK: - Win/Loss Calculation
-
-    private static func calculateWinLoss(_ trades: [Transaction]) -> (wins: Int, losses: Int, avgWin: Double, avgLoss: Double) {
-        var wins = 0
-        var losses = 0
-        var totalWinAmount = 0.0
-        var totalLossAmount = 0.0
-
-        for trade in trades {
-            // Use realizedProfitLoss if available, otherwise estimate from transaction data
-            if let pnl = trade.realizedProfitLoss {
-                if pnl >= 0 {
-                    wins += 1
-                    totalWinAmount += pnl
-                } else {
-                    losses += 1
-                    totalLossAmount += abs(pnl)
-                }
-            } else if let costBasis = trade.costBasisPerUnit {
-                // Calculate P/L from cost basis
-                let pnl = (trade.pricePerUnit - costBasis) * trade.quantity
-                if pnl >= 0 {
-                    wins += 1
-                    totalWinAmount += pnl
-                } else {
-                    losses += 1
-                    totalLossAmount += abs(pnl)
-                }
-            }
-        }
-
-        let avgWin = wins > 0 ? totalWinAmount / Double(wins) : 0
-        let avgLoss = losses > 0 ? totalLossAmount / Double(losses) : 0
-
-        return (wins, losses, avgWin, avgLoss)
     }
 
     // MARK: - Maximum Drawdown
@@ -160,47 +118,45 @@ struct PerformanceMetricsCalculator {
         return (annualizedReturn - riskFreeRate) / annualizedStdDev
     }
 
-    // MARK: - Average Holding Period
+    // MARK: - Monthly Investments
 
-    private static func calculateAverageHoldingPeriod(_ transactions: [Transaction]) -> Double {
-        // Match buys to sells for the same symbol using FIFO
-        var buyDates: [String: [(date: Date, quantity: Double)]] = [:]
-        var holdingPeriods: [Double] = []
+    /// Groups buy transactions by month, returns last 6 months
+    static func calculateMonthlyInvestments(_ transactions: [Transaction]) -> [MonthlyInvestment] {
+        let buys = transactions.filter { $0.type == .buy }
+        guard !buys.isEmpty else { return [] }
 
-        // Sort transactions chronologically
-        let sortedTransactions = transactions.sorted { $0.transactionDate < $1.transactionDate }
+        let calendar = Calendar.current
+        let monthKeyFormatter = DateFormatter()
+        monthKeyFormatter.dateFormat = "yyyy-MM"
 
-        for tx in sortedTransactions {
-            let symbol = tx.symbol.uppercased()
+        let labelFormatter = DateFormatter()
+        labelFormatter.dateFormat = "MMM ''yy"
 
-            switch tx.type {
-            case .buy, .transferIn:
-                // Add to buy queue
-                buyDates[symbol, default: []].append((tx.transactionDate, tx.quantity))
+        // Group by month
+        var monthlyTotals: [String: (label: String, amount: Double, date: Date)] = [:]
 
-            case .sell, .transferOut:
-                // Match against buys FIFO
-                var remainingQuantity = tx.quantity
+        for tx in buys {
+            let key = monthKeyFormatter.string(from: tx.transactionDate)
+            let label = labelFormatter.string(from: tx.transactionDate)
+            let amount = tx.quantity * tx.pricePerUnit
 
-                while remainingQuantity > 0, let firstBuy = buyDates[symbol]?.first {
-                    let daysHeld = tx.transactionDate.timeIntervalSince(firstBuy.date) / 86400
-
-                    if firstBuy.quantity <= remainingQuantity {
-                        // Fully consume this buy lot
-                        holdingPeriods.append(daysHeld)
-                        remainingQuantity -= firstBuy.quantity
-                        buyDates[symbol]?.removeFirst()
-                    } else {
-                        // Partially consume this buy lot
-                        holdingPeriods.append(daysHeld)
-                        buyDates[symbol]?[0].quantity -= remainingQuantity
-                        remainingQuantity = 0
-                    }
-                }
+            if let existing = monthlyTotals[key] {
+                monthlyTotals[key] = (label: existing.label, amount: existing.amount + amount, date: existing.date)
+            } else {
+                // Use the first day of the month for sorting
+                let components = calendar.dateComponents([.year, .month], from: tx.transactionDate)
+                let monthDate = calendar.date(from: components) ?? tx.transactionDate
+                monthlyTotals[key] = (label: label, amount: amount, date: monthDate)
             }
         }
 
-        guard !holdingPeriods.isEmpty else { return 0 }
-        return holdingPeriods.reduce(0, +) / Double(holdingPeriods.count)
+        // Sort by date descending and take last 6
+        let sorted = monthlyTotals
+            .sorted { $0.value.date > $1.value.date }
+            .prefix(6)
+            .reversed() // Show oldest first (left to right)
+            .map { MonthlyInvestment(monthKey: $0.key, label: $0.value.label, amount: $0.value.amount) }
+
+        return Array(sorted)
     }
 }

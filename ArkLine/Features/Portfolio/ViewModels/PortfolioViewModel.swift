@@ -114,6 +114,7 @@ final class PortfolioViewModel {
         PerformanceMetricsCalculator.calculate(
             transactions: transactions,
             historyPoints: historyPoints,
+            holdings: holdings,
             totalReturn: totalProfitLoss,
             totalReturnPercentage: totalProfitLossPercentage
         )
