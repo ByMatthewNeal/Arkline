@@ -72,6 +72,12 @@ struct CoinOption: Identifiable, Equatable {
     ]
 }
 
+// MARK: - Risk Source Type
+enum RiskSourceType: String, CaseIterable {
+    case logRegression = "Log Regression"
+    case composite = "7-Factor Composite"
+}
+
 // MARK: - DCA Frequency Extension
 extension DCAFrequency {
     var shortDisplayName: String {

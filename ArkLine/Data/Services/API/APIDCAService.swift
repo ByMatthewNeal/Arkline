@@ -108,7 +108,11 @@ final class APIDCAService: DCAServiceProtocol {
             throw error
         } catch {
             logError(error, context: "Create DCA reminder", category: .data)
-            throw AppError.networkError(underlying: error)
+            let message = "\(error)"
+            if message.contains("column") || message.contains("schema") || message.contains("postgrest") {
+                throw AppError.supabaseError(message: "Failed to save reminder. Please update the app or try again.")
+            }
+            throw AppError.from(error)
         }
     }
 

@@ -11,6 +11,7 @@ struct CreateDCASheetView: View {
     @State private var showCoinPicker = false
     @State private var amount: String = "1000"
     @State private var attachRiskLevel = false
+    @State private var riskSource: RiskSourceType = .composite
     @State private var riskThreshold: Double = 0.5
     @State private var selectedFrequency: DCAFrequencyOption = .daily
     @State private var customInterval: Int = 1
@@ -219,7 +220,14 @@ struct CreateDCASheetView: View {
             }
 
             if attachRiskLevel {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Risk Source", selection: $riskSource) {
+                        ForEach(RiskSourceType.allCases, id: \.self) { source in
+                            Text(source.rawValue).tag(source)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
                     HStack {
                         Text("Trigger when risk below")
                             .font(.system(size: 14))
@@ -385,13 +393,21 @@ struct CreateDCASheetView: View {
                 .font(.system(size: 13))
                 .foregroundColor(textPrimary.opacity(0.6))
 
-            DatePicker("", selection: $notificationTime, displayedComponents: .hourAndMinute)
-                .labelsHidden()
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
-                )
+            HStack {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(AppColors.accent)
+
+                DatePicker("", selection: $notificationTime, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+
+                Spacer()
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+            )
         }
         .padding(16)
         .background(

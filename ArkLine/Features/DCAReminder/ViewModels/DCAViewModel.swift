@@ -192,8 +192,7 @@ final class DCAViewModel {
                 totalPurchases: reminder.totalPurchases,
                 notificationTime: reminder.notificationTime,
                 startDate: reminder.startDate,
-                nextReminderDate: reminder.nextReminderDate ?? Date(),
-                portfolioId: nil
+                nextReminderDate: reminder.nextReminderDate ?? Date()
             )
             let createdReminder = try await dcaService.createReminder(request)
 
