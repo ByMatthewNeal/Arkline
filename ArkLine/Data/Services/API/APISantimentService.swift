@@ -49,12 +49,21 @@ final class APISantimentService: SantimentServiceProtocol {
     // MARK: - SantimentServiceProtocol
 
     func fetchLatestSupplyInProfit() async throws -> SupplyProfitData? {
-        // Try Supabase first for the latest data
+        // Try Supabase first, but only if data is reasonably fresh
         if let supabaseLatest = try? await database.getLatestSupplyInProfitData() {
-            return supabaseLatest.toSupplyProfitData()
+            let data = supabaseLatest.toSupplyProfitData()
+
+            // Santiment free tier lags ~30 days. Consider data stale if it's more
+            // than 33 days old, meaning newer data should be available on the API.
+            if let dateObj = data.dateObject {
+                let daysSinceData = Calendar.current.dateComponents([.day], from: dateObj, to: Date()).day ?? 0
+                if daysSinceData <= 33 {
+                    return data
+                }
+            }
         }
 
-        // Otherwise fetch history which will populate Supabase
+        // Supabase data is missing or stale — fetch from API to get the latest
         let history = try await fetchSupplyInProfitHistory(days: 7)
         return history.first
     }
