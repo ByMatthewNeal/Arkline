@@ -1,4 +1,14 @@
 import SwiftUI
+import Kingfisher
+
+// MARK: - Transaction Search Result
+private struct TransactionSearchResult: Identifiable {
+    let id: String
+    let symbol: String
+    let name: String
+    let currentPrice: Double?
+    let iconUrl: String?
+}
 
 // MARK: - Add Transaction View
 struct AddTransactionView: View {
@@ -18,6 +28,13 @@ struct AddTransactionView: View {
     @State private var showingError = false
     @State private var errorMessage = ""
     @State private var isSaving = false
+
+    // Search state
+    @State private var searchResults: [TransactionSearchResult] = []
+    @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
+    @State private var priceWasAutoFetched = false
+    @State private var didSelectResult = false
 
     /// Parse a string that may contain commas as a Double
     private func parseNumber(_ string: String) -> Double {
@@ -90,6 +107,76 @@ struct AddTransactionView: View {
                         TextField("Symbol (e.g., BTC)", text: $symbol)
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
+                            .onChange(of: symbol) { _, newValue in
+                                guard !didSelectResult else {
+                                    didSelectResult = false
+                                    return
+                                }
+                                priceWasAutoFetched = false
+                                performSearch(query: newValue)
+                            }
+                            .onChange(of: assetType) { _, _ in
+                                searchResults = []
+                                searchTask?.cancel()
+                                isSearching = false
+                            }
+
+                        // Inline search results
+                        if isSearching {
+                            HStack {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("Searching...")
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+
+                        ForEach(searchResults.prefix(6)) { result in
+                            Button {
+                                selectSearchResult(result)
+                            } label: {
+                                HStack(spacing: 10) {
+                                    // Icon
+                                    if assetType == .crypto, let urlString = result.iconUrl,
+                                       let url = URL(string: urlString) {
+                                        KFImage(url)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 28, height: 28)
+                                            .clipShape(Circle())
+                                    } else {
+                                        ZStack {
+                                            Circle()
+                                                .fill(AppColors.accent.opacity(0.15))
+                                                .frame(width: 28, height: 28)
+                                            Text(String(result.symbol.prefix(1)))
+                                                .font(AppFonts.body14Bold)
+                                                .foregroundColor(AppColors.accent)
+                                        }
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(result.symbol.uppercased())
+                                            .font(AppFonts.body14Bold)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                                        Text(result.name)
+                                            .font(AppFonts.caption12)
+                                            .foregroundColor(AppColors.textSecondary)
+                                            .lineLimit(1)
+                                    }
+
+                                    Spacer()
+
+                                    if let price = result.currentPrice, price > 0 {
+                                        Text(price.asCurrency)
+                                            .font(AppFonts.caption12)
+                                            .foregroundColor(AppColors.textSecondary)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
 
                         TextField("Name (e.g., Bitcoin)", text: $name)
                             .autocorrectionDisabled()
@@ -107,12 +194,20 @@ struct AddTransactionView: View {
                             .multilineTextAlignment(.trailing)
                     }
 
-                    HStack {
-                        Text("Price per Unit")
-                        Spacer()
-                        TextField("$0.00", text: $pricePerUnit)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Price per Unit")
+                            Spacer()
+                            TextField("$0.00", text: $pricePerUnit)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                        }
+
+                        if priceWasAutoFetched {
+                            Text("Live price")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.accent)
+                        }
                     }
 
                     DatePicker("Date", selection: $transactionDate, displayedComponents: [.date, .hourAndMinute])
@@ -303,6 +398,127 @@ struct AddTransactionView: View {
                 Haptics.success()
                 isSaving = false
                 dismiss()
+            }
+        }
+    }
+
+    // MARK: - Search
+
+    private func performSearch(query: String) {
+        searchTask?.cancel()
+
+        guard query.count >= 2 else {
+            searchResults = []
+            isSearching = false
+            return
+        }
+
+        isSearching = true
+
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+
+            guard !Task.isCancelled else { return }
+
+            do {
+                let marketService = ServiceContainer.shared.marketService
+                var results: [TransactionSearchResult] = []
+
+                switch assetType {
+                case .crypto:
+                    let cryptos = try await marketService.searchCrypto(query: query)
+                    results = cryptos.map { crypto in
+                        TransactionSearchResult(
+                            id: crypto.id,
+                            symbol: crypto.symbol,
+                            name: crypto.name,
+                            currentPrice: crypto.currentPrice,
+                            iconUrl: crypto.iconUrl
+                        )
+                    }
+
+                case .stock:
+                    let stocks = try await marketService.searchStocks(query: query)
+                    results = stocks.map { stock in
+                        TransactionSearchResult(
+                            id: stock.symbol,
+                            symbol: stock.symbol,
+                            name: stock.name,
+                            currentPrice: nil,
+                            iconUrl: nil
+                        )
+                    }
+
+                case .metal:
+                    let lowered = query.lowercased()
+                    let matched = PreciousMetal.allCases.filter {
+                        $0.rawValue.lowercased().contains(lowered) ||
+                        $0.name.lowercased().contains(lowered)
+                    }
+                    if !matched.isEmpty {
+                        let symbols = matched.map { $0.rawValue }
+                        let metals = try await marketService.fetchMetalAssets(symbols: symbols)
+                        results = metals.map { metal in
+                            TransactionSearchResult(
+                                id: metal.id,
+                                symbol: metal.symbol,
+                                name: metal.name,
+                                currentPrice: metal.currentPrice,
+                                iconUrl: nil
+                            )
+                        }
+                    }
+
+                case .realEstate:
+                    break
+                }
+
+                await MainActor.run {
+                    if !Task.isCancelled {
+                        searchResults = results
+                        isSearching = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    searchResults = []
+                    isSearching = false
+                }
+            }
+        }
+    }
+
+    private func selectSearchResult(_ result: TransactionSearchResult) {
+        didSelectResult = true
+        symbol = result.symbol.uppercased()
+        name = result.name
+        searchResults = []
+        searchTask?.cancel()
+        isSearching = false
+
+        if let price = result.currentPrice, price > 0 {
+            pricePerUnit = String(format: "%.2f", price)
+            priceWasAutoFetched = true
+        } else if assetType == .stock {
+            fetchStockPrice(symbol: result.symbol)
+        }
+
+        Haptics.selection()
+    }
+
+    private func fetchStockPrice(symbol: String) {
+        Task {
+            do {
+                let marketService = ServiceContainer.shared.marketService
+                let assets = try await marketService.fetchStockAssets(symbols: [symbol])
+                if let stock = assets.first, stock.currentPrice > 0 {
+                    await MainActor.run {
+                        pricePerUnit = String(format: "%.2f", stock.currentPrice)
+                        priceWasAutoFetched = true
+                    }
+                }
+            } catch {
+                // Silent - user can enter price manually
             }
         }
     }
