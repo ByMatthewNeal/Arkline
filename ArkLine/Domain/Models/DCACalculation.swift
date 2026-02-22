@@ -89,11 +89,6 @@ enum DCABTCRiskBand: String, CaseIterable, Identifiable {
         case .extreme: return "Historically where macro tops happen, smart-money distribution"
         }
     }
-
-    /// Returns bands recommended for DCA (lower risk = better accumulation)
-    static var recommendedForDCA: [DCABTCRiskBand] {
-        [.veryLow, .low, .neutral]
-    }
 }
 
 // MARK: - DCA Calculation Result

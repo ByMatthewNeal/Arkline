@@ -259,7 +259,6 @@ struct DCARiskBandCard: View {
                     DCARiskBandOptionRow(
                         band: band,
                         isSelected: selectedBands.contains(band),
-                        isRecommended: DCABTCRiskBand.recommendedForDCA.contains(band),
                         onToggle: { toggleBand(band) }
                     )
                 }
@@ -343,7 +342,6 @@ struct DCABTCRiskMeter: View {
 struct DCARiskBandOptionRow: View {
     let band: DCABTCRiskBand
     let isSelected: Bool
-    let isRecommended: Bool
     let onToggle: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
@@ -361,23 +359,9 @@ struct DCARiskBandOptionRow: View {
 
                 // Band info
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(band.rawValue)
-                            .font(AppFonts.body14Medium)
-                            .foregroundColor(textPrimary)
-
-                        if isRecommended {
-                            Text("Recommended")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(
-                                    Capsule()
-                                        .fill(Color(hex: "00C853"))
-                                )
-                        }
-                    }
+                    Text(band.rawValue)
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary)
 
                     Text(String(format: "%.2f - %.2f", band.riskRange.lowerBound / 100, band.riskRange.upperBound / 100))
                         .font(AppFonts.footnote10)
