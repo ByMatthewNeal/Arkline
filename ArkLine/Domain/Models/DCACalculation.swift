@@ -44,47 +44,53 @@ enum DCAScoreType: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Risk Band for DCA
+// MARK: - Risk Band for DCA (6-Tier, matches Risk Level Guide)
 enum DCABTCRiskBand: String, CaseIterable, Identifiable {
-    case veryLow = "Very Low"
-    case low = "Low"
+    case veryLow = "Very Low Risk"
+    case low = "Low Risk"
     case neutral = "Neutral"
-    case high = "High"
-    case veryHigh = "Very High"
+    case elevated = "Elevated Risk"
+    case high = "High Risk"
+    case extreme = "Extreme Risk"
 
     var id: String { rawValue }
 
+    /// Risk range as 0-100 scale (matching 0.0-1.0 risk levels × 100)
     var riskRange: ClosedRange<Double> {
         switch self {
         case .veryLow: return 0...20
         case .low: return 20...40
-        case .neutral: return 40...60
-        case .high: return 60...80
-        case .veryHigh: return 80...100
+        case .neutral: return 40...55
+        case .elevated: return 55...70
+        case .high: return 70...90
+        case .extreme: return 90...100
         }
     }
 
+    /// Colors matching RiskColors in RiskModels.swift
     var color: String {
         switch self {
-        case .veryLow: return "00C853"   // Green
-        case .low: return "64DD17"       // Light green
-        case .neutral: return "FFD600"   // Yellow
-        case .high: return "FF9100"      // Orange
-        case .veryHigh: return "FF1744"  // Red
+        case .veryLow: return "3B82F6"   // Blue
+        case .low: return "22C55E"       // Green
+        case .neutral: return "EAB308"   // Yellow
+        case .elevated: return "F97316"  // Orange
+        case .high: return "EF4444"      // Red
+        case .extreme: return "991B1B"   // Maroon
         }
     }
 
     var investmentAdvice: String {
         switch self {
-        case .veryLow: return "Excellent time to accumulate"
-        case .low: return "Good buying opportunity"
-        case .neutral: return "Consider dollar cost averaging"
-        case .high: return "Be cautious, consider taking profits"
-        case .veryHigh: return "High risk, avoid large purchases"
+        case .veryLow: return "Deep value range, historically excellent accumulation zone"
+        case .low: return "Still favorable accumulation, attractive for multi-year investors"
+        case .neutral: return "Mid-cycle territory, neither strong buy nor sell"
+        case .elevated: return "Late-cycle behavior, higher probability of corrections"
+        case .high: return "Historically blow-off-top region, major cycle tops occur here"
+        case .extreme: return "Historically where macro tops happen, smart-money distribution"
         }
     }
 
-    /// Returns bands recommended for DCA (typically lower risk)
+    /// Returns bands recommended for DCA (lower risk = better accumulation)
     static var recommendedForDCA: [DCABTCRiskBand] {
         [.veryLow, .low, .neutral]
     }
@@ -157,9 +163,7 @@ struct DCACalculation: Equatable {
         guard strategyType == .riskBased, !riskBands.isEmpty else { return "" }
         let sortedBands = riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
         guard let firstBand = sortedBands.first, let lastBand = sortedBands.last else { return "" }
-        let minRisk = Int(firstBand.riskRange.lowerBound)
-        let maxRisk = Int(lastBand.riskRange.upperBound)
-        return "\(minRisk) - \(maxRisk)"
+        return String(format: "%.2f - %.2f", firstBand.riskRange.lowerBound / 100, lastBand.riskRange.upperBound / 100)
     }
 }
 

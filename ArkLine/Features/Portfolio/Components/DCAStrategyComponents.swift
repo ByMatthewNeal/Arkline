@@ -274,7 +274,7 @@ struct DCARiskBandCard: View {
 
                     let sortedBands = selectedBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
                     if let firstBand = sortedBands.first, let lastBand = sortedBands.last {
-                        let rangeText = "\(Int(firstBand.riskRange.lowerBound)) - \(Int(lastBand.riskRange.upperBound))"
+                        let rangeText = String(format: "%.2f - %.2f", firstBand.riskRange.lowerBound / 100, lastBand.riskRange.upperBound / 100)
                         Text("\(sortedBands.map { $0.rawValue }.joined(separator: ", ")) (\(rangeText))")
                             .font(AppFonts.body14Bold)
                             .foregroundColor(AppColors.accent)
@@ -301,15 +301,22 @@ struct DCABTCRiskMeter: View {
     let selectedBands: Set<DCABTCRiskBand>
     @Environment(\.colorScheme) var colorScheme
 
+    /// Width proportion for each band based on its range size (total = 100)
+    private func bandWidth(for band: DCABTCRiskBand, totalWidth: CGFloat) -> CGFloat {
+        let rangeSize = band.riskRange.upperBound - band.riskRange.lowerBound
+        let gaps = CGFloat(DCABTCRiskBand.allCases.count - 1) * 2
+        return (rangeSize / 100.0) * (totalWidth - gaps)
+    }
+
     var body: some View {
         VStack(spacing: 8) {
-            // Risk meter bar
+            // Risk meter bar with proportional widths
             GeometryReader { geometry in
                 HStack(spacing: 2) {
                     ForEach(DCABTCRiskBand.allCases) { band in
                         Rectangle()
                             .fill(Color(hex: band.color).opacity(selectedBands.contains(band) ? 1.0 : 0.3))
-                            .frame(width: (geometry.size.width - CGFloat(DCABTCRiskBand.allCases.count - 1) * 2) / CGFloat(DCABTCRiskBand.allCases.count))
+                            .frame(width: bandWidth(for: band, totalWidth: geometry.size.width))
                     }
                 }
             }
@@ -324,9 +331,9 @@ struct DCABTCRiskMeter: View {
 
                 Spacer()
 
-                Text("High Risk")
+                Text("Extreme Risk")
                     .font(AppFonts.footnote10)
-                    .foregroundColor(Color(hex: DCABTCRiskBand.veryHigh.color))
+                    .foregroundColor(Color(hex: DCABTCRiskBand.extreme.color))
             }
         }
     }
@@ -372,7 +379,7 @@ struct DCARiskBandOptionRow: View {
                         }
                     }
 
-                    Text("\(Int(band.riskRange.lowerBound))-\(Int(band.riskRange.upperBound))% • \(band.investmentAdvice)")
+                    Text(String(format: "%.2f - %.2f", band.riskRange.lowerBound / 100, band.riskRange.upperBound / 100))
                         .font(AppFonts.footnote10)
                         .foregroundColor(AppColors.textSecondary)
                         .lineLimit(1)

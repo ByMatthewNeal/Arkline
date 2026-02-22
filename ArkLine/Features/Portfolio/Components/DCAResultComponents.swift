@@ -228,7 +228,7 @@ struct DCACalculationSummaryCard: View {
                                 .font(AppFonts.caption12Medium)
                                 .foregroundColor(textPrimary)
 
-                            Text("(\(Int(band.riskRange.lowerBound))-\(Int(band.riskRange.upperBound)))")
+                            Text(String(format: "(%.2f-%.2f)", band.riskRange.lowerBound / 100, band.riskRange.upperBound / 100))
                                 .font(AppFonts.footnote10)
                                 .foregroundColor(AppColors.textSecondary)
 
