@@ -206,12 +206,13 @@ final class APIDCAService: DCAServiceProtocol {
 
         do {
             // 1. Fetch current reminder
-            let reminders: [DCAReminder] = try await supabase.database
+            let fetchData = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
                 .eq("id", value: id.uuidString)
                 .execute()
-                .value
+                .data
+            let reminders = try Self.dcaDecoder.decode([DCAReminder].self, from: fetchData)
 
             guard var reminder = reminders.first else {
                 throw AppError.dataNotFound
@@ -258,12 +259,13 @@ final class APIDCAService: DCAServiceProtocol {
 
         do {
             // 1. Fetch current reminder
-            let reminders: [DCAReminder] = try await supabase.database
+            let reminderData = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
                 .eq("id", value: id.uuidString)
                 .execute()
-                .value
+                .data
+            let reminders = try Self.dcaDecoder.decode([DCAReminder].self, from: reminderData)
 
             guard var reminder = reminders.first else {
                 throw AppError.dataNotFound
@@ -310,12 +312,13 @@ final class APIDCAService: DCAServiceProtocol {
 
         do {
             // 1. Fetch current reminder
-            let reminders: [DCAReminder] = try await supabase.database
+            let reminderData = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
                 .eq("id", value: id.uuidString)
                 .execute()
-                .value
+                .data
+            let reminders = try Self.dcaDecoder.decode([DCAReminder].self, from: reminderData)
 
             guard var reminder = reminders.first else {
                 throw AppError.dataNotFound
