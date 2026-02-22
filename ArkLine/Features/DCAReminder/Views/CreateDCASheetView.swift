@@ -293,6 +293,7 @@ struct CreateDCASheetView: View {
                         .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
                 )
             }
+            .transaction { $0.animation = nil }
 
             // Custom settings
             if selectedFrequency == .custom {
@@ -303,6 +304,7 @@ struct CreateDCASheetView: View {
             Text(frequencyDescription)
                 .font(.system(size: 14))
                 .foregroundColor(AppColors.accent)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
         }
         .padding(16)
