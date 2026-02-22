@@ -313,7 +313,7 @@ struct DCACalculatorView: View {
             amount: calculation.amountPerPurchase,
             frequency: calculation.frequency.rawValue,
             totalPurchases: calculation.numberOfPurchases,
-            notificationTime: CreateDCARequest.timeString(from: Date()),
+            notificationTime: Date(),
             startDate: calculation.startDate,
             nextReminderDate: calculation.purchaseDates.first ?? Date()
         )

@@ -190,7 +190,7 @@ final class DCAViewModel {
                 amount: reminder.amount,
                 frequency: reminder.frequency.rawValue,
                 totalPurchases: reminder.totalPurchases,
-                notificationTime: CreateDCARequest.timeString(from: reminder.notificationTime),
+                notificationTime: reminder.notificationTime,
                 startDate: reminder.startDate,
                 nextReminderDate: reminder.nextReminderDate ?? Date()
             )
