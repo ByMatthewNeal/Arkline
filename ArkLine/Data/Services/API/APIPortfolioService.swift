@@ -428,7 +428,9 @@ final class APIPortfolioService: PortfolioServiceProtocol {
 
         for asset in assets {
             if symbols.contains(asset.id) || symbols.contains(asset.symbol.lowercased()) {
-                prices[asset.id] = (asset.currentPrice, asset.priceChangePercentage24h)
+                let priceData = (asset.currentPrice, asset.priceChangePercentage24h)
+                prices[asset.id] = priceData
+                prices[asset.symbol.lowercased()] = priceData
             }
         }
 
