@@ -55,6 +55,24 @@ struct AddTransactionView: View {
         parseNumber(quantity) * parseNumber(pricePerUnit)
     }
 
+    private var symbolPlaceholder: String {
+        switch assetType {
+        case .crypto: return "Symbol (e.g., BTC)"
+        case .stock: return "Symbol (e.g., AAPL)"
+        case .metal: return "Symbol (e.g., XAU)"
+        case .realEstate: return "Symbol"
+        }
+    }
+
+    private var namePlaceholder: String {
+        switch assetType {
+        case .crypto: return "Name (e.g., Bitcoin)"
+        case .stock: return "Name (e.g., Apple Inc.)"
+        case .metal: return "Name (e.g., Gold)"
+        case .realEstate: return "Name"
+        }
+    }
+
     private var hasPortfolio: Bool {
         viewModel.selectedPortfolio != nil || !viewModel.portfolios.isEmpty
     }
@@ -104,7 +122,7 @@ struct AddTransactionView: View {
                             }
                         }
                     } else {
-                        TextField("Symbol (e.g., BTC)", text: $symbol)
+                        TextField(symbolPlaceholder, text: $symbol)
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .onChange(of: symbol) { _, newValue in
@@ -178,7 +196,7 @@ struct AddTransactionView: View {
                             .buttonStyle(.plain)
                         }
 
-                        TextField("Name (e.g., Bitcoin)", text: $name)
+                        TextField(namePlaceholder, text: $name)
                             .autocorrectionDisabled()
                     }
                 }

@@ -81,8 +81,8 @@ struct BroadcastEditorView: View {
                     // Scheduling Section
                     schedulingSection
 
-                    // Target Audience Section
-                    targetAudienceSection
+                    // Target Audience — always broadcast to all users
+                    // targetAudienceSection
                 }
                 .padding(ArkSpacing.md)
             }

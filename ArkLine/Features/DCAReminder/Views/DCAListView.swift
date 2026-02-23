@@ -24,8 +24,13 @@ struct DCAListView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    // All reminders (unified list)
-                    ForEach(viewModel.reminders) { reminder in
+                    // All reminders sorted: active first (by next date), then inactive
+                    ForEach(viewModel.reminders.sorted { a, b in
+                        if a.isActive != b.isActive { return a.isActive }
+                        let aDate = a.nextReminderDate ?? .distantFuture
+                        let bDate = b.nextReminderDate ?? .distantFuture
+                        return aDate < bDate
+                    }) { reminder in
                         DCAUnifiedCard(
                             reminder: reminder,
                             riskLevel: viewModel.riskLevel(for: reminder.symbol),
@@ -82,7 +87,9 @@ struct DCAListView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView(feature: .unlimitedDCA)
         }
-        .sheet(isPresented: $showCreateSheet) {
+        .sheet(isPresented: $showCreateSheet, onDismiss: {
+            Task { await viewModel.refresh() }
+        }) {
             CreateDCASheetView(viewModel: viewModel)
         }
         .sheet(item: $viewModel.editingReminder) { reminder in
@@ -90,6 +97,9 @@ struct DCAListView: View {
         }
         .sheet(item: $viewModel.selectedReminder) { reminder in
             InvestmentHistorySheetView(reminder: reminder, viewModel: viewModel)
+        }
+        .onAppear {
+            Task { await viewModel.refresh() }
         }
     }
 }

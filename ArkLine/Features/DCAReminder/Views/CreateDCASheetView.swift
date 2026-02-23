@@ -504,6 +504,24 @@ struct CreateDCASheetView: View {
 
         let frequency: DCAFrequency = selectedFrequency.toDCAFrequency
 
+        // Calculate the first reminder date based on frequency
+        let calendar = Calendar.current
+        let now = Date()
+        let firstReminderDate: Date = {
+            switch frequency {
+            case .daily:
+                return calendar.date(byAdding: .day, value: 1, to: now) ?? now
+            case .twiceWeekly:
+                return calendar.date(byAdding: .day, value: 1, to: now) ?? now
+            case .weekly:
+                return calendar.date(byAdding: .weekOfYear, value: 1, to: now) ?? now
+            case .biweekly:
+                return calendar.date(byAdding: .weekOfYear, value: 2, to: now) ?? now
+            case .monthly:
+                return calendar.date(byAdding: .month, value: 1, to: now) ?? now
+            }
+        }()
+
         let reminder = DCAReminder(
             userId: userId,
             symbol: coin.symbol,
@@ -513,8 +531,8 @@ struct CreateDCASheetView: View {
             totalPurchases: nil,
             completedPurchases: 0,
             notificationTime: notificationTime,
-            startDate: Date(),
-            nextReminderDate: Date(),
+            startDate: now,
+            nextReminderDate: firstReminderDate,
             isActive: true
         )
 

@@ -56,7 +56,6 @@ struct AddRealEstateView: View {
     }
 
     var body: some View {
-        NavigationStack {
             Form {
                 // Property Details Section
                 Section("Property Details") {
@@ -206,7 +205,6 @@ struct AddRealEstateView: View {
                         .scaleEffect(1.2)
                 }
             }
-        }
     }
 
     private func saveProperty() {
