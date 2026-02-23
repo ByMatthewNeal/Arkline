@@ -68,14 +68,24 @@ struct GEIData {
         abs(score) > 1.5
     }
 
-    /// Human-readable signal description
+    /// Human-readable signal description for the card subtitle
     var signalDescription: String {
-        if isExtreme && score > 0 {
-            return "Overheated"
-        } else if isExtreme && score < 0 {
-            return "Deeply Contracted"
+        switch score {
+        case _ where score > 1.5:
+            return "Overheated - caution"
+        case _ where score > 0.5:
+            return "Expanding - risk-on"
+        case _ where score > 0.25:
+            return "Mild expansion"
+        case _ where score > -0.25:
+            return "Mixed signals"
+        case _ where score > -0.5:
+            return "Mild contraction"
+        case _ where score > -1.5:
+            return "Contracting - risk-off"
+        default:
+            return "Deep fear - accumulation zone"
         }
-        return signal.label
     }
 
     /// Formatted score for display (e.g. "+0.42" or "-1.23")
