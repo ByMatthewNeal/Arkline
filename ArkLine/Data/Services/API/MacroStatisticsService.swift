@@ -9,6 +9,7 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
     private let dxyService: DXYServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
     private let crudeOilService: CrudeOilServiceProtocol
+    private let goldService: GoldServiceProtocol
 
     // MARK: - Cache
 
@@ -29,12 +30,14 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         vixService: VIXServiceProtocol? = nil,
         dxyService: DXYServiceProtocol? = nil,
         globalLiquidityService: GlobalLiquidityServiceProtocol? = nil,
-        crudeOilService: CrudeOilServiceProtocol? = nil
+        crudeOilService: CrudeOilServiceProtocol? = nil,
+        goldService: GoldServiceProtocol? = nil
     ) {
         self.vixService = vixService ?? ServiceContainer.shared.vixService
         self.dxyService = dxyService ?? ServiceContainer.shared.dxyService
         self.globalLiquidityService = globalLiquidityService ?? ServiceContainer.shared.globalLiquidityService
         self.crudeOilService = crudeOilService ?? ServiceContainer.shared.crudeOilService
+        self.goldService = goldService ?? ServiceContainer.shared.goldService
     }
 
     // MARK: - Protocol Methods
@@ -62,6 +65,7 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         async let dxyData = fetchZScoreData(for: .dxy)
         async let m2Data = fetchZScoreData(for: .m2)
         async let crudeOilData = fetchZScoreData(for: .crudeOil)
+        async let goldData = fetchZScoreData(for: .gold)
 
         // Collect results, allowing partial failures
         var results: [MacroIndicatorType: MacroZScoreData] = [:]
@@ -77,6 +81,9 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         }
         if let oil = try? await crudeOilData {
             results[.crudeOil] = oil
+        }
+        if let gold = try? await goldData {
+            results[.gold] = gold
         }
 
         return results
@@ -99,6 +106,8 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
             return try await calculateM2ZScore()
         case .crudeOil:
             return try await calculateCrudeOilZScore()
+        case .gold:
+            return try await calculateGoldZScore()
         }
     }
 
@@ -261,6 +270,49 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         return MacroZScoreData(
             indicator: .crudeOil,
             currentValue: currentOil.value,
+            zScore: zScore,
+            sdBands: sdBands,
+            historyValues: historyValues,
+            calculatedAt: Date()
+        )
+    }
+
+    private func calculateGoldZScore() async throws -> MacroZScoreData {
+        // Fetch current and historical gold data
+        async let latestTask = goldService.fetchLatestGold()
+        async let historyTask = goldService.fetchGoldHistory(days: defaultLookbackDays)
+
+        let (latest, history) = try await (latestTask, historyTask)
+
+        guard let currentGold = latest else {
+            throw MacroStatisticsError.noCurrentData(indicator: .gold)
+        }
+
+        // Extract values from history
+        let historyValues = history.map { $0.value }
+
+        guard historyValues.count >= minimumDataPoints else {
+            throw MacroStatisticsError.insufficientHistory(
+                indicator: .gold,
+                required: minimumDataPoints,
+                actual: historyValues.count
+            )
+        }
+
+        // Calculate z-score
+        guard let zScore = StatisticsCalculator.calculateZScore(
+            currentValue: currentGold.value,
+            history: historyValues
+        ) else {
+            throw MacroStatisticsError.calculationFailed(indicator: .gold)
+        }
+
+        // Calculate SD bands
+        let sdBands = StatisticsCalculator.sdBands(mean: zScore.mean, sd: zScore.standardDeviation)
+
+        return MacroZScoreData(
+            indicator: .gold,
+            currentValue: currentGold.value,
             zScore: zScore,
             sdBands: sdBands,
             historyValues: historyValues,

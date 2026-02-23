@@ -262,6 +262,10 @@
 		C7FD1D9ADDC8CFB27BD2BA90 /* CrudeOilServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */; };
 		DA0C38A633DD5E7E30918B40 /* YahooCrudeOilService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E504C608D3B2A01C071188A /* YahooCrudeOilService.swift */; };
 		1AAE4CFBB39B940F1DDB1337 /* CrudeOilDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */; };
+		CCC69B2E372601EE8DDBA323 /* GoldData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DEB9D2E7F678C5CF7CC455B /* GoldData.swift */; };
+		C81152446788476897014440 /* GoldServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9D7E2A614F2063FE05E1DE /* GoldServiceProtocol.swift */; };
+		A5B0A5997ECB2DEF60E25B11 /* YahooGoldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A34E85AD5F58D683DA18A20 /* YahooGoldService.swift */; };
+		25C648A271174A9662409B17 /* GoldDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */; };
 		BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */; };
 		C01NP1CK3RV13W0000002 /* CoinPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01NP1CK3RV13W0000001 /* CoinPickerView.swift */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
@@ -631,6 +635,10 @@
 		0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilServiceProtocol.swift; sourceTree = "<group>"; };
 		4E504C608D3B2A01C071188A /* YahooCrudeOilService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooCrudeOilService.swift; sourceTree = "<group>"; };
 		EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilDetailView.swift; sourceTree = "<group>"; };
+		4DEB9D2E7F678C5CF7CC455B /* GoldData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldData.swift; sourceTree = "<group>"; };
+		DC9D7E2A614F2063FE05E1DE /* GoldServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldServiceProtocol.swift; sourceTree = "<group>"; };
+		1A34E85AD5F58D683DA18A20 /* YahooGoldService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooGoldService.swift; sourceTree = "<group>"; };
+		AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldDetailView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000011 /* AppErrorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppErrorTests.swift; path = ../ArkLineTests/AppErrorTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* AssetRiskConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssetRiskConfigTests.swift; path = ../ArkLineTests/AssetRiskConfigTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* MultiFactorRiskTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MultiFactorRiskTests.swift; path = ../ArkLineTests/MultiFactorRiskTests.swift; sourceTree = "<group>"; };
@@ -1043,6 +1051,7 @@
 				BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */,
 				A1F5409EE3FED4A42BA318B3 /* YahooVIXService.swift */,
 				4E504C608D3B2A01C071188A /* YahooCrudeOilService.swift */,
+				1A34E85AD5F58D683DA18A20 /* YahooGoldService.swift */,
 				8C9F2BB5F78AF614F347490F /* BroadcastService.swift */,
 				FE0000000000000000000012 /* FeatureRequestService.swift */,
 				EF6DC4B590B15208F84C18F4 /* MarketDataCollector.swift */,
@@ -1146,6 +1155,7 @@
 				FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */,
 				E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */,
 				0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */,
+				DC9D7E2A614F2063FE05E1DE /* GoldServiceProtocol.swift */,
 				23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */,
 				5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */,
 				79762427DB37480CBA73C016 /* AdminServiceProtocol.swift */,
@@ -1194,6 +1204,7 @@
 				FBEE2AB1904E9E24D7B1229D /* User.swift */,
 				A9CBCD28DAB9835627BA87F5 /* VIXData.swift */,
 				BE590AB631BFDB64F5773680 /* CrudeOilData.swift */,
+				4DEB9D2E7F678C5CF7CC455B /* GoldData.swift */,
 				5938799B40563800647E30C4 /* Broadcast.swift */,
 				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
 				FE0000000000000000000011 /* FeatureRequest.swift */,
@@ -1247,6 +1258,7 @@
 				8FCD088B0831263C159A5269 /* MarketOverviewView.swift */,
 				AA1122334455667788990022 /* MetalDetailView.swift */,
 				EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */,
+				AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */,
 				A1B2C3D4E5F60718293A4B5C /* ArkLineScoreDetailView.swift */,
 				7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */,
 				AA1122334455667788990011 /* StockDetailView.swift */,
@@ -2426,6 +2438,10 @@
 				C7FD1D9ADDC8CFB27BD2BA90 /* CrudeOilServiceProtocol.swift in Sources */,
 				DA0C38A633DD5E7E30918B40 /* YahooCrudeOilService.swift in Sources */,
 				1AAE4CFBB39B940F1DDB1337 /* CrudeOilDetailView.swift in Sources */,
+				CCC69B2E372601EE8DDBA323 /* GoldData.swift in Sources */,
+				C81152446788476897014440 /* GoldServiceProtocol.swift in Sources */,
+				A5B0A5997ECB2DEF60E25B11 /* YahooGoldService.swift in Sources */,
+				25C648A271174A9662409B17 /* GoldDetailView.swift in Sources */,
 				7A9C2B0E2516699150C161D4 /* ZScoreIndicator.swift in Sources */,
 				F1NANC1ALD15CLA1M3R02 /* FinancialDisclaimer.swift in Sources */,
 				0E896256033DF759ECCCC6D2 /* Broadcast.swift in Sources */,

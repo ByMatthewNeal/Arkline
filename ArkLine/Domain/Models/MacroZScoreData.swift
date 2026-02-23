@@ -9,6 +9,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
     case dxy = "DXY"
     case m2 = "M2"
     case crudeOil = "WTI"
+    case gold = "XAU"
 
     var id: String { rawValue }
 
@@ -19,6 +20,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .dxy: return "US Dollar"
         case .m2: return "M2 Supply"
         case .crudeOil: return "Crude Oil"
+        case .gold: return "Gold"
         }
     }
 
@@ -29,6 +31,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .dxy: return "US Dollar Index"
         case .m2: return "M2 Money Supply"
         case .crudeOil: return "WTI Crude Oil"
+        case .gold: return "Gold (XAU/USD)"
         }
     }
 
@@ -39,6 +42,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .dxy: return .inverse  // Strong dollar = headwind for crypto
         case .m2: return .positive  // More liquidity = bullish crypto
         case .crudeOil: return .inverse  // High oil = inflation = hawkish Fed = bearish crypto
+        case .gold: return .inverse  // High gold = safe-haven demand = risk-off = bearish crypto short-term
         }
     }
 
@@ -53,6 +57,8 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
             return "Rapid liquidity expansion - historically bullish for crypto with 2-3 month lag"
         case .crudeOil:
             return "High oil prices drive inflation expectations - hawkish Fed policy is bearish for crypto"
+        case .gold:
+            return "Strong safe-haven demand - risk-off environment, historically bearish for crypto short-term"
         }
     }
 
@@ -67,16 +73,19 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
             return "Liquidity contraction - historically creates headwinds for crypto"
         case .crudeOil:
             return "Low oil prices ease inflation pressure - favorable for risk assets including crypto"
+        case .gold:
+            return "Weak safe-haven demand - risk-on conditions favorable for crypto"
         }
     }
 
     /// Icon for the indicator
     var iconName: String {
         switch self {
-        case .vix: return "waveform.path.ecg"
-        case .dxy: return "dollarsign.circle"
-        case .m2: return "banknote"
-        case .crudeOil: return "flame.fill"
+        case .vix: return "chart.line.uptrend.xyaxis"
+        case .dxy: return "dollarsign.arrow.trianglehead.counterclockwise.rotate.90"
+        case .m2: return "chart.bar.fill"
+        case .crudeOil: return "drop.fill"
+        case .gold: return "diamond.fill"
         }
     }
 }

@@ -460,6 +460,7 @@ struct MacroIndicatorsSection: View {
     let dxyData: DXYData?
     let globalM2Data: GlobalLiquidityChanges?
     var crudeOilData: CrudeOilData? = nil
+    var goldData: GoldData? = nil
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     @Environment(\.colorScheme) var colorScheme
 
@@ -498,7 +499,7 @@ struct MacroIndicatorsSection: View {
                     value: vixData.map { String(format: "%.2f", $0.value) } ?? "--",
                     signal: vixSignal,
                     description: vixZScoreDescription,
-                    icon: "waveform.path.ecg",
+                    icon: "chart.line.uptrend.xyaxis",
                     vixData: vixData,
                     zScoreData: macroZScores[.vix]
                 )
@@ -510,7 +511,7 @@ struct MacroIndicatorsSection: View {
                     value: dxyData.map { String(format: "%.2f", $0.value) } ?? "--",
                     signal: dxySignal,
                     description: dxyZScoreDescription,
-                    icon: "dollarsign.circle",
+                    icon: "dollarsign.arrow.trianglehead.counterclockwise.rotate.90",
                     dxyData: dxyData,
                     zScoreData: macroZScores[.dxy]
                 )
@@ -522,7 +523,7 @@ struct MacroIndicatorsSection: View {
                     value: globalM2Data.map { formatM2($0.current) } ?? "--",
                     signal: m2Signal,
                     description: m2ZScoreDescription,
-                    icon: "banknote",
+                    icon: "chart.bar.fill",
                     liquidityData: globalM2Data,
                     zScoreData: macroZScores[.m2]
                 )
@@ -534,9 +535,21 @@ struct MacroIndicatorsSection: View {
                     value: crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--",
                     signal: oilSignal,
                     description: oilZScoreDescription,
-                    icon: "flame.fill",
+                    icon: "drop.fill",
                     crudeOilData: crudeOilData,
                     zScoreData: macroZScores[.crudeOil]
+                )
+
+                // Gold Card
+                MacroIndicatorCard(
+                    title: "Gold",
+                    subtitle: "XAU/USD",
+                    value: goldData.map { String(format: "$%.0f", $0.value) } ?? "--",
+                    signal: goldSignal,
+                    description: goldZScoreDescription,
+                    icon: "diamond.fill",
+                    goldData: goldData,
+                    zScoreData: macroZScores[.gold]
                 )
             }
             .padding(.horizontal)
@@ -649,6 +662,32 @@ struct MacroIndicatorsSection: View {
         return oilDescription
     }
 
+    // Gold helpers
+    private var goldSignal: MacroTrendSignal {
+        guard let gold = goldData?.value else { return .neutral }
+        if gold < 2000 { return .bullish }
+        if gold > 2400 { return .bearish }
+        return .neutral
+    }
+
+    private var goldDescription: String {
+        guard let gold = goldData?.value else { return "Safe-haven asset" }
+        if gold < 2000 { return "Low - risk-on" }
+        if gold < 2400 { return "Normal range" }
+        return "High - safe-haven demand"
+    }
+
+    private var goldZScoreDescription: String {
+        if let zScore = macroZScores[.gold] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Strong safe-haven (\(zScore.zScore.formatted))" : "Weak safe-haven (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
+            }
+        }
+        return goldDescription
+    }
+
     private func formatM2(_ value: Double) -> String {
         String(format: "$%.1fT", value / 1_000_000_000_000)
     }
@@ -666,6 +705,7 @@ struct MacroIndicatorCard: View {
     var dxyData: DXYData? = nil
     var liquidityData: GlobalLiquidityChanges? = nil
     var crudeOilData: CrudeOilData? = nil
+    var goldData: GoldData? = nil
     var zScoreData: MacroZScoreData? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -758,6 +798,8 @@ struct MacroIndicatorCard: View {
             DXYDetailView(dxyData: dxyData)
         case "WTI":
             CrudeOilDetailView(crudeOilData: crudeOilData)
+        case "Gold":
+            GoldDetailView(goldData: goldData)
         default:
             GlobalM2DetailView(liquidityChanges: liquidityData)
         }

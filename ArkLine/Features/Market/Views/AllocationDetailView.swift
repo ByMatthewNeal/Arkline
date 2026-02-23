@@ -129,7 +129,7 @@ struct AllocationDetailView: View {
                 value: sentimentViewModel.vixData.map { String(format: "%.2f", $0.value) } ?? "--",
                 signal: vixSignal,
                 description: vixDescription,
-                icon: "waveform.path.ecg",
+                icon: "chart.line.uptrend.xyaxis",
                 vixData: sentimentViewModel.vixData,
                 zScoreData: sentimentViewModel.macroZScores[.vix]
             )
@@ -141,7 +141,7 @@ struct AllocationDetailView: View {
                 value: sentimentViewModel.dxyData.map { String(format: "%.2f", $0.value) } ?? "--",
                 signal: dxySignal,
                 description: dxyDescription,
-                icon: "dollarsign.circle",
+                icon: "dollarsign.arrow.trianglehead.counterclockwise.rotate.90",
                 dxyData: sentimentViewModel.dxyData,
                 zScoreData: sentimentViewModel.macroZScores[.dxy]
             )
@@ -153,7 +153,7 @@ struct AllocationDetailView: View {
                 value: sentimentViewModel.globalM2Data.map { String(format: "$%.1fT", $0.current / 1_000_000_000_000) } ?? "--",
                 signal: m2Signal,
                 description: m2Description,
-                icon: "banknote",
+                icon: "chart.bar.fill",
                 liquidityData: sentimentViewModel.globalM2Data,
                 zScoreData: sentimentViewModel.macroZScores[.m2]
             )
@@ -165,9 +165,21 @@ struct AllocationDetailView: View {
                 value: sentimentViewModel.crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--",
                 signal: crudeOilSignal,
                 description: crudeOilDescription,
-                icon: "flame.fill",
+                icon: "drop.fill",
                 crudeOilData: sentimentViewModel.crudeOilData,
                 zScoreData: sentimentViewModel.macroZScores[.crudeOil]
+            )
+
+            // Gold
+            MacroIndicatorCard(
+                title: "Gold",
+                subtitle: "XAU/USD",
+                value: sentimentViewModel.goldData.map { String(format: "$%.0f", $0.value) } ?? "--",
+                signal: goldSignal,
+                description: goldDescription,
+                icon: "diamond.fill",
+                goldData: sentimentViewModel.goldData,
+                zScoreData: sentimentViewModel.macroZScores[.gold]
             )
         }
         .padding(.horizontal)
@@ -259,6 +271,27 @@ struct AllocationDetailView: View {
         if oil < 65 { return "Low - disinflationary" }
         if oil < 85 { return "Normal range" }
         return "High - inflationary"
+    }
+
+    private var goldSignal: MacroTrendSignal {
+        guard let gold = sentimentViewModel.goldData?.value else { return .neutral }
+        if gold < 2000 { return .bullish }
+        if gold > 2400 { return .bearish }
+        return .neutral
+    }
+
+    private var goldDescription: String {
+        if let zScore = sentimentViewModel.macroZScores[.gold] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Strong safe-haven (\(zScore.zScore.formatted))" : "Weak safe-haven (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
+            }
+        }
+        guard let gold = sentimentViewModel.goldData?.value else { return "Safe-haven asset" }
+        if gold < 2000 { return "Low - risk-on" }
+        if gold < 2400 { return "Normal range" }
+        return "High - safe-haven demand"
     }
 
     // MARK: - Asset Table

@@ -107,7 +107,7 @@ struct MacroDashboardDetailView: View {
                             // VIX
                             Button(action: { toggleIndicator(.vix) }) {
                                 SimpleIndicatorRow(
-                                    icon: "waveform.path.ecg",
+                                    icon: "chart.line.uptrend.xyaxis",
                                     title: "VIX",
                                     value: vixData.map { String(format: "%.1f", $0.value) } ?? "--",
                                     status: vixStatus,
@@ -136,7 +136,7 @@ struct MacroDashboardDetailView: View {
                             // DXY
                             Button(action: { toggleIndicator(.dxy) }) {
                                 SimpleIndicatorRow(
-                                    icon: "dollarsign.circle",
+                                    icon: "dollarsign.arrow.trianglehead.counterclockwise.rotate.90",
                                     title: "DXY",
                                     value: dxyData.map { String(format: "%.1f", $0.value) } ?? "--",
                                     change: dxyData?.changePercent,
@@ -166,7 +166,7 @@ struct MacroDashboardDetailView: View {
                             // Global M2
                             Button(action: { toggleIndicator(.m2) }) {
                                 SimpleIndicatorRow(
-                                    icon: "banknote",
+                                    icon: "chart.bar.fill",
                                     title: "Global M2",
                                     value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
                                     change: liquidityData?.monthlyChange,
@@ -383,6 +383,8 @@ struct MacroDashboardDetailView: View {
         case .m2:
             break // Already available in liquidityData.history
         case .crudeOil:
+            break // History loaded via z-score service
+        case .gold:
             break // History loaded via z-score service
         }
     }

@@ -270,9 +270,9 @@ enum AppSection: String, Codable, CaseIterable {
 
     var iconName: String {
         switch self {
-        case .vix: return "waveform.path.ecg"
-        case .dxy: return "dollarsign.circle"
-        case .m2: return "banknote"
+        case .vix: return "chart.line.uptrend.xyaxis"
+        case .dxy: return "dollarsign.arrow.trianglehead.counterclockwise.rotate.90"
+        case .m2: return "chart.bar.fill"
         case .bitcoinRisk: return "exclamationmark.triangle"
         case .upcomingEvents: return "calendar"
         case .fearGreed: return "gauge.with.needle"

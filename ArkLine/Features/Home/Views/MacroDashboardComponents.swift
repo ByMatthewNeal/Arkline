@@ -368,6 +368,8 @@ struct ZScoreAnalysisRow: View {
             return formatLargeNumber(value)
         case .crudeOil:
             return String(format: "$%.2f", value)
+        case .gold:
+            return String(format: "$%.0f", value)
         }
     }
 

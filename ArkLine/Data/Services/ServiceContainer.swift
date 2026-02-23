@@ -54,6 +54,7 @@ final class ServiceContainer {
     private lazy var _yahooVIXService = YahooVIXService()
     private lazy var _yahooDXYService = YahooDXYService()
     private lazy var _yahooCrudeOilService = YahooCrudeOilService()
+    private lazy var _yahooGoldService = YahooGoldService()
 
     // MARK: - Lazy Services - Coinglass (Derivatives)
     private lazy var _apiCoinglassService = APICoinglassService()
@@ -118,6 +119,11 @@ final class ServiceContainer {
     /// Crude Oil service - uses Yahoo Finance (no rate limits)
     var crudeOilService: CrudeOilServiceProtocol {
         _yahooCrudeOilService
+    }
+
+    /// Gold service - uses Yahoo Finance (no rate limits)
+    var goldService: GoldServiceProtocol {
+        _yahooGoldService
     }
 
     /// Rainbow Chart service - calculation-based (uses market service for BTC price)
