@@ -15,6 +15,7 @@ class SentimentViewModel {
     private let crudeOilService: CrudeOilServiceProtocol
     private let goldService: GoldServiceProtocol
     private let coinglassService: CoinglassServiceProtocol
+    private let geiService: GEIServiceProtocol
 
     /// When false, skips fire-and-forget archival/alerting (for unit tests)
     private let enableSideEffects: Bool
@@ -39,6 +40,9 @@ class SentimentViewModel {
     var globalM2Data: GlobalLiquidityChanges?
     var crudeOilData: CrudeOilData?
     var goldData: GoldData?
+
+    // Global Economy Index (composite leading indicator)
+    var geiData: GEIData?
 
     // Macro Z-Scores (statistical analysis)
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
@@ -264,6 +268,7 @@ class SentimentViewModel {
         goldService: GoldServiceProtocol = ServiceContainer.shared.goldService,
         macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService,
         coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService,
+        geiService: GEIServiceProtocol = ServiceContainer.shared.geiService,
         enableSideEffects: Bool = true
     ) {
         self.sentimentService = sentimentService
@@ -276,6 +281,7 @@ class SentimentViewModel {
         self.goldService = goldService
         self.macroStatisticsService = macroStatisticsService
         self.coinglassService = coinglassService
+        self.geiService = geiService
         self.enableSideEffects = enableSideEffects
     }
 
@@ -314,12 +320,13 @@ class SentimentViewModel {
         // Market cap sparkline (7-day BTC market cap as proxy)
         async let marketCapHistoryTask = fetchMarketCapHistorySafe()
 
-        // Macro Indicators (VIX, DXY, Global M2, WTI, Gold)
+        // Macro Indicators (VIX, DXY, Global M2, WTI, Gold, GEI)
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
         async let globalM2Task = fetchGlobalM2Safe()
         async let crudeOilTask = fetchCrudeOilSafe()
         async let goldTask = fetchGoldSafe()
+        async let geiTask = fetchGEISafe()
 
         // Macro Z-Scores (statistical analysis)
         async let zScoresTask = fetchMacroZScoresSafe()
@@ -336,6 +343,7 @@ class SentimentViewModel {
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
         let crudeOil = await crudeOilTask
         let gold = await goldTask
+        let gei = await geiTask
         let zScores = await zScoresTask
         let btcOI = await btcOITask
 
@@ -376,6 +384,7 @@ class SentimentViewModel {
         self.globalM2Data = globalM2
         self.crudeOilData = crudeOil
         self.goldData = gold
+        self.geiData = gei
 
         // Macro Z-Scores
         self.macroZScores = zScores
@@ -400,7 +409,7 @@ class SentimentViewModel {
         if enableSideEffects {
             notifyFailures(
                 fg: fg, btc: btc, marketOverview: marketOverview,
-                vix: vix, dxy: dxy, globalM2: globalM2, crudeOil: crudeOil, gold: gold
+                vix: vix, dxy: dxy, globalM2: globalM2, crudeOil: crudeOil, gold: gold, gei: gei
             )
         }
 
@@ -489,6 +498,16 @@ class SentimentViewModel {
                 await collector.recordIndicator(
                     name: "app_store_rankings", value: Double(rankings.first?.ranking ?? 0),
                     metadata: rankMeta
+                )
+            }
+            if let gei = gei {
+                await collector.recordIndicator(
+                    name: "gei_composite", value: gei.score,
+                    metadata: [
+                        "signal": .string(gei.signal.label),
+                        "component_count": .int(gei.components.count),
+                        "is_extreme": .bool(gei.isExtreme)
+                    ]
                 )
             }
             if let oi = btcOI {
@@ -609,10 +628,17 @@ class SentimentViewModel {
     // MARK: - Private Methods
     func loadInitialData() async {
         await refresh()
-        await fetchFearGreedHistory(days: 90)
-        await fetchGoogleTrendsHistory()
-        await fetchCapitalRotation()
-        await fetchSentimentRegime()
+        await loadSupplementalData()
+    }
+
+    /// Fetches secondary data (history, trends, rotation, regime) that isn't needed
+    /// for the initial macro indicator display or allocation calculations.
+    func loadSupplementalData() async {
+        async let h: () = fetchFearGreedHistory(days: 90)
+        async let g: () = fetchGoogleTrendsHistory()
+        async let c: () = fetchCapitalRotation()
+        async let s: () = fetchSentimentRegime()
+        _ = await (h, g, c, s)
     }
 
     // MARK: - Individual Retry Methods
@@ -661,7 +687,7 @@ class SentimentViewModel {
     @MainActor
     private func notifyFailures(
         fg: FearGreedIndex?, btc: BTCDominance?, marketOverview: MarketOverview?,
-        vix: VIXData?, dxy: DXYData?, globalM2: GlobalLiquidityChanges?, crudeOil: CrudeOilData?, gold: GoldData?
+        vix: VIXData?, dxy: DXYData?, globalM2: GlobalLiquidityChanges?, crudeOil: CrudeOilData?, gold: GoldData?, gei: GEIData?
     ) {
         var failedCore: [String] = []
         if fg == nil { failedCore.append("Fear & Greed") }
@@ -674,6 +700,7 @@ class SentimentViewModel {
         if globalM2 == nil { failedMacro.append("Global M2") }
         if crudeOil == nil { failedMacro.append("WTI") }
         if gold == nil { failedMacro.append("Gold") }
+        if gei == nil { failedMacro.append("GEI") }
 
         let totalFailed = failedCore.count + failedMacro.count
         if totalFailed >= 3 {
@@ -795,6 +822,10 @@ class SentimentViewModel {
 
     private func fetchBTCOpenInterestSafe() async -> OpenInterestData? {
         try? await coinglassService.fetchOpenInterest(symbol: "BTC")
+    }
+
+    private func fetchGEISafe() async -> GEIData? {
+        try? await geiService.fetchGEI()
     }
 
     // MARK: - Enhanced Risk Methods

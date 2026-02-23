@@ -56,6 +56,9 @@ final class ServiceContainer {
     private lazy var _yahooCrudeOilService = YahooCrudeOilService()
     private lazy var _yahooGoldService = YahooGoldService()
 
+    // MARK: - Lazy Services - GEI (Composite)
+    private lazy var _apiGEIService = APIGEIService()
+
     // MARK: - Lazy Services - Coinglass (Derivatives)
     private lazy var _apiCoinglassService = APICoinglassService()
     private lazy var _mockCoinglassService = MockCoinglassService()
@@ -154,6 +157,11 @@ final class ServiceContainer {
     /// Historical Context service - finds similar historical occurrences
     var historicalContextService: HistoricalContextService {
         _historicalContextService
+    }
+
+    /// GEI service - composite leading economic index (6 indicators)
+    var geiService: GEIServiceProtocol {
+        _apiGEIService
     }
 
     /// Broadcast service - manages broadcasts for the Broadcast Studio

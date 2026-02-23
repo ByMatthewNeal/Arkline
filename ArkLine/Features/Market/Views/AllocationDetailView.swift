@@ -122,6 +122,17 @@ struct AllocationDetailView: View {
                 .foregroundColor(AppColors.textSecondary)
                 .padding(.horizontal)
 
+            // GEI (composite leading indicator)
+            MacroIndicatorCard(
+                title: "GEI",
+                subtitle: "Global Economy",
+                value: sentimentViewModel.geiData?.formattedScore ?? "--",
+                signal: geiSignal,
+                description: geiDescription,
+                icon: "globe.americas.fill",
+                geiData: sentimentViewModel.geiData
+            )
+
             // VIX
             MacroIndicatorCard(
                 title: "VIX",
@@ -186,6 +197,20 @@ struct AllocationDetailView: View {
     }
 
     // MARK: - Macro Signal Helpers
+
+    private var geiSignal: MacroTrendSignal {
+        guard let gei = sentimentViewModel.geiData else { return .neutral }
+        switch gei.signal {
+        case .expansion: return .bullish
+        case .contraction: return .bearish
+        case .neutral: return .neutral
+        }
+    }
+
+    private var geiDescription: String {
+        guard let gei = sentimentViewModel.geiData else { return "Composite index" }
+        return gei.signalDescription
+    }
 
     private var vixSignal: MacroTrendSignal {
         guard let vix = sentimentViewModel.vixData?.value else { return .neutral }

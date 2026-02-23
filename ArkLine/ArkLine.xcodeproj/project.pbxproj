@@ -415,6 +415,10 @@
 		55EA2A30092B25DA9B46A610 /* AllocationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381C1471265D409B73F28DD4 /* AllocationViewModel.swift */; };
 		21143EF4E51662971C0DED29 /* AllocationSummarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2E1D176C178296E4E436AE /* AllocationSummarySection.swift */; };
 		837C7B8D6179B639E0B47A89 /* AllocationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3871E2B3DABE8666344641E /* AllocationDetailView.swift */; };
+		B2C3D4E5F6A7182930415B6C /* GEIData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304A5B /* GEIData.swift */; };
+		D4E5F6A7B8C9304152637D8E /* GEIServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B8293041526C7D /* GEIServiceProtocol.swift */; };
+		F6A7B8C9DAEB52637485A9B0 /* APIGEIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */; };
+		B8C9DAEBF0D174859607C1D2 /* GEIDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B8C9DAEFC063748596B0C1 /* GEIDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -836,6 +840,10 @@
 		381C1471265D409B73F28DD4 /* AllocationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationViewModel.swift; sourceTree = "<group>"; };
 		5E2E1D176C178296E4E436AE /* AllocationSummarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationSummarySection.swift; sourceTree = "<group>"; };
 		C3871E2B3DABE8666344641E /* AllocationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationDetailView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6071829304A5B /* GEIData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIData.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B8293041526C7D /* GEIServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIServiceProtocol.swift; sourceTree = "<group>"; };
+		E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIGEIService.swift; sourceTree = "<group>"; };
+		A7B8C9DAEFC063748596B0C1 /* GEIDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1062,6 +1070,7 @@
 				ECA6B164AD3765E2BDD5E4A9 /* PositioningSignalCalculator.swift */,
 				EDC31084AE9E2638BB22F66A /* MacroRegimeCalculator.swift */,
 				022988C8CBE9E57CBBD2897D /* AllocationEngine.swift */,
+				E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1156,6 +1165,7 @@
 				E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */,
 				0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */,
 				DC9D7E2A614F2063FE05E1DE /* GoldServiceProtocol.swift */,
+				C3D4E5F6A7B8293041526C7D /* GEIServiceProtocol.swift */,
 				23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */,
 				5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */,
 				79762427DB37480CBA73C016 /* AdminServiceProtocol.swift */,
@@ -1205,6 +1215,7 @@
 				A9CBCD28DAB9835627BA87F5 /* VIXData.swift */,
 				BE590AB631BFDB64F5773680 /* CrudeOilData.swift */,
 				4DEB9D2E7F678C5CF7CC455B /* GoldData.swift */,
+				A1B2C3D4E5F6071829304A5B /* GEIData.swift */,
 				5938799B40563800647E30C4 /* Broadcast.swift */,
 				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
 				FE0000000000000000000011 /* FeatureRequest.swift */,
@@ -1266,6 +1277,7 @@
 				1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */,
 				C3871E2B3DABE8666344641E /* AllocationDetailView.swift */,
 				D4AA00B2C2D8CF243B93A2E0 /* SentimentDetailView.swift */,
+				A7B8C9DAEFC063748596B0C1 /* GEIDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2532,6 +2544,10 @@
 				ED8D0F6F4BFC3D58BB1C4C6B /* TraditionalMarketsSection.swift in Sources */,
 				B381701833D18EC52D949262 /* SentimentSummarySection.swift in Sources */,
 				3CF3899575E1805C79C32278 /* SentimentDetailView.swift in Sources */,
+				B2C3D4E5F6A7182930415B6C /* GEIData.swift in Sources */,
+				D4E5F6A7B8C9304152637D8E /* GEIServiceProtocol.swift in Sources */,
+				F6A7B8C9DAEB52637485A9B0 /* APIGEIService.swift in Sources */,
+				B8C9DAEBF0D174859607C1D2 /* GEIDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

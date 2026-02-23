@@ -92,14 +92,18 @@ struct MarketOverviewView: View {
             }
             .navigationTitle("Market Overview")
             .task {
+                // Start market + sentiment refresh in parallel
                 async let market: () = viewModel.refresh()
-                async let sentiment: () = sentimentViewModel.loadInitialData()
+                async let sentiment: () = sentimentViewModel.refresh()
                 _ = await (market, sentiment)
-                // Init allocation VM after sentiment data loads
+
+                // Macro data is now available — kick off allocations + history fetches in parallel
                 if allocationViewModel == nil {
                     allocationViewModel = AllocationViewModel(sentimentViewModel: sentimentViewModel)
                 }
-                await allocationViewModel?.loadAllocations()
+                async let allocation: () = allocationViewModel?.loadAllocations() ?? ()
+                async let history: () = sentimentViewModel.loadSupplementalData()
+                _ = await (allocation, history)
             }
             .onAppear {
                 Task { await AnalyticsService.shared.trackScreenView("market") }
@@ -461,6 +465,7 @@ struct MacroIndicatorsSection: View {
     let globalM2Data: GlobalLiquidityChanges?
     var crudeOilData: CrudeOilData? = nil
     var goldData: GoldData? = nil
+    var geiData: GEIData? = nil
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     @Environment(\.colorScheme) var colorScheme
 
@@ -492,6 +497,17 @@ struct MacroIndicatorsSection: View {
 
             // Indicators Grid
             VStack(spacing: 12) {
+                // GEI Card (composite leading indicator)
+                MacroIndicatorCard(
+                    title: "GEI",
+                    subtitle: "Global Economy",
+                    value: geiData?.formattedScore ?? "--",
+                    signal: geiSignal,
+                    description: geiDescription,
+                    icon: "globe.americas.fill",
+                    geiData: geiData
+                )
+
                 // VIX Card
                 MacroIndicatorCard(
                     title: "VIX",
@@ -554,6 +570,21 @@ struct MacroIndicatorsSection: View {
             }
             .padding(.horizontal)
         }
+    }
+
+    // GEI helpers
+    private var geiSignal: MacroTrendSignal {
+        guard let gei = geiData else { return .neutral }
+        switch gei.signal {
+        case .expansion: return .bullish
+        case .contraction: return .bearish
+        case .neutral: return .neutral
+        }
+    }
+
+    private var geiDescription: String {
+        guard let gei = geiData else { return "Composite index" }
+        return gei.signalDescription
     }
 
     // VIX helpers
@@ -706,6 +737,7 @@ struct MacroIndicatorCard: View {
     var liquidityData: GlobalLiquidityChanges? = nil
     var crudeOilData: CrudeOilData? = nil
     var goldData: GoldData? = nil
+    var geiData: GEIData? = nil
     var zScoreData: MacroZScoreData? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -792,6 +824,8 @@ struct MacroIndicatorCard: View {
     @ViewBuilder
     private var detailView: some View {
         switch title {
+        case "GEI":
+            GEIDetailView(geiData: geiData)
         case "VIX":
             VIXDetailView(vixData: vixData)
         case "DXY":
