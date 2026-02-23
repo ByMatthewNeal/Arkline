@@ -125,11 +125,14 @@ struct ReorderableWidgetStack: View {
             // Show if any user-selected coin has risk data
             return !viewModel.userSelectedRiskLevels.filter { $0.riskLevel != nil }.isEmpty
         case .vixIndicator:
-            return true
+            // Hidden when Macro Dashboard is enabled (already shows VIX)
+            return !appState.isWidgetEnabled(.macroDashboard)
         case .dxyIndicator:
-            return true
+            // Hidden when Macro Dashboard is enabled (already shows DXY)
+            return !appState.isWidgetEnabled(.macroDashboard)
         case .globalLiquidity:
-            return true
+            // Hidden when Macro Dashboard is enabled (already shows M2)
+            return !appState.isWidgetEnabled(.macroDashboard)
         case .supplyInProfit:
             return true
         case .macroDashboard:

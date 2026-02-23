@@ -85,7 +85,11 @@ struct CustomizeHomeView: View {
                     // Widget toggles
                     VStack(spacing: 12) {
                         ForEach(HomeWidgetType.allCases) { widget in
-                            if widget.isPremium && !appState.isPro {
+                            // Hide individual VIX/DXY/M2 when Macro Dashboard is enabled
+                            // (they're redundant — the dashboard already shows all three)
+                            if isRedundantMacroWidget(widget) {
+                                // Skip — don't show in the list at all
+                            } else if widget.isPremium && !appState.isPro {
                                 WidgetConfigRow(
                                     widget: widget,
                                     isEnabled: false,
@@ -107,6 +111,14 @@ struct CustomizeHomeView: View {
                                             appState.toggleWidget(widget)
                                             if !appState.isWidgetEnabled(widget) {
                                                 expandedWidget = nil
+                                            }
+                                            // When macro dashboard is enabled, auto-disable individual indicators
+                                            if widget == .macroDashboard && appState.isWidgetEnabled(.macroDashboard) {
+                                                var config = appState.widgetConfiguration
+                                                config.setWidgetEnabled(.vixIndicator, enabled: false)
+                                                config.setWidgetEnabled(.dxyIndicator, enabled: false)
+                                                config.setWidgetEnabled(.globalLiquidity, enabled: false)
+                                                appState.setWidgetConfiguration(config)
                                             }
                                         }
                                     },
@@ -167,6 +179,12 @@ struct CustomizeHomeView: View {
                 }
             }
         }
+    }
+
+    /// Individual VIX, DXY, M2 widgets are redundant when Macro Dashboard is enabled.
+    private func isRedundantMacroWidget(_ widget: HomeWidgetType) -> Bool {
+        guard appState.isWidgetEnabled(.macroDashboard) else { return false }
+        return widget == .vixIndicator || widget == .dxyIndicator || widget == .globalLiquidity
     }
 
     private func resetToDefaults() {

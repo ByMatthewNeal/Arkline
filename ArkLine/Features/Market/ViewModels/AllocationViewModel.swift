@@ -175,7 +175,7 @@ class AllocationViewModel {
             "ethereum": "279/large/ethereum.png",
             "solana": "4128/large/solana.png",
             "binancecoin": "825/large/bnb-icon2_2x.png",
-            "uniswap": "12504/large/uni.png",
+            "uniswap": "12504/large/uniswap-logo.png",
             "render-token": "11636/large/rndr.png",
             "sui": "26375/large/sui_asset.jpeg",
             "ondo-finance": "26580/large/ONDO.png",
