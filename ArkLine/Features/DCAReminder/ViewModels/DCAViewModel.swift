@@ -37,12 +37,22 @@ final class DCAViewModel {
     // User context
     private var cachedUserId: UUID?
 
-    /// Resolves user ID from Supabase auth (must be called from async context)
-    @MainActor
-    private func resolveUserId() -> UUID? {
-        let id = SupabaseAuthManager.shared.currentUserId
-        cachedUserId = id
-        return id
+    /// Resolves user ID from Supabase auth, retrying once if session isn't ready yet
+    private func resolveUserId() async -> UUID? {
+        if let id = SupabaseAuthManager.shared.currentUserId {
+            cachedUserId = id
+            return id
+        }
+
+        // Session may not be restored yet — refresh it and retry
+        await SupabaseAuthManager.shared.checkSession()
+        if let id = SupabaseAuthManager.shared.currentUserId {
+            cachedUserId = id
+            return id
+        }
+
+        // Fall back to previously cached ID (e.g., from a prior successful load)
+        return cachedUserId
     }
 
     // MARK: - Computed Properties

@@ -180,6 +180,9 @@ extension SupabaseAuthManager {
                         self.isAuthenticated = false
                     case .tokenRefreshed:
                         self.currentSession = session
+                        if let user = session?.user {
+                            self.currentAuthUser = user
+                        }
                     case .userUpdated:
                         self.currentAuthUser = session?.user
                     default:

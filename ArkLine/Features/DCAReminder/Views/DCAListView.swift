@@ -150,8 +150,8 @@ struct DCAListView: View {
         .sheet(item: $viewModel.selectedReminder) { reminder in
             InvestmentHistorySheetView(reminder: reminder, viewModel: viewModel)
         }
-        .onAppear {
-            Task { await viewModel.refresh() }
+        .task {
+            await viewModel.refresh()
         }
     }
 
