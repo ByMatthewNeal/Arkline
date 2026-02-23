@@ -167,8 +167,13 @@ class HomeViewModel {
         }
     }
 
-    /// Generates chart data from real portfolio history points
+    /// Generates chart data from real portfolio history points.
+    /// For short periods (1H, 1D) where history snapshots are sparse,
+    /// synthesizes a line from the computed 24h change so the chart
+    /// matches the displayed percentage.
     private func generateChartData(for period: TimePeriod) -> [CGFloat] {
+        guard portfolioValue > 0 else { return [] }
+
         let days = period.days
         let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
         var relevantHistory = portfolioHistory
@@ -176,30 +181,46 @@ class HomeViewModel {
             .sorted { $0.date < $1.date }
 
         // Add current value as the latest point
-        if portfolioValue > 0 {
-            relevantHistory.append(PortfolioHistoryPoint(date: Date(), value: portfolioValue))
+        relevantHistory.append(PortfolioHistoryPoint(date: Date(), value: portfolioValue))
+
+        // For 1H / 1D: history snapshots are at most daily, so synthesize
+        // a start→end line from the live 24h change data when history is sparse.
+        if relevantHistory.count < 3 && (period == .hour || period == .day) {
+            let change = getChangeForTimePeriod(period)
+            let previousValue = portfolioValue - change.amount
+            if previousValue > 0 {
+                return normalizeValues([previousValue, portfolioValue])
+            }
         }
 
-        // If not enough history for the selected period, fall back to cost basis → current value
-        if relevantHistory.count < 2 && portfolioValue > 0 {
+        // For longer periods with insufficient history, fall back to cost basis
+        if relevantHistory.count < 2 {
             let totalCost = portfolioHoldings.reduce(0) { $0 + $1.totalCost }
             if totalCost > 0 {
-                return [CGFloat(0), CGFloat(totalCost > portfolioValue ? 0 : 1)]
+                return normalizeValues([totalCost, portfolioValue])
             }
-            // No cost basis either — show a flat line so the chart area isn't empty
             return [0.5, 0.5]
         }
 
-        guard relevantHistory.count >= 2 else { return [] }
-
         let values = relevantHistory.map { $0.value }
+        return normalizeValues(values)
+    }
+
+    /// Normalizes an array of values to 0–1 range for sparkline rendering.
+    private func normalizeValues(_ values: [Double]) -> [CGFloat] {
         guard let minVal = values.min(), let maxVal = values.max() else { return [] }
         let range = maxVal - minVal
-
         if range < 0.01 {
-            return values.map { _ in CGFloat(0.5) }
+            // All values nearly equal — show a subtle slope based on direction
+            // so the chart isn't misleadingly flat.
+            guard values.count >= 2 else { return [0.5] }
+            let first = values.first!, last = values.last!
+            if last >= first {
+                return [CGFloat(0.4), CGFloat(0.6)]
+            } else {
+                return [CGFloat(0.6), CGFloat(0.4)]
+            }
         }
-
         return values.map { CGFloat(($0 - minVal) / range) }
     }
 
