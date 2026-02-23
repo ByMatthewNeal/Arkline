@@ -4,6 +4,7 @@ import Foundation
 
 /// Orchestrates the three allocation calculators to produce a unified AllocationSummary.
 /// Reads macro data from an existing SentimentViewModel to avoid duplicate fetches.
+/// TA fetches are sequential with 16s delays to respect Taapi.io rate limits (1 req/15s).
 @MainActor
 @Observable
 class AllocationViewModel {
@@ -15,6 +16,14 @@ class AllocationViewModel {
     var allocationSummary: AllocationSummary?
     var isLoading = false
     var errorMessage: String?
+
+    /// TA results cache — survives across refreshes until replaced
+    private var taCache: [String: TechnicalAnalysis] = [:]
+    private var taCacheTimestamp: Date?
+    private let taCacheTTL: TimeInterval = 300 // 5 minutes
+
+    /// Taapi.io rate limit: 1 request per 15 seconds
+    private static let taapiDelay: UInt64 = 16_000_000_000 // 16s in nanoseconds
 
     // MARK: - Init
 
@@ -30,91 +39,139 @@ class AllocationViewModel {
         errorMessage = nil
         defer { isLoading = false }
 
-        do {
-            // 1. Fetch TA for all 8 assets in parallel
-            let configs = AssetRiskConfig.allConfigs
-            let technicalResults = await fetchAllTA(configs: configs)
+        let configs = AssetRiskConfig.allConfigs
 
-            // 2. Read macro data from sentimentViewModel (already loaded)
-            let regime = MacroRegimeCalculator.computeRegime(
-                vixData: sentimentViewModel.vixData,
-                dxyData: sentimentViewModel.dxyData,
-                globalM2Data: sentimentViewModel.globalM2Data,
-                macroZScores: sentimentViewModel.macroZScores
-            )
+        // 1. Compute regime from macro data (instant, no network)
+        let regime = MacroRegimeCalculator.computeRegime(
+            vixData: sentimentViewModel.vixData,
+            dxyData: sentimentViewModel.dxyData,
+            globalM2Data: sentimentViewModel.globalM2Data,
+            macroZScores: sentimentViewModel.macroZScores
+        )
 
-            // 3. Compute signals for each asset that has TA data
-            var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal)] = []
+        // 2. Build signals for ALL assets — use cached TA if available, risk-level fallback otherwise
+        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal)] = []
 
-            for config in configs {
-                guard let ta = technicalResults[config.assetId] else { continue }
+        for config in configs {
+            let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
+            let signal: PositioningSignal
 
-                let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
-                let signal = PositioningSignalCalculator.computeSignal(
+            if let ta = taCache[config.assetId] {
+                signal = PositioningSignalCalculator.computeSignal(
                     trendScore: ta.trendScore,
                     riskLevel: riskLevel
                 )
-
-                let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
-
-                signals.append((
-                    assetId: config.assetId,
-                    displayName: config.displayName,
-                    iconUrl: iconUrl,
-                    signal: signal
-                ))
+            } else {
+                // Fallback: use risk level alone when TA is unavailable
+                signal = signalFromRiskLevel(riskLevel)
             }
 
-            // 4. Compute allocations
-            allocationSummary = AllocationEngine.computeAll(
-                signals: signals,
-                regime: regime
-            )
-        } catch {
-            errorMessage = error.localizedDescription
+            let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
+            signals.append((
+                assetId: config.assetId,
+                displayName: config.displayName,
+                iconUrl: iconUrl,
+                signal: signal
+            ))
+        }
+
+        // 3. Publish initial summary immediately (with whatever data we have)
+        allocationSummary = AllocationEngine.computeAll(signals: signals, regime: regime)
+
+        // 4. Fetch TA sequentially in background, updating summary as each completes
+        let isCacheStale = taCacheTimestamp.map { Date().timeIntervalSince($0) > taCacheTTL } ?? true
+        if isCacheStale {
+            await fetchTASequentially(configs: configs, regime: regime)
         }
     }
 
     /// Refresh — alias for loadAllocations for pull-to-refresh consistency
     func refresh() async {
+        // Clear cache on manual refresh so TA is re-fetched
+        taCache.removeAll()
+        taCacheTimestamp = nil
         await loadAllocations()
     }
 
-    // MARK: - Private
+    // MARK: - Sequential TA Fetching
 
-    /// Fetch technical analysis for all configs, returning results keyed by assetId.
-    /// Individual failures are silently skipped (asset omitted from results).
-    private func fetchAllTA(configs: [AssetRiskConfig]) async -> [String: TechnicalAnalysis] {
-        await withTaskGroup(of: (String, TechnicalAnalysis?).self) { group in
-            for config in configs {
-                guard let binanceSymbol = config.binanceSymbol else { continue }
-                let symbol = binanceSymbol.replacingOccurrences(of: "USDT", with: "/USDT")
-                let assetId = config.assetId
+    /// Fetches TA for each asset one at a time with rate limit delays.
+    /// Updates the summary after each successful fetch for progressive loading.
+    private func fetchTASequentially(configs: [AssetRiskConfig], regime: MacroRegimeResult) async {
+        var isFirst = true
 
-                group.addTask { [technicalAnalysisService] in
-                    do {
-                        let ta = try await technicalAnalysisService.fetchTechnicalAnalysis(
-                            symbol: symbol,
-                            exchange: "binance",
-                            interval: .daily
-                        )
-                        return (assetId, ta)
-                    } catch {
-                        return (assetId, nil)
-                    }
-                }
+        for config in configs {
+            guard let binanceSymbol = config.binanceSymbol else { continue }
+
+            // Rate limit delay (skip for first request)
+            if !isFirst {
+                try? await Task.sleep(nanoseconds: Self.taapiDelay)
             }
+            isFirst = false
 
-            var results: [String: TechnicalAnalysis] = [:]
-            for await (assetId, ta) in group {
-                if let ta { results[assetId] = ta }
+            let symbol = binanceSymbol.replacingOccurrences(of: "USDT", with: "/USDT")
+
+            do {
+                let ta = try await technicalAnalysisService.fetchTechnicalAnalysis(
+                    symbol: symbol,
+                    exchange: "binance",
+                    interval: .daily
+                )
+                taCache[config.assetId] = ta
+
+                // Rebuild and publish updated summary
+                rebuildSummary(configs: configs, regime: regime)
+            } catch {
+                // Keep fallback signal for this asset
             }
-            return results
         }
+
+        taCacheTimestamp = Date()
     }
 
+    /// Rebuild the allocation summary from current cache + fallbacks.
+    private func rebuildSummary(configs: [AssetRiskConfig], regime: MacroRegimeResult) {
+        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal)] = []
+
+        for config in configs {
+            let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
+            let signal: PositioningSignal
+
+            if let ta = taCache[config.assetId] {
+                signal = PositioningSignalCalculator.computeSignal(
+                    trendScore: ta.trendScore,
+                    riskLevel: riskLevel
+                )
+            } else {
+                signal = signalFromRiskLevel(riskLevel)
+            }
+
+            let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
+            signals.append((
+                assetId: config.assetId,
+                displayName: config.displayName,
+                iconUrl: iconUrl,
+                signal: signal
+            ))
+        }
+
+        allocationSummary = AllocationEngine.computeAll(signals: signals, regime: regime)
+    }
+
+    // MARK: - Fallback Signal
+
+    /// Derive a signal from risk level alone when TA data is unavailable.
+    /// Low risk → bullish, high risk → bearish, otherwise neutral.
+    private func signalFromRiskLevel(_ riskLevel: Double?) -> PositioningSignal {
+        guard let risk = riskLevel else { return .neutral }
+        if risk <= 0.3 { return .bullish }
+        if risk >= 0.7 { return .bearish }
+        return .neutral
+    }
+
+    // MARK: - Icon URL
+
     /// Map geckoId to CoinGecko image path segment.
-    /// Uses a static lookup since CoinGecko image IDs don't follow a predictable pattern.
     private func coinGeckoImageId(for geckoId: String) -> String {
         let mapping: [String: String] = [
             "bitcoin": "1/large/bitcoin.png",
