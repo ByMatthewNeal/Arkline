@@ -12,10 +12,11 @@ enum MacroRegimeCalculator {
         vixData: VIXData?,
         dxyData: DXYData?,
         globalM2Data: GlobalLiquidityChanges?,
+        crudeOilData: CrudeOilData? = nil,
         macroZScores: [MacroIndicatorType: MacroZScoreData]
     ) -> MacroRegimeResult {
         let growthScore = computeGrowthScore(vixData: vixData, macroZScores: macroZScores)
-        let inflationScore = computeInflationScore(dxyData: dxyData, globalM2Data: globalM2Data, macroZScores: macroZScores)
+        let inflationScore = computeInflationScore(dxyData: dxyData, globalM2Data: globalM2Data, crudeOilData: crudeOilData, macroZScores: macroZScores)
 
         let quadrant: MacroRegimeQuadrant
         if growthScore >= 50 && inflationScore < 50 {
@@ -78,13 +79,14 @@ enum MacroRegimeCalculator {
     // MARK: - Inflation Axis
 
     /// 0-100, higher = more inflationary.
-    /// Weighted: DXY z-score (60%) + M2 monthly change (40%).
+    /// Weighted: DXY z-score (45%) + M2 monthly change (30%) + WTI Crude Oil (25%).
     private static func computeInflationScore(
         dxyData: DXYData?,
         globalM2Data: GlobalLiquidityChanges?,
+        crudeOilData: CrudeOilData?,
         macroZScores: [MacroIndicatorType: MacroZScoreData]
     ) -> Double {
-        // DXY component (60% weight):
+        // DXY component:
         // Positive z-score (strong dollar) = disinflation (low score)
         // Negative z-score (weak dollar) = inflation (high score)
         let dxyComponent: Double
@@ -96,7 +98,7 @@ enum MacroRegimeCalculator {
             dxyComponent = 50
         }
 
-        // M2 component (40% weight):
+        // M2 component:
         // Higher monthly change = more inflationary
         let m2Component: Double
         if let m2 = globalM2Data {
@@ -114,6 +116,26 @@ enum MacroRegimeCalculator {
             m2Component = 50
         }
 
-        return dxyComponent * 0.6 + m2Component * 0.4
+        // WTI Crude Oil component:
+        // Higher oil prices = more inflationary pressure
+        let oilComponent: Double
+        if let oil = crudeOilData {
+            let price = oil.value
+            if price < 65 {
+                oilComponent = 30
+            } else if price < 75 {
+                oilComponent = 40
+            } else if price < 85 {
+                oilComponent = 55
+            } else if price < 95 {
+                oilComponent = 70
+            } else {
+                oilComponent = 85
+            }
+        } else {
+            oilComponent = 50
+        }
+
+        return dxyComponent * 0.45 + m2Component * 0.30 + oilComponent * 0.25
     }
 }

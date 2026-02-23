@@ -157,6 +157,18 @@ struct AllocationDetailView: View {
                 liquidityData: sentimentViewModel.globalM2Data,
                 zScoreData: sentimentViewModel.macroZScores[.m2]
             )
+
+            // WTI Crude Oil
+            MacroIndicatorCard(
+                title: "WTI",
+                subtitle: "Crude Oil",
+                value: sentimentViewModel.crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--",
+                signal: crudeOilSignal,
+                description: crudeOilDescription,
+                icon: "flame.fill",
+                crudeOilData: sentimentViewModel.crudeOilData,
+                zScoreData: sentimentViewModel.macroZScores[.crudeOil]
+            )
         }
         .padding(.horizontal)
     }
@@ -226,6 +238,27 @@ struct AllocationDetailView: View {
         if m2.monthlyChange > 0 { return "Expanding" }
         if m2.monthlyChange > -2.0 { return "Contracting" }
         return "Contracting fast"
+    }
+
+    private var crudeOilSignal: MacroTrendSignal {
+        guard let oil = sentimentViewModel.crudeOilData?.value else { return .neutral }
+        if oil < 65 { return .bullish }
+        if oil > 85 { return .bearish }
+        return .neutral
+    }
+
+    private var crudeOilDescription: String {
+        if let zScore = sentimentViewModel.macroZScores[.crudeOil] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Very high (\(zScore.zScore.formatted))" : "Very low (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
+            }
+        }
+        guard let oil = sentimentViewModel.crudeOilData?.value else { return "Oil prices" }
+        if oil < 65 { return "Low - disinflationary" }
+        if oil < 85 { return "Normal range" }
+        return "High - inflationary"
     }
 
     // MARK: - Asset Table
@@ -400,7 +433,7 @@ struct AllocationDetailView: View {
 
             guideRow(
                 title: "What is the Macro Regime?",
-                text: "We analyze VIX (volatility), DXY (dollar strength), and Global M2 (money supply) to classify the current macro environment into one of four regimes. Each regime has different implications for crypto performance."
+                text: "We analyze VIX (volatility), DXY (dollar strength), Global M2 (money supply), and WTI Crude Oil (inflation pressure) to classify the current macro environment into one of four regimes. Each regime has different implications for crypto performance."
             )
 
             guideRow(

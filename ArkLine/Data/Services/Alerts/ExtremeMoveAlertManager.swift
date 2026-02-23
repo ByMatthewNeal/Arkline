@@ -276,6 +276,8 @@ struct ExtremeMove: Codable, Identifiable, Equatable {
             valueFormatted = String(format: "%.2f", currentValue)
         case .m2:
             valueFormatted = formatLargeNumber(currentValue)
+        case .crudeOil:
+            valueFormatted = String(format: "$%.2f", currentValue)
         }
 
         let rarityText: String

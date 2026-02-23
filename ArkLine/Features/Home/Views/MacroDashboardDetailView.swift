@@ -382,6 +382,8 @@ struct MacroDashboardDetailView: View {
             loadDXYHistory()
         case .m2:
             break // Already available in liquidityData.history
+        case .crudeOil:
+            break // History loaded via z-score service
         }
     }
 

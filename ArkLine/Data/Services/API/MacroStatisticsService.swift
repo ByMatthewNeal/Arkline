@@ -8,6 +8,7 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
+    private let crudeOilService: CrudeOilServiceProtocol
 
     // MARK: - Cache
 
@@ -27,11 +28,13 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
     init(
         vixService: VIXServiceProtocol? = nil,
         dxyService: DXYServiceProtocol? = nil,
-        globalLiquidityService: GlobalLiquidityServiceProtocol? = nil
+        globalLiquidityService: GlobalLiquidityServiceProtocol? = nil,
+        crudeOilService: CrudeOilServiceProtocol? = nil
     ) {
         self.vixService = vixService ?? ServiceContainer.shared.vixService
         self.dxyService = dxyService ?? ServiceContainer.shared.dxyService
         self.globalLiquidityService = globalLiquidityService ?? ServiceContainer.shared.globalLiquidityService
+        self.crudeOilService = crudeOilService ?? ServiceContainer.shared.crudeOilService
     }
 
     // MARK: - Protocol Methods
@@ -58,6 +61,7 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         async let vixData = fetchZScoreData(for: .vix)
         async let dxyData = fetchZScoreData(for: .dxy)
         async let m2Data = fetchZScoreData(for: .m2)
+        async let crudeOilData = fetchZScoreData(for: .crudeOil)
 
         // Collect results, allowing partial failures
         var results: [MacroIndicatorType: MacroZScoreData] = [:]
@@ -70,6 +74,9 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         }
         if let m2 = try? await m2Data {
             results[.m2] = m2
+        }
+        if let oil = try? await crudeOilData {
+            results[.crudeOil] = oil
         }
 
         return results
@@ -90,6 +97,8 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
             return try await calculateDXYZScore()
         case .m2:
             return try await calculateM2ZScore()
+        case .crudeOil:
+            return try await calculateCrudeOilZScore()
         }
     }
 
@@ -210,6 +219,48 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
         return MacroZScoreData(
             indicator: .m2,
             currentValue: currentM2,
+            zScore: zScore,
+            sdBands: sdBands,
+            historyValues: historyValues,
+            calculatedAt: Date()
+        )
+    }
+    private func calculateCrudeOilZScore() async throws -> MacroZScoreData {
+        // Fetch current and historical crude oil data
+        async let latestTask = crudeOilService.fetchLatestCrudeOil()
+        async let historyTask = crudeOilService.fetchCrudeOilHistory(days: defaultLookbackDays)
+
+        let (latest, history) = try await (latestTask, historyTask)
+
+        guard let currentOil = latest else {
+            throw MacroStatisticsError.noCurrentData(indicator: .crudeOil)
+        }
+
+        // Extract values from history
+        let historyValues = history.map { $0.value }
+
+        guard historyValues.count >= minimumDataPoints else {
+            throw MacroStatisticsError.insufficientHistory(
+                indicator: .crudeOil,
+                required: minimumDataPoints,
+                actual: historyValues.count
+            )
+        }
+
+        // Calculate z-score
+        guard let zScore = StatisticsCalculator.calculateZScore(
+            currentValue: currentOil.value,
+            history: historyValues
+        ) else {
+            throw MacroStatisticsError.calculationFailed(indicator: .crudeOil)
+        }
+
+        // Calculate SD bands
+        let sdBands = StatisticsCalculator.sdBands(mean: zScore.mean, sd: zScore.standardDeviation)
+
+        return MacroZScoreData(
+            indicator: .crudeOil,
+            currentValue: currentOil.value,
             zScore: zScore,
             sdBands: sdBands,
             historyValues: historyValues,

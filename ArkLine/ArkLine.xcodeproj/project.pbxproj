@@ -258,6 +258,10 @@
 		BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */; };
 		BE518BD133BCA4B82F9178E4 /* SupplyInProfitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */; };
 		BE89C92611163C89B015EF91 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CBCD28DAB9835627BA87F5 /* VIXData.swift */; };
+		C909565F23FC6EE97CEF5EC2 /* CrudeOilData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE590AB631BFDB64F5773680 /* CrudeOilData.swift */; };
+		C7FD1D9ADDC8CFB27BD2BA90 /* CrudeOilServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */; };
+		DA0C38A633DD5E7E30918B40 /* YahooCrudeOilService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E504C608D3B2A01C071188A /* YahooCrudeOilService.swift */; };
+		1AAE4CFBB39B940F1DDB1337 /* CrudeOilDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */; };
 		BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */; };
 		C01NP1CK3RV13W0000002 /* CoinPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01NP1CK3RV13W0000001 /* CoinPickerView.swift */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
@@ -623,6 +627,10 @@
 		A7B3C8D9E2F401568A3D7E01 /* AltcoinSeasonStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AltcoinSeasonStore.swift; sourceTree = "<group>"; };
 		A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalLiquidityServiceProtocol.swift; sourceTree = "<group>"; };
 		A9CBCD28DAB9835627BA87F5 /* VIXData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VIXData.swift; sourceTree = "<group>"; };
+		BE590AB631BFDB64F5773680 /* CrudeOilData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilData.swift; sourceTree = "<group>"; };
+		0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilServiceProtocol.swift; sourceTree = "<group>"; };
+		4E504C608D3B2A01C071188A /* YahooCrudeOilService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooCrudeOilService.swift; sourceTree = "<group>"; };
+		EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilDetailView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000011 /* AppErrorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppErrorTests.swift; path = ../ArkLineTests/AppErrorTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* AssetRiskConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AssetRiskConfigTests.swift; path = ../ArkLineTests/AssetRiskConfigTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* MultiFactorRiskTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MultiFactorRiskTests.swift; path = ../ArkLineTests/MultiFactorRiskTests.swift; sourceTree = "<group>"; };
@@ -1034,6 +1042,7 @@
 				7595D2044FCFDCA031195CAA /* YahooDXYService.swift */,
 				BA91044F71D1EA8FA81B5DE6 /* YahooFinanceService.swift */,
 				A1F5409EE3FED4A42BA318B3 /* YahooVIXService.swift */,
+				4E504C608D3B2A01C071188A /* YahooCrudeOilService.swift */,
 				8C9F2BB5F78AF614F347490F /* BroadcastService.swift */,
 				FE0000000000000000000012 /* FeatureRequestService.swift */,
 				EF6DC4B590B15208F84C18F4 /* MarketDataCollector.swift */,
@@ -1136,6 +1145,7 @@
 				ED28F57A1AE475BCCE6387CE /* SentimentServiceProtocol.swift */,
 				FDA16D535F92C4AE0E9C2722 /* TechnicalAnalysisServiceProtocol.swift */,
 				E4A1C6036B2092A3DBE5DEEB /* VIXServiceProtocol.swift */,
+				0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */,
 				23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */,
 				5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */,
 				79762427DB37480CBA73C016 /* AdminServiceProtocol.swift */,
@@ -1183,6 +1193,7 @@
 				1932000FA607265666E09FA8 /* Transaction.swift */,
 				FBEE2AB1904E9E24D7B1229D /* User.swift */,
 				A9CBCD28DAB9835627BA87F5 /* VIXData.swift */,
+				BE590AB631BFDB64F5773680 /* CrudeOilData.swift */,
 				5938799B40563800647E30C4 /* Broadcast.swift */,
 				5938799B40563800647E30C5 /* PortfolioShowcase.swift */,
 				FE0000000000000000000011 /* FeatureRequest.swift */,
@@ -1235,6 +1246,7 @@
 				86AA2774D5757CF06C791EEC /* AssetDetailView.swift */,
 				8FCD088B0831263C159A5269 /* MarketOverviewView.swift */,
 				AA1122334455667788990022 /* MetalDetailView.swift */,
+				EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */,
 				A1B2C3D4E5F60718293A4B5C /* ArkLineScoreDetailView.swift */,
 				7F8A2B4C6D0E1F3A5B7C9D2E /* SentimentRegimeDetailView.swift */,
 				AA1122334455667788990011 /* StockDetailView.swift */,
@@ -2410,6 +2422,10 @@
 				A854D41D995843DF457AFF21 /* YahooDXYService.swift in Sources */,
 				1A1D17A6E0379D73A6F45738 /* YahooFinanceService.swift in Sources */,
 				8DD30594AE32B9D1BE06917D /* YahooVIXService.swift in Sources */,
+				C909565F23FC6EE97CEF5EC2 /* CrudeOilData.swift in Sources */,
+				C7FD1D9ADDC8CFB27BD2BA90 /* CrudeOilServiceProtocol.swift in Sources */,
+				DA0C38A633DD5E7E30918B40 /* YahooCrudeOilService.swift in Sources */,
+				1AAE4CFBB39B940F1DDB1337 /* CrudeOilDetailView.swift in Sources */,
 				7A9C2B0E2516699150C161D4 /* ZScoreIndicator.swift in Sources */,
 				F1NANC1ALD15CLA1M3R02 /* FinancialDisclaimer.swift in Sources */,
 				0E896256033DF759ECCCC6D2 /* Broadcast.swift in Sources */,

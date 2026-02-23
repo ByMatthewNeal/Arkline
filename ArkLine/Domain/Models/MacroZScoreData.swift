@@ -8,6 +8,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
     case vix = "VIX"
     case dxy = "DXY"
     case m2 = "M2"
+    case crudeOil = "WTI"
 
     var id: String { rawValue }
 
@@ -17,6 +18,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .vix: return "VIX"
         case .dxy: return "US Dollar"
         case .m2: return "M2 Supply"
+        case .crudeOil: return "Crude Oil"
         }
     }
 
@@ -26,6 +28,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .vix: return "CBOE Volatility Index"
         case .dxy: return "US Dollar Index"
         case .m2: return "M2 Money Supply"
+        case .crudeOil: return "WTI Crude Oil"
         }
     }
 
@@ -35,6 +38,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .vix: return .inverse  // High VIX = risk-off = bearish crypto
         case .dxy: return .inverse  // Strong dollar = headwind for crypto
         case .m2: return .positive  // More liquidity = bullish crypto
+        case .crudeOil: return .inverse  // High oil = inflation = hawkish Fed = bearish crypto
         }
     }
 
@@ -47,6 +51,8 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
             return "Unusually strong dollar - creates headwind for risk assets including crypto"
         case .m2:
             return "Rapid liquidity expansion - historically bullish for crypto with 2-3 month lag"
+        case .crudeOil:
+            return "High oil prices drive inflation expectations - hawkish Fed policy is bearish for crypto"
         }
     }
 
@@ -59,6 +65,8 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
             return "Unusually weak dollar - historically bullish for crypto and risk assets"
         case .m2:
             return "Liquidity contraction - historically creates headwinds for crypto"
+        case .crudeOil:
+            return "Low oil prices ease inflation pressure - favorable for risk assets including crypto"
         }
     }
 
@@ -68,6 +76,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
         case .vix: return "waveform.path.ecg"
         case .dxy: return "dollarsign.circle"
         case .m2: return "banknote"
+        case .crudeOil: return "flame.fill"
         }
     }
 }

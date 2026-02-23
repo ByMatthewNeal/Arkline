@@ -459,6 +459,7 @@ struct MacroIndicatorsSection: View {
     let vixData: VIXData?
     let dxyData: DXYData?
     let globalM2Data: GlobalLiquidityChanges?
+    var crudeOilData: CrudeOilData? = nil
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     @Environment(\.colorScheme) var colorScheme
 
@@ -524,6 +525,18 @@ struct MacroIndicatorsSection: View {
                     icon: "banknote",
                     liquidityData: globalM2Data,
                     zScoreData: macroZScores[.m2]
+                )
+
+                // WTI Crude Oil Card
+                MacroIndicatorCard(
+                    title: "WTI",
+                    subtitle: "Crude Oil",
+                    value: crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--",
+                    signal: oilSignal,
+                    description: oilZScoreDescription,
+                    icon: "flame.fill",
+                    crudeOilData: crudeOilData,
+                    zScoreData: macroZScores[.crudeOil]
                 )
             }
             .padding(.horizontal)
@@ -610,6 +623,32 @@ struct MacroIndicatorsSection: View {
         return m2Description
     }
 
+    // Oil helpers
+    private var oilSignal: MacroTrendSignal {
+        guard let oil = crudeOilData?.value else { return .neutral }
+        if oil < 65 { return .bullish }
+        if oil > 85 { return .bearish }
+        return .neutral
+    }
+
+    private var oilDescription: String {
+        guard let oil = crudeOilData?.value else { return "Oil prices" }
+        if oil < 65 { return "Low - disinflationary" }
+        if oil < 85 { return "Normal range" }
+        return "High - inflationary"
+    }
+
+    private var oilZScoreDescription: String {
+        if let zScore = macroZScores[.crudeOil] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Very high (\(zScore.zScore.formatted))" : "Very low (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
+            }
+        }
+        return oilDescription
+    }
+
     private func formatM2(_ value: Double) -> String {
         String(format: "$%.1fT", value / 1_000_000_000_000)
     }
@@ -626,6 +665,7 @@ struct MacroIndicatorCard: View {
     var vixData: VIXData? = nil
     var dxyData: DXYData? = nil
     var liquidityData: GlobalLiquidityChanges? = nil
+    var crudeOilData: CrudeOilData? = nil
     var zScoreData: MacroZScoreData? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -716,6 +756,8 @@ struct MacroIndicatorCard: View {
             VIXDetailView(vixData: vixData)
         case "DXY":
             DXYDetailView(dxyData: dxyData)
+        case "WTI":
+            CrudeOilDetailView(crudeOilData: crudeOilData)
         default:
             GlobalM2DetailView(liquidityChanges: liquidityData)
         }

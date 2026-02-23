@@ -48,6 +48,7 @@ class AllocationViewModel {
             vixData: sentimentViewModel.vixData,
             dxyData: sentimentViewModel.dxyData,
             globalM2Data: sentimentViewModel.globalM2Data,
+            crudeOilData: sentimentViewModel.crudeOilData,
             macroZScores: sentimentViewModel.macroZScores
         )
 

@@ -12,6 +12,7 @@ class SentimentViewModel {
     private let dxyService: DXYServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
     private let macroStatisticsService: MacroStatisticsServiceProtocol
+    private let crudeOilService: CrudeOilServiceProtocol
     private let coinglassService: CoinglassServiceProtocol
 
     /// When false, skips fire-and-forget archival/alerting (for unit tests)
@@ -31,10 +32,11 @@ class SentimentViewModel {
     var altcoinSeason: AltcoinSeasonIndex?
     var globalLiquidity: GlobalLiquidity?
 
-    // Macro Indicators (VIX, DXY, Global M2)
+    // Macro Indicators (VIX, DXY, Global M2, WTI)
     var vixData: VIXData?
     var dxyData: DXYData?
     var globalM2Data: GlobalLiquidityChanges?
+    var crudeOilData: CrudeOilData?
 
     // Macro Z-Scores (statistical analysis)
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
@@ -256,6 +258,7 @@ class SentimentViewModel {
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
+        crudeOilService: CrudeOilServiceProtocol = ServiceContainer.shared.crudeOilService,
         macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService,
         coinglassService: CoinglassServiceProtocol = ServiceContainer.shared.coinglassService,
         enableSideEffects: Bool = true
@@ -266,6 +269,7 @@ class SentimentViewModel {
         self.vixService = vixService
         self.dxyService = dxyService
         self.globalLiquidityService = globalLiquidityService
+        self.crudeOilService = crudeOilService
         self.macroStatisticsService = macroStatisticsService
         self.coinglassService = coinglassService
         self.enableSideEffects = enableSideEffects
@@ -306,10 +310,11 @@ class SentimentViewModel {
         // Market cap sparkline (7-day BTC market cap as proxy)
         async let marketCapHistoryTask = fetchMarketCapHistorySafe()
 
-        // Macro Indicators (VIX, DXY, Global M2)
+        // Macro Indicators (VIX, DXY, Global M2, WTI)
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
         async let globalM2Task = fetchGlobalM2Safe()
+        async let crudeOilTask = fetchCrudeOilSafe()
 
         // Macro Z-Scores (statistical analysis)
         async let zScoresTask = fetchMacroZScoresSafe()
@@ -324,6 +329,7 @@ class SentimentViewModel {
         let marketOverview = await marketOverviewTask
         let marketCapSparkline = await marketCapHistoryTask
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
+        let crudeOil = await crudeOilTask
         let zScores = await zScoresTask
         let btcOI = await btcOITask
 
@@ -362,6 +368,7 @@ class SentimentViewModel {
         self.vixData = vix
         self.dxyData = dxy
         self.globalM2Data = globalM2
+        self.crudeOilData = crudeOil
 
         // Macro Z-Scores
         self.macroZScores = zScores
@@ -386,7 +393,7 @@ class SentimentViewModel {
         if enableSideEffects {
             notifyFailures(
                 fg: fg, btc: btc, marketOverview: marketOverview,
-                vix: vix, dxy: dxy, globalM2: globalM2
+                vix: vix, dxy: dxy, globalM2: globalM2, crudeOil: crudeOil
             )
         }
 
@@ -438,6 +445,12 @@ class SentimentViewModel {
                 await collector.recordIndicator(
                     name: "global_m2", value: m2.current,
                     metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
+                )
+            }
+            if let oil = crudeOil {
+                await collector.recordIndicator(
+                    name: "crude_oil_wti", value: oil.value,
+                    metadata: ["change_pct": .double(oil.changePercent ?? 0)]
                 )
             }
             if let arkLineScore = arkLineScore {
@@ -635,7 +648,7 @@ class SentimentViewModel {
     @MainActor
     private func notifyFailures(
         fg: FearGreedIndex?, btc: BTCDominance?, marketOverview: MarketOverview?,
-        vix: VIXData?, dxy: DXYData?, globalM2: GlobalLiquidityChanges?
+        vix: VIXData?, dxy: DXYData?, globalM2: GlobalLiquidityChanges?, crudeOil: CrudeOilData?
     ) {
         var failedCore: [String] = []
         if fg == nil { failedCore.append("Fear & Greed") }
@@ -646,6 +659,7 @@ class SentimentViewModel {
         if vix == nil { failedMacro.append("VIX") }
         if dxy == nil { failedMacro.append("DXY") }
         if globalM2 == nil { failedMacro.append("Global M2") }
+        if crudeOil == nil { failedMacro.append("WTI") }
 
         let totalFailed = failedCore.count + failedMacro.count
         if totalFailed >= 3 {
@@ -751,6 +765,10 @@ class SentimentViewModel {
 
     private func fetchGlobalM2Safe() async -> GlobalLiquidityChanges? {
         try? await globalLiquidityService.fetchLiquidityChanges()
+    }
+
+    private func fetchCrudeOilSafe() async -> CrudeOilData? {
+        try? await crudeOilService.fetchLatestCrudeOil()
     }
 
     private func fetchMacroZScoresSafe() async -> [MacroIndicatorType: MacroZScoreData] {

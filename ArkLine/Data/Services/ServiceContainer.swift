@@ -53,6 +53,7 @@ final class ServiceContainer {
     // MARK: - Lazy Services - Yahoo Finance (better rate limits than Alpha Vantage)
     private lazy var _yahooVIXService = YahooVIXService()
     private lazy var _yahooDXYService = YahooDXYService()
+    private lazy var _yahooCrudeOilService = YahooCrudeOilService()
 
     // MARK: - Lazy Services - Coinglass (Derivatives)
     private lazy var _apiCoinglassService = APICoinglassService()
@@ -112,6 +113,11 @@ final class ServiceContainer {
     var dxyService: DXYServiceProtocol {
         // Yahoo Finance has no strict rate limits unlike Alpha Vantage (25/day)
         useMockMacroServices ? _mockDXYService : _yahooDXYService
+    }
+
+    /// Crude Oil service - uses Yahoo Finance (no rate limits)
+    var crudeOilService: CrudeOilServiceProtocol {
+        _yahooCrudeOilService
     }
 
     /// Rainbow Chart service - calculation-based (uses market service for BTC price)
