@@ -397,6 +397,13 @@
 		C2EB8B4DAC0C80D048AD7DA9 /* TrendChannelFullscreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */; };
 		7EC0A3B4D5F6289301C4E5A6 /* ShareCardKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */; };
 		8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */; };
+		DA18546E570B78C09BA23D67 /* AllocationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3326E173F155FC73440C973C /* AllocationModels.swift */; };
+		C04B4FC3C23778233ABA6322 /* PositioningSignalCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECA6B164AD3765E2BDD5E4A9 /* PositioningSignalCalculator.swift */; };
+		EF0E76FC97BDFDB13097DBB4 /* MacroRegimeCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC31084AE9E2638BB22F66A /* MacroRegimeCalculator.swift */; };
+		369D0F83688338266A64849A /* AllocationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022988C8CBE9E57CBBD2897D /* AllocationEngine.swift */; };
+		55EA2A30092B25DA9B46A610 /* AllocationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381C1471265D409B73F28DD4 /* AllocationViewModel.swift */; };
+		21143EF4E51662971C0DED29 /* AllocationSummarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2E1D176C178296E4E436AE /* AllocationSummarySection.swift */; };
+		837C7B8D6179B639E0B47A89 /* AllocationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3871E2B3DABE8666344641E /* AllocationDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -800,6 +807,13 @@
 		1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendChannelFullscreenView.swift; sourceTree = "<group>"; };
 		5CA8E1F2B3D4067189A2C3E4 /* ShareCardKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardKit.swift; sourceTree = "<group>"; };
 		6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardContent.swift; sourceTree = "<group>"; };
+		3326E173F155FC73440C973C /* AllocationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationModels.swift; sourceTree = "<group>"; };
+		ECA6B164AD3765E2BDD5E4A9 /* PositioningSignalCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalCalculator.swift; sourceTree = "<group>"; };
+		EDC31084AE9E2638BB22F66A /* MacroRegimeCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroRegimeCalculator.swift; sourceTree = "<group>"; };
+		022988C8CBE9E57CBBD2897D /* AllocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationEngine.swift; sourceTree = "<group>"; };
+		381C1471265D409B73F28DD4 /* AllocationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationViewModel.swift; sourceTree = "<group>"; };
+		5E2E1D176C178296E4E436AE /* AllocationSummarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationSummarySection.swift; sourceTree = "<group>"; };
+		C3871E2B3DABE8666344641E /* AllocationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1021,6 +1035,9 @@
 				E19F3731EAF433D80B2B6F1F /* InviteCodeService.swift */,
 				664FD2E2B7EC92200D5DE579 /* AdminService.swift */,
 				4D01467C8E13560F1E3F3B88 /* LogRegressionService.swift */,
+				ECA6B164AD3765E2BDD5E4A9 /* PositioningSignalCalculator.swift */,
+				EDC31084AE9E2638BB22F66A /* MacroRegimeCalculator.swift */,
+				022988C8CBE9E57CBBD2897D /* AllocationEngine.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1166,6 +1183,7 @@
 				A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */,
 				B7A3D9E1F4C8520A6D9B3E71 /* Subscription.swift */,
 				DEDCC061853C0D4C42CD9047 /* LogRegressionChannel.swift */,
+				3326E173F155FC73440C973C /* AllocationModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1216,6 +1234,7 @@
 				AA1122334455667788990011 /* StockDetailView.swift */,
 				891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */,
 				1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */,
+				C3871E2B3DABE8666344641E /* AllocationDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1516,6 +1535,7 @@
 				B4B455C1A7CD339880E0FD5B /* MarketViewModel.swift */,
 				5831D493E668A00494BC0398 /* SentimentViewModel.swift */,
 				4BB9EAB1CFB9AC165E66CAC7 /* TrendChannelViewModel.swift */,
+				381C1471265D409B73F28DD4 /* AllocationViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -1611,6 +1631,7 @@
 				91682101CBACB8AFAFBF1334 /* GoogleTrendsDetailView.swift */,
 				2AD3282515B7877788D18601 /* TrendChannelChart.swift */,
 				50533F2F531F5D45D8710237 /* RSIChartView.swift */,
+				5E2E1D176C178296E4E436AE /* AllocationSummarySection.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -2460,6 +2481,13 @@
 				EF65599A27FB2467E06546A4 /* AdminService.swift in Sources */,
 				BC10DB23701A8497F1ACDEEF /* SendInviteViewModel.swift in Sources */,
 				D7FA11028D257E313490ED5F /* SendInviteView.swift in Sources */,
+				DA18546E570B78C09BA23D67 /* AllocationModels.swift in Sources */,
+				C04B4FC3C23778233ABA6322 /* PositioningSignalCalculator.swift in Sources */,
+				EF0E76FC97BDFDB13097DBB4 /* MacroRegimeCalculator.swift in Sources */,
+				369D0F83688338266A64849A /* AllocationEngine.swift in Sources */,
+				55EA2A30092B25DA9B46A610 /* AllocationViewModel.swift in Sources */,
+				21143EF4E51662971C0DED29 /* AllocationSummarySection.swift in Sources */,
+				837C7B8D6179B639E0B47A89 /* AllocationDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

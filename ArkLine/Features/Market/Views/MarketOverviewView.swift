@@ -3,6 +3,7 @@ import SwiftUI
 struct MarketOverviewView: View {
     @State private var viewModel = MarketViewModel()
     @State private var sentimentViewModel = SentimentViewModel()
+    @State private var allocationViewModel: AllocationViewModel?
     @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
@@ -39,6 +40,12 @@ struct MarketOverviewView: View {
                             macroZScores: sentimentViewModel.macroZScores
                         )
 
+                        // 3.1 Positioning Signals Section
+                        AllocationSummarySection(
+                            allocationSummary: allocationViewModel?.allocationSummary,
+                            isLoading: allocationViewModel?.isLoading ?? false
+                        )
+
                         // 3.25 Indexes (S&P 500 & Nasdaq)
                         IndexesSection()
 
@@ -70,7 +77,8 @@ struct MarketOverviewView: View {
                 .refreshable {
                     async let market: () = viewModel.refresh()
                     async let sentiment: () = sentimentViewModel.refresh()
-                    _ = await (market, sentiment)
+                    async let allocation: () = allocationViewModel?.refresh() ?? ()
+                    _ = await (market, sentiment, allocation)
                 }
                 .onChange(of: appState.marketNavigationReset) { _, _ in
                     navigationPath = NavigationPath()
@@ -80,11 +88,19 @@ struct MarketOverviewView: View {
                 }
             } // ScrollViewReader
             }
+            .navigationDestination(for: AllocationSummary.self) { summary in
+                AllocationDetailView(summary: summary)
+            }
             .navigationTitle("Market Overview")
             .task {
                 async let market: () = viewModel.refresh()
                 async let sentiment: () = sentimentViewModel.loadInitialData()
                 _ = await (market, sentiment)
+                // Init allocation VM after sentiment data loads
+                if allocationViewModel == nil {
+                    allocationViewModel = AllocationViewModel(sentimentViewModel: sentimentViewModel)
+                }
+                await allocationViewModel?.loadAllocations()
             }
             .onAppear {
                 Task { await AnalyticsService.shared.trackScreenView("market") }
