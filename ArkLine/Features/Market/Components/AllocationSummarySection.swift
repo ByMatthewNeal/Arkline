@@ -16,9 +16,9 @@ struct AllocationSummarySection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
             HStack {
-                Image(systemName: "gauge.with.dots.needle.33percent")
+                Image(systemName: "chart.bar.doc.horizontal")
                     .foregroundColor(AppColors.accent)
-                Text("Positioning Signals")
+                Text("Crypto Positioning")
                     .font(.headline)
                     .foregroundColor(textPrimary)
                 Spacer()
@@ -42,11 +42,14 @@ struct AllocationSummarySection: View {
     private func summaryCard(summary: AllocationSummary) -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 10) {
-                // Regime badge
+                // Regime badge (text only, no icon)
                 regimeBadge(regime: summary.regime)
 
-                // Signal distribution
-                signalDistribution(allocations: summary.allocations)
+                // Signal summary line
+                signalSummary(allocations: summary.allocations)
+
+                // Stacked signal bar
+                signalBar(allocations: summary.allocations)
             }
 
             Spacer()
@@ -66,42 +69,63 @@ struct AllocationSummarySection: View {
     // MARK: - Regime Badge
 
     private func regimeBadge(regime: MacroRegimeResult) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: regime.quadrant.icon)
-                .font(.system(size: 12))
-            Text(regime.quadrant.rawValue)
-                .font(AppFonts.caption12Medium)
-        }
-        .foregroundColor(regime.quadrant.color)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(regime.quadrant.color.opacity(0.15))
-        .cornerRadius(8)
+        Text("Macro: \(regime.quadrant.shortLabel)")
+            .font(AppFonts.caption12Medium)
+            .foregroundColor(regime.quadrant.color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(regime.quadrant.color.opacity(0.12))
+            .cornerRadius(8)
     }
 
-    // MARK: - Signal Distribution
+    // MARK: - Signal Summary
 
-    private func signalDistribution(allocations: [AssetAllocation]) -> some View {
+    private func signalSummary(allocations: [AssetAllocation]) -> some View {
         let bullishCount = allocations.filter { $0.signal == .bullish }.count
-        let neutralCount = allocations.filter { $0.signal == .neutral }.count
-        let bearishCount = allocations.filter { $0.signal == .bearish }.count
+        let total = allocations.count
 
-        return HStack(spacing: 12) {
-            signalDot(color: AppColors.success, count: bullishCount, label: "Bullish")
-            signalDot(color: AppColors.warning, count: neutralCount, label: "Neutral")
-            signalDot(color: AppColors.error, count: bearishCount, label: "Bearish")
+        let text: String
+        if bullishCount == 0 {
+            text = "No assets showing bullish signals"
+        } else if bullishCount == total {
+            text = "All \(total) assets bullish"
+        } else {
+            text = "\(bullishCount) of \(total) assets showing bullish signals"
         }
+
+        return Text(text)
+            .font(AppFonts.body14Medium)
+            .foregroundColor(textPrimary)
     }
 
-    private func signalDot(color: Color, count: Int, label: String) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text("\(count) \(label)")
-                .font(AppFonts.caption12)
-                .foregroundColor(AppColors.textSecondary)
+    // MARK: - Signal Bar
+
+    private func signalBar(allocations: [AssetAllocation]) -> some View {
+        let total = max(allocations.count, 1)
+        let bullish = Double(allocations.filter { $0.signal == .bullish }.count) / Double(total)
+        let neutral = Double(allocations.filter { $0.signal == .neutral }.count) / Double(total)
+        let bearish = Double(allocations.filter { $0.signal == .bearish }.count) / Double(total)
+
+        return GeometryReader { geo in
+            HStack(spacing: 2) {
+                if bullish > 0 {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(AppColors.success)
+                        .frame(width: max(4, geo.size.width * bullish - 1))
+                }
+                if neutral > 0 {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(AppColors.warning)
+                        .frame(width: max(4, geo.size.width * neutral - 1))
+                }
+                if bearish > 0 {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(AppColors.error)
+                        .frame(width: max(4, geo.size.width * bearish - 1))
+                }
+            }
         }
+        .frame(height: 6)
     }
 
     // MARK: - Loading
@@ -111,7 +135,7 @@ struct AllocationSummarySection: View {
             Spacer()
             ProgressView()
                 .tint(AppColors.accent)
-            Text("Loading signals...")
+            Text("Analyzing positions...")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
             Spacer()

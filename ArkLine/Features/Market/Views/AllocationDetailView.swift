@@ -20,10 +20,13 @@ struct AllocationDetailView: View {
                 // 2. Asset Table
                 assetTable
 
-                // 3. How to Read Guide
+                // 3. Allocation Scale Legend
+                allocationScaleLegend
+
+                // 4. Understanding This View
                 guideCard
 
-                // 4. Disclaimer
+                // 5. Disclaimer
                 FinancialDisclaimer()
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
@@ -33,7 +36,7 @@ struct AllocationDetailView: View {
             .padding(.top, 16)
         }
         .background(AppColors.background(colorScheme))
-        .navigationTitle("Positioning Signals")
+        .navigationTitle("Crypto Positioning")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -43,31 +46,32 @@ struct AllocationDetailView: View {
 
     private var regimeHeader: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Quadrant name + icon
-            HStack(spacing: 10) {
-                Image(systemName: summary.regime.quadrant.icon)
-                    .font(.title2)
-                    .foregroundColor(summary.regime.quadrant.color)
-                    .frame(width: 44, height: 44)
-                    .background(summary.regime.quadrant.color.opacity(0.15))
-                    .cornerRadius(12)
+            // Quadrant name (no icon)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Current Macro Regime")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Current Regime")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
+                HStack(spacing: 8) {
                     Text(summary.regime.quadrant.rawValue)
                         .font(AppFonts.title18SemiBold)
                         .foregroundColor(textPrimary)
-                }
 
-                Spacer()
+                    Text(summary.regime.quadrant.shortLabel)
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(summary.regime.quadrant.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(summary.regime.quadrant.color.opacity(0.12))
+                        .cornerRadius(6)
+                }
             }
 
             // Description
             Text(summary.regime.quadrant.description)
                 .font(AppFonts.body14)
                 .foregroundColor(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Growth / Inflation score bars
             HStack(spacing: 16) {
@@ -112,6 +116,13 @@ struct AllocationDetailView: View {
 
     private var assetTable: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Section intro
+            Text("Each asset is scored on its technical trend and how well it fits the current macro regime.")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+                .padding(.horizontal)
+                .padding(.bottom, 12)
+
             // Table header
             HStack {
                 Text("Asset")
@@ -122,10 +133,10 @@ struct AllocationDetailView: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
                     .frame(width: 80)
-                Text("Target")
+                Text("Allocation")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
-                    .frame(width: 55, alignment: .trailing)
+                    .frame(width: 65, alignment: .trailing)
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
@@ -148,66 +159,71 @@ struct AllocationDetailView: View {
     }
 
     private func assetRow(allocation: AssetAllocation) -> some View {
-        HStack(spacing: 12) {
-            // Asset icon + name
-            if let url = allocation.iconUrl.flatMap({ URL(string: $0) }) {
-                KFImage(url)
-                    .resizable()
-                    .placeholder {
-                        Circle()
-                            .fill(AppColors.accent.opacity(0.2))
-                    }
-                    .scaledToFit()
-                    .frame(width: 32, height: 32)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(AppColors.accent.opacity(0.2))
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Text(String(allocation.assetId.prefix(1)))
-                            .font(AppFonts.caption12Medium)
-                            .foregroundColor(AppColors.accent)
-                    )
+        VStack(alignment: .leading, spacing: 6) {
+            // Main row: icon + name + signal + allocation
+            HStack(spacing: 12) {
+                // Asset icon
+                if let url = allocation.iconUrl.flatMap({ URL(string: $0) }) {
+                    KFImage(url)
+                        .resizable()
+                        .placeholder {
+                            Circle()
+                                .fill(AppColors.accent.opacity(0.2))
+                        }
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(AppColors.accent.opacity(0.2))
+                        .frame(width: 32, height: 32)
+                        .overlay(
+                            Text(String(allocation.assetId.prefix(1)))
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(AppColors.accent)
+                        )
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(allocation.displayName)
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary)
+                    Text(allocation.assetId)
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                // Signal badge
+                signalBadge(signal: allocation.signal)
+                    .frame(width: 80)
+
+                // Allocation %
+                Text("\(allocation.targetAllocation)%")
+                    .font(AppFonts.title18SemiBold)
+                    .foregroundColor(allocationColor(allocation.targetAllocation))
+                    .frame(width: 65, alignment: .trailing)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(allocation.displayName)
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(textPrimary)
-                Text(allocation.assetId)
-                    .font(AppFonts.footnote10)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            Spacer()
-
-            // Signal badge
-            signalBadge(signal: allocation.signal)
-                .frame(width: 80)
-
-            // Target allocation %
-            Text("\(allocation.targetAllocation)%")
-                .font(AppFonts.title18SemiBold)
-                .foregroundColor(allocationColor(allocation.targetAllocation))
-                .frame(width: 55, alignment: .trailing)
+            // Interpretation line
+            Text(allocation.interpretation)
+                .font(AppFonts.footnote10)
+                .foregroundColor(AppColors.textTertiary)
+                .padding(.leading, 44) // Align with text after icon
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
     }
 
     private func signalBadge(signal: PositioningSignal) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: signal.icon)
-                .font(.system(size: 10, weight: .bold))
-            Text(signal.label)
-                .font(AppFonts.caption12Medium)
-        }
-        .foregroundColor(signal.color)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(signal.color.opacity(0.12))
-        .cornerRadius(6)
+        Text(signal.label)
+            .font(AppFonts.caption12Medium)
+            .foregroundColor(signal.color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(signal.color.opacity(0.12))
+            .cornerRadius(6)
     }
 
     private func allocationColor(_ percent: Int) -> Color {
@@ -219,33 +235,75 @@ struct AllocationDetailView: View {
         }
     }
 
+    // MARK: - Allocation Scale Legend
+
+    private var allocationScaleLegend: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Allocation Scale")
+                .font(AppFonts.body14Bold)
+                .foregroundColor(textPrimary)
+
+            HStack(spacing: 0) {
+                scaleSegment(label: "0%", sublabel: "No position", color: AppColors.textSecondary, isFirst: true)
+                scaleSegment(label: "25%", sublabel: "Quarter", color: AppColors.warning, isFirst: false)
+                scaleSegment(label: "50%", sublabel: "Half", color: Color(hex: "84CC16"), isFirst: false)
+                scaleSegment(label: "100%", sublabel: "Full", color: AppColors.success, isFirst: false)
+            }
+
+            Text("This scale represents how much of your intended position size to deploy based on current conditions. 100% means conditions fully support the position; 0% means stay on the sidelines.")
+                .font(AppFonts.footnote10)
+                .foregroundColor(AppColors.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .padding(.horizontal)
+    }
+
+    private func scaleSegment(label: String, sublabel: String, color: Color, isFirst: Bool) -> some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(AppFonts.body14Bold)
+                .foregroundColor(color)
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(height: 4)
+            Text(sublabel)
+                .font(AppFonts.footnote10)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     // MARK: - Guide Card
 
     private var guideCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("How to Read This")
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Understanding This View")
                 .font(AppFonts.body14Bold)
                 .foregroundColor(textPrimary)
 
             guideRow(
-                icon: "arrow.up.right.circle.fill",
-                color: AppColors.success,
-                title: "Signal",
-                text: "Derived from technical trend score and risk level. Bullish = strong trend + low risk."
+                title: "What is the Macro Regime?",
+                text: "We analyze VIX (volatility), DXY (dollar strength), and Global M2 (money supply) to classify the current macro environment into one of four regimes. Each regime has different implications for crypto performance."
             )
 
             guideRow(
-                icon: "globe",
-                color: AppColors.accent,
-                title: "Regime Fit",
-                text: "How well each asset historically performs in the current macro environment."
+                title: "What does the Signal mean?",
+                text: "Each asset's signal combines its technical trend (price momentum, moving averages) with its risk level. Bullish means the trend is strong and risk is low. Bearish means the trend has weakened or risk is elevated."
             )
 
             guideRow(
-                icon: "target",
-                color: AppColors.warning,
-                title: "Target %",
-                text: "Suggested allocation of your position. 100% = full, 0% = sidelines. Not financial advice."
+                title: "How should I read the Allocation %?",
+                text: "The allocation percentage tells you how much of your planned position to deploy right now. For example, if you normally hold $10,000 in BTC and the allocation says 50%, conditions support holding about $5,000. This is based on how well the asset fits the current regime and its trend signal."
+            )
+
+            guideRow(
+                title: "Why might an asset show 0%?",
+                text: "A 0% allocation means either the trend is bearish (negative momentum) or the asset is a poor fit for the current macro regime. It doesn't mean the asset is bad long-term, just that current conditions don't favor it."
             )
         }
         .padding()
@@ -256,22 +314,15 @@ struct AllocationDetailView: View {
         .padding(.horizontal)
     }
 
-    private func guideRow(icon: String, color: Color, title: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(color)
-                .frame(width: 20)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AppFonts.caption12Medium)
-                    .foregroundColor(textPrimary)
-                Text(text)
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    private func guideRow(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(textPrimary)
+            Text(text)
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

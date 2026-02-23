@@ -47,25 +47,26 @@ enum MacroRegimeQuadrant: String, CaseIterable {
         }
     }
 
-    var icon: String {
-        switch self {
-        case .riskOnDisinflation: return "sun.max.fill"
-        case .riskOnInflation: return "flame.fill"
-        case .riskOffInflation: return "exclamationmark.triangle.fill"
-        case .riskOffDisinflation: return "snowflake"
-        }
-    }
-
     var description: String {
         switch self {
         case .riskOnDisinflation:
-            return "Growth with easing conditions — ideal for crypto"
+            return "Economic growth with easing monetary conditions. Historically the best environment for crypto assets."
         case .riskOnInflation:
-            return "Growth with rising prices — mixed for crypto"
+            return "Economic growth with rising prices. Crypto can still perform but gains may be capped by tightening expectations."
         case .riskOffInflation:
-            return "Slowing growth with inflation — hostile for crypto"
+            return "Slowing growth with persistent inflation. The most challenging environment for risk assets including crypto."
         case .riskOffDisinflation:
-            return "Slowing growth, easing conditions — defensive positioning"
+            return "Slowing growth with easing conditions. Defensive positioning recommended until growth signals improve."
+        }
+    }
+
+    /// Short label for the regime, used in the summary card
+    var shortLabel: String {
+        switch self {
+        case .riskOnDisinflation: return "Favorable"
+        case .riskOnInflation: return "Mixed"
+        case .riskOffInflation: return "Unfavorable"
+        case .riskOffDisinflation: return "Cautious"
         }
     }
 }
@@ -94,6 +95,24 @@ struct AssetAllocation: Identifiable, Hashable {
     let targetAllocation: Int // 0, 25, 50, or 100
 
     var id: String { assetId }
+
+    /// Plain-English interpretation of what this allocation means for the user
+    var interpretation: String {
+        switch targetAllocation {
+        case 100:
+            return "Strong trend in a favorable regime. Full position supported."
+        case 50:
+            return regimeFit >= 0.7
+                ? "Trend is neutral but regime is favorable. Consider a half position."
+                : "Trend is strong but regime fit is moderate. Consider a half position."
+        case 25:
+            return "Weak regime fit limits upside. A small position may be appropriate."
+        default:
+            return signal == .bearish
+                ? "Trend is negative. Consider staying on the sidelines."
+                : "Low regime fit and weak signals. No position recommended."
+        }
+    }
 }
 
 // MARK: - Allocation Summary
