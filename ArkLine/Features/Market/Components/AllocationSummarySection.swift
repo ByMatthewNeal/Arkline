@@ -95,13 +95,18 @@ struct AllocationSummarySection: View {
 
     private func signalSummary(allocations: [AssetAllocation]) -> some View {
         let bullishCount = allocations.filter { $0.signal == .bullish }.count
+        let dcaCount = allocations.filter { $0.isDCAOpportunity }.count
         let total = allocations.count
 
         let text: String
-        if bullishCount == 0 {
+        if bullishCount == 0 && dcaCount == 0 {
             text = "No assets showing bullish signals"
         } else if bullishCount == total {
             text = "All \(total) assets bullish"
+        } else if bullishCount == 0 && dcaCount > 0 {
+            text = "\(dcaCount) of \(total) assets showing DCA opportunities"
+        } else if dcaCount > 0 {
+            text = "\(bullishCount) bullish, \(dcaCount) DCA opportunities"
         } else {
             text = "\(bullishCount) of \(total) assets showing bullish signals"
         }
@@ -116,8 +121,9 @@ struct AllocationSummarySection: View {
     private func signalBar(allocations: [AssetAllocation]) -> some View {
         let total = max(allocations.count, 1)
         let bullish = Double(allocations.filter { $0.signal == .bullish }.count) / Double(total)
-        let neutral = Double(allocations.filter { $0.signal == .neutral }.count) / Double(total)
-        let bearish = Double(allocations.filter { $0.signal == .bearish }.count) / Double(total)
+        let dca = Double(allocations.filter { $0.isDCAOpportunity }.count) / Double(total)
+        let neutral = Double(allocations.filter { $0.signal == .neutral && !$0.isDCAOpportunity }.count) / Double(total)
+        let bearish = Double(allocations.filter { $0.signal == .bearish && !$0.isDCAOpportunity }.count) / Double(total)
 
         return GeometryReader { geo in
             HStack(spacing: 2) {
@@ -125,6 +131,11 @@ struct AllocationSummarySection: View {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(AppColors.success)
                         .frame(width: max(4, geo.size.width * bullish - 1))
+                }
+                if dca > 0 {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(hex: "3B82F6"))
+                        .frame(width: max(4, geo.size.width * dca - 1))
                 }
                 if neutral > 0 {
                     RoundedRectangle(cornerRadius: 3)

@@ -85,7 +85,7 @@ struct MacroRegimeResult: Hashable {
 
 // MARK: - Asset Allocation
 
-/// Per-asset allocation recommendation combining signal, regime fit, and target %
+/// Per-asset allocation recommendation combining signal, regime fit, risk level, and target %
 struct AssetAllocation: Identifiable, Hashable {
     let assetId: String
     let displayName: String
@@ -93,24 +93,38 @@ struct AssetAllocation: Identifiable, Hashable {
     let signal: PositioningSignal
     let regimeFit: Double
     let targetAllocation: Int // 0, 25, 50, or 100
+    let riskLevel: Double? // 0-1 from ITC risk, nil if unavailable
+    let isDCAOpportunity: Bool // true when bearish trend + low risk = accumulation window
 
     var id: String { assetId }
 
-    /// Plain-English interpretation of what this allocation means for the user
+    /// Plain-English interpretation synthesizing trend, risk, and macro into one clear message
     var interpretation: String {
-        switch targetAllocation {
-        case 100:
-            return "Strong trend in a favorable regime. Full position supported."
-        case 50:
-            return regimeFit >= 0.7
-                ? "Trend is neutral but regime is favorable. Consider a half position."
-                : "Trend is strong but regime fit is moderate. Consider a half position."
-        case 25:
-            return "Weak regime fit limits upside. A small position may be appropriate."
+        // DCA opportunity: trend is weak but risk level says the asset has corrected enough
+        if isDCAOpportunity {
+            let riskLabel = riskLevel.map { String(format: "%.2f", $0) } ?? "low"
+            return "Trend is weak but risk is low (\(riskLabel)). Small DCA positions may be favorable."
+        }
+
+        switch (signal, targetAllocation) {
+        case (.bullish, 100):
+            return "Strong trend in a favorable macro regime. Full position supported."
+        case (.bullish, 50):
+            return "Strong trend but macro fit is moderate. Half position appropriate."
+        case (.bullish, 25):
+            return "Strong trend but current regime limits upside. Small position only."
+        case (.neutral, let pct) where pct > 0:
+            if let risk = riskLevel, risk < 0.35 {
+                return "Mixed trend with low risk (\(String(format: "%.2f", risk))). Partial position if thesis is strong."
+            }
+            return "Mixed signals. Partial position if your long-term thesis is strong."
+        case (.bearish, _):
+            if let risk = riskLevel, risk > 0.7 {
+                return "Weak trend with elevated risk. Avoid new positions."
+            }
+            return "Trend doesn't support new positions right now."
         default:
-            return signal == .bearish
-                ? "Trend is negative. Consider staying on the sidelines."
-                : "Low regime fit and weak signals. No position recommended."
+            return "Conditions don't favor this position right now."
         }
     }
 }

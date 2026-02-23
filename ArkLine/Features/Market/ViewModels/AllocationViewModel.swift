@@ -49,8 +49,8 @@ class AllocationViewModel {
             macroZScores: sentimentViewModel.macroZScores
         )
 
-        // 2. Build signals for ALL assets — use cached TA if available, risk-level fallback otherwise
-        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal)] = []
+        // 2. Build signals for ALL assets — use cached TA if available, bearish fallback otherwise
+        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal, riskLevel: Double?)] = []
 
         for config in configs {
             let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
@@ -73,7 +73,8 @@ class AllocationViewModel {
                 assetId: config.assetId,
                 displayName: config.displayName,
                 iconUrl: iconUrl,
-                signal: signal
+                signal: signal,
+                riskLevel: riskLevel
             ))
         }
 
@@ -133,7 +134,7 @@ class AllocationViewModel {
 
     /// Rebuild the allocation summary from current cache + fallbacks.
     private func rebuildSummary(configs: [AssetRiskConfig], regime: MacroRegimeResult) {
-        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal)] = []
+        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal, riskLevel: Double?)] = []
 
         for config in configs {
             let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
@@ -155,7 +156,8 @@ class AllocationViewModel {
                 assetId: config.assetId,
                 displayName: config.displayName,
                 iconUrl: iconUrl,
-                signal: signal
+                signal: signal,
+                riskLevel: riskLevel
             ))
         }
 

@@ -232,7 +232,7 @@ struct AllocationDetailView: View {
 
     private var assetTable: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Each asset is scored on its technical trend and how well it fits the current macro regime.")
+            Text("Each asset is scored on its technical trend, risk level, and macro regime fit.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .padding(.horizontal)
@@ -307,7 +307,7 @@ struct AllocationDetailView: View {
 
                 Spacer()
 
-                signalBadge(signal: allocation.signal)
+                signalBadge(allocation: allocation)
                     .frame(width: 80)
 
                 Text("\(allocation.targetAllocation)%")
@@ -325,13 +325,16 @@ struct AllocationDetailView: View {
         .padding(.vertical, 10)
     }
 
-    private func signalBadge(signal: PositioningSignal) -> some View {
-        Text(signal.label)
+    private func signalBadge(allocation: AssetAllocation) -> some View {
+        let label = allocation.isDCAOpportunity ? "DCA" : allocation.signal.label
+        let color = allocation.isDCAOpportunity ? Color(hex: "3B82F6") : allocation.signal.color
+
+        return Text(label)
             .font(AppFonts.caption12Medium)
-            .foregroundColor(signal.color)
+            .foregroundColor(color)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(signal.color.opacity(0.12))
+            .background(color.opacity(0.12))
             .cornerRadius(6)
     }
 
@@ -353,13 +356,13 @@ struct AllocationDetailView: View {
                 .foregroundColor(textPrimary)
 
             HStack(spacing: 0) {
-                scaleSegment(label: "0%", sublabel: "No position", color: AppColors.textSecondary)
-                scaleSegment(label: "25%", sublabel: "Quarter", color: AppColors.warning)
+                scaleSegment(label: "0%", sublabel: "Sidelines", color: AppColors.textSecondary)
+                scaleSegment(label: "25%", sublabel: "Small / DCA", color: AppColors.warning)
                 scaleSegment(label: "50%", sublabel: "Half", color: Color(hex: "84CC16"))
                 scaleSegment(label: "100%", sublabel: "Full", color: AppColors.success)
             }
 
-            Text("This scale represents how much of your intended position size to deploy based on current conditions. 100% means conditions fully support the position; 0% means stay on the sidelines.")
+            Text("This scale shows how much of your planned position to deploy. A 25% DCA allocation means the trend is weak but risk levels suggest small, gradual accumulation may be favorable.")
                 .font(AppFonts.footnote10)
                 .foregroundColor(AppColors.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -402,17 +405,22 @@ struct AllocationDetailView: View {
 
             guideRow(
                 title: "What does the Signal mean?",
-                text: "Each asset's signal combines its technical trend (price momentum, moving averages) with its risk level. Bullish means the trend is strong and risk is low. Bearish means the trend has weakened or risk is elevated."
+                text: "Each asset's signal combines its technical trend (price momentum, moving averages), risk level, and macro regime fit into one recommendation. Bullish means the trend is strong. Bearish means the trend has weakened. DCA means the trend is weak but the asset's risk level is low enough that gradual accumulation may make sense."
+            )
+
+            guideRow(
+                title: "What is a DCA opportunity?",
+                text: "When an asset's trend is negative but its risk level is low (the price has already corrected and stabilized), it may be a good time for dollar-cost averaging — buying small amounts gradually. This is different from a bearish signal with high risk, which means the asset is still falling."
             )
 
             guideRow(
                 title: "How should I read the Allocation %?",
-                text: "The allocation percentage tells you how much of your planned position to deploy right now. For example, if you normally hold $10,000 in BTC and the allocation says 50%, conditions support holding about $5,000. This is based on how well the asset fits the current regime and its trend signal."
+                text: "The allocation percentage tells you how much of your planned position to deploy right now. For example, if you normally hold $10,000 in BTC and the allocation says 25% DCA, conditions support gradually building toward about $2,500. This synthesizes trend, risk, and macro into one number."
             )
 
             guideRow(
                 title: "Why might an asset show 0%?",
-                text: "A 0% allocation means either the trend is bearish (negative momentum) or the asset is a poor fit for the current macro regime. It doesn't mean the asset is bad long-term, just that current conditions don't favor it."
+                text: "A 0% allocation means the trend is bearish AND risk is elevated — the asset is still falling or hasn't stabilized. This is different from a DCA opportunity at 25%, where the correction appears complete."
             )
         }
         .padding()
