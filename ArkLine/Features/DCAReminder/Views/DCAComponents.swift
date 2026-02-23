@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Unified DCA Card
 struct DCAUnifiedCard: View {
@@ -6,6 +7,7 @@ struct DCAUnifiedCard: View {
     let riskLevel: AssetRiskLevel?
     let onEdit: () -> Void
     let onViewHistory: () -> Void
+    var onMarkInvested: (() -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -14,6 +16,11 @@ struct DCAUnifiedCard: View {
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var isDue: Bool {
+        guard let nextDate = reminder.nextReminderDate else { return false }
+        return nextDate <= Date()
     }
 
     var body: some View {
@@ -56,9 +63,28 @@ struct DCAUnifiedCard: View {
 
             // Action buttons
             HStack(spacing: 12) {
+                // Mark Invested button (only for due reminders)
+                if let onMarkInvested, isDue {
+                    Button(action: onMarkInvested) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("Invested")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(AppColors.success)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppColors.success.opacity(0.15))
+                        )
+                    }
+                }
+
                 // Edit Reminder button
                 Button(action: onEdit) {
-                    Text("Edit Reminder")
+                    Text("Edit")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(textPrimary.opacity(0.7))
                         .frame(maxWidth: .infinity)
@@ -71,7 +97,7 @@ struct DCAUnifiedCard: View {
 
                 // View History button
                 Button(action: onViewHistory) {
-                    Text("View History")
+                    Text("History")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(AppColors.accent)
                         .frame(maxWidth: .infinity)
@@ -106,16 +132,44 @@ struct DCACoinIconView: View {
     let size: CGFloat
     @Environment(\.colorScheme) var colorScheme
 
+    private static let coinGeckoImageUrls: [String: String] = [
+        "BTC": "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
+        "ETH": "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
+        "SOL": "https://assets.coingecko.com/coins/images/4128/large/solana.png",
+        "BNB": "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png",
+        "UNI": "https://assets.coingecko.com/coins/images/12504/large/uniswap-logo.png",
+        "RENDER": "https://assets.coingecko.com/coins/images/11636/large/rndr.png",
+        "SUI": "https://assets.coingecko.com/coins/images/26375/large/sui_asset.jpeg",
+        "ONDO": "https://assets.coingecko.com/coins/images/26580/large/ONDO.png",
+        "ADA": "https://assets.coingecko.com/coins/images/975/large/cardano.png",
+        "DOT": "https://assets.coingecko.com/coins/images/12171/large/polkadot.png",
+        "AVAX": "https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png",
+        "LINK": "https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png",
+        "DOGE": "https://assets.coingecko.com/coins/images/5/large/dogecoin.png",
+        "TRX": "https://assets.coingecko.com/coins/images/1094/large/tron-logo.png",
+        "SHIB": "https://assets.coingecko.com/coins/images/11939/large/shiba.png",
+        "XRP": "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png",
+    ]
+
     var body: some View {
         ZStack {
             Circle()
                 .fill(coinColor.opacity(0.15))
                 .frame(width: size, height: size)
 
-            if let iconName = coinSystemIcon {
-                Image(systemName: iconName)
-                    .font(.system(size: size * 0.45, weight: .semibold))
-                    .foregroundColor(coinColor)
+            if let urlString = Self.coinGeckoImageUrls[symbol.uppercased()],
+               let url = URL(string: urlString) {
+                KFImage(url)
+                    .resizable()
+                    .placeholder {
+                        Text(String(symbol.prefix(1)))
+                            .font(.system(size: size * 0.4, weight: .bold))
+                            .foregroundColor(coinColor)
+                    }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: size * 0.65, height: size * 0.65)
+                    .clipShape(Circle())
             } else {
                 Text(String(symbol.prefix(1)))
                     .font(.system(size: size * 0.4, weight: .bold))
@@ -137,14 +191,6 @@ struct DCACoinIconView: View {
         case "XRP": return Color(hex: "23292F")
         case "SHIB": return Color(hex: "F4A422")
         default: return AppColors.accent
-        }
-    }
-
-    private var coinSystemIcon: String? {
-        switch symbol.uppercased() {
-        case "BTC": return "bitcoinsign"
-        case "ETH": return "diamond.fill"
-        default: return nil
         }
     }
 }

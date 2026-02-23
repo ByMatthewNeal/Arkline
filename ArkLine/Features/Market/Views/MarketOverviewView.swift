@@ -22,6 +22,17 @@ struct MarketOverviewView: View {
                 // Content
                 ScrollViewReader { scrollProxy in
                 ScrollView {
+                    if viewModel.isLoading && viewModel.newsItems.isEmpty {
+                        // First load skeleton
+                        VStack(spacing: 16) {
+                            SkeletonCard()
+                            SkeletonCard()
+                            SkeletonList(itemCount: 3)
+                            SkeletonCard()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                    } else {
                     VStack(spacing: 24) {
                         Color.clear.frame(height: 0).id("scrollTop")
                         // 1. Daily News Section
@@ -63,6 +74,7 @@ struct MarketOverviewView: View {
                         Spacer(minLength: 100)
                     }
                     .padding(.top, 16)
+                    } // else
                 }
                 .refreshable {
                     async let market: () = viewModel.refresh()

@@ -7,6 +7,7 @@ struct DCAListView: View {
     @State private var viewModel = DCAViewModel()
     @State private var showCreateSheet = false
     @State private var showPaywall = false
+    @State private var showCompleted = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -24,19 +25,70 @@ struct DCAListView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    // All reminders sorted: active first (by next date), then inactive
-                    ForEach(viewModel.reminders.sorted { a, b in
-                        if a.isActive != b.isActive { return a.isActive }
-                        let aDate = a.nextReminderDate ?? .distantFuture
-                        let bDate = b.nextReminderDate ?? .distantFuture
-                        return aDate < bDate
-                    }) { reminder in
-                        DCAUnifiedCard(
-                            reminder: reminder,
-                            riskLevel: viewModel.riskLevel(for: reminder.symbol),
-                            onEdit: { viewModel.editingReminder = reminder },
-                            onViewHistory: { viewModel.selectedReminder = reminder }
-                        )
+                    // Upcoming section
+                    let upcoming = viewModel.activeReminders.sorted {
+                        ($0.nextReminderDate ?? .distantFuture) < ($1.nextReminderDate ?? .distantFuture)
+                    }
+
+                    if !upcoming.isEmpty {
+                        sectionHeader("Upcoming", count: upcoming.count)
+
+                        ForEach(upcoming) { reminder in
+                            DCAUnifiedCard(
+                                reminder: reminder,
+                                riskLevel: viewModel.riskLevel(for: reminder.symbol),
+                                onEdit: { viewModel.editingReminder = reminder },
+                                onViewHistory: { viewModel.selectedReminder = reminder },
+                                onMarkInvested: {
+                                    Task { await viewModel.markAsInvested(reminder) }
+                                }
+                            )
+                        }
+                    }
+
+                    // Completed section
+                    let completed = viewModel.completedReminders
+                    if !completed.isEmpty {
+                        Button {
+                            withAnimation(.arkSpring) { showCompleted.toggle() }
+                        } label: {
+                            HStack {
+                                Text("Completed")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(textPrimary.opacity(0.6))
+
+                                Text("\(completed.count)")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(textPrimary.opacity(0.4))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule()
+                                            .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "E8E8EA"))
+                                    )
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(textPrimary.opacity(0.3))
+                                    .rotationEffect(.degrees(showCompleted ? 90 : 0))
+                            }
+                            .padding(.top, 8)
+                        }
+                        .buttonStyle(.plain)
+
+                        if showCompleted {
+                            ForEach(completed) { reminder in
+                                DCAUnifiedCard(
+                                    reminder: reminder,
+                                    riskLevel: viewModel.riskLevel(for: reminder.symbol),
+                                    onEdit: { viewModel.editingReminder = reminder },
+                                    onViewHistory: { viewModel.selectedReminder = reminder }
+                                )
+                                .opacity(0.7)
+                            }
+                        }
                     }
 
                     // Empty state
@@ -100,6 +152,26 @@ struct DCAListView: View {
         }
         .onAppear {
             Task { await viewModel.refresh() }
+        }
+    }
+
+    private func sectionHeader(_ title: String, count: Int) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(textPrimary.opacity(0.6))
+
+            Text("\(count)")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(textPrimary.opacity(0.4))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule()
+                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "E8E8EA"))
+                )
+
+            Spacer()
         }
     }
 }
