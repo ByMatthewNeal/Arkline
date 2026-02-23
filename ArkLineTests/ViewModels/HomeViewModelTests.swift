@@ -84,7 +84,8 @@ final class HomeViewModelTests: XCTestCase {
             rainbowChartService: mockRainbow,
             globalLiquidityService: mockLiquidity,
             macroStatisticsService: macroStats,
-            santimentService: mockSantiment
+            santimentService: mockSantiment,
+            enableSideEffects: false
         )
         vm.stopAutoRefresh()
         return vm

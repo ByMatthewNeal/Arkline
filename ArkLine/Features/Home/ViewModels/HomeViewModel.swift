@@ -19,6 +19,9 @@ class HomeViewModel {
     private let macroStatisticsService: MacroStatisticsServiceProtocol
     private let santimentService: SantimentServiceProtocol
 
+    /// When false, skips fire-and-forget archival tasks (for unit tests)
+    private let enableSideEffects: Bool
+
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
     private let refreshInterval: TimeInterval = 300 // 5 minutes for events
@@ -307,7 +310,8 @@ class HomeViewModel {
         rainbowChartService: RainbowChartServiceProtocol = ServiceContainer.shared.rainbowChartService,
         globalLiquidityService: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService,
         macroStatisticsService: MacroStatisticsServiceProtocol = ServiceContainer.shared.macroStatisticsService,
-        santimentService: SantimentServiceProtocol = ServiceContainer.shared.santimentService
+        santimentService: SantimentServiceProtocol = ServiceContainer.shared.santimentService,
+        enableSideEffects: Bool = true
     ) {
         self.sentimentService = sentimentService
         self.marketService = marketService
@@ -321,6 +325,7 @@ class HomeViewModel {
         self.globalLiquidityService = globalLiquidityService
         self.macroStatisticsService = macroStatisticsService
         self.santimentService = santimentService
+        self.enableSideEffects = enableSideEffects
         // Initialize user data synchronously; data loading is triggered by HomeView.task
         self.sentimentViewModel = SentimentViewModel()
         startAutoRefresh()
@@ -441,7 +446,7 @@ class HomeViewModel {
         let crypto = await cryptoTask
 
         if !crypto.isEmpty {
-            Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) }
+            if enableSideEffects { Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) } }
             cachedCryptoAssets = crypto
         }
 
@@ -484,28 +489,30 @@ class HomeViewModel {
         }
 
         // Archive macro indicators (fire-and-forget)
-        Task {
-            let collector = MarketDataCollector.shared
-            if let vix = vix {
-                await collector.recordIndicator(
-                    name: "vix", value: vix.value,
-                    metadata: vix.open.map { ["open": .double($0), "high": .double(vix.high ?? 0), "low": .double(vix.low ?? 0), "close": .double(vix.close ?? 0)] }
-                )
-            }
-            if let dxy = dxy {
-                await collector.recordIndicator(
-                    name: "dxy", value: dxy.value,
-                    metadata: dxy.open.map { ["open": .double($0), "high": .double(dxy.high ?? 0), "low": .double(dxy.low ?? 0), "close": .double(dxy.close ?? 0)] }
-                )
-            }
-            if let m2 = liquidity {
-                await collector.recordIndicator(
-                    name: "global_m2", value: m2.current,
-                    metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
-                )
-            }
-            if let sp = supplyProfit {
-                await collector.recordIndicator(name: "supply_in_profit", value: sp.value)
+        if enableSideEffects {
+            Task {
+                let collector = MarketDataCollector.shared
+                if let vix = vix {
+                    await collector.recordIndicator(
+                        name: "vix", value: vix.value,
+                        metadata: vix.open.map { ["open": .double($0), "high": .double(vix.high ?? 0), "low": .double(vix.low ?? 0), "close": .double(vix.close ?? 0)] }
+                    )
+                }
+                if let dxy = dxy {
+                    await collector.recordIndicator(
+                        name: "dxy", value: dxy.value,
+                        metadata: dxy.open.map { ["open": .double($0), "high": .double(dxy.high ?? 0), "low": .double(dxy.low ?? 0), "close": .double(dxy.close ?? 0)] }
+                    )
+                }
+                if let m2 = liquidity {
+                    await collector.recordIndicator(
+                        name: "global_m2", value: m2.current,
+                        metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
+                    )
+                }
+                if let sp = supplyProfit {
+                    await collector.recordIndicator(name: "supply_in_profit", value: sp.value)
+                }
             }
         }
 
@@ -527,10 +534,14 @@ class HomeViewModel {
             }
             self.newsItems = news
             self.macroZScores = zScores
-            ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
+            if self.enableSideEffects {
+                ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
+            }
             self.failedFetchCount = failureCount
             self.lastRefreshed = Date()
         }
+
+        guard enableSideEffects else { return }
 
         // Archive fear/greed and risk score (fire-and-forget)
         Task {
