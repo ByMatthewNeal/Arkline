@@ -59,11 +59,13 @@ class AllocationViewModel {
             if let ta = taCache[config.assetId] {
                 signal = PositioningSignalCalculator.computeSignal(
                     trendScore: ta.trendScore,
-                    riskLevel: riskLevel
+                    riskLevel: riskLevel,
+                    isAbove200SMA: ta.smaAnalysis.above200SMA
                 )
             } else {
-                // Fallback: use risk level alone when TA is unavailable
-                signal = signalFromRiskLevel(riskLevel)
+                // Conservative fallback: default to bearish when TA is unavailable.
+                // We don't tell users to deploy capital without actual trend data.
+                signal = .bearish
             }
 
             let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
@@ -140,10 +142,12 @@ class AllocationViewModel {
             if let ta = taCache[config.assetId] {
                 signal = PositioningSignalCalculator.computeSignal(
                     trendScore: ta.trendScore,
-                    riskLevel: riskLevel
+                    riskLevel: riskLevel,
+                    isAbove200SMA: ta.smaAnalysis.above200SMA
                 )
             } else {
-                signal = signalFromRiskLevel(riskLevel)
+                // Conservative fallback: bearish until proven otherwise
+                signal = .bearish
             }
 
             let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
@@ -156,17 +160,6 @@ class AllocationViewModel {
         }
 
         allocationSummary = AllocationEngine.computeAll(signals: signals, regime: regime)
-    }
-
-    // MARK: - Fallback Signal
-
-    /// Derive a signal from risk level alone when TA data is unavailable.
-    /// Low risk → bullish, high risk → bearish, otherwise neutral.
-    private func signalFromRiskLevel(_ riskLevel: Double?) -> PositioningSignal {
-        guard let risk = riskLevel else { return .neutral }
-        if risk <= 0.3 { return .bullish }
-        if risk >= 0.7 { return .bearish }
-        return .neutral
     }
 
     // MARK: - Icon URL
