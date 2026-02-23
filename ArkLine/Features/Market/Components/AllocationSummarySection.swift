@@ -55,8 +55,14 @@ struct AllocationSummarySection: View {
     private func summaryCard(summary: AllocationSummary) -> some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 10) {
-                // Regime badge (text only, no icon)
-                regimeBadge(regime: summary.regime)
+                // Regime badge + last updated
+                HStack {
+                    regimeBadge(regime: summary.regime)
+                    Spacer()
+                    Text(lastUpdatedText(summary.timestamp))
+                        .font(AppFonts.footnote10)
+                        .foregroundColor(AppColors.textTertiary)
+                }
 
                 // Signal summary line
                 signalSummary(allocations: summary.allocations)
@@ -150,6 +156,18 @@ struct AllocationSummarySection: View {
             }
         }
         .frame(height: 6)
+    }
+
+    // MARK: - Last Updated
+
+    private func lastUpdatedText(_ date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 { return "Just now" }
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        if interval < 86400 { return "\(Int(interval / 3600))h ago" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 
     // MARK: - Loading

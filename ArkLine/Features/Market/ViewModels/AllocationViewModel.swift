@@ -17,10 +17,12 @@ class AllocationViewModel {
     var isLoading = false
     var errorMessage: String?
 
-    /// TA results cache — survives across refreshes until replaced
+    /// TA results cache — survives across refreshes until replaced.
+    /// 4-hour TTL: signals are based on daily candles, so refreshing more than
+    /// a few times per day adds API cost without adding signal value.
     private var taCache: [String: TechnicalAnalysis] = [:]
     private var taCacheTimestamp: Date?
-    private let taCacheTTL: TimeInterval = 300 // 5 minutes
+    private let taCacheTTL: TimeInterval = 14_400 // 4 hours
 
     /// Taapi.io rate limit: 1 request per 15 seconds
     private static let taapiDelay: UInt64 = 16_000_000_000 // 16s in nanoseconds
