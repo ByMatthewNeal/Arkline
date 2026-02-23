@@ -7,6 +7,8 @@ import SwiftUI
 struct AllocationSummarySection: View {
     let allocationSummary: AllocationSummary?
     let isLoading: Bool
+    let hasExtremeMove: Bool
+    let sentimentViewModel: SentimentViewModel
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -21,6 +23,12 @@ struct AllocationSummarySection: View {
                 Text("Crypto Positioning")
                     .font(.headline)
                     .foregroundColor(textPrimary)
+
+                // Extreme macro move indicator
+                if hasExtremeMove {
+                    PulsingExtremeIndicator(isActive: true, color: AppColors.error)
+                }
+
                 Spacer()
             }
             .padding(.horizontal)
@@ -29,7 +37,12 @@ struct AllocationSummarySection: View {
             if isLoading && allocationSummary == nil {
                 loadingView
             } else if let summary = allocationSummary {
-                NavigationLink(value: summary) {
+                NavigationLink {
+                    AllocationDetailView(
+                        summary: summary,
+                        sentimentViewModel: sentimentViewModel
+                    )
+                } label: {
                     summaryCard(summary: summary)
                 }
                 .buttonStyle(PlainButtonStyle())

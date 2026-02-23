@@ -32,37 +32,27 @@ struct MarketOverviewView: View {
                         // 2. Fed Watch Section
                         FedWatchSection(meetings: viewModel.fedWatchMeetings)
 
-                        // 3. Macro Indicators Section (VIX, DXY, Global M2)
-                        MacroIndicatorsSection(
-                            vixData: sentimentViewModel.vixData,
-                            dxyData: sentimentViewModel.dxyData,
-                            globalM2Data: sentimentViewModel.globalM2Data,
-                            macroZScores: sentimentViewModel.macroZScores
-                        )
-
-                        // 3.1 Positioning Signals Section
+                        // 3. Crypto Positioning (includes macro indicators in detail)
                         AllocationSummarySection(
                             allocationSummary: allocationViewModel?.allocationSummary,
-                            isLoading: allocationViewModel?.isLoading ?? false
+                            isLoading: allocationViewModel?.isLoading ?? false,
+                            hasExtremeMove: sentimentViewModel.hasExtremeMacroMove,
+                            sentimentViewModel: sentimentViewModel
                         )
 
-                        // 3.25 Indexes (S&P 500 & Nasdaq)
-                        IndexesSection()
+                        // 4. Traditional Markets (Indexes + Precious Metals)
+                        TraditionalMarketsSection()
 
-                        // 3.5 Precious Metals Section
-                        PreciousMetalsSection()
-
-                        // 3.75 Top Coins Browser
+                        // 5. Top Coins Browser
                         TopCoinsSection(viewModel: viewModel)
 
-                        // 4. Market Sentiment Section
-                        MarketSentimentSection(
+                        // 6. Market Sentiment (compact summary → detail)
+                        SentimentSummarySection(
                             viewModel: sentimentViewModel,
-                            lastUpdated: sentimentViewModel.lastRefreshed ?? Date(),
                             isPro: appState.isPro
                         )
 
-                        // 5. Altcoin Screener (30D returns)
+                        // 7. Altcoin Screener (30D returns)
                         AltcoinScreenerSection()
 
                         // Disclaimer
@@ -87,9 +77,6 @@ struct MarketOverviewView: View {
                     }
                 }
             } // ScrollViewReader
-            }
-            .navigationDestination(for: AllocationSummary.self) { summary in
-                AllocationDetailView(summary: summary)
             }
             .navigationTitle("Market Overview")
             .task {

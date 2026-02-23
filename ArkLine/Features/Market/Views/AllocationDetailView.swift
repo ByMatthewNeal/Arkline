@@ -3,9 +3,10 @@ import Kingfisher
 
 // MARK: - Allocation Detail View
 
-/// Full detail view showing macro regime header, per-asset allocation table, and guide.
+/// Full detail view showing macro regime header, macro inputs, per-asset allocation table, and guide.
 struct AllocationDetailView: View {
     let summary: AllocationSummary
+    let sentimentViewModel: SentimentViewModel
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -17,16 +18,19 @@ struct AllocationDetailView: View {
                 // 1. Regime Header
                 regimeHeader
 
-                // 2. Asset Table
+                // 2. Macro Inputs (VIX, DXY, M2)
+                macroInputsSection
+
+                // 3. Asset Table
                 assetTable
 
-                // 3. Allocation Scale Legend
+                // 4. Allocation Scale Legend
                 allocationScaleLegend
 
-                // 4. Understanding This View
+                // 5. Understanding This View
                 guideCard
 
-                // 5. Disclaimer
+                // 6. Disclaimer
                 FinancialDisclaimer()
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
@@ -46,7 +50,6 @@ struct AllocationDetailView: View {
 
     private var regimeHeader: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Quadrant name (no icon)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Current Macro Regime")
                     .font(AppFonts.caption12)
@@ -67,13 +70,11 @@ struct AllocationDetailView: View {
                 }
             }
 
-            // Description
             Text(summary.regime.quadrant.description)
                 .font(AppFonts.body14)
                 .foregroundColor(AppColors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Growth / Inflation score bars
             HStack(spacing: 16) {
                 scoreBar(label: "Growth", value: summary.regime.growthScore, color: AppColors.success)
                 scoreBar(label: "Inflation", value: summary.regime.inflationScore, color: AppColors.warning)
@@ -112,18 +113,131 @@ struct AllocationDetailView: View {
         }
     }
 
+    // MARK: - Macro Inputs Section
+
+    private var macroInputsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Macro Inputs")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+                .padding(.horizontal)
+
+            // VIX
+            MacroIndicatorCard(
+                title: "VIX",
+                subtitle: "Volatility Index",
+                value: sentimentViewModel.vixData.map { String(format: "%.2f", $0.value) } ?? "--",
+                signal: vixSignal,
+                description: vixDescription,
+                icon: "waveform.path.ecg",
+                vixData: sentimentViewModel.vixData,
+                zScoreData: sentimentViewModel.macroZScores[.vix]
+            )
+
+            // DXY
+            MacroIndicatorCard(
+                title: "DXY",
+                subtitle: "US Dollar Index",
+                value: sentimentViewModel.dxyData.map { String(format: "%.2f", $0.value) } ?? "--",
+                signal: dxySignal,
+                description: dxyDescription,
+                icon: "dollarsign.circle",
+                dxyData: sentimentViewModel.dxyData,
+                zScoreData: sentimentViewModel.macroZScores[.dxy]
+            )
+
+            // Global M2
+            MacroIndicatorCard(
+                title: "Global M2",
+                subtitle: "Money Supply",
+                value: sentimentViewModel.globalM2Data.map { String(format: "$%.1fT", $0.current / 1_000_000_000_000) } ?? "--",
+                signal: m2Signal,
+                description: m2Description,
+                icon: "banknote",
+                liquidityData: sentimentViewModel.globalM2Data,
+                zScoreData: sentimentViewModel.macroZScores[.m2]
+            )
+        }
+        .padding(.horizontal)
+    }
+
+    // MARK: - Macro Signal Helpers
+
+    private var vixSignal: MacroTrendSignal {
+        guard let vix = sentimentViewModel.vixData?.value else { return .neutral }
+        if vix < 18 { return .bullish }
+        if vix > 25 { return .bearish }
+        return .neutral
+    }
+
+    private var vixDescription: String {
+        if let zScore = sentimentViewModel.macroZScores[.vix] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Extreme fear (\(zScore.zScore.formatted))" : "Extreme calm (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
+            }
+        }
+        guard let vix = sentimentViewModel.vixData?.value else { return "Market fear gauge" }
+        if vix < 15 { return "Low fear" }
+        if vix < 20 { return "Normal" }
+        if vix < 25 { return "Elevated" }
+        return "High fear"
+    }
+
+    private var dxySignal: MacroTrendSignal {
+        guard let change = sentimentViewModel.dxyData?.changePercent else { return .neutral }
+        if change < -0.3 { return .bullish }
+        if change > 0.3 { return .bearish }
+        return .neutral
+    }
+
+    private var dxyDescription: String {
+        if let zScore = sentimentViewModel.macroZScores[.dxy] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Extreme strength (\(zScore.zScore.formatted))" : "Extreme weakness (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Strong (\(zScore.zScore.formatted))" : "Weak (\(zScore.zScore.formatted))"
+            }
+        }
+        guard let change = sentimentViewModel.dxyData?.changePercent else { return "Dollar strength" }
+        if change < -0.5 { return "Weakening" }
+        if change > 0.5 { return "Strengthening" }
+        return "Stable"
+    }
+
+    private var m2Signal: MacroTrendSignal {
+        guard let m2 = sentimentViewModel.globalM2Data else { return .neutral }
+        if m2.monthlyChange > 1.0 { return .bullish }
+        if m2.monthlyChange < -1.0 { return .bearish }
+        return .neutral
+    }
+
+    private var m2Description: String {
+        if let zScore = sentimentViewModel.macroZScores[.m2] {
+            if zScore.isExtreme {
+                return zScore.zScore.zScore > 0 ? "Rapid expansion (\(zScore.zScore.formatted))" : "Severe contraction (\(zScore.zScore.formatted))"
+            } else if zScore.isSignificant {
+                return zScore.zScore.zScore > 0 ? "Expanding (\(zScore.zScore.formatted))" : "Contracting (\(zScore.zScore.formatted))"
+            }
+        }
+        guard let m2 = sentimentViewModel.globalM2Data else { return "Global liquidity" }
+        if m2.monthlyChange > 2.0 { return "Expanding fast" }
+        if m2.monthlyChange > 0 { return "Expanding" }
+        if m2.monthlyChange > -2.0 { return "Contracting" }
+        return "Contracting fast"
+    }
+
     // MARK: - Asset Table
 
     private var assetTable: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Section intro
             Text("Each asset is scored on its technical trend and how well it fits the current macro regime.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .padding(.horizontal)
                 .padding(.bottom, 12)
 
-            // Table header
             HStack {
                 Text("Asset")
                     .font(AppFonts.caption12)
@@ -160,9 +274,7 @@ struct AllocationDetailView: View {
 
     private func assetRow(allocation: AssetAllocation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Main row: icon + name + signal + allocation
             HStack(spacing: 12) {
-                // Asset icon
                 if let url = allocation.iconUrl.flatMap({ URL(string: $0) }) {
                     KFImage(url)
                         .resizable()
@@ -195,22 +307,19 @@ struct AllocationDetailView: View {
 
                 Spacer()
 
-                // Signal badge
                 signalBadge(signal: allocation.signal)
                     .frame(width: 80)
 
-                // Allocation %
                 Text("\(allocation.targetAllocation)%")
                     .font(AppFonts.title18SemiBold)
                     .foregroundColor(allocationColor(allocation.targetAllocation))
                     .frame(width: 65, alignment: .trailing)
             }
 
-            // Interpretation line
             Text(allocation.interpretation)
                 .font(AppFonts.footnote10)
                 .foregroundColor(AppColors.textTertiary)
-                .padding(.leading, 44) // Align with text after icon
+                .padding(.leading, 44)
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
@@ -244,10 +353,10 @@ struct AllocationDetailView: View {
                 .foregroundColor(textPrimary)
 
             HStack(spacing: 0) {
-                scaleSegment(label: "0%", sublabel: "No position", color: AppColors.textSecondary, isFirst: true)
-                scaleSegment(label: "25%", sublabel: "Quarter", color: AppColors.warning, isFirst: false)
-                scaleSegment(label: "50%", sublabel: "Half", color: Color(hex: "84CC16"), isFirst: false)
-                scaleSegment(label: "100%", sublabel: "Full", color: AppColors.success, isFirst: false)
+                scaleSegment(label: "0%", sublabel: "No position", color: AppColors.textSecondary)
+                scaleSegment(label: "25%", sublabel: "Quarter", color: AppColors.warning)
+                scaleSegment(label: "50%", sublabel: "Half", color: Color(hex: "84CC16"))
+                scaleSegment(label: "100%", sublabel: "Full", color: AppColors.success)
             }
 
             Text("This scale represents how much of your intended position size to deploy based on current conditions. 100% means conditions fully support the position; 0% means stay on the sidelines.")
@@ -263,7 +372,7 @@ struct AllocationDetailView: View {
         .padding(.horizontal)
     }
 
-    private func scaleSegment(label: String, sublabel: String, color: Color, isFirst: Bool) -> some View {
+    private func scaleSegment(label: String, sublabel: String, color: Color) -> some View {
         VStack(spacing: 4) {
             Text(label)
                 .font(AppFonts.body14Bold)

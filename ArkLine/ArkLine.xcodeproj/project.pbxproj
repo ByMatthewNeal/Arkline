@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
+		ED8D0F6F4BFC3D58BB1C4C6B /* TraditionalMarketsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B1980459627755966F9BBBA /* TraditionalMarketsSection.swift */; };
+		B381701833D18EC52D949262 /* SentimentSummarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E307FB3F02361B0AAFCFE06 /* SentimentSummarySection.swift */; };
+		3CF3899575E1805C79C32278 /* SentimentDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4AA00B2C2D8CF243B93A2E0 /* SentimentDetailView.swift */; };
 		0163AAB9E3115D7C8026A39F /* GlobalLiquidityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */; };
 		0287C168D12A0BBB5F6AAD51 /* DoubleExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0226AB419D7AB03D9541784 /* DoubleExtensionsTests.swift */; };
 		030FE9AB6E861E212A56106A /* CorrelationBars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350231142836357F1140D465 /* CorrelationBars.swift */; };
@@ -511,6 +514,9 @@
 		4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockRainbowChartService.swift; sourceTree = "<group>"; };
 		4F83C7068E9D94A46C50410C /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
 		508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketAssetsSection.swift; sourceTree = "<group>"; };
+		8B1980459627755966F9BBBA /* TraditionalMarketsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TraditionalMarketsSection.swift; sourceTree = "<group>"; };
+		1E307FB3F02361B0AAFCFE06 /* SentimentSummarySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentSummarySection.swift; sourceTree = "<group>"; };
+		D4AA00B2C2D8CF243B93A2E0 /* SentimentDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentDetailView.swift; sourceTree = "<group>"; };
 		509FFD3817DDAF75AAA5B555 /* BroadcastTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastTabView.swift; sourceTree = "<group>"; };
 		50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncrementalPriceStore.swift; sourceTree = "<group>"; };
 		51911C535784ED78B6640ECB /* MockSantimentService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MockSantimentService.swift; path = Data/Services/Mock/MockSantimentService.swift; sourceTree = "<group>"; };
@@ -1235,6 +1241,7 @@
 				891F27ECC7D36A0AD0A82CAB /* TrendChannelDetailView.swift */,
 				1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */,
 				C3871E2B3DABE8666344641E /* AllocationDetailView.swift */,
+				D4AA00B2C2D8CF243B93A2E0 /* SentimentDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1632,6 +1639,8 @@
 				2AD3282515B7877788D18601 /* TrendChannelChart.swift */,
 				50533F2F531F5D45D8710237 /* RSIChartView.swift */,
 				5E2E1D176C178296E4E436AE /* AllocationSummarySection.swift */,
+				8B1980459627755966F9BBBA /* TraditionalMarketsSection.swift */,
+				1E307FB3F02361B0AAFCFE06 /* SentimentSummarySection.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -2488,6 +2497,9 @@
 				55EA2A30092B25DA9B46A610 /* AllocationViewModel.swift in Sources */,
 				21143EF4E51662971C0DED29 /* AllocationSummarySection.swift in Sources */,
 				837C7B8D6179B639E0B47A89 /* AllocationDetailView.swift in Sources */,
+				ED8D0F6F4BFC3D58BB1C4C6B /* TraditionalMarketsSection.swift in Sources */,
+				B381701833D18EC52D949262 /* SentimentSummarySection.swift in Sources */,
+				3CF3899575E1805C79C32278 /* SentimentDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
