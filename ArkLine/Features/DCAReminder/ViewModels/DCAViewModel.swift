@@ -80,7 +80,6 @@ final class DCAViewModel {
     // MARK: - Initialization
     init(dcaService: DCAServiceProtocol = ServiceContainer.shared.dcaService) {
         self.dcaService = dcaService
-        Task { await loadInitialData() }
     }
 
     // MARK: - Data Loading
@@ -117,10 +116,6 @@ final class DCAViewModel {
                 self.isLoading = false
             }
         }
-    }
-
-    private func loadInitialData() async {
-        await refresh()
     }
 
     /// Refreshes risk levels for all risk-based reminder symbols
