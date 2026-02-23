@@ -220,18 +220,15 @@ struct AllocationDetailView: View {
     }
 
     private var vixDescription: String {
-        if let zScore = sentimentViewModel.macroZScores[.vix] {
-            if zScore.isExtreme {
-                return zScore.zScore.zScore > 0 ? "Extreme fear (\(zScore.zScore.formatted))" : "Extreme calm (\(zScore.zScore.formatted))"
-            } else if zScore.isSignificant {
-                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
-            }
-        }
         guard let vix = sentimentViewModel.vixData?.value else { return "Market fear gauge" }
-        if vix < 15 { return "Low fear" }
-        if vix < 20 { return "Normal" }
-        if vix < 25 { return "Elevated" }
-        return "High fear"
+        switch vix {
+        case ..<15: return "Low fear - risk-on"
+        case 15..<20: return "Calm - favorable for crypto"
+        case 20..<25: return "Moderate - normal volatility"
+        case 25..<30: return "Elevated fear - risk-off pressure"
+        case 30..<35: return "High fear - potential bounce"
+        default: return "Extreme fear - capitulation zone"
+        }
     }
 
     private var dxySignal: MacroTrendSignal {
@@ -242,17 +239,14 @@ struct AllocationDetailView: View {
     }
 
     private var dxyDescription: String {
-        if let zScore = sentimentViewModel.macroZScores[.dxy] {
-            if zScore.isExtreme {
-                return zScore.zScore.zScore > 0 ? "Extreme strength (\(zScore.zScore.formatted))" : "Extreme weakness (\(zScore.zScore.formatted))"
-            } else if zScore.isSignificant {
-                return zScore.zScore.zScore > 0 ? "Strong (\(zScore.zScore.formatted))" : "Weak (\(zScore.zScore.formatted))"
-            }
+        guard let dxy = sentimentViewModel.dxyData?.value else { return "Dollar strength" }
+        switch dxy {
+        case ..<95: return "Weak dollar - tailwind for crypto"
+        case 95..<100: return "Moderate - neutral for crypto"
+        case 100..<104: return "Strong dollar - headwind"
+        case 104..<108: return "Very strong - pressure on risk assets"
+        default: return "Extreme strength - major headwind"
         }
-        guard let change = sentimentViewModel.dxyData?.changePercent else { return "Dollar strength" }
-        if change < -0.5 { return "Weakening" }
-        if change > 0.5 { return "Strengthening" }
-        return "Stable"
     }
 
     private var m2Signal: MacroTrendSignal {
@@ -263,18 +257,14 @@ struct AllocationDetailView: View {
     }
 
     private var m2Description: String {
-        if let zScore = sentimentViewModel.macroZScores[.m2] {
-            if zScore.isExtreme {
-                return zScore.zScore.zScore > 0 ? "Rapid expansion (\(zScore.zScore.formatted))" : "Severe contraction (\(zScore.zScore.formatted))"
-            } else if zScore.isSignificant {
-                return zScore.zScore.zScore > 0 ? "Expanding (\(zScore.zScore.formatted))" : "Contracting (\(zScore.zScore.formatted))"
-            }
-        }
         guard let m2 = sentimentViewModel.globalM2Data else { return "Global liquidity" }
-        if m2.monthlyChange > 2.0 { return "Expanding fast" }
-        if m2.monthlyChange > 0 { return "Expanding" }
-        if m2.monthlyChange > -2.0 { return "Contracting" }
-        return "Contracting fast"
+        switch m2.monthlyChange {
+        case _ where m2.monthlyChange > 2.0: return "Rapid expansion - liquidity tailwind"
+        case _ where m2.monthlyChange > 0.5: return "Expanding - favorable backdrop"
+        case _ where m2.monthlyChange > -0.5: return "Flat - neutral liquidity"
+        case _ where m2.monthlyChange > -2.0: return "Contracting - liquidity headwind"
+        default: return "Severe contraction - major headwind"
+        }
     }
 
     private var crudeOilSignal: MacroTrendSignal {
@@ -285,17 +275,14 @@ struct AllocationDetailView: View {
     }
 
     private var crudeOilDescription: String {
-        if let zScore = sentimentViewModel.macroZScores[.crudeOil] {
-            if zScore.isExtreme {
-                return zScore.zScore.zScore > 0 ? "Very high (\(zScore.zScore.formatted))" : "Very low (\(zScore.zScore.formatted))"
-            } else if zScore.isSignificant {
-                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
-            }
-        }
         guard let oil = sentimentViewModel.crudeOilData?.value else { return "Oil prices" }
-        if oil < 65 { return "Low - disinflationary" }
-        if oil < 85 { return "Normal range" }
-        return "High - inflationary"
+        switch oil {
+        case ..<55: return "Very low - deflationary signal"
+        case 55..<65: return "Low - disinflationary"
+        case 65..<80: return "Normal - balanced"
+        case 80..<90: return "Elevated - inflation pressure"
+        default: return "High - inflation risk"
+        }
     }
 
     private var goldSignal: MacroTrendSignal {
@@ -306,17 +293,15 @@ struct AllocationDetailView: View {
     }
 
     private var goldDescription: String {
-        if let zScore = sentimentViewModel.macroZScores[.gold] {
-            if zScore.isExtreme {
-                return zScore.zScore.zScore > 0 ? "Strong safe-haven (\(zScore.zScore.formatted))" : "Weak safe-haven (\(zScore.zScore.formatted))"
-            } else if zScore.isSignificant {
-                return zScore.zScore.zScore > 0 ? "Elevated (\(zScore.zScore.formatted))" : "Low (\(zScore.zScore.formatted))"
-            }
-        }
         guard let gold = sentimentViewModel.goldData?.value else { return "Safe-haven asset" }
-        if gold < 2000 { return "Low - risk-on" }
-        if gold < 2400 { return "Normal range" }
-        return "High - safe-haven demand"
+        switch gold {
+        case ..<1800: return "Very low - strong risk-on"
+        case 1800..<2000: return "Low - risk-on"
+        case 2000..<2400: return "Normal range"
+        case 2400..<2800: return "Elevated - growing uncertainty"
+        case 2800..<3500: return "High - safe-haven demand"
+        default: return "Very high - extreme fear or debasement"
+        }
     }
 
     // MARK: - Asset Table
