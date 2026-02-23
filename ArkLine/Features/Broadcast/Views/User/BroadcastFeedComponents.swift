@@ -42,6 +42,12 @@ struct BroadcastCardView: View {
                                 .font(.caption)
                                 .foregroundColor(AppColors.accent)
                         }
+
+                        if broadcast.meetingLink != nil {
+                            Image(systemName: "video.fill")
+                                .font(.caption)
+                                .foregroundColor(AppColors.accent)
+                        }
                     }
                 }
 
@@ -100,6 +106,7 @@ struct BroadcastDetailView: View {
     @State private var isLoadingReactions = false
     @State private var audioPlayer: AVPlayer?
     @State private var isPlayingAudio = false
+    @Environment(\.openURL) private var openURL
     @State private var audioEndObserver: NSObjectProtocol?
 
     var body: some View {
@@ -120,6 +127,40 @@ struct BroadcastDetailView: View {
                     // Audio Player (placeholder)
                     if broadcast.audioURL != nil {
                         audioPlayerPlaceholder
+                    }
+
+                    // Meeting Link
+                    if let meetingURL = broadcast.meetingLink {
+                        Button {
+                            openURL(meetingURL)
+                        } label: {
+                            HStack(spacing: ArkSpacing.md) {
+                                Image(systemName: "video.fill")
+                                    .font(.title2)
+                                    .foregroundColor(AppColors.accent)
+
+                                VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
+                                    Text("Join Meeting")
+                                        .font(ArkFonts.bodySemibold)
+                                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                                    Text(meetingURL.host ?? meetingURL.absoluteString)
+                                        .font(ArkFonts.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.accent)
+                            }
+                            .padding(ArkSpacing.md)
+                            .background(AppColors.accent.opacity(0.1))
+                            .cornerRadius(ArkSpacing.sm)
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     // Content

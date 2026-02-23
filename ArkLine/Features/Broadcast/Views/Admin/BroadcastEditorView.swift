@@ -19,6 +19,7 @@ struct BroadcastEditorView: View {
     @State private var portfolioAttachment: BroadcastPortfolioAttachment?
     @State private var targetAudience: TargetAudience = .all
     @State private var selectedTags: [String] = []
+    @State private var meetingLink: String = ""
     @State private var isScheduled = false
     @State private var scheduledDate = Date().addingTimeInterval(3600)
     @State private var showingVoiceRecorder = false
@@ -65,6 +66,9 @@ struct BroadcastEditorView: View {
                             .background(AppColors.cardBackground(colorScheme))
                             .cornerRadius(ArkSpacing.sm)
                     }
+
+                    // Meeting Link Section
+                    meetingLinkSection
 
                     // App References Section
                     appReferencesSection
@@ -147,6 +151,7 @@ struct BroadcastEditorView: View {
                     images = broadcast.images
                     appReferences = broadcast.appReferences
                     portfolioAttachment = broadcast.portfolioAttachment
+                    meetingLink = broadcast.meetingLink?.absoluteString ?? ""
                     targetAudience = broadcast.targetAudience
                     selectedTags = broadcast.tags
                     if let scheduled = broadcast.scheduledAt {
@@ -256,6 +261,59 @@ struct BroadcastEditorView: View {
                     .cornerRadius(ArkSpacing.sm)
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Meeting Link Section
+
+    /// Parsed URL from the meeting link text field (nil if empty or invalid)
+    private var meetingLinkURL: URL? {
+        let trimmed = meetingLink.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            return nil
+        }
+        return url
+    }
+
+    private var meetingLinkSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            Text("Meeting Link")
+                .font(ArkFonts.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            HStack(spacing: ArkSpacing.sm) {
+                Image(systemName: "video.fill")
+                    .foregroundColor(AppColors.accent)
+                    .frame(width: 24)
+
+                TextField("https://zoom.us/j/...", text: $meetingLink)
+                    .font(ArkFonts.body)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                if !meetingLink.isEmpty {
+                    Button {
+                        meetingLink = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(AppColors.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(ArkSpacing.md)
+            .background(AppColors.cardBackground(colorScheme))
+            .cornerRadius(ArkSpacing.sm)
+
+            if !meetingLink.isEmpty && meetingLinkURL == nil {
+                Text("Enter a valid URL starting with https://")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.error)
             }
         }
     }
@@ -755,6 +813,7 @@ struct BroadcastEditorView: View {
                     updated.images = images
                     updated.appReferences = appReferences
                     updated.portfolioAttachment = portfolioAttachment
+                    updated.meetingLink = meetingLinkURL
                     updated.targetAudience = targetAudience
                     updated.tags = selectedTags
 
@@ -796,6 +855,7 @@ struct BroadcastEditorView: View {
                         images: images,
                         appReferences: appReferences,
                         portfolioAttachment: portfolioAttachment,
+                        meetingLink: meetingLinkURL,
                         targetAudience: targetAudience,
                         status: status,
                         publishedAt: publishedAt,
