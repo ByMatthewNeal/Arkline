@@ -438,6 +438,210 @@ struct EmbeddedWidgetView: View {
     }
 }
 
+// MARK: - Embedded Asset Widget
+
+/// Displays a compact live-price card for a crypto, stock, or commodity asset.
+struct EmbeddedAssetWidget: View {
+    let assetReference: AssetReference
+    @Environment(\.colorScheme) var colorScheme
+    @StateObject private var viewModel = EmbeddedAssetWidgetViewModel()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            // Header
+            HStack(spacing: ArkSpacing.xs) {
+                Image(systemName: assetReference.iconName)
+                    .font(.caption)
+                    .foregroundColor(AppColors.accent)
+
+                Text(assetReference.assetType.rawValue.capitalized)
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                if viewModel.isLoading {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                }
+            }
+
+            // Content
+            HStack(spacing: ArkSpacing.md) {
+                if viewModel.hasData {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(assetReference.displayName) (\(assetReference.symbol))")
+                            .font(ArkFonts.bodySemibold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .lineLimit(1)
+
+                        Text(viewModel.formattedPrice)
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                    }
+
+                    Spacer()
+
+                    if let change = viewModel.changePercent {
+                        priceChangeIndicator(change: change)
+                    }
+                } else if !viewModel.isLoading {
+                    Text("Price unavailable")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                } else {
+                    Text("Loading...")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                }
+            }
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(ArkSpacing.sm)
+        .task {
+            await viewModel.loadData(for: assetReference)
+        }
+    }
+
+    private func priceChangeIndicator(change: Double) -> some View {
+        let isPositive = change >= 0
+        let color = isPositive ? AppColors.success : AppColors.error
+        let icon = isPositive ? "arrow.up.right" : "arrow.down.right"
+
+        return HStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(.caption2)
+            Text(String(format: "%.2f%%", abs(change)))
+                .font(ArkFonts.caption)
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, ArkSpacing.sm)
+        .padding(.vertical, ArkSpacing.xxs)
+        .background(color.opacity(0.1))
+        .cornerRadius(ArkSpacing.xs)
+    }
+}
+
+// MARK: - Embedded Asset Widget ViewModel
+
+@MainActor
+class EmbeddedAssetWidgetViewModel: ObservableObject {
+    @Published var isLoading = false
+    @Published var formattedPrice: String = ""
+    @Published var changePercent: Double?
+    @Published var hasData = false
+
+    // Loaded asset models for navigation handoff
+    @Published var cryptoAsset: CryptoAsset?
+    @Published var stockAsset: StockAsset?
+    @Published var metalAsset: MetalAsset?
+
+    private let marketService: MarketServiceProtocol
+
+    init() {
+        self.marketService = ServiceContainer.shared.marketService
+    }
+
+    func loadData(for ref: AssetReference) async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            switch ref.assetType {
+            case .crypto:
+                if let cgId = ref.coinGeckoId {
+                    let assets = try await marketService.searchCrypto(query: cgId)
+                    if let asset = assets.first(where: { $0.id == cgId || $0.symbol.uppercased() == ref.symbol.uppercased() }) {
+                        cryptoAsset = asset
+                        formattedPrice = formatPrice(asset.currentPrice)
+                        changePercent = asset.priceChangePercentage24h
+                        hasData = true
+                    }
+                }
+
+            case .stock:
+                let assets = try await marketService.fetchStockAssets(symbols: [ref.symbol])
+                if let asset = assets.first {
+                    stockAsset = asset
+                    formattedPrice = formatPrice(asset.currentPrice)
+                    changePercent = asset.priceChangePercentage24h
+                    hasData = true
+                }
+
+            case .commodity:
+                let assets = try await marketService.fetchMetalAssets(symbols: [ref.symbol])
+                if let asset = assets.first {
+                    metalAsset = asset
+                    formattedPrice = formatPrice(asset.currentPrice)
+                    changePercent = asset.priceChangePercentage24h
+                    hasData = true
+                }
+            }
+        } catch {
+            // Silently fail - widget will show placeholder
+        }
+    }
+
+    private func formatPrice(_ price: Double) -> String {
+        if price >= 1 {
+            return String(format: "$%,.2f", price)
+        } else {
+            return String(format: "$%.4f", price)
+        }
+    }
+}
+
+// MARK: - External Link Preview Card
+
+/// Displays a preview card for an external URL with metadata.
+struct ExternalLinkPreviewCard: View {
+    let link: ExternalLink
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        HStack(spacing: ArkSpacing.md) {
+            Image(systemName: "link")
+                .font(.title3)
+                .foregroundColor(AppColors.accent)
+                .frame(width: 32)
+
+            VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
+                Text(link.title ?? link.url.absoluteString)
+                    .font(ArkFonts.bodySemibold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(2)
+
+                if let description = link.description, !description.isEmpty {
+                    Text(description)
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(2)
+                }
+
+                if let domain = link.domain {
+                    HStack(spacing: 4) {
+                        Text(domain)
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.accent)
+
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
+
+            Spacer()
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(ArkSpacing.sm)
+    }
+}
+
 // MARK: - Embedded Widget ViewModel
 
 @MainActor
@@ -500,6 +704,18 @@ class EmbeddedWidgetViewModel: ObservableObject {
         EmbeddedWidgetView(section: .vix)
         EmbeddedWidgetView(section: .fearGreed)
         EmbeddedWidgetView(section: .bitcoinRisk)
+        EmbeddedAssetWidget(assetReference: AssetReference(
+            symbol: "BTC",
+            assetType: .crypto,
+            displayName: "Bitcoin",
+            coinGeckoId: "bitcoin"
+        ))
+        ExternalLinkPreviewCard(link: ExternalLink(
+            url: URL(string: "https://example.com/article")!,
+            title: "Sample Article",
+            description: "A brief description of the article",
+            domain: "example.com"
+        ))
     }
     .padding()
 }

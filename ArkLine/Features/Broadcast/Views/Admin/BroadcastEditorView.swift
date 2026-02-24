@@ -355,13 +355,13 @@ struct BroadcastEditorView: View {
                 VStack(spacing: ArkSpacing.xs) {
                     ForEach(appReferences) { reference in
                         HStack(spacing: ArkSpacing.sm) {
-                            Image(systemName: reference.section.iconName)
+                            Image(systemName: reference.iconName)
                                 .font(.body)
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 24)
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(reference.section.displayName)
+                                Text(reference.displayName)
                                     .font(ArkFonts.body)
                                     .foregroundColor(AppColors.textPrimary(colorScheme))
 

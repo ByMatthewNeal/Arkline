@@ -69,10 +69,10 @@ struct BroadcastCardView: View {
                         HStack(spacing: ArkSpacing.xs) {
                             ForEach(broadcast.appReferences) { reference in
                                 HStack(spacing: ArkSpacing.xxs) {
-                                    Image(systemName: reference.section.iconName)
+                                    Image(systemName: reference.iconName)
                                         .font(.caption2)
 
-                                    Text(reference.section.displayName)
+                                    Text(reference.displayName)
                                         .font(ArkFonts.caption)
                                 }
                                 .foregroundColor(AppColors.accent)
@@ -415,10 +415,105 @@ struct BroadcastDetailView: View {
                             .italic()
                     }
 
-                    // Embedded live data widget
-                    EmbeddedWidgetView(section: reference.section)
+                    // Dispatch by reference kind
+                    switch reference.referenceKind {
+                    case .macroIndicator:
+                        if let section = reference.section {
+                            EmbeddedWidgetView(section: section)
+                                .onTapGesture {
+                                    appState.selectedTab = .home
+                                    dismiss()
+                                }
+                        }
+
+                    case .asset:
+                        if let assetRef = reference.assetReference {
+                            NavigationLink {
+                                AssetReferenceDestination(assetReference: assetRef)
+                            } label: {
+                                EmbeddedAssetWidget(assetReference: assetRef)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                    case .externalLink:
+                        if let link = reference.externalLink {
+                            Button {
+                                openURL(link.url)
+                            } label: {
+                                ExternalLinkPreviewCard(link: link)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Asset Reference Destination
+
+/// Bridges an AssetReference to the appropriate detail view by loading the asset first.
+private struct AssetReferenceDestination: View {
+    let assetReference: AssetReference
+    @State private var cryptoAsset: CryptoAsset?
+    @State private var stockAsset: StockAsset?
+    @State private var metalAsset: MetalAsset?
+    @State private var isLoading = true
+    @Environment(\.colorScheme) var colorScheme
+
+    private let marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
+
+    var body: some View {
+        Group {
+            if let crypto = cryptoAsset {
+                AssetDetailView(asset: crypto)
+            } else if let stock = stockAsset {
+                StockDetailView(asset: stock)
+            } else if let metal = metalAsset {
+                MetalDetailView(asset: metal)
+            } else if isLoading {
+                ProgressView("Loading \(assetReference.displayName)...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppColors.background(colorScheme))
+            } else {
+                VStack(spacing: ArkSpacing.md) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.title)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("Could not load \(assetReference.displayName)")
+                        .font(ArkFonts.body)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(AppColors.background(colorScheme))
+            }
+        }
+        .task {
+            await loadAsset()
+        }
+    }
+
+    private func loadAsset() async {
+        defer { isLoading = false }
+
+        do {
+            switch assetReference.assetType {
+            case .crypto:
+                if let cgId = assetReference.coinGeckoId {
+                    let results = try await marketService.searchCrypto(query: cgId)
+                    cryptoAsset = results.first(where: { $0.id == cgId || $0.symbol.uppercased() == assetReference.symbol.uppercased() })
+                }
+            case .stock:
+                let results = try await marketService.fetchStockAssets(symbols: [assetReference.symbol])
+                stockAsset = results.first
+            case .commodity:
+                let results = try await marketService.fetchMetalAssets(symbols: [assetReference.symbol])
+                metalAsset = results.first
+            }
+        } catch {
+            // Loading failed — will show error state
         }
     }
 }

@@ -235,20 +235,27 @@ enum AnnotationType: String, Codable, CaseIterable {
 
 // MARK: - App Reference
 
-/// A reference to an app section with optional screenshot
+/// A reference to an app section, asset, or external link with optional screenshot
 struct AppReference: Codable, Identifiable, Equatable {
     let id: UUID
-    let section: AppSection
+    var section: AppSection?
+    var assetReference: AssetReference?
+    var externalLink: ExternalLink?
     var screenshotURL: URL?
     var note: String?
 
     enum CodingKeys: String, CodingKey {
         case id
         case section
+        case assetReference = "asset_reference"
+        case externalLink = "external_link"
         case screenshotURL = "screenshot_url"
         case note
     }
 
+    // MARK: - Convenience Inits
+
+    /// Macro indicator reference (backward-compatible)
     init(
         id: UUID = UUID(),
         section: AppSection,
@@ -257,8 +264,129 @@ struct AppReference: Codable, Identifiable, Equatable {
     ) {
         self.id = id
         self.section = section
+        self.assetReference = nil
+        self.externalLink = nil
         self.screenshotURL = screenshotURL
         self.note = note
+    }
+
+    /// Asset reference (crypto, stock, commodity)
+    init(
+        id: UUID = UUID(),
+        assetReference: AssetReference,
+        note: String? = nil
+    ) {
+        self.id = id
+        self.section = nil
+        self.assetReference = assetReference
+        self.externalLink = nil
+        self.screenshotURL = nil
+        self.note = note
+    }
+
+    /// External link reference
+    init(
+        id: UUID = UUID(),
+        externalLink: ExternalLink,
+        note: String? = nil
+    ) {
+        self.id = id
+        self.section = nil
+        self.assetReference = nil
+        self.externalLink = externalLink
+        self.screenshotURL = nil
+        self.note = note
+    }
+
+    // MARK: - Custom Decoder (backward compatibility)
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        section = try container.decodeIfPresent(AppSection.self, forKey: .section)
+        assetReference = try container.decodeIfPresent(AssetReference.self, forKey: .assetReference)
+        externalLink = try container.decodeIfPresent(ExternalLink.self, forKey: .externalLink)
+        screenshotURL = try container.decodeIfPresent(URL.self, forKey: .screenshotURL)
+        note = try container.decodeIfPresent(String.self, forKey: .note)
+    }
+
+    // MARK: - Computed Properties
+
+    /// The kind of reference this represents
+    var referenceKind: ReferenceKind {
+        if section != nil { return .macroIndicator }
+        if assetReference != nil { return .asset }
+        if externalLink != nil { return .externalLink }
+        return .macroIndicator
+    }
+
+    /// Display name for any reference type
+    var displayName: String {
+        if let section { return section.displayName }
+        if let asset = assetReference { return asset.displayName }
+        if let link = externalLink { return link.title ?? link.domain ?? link.url.absoluteString }
+        return "Unknown"
+    }
+
+    /// SF Symbol icon name for any reference type
+    var iconName: String {
+        if let section { return section.iconName }
+        if let asset = assetReference { return asset.iconName }
+        if externalLink != nil { return "link" }
+        return "questionmark.circle"
+    }
+}
+
+// MARK: - Reference Kind
+
+enum ReferenceKind: String, Codable {
+    case macroIndicator
+    case asset
+    case externalLink
+}
+
+// MARK: - Asset Reference
+
+/// A reference to a specific crypto, stock, or commodity asset
+struct AssetReference: Codable, Equatable {
+    let symbol: String
+    let assetType: AssetType
+    let displayName: String
+    let coinGeckoId: String?
+
+    var iconName: String {
+        switch assetType {
+        case .crypto: return "bitcoinsign.circle"
+        case .stock: return "chart.line.uptrend.xyaxis"
+        case .commodity: return "scalemass"
+        }
+    }
+}
+
+// MARK: - Asset Type
+
+enum AssetType: String, Codable, CaseIterable {
+    case crypto
+    case stock
+    case commodity
+}
+
+// MARK: - External Link
+
+/// A reference to an external URL with optional metadata
+struct ExternalLink: Codable, Equatable {
+    let url: URL
+    var title: String?
+    var description: String?
+    var imageURL: URL?
+    var domain: String?
+
+    enum CodingKeys: String, CodingKey {
+        case url
+        case title
+        case description
+        case imageURL = "image_url"
+        case domain
     }
 }
 
