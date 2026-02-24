@@ -76,9 +76,15 @@ final class APIDCAService: DCAServiceProtocol {
                 .execute()
                 .data
 
-            let reminders = try Self.dcaDecoder.decode([DCAReminder].self, from: data)
-            logInfo("Fetched \(reminders.count) DCA reminders", category: .data)
-            return reminders
+            do {
+                let reminders = try Self.dcaDecoder.decode([DCAReminder].self, from: data)
+                logInfo("Fetched \(reminders.count) DCA reminders", category: .data)
+                return reminders
+            } catch {
+                let rawJSON = String(data: data, encoding: .utf8) ?? "<unreadable>"
+                logError("DCA fetch decode failed. Raw JSON: \(rawJSON)\nError: \(error)", category: .data)
+                throw error
+            }
         } catch {
             logError(error, context: "Fetch DCA reminders", category: .data)
             throw AppError.networkError(underlying: error)
@@ -142,30 +148,58 @@ final class APIDCAService: DCAServiceProtocol {
             throw AppError.networkError(underlying: NSError(domain: "SupabaseNotConfigured", code: 0))
         }
 
+        // Step 1: Insert the row. Use .select().single() to get the server response.
+        let responseData: Data
         do {
-            // Insert and get the server-created row back in one round trip.
-            // The dcaDecoder now handles all PostgreSQL time formats including
-            // timezone suffixes and fractional seconds.
-            let data = try await supabase.database
+            responseData = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .insert(request)
                 .select()
                 .single()
                 .execute()
                 .data
-
-            let created = try Self.dcaDecoder.decode(DCAReminder.self, from: data)
-            logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
-            return created
-        } catch let error as AppError {
-            throw error
         } catch {
-            logError(error, context: "Create DCA reminder", category: .data)
+            // If the insert itself fails, that's a real error
+            logError(error, context: "Create DCA reminder (insert)", category: .data)
             let message = "\(error)"
             if message.contains("column") || message.contains("schema") || message.contains("postgrest") {
                 throw AppError.supabaseError(message: "Failed to save reminder. Please update the app or try again.")
             }
             throw AppError.from(error)
+        }
+
+        // Step 2: Try to decode the response. If it fails (due to time column format),
+        // log the raw JSON for debugging and construct the model locally.
+        do {
+            let created = try Self.dcaDecoder.decode(DCAReminder.self, from: responseData)
+            logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
+            return created
+        } catch {
+            // Log the raw JSON so we can see exactly what format is failing
+            let rawJSON = String(data: responseData, encoding: .utf8) ?? "<unreadable>"
+            logError("DCA decode failed. Raw JSON: \(rawJSON)\nError: \(error)", category: .data)
+
+            // The INSERT succeeded — construct the model from request data
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            let notifDate = f.date(from: request.notificationTime) ?? Date()
+
+            let fallback = DCAReminder(
+                userId: request.userId,
+                symbol: request.symbol,
+                name: request.name,
+                amount: request.amount,
+                frequency: DCAFrequency(rawValue: request.frequency) ?? .daily,
+                totalPurchases: request.totalPurchases,
+                completedPurchases: 0,
+                notificationTime: notifDate,
+                startDate: request.startDate,
+                nextReminderDate: request.nextReminderDate,
+                isActive: true
+            )
+            logInfo("Created DCA reminder (fallback): \(fallback.name)", category: .data)
+            return fallback
         }
     }
 
