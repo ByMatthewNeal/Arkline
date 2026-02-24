@@ -235,6 +235,7 @@ struct OnboardingBottomActions: View {
 // MARK: - Back Button Modifier
 struct OnboardingBackButton: ViewModifier {
     let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
@@ -244,7 +245,7 @@ struct OnboardingBackButton: ViewModifier {
                     Button(action: action) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
                     }
                 }
             }

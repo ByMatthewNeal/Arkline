@@ -38,7 +38,7 @@ struct NotificationSetupView: View {
                 VStack(spacing: ArkSpacing.md) {
                     BiometricFeatureRow(
                         icon: "megaphone.fill",
-                        title: "Coach Updates",
+                        title: "Market Updates",
                         description: "Real-time insights and broadcasts",
                         colorScheme: colorScheme
                     )

@@ -9,21 +9,21 @@ struct WelcomeView: View {
 
     private let slides: [WelcomeSlide] = [
         WelcomeSlide(
-            icon: "chart.line.uptrend.xyaxis",
-            title: "Track Your Portfolio",
-            description: "Monitor all your crypto investments in one place with real-time price updates and performance analytics.",
+            icon: "shield.checkered",
+            title: "Invest with Confidence",
+            description: "Real-time risk scoring, macro indicators, and AI analysis — so you always know when to buy, hold, or wait.",
             accentColor: AppColors.fillPrimary
         ),
         WelcomeSlide(
-            icon: "brain.head.profile",
-            title: "AI-Powered Insights",
-            description: "Get personalized market analysis and investment suggestions powered by advanced AI technology.",
+            icon: "bell.badge.fill",
+            title: "Your Personal Coach",
+            description: "Receive live broadcasts, DCA reminders, and market alerts directly from your coach — never miss a move.",
             accentColor: AppColors.success
         ),
         WelcomeSlide(
-            icon: "person.3.fill",
-            title: "Join the Community",
-            description: "Connect with fellow investors, share strategies, and learn from the best in the crypto space.",
+            icon: "sparkles",
+            title: "Smarter Over Time",
+            description: "Adaptive risk models that learn from the market, portfolio tracking, and AI chat — all in one place.",
             accentColor: AppColors.info
         )
     ]
