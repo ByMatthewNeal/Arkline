@@ -119,9 +119,17 @@ struct PreciousMetalCard: View {
     private var isPositive: Bool { metal.priceChangePercentage24h >= 0 }
 
     private var priceSignal: (color: Color, label: String) {
-        if metal.priceChangePercentage24h > 0.5 { return (AppColors.success, "Bullish") }
-        if metal.priceChangePercentage24h < -0.5 { return (AppColors.error, "Bearish") }
+        if metal.priceChangePercentage24h > 1.0 { return (AppColors.success, "Bullish") }
+        if metal.priceChangePercentage24h < -1.0 { return (AppColors.error, "Bearish") }
         return (AppColors.warning, "Neutral")
+    }
+
+    private var subtitleText: String {
+        let priceStr = metal.currentPrice.asCurrency
+        if metal.priceChange24h != 0 {
+            return "\(priceStr)  \(String(format: "%+.2f%%", metal.priceChangePercentage24h))"
+        }
+        return "\(priceStr) per \(metal.unit)"
     }
 
     private var metalIcon: String {
@@ -162,15 +170,15 @@ struct PreciousMetalCard: View {
                         .foregroundColor(.white)
                 }
 
-                // Name & Symbol
+                // Name & Price subtitle
                 VStack(alignment: .leading, spacing: 2) {
                     Text(metal.name)
                         .font(.headline)
                         .foregroundColor(textPrimary)
 
-                    Text(metal.symbol.uppercased())
+                    Text(subtitleText)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(AppColors.textSecondary)
                 }
 
                 Spacer()
@@ -182,29 +190,6 @@ struct PreciousMetalCard: View {
                     .padding(.vertical, 4)
                     .background(priceSignal.color.opacity(0.15))
                     .cornerRadius(8)
-
-                // Price & Change
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(metal.currentPrice.asCurrency)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(textPrimary)
-
-                    if metal.priceChange24h != 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: isPositive ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 10, weight: .bold))
-                            Text("\(isPositive ? "+" : "")\(metal.priceChangePercentage24h, specifier: "%.2f")%")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(isPositive ? AppColors.success : AppColors.error)
-                    } else {
-                        Text("per \(metal.unit)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
 
                 Image(systemName: "chevron.right")
                     .font(.caption)

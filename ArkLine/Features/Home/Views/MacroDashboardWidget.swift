@@ -126,9 +126,8 @@ struct MacroDashboardWidget: View {
     /// VIX → crypto (inverse): low VIX = bullish for crypto
     private var vixCryptoSignal: (color: Color, label: String) {
         guard let vix = vixData?.value else { return (.secondary, "--") }
-        if vix < 15 { return (AppColors.success, "Bullish") }
-        if vix < 20 { return (AppColors.success, "Favorable") }
-        if vix < 25 { return (AppColors.warning, "Cautious") }
+        if vix < 20 { return (AppColors.success, "Bullish") }
+        if vix < 25 { return (AppColors.warning, "Neutral") }
         return (AppColors.error, "Bearish")
     }
 
@@ -143,9 +142,8 @@ struct MacroDashboardWidget: View {
     /// M2 → crypto (positive): expanding liquidity = bullish for crypto
     private var m2CryptoSignal: (color: Color, label: String) {
         guard let m2 = liquidityData else { return (.secondary, "--") }
-        if m2.monthlyChange > 1.0 { return (AppColors.success, "Bullish") }
-        if m2.monthlyChange > 0 { return (AppColors.success, "Favorable") }
-        if m2.monthlyChange > -1.0 { return (AppColors.warning, "Cautious") }
+        if m2.monthlyChange > 0 { return (AppColors.success, "Bullish") }
+        if m2.monthlyChange > -1.0 { return (AppColors.warning, "Neutral") }
         return (AppColors.error, "Bearish")
     }
 
