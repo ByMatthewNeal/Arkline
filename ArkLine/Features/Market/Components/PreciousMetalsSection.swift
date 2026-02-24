@@ -118,6 +118,12 @@ struct PreciousMetalCard: View {
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var isPositive: Bool { metal.priceChangePercentage24h >= 0 }
 
+    private var priceSignal: (color: Color, label: String) {
+        if metal.priceChangePercentage24h > 0.5 { return (AppColors.success, "Bullish") }
+        if metal.priceChangePercentage24h < -0.5 { return (AppColors.error, "Bearish") }
+        return (AppColors.warning, "Neutral")
+    }
+
     private var metalIcon: String {
         switch metal.symbol.uppercased() {
         case "XAU": return "Au"
@@ -168,6 +174,14 @@ struct PreciousMetalCard: View {
                 }
 
                 Spacer()
+
+                Text(priceSignal.label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(priceSignal.color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(priceSignal.color.opacity(0.15))
+                    .cornerRadius(8)
 
                 // Price & Change
                 VStack(alignment: .trailing, spacing: 4) {

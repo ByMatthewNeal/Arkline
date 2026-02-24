@@ -122,6 +122,33 @@ struct MacroDashboardWidget: View {
         return (AppColors.error, "Contracting")
     }
 
+    // MARK: - Crypto Signal Mappings
+    /// VIX → crypto (inverse): low VIX = bullish for crypto
+    private var vixCryptoSignal: (color: Color, label: String) {
+        guard let vix = vixData?.value else { return (.secondary, "--") }
+        if vix < 15 { return (AppColors.success, "Bullish") }
+        if vix < 20 { return (AppColors.success, "Favorable") }
+        if vix < 25 { return (AppColors.warning, "Cautious") }
+        return (AppColors.error, "Bearish")
+    }
+
+    /// DXY → crypto (inverse): weak dollar = bullish for crypto
+    private var dxyCryptoSignal: (color: Color, label: String) {
+        guard let change = dxyData?.changePercent else { return (.secondary, "--") }
+        if change < -0.3 { return (AppColors.success, "Bullish") }
+        if change > 0.3 { return (AppColors.error, "Bearish") }
+        return (AppColors.warning, "Neutral")
+    }
+
+    /// M2 → crypto (positive): expanding liquidity = bullish for crypto
+    private var m2CryptoSignal: (color: Color, label: String) {
+        guard let m2 = liquidityData else { return (.secondary, "--") }
+        if m2.monthlyChange > 1.0 { return (AppColors.success, "Bullish") }
+        if m2.monthlyChange > 0 { return (AppColors.success, "Favorable") }
+        if m2.monthlyChange > -1.0 { return (AppColors.warning, "Cautious") }
+        return (AppColors.error, "Bearish")
+    }
+
     private func formatLiquidity(_ value: Double) -> String {
         if value >= 1_000_000_000_000 {
             return String(format: "%.1fT", value / 1_000_000_000_000)
@@ -179,6 +206,7 @@ struct MacroDashboardWidget: View {
                         value: vixData.map { String(format: "%.1f", $0.value) } ?? "--",
                         change: nil,
                         signal: vixSignal,
+                        cryptoSignal: vixCryptoSignal,
                         correlation: vixCorrelation,
                         sparklineData: vixSparkline,
                         size: size,
@@ -195,6 +223,7 @@ struct MacroDashboardWidget: View {
                         value: dxyData.map { String(format: "%.1f", $0.value) } ?? "--",
                         change: dxyData?.changePercent,
                         signal: dxySignal,
+                        cryptoSignal: dxyCryptoSignal,
                         correlation: dxyCorrelation,
                         sparklineData: dxySparkline,
                         size: size,
@@ -211,6 +240,7 @@ struct MacroDashboardWidget: View {
                         value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
                         change: liquidityData?.monthlyChange,
                         signal: m2Signal,
+                        cryptoSignal: m2CryptoSignal,
                         correlation: m2Correlation,
                         sparklineData: m2Sparkline,
                         size: size,
@@ -361,6 +391,7 @@ struct MacroIndicatorColumn: View {
     let value: String
     let change: Double?
     let signal: (color: Color, label: String)
+    let cryptoSignal: (color: Color, label: String)
     let correlation: CorrelationStrength
     let sparklineData: [CGFloat]
     let size: WidgetSize
@@ -372,17 +403,8 @@ struct MacroIndicatorColumn: View {
         AppColors.textPrimary(colorScheme)
     }
 
-    private var valueFontSize: CGFloat {
-        switch size {
-        case .compact: return 18
-        case .standard: return 22
-        case .expanded: return 26
-        }
-    }
-
     private var sparklineColor: Color {
-        // Use signal color for sparkline
-        signal.color.opacity(0.8)
+        cryptoSignal.color.opacity(0.8)
     }
 
     var body: some View {
@@ -403,11 +425,34 @@ struct MacroIndicatorColumn: View {
                 }
             }
 
-            // Value with z-score badge
+            // Crypto signal pill (primary visual)
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(cryptoSignal.color)
+                    .frame(width: 6, height: 6)
+
+                Text(cryptoSignal.label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(cryptoSignal.color)
+            }
+
+            // Sparkline (only show in standard and expanded)
+            if size != .compact && !sparklineData.isEmpty {
+                SparklineView(
+                    data: sparklineData,
+                    color: sparklineColor,
+                    height: size == .expanded ? 20 : 16,
+                    showGradientFill: true
+                )
+                .frame(width: 65)
+                .padding(.vertical, 2)
+            }
+
+            // Raw value (secondary, dimmed)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(value)
-                    .font(.system(size: valueFontSize, weight: .semibold, design: .default))
-                    .foregroundColor(textPrimary)
+                    .font(.system(size: 13, weight: .medium, design: .default))
+                    .foregroundColor(textPrimary.opacity(0.5))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -423,27 +468,11 @@ struct MacroIndicatorColumn: View {
                 }
             }
 
-            // Sparkline (only show in standard and expanded)
-            if size != .compact && !sparklineData.isEmpty {
-                SparklineView(
-                    data: sparklineData,
-                    color: sparklineColor,
-                    height: size == .expanded ? 20 : 16,
-                    showGradientFill: true
-                )
-                .frame(width: 65)
-                .padding(.vertical, 2)
-            }
-
-            // Signal badge
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(signal.color)
-                    .frame(width: 5, height: 5)
-
+            // Original indicator label (only in expanded, very subtle)
+            if size == .expanded {
                 Text(signal.label)
                     .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(signal.color)
+                    .foregroundColor(textPrimary.opacity(0.35))
             }
         }
         .frame(maxWidth: .infinity)

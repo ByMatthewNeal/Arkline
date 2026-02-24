@@ -598,6 +598,7 @@ struct IndexWidgetCard: View {
     let index: IndexSymbol
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
+    @State private var viewModel = TrendChannelViewModel()
 
     private var abbreviation: String {
         switch index {
@@ -606,11 +607,32 @@ struct IndexWidgetCard: View {
         }
     }
 
-    private var subtitle: String {
-        switch index {
-        case .sp500: return "Log regression trend channel"
-        case .nasdaq: return "Log regression trend channel"
+    /// Map trend channel zone → crypto-relevant signal
+    private var zoneSignal: (color: Color, label: String)? {
+        guard let zone = viewModel.channelData?.currentZone else { return nil }
+        switch zone {
+        case .deepValue, .value:
+            return (AppColors.success, "Bullish")
+        case .fair:
+            return (AppColors.warning, "Neutral")
+        case .elevated, .overextended:
+            return (AppColors.error, "Bearish")
         }
+    }
+
+    private var subtitleText: String {
+        if let price = viewModel.currentPrice {
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.locale = Locale(identifier: "en_US")
+            formatter.maximumFractionDigits = 2
+            let priceStr = formatter.string(from: NSNumber(value: price)) ?? "$\(price)"
+            if let change = viewModel.priceChange {
+                return "\(priceStr)  \(String(format: "%+.2f%%", change))"
+            }
+            return priceStr
+        }
+        return "Log regression trend channel"
     }
 
     var body: some View {
@@ -628,12 +650,22 @@ struct IndexWidgetCard: View {
                     Text(index.displayName)
                         .font(.headline)
                         .foregroundStyle(AppColors.textPrimary(colorScheme))
-                    Text(subtitle)
+                    Text(subtitleText)
                         .font(.caption)
                         .foregroundStyle(AppColors.textSecondary)
                 }
 
                 Spacer()
+
+                if let signal = zoneSignal {
+                    Text(signal.label)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(signal.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(signal.color.opacity(0.15))
+                        .cornerRadius(8)
+                }
 
                 Image(systemName: "chevron.right")
                     .font(.caption)
@@ -648,6 +680,10 @@ struct IndexWidgetCard: View {
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingDetail) {
             TrendChannelDetailView(initialIndex: index)
+        }
+        .task {
+            viewModel.selectedIndex = index
+            await viewModel.loadData()
         }
     }
 }
