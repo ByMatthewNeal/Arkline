@@ -390,56 +390,181 @@ struct ExternalLink: Codable, Equatable {
     }
 }
 
+// MARK: - App Section Group
+
+/// Categories for grouping AppSection in the picker
+enum AppSectionGroup: String, CaseIterable {
+    case homeIndicators = "Home Indicators"
+    case macroData = "Macro & Economy"
+    case sentiment = "Sentiment & Retail"
+    case positioning = "Positioning & Allocation"
+    case market = "Market Sections"
+}
+
 // MARK: - App Section
 
 /// Sections of the app that can be referenced in broadcasts
 enum AppSection: String, Codable, CaseIterable {
+    // Home Screen Widgets
+    case arklineRiskScore = "arkline_risk_score"
+    case fearGreed = "fear_greed"
+    case bitcoinRisk = "bitcoin_risk"
+    case coreAssets = "core_assets"
+    case supplyInProfit = "supply_in_profit"
+    case fedWatch = "fed_watch"
+    case dailyNews = "daily_news"
+    case upcomingEvents = "upcoming_events"
+    case dcaReminders = "dca_reminders"
+    case favorites
+    case macroDashboard = "macro_dashboard"
+
+    // Macro & Economy
     case vix
     case dxy
     case m2
-    case bitcoinRisk = "bitcoin_risk"
-    case upcomingEvents = "upcoming_events"
-    case fearGreed = "fear_greed"
-    case sentiment
-    case rainbowChart = "rainbow_chart"
+    case macroRegime = "macro_regime"
+
+    // Sentiment & Retail
+    case sentimentOverview = "sentiment_overview"
+    case sentimentRegime = "sentiment_regime"
+    case coinbaseRanking = "coinbase_ranking"
+    case bitcoinSearchIndex = "bitcoin_search_index"
+
+    // Positioning & Allocation
+    case cryptoPositioning = "crypto_positioning"
+
+    // Market Sections
     case technicalAnalysis = "technical_analysis"
+    case traditionalMarkets = "traditional_markets"
+    case altcoinScreener = "altcoin_screener"
     case portfolioShowcase = "portfolio_showcase"
+
+    // MARK: - Display Name
 
     var displayName: String {
         switch self {
+        case .arklineRiskScore: return "ArkLine Risk Score"
+        case .fearGreed: return "Fear & Greed Index"
+        case .bitcoinRisk: return "Asset Risk Level"
+        case .coreAssets: return "Core Assets (BTC/ETH/SOL)"
+        case .supplyInProfit: return "BTC Supply in Profit"
+        case .fedWatch: return "Fed Watch"
+        case .dailyNews: return "Daily News"
+        case .upcomingEvents: return "Upcoming Events"
+        case .dcaReminders: return "DCA Reminders"
+        case .favorites: return "Favorites"
+        case .macroDashboard: return "Macro Dashboard"
         case .vix: return "VIX Index"
         case .dxy: return "Dollar Index (DXY)"
         case .m2: return "M2 Money Supply"
-        case .bitcoinRisk: return "Bitcoin Risk Level"
-        case .upcomingEvents: return "Upcoming Events"
-        case .fearGreed: return "Fear & Greed Index"
-        case .sentiment: return "Market Sentiment"
-        case .rainbowChart: return "Rainbow Chart"
+        case .macroRegime: return "Macro Regime"
+        case .sentimentOverview: return "Market Sentiment Overview"
+        case .sentimentRegime: return "Sentiment Regime"
+        case .coinbaseRanking: return "Coinbase App Store Rank"
+        case .bitcoinSearchIndex: return "Bitcoin Search Interest"
+        case .cryptoPositioning: return "Crypto Positioning"
         case .technicalAnalysis: return "Technical Analysis"
+        case .traditionalMarkets: return "Traditional Markets"
+        case .altcoinScreener: return "Altcoin Screener"
         case .portfolioShowcase: return "Portfolio Showcase"
         }
     }
 
+    // MARK: - Icon Name
+
     var iconName: String {
         switch self {
+        case .arklineRiskScore: return "shield.checkered"
+        case .fearGreed: return "gauge.with.needle"
+        case .bitcoinRisk: return "exclamationmark.triangle"
+        case .coreAssets: return "bitcoinsign.circle"
+        case .supplyInProfit: return "chart.pie"
+        case .fedWatch: return "building.columns"
+        case .dailyNews: return "newspaper"
+        case .upcomingEvents: return "calendar"
+        case .dcaReminders: return "repeat"
+        case .favorites: return "star.fill"
+        case .macroDashboard: return "square.grid.2x2"
         case .vix: return "chart.line.uptrend.xyaxis"
         case .dxy: return "dollarsign.arrow.trianglehead.counterclockwise.rotate.90"
         case .m2: return "chart.bar.fill"
-        case .bitcoinRisk: return "exclamationmark.triangle"
-        case .upcomingEvents: return "calendar"
-        case .fearGreed: return "gauge.with.needle"
-        case .sentiment: return "chart.bar"
-        case .rainbowChart: return "rainbow"
+        case .macroRegime: return "globe"
+        case .sentimentOverview: return "chart.bar"
+        case .sentimentRegime: return "person.3"
+        case .coinbaseRanking: return "arrow.up.arrow.down"
+        case .bitcoinSearchIndex: return "magnifyingglass"
+        case .cryptoPositioning: return "slider.horizontal.3"
         case .technicalAnalysis: return "chart.xyaxis.line"
+        case .traditionalMarkets: return "building.2"
+        case .altcoinScreener: return "list.number"
         case .portfolioShowcase: return "square.split.2x1"
         }
     }
 
-    /// Deep link URL for navigation
+    // MARK: - Section Group
+
+    var sectionGroup: AppSectionGroup {
+        switch self {
+        case .arklineRiskScore, .fearGreed, .bitcoinRisk, .coreAssets, .supplyInProfit,
+             .fedWatch, .dailyNews, .upcomingEvents, .dcaReminders, .favorites, .macroDashboard:
+            return .homeIndicators
+        case .vix, .dxy, .m2, .macroRegime:
+            return .macroData
+        case .sentimentOverview, .sentimentRegime, .coinbaseRanking, .bitcoinSearchIndex:
+            return .sentiment
+        case .cryptoPositioning:
+            return .positioning
+        case .technicalAnalysis, .traditionalMarkets, .altcoinScreener, .portfolioShowcase:
+            return .market
+        }
+    }
+
+    // MARK: - Navigation Tab
+
+    var navigationTab: AppTab {
+        switch self {
+        case .cryptoPositioning, .macroRegime, .sentimentRegime, .sentimentOverview,
+             .coinbaseRanking, .bitcoinSearchIndex, .traditionalMarkets, .altcoinScreener,
+             .technicalAnalysis:
+            return .market
+        case .portfolioShowcase:
+            return .portfolio
+        default:
+            return .home
+        }
+    }
+
+    // MARK: - Deep Link URL
+
     // swiftlint:disable:next force_unwrapping
     private static let fallbackURL = URL(string: "arkline://home")! // Safe: compile-time constant
     var deepLinkURL: URL {
         URL(string: "arkline://section/\(rawValue)") ?? Self.fallbackURL
+    }
+
+    // MARK: - Backward Compatibility
+
+    /// Custom decoding to handle removed cases from old broadcasts
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+
+        switch rawValue {
+        case "sentiment":
+            // Old "sentiment" maps to sentimentOverview
+            self = .sentimentOverview
+        case "rainbow_chart":
+            // Old "rainbow_chart" maps to bitcoinRisk (it's just the risk level)
+            self = .bitcoinRisk
+        default:
+            guard let section = AppSection(rawValue: rawValue) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Unknown AppSection: \(rawValue)"
+                )
+            }
+            self = section
+        }
     }
 }
 

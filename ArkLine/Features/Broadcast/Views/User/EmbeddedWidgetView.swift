@@ -45,24 +45,57 @@ struct EmbeddedWidgetView: View {
     @ViewBuilder
     private var widgetContent: some View {
         switch section {
+        // Home Indicators
+        case .arklineRiskScore:
+            arklineRiskScoreWidget
+        case .fearGreed:
+            fearGreedWidget
+        case .bitcoinRisk:
+            bitcoinRiskWidget
+        case .coreAssets:
+            coreAssetsWidget
+        case .supplyInProfit:
+            supplyInProfitWidget
+        case .fedWatch:
+            fedWatchWidget
+        case .dailyNews:
+            dailyNewsWidget
+        case .upcomingEvents:
+            upcomingEventsWidget
+        case .dcaReminders:
+            genericSectionWidget(title: "DCA Reminders", subtitle: "Your scheduled buys")
+        case .favorites:
+            genericSectionWidget(title: "Favorites", subtitle: "Your watchlist assets")
+        case .macroDashboard:
+            macroDashboardWidget
+        // Macro & Economy
         case .vix:
             vixWidget
         case .dxy:
             dxyWidget
         case .m2:
             m2Widget
-        case .bitcoinRisk:
-            bitcoinRiskWidget
-        case .fearGreed:
-            fearGreedWidget
-        case .upcomingEvents:
-            upcomingEventsWidget
-        case .sentiment:
-            sentimentWidget
-        case .rainbowChart:
-            rainbowChartWidget
+        case .macroRegime:
+            macroRegimeWidget
+        // Sentiment & Retail
+        case .sentimentOverview:
+            sentimentOverviewWidget
+        case .sentimentRegime:
+            sentimentRegimeWidget
+        case .coinbaseRanking:
+            coinbaseRankingWidget
+        case .bitcoinSearchIndex:
+            bitcoinSearchWidget
+        // Positioning & Allocation
+        case .cryptoPositioning:
+            cryptoPositioningWidget
+        // Market Sections
         case .technicalAnalysis:
             technicalAnalysisWidget
+        case .traditionalMarkets:
+            traditionalMarketsWidget
+        case .altcoinScreener:
+            genericSectionWidget(title: "Altcoin Screener", subtitle: "Top & bottom 30D performers")
         case .portfolioShowcase:
             portfolioShowcaseWidget
         }
@@ -320,47 +353,416 @@ struct EmbeddedWidgetView: View {
         return formatter.string(from: date)
     }
 
-    // MARK: - Sentiment Widget
+    // MARK: - ArkLine Risk Score Widget
 
-    private var sentimentWidget: some View {
+    private var arklineRiskScoreWidget: some View {
         HStack(spacing: ArkSpacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Market Sentiment")
-                    .font(ArkFonts.body)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            if let riskScore = viewModel.arklineRiskScore {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(riskScore.score)")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(riskScoreColor(riskScore.score))
 
-                Text("Analyzing social & on-chain data")
+                    Text(riskScore.tier.rawValue)
+                        .font(ArkFonts.caption)
+                        .foregroundColor(riskScoreColor(riskScore.score))
+                }
+
+                Spacer()
+
+                Text(riskScore.recommendation)
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 140)
+            } else {
+                placeholderContent
             }
-
-            Spacer()
-
-            Text("Not Yet Available")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textTertiary)
         }
     }
 
-    // MARK: - Rainbow Chart Widget
+    private func riskScoreColor(_ score: Int) -> Color {
+        if score < 25 { return AppColors.success }
+        if score < 45 { return Color(hex: "4ADE80") }
+        if score < 55 { return Color.gray }
+        if score < 75 { return AppColors.warning }
+        return AppColors.error
+    }
 
-    private var rainbowChartWidget: some View {
+    // MARK: - Core Assets Widget
+
+    private var coreAssetsWidget: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            if viewModel.coreAssets.isEmpty {
+                placeholderContent
+            } else {
+                ForEach(viewModel.coreAssets) { asset in
+                    HStack(spacing: ArkSpacing.sm) {
+                        Text(asset.symbol.uppercased())
+                            .font(ArkFonts.bodySemibold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .frame(width: 40, alignment: .leading)
+
+                        Text(formatCoreAssetPrice(asset.currentPrice))
+                            .font(ArkFonts.body)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        Spacer()
+
+                        let change = asset.priceChangePercentage24h
+                        HStack(spacing: 2) {
+                            Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                .font(.caption2)
+                            Text(String(format: "%.1f%%", abs(change)))
+                                .font(ArkFonts.caption)
+                        }
+                        .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                    }
+                }
+            }
+        }
+    }
+
+    private func formatCoreAssetPrice(_ price: Double) -> String {
+        if price >= 1000 { return String(format: "$%,.0f", price) }
+        if price >= 1 { return String(format: "$%.2f", price) }
+        return String(format: "$%.4f", price)
+    }
+
+    // MARK: - Supply in Profit Widget
+
+    private var supplyInProfitWidget: some View {
         HStack(spacing: ArkSpacing.md) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Rainbow Chart")
-                    .font(ArkFonts.body)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            if let supply = viewModel.supplyInProfit {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(format: "%.1f%%", supply.value))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(supplyColor(supply.value))
 
-                Text("Long-term BTC valuation bands")
+                    Text("BTC Supply in Profit")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                Text(supplySignal(supply.value))
                     .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
+                    .foregroundColor(supplyColor(supply.value))
+                    .padding(.horizontal, ArkSpacing.sm)
+                    .padding(.vertical, ArkSpacing.xxs)
+                    .background(supplyColor(supply.value).opacity(0.1))
+                    .cornerRadius(ArkSpacing.xs)
+            } else {
+                placeholderContent
+            }
+        }
+    }
+
+    private func supplyColor(_ value: Double) -> Color {
+        if value > 95 { return AppColors.error }
+        if value > 85 { return AppColors.warning }
+        if value < 50 { return AppColors.success }
+        return Color(hex: "4ADE80")
+    }
+
+    private func supplySignal(_ value: Double) -> String {
+        if value > 95 { return "Overheated" }
+        if value > 85 { return "Elevated" }
+        if value < 50 { return "Opportunity" }
+        return "Healthy"
+    }
+
+    // MARK: - Fed Watch Widget
+
+    private var fedWatchWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let fedWatch = viewModel.fedWatchData {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(fedWatch.dominantOutcome)
+                        .font(ArkFonts.bodySemibold)
+                        .foregroundColor(fedWatch.dominantColor)
+
+                    Text(fedWatch.nextMeetingFormatted)
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(String(format: "%.0f%%", fedWatch.dominantProbability))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(fedWatch.dominantColor)
+
+                    Text(fedWatch.marketSentiment)
+                        .font(ArkFonts.caption)
+                        .foregroundColor(fedWatch.sentimentColor)
+                }
+            } else {
+                placeholderContent
+            }
+        }
+    }
+
+    // MARK: - Daily News Widget
+
+    private var dailyNewsWidget: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            if viewModel.newsHeadlines.isEmpty {
+                placeholderContent
+            } else {
+                ForEach(viewModel.newsHeadlines.prefix(3)) { item in
+                    HStack(spacing: ArkSpacing.sm) {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 4, height: 4)
+
+                        Text(item.title)
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .lineLimit(1)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Macro Dashboard Widget
+
+    private var macroDashboardWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let vix = viewModel.vixData {
+                miniMetric(label: "VIX", value: String(format: "%.1f", vix.value), color: vixColor(vix.value))
+            }
+            if let dxy = viewModel.dxyData {
+                miniMetric(label: "DXY", value: String(format: "%.1f", dxy.value), color: AppColors.textPrimary(colorScheme))
+            }
+            if let m2 = viewModel.liquidityData {
+                miniMetric(label: "M2", value: formatLiquidity(m2.current), color: m2.monthlyChange > 0 ? AppColors.success : AppColors.error)
+            }
+
+            if viewModel.vixData == nil && viewModel.dxyData == nil && viewModel.liquidityData == nil {
+                placeholderContent
+            }
+        }
+    }
+
+    private func miniMetric(label: String, value: String, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(ArkFonts.caption)
+                .foregroundColor(AppColors.textSecondary)
+            Text(value)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Macro Regime Widget
+
+    private var macroRegimeWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let regime = viewModel.macroRegime {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(regime.quadrant.rawValue)
+                        .font(ArkFonts.bodySemibold)
+                        .foregroundColor(regime.quadrant.color)
+
+                    HStack(spacing: ArkSpacing.sm) {
+                        Text("Growth: \(Int(regime.growthScore))")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("Inflation: \(Int(regime.inflationScore))")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                Spacer()
+
+                Text(regime.quadrant.shortLabel)
+                    .font(ArkFonts.caption)
+                    .foregroundColor(regime.quadrant.color)
+                    .padding(.horizontal, ArkSpacing.sm)
+                    .padding(.vertical, ArkSpacing.xxs)
+                    .background(regime.quadrant.color.opacity(0.1))
+                    .cornerRadius(ArkSpacing.xs)
+            } else {
+                placeholderContent
+            }
+        }
+    }
+
+    // MARK: - Sentiment Overview Widget
+
+    private var sentimentOverviewWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let riskScore = viewModel.arklineRiskScore {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ArkLine Score")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("\(riskScore.score)")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(riskScoreColor(riskScore.score))
+                }
+            }
+
+            if let fg = viewModel.fearGreedIndex {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Fear & Greed")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("\(fg.value)")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(fearGreedColor(fg.value))
+                }
             }
 
             Spacer()
 
-            Text("Not Yet Available")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textTertiary)
+            if viewModel.arklineRiskScore == nil && viewModel.fearGreedIndex == nil {
+                placeholderContent
+            }
+        }
+    }
+
+    // MARK: - Sentiment Regime Widget
+
+    private var sentimentRegimeWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let regime = viewModel.sentimentRegimeData {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: ArkSpacing.xs) {
+                        Image(systemName: regime.currentRegime.icon)
+                            .font(.caption)
+                            .foregroundColor(Color(hex: regime.currentRegime.colorHex))
+                        Text(regime.currentRegime.rawValue)
+                            .font(ArkFonts.bodySemibold)
+                            .foregroundColor(Color(hex: regime.currentRegime.colorHex))
+                    }
+
+                    HStack(spacing: ArkSpacing.sm) {
+                        Text("Emotion: \(Int(regime.currentPoint.emotionScore))")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("Engagement: \(Int(regime.currentPoint.engagementScore))")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                Spacer()
+            } else {
+                placeholderContent
+            }
+        }
+    }
+
+    // MARK: - Coinbase Ranking Widget
+
+    private var coinbaseRankingWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let rankings = viewModel.appStoreRankings, let coinbase = rankings.first(where: { $0.appName.lowercased().contains("coinbase") }) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("#\(coinbase.ranking)")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(coinbase.ranking <= 50 ? AppColors.success : AppColors.textPrimary(colorScheme))
+
+                    Text("App Store Finance")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                if coinbase.change != 0 {
+                    HStack(spacing: 2) {
+                        // Negative change means moved UP in rank (better)
+                        Image(systemName: coinbase.change < 0 ? "arrow.up" : "arrow.down")
+                            .font(.caption2)
+                        Text("\(abs(coinbase.change))")
+                            .font(ArkFonts.caption)
+                    }
+                    .foregroundColor(coinbase.change < 0 ? AppColors.success : AppColors.error)
+                    .padding(.horizontal, ArkSpacing.sm)
+                    .padding(.vertical, ArkSpacing.xxs)
+                    .background((coinbase.change < 0 ? AppColors.success : AppColors.error).opacity(0.1))
+                    .cornerRadius(ArkSpacing.xs)
+                }
+            } else {
+                placeholderContent
+            }
+        }
+    }
+
+    // MARK: - Bitcoin Search Interest Widget
+
+    private var bitcoinSearchWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let trends = viewModel.googleTrends {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(trends.currentIndex)/100")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    Text("Search Interest")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(systemName: trends.trend.icon)
+                        .font(.caption2)
+                    Text(trends.trend.rawValue)
+                        .font(ArkFonts.caption)
+                }
+                .foregroundColor(trendColor(trends.trend))
+                .padding(.horizontal, ArkSpacing.sm)
+                .padding(.vertical, ArkSpacing.xxs)
+                .background(trendColor(trends.trend).opacity(0.1))
+                .cornerRadius(ArkSpacing.xs)
+            } else {
+                placeholderContent
+            }
+        }
+    }
+
+    private func trendColor(_ trend: TrendDirection) -> Color {
+        switch trend {
+        case .rising: return AppColors.success
+        case .stable: return AppColors.textSecondary
+        case .falling: return AppColors.error
+        }
+    }
+
+    // MARK: - Crypto Positioning Widget
+
+    private var cryptoPositioningWidget: some View {
+        HStack(spacing: ArkSpacing.md) {
+            if let regime = viewModel.macroRegime {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Positioning")
+                        .font(ArkFonts.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text(regime.quadrant.rawValue)
+                        .font(ArkFonts.bodySemibold)
+                        .foregroundColor(regime.quadrant.color)
+                }
+
+                Spacer()
+
+                Text("View Allocations")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.accent)
+            } else {
+                placeholderContent
+            }
         }
     }
 
@@ -373,16 +775,50 @@ struct EmbeddedWidgetView: View {
                     .font(ArkFonts.body)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text("Charts & indicators")
+                Text("BTC / ETH / SOL TA breakdown")
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
 
             Spacer()
 
-            Text("Not Yet Available")
-                .font(ArkFonts.caption)
-                .foregroundColor(AppColors.textTertiary)
+            Image(systemName: "chart.xyaxis.line")
+                .font(.title2)
+                .foregroundColor(AppColors.accent)
+        }
+    }
+
+    // MARK: - Traditional Markets Widget
+
+    private var traditionalMarketsWidget: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            if viewModel.traditionalMarketAssets.isEmpty {
+                placeholderContent
+            } else {
+                ForEach(viewModel.traditionalMarketAssets, id: \.symbol) { asset in
+                    HStack(spacing: ArkSpacing.sm) {
+                        Text(asset.symbol)
+                            .font(ArkFonts.bodySemibold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .frame(width: 50, alignment: .leading)
+
+                        Text(String(format: "$%,.0f", asset.currentPrice))
+                            .font(ArkFonts.body)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        Spacer()
+
+                        let change = asset.priceChangePercentage24h
+                        HStack(spacing: 2) {
+                            Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                .font(.caption2)
+                            Text(String(format: "%.1f%%", abs(change)))
+                                .font(ArkFonts.caption)
+                        }
+                        .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                    }
+                }
+            }
         }
     }
 
@@ -395,7 +831,7 @@ struct EmbeddedWidgetView: View {
                     .font(ArkFonts.body)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text("Compare portfolios side-by-side")
+                Text("Portfolio allocation breakdown")
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -404,6 +840,28 @@ struct EmbeddedWidgetView: View {
 
             Image(systemName: "square.split.2x1")
                 .font(.title2)
+                .foregroundColor(AppColors.accent)
+        }
+    }
+
+    // MARK: - Generic Section Widget
+
+    private func genericSectionWidget(title: String, subtitle: String) -> some View {
+        HStack(spacing: ArkSpacing.md) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(ArkFonts.body)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text(subtitle)
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
+
+            Text("View in App")
+                .font(ArkFonts.caption)
                 .foregroundColor(AppColors.accent)
         }
     }
@@ -647,6 +1105,8 @@ struct ExternalLinkPreviewCard: View {
 @MainActor
 class EmbeddedWidgetViewModel: ObservableObject {
     @Published var isLoading = false
+
+    // Existing data
     @Published var vixData: VIXData?
     @Published var dxyData: DXYData?
     @Published var liquidityData: GlobalLiquidityChanges?
@@ -654,12 +1114,28 @@ class EmbeddedWidgetViewModel: ObservableObject {
     @Published var fearGreedIndex: FearGreedIndex?
     @Published var upcomingEvents: [EconomicEvent] = []
 
+    // New data
+    @Published var arklineRiskScore: ArkLineRiskScore?
+    @Published var coreAssets: [CryptoAsset] = []
+    @Published var supplyInProfit: SupplyProfitData?
+    @Published var fedWatchData: FedWatchData?
+    @Published var newsHeadlines: [NewsItem] = []
+    @Published var macroRegime: MacroRegimeResult?
+    @Published var sentimentRegimeData: SentimentRegimeData?
+    @Published var appStoreRankings: [AppStoreRanking]?
+    @Published var googleTrends: GoogleTrendsData?
+    @Published var traditionalMarketAssets: [StockAsset] = []
+
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
     private let globalLiquidityService: GlobalLiquidityServiceProtocol
     private let itcRiskService: ITCRiskServiceProtocol
     private let sentimentService: SentimentServiceProtocol
     private let newsService: NewsServiceProtocol
+    private let marketService: MarketServiceProtocol
+    private let santimentService: SantimentServiceProtocol
+    private let crudeOilService: CrudeOilServiceProtocol
+    private let macroStatisticsService: MacroStatisticsServiceProtocol
 
     init() {
         self.vixService = ServiceContainer.shared.vixService
@@ -668,6 +1144,10 @@ class EmbeddedWidgetViewModel: ObservableObject {
         self.itcRiskService = ServiceContainer.shared.itcRiskService
         self.sentimentService = ServiceContainer.shared.sentimentService
         self.newsService = ServiceContainer.shared.newsService
+        self.marketService = ServiceContainer.shared.marketService
+        self.santimentService = ServiceContainer.shared.santimentService
+        self.crudeOilService = ServiceContainer.shared.crudeOilService
+        self.macroStatisticsService = ServiceContainer.shared.macroStatisticsService
     }
 
     func loadData(for section: AppSection) async {
@@ -676,23 +1156,122 @@ class EmbeddedWidgetViewModel: ObservableObject {
 
         do {
             switch section {
+            // Home Indicators
+            case .arklineRiskScore:
+                arklineRiskScore = try await sentimentService.fetchArkLineRiskScore()
+            case .fearGreed:
+                fearGreedIndex = try await sentimentService.fetchFearGreedIndex()
+            case .bitcoinRisk:
+                riskLevel = try await itcRiskService.fetchLatestRiskLevel(coin: "BTC")
+            case .coreAssets:
+                let allAssets = try await marketService.fetchCryptoAssets(page: 1, perPage: 10)
+                coreAssets = allAssets.filter { ["btc", "eth", "sol"].contains($0.symbol.lowercased()) }
+            case .supplyInProfit:
+                supplyInProfit = try await santimentService.fetchLatestSupplyInProfit()
+            case .fedWatch:
+                fedWatchData = try await newsService.fetchFedWatchData()
+            case .dailyNews:
+                newsHeadlines = try await newsService.fetchCombinedNewsFeed(limit: 5, includeTwitter: false, includeGoogleNews: true, topics: nil, customKeywords: nil)
+            case .upcomingEvents:
+                upcomingEvents = try await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
+            case .dcaReminders, .favorites:
+                break // These require user context; show generic widget
+            case .macroDashboard:
+                async let v = vixService.fetchLatestVIX()
+                async let d = dxyService.fetchLatestDXY()
+                async let l = globalLiquidityService.fetchLiquidityChanges()
+                vixData = try await v
+                dxyData = try await d
+                liquidityData = try await l
+            // Macro & Economy
             case .vix:
                 vixData = try await vixService.fetchLatestVIX()
             case .dxy:
                 dxyData = try await dxyService.fetchLatestDXY()
             case .m2:
                 liquidityData = try await globalLiquidityService.fetchLiquidityChanges()
-            case .bitcoinRisk:
-                riskLevel = try await itcRiskService.fetchLatestRiskLevel(coin: "BTC")
-            case .fearGreed:
-                fearGreedIndex = try await sentimentService.fetchFearGreedIndex()
-            case .upcomingEvents:
-                upcomingEvents = try await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
-            default:
-                break
+            case .macroRegime:
+                await loadMacroRegime()
+            // Sentiment & Retail
+            case .sentimentOverview:
+                async let rs = sentimentService.fetchArkLineRiskScore()
+                async let fg = sentimentService.fetchFearGreedIndex()
+                arklineRiskScore = try await rs
+                fearGreedIndex = try await fg
+            case .sentimentRegime:
+                await loadSentimentRegime()
+            case .coinbaseRanking:
+                appStoreRankings = try await sentimentService.fetchAppStoreRankings()
+            case .bitcoinSearchIndex:
+                googleTrends = try await sentimentService.fetchGoogleTrends()
+            // Positioning & Allocation
+            case .cryptoPositioning:
+                await loadMacroRegime()
+            // Market Sections
+            case .technicalAnalysis, .altcoinScreener, .portfolioShowcase:
+                break // Show generic widget
+            case .traditionalMarkets:
+                traditionalMarketAssets = try await marketService.fetchStockAssets(symbols: ["^GSPC", "^DJI"])
             }
         } catch {
             // Silently fail - widget will show placeholder
+        }
+    }
+
+    // MARK: - Composite Loaders
+
+    private func loadMacroRegime() async {
+        do {
+            async let v = vixService.fetchLatestVIX()
+            async let d = dxyService.fetchLatestDXY()
+            async let l = globalLiquidityService.fetchLiquidityChanges()
+            async let o = crudeOilService.fetchLatestCrudeOil()
+
+            let vixResult = try? await v
+            let dxyResult = try? await d
+            let m2Result = try? await l
+            let oilResult = try? await o
+
+            vixData = vixResult
+            dxyData = dxyResult
+            liquidityData = m2Result
+
+            let zScores = try await macroStatisticsService.fetchAllZScores()
+            macroRegime = MacroRegimeCalculator.computeRegime(
+                vixData: vixResult,
+                dxyData: dxyResult,
+                globalM2Data: m2Result,
+                crudeOilData: oilResult,
+                macroZScores: zScores
+            )
+        } catch {
+            // Silently fail
+        }
+    }
+
+    private func loadSentimentRegime() async {
+        do {
+            let fgHistory = try await sentimentService.fetchFearGreedHistory(days: 90)
+            let btcAssets = try await marketService.fetchCryptoAssets(page: 1, perPage: 1)
+            let volumeData: [[Double]] = btcAssets.first.map { [[$0.totalVolume ?? 0]] } ?? []
+
+            // Build live indicator snapshot for richer data
+            let fearGreed = try? await sentimentService.fetchFearGreedIndex()
+            let trends = try? await sentimentService.fetchGoogleTrends()
+            let rankings = try? await sentimentService.fetchAppStoreRankings()
+            let riskLvl = try? await itcRiskService.fetchLatestRiskLevel(coin: "BTC")
+
+            var snapshot = RegimeIndicatorSnapshot()
+            snapshot.btcRiskLevel = riskLvl?.riskLevel
+            snapshot.searchInterest = trends?.currentIndex
+
+            sentimentRegimeData = SentimentRegimeService.computeRegimeData(
+                fearGreedHistory: fgHistory,
+                volumeData: volumeData,
+                liveIndicators: snapshot
+            )
+        } catch {
+            // Silently fail
         }
     }
 }

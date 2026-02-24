@@ -138,28 +138,34 @@ struct AppReferencePickerView: View {
 
     private var indicatorsTab: some View {
         List {
-            Section {
-                ForEach(filteredSections, id: \.self) { section in
-                    availableSectionRow(section)
+            ForEach(AppSectionGroup.allCases, id: \.self) { group in
+                let sections = filteredSections(for: group)
+                if !sections.isEmpty {
+                    Section {
+                        ForEach(sections, id: \.self) { section in
+                            availableSectionRow(section)
+                        }
+                    } header: {
+                        Text(group.rawValue)
+                    }
                 }
-            } header: {
-                Text("Macro Indicators")
             }
         }
         .listStyle(.insetGrouped)
         .searchable(text: $searchText, prompt: "Search indicators")
     }
 
-    private var filteredSections: [AppSection] {
+    private func filteredSections(for group: AppSectionGroup) -> [AppSection] {
         let selectedSections = Set(selectedReferences.compactMap(\.section))
-        let availableSections = AppSection.allCases.filter { !selectedSections.contains($0) }
+        let groupSections = AppSection.allCases.filter { $0.sectionGroup == group && !selectedSections.contains($0) }
 
         if searchText.isEmpty {
-            return availableSections
+            return groupSections
         }
 
-        return availableSections.filter { section in
+        return groupSections.filter { section in
             section.displayName.localizedCaseInsensitiveContains(searchText)
+                || sectionDescription(section).localizedCaseInsensitiveContains(searchText)
         }
     }
 
@@ -621,16 +627,35 @@ struct AppReferencePickerView: View {
 
     private func sectionDescription(_ section: AppSection) -> String {
         switch section {
+        // Home Indicators
+        case .arklineRiskScore: return "Composite risk score (0-100) with tier & recommendation"
+        case .fearGreed: return "Market sentiment gauge (0-100)"
+        case .bitcoinRisk: return "Risk level analysis via regression"
+        case .coreAssets: return "BTC, ETH, SOL live prices & 24h change"
+        case .supplyInProfit: return "Percentage of BTC supply in profit"
+        case .fedWatch: return "FOMC meeting rate probabilities"
+        case .dailyNews: return "Top crypto & macro headlines"
+        case .upcomingEvents: return "Economic calendar & events"
+        case .dcaReminders: return "Due & upcoming DCA reminders"
+        case .favorites: return "Favorite asset prices at a glance"
+        case .macroDashboard: return "VIX, DXY, M2 side-by-side overview"
+        // Macro & Economy
         case .vix: return "Market volatility indicator"
         case .dxy: return "US Dollar strength index"
         case .m2: return "Money supply & liquidity"
-        case .bitcoinRisk: return "Risk level analysis for BTC"
-        case .upcomingEvents: return "Economic calendar & events"
-        case .fearGreed: return "Market sentiment gauge"
-        case .sentiment: return "Overall market mood"
-        case .rainbowChart: return "Long-term BTC price bands"
-        case .technicalAnalysis: return "Charts & technical indicators"
-        case .portfolioShowcase: return "Portfolio comparison showcase"
+        case .macroRegime: return "Growth/inflation quadrant (risk-on/off)"
+        // Sentiment & Retail
+        case .sentimentOverview: return "ArkLine score + Fear & Greed value"
+        case .sentimentRegime: return "Regime quadrant (panic/fomo/apathy/complacency)"
+        case .coinbaseRanking: return "Coinbase app store rank & change"
+        case .bitcoinSearchIndex: return "Google Trends search interest (0-100)"
+        // Positioning & Allocation
+        case .cryptoPositioning: return "Regime quadrant & allocation signals"
+        // Market Sections
+        case .technicalAnalysis: return "BTC/ETH/SOL TA breakdown"
+        case .traditionalMarkets: return "S&P 500, indexes & metals"
+        case .altcoinScreener: return "Top/bottom 30D performers"
+        case .portfolioShowcase: return "Portfolio allocation showcase"
         }
     }
 }

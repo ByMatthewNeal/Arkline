@@ -421,7 +421,7 @@ struct BroadcastDetailView: View {
                         if let section = reference.section {
                             EmbeddedWidgetView(section: section)
                                 .onTapGesture {
-                                    appState.selectedTab = .home
+                                    appState.selectedTab = section.navigationTab
                                     dismiss()
                                 }
                         }
