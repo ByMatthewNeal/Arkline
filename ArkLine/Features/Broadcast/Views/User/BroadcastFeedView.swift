@@ -159,7 +159,6 @@ struct BroadcastFeedView: View {
             .background(AppColors.background(colorScheme))
             .navigationTitle("Insights")
             .navigationBarTitleDisplayMode(.large)
-            .searchable(text: $searchText, prompt: "Search insights...")
             .refreshable {
                 if let userId = appState.currentUser?.id {
                     await viewModel.loadPublishedBroadcasts(for: userId)
@@ -186,8 +185,38 @@ struct BroadcastFeedView: View {
 
     // MARK: - Filter Bar
 
+    /// Resolve a tag string to its predefined color, falling back to accent
+    private func tagColor(for tag: String) -> Color {
+        BroadcastTag(rawValue: tag)?.color ?? AppColors.accent
+    }
+
     private var filterBar: some View {
         VStack(spacing: ArkSpacing.sm) {
+            // Always-visible search bar
+            HStack(spacing: ArkSpacing.xs) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(AppColors.textSecondary)
+                    .font(ArkFonts.body)
+
+                TextField("Search insights...", text: $searchText)
+                    .font(ArkFonts.body)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(AppColors.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, ArkSpacing.sm)
+            .padding(.vertical, ArkSpacing.xs + 2)
+            .background(AppColors.cardBackground(colorScheme))
+            .cornerRadius(ArkSpacing.sm)
+
             // Date filter chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.xs) {
@@ -224,15 +253,14 @@ struct BroadcastFeedView: View {
                                     }
                                 }
                             } label: {
-                                HStack(spacing: ArkSpacing.xxs) {
-                                    Text("#\(tag)")
-                                        .font(ArkFonts.caption)
-                                }
-                                .foregroundColor(selectedTags.contains(tag) ? .white : AppColors.accent)
-                                .padding(.horizontal, ArkSpacing.sm)
-                                .padding(.vertical, ArkSpacing.xxs)
-                                .background(selectedTags.contains(tag) ? AppColors.accent : AppColors.accent.opacity(0.1))
-                                .cornerRadius(ArkSpacing.xs)
+                                let color = tagColor(for: tag)
+                                Text("#\(tag)")
+                                    .font(ArkFonts.caption)
+                                    .foregroundColor(selectedTags.contains(tag) ? .white : color)
+                                    .padding(.horizontal, ArkSpacing.sm)
+                                    .padding(.vertical, ArkSpacing.xxs)
+                                    .background(selectedTags.contains(tag) ? color : color.opacity(0.1))
+                                    .cornerRadius(ArkSpacing.xs)
                             }
                             .buttonStyle(.plain)
                         }
