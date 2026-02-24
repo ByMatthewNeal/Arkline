@@ -407,23 +407,12 @@ struct MacroIndicatorColumn: View {
 
     var body: some View {
         VStack(spacing: size == .compact ? 4 : 6) {
-            // Label with correlation bars and extreme indicator
-            HStack(spacing: 4) {
-                Text(label)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(textPrimary.opacity(0.5))
+            // Label
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(textPrimary.opacity(0.5))
 
-                if size != .compact {
-                    CorrelationBars(strength: correlation)
-                }
-
-                // Pulsing indicator for extreme moves
-                if let zScore = zScoreData, zScore.isExtreme {
-                    PulsingExtremeIndicator(isActive: true, color: AppColors.error)
-                }
-            }
-
-            // Crypto signal pill (primary visual)
+            // Crypto signal (primary visual)
             HStack(spacing: 4) {
                 Circle()
                     .fill(cryptoSignal.color)
@@ -447,31 +436,12 @@ struct MacroIndicatorColumn: View {
             }
 
             // Raw value (secondary, dimmed)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(.system(size: 13, weight: .medium, design: .default))
-                    .foregroundColor(textPrimary.opacity(0.5))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-
-                if let zScore = zScoreData, size != .compact {
-                    ZScoreIndicator(zScore: zScore.zScore.zScore, size: .small)
-                } else if let change = change, size != .compact {
-                    Text(String(format: "%+.1f%%", change))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
-                        .lineLimit(1)
-                        .fixedSize()
-                }
-            }
-
-            // Original indicator label (only in expanded, very subtle)
-            if size == .expanded {
-                Text(signal.label)
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(textPrimary.opacity(0.35))
-            }
+            Text(value)
+                .font(.system(size: 13, weight: .medium, design: .default))
+                .foregroundColor(textPrimary.opacity(0.5))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
         }
         .frame(maxWidth: .infinity)
     }
