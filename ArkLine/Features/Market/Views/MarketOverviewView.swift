@@ -590,59 +590,46 @@ struct MacroIndicatorsSection: View {
     // VIX helpers
     private var vixSignal: MacroTrendSignal {
         guard let vix = vixData?.value else { return .neutral }
-        if vix < 18 { return .bullish }
+        if vix < 20 { return .bullish }
         if vix > 25 { return .bearish }
         return .neutral
     }
 
     private var vixZScoreDescription: String {
         guard let vix = vixData?.value else { return "Market fear gauge" }
-        switch vix {
-        case ..<15: return "Low fear - risk-on"
-        case 15..<20: return "Calm - favorable for crypto"
-        case 20..<25: return "Moderate - normal volatility"
-        case 25..<30: return "Elevated fear - risk-off pressure"
-        case 30..<35: return "High fear - potential bounce"
-        default: return "Extreme fear - capitulation zone"
-        }
+        if vix < 20 { return "Bullish" }
+        if vix < 25 { return "Neutral" }
+        return "Bearish"
     }
 
     // DXY helpers
     private var dxySignal: MacroTrendSignal {
-        guard let change = dxyData?.changePercent else { return .neutral }
-        if change < -0.3 { return .bullish }
-        if change > 0.3 { return .bearish }
+        guard let dxy = dxyData?.value else { return .neutral }
+        if dxy < 100 { return .bullish }
+        if dxy < 105 { return .bearish }
         return .neutral
     }
 
     private var dxyZScoreDescription: String {
         guard let dxy = dxyData?.value else { return "Dollar strength" }
-        switch dxy {
-        case ..<95: return "Weak dollar - tailwind for crypto"
-        case 95..<100: return "Moderate - neutral for crypto"
-        case 100..<104: return "Strong dollar - headwind"
-        case 104..<108: return "Very strong - pressure on risk assets"
-        default: return "Extreme strength - major headwind"
-        }
+        if dxy < 100 { return "Bullish" }
+        if dxy < 105 { return "Neutral" }
+        return "Bearish"
     }
 
     // M2 helpers
     private var m2Signal: MacroTrendSignal {
         guard let m2 = globalM2Data else { return .neutral }
-        if m2.monthlyChange > 1.0 { return .bullish }
-        if m2.monthlyChange < -1.0 { return .bearish }
-        return .neutral
+        if m2.monthlyChange > 0 { return .bullish }
+        if m2.monthlyChange > -1.0 { return .neutral }
+        return .bearish
     }
 
     private var m2ZScoreDescription: String {
         guard let m2 = globalM2Data else { return "Global liquidity" }
-        switch m2.monthlyChange {
-        case _ where m2.monthlyChange > 2.0: return "Rapid expansion - liquidity tailwind"
-        case _ where m2.monthlyChange > 0.5: return "Expanding - favorable backdrop"
-        case _ where m2.monthlyChange > -0.5: return "Flat - neutral liquidity"
-        case _ where m2.monthlyChange > -2.0: return "Contracting - liquidity headwind"
-        default: return "Severe contraction - major headwind"
-        }
+        if m2.monthlyChange > 0 { return "Bullish" }
+        if m2.monthlyChange > -1.0 { return "Neutral" }
+        return "Bearish"
     }
 
     // Oil helpers
@@ -655,33 +642,24 @@ struct MacroIndicatorsSection: View {
 
     private var oilZScoreDescription: String {
         guard let oil = crudeOilData?.value else { return "Oil prices" }
-        switch oil {
-        case ..<55: return "Very low - deflationary signal"
-        case 55..<65: return "Low - disinflationary"
-        case 65..<80: return "Normal - balanced"
-        case 80..<90: return "Elevated - inflation pressure"
-        default: return "High - inflation risk"
-        }
+        if oil < 65 { return "Bullish" }
+        if oil < 85 { return "Neutral" }
+        return "Bearish"
     }
 
     // Gold helpers
     private var goldSignal: MacroTrendSignal {
         guard let gold = goldData?.value else { return .neutral }
-        if gold < 2000 { return .bullish }
-        if gold > 2400 { return .bearish }
+        if gold < 2400 { return .bullish }
+        if gold > 3500 { return .bearish }
         return .neutral
     }
 
     private var goldZScoreDescription: String {
         guard let gold = goldData?.value else { return "Safe-haven asset" }
-        switch gold {
-        case ..<1800: return "Very low - strong risk-on"
-        case 1800..<2000: return "Low - risk-on"
-        case 2000..<2400: return "Normal range"
-        case 2400..<2800: return "Elevated - growing uncertainty"
-        case 2800..<3500: return "High - safe-haven demand"
-        default: return "Very high - extreme fear or debasement"
-        }
+        if gold < 2400 { return "Bullish" }
+        if gold < 3500 { return "Neutral" }
+        return "Bearish"
     }
 
     private func formatM2(_ value: Double) -> String {
