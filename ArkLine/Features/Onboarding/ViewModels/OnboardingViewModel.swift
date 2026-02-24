@@ -15,6 +15,7 @@ enum OnboardingStep: Int, CaseIterable {
     case createPasscode
     case confirmPasscode
     case faceIDSetup
+    case notifications
 
     /// Gate steps excluded from progress tracking
     private static let gateSteps: Set<OnboardingStep> = [.welcome, .inviteCode]
@@ -55,13 +56,14 @@ enum OnboardingStep: Int, CaseIterable {
         case .createPasscode: return "Create Passcode"
         case .confirmPasscode: return "Confirm Passcode"
         case .faceIDSetup: return "Face ID"
+        case .notifications: return "Notifications"
         }
     }
 
     /// Whether this step can be skipped
     var isSkippable: Bool {
         switch self {
-        case .careerIndustry, .careerInfo, .socialLinks, .profilePicture:
+        case .careerIndustry, .careerInfo, .socialLinks, .profilePicture, .notifications:
             return true
         default:
             return false
@@ -79,6 +81,8 @@ enum OnboardingStep: Int, CaseIterable {
             return .profile
         case .createPasscode, .confirmPasscode, .faceIDSetup:
             return .security
+        case .notifications:
+            return .setup
         }
     }
 }
@@ -89,6 +93,7 @@ enum StepCategory: String {
     case authentication = "Account"
     case profile = "Profile"
     case security = "Security"
+    case setup = "Setup"
 }
 
 // MARK: - Onboarding View Model
@@ -353,12 +358,20 @@ class OnboardingViewModel {
     func setupFaceID(enabled: Bool) {
         isFaceIDEnabled = enabled
         passcodeManager.isBiometricEnabled = enabled
-        completeOnboarding()
+        nextStep()
     }
 
     func skipFaceID() {
         isFaceIDEnabled = false
         passcodeManager.isBiometricEnabled = false
+        nextStep()
+    }
+
+    func enableNotifications() {
+        completeOnboarding()
+    }
+
+    func skipNotifications() {
         completeOnboarding()
     }
 

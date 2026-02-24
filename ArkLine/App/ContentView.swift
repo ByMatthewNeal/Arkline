@@ -177,6 +177,8 @@ struct OnboardingFlowView: View {
                 ConfirmPasscodeView(viewModel: viewModel)
             case .faceIDSetup:
                 FaceIDSetupView(viewModel: viewModel)
+            case .notifications:
+                NotificationSetupView(viewModel: viewModel)
             }
         }
         .id(viewModel.currentStep)

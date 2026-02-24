@@ -34,6 +34,7 @@
 		0F57D66C7B4F2E45760BFCF2 /* DCAReminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608A536AA089EA6F8D512468 /* DCAReminder.swift */; };
 		0FE26D59F0B74D161E4019D3 /* SentimentServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED28F57A1AE475BCCE6387CE /* SentimentServiceProtocol.swift */; };
 		1028E8CBB796AA676788323E /* FaceIDSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */; };
+		B8C4D0E6F2A3B9C5D1E7F3A4 /* NotificationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B3C9D5E1F2A8B4C0D6E2F3 /* NotificationSetupView.swift */; };
 		11530E01A7E1E110918998B7 /* EconomicEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */; };
 		1229BB7C45A6A74F5082A32F /* AssetRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440FC32555A994CF7B6FD757 /* AssetRowView.swift */; };
 		124D9971E61229596EEB9C25 /* PerformanceMetricsCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C2CF2970C7B180D45DC91E /* PerformanceMetricsCalculator.swift */; };
@@ -434,6 +435,7 @@
 
 /* Begin PBXFileReference section */
 		0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDSetupView.swift; sourceTree = "<group>"; };
+		A7B3C9D5E1F2A8B4C0D6E2F3 /* NotificationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSetupView.swift; sourceTree = "<group>"; };
 		0301CE05698CD3FFB7876E41 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
 		03A2248CF31FBE81B04E09E5 /* FMPService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FMPService.swift; sourceTree = "<group>"; };
 		04628B553AF47C260C3AF994 /* AppReferencePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppReferencePickerView.swift; sourceTree = "<group>"; };
@@ -1869,6 +1871,7 @@
 				6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */,
 				226992D4574D4FB6A57D1757 /* EnterEmailView.swift */,
 				0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */,
+				A7B3C9D5E1F2A8B4C0D6E2F3 /* NotificationSetupView.swift */,
 				ABF01AA7F99FF1B71AD4E243 /* PersonalInfoView.swift */,
 				CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */,
 				28D7DB64239C464966F42017 /* SocialLinksView.swift */,
@@ -2268,6 +2271,7 @@
 				933D2871520E6D18D9470079 /* FMPService.swift in Sources */,
 				74342987C2189339E31FAA64 /* FaceIDPromptView.swift in Sources */,
 				1028E8CBB796AA676788323E /* FaceIDSetupView.swift in Sources */,
+				B8C4D0E6F2A3B9C5D1E7F3A4 /* NotificationSetupView.swift in Sources */,
 				0F4CC45089337035918EB194 /* FarsideETFScraper.swift in Sources */,
 				E2BB1EB5D67959A37F288456 /* FavoritesStore.swift in Sources */,
 				4B447B76CC96D961B8B5C07B /* ReadArticlesStore.swift in Sources */,
