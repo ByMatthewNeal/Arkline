@@ -263,7 +263,7 @@ struct PortfolioTransactionsContent: View {
                 .padding(.top, 20)
             } else {
                 // Transaction List
-                List {
+                LazyVStack(spacing: ArkSpacing.xs) {
                     ForEach(viewModel.filteredTransactions) { transaction in
                         Button(action: {
                             selectedTransaction = transaction
@@ -272,10 +272,7 @@ struct PortfolioTransactionsContent: View {
                             TransactionRow(transaction: transaction)
                         }
                         .buttonStyle(.plain)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        .contextMenu {
                             Button(role: .destructive) {
                                 transactionToDelete = transaction
                                 showDeleteConfirmation = true
@@ -286,8 +283,7 @@ struct PortfolioTransactionsContent: View {
                         .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
                     }
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 20)
             }
         }
         .padding(.top, 16)
