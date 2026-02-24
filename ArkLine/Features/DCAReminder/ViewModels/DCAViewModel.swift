@@ -21,6 +21,7 @@ final class DCAViewModel {
     var selectedRiskBasedReminder: RiskBasedDCAReminder?
     var isLoading = false
     var error: AppError?
+    private var isRefreshing = false
 
     // MARK: - Tab Selection
     var selectedTab: DCAViewTab = .timeBased
@@ -93,6 +94,11 @@ final class DCAViewModel {
 
     // MARK: - Data Loading
     func refresh() async {
+        // Prevent concurrent refreshes from stomping on each other
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
         // Only show loading spinner if we have no data yet (avoid flash on re-navigation)
         let showSpinner = reminders.isEmpty && riskBasedReminders.isEmpty
         if showSpinner { isLoading = true }

@@ -118,35 +118,18 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
-            // Insert without decoding — the `time` column can't round-trip through
-            // the Supabase SDK's ISO 8601 date decoder, so we skip .select().value
-            // and construct the result from the request data.
-            try await supabase.database
+            // Insert and select back using our custom decoder that handles the
+            // `time` column format (HH:mm:ss) alongside ISO 8601 timestamps.
+            let data = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .insert(request)
+                .select()
+                .single()
                 .execute()
+                .data
 
-            // Parse the time string back to a Date for the local model
-            let f = DateFormatter()
-            f.dateFormat = "HH:mm:ss"
-            f.locale = Locale(identifier: "en_US_POSIX")
-            let notifDate = f.date(from: request.notificationTime) ?? Date()
-
-            let created = DCAReminder(
-                userId: request.userId,
-                symbol: request.symbol,
-                name: request.name,
-                amount: request.amount,
-                frequency: DCAFrequency(rawValue: request.frequency) ?? .daily,
-                totalPurchases: request.totalPurchases,
-                completedPurchases: 0,
-                notificationTime: notifDate,
-                startDate: request.startDate,
-                nextReminderDate: request.nextReminderDate,
-                isActive: true
-            )
-
-            logInfo("Created DCA reminder: \(created.name)", category: .data)
+            let created = try Self.dcaDecoder.decode(DCAReminder.self, from: data)
+            logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
             return created
         } catch let error as AppError {
             throw error

@@ -153,9 +153,7 @@ struct DCAListView: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView(feature: .unlimitedDCA)
         }
-        .sheet(isPresented: $showCreateSheet, onDismiss: {
-            Task { await viewModel.refresh() }
-        }) {
+        .sheet(isPresented: $showCreateSheet) {
             CreateDCASheetView(viewModel: viewModel)
         }
         .sheet(item: $viewModel.editingReminder) { reminder in
