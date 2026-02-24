@@ -16,13 +16,20 @@ struct HomeView: View {
 
     /// Build notifications from today's DCA reminders
     private var currentNotifications: [AppNotification] {
-        viewModel.todayReminders.map { reminder in
-            AppNotification(
+        let calendar = Calendar.current
+        let today = Date()
+        return viewModel.todayReminders.map { reminder in
+            // Combine today's date with the reminder's time-of-day
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: reminder.notificationTime)
+            let notifTime = calendar.date(bySettingHour: timeComponents.hour ?? 0,
+                                          minute: timeComponents.minute ?? 0,
+                                          second: 0, of: today) ?? today
+            return AppNotification(
                 icon: "dollarsign.arrow.circlepath",
                 iconColor: AppColors.accent,
                 title: "DCA Reminder: \(reminder.name)",
                 subtitle: "Time to invest \(reminder.amount.asCurrency) in \(reminder.symbol)",
-                time: reminder.notificationTime,
+                time: notifTime,
                 isRead: false
             )
         }
