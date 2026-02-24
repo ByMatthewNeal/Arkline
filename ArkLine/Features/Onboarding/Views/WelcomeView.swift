@@ -10,6 +10,7 @@ struct WelcomeView: View {
     private let slides: [WelcomeSlide] = [
         WelcomeSlide(
             icon: "shield.checkered",
+            assetImage: "ArkLineLogo",
             title: "Invest with Confidence",
             description: "Real-time risk scoring, macro indicators, and AI analysis — so you always know when to buy, hold, or wait.",
             accentColor: AppColors.fillPrimary
@@ -85,6 +86,7 @@ struct WelcomeView: View {
 // MARK: - Welcome Slide Model
 struct WelcomeSlide {
     let icon: String
+    var assetImage: String? = nil
     let title: String
     let description: String
     let accentColor: Color
@@ -134,15 +136,29 @@ struct WelcomeSlideView: View {
                         )
                         .frame(width: 120, height: 120)
 
-                    Image(systemName: slide.icon)
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [slide.accentColor, slide.accentColor.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                    if let assetImage = slide.assetImage {
+                        LinearGradient(
+                            colors: [slide.accentColor, slide.accentColor.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
+                        .mask(
+                            Image(assetImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        )
+                        .frame(width: 80, height: 80)
+                    } else {
+                        Image(systemName: slide.icon)
+                            .font(.system(size: 48, weight: .medium))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [slide.accentColor, slide.accentColor.opacity(0.7)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
                 }
             }
 
