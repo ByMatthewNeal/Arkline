@@ -91,8 +91,22 @@ struct DCAListView: View {
                         }
                     }
 
-                    // Empty state
-                    if viewModel.reminders.isEmpty && viewModel.riskBasedReminders.isEmpty {
+                    // Loading state
+                    if viewModel.isLoading && viewModel.reminders.isEmpty {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .controlSize(.regular)
+                                .tint(AppColors.accent)
+                            Text("Loading reminders...")
+                                .font(.system(size: 14))
+                                .foregroundColor(textPrimary.opacity(0.5))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    }
+
+                    // Empty state (only show after loading completes)
+                    if !viewModel.isLoading && viewModel.reminders.isEmpty && viewModel.riskBasedReminders.isEmpty {
                         EmptyStateView(
                             icon: "calendar.badge.clock",
                             title: "No DCA Reminders",
@@ -150,8 +164,8 @@ struct DCAListView: View {
         .sheet(item: $viewModel.selectedReminder) { reminder in
             InvestmentHistorySheetView(reminder: reminder, viewModel: viewModel)
         }
-        .task {
-            await viewModel.refresh()
+        .onAppear {
+            Task { await viewModel.refresh() }
         }
     }
 

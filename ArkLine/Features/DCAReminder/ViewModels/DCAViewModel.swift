@@ -93,15 +93,21 @@ final class DCAViewModel {
 
     // MARK: - Data Loading
     func refresh() async {
-        isLoading = true
+        // Only show loading spinner if we have no data yet (avoid flash on re-navigation)
+        let showSpinner = reminders.isEmpty && riskBasedReminders.isEmpty
+        if showSpinner { isLoading = true }
         error = nil
 
         do {
             guard let userId = await resolveUserId() else {
                 await MainActor.run {
-                    self.error = .authenticationRequired
+                    // Only show error if we have no cached data
+                    if self.reminders.isEmpty {
+                        self.error = .authenticationRequired
+                    }
                     self.isLoading = false
                 }
+                logError("DCA refresh: could not resolve user ID", category: .auth)
                 return
             }
 
@@ -124,9 +130,11 @@ final class DCAViewModel {
             await refreshRiskLevels()
         } catch {
             await MainActor.run {
+                // Keep existing data on failure — don't clear reminders
                 self.error = AppError.from(error)
                 self.isLoading = false
             }
+            logError("DCA refresh failed: \(error)", category: .data)
         }
     }
 
