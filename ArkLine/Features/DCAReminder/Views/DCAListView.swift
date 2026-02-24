@@ -40,6 +40,9 @@ struct DCAListView: View {
                                 onEdit: { viewModel.editingReminder = reminder },
                                 onMarkInvested: {
                                     Task { await viewModel.markAsInvested(reminder) }
+                                },
+                                onSkip: {
+                                    Task { await viewModel.skipReminder(reminder) }
                                 }
                             )
                         }

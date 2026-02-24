@@ -7,6 +7,7 @@ struct DCAUnifiedCard: View {
     let riskLevel: AssetRiskLevel?
     let onEdit: () -> Void
     var onMarkInvested: (() -> Void)? = nil
+    var onSkip: (() -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -61,14 +62,14 @@ struct DCAUnifiedCard: View {
             }
 
             // Action buttons
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 // Mark Invested button (only for due reminders)
                 if let onMarkInvested, isDue {
                     Button(action: onMarkInvested) {
                         HStack(spacing: 6) {
                             Image(systemName: "dollarsign.arrow.circlepath")
                                 .font(.system(size: 14, weight: .medium))
-                            Text("Mark Invested")
+                            Text("Invested")
                                 .font(.system(size: 14, weight: .medium))
                         }
                         .foregroundColor(AppColors.accent)
@@ -77,6 +78,25 @@ struct DCAUnifiedCard: View {
                         .background(
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(AppColors.accent.opacity(0.15))
+                        )
+                    }
+                }
+
+                // Skip button (only for due reminders)
+                if let onSkip, isDue {
+                    Button(action: onSkip) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "forward.fill")
+                                .font(.system(size: 12, weight: .medium))
+                            Text("Skip")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(textPrimary.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
                         )
                     }
                 }
