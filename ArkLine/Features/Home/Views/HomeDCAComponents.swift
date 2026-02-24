@@ -219,8 +219,6 @@ struct HomeDCACard: View {
     let onInvest: () -> Void
     var isCompact: Bool = false
     @Environment(\.colorScheme) var colorScheme
-    @State private var isInvesting = false
-
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
@@ -265,52 +263,28 @@ struct HomeDCACard: View {
                 Spacer()
 
                 if isCompact {
-                    // Simple invest button for compact
-                    Button {
-                        guard !isInvesting else { return }
-                        isInvesting = true
-                        onInvest()
-                    } label: {
-                        if isInvesting {
-                            ProgressView()
-                                .controlSize(.small)
-                                .frame(width: 24, height: 24)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(AppColors.accent)
-                        }
+                    Button(action: onInvest) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(AppColors.accent)
                     }
-                    .disabled(isInvesting)
                     .accessibilityLabel("Mark \(reminder.name) as invested")
                 }
             }
 
             // Mark as Invested button (only for non-compact)
             if !isCompact {
-                Button {
-                    guard !isInvesting else { return }
-                    isInvesting = true
-                    onInvest()
-                } label: {
-                    HStack(spacing: 8) {
-                        if isInvesting {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(AppColors.accent)
-                        }
-                        Text(isInvesting ? "Marking..." : "Mark as Invested")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(AppColors.accent)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(AppColors.accent.opacity(0.15))
-                    )
+                Button(action: onInvest) {
+                    Text("Mark as Invested")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(AppColors.accent.opacity(0.15))
+                        )
                 }
-                .disabled(isInvesting)
                 .accessibilityLabel("Mark \(reminder.name) as invested")
             }
         }

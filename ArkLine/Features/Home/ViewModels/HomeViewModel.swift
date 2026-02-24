@@ -598,21 +598,17 @@ class HomeViewModel {
 
     func markReminderComplete(_ reminder: DCAReminder) async {
         do {
-            _ = try await dcaService.markAsInvested(id: reminder.id)
+            let updated = try await dcaService.markAsInvested(id: reminder.id)
 
             await MainActor.run {
                 if let index = self.activeReminders.firstIndex(where: { $0.id == reminder.id }) {
-                    self.activeReminders[index].completedPurchases += 1
+                    self.activeReminders[index] = updated
                 }
-                if let index = self.todayReminders.firstIndex(where: { $0.id == reminder.id }) {
-                    self.todayReminders.remove(at: index)
-                }
+                self.todayReminders.removeAll { $0.id == reminder.id }
             }
 
             // Re-schedule notification for the next DCA date
-            if let index = activeReminders.firstIndex(where: { $0.id == reminder.id }) {
-                await DCANotificationScheduler.schedule(activeReminders[index])
-            }
+            await DCANotificationScheduler.schedule(updated)
         } catch {
             await MainActor.run {
                 self.errorMessage = AppError.from(error).userMessage
