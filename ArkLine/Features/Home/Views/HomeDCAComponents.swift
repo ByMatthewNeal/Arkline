@@ -219,12 +219,20 @@ struct HomeDCACard: View {
     let onInvest: () -> Void
     var isCompact: Bool = false
     @Environment(\.colorScheme) var colorScheme
+    @State private var didInvest = false
+
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private func handleInvest() {
+        guard !didInvest else { return }
+        withAnimation(.arkSpring) { didInvest = true }
+        onInvest()
     }
 
     var body: some View {
@@ -263,28 +271,36 @@ struct HomeDCACard: View {
                 Spacer()
 
                 if isCompact {
-                    Button(action: onInvest) {
-                        Image(systemName: "checkmark.circle.fill")
+                    Button(action: handleInvest) {
+                        Image(systemName: didInvest ? "checkmark.seal.fill" : "checkmark.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundColor(AppColors.accent)
+                            .foregroundColor(didInvest ? AppColors.success : AppColors.accent)
                     }
+                    .disabled(didInvest)
                     .accessibilityLabel("Mark \(reminder.name) as invested")
                 }
             }
 
             // Mark as Invested button (only for non-compact)
             if !isCompact {
-                Button(action: onInvest) {
-                    Text("Mark as Invested")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AppColors.accent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(AppColors.accent.opacity(0.15))
-                        )
+                Button(action: handleInvest) {
+                    HStack(spacing: 6) {
+                        if didInvest {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        Text(didInvest ? "Invested!" : "Mark as Invested")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(didInvest ? AppColors.success : AppColors.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill((didInvest ? AppColors.success : AppColors.accent).opacity(0.15))
+                    )
                 }
+                .disabled(didInvest)
                 .accessibilityLabel("Mark \(reminder.name) as invested")
             }
         }
