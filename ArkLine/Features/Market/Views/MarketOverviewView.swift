@@ -632,33 +632,33 @@ struct MacroIndicatorsSection: View {
         return "Bearish"
     }
 
-    // Oil helpers
+    // Oil helpers — moderate oil = manageable inflation = bullish for risk assets
     private var oilSignal: MacroTrendSignal {
         guard let oil = crudeOilData?.value else { return .neutral }
-        if oil < 65 { return .bullish }
-        if oil > 85 { return .bearish }
+        if oil < 80 { return .bullish }
+        if oil > 95 { return .bearish }
         return .neutral
     }
 
     private var oilZScoreDescription: String {
         guard let oil = crudeOilData?.value else { return "Oil prices" }
-        if oil < 65 { return "Bullish" }
-        if oil < 85 { return "Neutral" }
+        if oil < 80 { return "Bullish" }
+        if oil < 95 { return "Neutral" }
         return "Bearish"
     }
 
-    // Gold helpers
+    // Gold helpers — high gold reflects safe-haven demand / debasement hedge
     private var goldSignal: MacroTrendSignal {
         guard let gold = goldData?.value else { return .neutral }
-        if gold < 2400 { return .bullish }
-        if gold > 3500 { return .bearish }
+        if gold < 4000 { return .bullish }
+        if gold > 6000 { return .bearish }
         return .neutral
     }
 
     private var goldZScoreDescription: String {
         guard let gold = goldData?.value else { return "Safe-haven asset" }
-        if gold < 2400 { return "Bullish" }
-        if gold < 3500 { return "Neutral" }
+        if gold < 4000 { return "Bullish" }
+        if gold < 6000 { return "Neutral" }
         return "Bearish"
     }
 

@@ -607,15 +607,17 @@ struct IndexWidgetCard: View {
         }
     }
 
-    /// Map trend channel zone → crypto-relevant signal
+    /// Map trend channel zone → investing signal
+    /// At or below long-term trend = uptrend intact = Bullish
+    /// Above trend = stretched, flag caution
     private var zoneSignal: (color: Color, label: String)? {
         guard let zone = viewModel.channelData?.currentZone else { return nil }
         switch zone {
-        case .deepValue, .value:
+        case .deepValue, .value, .fair:
             return (AppColors.success, "Bullish")
-        case .fair:
+        case .elevated:
             return (AppColors.warning, "Neutral")
-        case .elevated, .overextended:
+        case .overextended:
             return (AppColors.error, "Bearish")
         }
     }

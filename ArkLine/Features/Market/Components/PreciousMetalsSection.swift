@@ -118,10 +118,12 @@ struct PreciousMetalCard: View {
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var isPositive: Bool { metal.priceChangePercentage24h >= 0 }
 
+    /// Trend signal for spot investing — daily noise shouldn't override the trend.
+    /// Only a significant single-day sell-off indicates potential trend change.
     private var priceSignal: (color: Color, label: String) {
-        if metal.priceChangePercentage24h > 2.0 { return (AppColors.success, "Bullish") }
-        if metal.priceChangePercentage24h < -2.0 { return (AppColors.error, "Bearish") }
-        return (AppColors.warning, "Neutral")
+        if metal.priceChangePercentage24h > -1.0 { return (AppColors.success, "Bullish") }
+        if metal.priceChangePercentage24h > -3.0 { return (AppColors.warning, "Neutral") }
+        return (AppColors.error, "Bearish")
     }
 
     private var subtitleText: String {
