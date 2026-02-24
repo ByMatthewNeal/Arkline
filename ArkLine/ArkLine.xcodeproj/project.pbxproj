@@ -308,6 +308,7 @@
 		CB7805A9B0595243211641AB /* SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA39820401F384E38429D1FB /* SparklineView.swift */; };
 		CC0000000000000000000001 /* ConfidenceTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000002 /* ConfidenceTracker.swift */; };
 		CC0000000000000000000003 /* ConfidenceTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000004 /* ConfidenceTrackerTests.swift */; };
+		CC0000000000000000000005 /* BroadcastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000000000000000000006 /* BroadcastTests.swift */; };
 		CC3D4E5F01 /* BroadcastEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3D4E5F02 /* BroadcastEditorView.swift */; };
 		CC3D4E5F03 /* BroadcastStudioComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3D4E5F04 /* BroadcastStudioComponents.swift */; };
 		CC3D4E5F05 /* RiskLevelComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3D4E5F06 /* RiskLevelComponents.swift */; };
@@ -735,6 +736,7 @@
 		CB5324CFC48F1379600379DC /* APICoinglassService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICoinglassService.swift; sourceTree = "<group>"; };
 		CC0000000000000000000002 /* ConfidenceTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfidenceTracker.swift; sourceTree = "<group>"; };
 		CC0000000000000000000004 /* ConfidenceTrackerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ConfidenceTrackerTests.swift; path = ../ArkLineTests/ConfidenceTrackerTests.swift; sourceTree = "<group>"; };
+		CC0000000000000000000006 /* BroadcastTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = BroadcastTests.swift; path = ../ArkLineTests/BroadcastTests.swift; sourceTree = "<group>"; };
 		CC3D4E5F02 /* BroadcastEditorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastEditorView.swift; sourceTree = "<group>"; };
 		CC3D4E5F04 /* BroadcastStudioComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastStudioComponents.swift; sourceTree = "<group>"; };
 		CC3D4E5F06 /* RiskLevelComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RiskLevelComponents.swift; sourceTree = "<group>"; };
@@ -1574,6 +1576,7 @@
 				AA0000000000000000000015 /* RiskHistoryPointTests.swift */,
 				AA0000000000000000000016 /* SSLPinningConfigurationTests.swift */,
 				CC0000000000000000000004 /* ConfidenceTrackerTests.swift */,
+				CC0000000000000000000006 /* BroadcastTests.swift */,
 				FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */,
 				C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */,
 				DD1111111111111111111102 /* HomeViewModelTests.swift */,
@@ -2176,6 +2179,7 @@
 				BB0000000000000000000015 /* RiskHistoryPointTests.swift in Sources */,
 				BB0000000000000000000016 /* SSLPinningConfigurationTests.swift in Sources */,
 				CC0000000000000000000003 /* ConfidenceTrackerTests.swift in Sources */,
+				CC0000000000000000000005 /* BroadcastTests.swift in Sources */,
 				0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */,
 				95DCC179469B65E518BAA33F /* StringExtensionsTests.swift in Sources */,
 				DD1111111111111111111101 /* HomeViewModelTests.swift in Sources */,
