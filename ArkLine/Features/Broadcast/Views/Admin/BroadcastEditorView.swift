@@ -31,6 +31,8 @@ struct BroadcastEditorView: View {
     @State private var showingError = false
     @State private var errorMessage: String?
     @State private var isSaving = false
+    @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
+    @State private var showingPreview = false
 
     var body: some View {
         NavigationStack {
@@ -54,17 +56,68 @@ struct BroadcastEditorView: View {
 
                     // Content Field
                     VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        Text("Content")
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
+                        HStack {
+                            Text("Content")
+                                .font(ArkFonts.caption)
+                                .foregroundColor(AppColors.textSecondary)
 
-                        TextEditor(text: $content)
-                            .font(ArkFonts.body)
-                            .frame(minHeight: 200)
-                            .padding(ArkSpacing.sm)
-                            .scrollContentBackground(.hidden)
+                            Spacer()
+
+                            Button {
+                                showingPreview.toggle()
+                            } label: {
+                                HStack(spacing: ArkSpacing.xxs) {
+                                    Image(systemName: showingPreview ? "pencil" : "eye")
+                                        .font(.caption)
+                                    Text(showingPreview ? "Edit" : "Preview")
+                                        .font(ArkFonts.caption)
+                                }
+                                .foregroundColor(AppColors.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if showingPreview {
+                            // Preview mode: render markdown
+                            VStack(alignment: .leading) {
+                                if content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    Text("Nothing to preview")
+                                        .font(ArkFonts.body)
+                                        .foregroundColor(AppColors.textTertiary)
+                                        .padding(ArkSpacing.md)
+                                } else {
+                                    MarkdownContentView(content: content)
+                                        .padding(ArkSpacing.md)
+                                }
+                            }
+                            .frame(minHeight: 200, alignment: .topLeading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .background(AppColors.cardBackground(colorScheme))
                             .cornerRadius(ArkSpacing.sm)
+                        } else {
+                            // Edit mode: formatting toolbar + text editor
+                            VStack(spacing: 0) {
+                                FormattingToolbar { format in
+                                    applyFormat(format)
+                                }
+                                .background(AppColors.cardBackground(colorScheme))
+
+                                Divider()
+                                    .background(AppColors.textTertiary.opacity(0.3))
+
+                                #if canImport(UIKit)
+                                MarkdownTextEditor(text: $content, selectedRange: $selectedRange)
+                                    .frame(minHeight: 200)
+                                #else
+                                TextEditor(text: $content)
+                                    .font(ArkFonts.body)
+                                    .frame(minHeight: 200)
+                                    .scrollContentBackground(.hidden)
+                                #endif
+                            }
+                            .background(AppColors.cardBackground(colorScheme))
+                            .cornerRadius(ArkSpacing.sm)
+                        }
                     }
 
                     // Meeting Link Section
@@ -788,6 +841,14 @@ struct BroadcastEditorView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Formatting Actions
+
+    private func applyFormat(_ format: MarkdownFormat) {
+        let result = MarkdownFormatter.apply(format, to: content, selectedRange: selectedRange)
+        content = result.newText
+        selectedRange = result.newSelection
     }
 
     // MARK: - Template Actions

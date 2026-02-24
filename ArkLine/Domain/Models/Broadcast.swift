@@ -772,12 +772,50 @@ extension Broadcast {
         }
     }
 
-    /// Preview of content (first 100 characters)
-    var contentPreview: String {
-        if content.count > 100 {
-            return String(content.prefix(100)) + "..."
+    /// Content with markdown syntax stripped for use in previews and notifications.
+    var plainTextContent: String {
+        var text = content
+
+        // Strip inline markdown: **bold**, *italic*, ~~strikethrough~~, <u>underline</u>
+        // Order matters: strip ** before * to avoid partial matches
+        let patterns: [(String, String)] = [
+            (#"\*\*(.+?)\*\*"#, "$1"),          // **bold**
+            (#"~~(.+?)~~"#, "$1"),               // ~~strikethrough~~
+            (#"<u>(.+?)</u>"#, "$1"),            // <u>underline</u>
+            (#"\*(.+?)\*"#, "$1"),               // *italic*
+            (#"\[([^\]]+)\]\([^\)]+\)"#, "$1"),  // [text](url) -> text
+        ]
+
+        for (pattern, replacement) in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                let range = NSRange(text.startIndex..., in: text)
+                text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: replacement)
+            }
         }
-        return content
+
+        // Strip list prefixes
+        let listPatterns: [(String, String)] = [
+            (#"(?m)^\d+\.\s+"#, ""),  // ordered list prefix
+            (#"(?m)^- "#, ""),         // unordered list prefix
+        ]
+
+        for (pattern, replacement) in listPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                let range = NSRange(text.startIndex..., in: text)
+                text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: replacement)
+            }
+        }
+
+        return text
+    }
+
+    /// Preview of content (first 100 characters, markdown stripped)
+    var contentPreview: String {
+        let plain = plainTextContent
+        if plain.count > 100 {
+            return String(plain.prefix(100)) + "..."
+        }
+        return plain
     }
 
     /// Whether this broadcast is scheduled for future publishing

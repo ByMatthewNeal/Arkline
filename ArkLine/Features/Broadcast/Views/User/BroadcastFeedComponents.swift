@@ -164,9 +164,7 @@ struct BroadcastDetailView: View {
                     }
 
                     // Content
-                    Text(broadcast.content)
-                        .font(ArkFonts.body)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    MarkdownContentView(content: broadcast.content)
 
                     // Portfolio Showcase
                     if let portfolioAttachment = broadcast.portfolioAttachment, portfolioAttachment.hasContent {

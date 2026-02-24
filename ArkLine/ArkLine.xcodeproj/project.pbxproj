@@ -421,6 +421,10 @@
 		D4E5F6A7B8C9304152637D8E /* GEIServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B8293041526C7D /* GEIServiceProtocol.swift */; };
 		F6A7B8C9DAEB52637485A9B0 /* APIGEIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */; };
 		B8C9DAEBF0D174859607C1D2 /* GEIDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B8C9DAEFC063748596B0C1 /* GEIDetailView.swift */; };
+		711866D8E8B300A197D19BBD /* MarkdownFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 017567D8D205EC22A6F4CBAE /* MarkdownFormatter.swift */; };
+		AC3F663802A33B169577BED4 /* MarkdownTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47C967EA981318C1867319FC /* MarkdownTextEditor.swift */; };
+		B6E66E008E215A82AF589415 /* FormattingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7906B514471F4D2D6BA3EE /* FormattingToolbar.swift */; };
+		CDA9A8970F7537529B04DA15 /* MarkdownContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F459B2AE85AD191B9ACB0AD /* MarkdownContentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -848,6 +852,10 @@
 		C3D4E5F6A7B8293041526C7D /* GEIServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIServiceProtocol.swift; sourceTree = "<group>"; };
 		E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIGEIService.swift; sourceTree = "<group>"; };
 		A7B8C9DAEFC063748596B0C1 /* GEIDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIDetailView.swift; sourceTree = "<group>"; };
+		017567D8D205EC22A6F4CBAE /* MarkdownFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFormatter.swift; sourceTree = "<group>"; };
+		47C967EA981318C1867319FC /* MarkdownTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextEditor.swift; sourceTree = "<group>"; };
+		4E7906B514471F4D2D6BA3EE /* FormattingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattingToolbar.swift; sourceTree = "<group>"; };
+		5F459B2AE85AD191B9ACB0AD /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1640,6 +1648,17 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		D1ADCA11AE6034152988B261 /* Markdown */ = {
+			isa = PBXGroup;
+			children = (
+				017567D8D205EC22A6F4CBAE /* MarkdownFormatter.swift */,
+				47C967EA981318C1867319FC /* MarkdownTextEditor.swift */,
+				4E7906B514471F4D2D6BA3EE /* FormattingToolbar.swift */,
+				5F459B2AE85AD191B9ACB0AD /* MarkdownContentView.swift */,
+			);
+			path = Markdown;
+			sourceTree = "<group>";
+		};
 		AE9B616165DFB536A5EF5225 /* SharedComponents */ = {
 			isa = PBXGroup;
 			children = (
@@ -1652,6 +1671,7 @@
 				4303F7BE033EE7B7B0E2950F /* Navigation */,
 				9AE2C5D6F7B840A523E6A7C8 /* Share */,
 				EC439D6BB8FB7D4F521E6AF0 /* Toast */,
+				D1ADCA11AE6034152988B261 /* Markdown */,
 			);
 			path = SharedComponents;
 			sourceTree = "<group>";
@@ -2556,6 +2576,10 @@
 				D4E5F6A7B8C9304152637D8E /* GEIServiceProtocol.swift in Sources */,
 				F6A7B8C9DAEB52637485A9B0 /* APIGEIService.swift in Sources */,
 				B8C9DAEBF0D174859607C1D2 /* GEIDetailView.swift in Sources */,
+				711866D8E8B300A197D19BBD /* MarkdownFormatter.swift in Sources */,
+				AC3F663802A33B169577BED4 /* MarkdownTextEditor.swift in Sources */,
+				B6E66E008E215A82AF589415 /* FormattingToolbar.swift in Sources */,
+				CDA9A8970F7537529B04DA15 /* MarkdownContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
