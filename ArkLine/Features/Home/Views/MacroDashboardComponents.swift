@@ -539,31 +539,35 @@ struct SimpleIndicatorRow: View {
                 .foregroundColor(AppColors.accent)
                 .frame(width: 32)
 
-            // Title
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(textPrimary)
+            // Title & value subtitle
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(textPrimary)
 
-            Spacer()
-
-            // Value and change
-            VStack(alignment: .trailing, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(value)
-                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                        .foregroundColor(textPrimary)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(textPrimary.opacity(0.5))
 
                     if let change = change {
                         Text(String(format: "%+.1f%%", change))
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                     }
                 }
-
-                Text(status)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(statusColor)
             }
+
+            Spacer()
+
+            // Signal pill (prominent)
+            Text(status)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(statusColor)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(statusColor.opacity(0.15))
+                .cornerRadius(8)
 
             // Chevron
             Image(systemName: "chevron.right")

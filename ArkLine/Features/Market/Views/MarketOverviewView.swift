@@ -647,18 +647,18 @@ struct MacroIndicatorsSection: View {
         return "Bearish"
     }
 
-    // Gold helpers — high gold reflects safe-haven demand / debasement hedge
+    // Gold helpers
     private var goldSignal: MacroTrendSignal {
         guard let gold = goldData?.value else { return .neutral }
-        if gold < 4000 { return .bullish }
-        if gold > 6000 { return .bearish }
+        if gold < 6000 { return .bullish }
+        if gold > 8000 { return .bearish }
         return .neutral
     }
 
     private var goldZScoreDescription: String {
         guard let gold = goldData?.value else { return "Safe-haven asset" }
-        if gold < 4000 { return "Bullish" }
-        if gold < 6000 { return "Neutral" }
+        if gold < 6000 { return "Bullish" }
+        if gold < 8000 { return "Neutral" }
         return "Bearish"
     }
 
@@ -690,60 +690,35 @@ struct MacroIndicatorCard: View {
     var body: some View {
         Button(action: { showingDetail = true }) {
             HStack(spacing: 16) {
-                // Icon with extreme indicator
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: icon)
-                        .font(.title2)
-                        .foregroundColor(AppColors.accent)
-                        .frame(width: 44, height: 44)
-                        .background(AppColors.accent.opacity(0.15))
-                        .cornerRadius(12)
+                // Icon
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(AppColors.accent)
+                    .frame(width: 44, height: 44)
+                    .background(AppColors.accent.opacity(0.15))
+                    .cornerRadius(12)
 
-                    // Extreme move indicator
-                    if let zScore = zScoreData, zScore.isExtreme {
-                        Circle()
-                            .fill(AppColors.error)
-                            .frame(width: 10, height: 10)
-                            .offset(x: 2, y: -2)
-                    }
-                }
-
-                // Title & Subtitle with z-score badge
+                // Title & value subtitle
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(title)
-                            .font(.headline)
-                            .foregroundColor(textPrimary)
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(textPrimary)
 
-                        // Z-Score badge
-                        if let zScore = zScoreData {
-                            ZScoreIndicator(zScore: zScore.zScore.zScore, size: .small)
-                        }
-                    }
-                    Text(subtitle)
+                    Text(value)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
-                // Value & Signal
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(value)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(textPrimary)
-
-                    HStack(spacing: 4) {
-                        Image(systemName: signal.icon)
-                            .font(.system(size: 10, weight: .bold))
-                        Text(description)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .lineLimit(1)
-                    }
-                    .foregroundColor(signal.color)
-                }
+                // Signal pill (prominent)
+                Text(description)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(signal.color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(signal.color.opacity(0.15))
+                    .cornerRadius(8)
 
                 Image(systemName: "chevron.right")
                     .font(.caption)

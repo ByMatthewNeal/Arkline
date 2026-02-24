@@ -466,46 +466,43 @@ struct MacroDashboardDetailView: View {
 
     private var vixStatus: String {
         guard let vix = vixData?.value else { return "No data" }
-        if vix < 15 { return "Low" }
-        if vix < 20 { return "Normal" }
-        if vix < 25 { return "Elevated" }
-        return "High"
+        if vix < 20 { return "Bullish" }
+        if vix < 25 { return "Neutral" }
+        return "Bearish"
     }
 
     private var vixStatusColor: Color {
         guard let vix = vixData?.value else { return .secondary }
-        if vix < 15 { return AppColors.success }
-        if vix < 20 { return Color(hex: "3B82F6") }
+        if vix < 20 { return AppColors.success }
         if vix < 25 { return AppColors.warning }
         return AppColors.error
     }
 
     private var dxyStatus: String {
-        guard let change = dxyData?.changePercent else { return "No data" }
-        if change < -0.3 { return "Weakening" }
-        if change > 0.3 { return "Strengthening" }
-        return "Stable"
+        guard let dxy = dxyData?.value else { return "No data" }
+        if dxy < 100 { return "Bullish" }
+        if dxy < 105 { return "Neutral" }
+        return "Bearish"
     }
 
     private var dxyStatusColor: Color {
-        guard let change = dxyData?.changePercent else { return .secondary }
-        if change < -0.3 { return AppColors.success }
-        if change > 0.3 { return AppColors.error }
-        return AppColors.warning
+        guard let dxy = dxyData?.value else { return .secondary }
+        if dxy < 100 { return AppColors.success }
+        if dxy < 105 { return AppColors.warning }
+        return AppColors.error
     }
 
     private var m2Status: String {
         guard let m2 = liquidityData else { return "No data" }
-        if m2.monthlyChange > 1.0 { return "Expanding" }
-        if m2.monthlyChange > 0 { return "Growing" }
-        if m2.monthlyChange > -1.0 { return "Flat" }
-        return "Contracting"
+        if m2.monthlyChange > 0 { return "Bullish" }
+        if m2.monthlyChange > -1.0 { return "Neutral" }
+        return "Bearish"
     }
 
     private var m2StatusColor: Color {
         guard let m2 = liquidityData else { return .secondary }
-        if m2.monthlyChange > 0.5 { return AppColors.success }
-        if m2.monthlyChange > -0.5 { return AppColors.warning }
+        if m2.monthlyChange > 0 { return AppColors.success }
+        if m2.monthlyChange > -1.0 { return AppColors.warning }
         return AppColors.error
     }
 

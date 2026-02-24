@@ -270,15 +270,15 @@ struct AllocationDetailView: View {
 
     private var goldSignal: MacroTrendSignal {
         guard let gold = sentimentViewModel.goldData?.value else { return .neutral }
-        if gold < 4000 { return .bullish }
-        if gold > 6000 { return .bearish }
+        if gold < 6000 { return .bullish }
+        if gold > 8000 { return .bearish }
         return .neutral
     }
 
     private var goldDescription: String {
         guard let gold = sentimentViewModel.goldData?.value else { return "Safe-haven asset" }
-        if gold < 4000 { return "Bullish" }
-        if gold < 6000 { return "Neutral" }
+        if gold < 6000 { return "Bullish" }
+        if gold < 8000 { return "Neutral" }
         return "Bearish"
     }
 
