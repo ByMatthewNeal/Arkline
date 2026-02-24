@@ -799,7 +799,11 @@ struct BroadcastEditorView: View {
     }
 
     private func saveBroadcast(publish: Bool = false, schedule: Bool = false) {
-        guard let userId = appState.currentUser?.id else { return }
+        guard let userId = appState.currentUser?.id else {
+            errorMessage = "Unable to identify user. Please log in again."
+            showingError = true
+            return
+        }
 
         isSaving = true
 

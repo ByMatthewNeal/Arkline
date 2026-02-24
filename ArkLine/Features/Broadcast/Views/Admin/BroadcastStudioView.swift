@@ -39,6 +39,20 @@ struct BroadcastStudioView: View {
                         broadcastSection(title: "Published", broadcasts: viewModel.published)
                     }
 
+                    // Loading State
+                    if viewModel.isLoading && viewModel.broadcasts.isEmpty {
+                        VStack(spacing: ArkSpacing.md) {
+                            ProgressView()
+                                .controlSize(.regular)
+                                .tint(AppColors.accent)
+                            Text("Loading broadcasts...")
+                                .font(ArkFonts.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ArkSpacing.xl)
+                    }
+
                     // Empty State
                     if viewModel.drafts.isEmpty && viewModel.published.isEmpty && !viewModel.isLoading {
                         emptyStateView

@@ -337,6 +337,7 @@ struct BroadcastDetailView: View {
         .cornerRadius(ArkSpacing.sm)
         .onDisappear {
             audioPlayer?.pause()
+            audioPlayer = nil
             isPlayingAudio = false
             if let observer = audioEndObserver {
                 NotificationCenter.default.removeObserver(observer)

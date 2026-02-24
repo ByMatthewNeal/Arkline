@@ -134,26 +134,26 @@ struct BroadcastAnalyticsView: View {
 
     private var reactionBreakdownSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            Text("Reaction Breakdown")
+            Text("Reactions")
                 .font(ArkFonts.subheadline)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            HStack(spacing: ArkSpacing.sm) {
-                ForEach(ReactionEmoji.allCases, id: \.rawValue) { emoji in
-                    VStack(spacing: 4) {
+            VStack(spacing: ArkSpacing.sm) {
+                HStack(spacing: ArkSpacing.sm) {
+                    ForEach(ReactionEmoji.allCases, id: \.rawValue) { emoji in
                         Text(emoji.rawValue)
                             .font(.title2)
-
-                        Text("\(reactionCount(for: emoji))")
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
+                            .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, ArkSpacing.sm)
-                    .background(AppColors.cardBackground(colorScheme))
-                    .cornerRadius(ArkSpacing.sm)
                 }
+
+                Text("\(totalReactions) total reactions across \(viewModel.published.count) broadcasts")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
             }
+            .padding(ArkSpacing.md)
+            .background(AppColors.cardBackground(colorScheme))
+            .cornerRadius(ArkSpacing.sm)
         }
     }
 
@@ -209,12 +209,6 @@ struct BroadcastAnalyticsView: View {
             .sorted { ($0.reactionCount ?? 0) > ($1.reactionCount ?? 0) }
             .prefix(5)
             .map { $0 }
-    }
-
-    private func reactionCount(for emoji: ReactionEmoji) -> Int {
-        // This would normally come from aggregated analytics
-        // For now, return placeholder
-        Int.random(in: 0...50)
     }
 
     private var recentActivities: [BroadcastActivityItem] {

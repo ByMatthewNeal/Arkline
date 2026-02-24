@@ -161,13 +161,18 @@ struct BroadcastFeedView: View {
             .navigationBarTitleDisplayMode(.large)
             .searchable(text: $searchText, prompt: "Search insights...")
             .refreshable {
-                await viewModel.loadBroadcasts()
+                if let userId = appState.currentUser?.id {
+                    await viewModel.loadPublishedBroadcasts(for: userId)
+                }
             }
             .sheet(item: $selectedBroadcast) { broadcast in
                 BroadcastDetailView(broadcast: broadcast, viewModel: viewModel)
             }
             .task {
-                await viewModel.loadBroadcasts()
+                if let userId = appState.currentUser?.id {
+                    await viewModel.loadPublishedBroadcasts(for: userId)
+                    await viewModel.updateUnreadCount(for: userId)
+                }
                 await checkNotificationStatus()
             }
             .onChange(of: appState.insightsNavigationReset) { _, _ in
