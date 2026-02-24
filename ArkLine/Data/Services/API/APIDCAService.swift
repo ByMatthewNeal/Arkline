@@ -12,15 +12,21 @@ final class APIDCAService: DCAServiceProtocol {
     private static let dcaDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
 
-        // PostgreSQL time/timetz formats: "HH:mm:ss", "HH:mm:ss.SSSSSS", "HH:mm:ss+00", etc.
-        let timeFormatters: [DateFormatter] = {
-            let formats = ["HH:mm:ss", "HH:mm:ssxxx", "HH:mm:ssxx", "HH:mm:ssx"]
-            return formats.map { fmt in
-                let f = DateFormatter()
-                f.dateFormat = fmt
-                f.locale = Locale(identifier: "en_US_POSIX")
-                return f
-            }
+        // Time-only formatter for notification_time column ("HH:mm:ss")
+        let timeFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            return f
+        }()
+
+        // Date-only formatter for start_date, next_reminder_date columns ("yyyy-MM-dd")
+        let dateOnlyFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.timeZone = TimeZone(identifier: "UTC")
+            return f
         }()
 
         let iso8601WithFrac = ISO8601DateFormatter()
@@ -32,26 +38,35 @@ final class APIDCAService: DCAServiceProtocol {
             let container = try decoder.singleValueContainer()
             let string = try container.decode(String.self)
 
-            // Strip fractional seconds from time-only strings (e.g. "12:00:00.000000" → "12:00:00")
-            // Also handles "12:00:00.000000+00" → "12:00:00+00"
-            let cleanedTime: String = {
-                // Match time-only pattern with optional fractional seconds and timezone
-                guard string.count <= 32, !string.contains("T") else { return string }
-                // Remove fractional part: everything between the 3rd colon group's digits and +/- or end
-                if let dotRange = string.range(of: #"\.\d+"#, options: .regularExpression) {
-                    return string.replacingCharacters(in: dotRange, with: "")
-                }
-                return string
-            }()
-
-            // Try time-only formats first (for notification_time column)
-            for formatter in timeFormatters {
-                if let d = formatter.date(from: cleanedTime) { return d }
+            // 1. Date-only: "2026-02-24" (start_date, next_reminder_date)
+            if string.count == 10, string.contains("-"), !string.contains(":") {
+                if let d = dateOnlyFormatter.date(from: string) { return d }
             }
 
-            // Try ISO 8601 formats (for created_at, start_date, next_reminder_date)
+            // 2. Time-only: "13:05:00" or "13:05:00.000000" or "13:05:00+00" (notification_time)
+            if !string.contains("T"), string.contains(":") {
+                // Strip fractional seconds: "13:05:00.000000" → "13:05:00"
+                // Also: "13:05:00.000000+00" → "13:05:00"
+                let stripped = string.replacingOccurrences(
+                    of: #"[.\+\-].*$"#, with: "", options: .regularExpression
+                )
+                if let d = timeFormatter.date(from: stripped) { return d }
+            }
+
+            // 3. ISO 8601 with fractional seconds: "2026-02-24T04:29:54.35245+00:00"
             if let d = iso8601WithFrac.date(from: string) { return d }
+
+            // 4. ISO 8601 without fractional seconds: "2026-02-24T04:29:54+00:00"
             if let d = iso8601.date(from: string) { return d }
+
+            // 5. ISO 8601 with fractional seconds that Apple's formatter can't handle —
+            //    strip fractional part and retry
+            if string.contains("T"), string.contains(".") {
+                let stripped = string.replacingOccurrences(
+                    of: #"\.\d+"#, with: "", options: .regularExpression
+                )
+                if let d = iso8601.date(from: stripped) { return d }
+            }
 
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
         }
