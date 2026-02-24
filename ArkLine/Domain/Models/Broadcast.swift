@@ -87,6 +87,25 @@ struct Broadcast: Codable, Identifiable, Equatable {
         self.reactionCount = reactionCount
     }
 
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(audioURL, forKey: .audioURL)
+        try container.encode(images, forKey: .images)
+        try container.encode(appReferences, forKey: .appReferences)
+        try container.encodeIfPresent(meetingLink, forKey: .meetingLink)
+        try container.encode(targetAudience, forKey: .targetAudience)
+        try container.encode(status, forKey: .status)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(publishedAt, forKey: .publishedAt)
+        try container.encodeIfPresent(scheduledAt, forKey: .scheduledAt)
+        try container.encode(authorId, forKey: .authorId)
+        // Note: viewCount, reactionCount, portfolioAttachment, templateId, tags
+        // are NOT encoded — they don't exist as columns in the broadcasts table
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
