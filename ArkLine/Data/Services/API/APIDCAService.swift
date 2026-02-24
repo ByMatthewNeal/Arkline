@@ -11,12 +11,18 @@ final class APIDCAService: DCAServiceProtocol {
     /// alongside normal ISO 8601 timestamps for other date fields.
     private static let dcaDecoder: JSONDecoder = {
         let decoder = JSONDecoder()
-        let timeFormatter: DateFormatter = {
-            let f = DateFormatter()
-            f.dateFormat = "HH:mm:ss"
-            f.locale = Locale(identifier: "en_US_POSIX")
-            return f
+
+        // PostgreSQL time/timetz formats: "HH:mm:ss", "HH:mm:ss.SSSSSS", "HH:mm:ss+00", etc.
+        let timeFormatters: [DateFormatter] = {
+            let formats = ["HH:mm:ss", "HH:mm:ssxxx", "HH:mm:ssxx", "HH:mm:ssx"]
+            return formats.map { fmt in
+                let f = DateFormatter()
+                f.dateFormat = fmt
+                f.locale = Locale(identifier: "en_US_POSIX")
+                return f
+            }
         }()
+
         let iso8601WithFrac = ISO8601DateFormatter()
         iso8601WithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let iso8601 = ISO8601DateFormatter()
@@ -25,9 +31,28 @@ final class APIDCAService: DCAServiceProtocol {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let string = try container.decode(String.self)
-            if let d = timeFormatter.date(from: string) { return d }
+
+            // Strip fractional seconds from time-only strings (e.g. "12:00:00.000000" → "12:00:00")
+            // Also handles "12:00:00.000000+00" → "12:00:00+00"
+            let cleanedTime: String = {
+                // Match time-only pattern with optional fractional seconds and timezone
+                guard string.count <= 32, !string.contains("T") else { return string }
+                // Remove fractional part: everything between the 3rd colon group's digits and +/- or end
+                if let dotRange = string.range(of: #"\.\d+"#, options: .regularExpression) {
+                    return string.replacingCharacters(in: dotRange, with: "")
+                }
+                return string
+            }()
+
+            // Try time-only formats first (for notification_time column)
+            for formatter in timeFormatters {
+                if let d = formatter.date(from: cleanedTime) { return d }
+            }
+
+            // Try ISO 8601 formats (for created_at, start_date, next_reminder_date)
             if let d = iso8601WithFrac.date(from: string) { return d }
             if let d = iso8601.date(from: string) { return d }
+
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(string)")
         }
         return decoder
@@ -118,54 +143,20 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
-            // Insert without decoding the response — the `time` column (notification_time)
-            // returns with a timezone suffix on INSERT RETURNING that our decoder can't handle.
-            try await supabase.database
+            // Insert and get the server-created row back in one round trip.
+            // The dcaDecoder now handles all PostgreSQL time formats including
+            // timezone suffixes and fractional seconds.
+            let data = try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .insert(request)
-                .execute()
-
-            // Verify the insert by fetching the just-created reminder back.
-            // This uses a regular SELECT which returns the time column in a
-            // format our dcaDecoder can handle (HH:mm:ss without timezone).
-            let verifyData = try await supabase.database
-                .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
-                .eq("user_id", value: request.userId.uuidString)
-                .eq("symbol", value: request.symbol)
-                .eq("name", value: request.name)
-                .order("created_at", ascending: false)
-                .limit(1)
+                .single()
                 .execute()
                 .data
 
-            let verified = try Self.dcaDecoder.decode([DCAReminder].self, from: verifyData)
-
-            if let created = verified.first {
-                logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
-                return created
-            }
-
-            // Fallback: insert succeeded but verify fetch failed — construct locally
-            logWarning("DCA insert succeeded but verify fetch returned empty", category: .data)
-            let f = DateFormatter()
-            f.dateFormat = "HH:mm:ss"
-            f.locale = Locale(identifier: "en_US_POSIX")
-            let notifDate = f.date(from: request.notificationTime) ?? Date()
-
-            return DCAReminder(
-                userId: request.userId,
-                symbol: request.symbol,
-                name: request.name,
-                amount: request.amount,
-                frequency: DCAFrequency(rawValue: request.frequency) ?? .daily,
-                totalPurchases: request.totalPurchases,
-                completedPurchases: 0,
-                notificationTime: notifDate,
-                startDate: request.startDate,
-                nextReminderDate: request.nextReminderDate,
-                isActive: true
-            )
+            let created = try Self.dcaDecoder.decode(DCAReminder.self, from: data)
+            logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
+            return created
         } catch let error as AppError {
             throw error
         } catch {
