@@ -14,6 +14,24 @@ struct HomeView: View {
         (appState.darkModePreference == .automatic && colorScheme == .dark)
     }
 
+    /// Build notifications from today's DCA reminders
+    private var currentNotifications: [AppNotification] {
+        viewModel.todayReminders.map { reminder in
+            AppNotification(
+                icon: "dollarsign.arrow.circlepath",
+                iconColor: AppColors.accent,
+                title: "DCA Reminder: \(reminder.name)",
+                subtitle: "Time to invest \(reminder.amount.asCurrency) in \(reminder.symbol)",
+                time: reminder.notificationTime,
+                isRead: false
+            )
+        }
+    }
+
+    private var hasNotifications: Bool {
+        !currentNotifications.isEmpty
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack {
@@ -31,6 +49,7 @@ struct HomeView: View {
                             userName: appState.currentUser?.firstName ?? "User",
                             avatarUrl: appState.currentUser?.avatarUrl.flatMap { URL(string: $0) },
                             appState: appState,
+                            hasNotification: hasNotifications,
                             onCustomizeTap: { showCustomizeSheet = true },
                             onNotificationsTap: { showNotificationsSheet = true }
                         )
@@ -124,7 +143,7 @@ struct HomeView: View {
                 CustomizeHomeView()
             }
             .sheet(isPresented: $showNotificationsSheet) {
-                NotificationsSheet()
+                NotificationsSheet(notifications: currentNotifications)
             }
             .task {
                 async let portfolios: () = viewModel.loadPortfolios()

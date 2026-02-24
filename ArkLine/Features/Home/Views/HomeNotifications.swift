@@ -2,10 +2,10 @@ import SwiftUI
 
 // MARK: - Notifications Sheet
 struct NotificationsSheet: View {
+    let notifications: [AppNotification]
+
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
-
-    @State private var notifications: [AppNotification] = []
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)

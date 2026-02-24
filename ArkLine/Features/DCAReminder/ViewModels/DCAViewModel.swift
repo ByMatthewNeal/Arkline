@@ -1,6 +1,5 @@
 import SwiftUI
 import Foundation
-import UserNotifications
 
 // MARK: - DCA Tab Selection
 enum DCAViewTab: String, CaseIterable {
@@ -117,6 +116,9 @@ final class DCAViewModel {
                 self.riskBasedReminders = fetchedRiskBased
                 self.isLoading = false
             }
+
+            // Sync DCA notifications (clears stale ones, schedules active ones)
+            await DCANotificationScheduler.syncAll(fetchedReminders)
 
             // Cache risk levels for all risk-based reminders
             await refreshRiskLevels()
@@ -240,9 +242,7 @@ final class DCAViewModel {
         do {
             try await dcaService.deleteReminder(id: reminder.id)
 
-            UNUserNotificationCenter.current().removePendingNotificationRequests(
-                withIdentifiers: ["dca_reminder_\(reminder.id.uuidString)"]
-            )
+            DCANotificationScheduler.cancel(reminder.id)
 
             await MainActor.run {
                 self.reminders.removeAll { $0.id == reminder.id }
@@ -259,10 +259,10 @@ final class DCAViewModel {
         updatedReminder.isActive.toggle()
         await updateReminder(updatedReminder)
 
-        if !updatedReminder.isActive {
-            UNUserNotificationCenter.current().removePendingNotificationRequests(
-                withIdentifiers: ["dca_reminder_\(reminder.id.uuidString)"]
-            )
+        if updatedReminder.isActive {
+            await DCANotificationScheduler.schedule(updatedReminder)
+        } else {
+            DCANotificationScheduler.cancel(reminder.id)
         }
     }
 
@@ -275,6 +275,11 @@ final class DCAViewModel {
                     self.reminders[index].completedPurchases += 1
                     self.reminders[index].nextReminderDate = self.calculateNextDate(for: self.reminders[index])
                 }
+            }
+
+            // Re-schedule notification for the next DCA date
+            if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
+                await DCANotificationScheduler.schedule(reminders[index])
             }
         } catch {
             await MainActor.run {
@@ -291,6 +296,11 @@ final class DCAViewModel {
                 if let index = self.reminders.firstIndex(where: { $0.id == reminder.id }) {
                     self.reminders[index].nextReminderDate = self.calculateNextDate(for: self.reminders[index])
                 }
+            }
+
+            // Re-schedule notification for the next DCA date
+            if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
+                await DCANotificationScheduler.schedule(reminders[index])
             }
         } catch {
             await MainActor.run {

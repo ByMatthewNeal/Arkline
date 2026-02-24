@@ -549,6 +549,10 @@ class HomeViewModel {
             }
             self.activeReminders = reminders.filter { $0.isActive }
             self.todayReminders = reminders.filter { $0.isDueToday }
+            // Sync DCA notifications on home refresh (app launch)
+            if self.enableSideEffects {
+                Task { await DCANotificationScheduler.syncAll(reminders) }
+            }
             if let riskScore = riskScore {
                 self.compositeRiskScore = riskScore.score
                 self.arkLineRiskScore = riskScore
@@ -603,6 +607,11 @@ class HomeViewModel {
                 if let index = self.todayReminders.firstIndex(where: { $0.id == reminder.id }) {
                     self.todayReminders.remove(at: index)
                 }
+            }
+
+            // Re-schedule notification for the next DCA date
+            if let index = activeReminders.firstIndex(where: { $0.id == reminder.id }) {
+                await DCANotificationScheduler.schedule(activeReminders[index])
             }
         } catch {
             await MainActor.run {

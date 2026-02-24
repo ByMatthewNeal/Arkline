@@ -7,6 +7,7 @@ struct GlassHeader: View {
     let userName: String
     let avatarUrl: URL?
     @ObservedObject var appState: AppState
+    var hasNotification: Bool = false
     var onCustomizeTap: (() -> Void)? = nil
     var onNotificationsTap: (() -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
@@ -52,7 +53,7 @@ struct GlassHeader: View {
                     HeaderIconButton(icon: "slider.horizontal.3", action: onCustomizeTap)
                 }
 
-                HeaderIconButton(icon: "bell", hasNotification: true, action: {
+                HeaderIconButton(icon: "bell", hasNotification: hasNotification, action: {
                     onNotificationsTap?()
                 })
             }

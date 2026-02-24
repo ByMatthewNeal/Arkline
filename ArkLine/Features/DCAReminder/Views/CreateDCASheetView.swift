@@ -552,43 +552,7 @@ struct CreateDCASheetView: View {
     }
 
     private func scheduleDCANotification(for reminder: DCAReminder) async {
-        let center = UNUserNotificationCenter.current()
-
-        // Request permission if needed
-        let settings = await center.notificationSettings()
-        if settings.authorizationStatus == .notDetermined {
-            _ = try? await center.requestAuthorization(options: [.alert, .badge, .sound])
-        }
-
-        guard await center.notificationSettings().authorizationStatus == .authorized else { return }
-
-        let content = UNMutableNotificationContent()
-        content.title = "DCA Reminder: \(reminder.name)"
-        content.body = "Time to invest \(reminder.amount.asCurrency) in \(reminder.symbol)"
-        content.sound = .default
-        content.categoryIdentifier = "DCA_REMINDER"
-        content.userInfo = [
-            "type": "dca_reminder",
-            "reminder_id": reminder.id.uuidString,
-            "symbol": reminder.symbol
-        ]
-
-        // Build trigger from the user's chosen notification time
-        let timeComponents = Calendar.current.dateComponents([.hour, .minute], from: reminder.notificationTime)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: timeComponents, repeats: true)
-
-        let request = UNNotificationRequest(
-            identifier: "dca_reminder_\(reminder.id.uuidString)",
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await center.add(request)
-            logInfo("Scheduled DCA notification for \(reminder.name) at \(timeComponents.hour ?? 0):\(timeComponents.minute ?? 0)", category: .data)
-        } catch {
-            logError("Failed to schedule DCA notification: \(error)", category: .data)
-        }
+        await DCANotificationScheduler.schedule(reminder)
     }
 }
 
