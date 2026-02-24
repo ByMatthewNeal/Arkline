@@ -118,19 +118,54 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
-            // Insert and select back using our custom decoder that handles the
-            // `time` column format (HH:mm:ss) alongside ISO 8601 timestamps.
-            let data = try await supabase.database
+            // Insert without decoding the response — the `time` column (notification_time)
+            // returns with a timezone suffix on INSERT RETURNING that our decoder can't handle.
+            try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
                 .insert(request)
+                .execute()
+
+            // Verify the insert by fetching the just-created reminder back.
+            // This uses a regular SELECT which returns the time column in a
+            // format our dcaDecoder can handle (HH:mm:ss without timezone).
+            let verifyData = try await supabase.database
+                .from(SupabaseTable.dcaReminders.rawValue)
                 .select()
-                .single()
+                .eq("user_id", value: request.userId.uuidString)
+                .eq("symbol", value: request.symbol)
+                .eq("name", value: request.name)
+                .order("created_at", ascending: false)
+                .limit(1)
                 .execute()
                 .data
 
-            let created = try Self.dcaDecoder.decode(DCAReminder.self, from: data)
-            logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
-            return created
+            let verified = try Self.dcaDecoder.decode([DCAReminder].self, from: verifyData)
+
+            if let created = verified.first {
+                logInfo("Created DCA reminder: \(created.name) (id: \(created.id))", category: .data)
+                return created
+            }
+
+            // Fallback: insert succeeded but verify fetch failed — construct locally
+            logWarning("DCA insert succeeded but verify fetch returned empty", category: .data)
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            f.locale = Locale(identifier: "en_US_POSIX")
+            let notifDate = f.date(from: request.notificationTime) ?? Date()
+
+            return DCAReminder(
+                userId: request.userId,
+                symbol: request.symbol,
+                name: request.name,
+                amount: request.amount,
+                frequency: DCAFrequency(rawValue: request.frequency) ?? .daily,
+                totalPurchases: request.totalPurchases,
+                completedPurchases: 0,
+                notificationTime: notifDate,
+                startDate: request.startDate,
+                nextReminderDate: request.nextReminderDate,
+                isActive: true
+            )
         } catch let error as AppError {
             throw error
         } catch {
