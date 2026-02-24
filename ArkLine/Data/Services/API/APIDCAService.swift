@@ -224,9 +224,16 @@ final class APIDCAService: DCAServiceProtocol {
         }
 
         do {
+            // Use partial update to avoid time/date encoding issues
+            let patch = DCAUpdatePatch(
+                frequency: reminder.frequency.rawValue,
+                notificationTime: Self.timeOnlyString(from: reminder.notificationTime),
+                isActive: reminder.isActive,
+                nextReminderDate: reminder.nextReminderDate.map { Self.dateOnlyString(from: $0) }
+            )
             try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
-                .update(reminder)
+                .update(patch)
                 .eq("id", value: reminder.id.uuidString)
                 .execute()
 
@@ -276,29 +283,24 @@ final class APIDCAService: DCAServiceProtocol {
                 throw AppError.dataNotFound
             }
 
-            // 2. Update reminder
-            reminder = DCAReminder(
-                id: reminder.id,
-                userId: reminder.userId,
-                symbol: reminder.symbol,
-                name: reminder.name,
-                amount: reminder.amount,
-                frequency: reminder.frequency,
-                totalPurchases: reminder.totalPurchases,
-                completedPurchases: reminder.completedPurchases + 1,
-                notificationTime: reminder.notificationTime,
-                startDate: reminder.startDate,
-                nextReminderDate: calculateNextDate(from: reminder.nextReminderDate ?? Date(), frequency: reminder.frequency),
-                isActive: reminder.isActive,
-                createdAt: reminder.createdAt
-            )
+            // 2. Calculate new values
+            let newCompleted = reminder.completedPurchases + 1
+            let newNextDate = calculateNextDate(from: reminder.nextReminderDate ?? Date(), frequency: reminder.frequency)
 
-            // 3. Save updated reminder
+            // 3. Partial update — only send changed columns to avoid time encoding issue
+            let patch = DCAInvestPatch(
+                completedPurchases: newCompleted,
+                nextReminderDate: Self.dateOnlyString(from: newNextDate)
+            )
             try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
-                .update(reminder)
+                .update(patch)
                 .eq("id", value: id.uuidString)
                 .execute()
+
+            // 4. Return updated local model
+            reminder.completedPurchases = newCompleted
+            reminder.nextReminderDate = newNextDate
 
             logInfo("Marked DCA reminder as invested: \(reminder.name)", category: .data)
             return reminder
@@ -330,28 +332,20 @@ final class APIDCAService: DCAServiceProtocol {
             }
 
             // 2. Calculate next date without incrementing completed purchases
-            reminder = DCAReminder(
-                id: reminder.id,
-                userId: reminder.userId,
-                symbol: reminder.symbol,
-                name: reminder.name,
-                amount: reminder.amount,
-                frequency: reminder.frequency,
-                totalPurchases: reminder.totalPurchases,
-                completedPurchases: reminder.completedPurchases,
-                notificationTime: reminder.notificationTime,
-                startDate: reminder.startDate,
-                nextReminderDate: calculateNextDate(from: reminder.nextReminderDate ?? Date(), frequency: reminder.frequency),
-                isActive: reminder.isActive,
-                createdAt: reminder.createdAt
-            )
+            let newNextDate = calculateNextDate(from: reminder.nextReminderDate ?? Date(), frequency: reminder.frequency)
 
-            // 3. Save updated reminder
+            // 3. Partial update — only send next_reminder_date
+            let patch = DCASkipPatch(
+                nextReminderDate: Self.dateOnlyString(from: newNextDate)
+            )
             try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
-                .update(reminder)
+                .update(patch)
                 .eq("id", value: id.uuidString)
                 .execute()
+
+            // 4. Return updated local model
+            reminder.nextReminderDate = newNextDate
 
             logInfo("Skipped DCA reminder: \(reminder.name)", category: .data)
             return reminder
@@ -383,29 +377,17 @@ final class APIDCAService: DCAServiceProtocol {
             }
 
             // 2. Toggle active state
-            reminder = DCAReminder(
-                id: reminder.id,
-                userId: reminder.userId,
-                symbol: reminder.symbol,
-                name: reminder.name,
-                amount: reminder.amount,
-                frequency: reminder.frequency,
-                totalPurchases: reminder.totalPurchases,
-                completedPurchases: reminder.completedPurchases,
-                notificationTime: reminder.notificationTime,
-                startDate: reminder.startDate,
-                nextReminderDate: reminder.nextReminderDate,
-                isActive: !reminder.isActive,
-                createdAt: reminder.createdAt
-            )
+            let newActive = !reminder.isActive
 
-            // 3. Save updated reminder
+            // 3. Partial update — only send is_active
+            let patch = DCATogglePatch(isActive: newActive)
             try await supabase.database
                 .from(SupabaseTable.dcaReminders.rawValue)
-                .update(reminder)
+                .update(patch)
                 .eq("id", value: id.uuidString)
                 .execute()
 
+            reminder.isActive = newActive
             logInfo("Toggled DCA reminder: \(reminder.name) - active: \(reminder.isActive)", category: .data)
             return reminder
         } catch let error as AppError {
@@ -862,5 +844,66 @@ final class APIDCAService: DCAServiceProtocol {
         case .monthly:
             return calendar.date(byAdding: .month, value: 1, to: current) ?? current
         }
+    }
+
+    // MARK: - Date/Time String Helpers
+
+    /// Formats a Date as "yyyy-MM-dd" for PostgreSQL date columns
+    static func dateOnlyString(from date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f.string(from: date)
+    }
+
+    /// Formats a Date as "HH:mm:ss" for PostgreSQL time columns
+    static func timeOnlyString(from date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f.string(from: date)
+    }
+}
+
+// MARK: - Partial Update Structs (avoid encoding full model with incompatible date types)
+
+private struct DCAInvestPatch: Encodable {
+    let completedPurchases: Int
+    let nextReminderDate: String
+
+    enum CodingKeys: String, CodingKey {
+        case completedPurchases = "completed_purchases"
+        case nextReminderDate = "next_reminder_date"
+    }
+}
+
+private struct DCASkipPatch: Encodable {
+    let nextReminderDate: String
+
+    enum CodingKeys: String, CodingKey {
+        case nextReminderDate = "next_reminder_date"
+    }
+}
+
+private struct DCATogglePatch: Encodable {
+    let isActive: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case isActive = "is_active"
+    }
+}
+
+private struct DCAUpdatePatch: Encodable {
+    let frequency: String
+    let notificationTime: String
+    let isActive: Bool
+    let nextReminderDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case frequency
+        case notificationTime = "notification_time"
+        case isActive = "is_active"
+        case nextReminderDate = "next_reminder_date"
     }
 }
