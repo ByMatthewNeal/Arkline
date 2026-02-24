@@ -131,12 +131,13 @@ struct MacroDashboardWidget: View {
         return (AppColors.error, "Bearish")
     }
 
-    /// DXY → crypto (inverse): weak dollar = bullish for crypto
+    /// DXY → crypto (inverse): weak dollar environment = bullish for crypto
+    /// Uses absolute level rather than daily change for investing relevance
     private var dxyCryptoSignal: (color: Color, label: String) {
-        guard let change = dxyData?.changePercent else { return (.secondary, "--") }
-        if change < -0.3 { return (AppColors.success, "Bullish") }
-        if change > 0.3 { return (AppColors.error, "Bearish") }
-        return (AppColors.warning, "Neutral")
+        guard let dxy = dxyData?.value else { return (.secondary, "--") }
+        if dxy < 100 { return (AppColors.success, "Bullish") }
+        if dxy < 105 { return (AppColors.warning, "Neutral") }
+        return (AppColors.error, "Bearish")
     }
 
     /// M2 → crypto (positive): expanding liquidity = bullish for crypto

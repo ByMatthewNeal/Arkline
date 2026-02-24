@@ -119,8 +119,8 @@ struct PreciousMetalCard: View {
     private var isPositive: Bool { metal.priceChangePercentage24h >= 0 }
 
     private var priceSignal: (color: Color, label: String) {
-        if metal.priceChangePercentage24h > 1.0 { return (AppColors.success, "Bullish") }
-        if metal.priceChangePercentage24h < -1.0 { return (AppColors.error, "Bearish") }
+        if metal.priceChangePercentage24h > 2.0 { return (AppColors.success, "Bullish") }
+        if metal.priceChangePercentage24h < -2.0 { return (AppColors.error, "Bearish") }
         return (AppColors.warning, "Neutral")
     }
 
