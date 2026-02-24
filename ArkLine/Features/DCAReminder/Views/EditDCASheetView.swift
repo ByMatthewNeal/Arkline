@@ -211,8 +211,10 @@ struct EditDCASheetView: View {
                 .foregroundColor(textPrimary.opacity(0.6))
 
             DatePicker("", selection: $notificationTime, displayedComponents: .hourAndMinute)
+                .datePickerStyle(.wheel)
                 .labelsHidden()
-                .padding(10)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
                         .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))

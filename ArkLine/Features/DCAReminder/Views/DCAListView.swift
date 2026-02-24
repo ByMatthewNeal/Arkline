@@ -38,7 +38,6 @@ struct DCAListView: View {
                                 reminder: reminder,
                                 riskLevel: viewModel.riskLevel(for: reminder.symbol),
                                 onEdit: { viewModel.editingReminder = reminder },
-                                onViewHistory: { viewModel.selectedReminder = reminder },
                                 onMarkInvested: {
                                     Task { await viewModel.markAsInvested(reminder) }
                                 }
@@ -83,8 +82,7 @@ struct DCAListView: View {
                                 DCAUnifiedCard(
                                     reminder: reminder,
                                     riskLevel: viewModel.riskLevel(for: reminder.symbol),
-                                    onEdit: { viewModel.editingReminder = reminder },
-                                    onViewHistory: { viewModel.selectedReminder = reminder }
+                                    onEdit: { viewModel.editingReminder = reminder }
                                 )
                                 .opacity(0.7)
                             }
@@ -158,9 +156,6 @@ struct DCAListView: View {
         }
         .sheet(item: $viewModel.editingReminder) { reminder in
             EditDCASheetView(reminder: reminder, viewModel: viewModel)
-        }
-        .sheet(item: $viewModel.selectedReminder) { reminder in
-            InvestmentHistorySheetView(reminder: reminder, viewModel: viewModel)
         }
         .onAppear {
             Task { await viewModel.refresh() }

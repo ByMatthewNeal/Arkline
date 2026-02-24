@@ -17,7 +17,6 @@ final class DCAViewModel {
     // MARK: - State
     var reminders: [DCAReminder] = []
     var riskBasedReminders: [RiskBasedDCAReminder] = []
-    var selectedReminder: DCAReminder?
     var selectedRiskBasedReminder: RiskBasedDCAReminder?
     var isLoading = false
     var error: AppError?

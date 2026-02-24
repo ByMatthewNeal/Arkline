@@ -6,7 +6,6 @@ struct DCAUnifiedCard: View {
     let reminder: DCAReminder
     let riskLevel: AssetRiskLevel?
     let onEdit: () -> Void
-    let onViewHistory: () -> Void
     var onMarkInvested: (() -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
 
@@ -67,17 +66,17 @@ struct DCAUnifiedCard: View {
                 if let onMarkInvested, isDue {
                     Button(action: onMarkInvested) {
                         HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill")
+                            Image(systemName: "dollarsign.arrow.circlepath")
                                 .font(.system(size: 14, weight: .medium))
-                            Text("Invested")
+                            Text("Mark Invested")
                                 .font(.system(size: 14, weight: .medium))
                         }
-                        .foregroundColor(AppColors.success)
+                        .foregroundColor(AppColors.accent)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(AppColors.success.opacity(0.15))
+                                .fill(AppColors.accent.opacity(0.15))
                         )
                     }
                 }
@@ -92,19 +91,6 @@ struct DCAUnifiedCard: View {
                         .background(
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
-                        )
-                }
-
-                // View History button
-                Button(action: onViewHistory) {
-                    Text("History")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AppColors.accent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(AppColors.accent.opacity(0.15))
                         )
                 }
             }
