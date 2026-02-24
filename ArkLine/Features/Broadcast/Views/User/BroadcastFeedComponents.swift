@@ -63,6 +63,22 @@ struct BroadcastCardView: View {
                     .foregroundColor(AppColors.textSecondary)
                     .lineLimit(3)
 
+                // Tags
+                if !broadcast.tags.isEmpty {
+                    HStack(spacing: ArkSpacing.xxs) {
+                        ForEach(broadcast.tags, id: \.self) { tag in
+                            let color = BroadcastTag(rawValue: tag)?.color ?? AppColors.accent
+                            Text("#\(tag)")
+                                .font(ArkFonts.caption)
+                                .foregroundColor(color)
+                                .padding(.horizontal, ArkSpacing.xs)
+                                .padding(.vertical, 2)
+                                .background(color.opacity(0.1))
+                                .cornerRadius(ArkSpacing.xxs)
+                        }
+                    }
+                }
+
                 // App References
                 if !broadcast.appReferences.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -122,6 +138,21 @@ struct BroadcastDetailView: View {
                         Text(broadcast.title)
                             .font(ArkFonts.title2)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        if !broadcast.tags.isEmpty {
+                            HStack(spacing: ArkSpacing.xxs) {
+                                ForEach(broadcast.tags, id: \.self) { tag in
+                                    let color = BroadcastTag(rawValue: tag)?.color ?? AppColors.accent
+                                    Text("#\(tag)")
+                                        .font(ArkFonts.caption)
+                                        .foregroundColor(color)
+                                        .padding(.horizontal, ArkSpacing.xs)
+                                        .padding(.vertical, 2)
+                                        .background(color.opacity(0.1))
+                                        .cornerRadius(ArkSpacing.xxs)
+                                }
+                            }
+                        }
                     }
 
                     // Audio Player (placeholder)
