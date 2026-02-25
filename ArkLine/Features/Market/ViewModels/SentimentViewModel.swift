@@ -535,13 +535,52 @@ class SentimentViewModel {
 
     func fetchGoogleTrendsHistory(limit: Int = 30) async {
         do {
-            let history = try await SupabaseDatabase.shared.getGoogleTrendsHistory(limit: limit)
+            var history = try await SupabaseDatabase.shared.getGoogleTrendsHistory(limit: limit)
+
+            // Backfill any records missing BTC price
+            if history.contains(where: { $0.btcPrice == nil }) {
+                history = await backfillMissingTrendsBTCPrices(in: history)
+            }
+
             await MainActor.run {
                 self.googleTrendsHistory = history
             }
         } catch {
             // Silently fail for history - not critical
         }
+    }
+
+    /// Fetch BTC price history and fill in any Google Trends records with missing prices
+    private func backfillMissingTrendsBTCPrices(in trends: [GoogleTrendsDTO]) async -> [GoogleTrendsDTO] {
+        let priceMap: [String: Double]
+        do {
+            let endpoint = CoinGeckoEndpoint.coinMarketChart(id: "bitcoin", currency: "usd", days: 365)
+            let chart: CoinGeckoMarketChart = try await NetworkManager.shared.request(endpoint)
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "UTC")
+
+            var map: [String: Double] = [:]
+            for point in chart.prices where point.count >= 2 {
+                let date = Date(timeIntervalSince1970: point[0] / 1000)
+                map[formatter.string(from: date)] = point[1]
+            }
+            priceMap = map
+        } catch {
+            return trends
+        }
+
+        var updated = trends
+        for i in updated.indices where updated[i].btcPrice == nil {
+            if let price = priceMap[updated[i].recordedDate] {
+                Task {
+                    try? await SupabaseDatabase.shared.updateTrendsBTCPrice(id: updated[i].id, btcPrice: price)
+                }
+                updated[i] = GoogleTrendsDTO(original: updated[i], btcPrice: price)
+            }
+        }
+        return updated
     }
 
     /// Fetches BTC volume data and computes the sentiment regime quadrant

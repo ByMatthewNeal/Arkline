@@ -351,6 +351,16 @@ extension SupabaseDatabase {
             .execute()
             .value
     }
+
+    func updateTrendsBTCPrice(id: UUID, btcPrice: Double) async throws {
+        guard SupabaseManager.shared.isConfigured else { return }
+        let client = SupabaseManager.shared.client
+        try await client
+            .from(SupabaseTable.googleTrendsHistory.rawValue)
+            .update(["btc_price": btcPrice])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
 }
 
 // MARK: - DTO Types for Database
@@ -517,6 +527,15 @@ struct GoogleTrendsDTO: Codable {
         formatter.dateFormat = "yyyy-MM-dd"
         self.recordedDate = formatter.string(from: date)
         self.createdAt = Date()
+    }
+
+    // Copy with backfilled BTC price
+    init(original: GoogleTrendsDTO, btcPrice: Double) {
+        self.id = original.id
+        self.searchIndex = original.searchIndex
+        self.btcPrice = btcPrice
+        self.recordedDate = original.recordedDate
+        self.createdAt = original.createdAt
     }
 
     // For decoding from database
