@@ -159,8 +159,8 @@ final class BroadcastTagTests: XCTestCase {
         XCTAssertNil(BroadcastTag(rawValue: "MACRO")) // case-sensitive
     }
 
-    func test_allCases_contains12Tags() {
-        XCTAssertEqual(BroadcastTag.allCases.count, 12)
+    func test_allCases_containsExpectedTags() {
+        XCTAssertEqual(BroadcastTag.allCases.count, 14)
     }
 }
 
