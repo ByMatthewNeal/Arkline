@@ -40,6 +40,14 @@ struct BroadcastAnalyticsView: View {
                     }
                 }
             }
+            .task {
+                await viewModel.loadAnalytics(periodDays: selectedPeriod.days)
+            }
+            .onChange(of: selectedPeriod) { _, newPeriod in
+                Task {
+                    await viewModel.loadAnalytics(periodDays: newPeriod.days)
+                }
+            }
         }
     }
 
@@ -72,31 +80,33 @@ struct BroadcastAnalyticsView: View {
                 .font(ArkFonts.subheadline)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
+            let summary = viewModel.analyticsSummary
+
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: ArkSpacing.sm) {
                 AnalyticsStatCard(
                     title: "Total Broadcasts",
-                    value: "\(viewModel.published.count + viewModel.drafts.count)",
+                    value: "\(summary?.totalBroadcasts ?? viewModel.published.count)",
                     icon: "antenna.radiowaves.left.and.right",
                     color: AppColors.accent
                 )
 
                 AnalyticsStatCard(
-                    title: "Published",
-                    value: "\(viewModel.published.count)",
-                    icon: "checkmark.circle",
+                    title: "Total Views",
+                    value: "\(summary?.totalViews ?? 0)",
+                    icon: "eye.fill",
                     color: AppColors.success
                 )
 
                 AnalyticsStatCard(
                     title: "Total Reactions",
-                    value: "\(totalReactions)",
+                    value: "\(summary?.totalReactions ?? totalReactions)",
                     icon: "heart.fill",
                     color: AppColors.error
                 )
 
                 AnalyticsStatCard(
-                    title: "Avg Reactions",
-                    value: String(format: "%.1f", avgReactionsPerBroadcast),
+                    title: "Avg Views",
+                    value: String(format: "%.1f", summary?.avgViewsPerBroadcast ?? 0),
                     icon: "chart.bar.fill",
                     color: AppColors.warning
                 )
@@ -147,7 +157,7 @@ struct BroadcastAnalyticsView: View {
                     }
                 }
 
-                Text("\(totalReactions) total reactions across \(viewModel.published.count) broadcasts")
+                Text("\(viewModel.analyticsSummary?.totalReactions ?? totalReactions) total reactions across \(viewModel.analyticsSummary?.totalBroadcasts ?? viewModel.published.count) broadcasts")
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -206,7 +216,7 @@ struct BroadcastAnalyticsView: View {
 
     private var topBroadcasts: [Broadcast] {
         viewModel.published
-            .sorted { ($0.reactionCount ?? 0) > ($1.reactionCount ?? 0) }
+            .sorted { ($0.viewCount ?? 0) > ($1.viewCount ?? 0) }
             .prefix(5)
             .map { $0 }
     }
@@ -234,6 +244,16 @@ enum AnalyticsPeriod: String, CaseIterable {
     case allTime = "All"
 
     var displayName: String { rawValue }
+
+    var days: Int {
+        switch self {
+        case .week: return 7
+        case .month: return 30
+        case .quarter: return 90
+        case .year: return 365
+        case .allTime: return 0
+        }
+    }
 }
 
 // MARK: - Analytics Stat Card
@@ -297,12 +317,12 @@ private struct TopBroadcastRow: View {
 
             Spacer()
 
-            // Reaction count
+            // View count
             HStack(spacing: 4) {
-                Image(systemName: "heart.fill")
+                Image(systemName: "eye.fill")
                     .font(.caption)
-                    .foregroundColor(AppColors.error)
-                Text("\(broadcast.reactionCount ?? 0)")
+                    .foregroundColor(AppColors.success)
+                Text("\(broadcast.viewCount ?? 0)")
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
             }

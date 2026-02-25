@@ -77,6 +77,15 @@ struct ArkLineApp: App {
                     userInfo: ["code": code]
                 )
             }
+        } else if url.host == "broadcast" {
+            // Handle broadcast deep link: arkline://broadcast?id=UUID
+            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let id = components.queryItems?.first(where: { $0.name == "id" })?.value {
+                await MainActor.run {
+                    appState.selectedTab = .insights
+                    appState.pendingBroadcastId = id
+                }
+            }
         } else if url.host == "auth" || url.path.contains("callback") {
             // Handle Supabase auth callback
             do {
@@ -186,6 +195,9 @@ class AppState: ObservableObject {
 
     // All users get full access (invite-only app, no subscription)
     var isPro: Bool { true }
+
+    // Deep link pending broadcast (from notification tap or URL scheme)
+    @Published var pendingBroadcastId: String?
 
     // Tab navigation
     @Published var selectedTab: AppTab = .home

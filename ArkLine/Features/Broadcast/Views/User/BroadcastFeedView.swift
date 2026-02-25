@@ -203,6 +203,30 @@ struct BroadcastFeedView: View {
                     scrollProxy.scrollTo("scrollTop", anchor: .top)
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BroadcastNotificationTapped"))) { notification in
+                if let id = notification.userInfo?["id"] as? String {
+                    appState.selectedTab = .insights
+                    if let broadcast = viewModel.published.first(where: { $0.id.uuidString == id }) {
+                        selectedBroadcast = broadcast
+                    } else {
+                        appState.pendingBroadcastId = id
+                    }
+                }
+            }
+            .onChange(of: appState.pendingBroadcastId) { _, newId in
+                guard let id = newId else { return }
+                if let broadcast = viewModel.published.first(where: { $0.id.uuidString == id }) {
+                    selectedBroadcast = broadcast
+                    appState.pendingBroadcastId = nil
+                }
+            }
+            .onChange(of: viewModel.published) { _, _ in
+                if let id = appState.pendingBroadcastId,
+                   let broadcast = viewModel.published.first(where: { $0.id.uuidString == id }) {
+                    selectedBroadcast = broadcast
+                    appState.pendingBroadcastId = nil
+                }
+            }
             } // ScrollViewReader
     }
 

@@ -81,6 +81,13 @@ protocol BroadcastServiceProtocol {
     /// - Parameter broadcastId: The broadcast ID
     func incrementViewCount(broadcastId: UUID) async throws
 
+    // MARK: - Analytics
+
+    /// Fetches aggregated analytics summary for a given period
+    /// - Parameter periodDays: Number of days to look back (0 = all time)
+    /// - Returns: BroadcastAnalyticsSummary with totals
+    func fetchAnalyticsSummary(periodDays: Int) async throws -> BroadcastAnalyticsSummary
+
     // MARK: - File Upload
 
     /// Uploads an audio file for a broadcast

@@ -264,6 +264,19 @@ final class BroadcastService: BroadcastServiceProtocol {
             .execute()
     }
 
+    // MARK: - Analytics
+
+    func fetchAnalyticsSummary(periodDays: Int) async throws -> BroadcastAnalyticsSummary {
+        guard supabase.isConfigured else {
+            throw AppError.supabaseNotConfigured
+        }
+
+        return try await supabase.database
+            .rpc("get_broadcast_analytics", params: ["period_days": periodDays])
+            .execute()
+            .value
+    }
+
     // MARK: - File Upload
 
     func uploadAudio(data: Data, for broadcastId: UUID) async throws -> URL {
@@ -318,8 +331,14 @@ final class BroadcastService: BroadcastServiceProtocol {
             throw AppError.supabaseNotConfigured
         }
 
-        // Extract path from URL
-        let path = url.lastPathComponent
+        // Storage paths are "{broadcastId}/{filename}" — need both components
+        let components = url.pathComponents
+        let path: String
+        if components.count >= 2 {
+            path = components.suffix(2).joined(separator: "/")
+        } else {
+            path = url.lastPathComponent
+        }
         try await supabase.storage
             .from(SupabaseBucket.broadcastMedia.rawValue)
             .remove(paths: [path])

@@ -51,6 +51,20 @@ fileprivate final class MockBroadcastService: BroadcastServiceProtocol {
     func unreadCount(for userId: UUID) async throws -> Int { unreadCountValue }
     func incrementViewCount(broadcastId: UUID) async throws {}
 
+    func fetchAnalyticsSummary(periodDays: Int) async throws -> BroadcastAnalyticsSummary {
+        BroadcastAnalyticsSummary(
+            totalBroadcasts: broadcasts.count,
+            totalViews: 0,
+            totalReactions: 0,
+            avgViewsPerBroadcast: 0,
+            avgReactionsPerBroadcast: 0,
+            topPerformingBroadcastId: nil,
+            mostUsedReaction: nil,
+            periodStart: Date(),
+            periodEnd: Date()
+        )
+    }
+
     func uploadAudio(data: Data, for broadcastId: UUID) async throws -> URL { URL(string: "https://example.com/audio.mp3")! }
     func uploadImage(data: Data, for broadcastId: UUID) async throws -> URL { URL(string: "https://example.com/image.png")! }
     func deleteFile(at url: URL) async throws {}

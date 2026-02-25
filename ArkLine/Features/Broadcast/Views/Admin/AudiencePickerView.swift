@@ -12,6 +12,8 @@ struct AudiencePickerView: View {
 
     @State private var selectedOption: AudienceOption = .all
     @State private var selectedUserIds: [UUID] = []
+    @State private var userNames: [UUID: String] = [:]
+    @State private var showingUserSearch = false
 
     private enum AudienceOption: String, CaseIterable {
         case all
@@ -82,12 +84,13 @@ struct AudiencePickerView: View {
                                 HStack {
                                     Image(systemName: "person.circle.fill")
                                         .foregroundColor(AppColors.accent)
-                                    Text(userId.uuidString.prefix(8) + "...")
+                                    Text(userNames[userId] ?? String(userId.uuidString.prefix(8)) + "...")
                                         .font(ArkFonts.body)
                                         .foregroundColor(AppColors.textPrimary(colorScheme))
                                     Spacer()
                                     Button {
                                         selectedUserIds.removeAll { $0 == userId }
+                                        userNames.removeValue(forKey: userId)
                                     } label: {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundColor(AppColors.textTertiary)
@@ -98,7 +101,7 @@ struct AudiencePickerView: View {
                         }
 
                         Button {
-                            // User search/picker — future feature
+                            showingUserSearch = true
                         } label: {
                             HStack {
                                 Image(systemName: "plus.circle.fill")
@@ -110,9 +113,6 @@ struct AudiencePickerView: View {
                         }
                     } header: {
                         Text("Selected Users (\(selectedUserIds.count))")
-                    } footer: {
-                        Text("User selection will be available in a future update. For now, use 'All Users' or 'Premium Only'.")
-                            .foregroundColor(AppColors.warning)
                     }
                 }
 
@@ -142,6 +142,12 @@ struct AudiencePickerView: View {
             }
             .onAppear {
                 loadCurrentSelection()
+            }
+            .sheet(isPresented: $showingUserSearch) {
+                UserSearchSheet(
+                    selectedUserIds: $selectedUserIds,
+                    userNames: $userNames
+                )
             }
         }
     }
@@ -245,6 +251,163 @@ struct AudiencePickerView: View {
         case .specific:
             targetAudience = .specific(userIds: selectedUserIds)
         }
+    }
+}
+
+// MARK: - User Search Sheet
+
+private struct UserSearchSheet: View {
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) var dismiss
+
+    @Binding var selectedUserIds: [UUID]
+    @Binding var userNames: [UUID: String]
+
+    @State private var searchText = ""
+    @State private var searchResults: [AdminMember] = []
+    @State private var isSearching = false
+
+    private let adminService = AdminService()
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Search bar
+                HStack(spacing: ArkSpacing.xs) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(AppColors.textSecondary)
+                    TextField("Search by name or email...", text: $searchText)
+                        .font(ArkFonts.body)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                            searchResults = []
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(AppColors.textTertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, ArkSpacing.md)
+                .padding(.vertical, ArkSpacing.sm)
+                .background(AppColors.cardBackground(colorScheme))
+
+                Divider()
+
+                // Results
+                if isSearching {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                } else if searchResults.isEmpty && !searchText.isEmpty {
+                    Spacer()
+                    VStack(spacing: ArkSpacing.sm) {
+                        Image(systemName: "person.slash")
+                            .font(.largeTitle)
+                            .foregroundColor(AppColors.textTertiary)
+                        Text("No users found")
+                            .font(ArkFonts.body)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    Spacer()
+                } else if searchResults.isEmpty {
+                    Spacer()
+                    VStack(spacing: ArkSpacing.sm) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.largeTitle)
+                            .foregroundColor(AppColors.textTertiary)
+                        Text("Search for users to add")
+                            .font(ArkFonts.body)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    Spacer()
+                } else {
+                    List(searchResults) { member in
+                        memberRow(member)
+                    }
+                    .listStyle(.plain)
+                }
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Add Users")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .onChange(of: searchText) { _, newValue in
+                Task {
+                    await search(query: newValue)
+                }
+            }
+        }
+    }
+
+    private func memberRow(_ member: AdminMember) -> some View {
+        let isSelected = selectedUserIds.contains(member.id)
+        return HStack(spacing: ArkSpacing.md) {
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(AppColors.accent.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Text(member.initials)
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.accent)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(member.displayName)
+                    .font(ArkFonts.body)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                Text(member.email)
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(AppColors.success)
+            } else {
+                Button {
+                    selectedUserIds.append(member.id)
+                    userNames[member.id] = member.displayName
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .foregroundColor(AppColors.accent)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.vertical, ArkSpacing.xxs)
+    }
+
+    private func search(query: String) async {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count >= 2 else {
+            searchResults = []
+            return
+        }
+
+        isSearching = true
+        do {
+            let response = try await adminService.fetchMembers(search: trimmed, status: nil, page: 1)
+            // Only apply results if the search text hasn't changed
+            if searchText.trimmingCharacters(in: .whitespaces) == trimmed {
+                searchResults = response.members
+            }
+        } catch {
+            logError("User search failed: \(error)", category: .data)
+        }
+        isSearching = false
     }
 }
 

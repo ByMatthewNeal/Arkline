@@ -13,6 +13,7 @@ class BroadcastViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var unreadCount: Int = 0
+    @Published var analyticsSummary: BroadcastAnalyticsSummary?
 
     // MARK: - Dependencies
 
@@ -161,6 +162,18 @@ class BroadcastViewModel: ObservableObject {
             } catch {
                 logError("Failed to increment view count: \(error)", category: .data)
             }
+        }
+    }
+
+    // MARK: - Analytics
+
+    /// Load aggregated analytics for a given period
+    func loadAnalytics(periodDays: Int) async {
+        do {
+            let summary = try await broadcastService.fetchAnalyticsSummary(periodDays: periodDays)
+            analyticsSummary = summary
+        } catch {
+            logError("Failed to load analytics: \(error)", category: .data)
         }
     }
 
