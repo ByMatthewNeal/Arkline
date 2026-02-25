@@ -195,18 +195,23 @@ struct PortfolioAllocation: Identifiable, Equatable {
         let totalValue = holdings.reduce(0) { $0 + $1.currentValue }
         guard totalValue > 0 else { return [] }
 
-        let grouped = Dictionary(grouping: holdings) { $0.assetType }
-        let colors = ["crypto": "#6366F1", "stock": "#22C55E", "metal": "#F59E0B", "real_estate": "#3B82F6"]
+        let holdingColors = [
+            "#6366F1", "#22C55E", "#F59E0B", "#3B82F6",
+            "#EC4899", "#8B5CF6", "#14B8A6", "#F97316",
+            "#EF4444", "#06B6D4", "#84CC16", "#A855F7"
+        ]
 
-        return grouped.map { type, items in
-            let typeValue = items.reduce(0) { $0 + $1.currentValue }
-            return PortfolioAllocation(
-                category: type.capitalized,
-                value: typeValue,
-                percentage: (typeValue / totalValue) * 100,
-                color: colors[type] ?? "#71717A"
-            )
-        }.sorted { $0.value > $1.value }
+        return holdings
+            .sorted { $0.currentValue > $1.currentValue }
+            .enumerated()
+            .map { index, holding in
+                PortfolioAllocation(
+                    category: holding.symbol.uppercased(),
+                    value: holding.currentValue,
+                    percentage: (holding.currentValue / totalValue) * 100,
+                    color: holdingColors[index % holdingColors.count]
+                )
+            }
     }
 
     /// Calculates per-holding allocations within a single asset type category.
