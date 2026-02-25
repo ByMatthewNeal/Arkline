@@ -33,6 +33,9 @@ final class PortfolioViewModel {
     var error: AppError?
     var priceRefreshFailed = false
 
+    // Allocation drill-down
+    var selectedAllocationCategory: String?
+
     // User context
     private var currentUserId: UUID?
     private var portfolioId: UUID?
@@ -101,6 +104,11 @@ final class PortfolioViewModel {
         return result.sorted { $0.transactionDate > $1.transactionDate }
     }
 
+    var detailAllocations: [PortfolioAllocation] {
+        guard let category = selectedAllocationCategory else { return [] }
+        return PortfolioAllocation.calculateByHolding(from: holdings, forAssetType: category)
+    }
+
     var topPerformers: [PortfolioHolding] {
         holdings.sorted { $0.profitLossPercentage > $1.profitLossPercentage }.prefix(3).map { $0 }
     }
@@ -135,6 +143,7 @@ final class PortfolioViewModel {
         isRefreshing = true
         isLoading = true
         error = nil
+        selectedAllocationCategory = nil
         defer { isRefreshing = false }
 
         do {
@@ -271,6 +280,14 @@ final class PortfolioViewModel {
 
     func selectTransactionFilter(_ filter: TransactionType?) {
         transactionFilter = filter
+    }
+
+    func selectAllocationCategory(_ category: String?) {
+        if selectedAllocationCategory == category {
+            selectedAllocationCategory = nil
+        } else {
+            selectedAllocationCategory = category
+        }
     }
 
     func dismissError() {

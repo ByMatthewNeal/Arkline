@@ -208,6 +208,31 @@ struct PortfolioAllocation: Identifiable, Equatable {
             )
         }.sorted { $0.value > $1.value }
     }
+
+    /// Calculates per-holding allocations within a single asset type category.
+    static func calculateByHolding(from holdings: [PortfolioHolding], forAssetType assetType: String) -> [PortfolioAllocation] {
+        let filtered = holdings.filter { $0.assetType.lowercased() == assetType.lowercased() }
+        let categoryTotal = filtered.reduce(0) { $0 + $1.currentValue }
+        guard categoryTotal > 0 else { return [] }
+
+        let holdingColors = [
+            "#6366F1", "#22C55E", "#F59E0B", "#3B82F6",
+            "#EC4899", "#8B5CF6", "#14B8A6", "#F97316",
+            "#EF4444", "#06B6D4", "#84CC16", "#A855F7"
+        ]
+
+        return filtered
+            .sorted { $0.currentValue > $1.currentValue }
+            .enumerated()
+            .map { index, holding in
+                PortfolioAllocation(
+                    category: holding.symbol.uppercased(),
+                    value: holding.currentValue,
+                    percentage: (holding.currentValue / categoryTotal) * 100,
+                    color: holdingColors[index % holdingColors.count]
+                )
+            }
+    }
 }
 
 // MARK: - Historical Portfolio Value

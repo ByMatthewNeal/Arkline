@@ -165,6 +165,14 @@ struct PortfolioAllocationContent: View {
         appState.preferredCurrency
     }
 
+    private var isDrilledIn: Bool {
+        viewModel.selectedAllocationCategory != nil
+    }
+
+    private var displayAllocations: [PortfolioAllocation] {
+        isDrilledIn ? viewModel.detailAllocations : viewModel.allocations
+    }
+
     var body: some View {
         if viewModel.allocations.isEmpty {
             EmptyStateView(
@@ -175,42 +183,97 @@ struct PortfolioAllocationContent: View {
             .padding(.top, 40)
         } else {
             VStack(spacing: 24) {
+                // Back button when drilled in
+                if isDrilledIn {
+                    HStack(spacing: ArkSpacing.xs) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                viewModel.selectedAllocationCategory = nil
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("All Categories")
+                                    .font(AppFonts.body14Medium)
+                            }
+                            .foregroundColor(AppColors.accent)
+                        }
+
+                        Spacer()
+
+                        Text(viewModel.selectedAllocationCategory?.capitalized ?? "")
+                            .font(AppFonts.title18SemiBold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                    }
+                    .padding(.horizontal, 20)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 // Pie Chart
-                AllocationPieChart(allocations: viewModel.allocations, colorScheme: colorScheme)
+                AllocationPieChart(allocations: displayAllocations, colorScheme: colorScheme)
                     .frame(height: 250)
                     .padding(.horizontal, 20)
-                    .accessibilityLabel("Portfolio allocation pie chart")
+                    .id(viewModel.selectedAllocationCategory ?? "categories")
+                    .accessibilityLabel(isDrilledIn
+                        ? "\(viewModel.selectedAllocationCategory?.capitalized ?? "") holdings pie chart"
+                        : "Portfolio allocation pie chart")
 
                 // Legend
                 VStack(spacing: 12) {
-                    ForEach(viewModel.allocations) { allocation in
-                        HStack {
-                            Circle()
-                                .fill(Color(hex: allocation.color))
-                                .frame(width: 12, height: 12)
-
-                            Text(allocation.category)
-                                .font(AppFonts.body14Medium)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                            Spacer()
-
-                            Text(allocation.value.asCurrency(code: currency))
-                                .font(AppFonts.body14)
-                                .foregroundColor(AppColors.textSecondary)
-
-                            Text("\(allocation.percentage, specifier: "%.1f")%")
-                                .font(AppFonts.body14Bold)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
-                                .frame(width: 50, alignment: .trailing)
+                    ForEach(displayAllocations) { allocation in
+                        if isDrilledIn {
+                            // Detail level — not tappable
+                            allocationRow(allocation)
+                                .padding(.horizontal, 20)
+                        } else {
+                            // Category level — tappable to drill in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    viewModel.selectAllocationCategory(allocation.category.lowercased())
+                                }
+                            } label: {
+                                HStack(spacing: 0) {
+                                    allocationRow(allocation)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(AppColors.textTertiary)
+                                        .padding(.leading, 8)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 20)
                         }
-                        .padding(.horizontal, 20)
-                        .accessibilityLabel("\(allocation.category), \(allocation.percentage, specifier: "%.1f") percent, \(allocation.value.asCurrency(code: currency))")
                     }
                 }
             }
             .padding(.top, 20)
         }
+    }
+
+    @ViewBuilder
+    private func allocationRow(_ allocation: PortfolioAllocation) -> some View {
+        HStack {
+            Circle()
+                .fill(Color(hex: allocation.color))
+                .frame(width: 12, height: 12)
+
+            Text(allocation.category)
+                .font(AppFonts.body14Medium)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Spacer()
+
+            Text(allocation.value.asCurrency(code: currency))
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textSecondary)
+
+            Text("\(allocation.percentage, specifier: "%.1f")%")
+                .font(AppFonts.body14Bold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .frame(width: 50, alignment: .trailing)
+        }
+        .accessibilityLabel("\(allocation.category), \(allocation.percentage, specifier: "%.1f") percent, \(allocation.value.asCurrency(code: currency))")
     }
 }
 
