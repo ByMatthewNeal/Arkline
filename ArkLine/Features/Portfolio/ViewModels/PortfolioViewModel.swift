@@ -161,6 +161,7 @@ final class PortfolioViewModel {
         isRefreshing = true
         isLoading = true
         error = nil
+        priceRefreshFailed = false
         selectedAllocationCategory = nil
         defer { isRefreshing = false }
 
@@ -185,8 +186,9 @@ final class PortfolioViewModel {
                 }
             }
 
-            // Load data for selected portfolio
-            if let portfolio = selectedPortfolio {
+            // Capture selected portfolio to prevent mid-flight mutation
+            let portfolio = selectedPortfolio
+            if let portfolio = portfolio {
                 self.portfolioId = portfolio.id
 
                 // Fetch holdings, transactions, and history concurrently
@@ -195,11 +197,14 @@ final class PortfolioViewModel {
                 async let transactionsTask = portfolioService.fetchTransactions(portfolioId: portfolio.id)
                 async let historyTask = portfolioService.fetchPortfolioHistory(portfolioId: portfolio.id, days: 30)
 
+                var partialFailure = false
+
                 let fetchedHoldings: [PortfolioHolding]
                 do { fetchedHoldings = try await holdingsTask }
                 catch {
                     logError("Failed to fetch holdings: \(error)", category: .data)
                     fetchedHoldings = self.holdings
+                    partialFailure = true
                 }
 
                 let fetchedTransactions: [Transaction]
@@ -207,6 +212,7 @@ final class PortfolioViewModel {
                 catch {
                     logError("Failed to fetch transactions: \(error)", category: .data)
                     fetchedTransactions = self.transactions
+                    partialFailure = true
                 }
 
                 let history: [PortfolioHistoryPoint]
@@ -214,6 +220,7 @@ final class PortfolioViewModel {
                 catch {
                     logError("Failed to fetch portfolio history: \(error)", category: .data)
                     history = self.historyPoints
+                    partialFailure = true
                 }
 
                 // Refresh live prices for holdings
@@ -222,6 +229,7 @@ final class PortfolioViewModel {
                 catch {
                     logError("Price refresh failed: \(error)", category: .data)
                     holdingsWithPrices = fetchedHoldings
+                    partialFailure = true
                 }
 
                 await MainActor.run {
@@ -229,6 +237,7 @@ final class PortfolioViewModel {
                     self.transactions = fetchedTransactions
                     self.historyPoints = history
                     self.allocations = self.computeAllocations(from: holdingsWithPrices)
+                    self.priceRefreshFailed = partialFailure
                     self.isLoading = false
                 }
 

@@ -11,7 +11,7 @@ struct DCAAmountInputCard: View {
     }
 
     private var sectionBackground: Color {
-        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+        AppColors.cardBackground(colorScheme)
     }
 
     // Number formatter for comma display
@@ -57,11 +57,11 @@ struct DCAAmountInputCard: View {
             // Amount input
             HStack(spacing: 8) {
                 Text("$")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(AppFonts.number36)
                     .foregroundColor(textPrimary)
 
                 TextField("0", text: $amount)
-                    .font(.system(size: 32, weight: .bold))
+                    .font(AppFonts.number36)
                     .foregroundColor(textPrimary)
                     #if os(iOS)
                     .keyboardType(.numberPad)
@@ -77,7 +77,7 @@ struct DCAAmountInputCard: View {
             .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                    .fill(AppColors.fillSecondary(colorScheme))
             )
 
             // Quick select
@@ -98,7 +98,7 @@ struct DCAAmountInputCard: View {
                             .padding(.vertical, 10)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(isPresetSelected(preset) ? AppColors.accent : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                                    .fill(isPresetSelected(preset) ? AppColors.accent : (AppColors.fillSecondary(colorScheme)))
                             )
                     }
                 }
@@ -232,7 +232,7 @@ struct DCAAssetPickerCard: View {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                    .fill(AppColors.fillSecondary(colorScheme))
             )
 
             // Asset list
@@ -545,7 +545,7 @@ struct DCAFrequencyOptionRow: View {
             .padding(.horizontal, 16)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? AppColors.accent.opacity(0.1) : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7")))
+                    .fill(isSelected ? AppColors.accent.opacity(0.1) : (AppColors.fillSecondary(colorScheme)))
             )
         }
     }
@@ -565,7 +565,7 @@ struct DCAWeekdayPicker: View {
             ForEach(Weekday.allCases) { day in
                 Button(action: { toggleDay(day) }) {
                     Text(day.shortName)
-                        .font(.system(size: 12, weight: selectedDays.contains(day) ? .semibold : .regular))
+                        .font(selectedDays.contains(day) ? AppFonts.caption12Medium : AppFonts.caption12)
                         .foregroundColor(selectedDays.contains(day) ? .white : textPrimary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -641,7 +641,7 @@ struct DCADurationCard: View {
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(showCustomPicker ? AppColors.accent : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                            .fill(showCustomPicker ? AppColors.accent : (AppColors.fillSecondary(colorScheme)))
                     )
                 }
             }
@@ -678,7 +678,7 @@ struct DCADurationCard: View {
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                                .fill(AppColors.fillSecondary(colorScheme))
                         )
                     }
                 }
@@ -710,7 +710,7 @@ struct DCADurationButton: View {
                 .padding(.vertical, 14)
                 .background(
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(isSelected ? AppColors.accent : (colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0")))
+                        .fill(isSelected ? AppColors.accent : (AppColors.fillSecondary(colorScheme)))
                 )
         }
     }

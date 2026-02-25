@@ -79,11 +79,11 @@ struct SellAssetView: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text(isRealEstate ? holding.symbol : holding.symbol.uppercased())
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(AppFonts.title16)
                                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
                             Text(holding.name)
-                                .font(.system(size: 13))
+                                .font(AppFonts.caption13)
                                 .foregroundColor(AppColors.textSecondary)
                         }
 
@@ -91,11 +91,11 @@ struct SellAssetView: View {
 
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("Available")
-                                .font(.system(size: 12))
+                                .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textSecondary)
 
                             Text(isRealEstate ? "1" : holding.quantity.asQuantity)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(AppFonts.body14Medium)
                                 .foregroundColor(AppColors.textPrimary(colorScheme))
                         }
                     }
@@ -114,7 +114,7 @@ struct SellAssetView: View {
                         Button("Max") {
                             quantityString = isRealEstate ? "1" : String(format: "%.8f", holding.quantity)
                         }
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFonts.caption12Medium)
                         .foregroundColor(AppColors.accent)
                     }
 
@@ -141,7 +141,7 @@ struct SellAssetView: View {
                         Button("Use current price: \(currentPrice.asCurrency)") {
                             priceString = String(format: "%.2f", currentPrice)
                         }
-                        .font(.system(size: 13))
+                        .font(AppFonts.caption13)
                         .foregroundColor(AppColors.accent)
                     }
 
@@ -165,7 +165,7 @@ struct SellAssetView: View {
                             Text("Total Proceeds")
                             Spacer()
                             Text(totalProceeds.asCurrency)
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(AppFonts.title16)
                         }
 
                         HStack {
@@ -180,7 +180,7 @@ struct SellAssetView: View {
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency)")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(AppFonts.title16)
                                     .foregroundColor(profitLoss >= 0 ? AppColors.success : AppColors.error)
 
                                 Text("\(profitLoss >= 0 ? "+" : "")\(String(format: "%.2f", profitLossPercentage))%")
@@ -225,7 +225,7 @@ struct SellAssetView: View {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("How are you feeling about this sale?")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         EmotionalStatePicker(selectedState: $selectedEmotionalState)
@@ -253,7 +253,7 @@ struct SellAssetView: View {
                     Button("Sell") {
                         executeSale()
                     }
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppFonts.title16)
                     .foregroundColor(isValid ? AppColors.error : AppColors.textSecondary.opacity(0.5))
                     .disabled(!isValid || isSaving)
                 }

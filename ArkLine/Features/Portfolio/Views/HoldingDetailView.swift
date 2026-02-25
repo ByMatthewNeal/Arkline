@@ -215,7 +215,7 @@ struct HoldingDetailView: View {
                     }
                     Button(action: { showSellSheet = true }) {
                         Text("Sell")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(AppFonts.body16Medium)
                             .foregroundColor(AppColors.error)
                     }
                 }

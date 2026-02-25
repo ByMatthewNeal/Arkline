@@ -125,7 +125,7 @@ struct PortfolioView: View {
                     Button(action: { showPortfolioPicker = true }) {
                         HStack(spacing: 4) {
                             Text(viewModel.selectedPortfolio?.name ?? "Portfolio")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(AppFonts.title18SemiBold)
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .semibold))
                         }

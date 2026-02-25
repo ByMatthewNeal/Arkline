@@ -28,7 +28,7 @@ struct EditPortfolioView: View {
     }
 
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+        AppColors.cardBackground(colorScheme)
     }
 
     private var isValid: Bool {
@@ -43,7 +43,7 @@ struct EditPortfolioView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                (colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
+                AppColors.background(colorScheme)
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -51,11 +51,11 @@ struct EditPortfolioView: View {
                         // Portfolio Name Section
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Portfolio Name")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(AppFonts.body14Medium)
                                 .foregroundColor(textSecondary)
 
                             TextField("e.g., Retirement Fund", text: $portfolioName)
-                                .font(.system(size: 16))
+                                .font(AppFonts.body16)
                                 .foregroundColor(textPrimary)
                                 .padding(16)
                                 .background(
@@ -67,17 +67,17 @@ struct EditPortfolioView: View {
                         // Visibility Toggle Section
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Visibility")
-                                .font(.system(size: 14, weight: .medium))
+                                .font(AppFonts.body14Medium)
                                 .foregroundColor(textSecondary)
 
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Public Portfolio")
-                                        .font(.system(size: 16, weight: .medium))
+                                        .font(AppFonts.body16Medium)
                                         .foregroundColor(textPrimary)
 
                                     Text("Allow others to view your portfolio")
-                                        .font(.system(size: 13))
+                                        .font(AppFonts.caption13)
                                         .foregroundColor(textSecondary)
                                 }
 
@@ -110,7 +110,7 @@ struct EditPortfolioView: View {
                     Button("Save") {
                         savePortfolio()
                     }
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppFonts.title16)
                     .foregroundColor(isValid && hasChanges ? AppColors.accent : textSecondary.opacity(0.5))
                     .disabled(!isValid || !hasChanges || isSaving)
                 }

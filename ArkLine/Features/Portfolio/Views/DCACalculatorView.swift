@@ -176,7 +176,7 @@ struct DCACalculatorView: View {
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
+                            .fill(AppColors.fillSecondary(colorScheme))
                     )
                 }
             }

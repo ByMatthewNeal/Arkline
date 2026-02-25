@@ -18,11 +18,11 @@ struct PortfolioSwitcherSheet: View {
     }
 
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+        AppColors.cardBackground(colorScheme)
     }
 
     private var sheetBackground: Color {
-        colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7")
+        AppColors.background(colorScheme)
     }
 
     var body: some View {
@@ -35,10 +35,10 @@ struct PortfolioSwitcherSheet: View {
                             .font(.system(size: 40))
                             .foregroundColor(AppColors.textSecondary)
                         Text("No portfolios yet")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(AppFonts.body16Medium)
                             .foregroundColor(textPrimary)
                         Text("Create your first portfolio to start tracking your assets")
-                            .font(.system(size: 14))
+                            .font(AppFonts.body14)
                             .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)
                     }
@@ -104,7 +104,7 @@ struct PortfolioSwitcherSheet: View {
                         }
 
                         Text("Create New Portfolio")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(AppFonts.body16Medium)
                             .foregroundColor(textPrimary)
 
                         Spacer()
@@ -171,7 +171,7 @@ struct PortfolioSwitcherRow: View {
     }
 
     private var cardBackground: Color {
-        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+        AppColors.cardBackground(colorScheme)
     }
 
     var body: some View {
@@ -188,11 +188,11 @@ struct PortfolioSwitcherRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(portfolio.name)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppFonts.title16)
                     .foregroundColor(textPrimary)
 
                 Text(portfolio.isPublic ? "Public" : "Private")
-                    .font(.system(size: 12))
+                    .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
 
@@ -218,7 +218,7 @@ struct PortfolioSwitcherRow: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.title16)
                         .foregroundColor(AppColors.textSecondary)
                         .frame(width: 32, height: 32)
                         .contentShape(Rectangle())

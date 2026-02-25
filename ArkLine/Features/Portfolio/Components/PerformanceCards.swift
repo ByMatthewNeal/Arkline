@@ -485,6 +485,6 @@ struct PerformanceExportView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: "0F0F0F"))
+        .background(AppColors.background(.dark))
     }
 }
