@@ -12,6 +12,7 @@ struct HoldingDetailView: View {
     @State private var transactionToDelete: Transaction?
     @State private var showDeleteConfirmation = false
     @State private var showDeleteHoldingConfirmation = false
+    @State private var showEditSheet = false
     @Environment(\.dismiss) private var dismiss
 
     private var currency: String {
@@ -182,6 +183,11 @@ struct HoldingDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
+                    Button(action: { showEditSheet = true }) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.accent)
+                    }
                     Button(action: { showDeleteHoldingConfirmation = true }) {
                         Image(systemName: "trash")
                             .font(.system(size: 15))
@@ -198,6 +204,11 @@ struct HoldingDetailView: View {
         #endif
         .sheet(isPresented: $showSellSheet) {
             SellAssetView(viewModel: viewModel, holding: liveHolding)
+        }
+        .sheet(isPresented: $showEditSheet) {
+            EditHoldingView(holding: liveHolding) { updated in
+                Task { await viewModel.editHolding(updated) }
+            }
         }
         .sheet(isPresented: $showTransactionDetail) {
             if let transaction = selectedTransaction {

@@ -826,6 +826,35 @@ final class PortfolioViewModel {
         }
     }
 
+    func editHolding(_ holding: PortfolioHolding) async {
+        guard let portfolioId = portfolioId else { return }
+
+        do {
+            try await portfolioService.updateHolding(holding)
+
+            // Refresh holdings with live prices
+            let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+            let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
+
+            await MainActor.run {
+                self.holdings = holdingsWithPrices
+                self.allocations = self.computeAllocations(from: holdingsWithPrices)
+            }
+
+            Task {
+                await AnalyticsService.shared.track("holding_edited", properties: [
+                    "coin": .string(holding.symbol),
+                    "quantity": .double(holding.quantity),
+                    "has_cost_basis": .bool(holding.averageBuyPrice != nil)
+                ])
+            }
+        } catch {
+            await MainActor.run {
+                self.error = AppError.from(error)
+            }
+        }
+    }
+
     func deleteHolding(_ holding: PortfolioHolding) async {
         do {
             // Delete associated transactions first
