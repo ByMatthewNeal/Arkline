@@ -28,6 +28,10 @@ struct PerformanceView: View {
             ReturnSummaryCard(metrics: viewModel.performanceMetrics)
                 .padding(.horizontal, 20)
 
+            // Risk Metrics
+            RiskMetricsCard(metrics: viewModel.performanceMetrics)
+                .padding(.horizontal, 20)
+
             // Portfolio Value Chart
             if !viewModel.historyPoints.isEmpty {
                 EquityCurveCard(historyPoints: viewModel.historyPoints)

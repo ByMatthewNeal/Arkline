@@ -194,7 +194,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let poor = PerformanceMetrics(
             totalReturn: 0, totalReturnPercentage: 0,
             totalInvested: 0, currentValue: 0, numberOfAssets: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: -0.5,
+            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: -0.5, volatility: 0,
             monthlyInvestments: []
         )
         XCTAssertEqual(poor.sharpeRating, "Poor")
@@ -202,7 +202,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let good = PerformanceMetrics(
             totalReturn: 0, totalReturnPercentage: 0,
             totalInvested: 0, currentValue: 0, numberOfAssets: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 1.5,
+            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 1.5, volatility: 0,
             monthlyInvestments: []
         )
         XCTAssertEqual(good.sharpeRating, "Good")
@@ -210,7 +210,7 @@ final class PerformanceMetricsTests: XCTestCase {
         let excellent = PerformanceMetrics(
             totalReturn: 0, totalReturnPercentage: 0,
             totalInvested: 0, currentValue: 0, numberOfAssets: 0,
-            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 3.5,
+            maxDrawdown: 0, maxDrawdownValue: 0, sharpeRatio: 3.5, volatility: 0,
             monthlyInvestments: []
         )
         XCTAssertEqual(excellent.sharpeRating, "Excellent")

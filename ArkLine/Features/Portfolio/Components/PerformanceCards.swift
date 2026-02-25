@@ -42,6 +42,77 @@ struct ReturnSummaryCard: View {
     }
 }
 
+// MARK: - Risk Metrics Card
+struct RiskMetricsCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    let metrics: PerformanceMetrics
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Risk Metrics")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            HStack(spacing: 0) {
+                // Sharpe Ratio
+                VStack(spacing: 6) {
+                    Text("Sharpe Ratio")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text(String(format: "%.2f", metrics.sharpeRatio))
+                        .font(AppFonts.number20)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    Text(metrics.sharpeRating)
+                        .font(AppFonts.caption12)
+                        .fontWeight(.semibold)
+                        .foregroundColor(metrics.sharpeColor)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider().frame(height: 60)
+
+                // Max Drawdown
+                VStack(spacing: 6) {
+                    Text("Max Drawdown")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text(String(format: "-%.1f%%", metrics.maxDrawdown))
+                        .font(AppFonts.number20)
+                        .foregroundColor(metrics.maxDrawdownColor)
+
+                    Text(metrics.maxDrawdownValue.asCurrency)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider().frame(height: 60)
+
+                // Volatility
+                VStack(spacing: 6) {
+                    Text("Volatility")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text(String(format: "%.1f%%", metrics.volatility))
+                        .font(AppFonts.number20)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    Text("Annualized")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(20)
+        .glassCard(cornerRadius: 16)
+    }
+}
+
 // MARK: - Asset Performance Card
 struct AssetPerformanceCard: View {
     @Environment(\.colorScheme) var colorScheme

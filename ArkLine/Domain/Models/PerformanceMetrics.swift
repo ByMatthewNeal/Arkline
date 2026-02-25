@@ -24,6 +24,7 @@ struct PerformanceMetrics: Equatable {
     let maxDrawdown: Double                // Maximum peak-to-trough decline (percentage)
     let maxDrawdownValue: Double           // Maximum drawdown in currency
     let sharpeRatio: Double                // Risk-adjusted return
+    let volatility: Double                 // Annualized standard deviation of returns
 
     // DCA activity
     let monthlyInvestments: [MonthlyInvestment]
@@ -47,6 +48,24 @@ struct PerformanceMetrics: Equatable {
         }
     }
 
+    var maxDrawdownRating: String {
+        switch maxDrawdown {
+        case ..<5: return "Low"
+        case 5..<15: return "Moderate"
+        case 15..<30: return "High"
+        default: return "Severe"
+        }
+    }
+
+    var maxDrawdownColor: Color {
+        switch maxDrawdown {
+        case ..<5: return AppColors.success
+        case 5..<15: return AppColors.warning
+        case 15..<30: return AppColors.error
+        default: return AppColors.error
+        }
+    }
+
     // Empty state for when no data is available
     static let empty = PerformanceMetrics(
         totalReturn: 0,
@@ -57,6 +76,7 @@ struct PerformanceMetrics: Equatable {
         maxDrawdown: 0,
         maxDrawdownValue: 0,
         sharpeRatio: 0,
+        volatility: 0,
         monthlyInvestments: []
     )
 }

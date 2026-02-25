@@ -30,8 +30,8 @@ struct PerformanceMetricsCalculator {
         // Maximum drawdown from portfolio history
         let (maxDrawdownPct, maxDrawdownValue) = calculateMaxDrawdown(historyPoints)
 
-        // Sharpe ratio (using daily returns from history)
-        let sharpeRatio = calculateSharpeRatio(historyPoints)
+        // Sharpe ratio and volatility (using daily returns from history)
+        let (sharpeRatio, volatility) = calculateSharpeRatio(historyPoints)
 
         // Monthly investment activity
         let monthlyInvestments = calculateMonthlyInvestments(transactions)
@@ -45,6 +45,7 @@ struct PerformanceMetricsCalculator {
             maxDrawdown: maxDrawdownPct,
             maxDrawdownValue: maxDrawdownValue,
             sharpeRatio: sharpeRatio,
+            volatility: volatility,
             monthlyInvestments: monthlyInvestments
         )
     }
@@ -84,8 +85,8 @@ struct PerformanceMetricsCalculator {
 
     // MARK: - Sharpe Ratio
 
-    private static func calculateSharpeRatio(_ history: [PortfolioHistoryPoint], riskFreeRate: Double = 0.04) -> Double {
-        guard history.count > 2 else { return 0 }
+    private static func calculateSharpeRatio(_ history: [PortfolioHistoryPoint], riskFreeRate: Double = 0.04) -> (sharpe: Double, volatility: Double) {
+        guard history.count > 2 else { return (0, 0) }
 
         // Sort by date
         let sortedHistory = history.sorted { $0.date < $1.date }
@@ -99,7 +100,7 @@ struct PerformanceMetricsCalculator {
             dailyReturns.append(dailyReturn)
         }
 
-        guard !dailyReturns.isEmpty else { return 0 }
+        guard !dailyReturns.isEmpty else { return (0, 0) }
 
         // Calculate mean return
         let avgReturn = dailyReturns.reduce(0, +) / Double(dailyReturns.count)
@@ -108,14 +109,15 @@ struct PerformanceMetricsCalculator {
         let variance = dailyReturns.reduce(0) { $0 + pow($1 - avgReturn, 2) } / Double(dailyReturns.count)
         let stdDev = sqrt(variance)
 
-        guard stdDev > 0 else { return 0 }
+        guard stdDev > 0 else { return (0, 0) }
 
         // Annualize (assuming 252 trading days)
         let annualizedReturn = avgReturn * 252
         let annualizedStdDev = stdDev * sqrt(252)
 
         // Sharpe = (return - risk-free rate) / volatility
-        return (annualizedReturn - riskFreeRate) / annualizedStdDev
+        let sharpe = (annualizedReturn - riskFreeRate) / annualizedStdDev
+        return (sharpe, annualizedStdDev * 100) // volatility as percentage
     }
 
     // MARK: - Monthly Investments
