@@ -71,11 +71,10 @@ struct TrendChannelChart: View {
     private var backgroundZones: some ChartContent {
         let domain = yDomain
         ForEach(points) { point in
-            RectangleMark(
+            BarMark(
                 x: .value("Date", point.date),
                 yStart: .value("Low", domain.lowerBound),
-                yEnd: .value("High", domain.upperBound),
-                width: 3
+                yEnd: .value("High", domain.upperBound)
             )
             .foregroundStyle(zoneBackgroundColor(point.zone))
         }
