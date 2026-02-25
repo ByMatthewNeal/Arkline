@@ -6,6 +6,7 @@ struct PerformanceView: View {
     @Bindable var viewModel: PortfolioViewModel
     @State private var showExportSheet = false
     @State private var isExporting = false
+    @State private var showExportError = false
 
     private var hasData: Bool {
         !viewModel.holdings.isEmpty
@@ -87,6 +88,11 @@ struct PerformanceView: View {
                 exportingOverlay
             }
         }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Unable to generate the export. Please try again.")
+        }
     }
 
     private var exportingOverlay: some View {
@@ -155,6 +161,10 @@ struct PerformanceView: View {
 
             if let data = fileData {
                 ExportService.shareFile(data: data, fileName: fileName, format: format)
+            } else {
+                await MainActor.run {
+                    showExportError = true
+                }
             }
         }
     }

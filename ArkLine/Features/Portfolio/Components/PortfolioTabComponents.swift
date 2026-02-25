@@ -467,6 +467,49 @@ struct AllocationTargetEditor: View {
     }
 }
 
+// MARK: - Transaction Date Grouping
+func groupTransactionsByDate(_ transactions: [Transaction]) -> [(String, [Transaction])] {
+    let calendar = Calendar.current
+    let now = Date()
+    let formatter = DateFormatter()
+
+    var groups: [(String, [Transaction])] = []
+    var currentLabel = ""
+    var currentGroup: [Transaction] = []
+
+    for transaction in transactions {
+        let label: String
+        if calendar.isDateInToday(transaction.transactionDate) {
+            label = "Today"
+        } else if calendar.isDateInYesterday(transaction.transactionDate) {
+            label = "Yesterday"
+        } else if calendar.isDate(transaction.transactionDate, equalTo: now, toGranularity: .month) {
+            formatter.dateFormat = "MMMM d"
+            label = formatter.string(from: transaction.transactionDate)
+        } else if calendar.isDate(transaction.transactionDate, equalTo: now, toGranularity: .year) {
+            formatter.dateFormat = "MMMM d"
+            label = formatter.string(from: transaction.transactionDate)
+        } else {
+            formatter.dateFormat = "MMMM d, yyyy"
+            label = formatter.string(from: transaction.transactionDate)
+        }
+
+        if label == currentLabel {
+            currentGroup.append(transaction)
+        } else {
+            if !currentGroup.isEmpty {
+                groups.append((currentLabel, currentGroup))
+            }
+            currentLabel = label
+            currentGroup = [transaction]
+        }
+    }
+    if !currentGroup.isEmpty {
+        groups.append((currentLabel, currentGroup))
+    }
+    return groups
+}
+
 // MARK: - Transactions Content
 struct PortfolioTransactionsContent: View {
     @Environment(\.colorScheme) var colorScheme
@@ -479,6 +522,10 @@ struct PortfolioTransactionsContent: View {
     private func destinationPortfolioName(for transaction: Transaction) -> String? {
         guard let destId = transaction.destinationPortfolioId else { return nil }
         return viewModel.portfolios.first { $0.id == destId }?.name
+    }
+
+    private var groupedTransactions: [(String, [Transaction])] {
+        groupTransactionsByDate(viewModel.filteredTransactions)
     }
 
     var body: some View {
@@ -515,25 +562,41 @@ struct PortfolioTransactionsContent: View {
                 )
                 .padding(.top, 20)
             } else {
-                // Transaction List
+                // Transaction List grouped by date
                 LazyVStack(spacing: ArkSpacing.xs) {
-                    ForEach(viewModel.filteredTransactions) { transaction in
-                        Button(action: {
-                            selectedTransaction = transaction
-                            showTransactionDetail = true
-                        }) {
-                            TransactionRow(transaction: transaction)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                transactionToDelete = transaction
-                                showDeleteConfirmation = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                    ForEach(groupedTransactions, id: \.0) { label, transactions in
+                        Text(label)
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, label == groupedTransactions.first?.0 ? 0 : 8)
+
+                        ForEach(transactions) { transaction in
+                            Button(action: {
+                                selectedTransaction = transaction
+                                showTransactionDetail = true
+                            }) {
+                                TransactionRow(transaction: transaction)
                             }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    transactionToDelete = transaction
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    transactionToDelete = transaction
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
                         }
-                        .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
                     }
                 }
                 .padding(.horizontal, 20)

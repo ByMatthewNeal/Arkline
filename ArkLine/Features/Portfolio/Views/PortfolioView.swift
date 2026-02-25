@@ -32,6 +32,24 @@ struct PortfolioView: View {
                     }
                 }
 
+                // Stale Price Warning
+                if viewModel.priceRefreshFailed {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12))
+                        Text("Prices may be outdated")
+                            .font(AppFonts.caption12)
+                        Spacer()
+                        Button("Retry") {
+                            Task { await viewModel.refreshPrices() }
+                        }
+                        .font(AppFonts.caption12Medium)
+                    }
+                    .foregroundColor(AppColors.warning)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                }
+
                 // Portfolio Value Header
                 PortfolioHeader(
                     totalValue: viewModel.totalValue,

@@ -28,6 +28,10 @@ struct HoldingDetailView: View {
             .sorted { $0.transactionDate > $1.transactionDate }
     }
 
+    private var groupedHoldingTransactions: [(String, [Transaction])] {
+        groupTransactionsByDate(holdingTransactions)
+    }
+
     private func destinationPortfolioName(for transaction: Transaction) -> String? {
         guard let destId = transaction.destinationPortfolioId else { return nil }
         return viewModel.portfolios.first { $0.id == destId }?.name
@@ -151,20 +155,36 @@ struct HoldingDetailView: View {
                         }
                     } else {
                         VStack(spacing: 8) {
-                            ForEach(holdingTransactions) { transaction in
-                                Button(action: {
-                                    selectedTransaction = transaction
-                                    showTransactionDetail = true
-                                }) {
-                                    TransactionRow(transaction: transaction)
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        transactionToDelete = transaction
-                                        showDeleteConfirmation = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+                            ForEach(groupedHoldingTransactions, id: \.0) { label, transactions in
+                                Text(label)
+                                    .font(AppFonts.caption12Medium)
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, label == groupedHoldingTransactions.first?.0 ? 0 : 4)
+
+                                ForEach(transactions) { transaction in
+                                    Button(action: {
+                                        selectedTransaction = transaction
+                                        showTransactionDetail = true
+                                    }) {
+                                        TransactionRow(transaction: transaction)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .swipeActions(edge: .trailing) {
+                                        Button(role: .destructive) {
+                                            transactionToDelete = transaction
+                                            showDeleteConfirmation = true
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            transactionToDelete = transaction
+                                            showDeleteConfirmation = true
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
                                     }
                                 }
                             }
