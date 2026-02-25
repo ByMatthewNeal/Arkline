@@ -95,6 +95,7 @@ class MarketViewModel {
     func refresh() async {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
 
         // Fetch news, Fed Watch, and top coins in parallel
         async let newsTask = fetchNewsSafe()
@@ -108,7 +109,6 @@ class MarketViewModel {
         self.fedWatchData = meetings?.first
         self.cachedTopCoins = coins
         self.topCoins = coins
-        self.isLoading = false
     }
 
     /// Safely fetches news without throwing errors
