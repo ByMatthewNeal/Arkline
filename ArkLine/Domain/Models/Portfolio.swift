@@ -87,6 +87,7 @@ struct PortfolioHolding: Codable, Identifiable, Equatable {
     var averageBuyPrice: Double?
     let createdAt: Date
     var updatedAt: Date
+    var targetPercentage: Double?
 
     // Live data (not stored in DB)
     var currentPrice: Double?
@@ -104,6 +105,7 @@ struct PortfolioHolding: Codable, Identifiable, Equatable {
         case averageBuyPrice = "average_buy_price"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case targetPercentage = "target_percentage"
     }
 
     init(
@@ -115,7 +117,8 @@ struct PortfolioHolding: Codable, Identifiable, Equatable {
         quantity: Double,
         averageBuyPrice: Double? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        targetPercentage: Double? = nil
     ) {
         self.id = id
         self.portfolioId = portfolioId
@@ -126,6 +129,7 @@ struct PortfolioHolding: Codable, Identifiable, Equatable {
         self.averageBuyPrice = averageBuyPrice
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.targetPercentage = targetPercentage
     }
 }
 
@@ -190,16 +194,22 @@ struct PortfolioAllocation: Identifiable, Equatable {
     let value: Double
     let percentage: Double
     let color: String
+    let targetPercentage: Double?
+
+    /// Drift from target: positive means overweight, negative means underweight
+    var drift: Double {
+        percentage - (targetPercentage ?? percentage)
+    }
+
+    private static let holdingColors = [
+        "#6366F1", "#22C55E", "#F59E0B", "#3B82F6",
+        "#EC4899", "#8B5CF6", "#14B8A6", "#F97316",
+        "#EF4444", "#06B6D4", "#84CC16", "#A855F7"
+    ]
 
     static func calculate(from holdings: [PortfolioHolding]) -> [PortfolioAllocation] {
         let totalValue = holdings.reduce(0) { $0 + $1.currentValue }
         guard totalValue > 0 else { return [] }
-
-        let holdingColors = [
-            "#6366F1", "#22C55E", "#F59E0B", "#3B82F6",
-            "#EC4899", "#8B5CF6", "#14B8A6", "#F97316",
-            "#EF4444", "#06B6D4", "#84CC16", "#A855F7"
-        ]
 
         return holdings
             .sorted { $0.currentValue > $1.currentValue }
@@ -209,7 +219,8 @@ struct PortfolioAllocation: Identifiable, Equatable {
                     category: holding.symbol.uppercased(),
                     value: holding.currentValue,
                     percentage: (holding.currentValue / totalValue) * 100,
-                    color: holdingColors[index % holdingColors.count]
+                    color: holdingColors[index % holdingColors.count],
+                    targetPercentage: holding.targetPercentage
                 )
             }
     }
@@ -220,12 +231,6 @@ struct PortfolioAllocation: Identifiable, Equatable {
         let categoryTotal = filtered.reduce(0) { $0 + $1.currentValue }
         guard categoryTotal > 0 else { return [] }
 
-        let holdingColors = [
-            "#6366F1", "#22C55E", "#F59E0B", "#3B82F6",
-            "#EC4899", "#8B5CF6", "#14B8A6", "#F97316",
-            "#EF4444", "#06B6D4", "#84CC16", "#A855F7"
-        ]
-
         return filtered
             .sorted { $0.currentValue > $1.currentValue }
             .enumerated()
@@ -234,7 +239,8 @@ struct PortfolioAllocation: Identifiable, Equatable {
                     category: holding.symbol.uppercased(),
                     value: holding.currentValue,
                     percentage: (holding.currentValue / categoryTotal) * 100,
-                    color: holdingColors[index % holdingColors.count]
+                    color: holdingColors[index % holdingColors.count],
+                    targetPercentage: holding.targetPercentage
                 )
             }
     }

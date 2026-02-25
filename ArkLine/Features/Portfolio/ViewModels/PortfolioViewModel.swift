@@ -36,6 +36,9 @@ final class PortfolioViewModel {
     // Allocation drill-down
     var selectedAllocationCategory: String?
 
+    // Target allocation
+    var showTargetEditor = false
+
     // User context
     private var currentUserId: UUID?
     private var portfolioId: UUID?
@@ -115,6 +118,10 @@ final class PortfolioViewModel {
 
     var worstPerformers: [PortfolioHolding] {
         holdings.sorted { $0.profitLossPercentage < $1.profitLossPercentage }.prefix(3).map { $0 }
+    }
+
+    var hasTargetAllocations: Bool {
+        holdings.contains { $0.targetPercentage != nil }
     }
 
     // MARK: - Performance Metrics
@@ -689,34 +696,7 @@ final class PortfolioViewModel {
 
             // Recalculate or remove the holding after deleting the transaction
             if let holdingId = transaction.holdingId {
-                let remainingForHolding = await MainActor.run {
-                    self.transactions.filter { $0.holdingId == holdingId }
-                }
-
-                let hasBuys = remainingForHolding.contains { $0.type == .buy || $0.type == .transferIn }
-
-                if !hasBuys {
-                    // No buy transactions remain — delete the holding
-                    try await portfolioService.deleteHolding(holdingId: holdingId)
-                } else {
-                    // Recalculate quantity and weighted average buy price
-                    let buyTransactions = remainingForHolding.filter { $0.type == .buy || $0.type == .transferIn }
-                    let sellTransactions = remainingForHolding.filter { $0.type == .sell || $0.type == .transferOut }
-
-                    let totalBought = buyTransactions.reduce(0.0) { $0 + $1.quantity }
-                    let totalSold = sellTransactions.reduce(0.0) { $0 + $1.quantity }
-                    let newQuantity = max(0, totalBought - totalSold)
-
-                    let totalCost = buyTransactions.reduce(0.0) { $0 + ($1.quantity * $1.pricePerUnit) }
-                    let avgBuyPrice = totalBought > 0 ? totalCost / totalBought : 0
-
-                    if let holding = holdings.first(where: { $0.id == holdingId }) {
-                        var updatedHolding = holding
-                        updatedHolding.quantity = newQuantity
-                        updatedHolding.averageBuyPrice = avgBuyPrice
-                        try await portfolioService.updateHolding(updatedHolding)
-                    }
-                }
+                try await recalculateHolding(holdingId: holdingId)
             }
 
             // Refresh holdings since removing a transaction affects quantity/avg price
@@ -738,11 +718,46 @@ final class PortfolioViewModel {
                 }
             }
 
-            // Refresh holdings since editing a transaction affects quantity/avg price
+            // Recalculate holding quantity/avg price from all its transactions
+            if let holdingId = transaction.holdingId {
+                try await recalculateHolding(holdingId: holdingId)
+            }
+
             await refresh()
         } catch {
             await MainActor.run {
                 self.error = AppError.from(error)
+            }
+        }
+    }
+
+    /// Recalculates a holding's quantity and average buy price from its transactions.
+    /// Deletes the holding if no buy/transferIn transactions remain.
+    private func recalculateHolding(holdingId: UUID) async throws {
+        let remainingForHolding = await MainActor.run {
+            self.transactions.filter { $0.holdingId == holdingId }
+        }
+
+        let hasBuys = remainingForHolding.contains { $0.type == .buy || $0.type == .transferIn }
+
+        if !hasBuys {
+            try await portfolioService.deleteHolding(holdingId: holdingId)
+        } else {
+            let buyTransactions = remainingForHolding.filter { $0.type == .buy || $0.type == .transferIn }
+            let sellTransactions = remainingForHolding.filter { $0.type == .sell || $0.type == .transferOut }
+
+            let totalBought = buyTransactions.reduce(0.0) { $0 + $1.quantity }
+            let totalSold = sellTransactions.reduce(0.0) { $0 + $1.quantity }
+            let newQuantity = max(0, totalBought - totalSold)
+
+            let totalCost = buyTransactions.reduce(0.0) { $0 + ($1.quantity * $1.pricePerUnit) }
+            let avgBuyPrice = totalBought > 0 ? totalCost / totalBought : 0
+
+            if let holding = holdings.first(where: { $0.id == holdingId }) {
+                var updatedHolding = holding
+                updatedHolding.quantity = newQuantity
+                updatedHolding.averageBuyPrice = avgBuyPrice
+                try await portfolioService.updateHolding(updatedHolding)
             }
         }
     }
@@ -760,6 +775,31 @@ final class PortfolioViewModel {
             await MainActor.run {
                 self.holdings.removeAll { $0.id == holding.id }
                 self.transactions.removeAll { $0.holdingId == holding.id }
+                self.allocations = PortfolioAllocation.calculate(from: self.holdings)
+            }
+        } catch {
+            await MainActor.run {
+                self.error = AppError.from(error)
+            }
+        }
+    }
+
+    func updateTargetAllocations(_ targets: [UUID: Double?]) async {
+        do {
+            for holding in holdings {
+                guard let target = targets[holding.id] else { continue }
+                var updatedHolding = holding
+                updatedHolding.targetPercentage = target
+                try await portfolioService.updateHolding(updatedHolding)
+            }
+
+            // Update local state
+            await MainActor.run {
+                for (id, target) in targets {
+                    if let index = self.holdings.firstIndex(where: { $0.id == id }) {
+                        self.holdings[index].targetPercentage = target
+                    }
+                }
                 self.allocations = PortfolioAllocation.calculate(from: self.holdings)
             }
         } catch {
