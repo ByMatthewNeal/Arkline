@@ -192,6 +192,7 @@ struct AddTransactionView: View {
                                             .foregroundColor(AppColors.textSecondary)
                                     }
                                 }
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
