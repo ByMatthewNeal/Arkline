@@ -274,23 +274,6 @@ struct MacroDashboardWidget: View {
                         .padding(.vertical, 4)
 
                     MacroIndicatorColumn(
-                        label: "M2",
-                        value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
-                        change: liquidityData?.monthlyChange,
-                        signal: m2Signal,
-                        cryptoSignal: m2CryptoSignal,
-                        correlation: m2Correlation,
-                        sparklineData: m2Sparkline,
-                        size: size,
-                        zScoreData: macroZScores[.m2]
-                    )
-
-                    Rectangle()
-                        .fill(textPrimary.opacity(0.08))
-                        .frame(width: 1)
-                        .padding(.vertical, 4)
-
-                    MacroIndicatorColumn(
                         label: "Net Liq",
                         value: netLiquidityData.map { formatLiquidity($0.current) } ?? "--",
                         change: netLiquidityData?.weeklyChange,
