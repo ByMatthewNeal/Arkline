@@ -234,6 +234,7 @@ struct ReorderableWidgetStack: View {
                 vixData: viewModel.vixData,
                 dxyData: viewModel.dxyData,
                 liquidityData: viewModel.globalLiquidityChanges,
+                netLiquidityData: viewModel.netLiquidityData,
                 macroZScores: viewModel.macroZScores,
                 size: appState.widgetSize(.macroDashboard)
             )

@@ -10,4 +10,7 @@ protocol GlobalLiquidityServiceProtocol {
 
     /// Get latest M2 money supply value
     func fetchLatestM2() async throws -> Double
+
+    /// Fetch US Net Liquidity (Fed balance sheet − TGA − RRP) with changes
+    func fetchNetLiquidityChanges() async throws -> NetLiquidityChanges
 }

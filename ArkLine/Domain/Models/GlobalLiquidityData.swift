@@ -138,6 +138,32 @@ struct GlobalLiquidityChanges: Codable {
     }
 }
 
+// MARK: - Net Liquidity Changes
+/// US Net Liquidity = Fed Balance Sheet (WALCL) - TGA (WTREGEN) - RRP (RRPONTSYD)
+/// The #1 short-term driver of crypto and risk asset prices
+struct NetLiquidityChanges: Codable {
+    let current: Double                  // Current net liquidity in USD
+    let weeklyChange: Double             // 7-day change %
+    let monthlyChange: Double            // 30-day change %
+    let yearlyChange: Double             // 365-day change %
+    let history: [GlobalLiquidityData]   // Historical data points
+
+    /// Formatted current value
+    var formattedCurrent: String {
+        if current >= 1_000_000_000_000 {
+            return String(format: "$%.2fT", current / 1_000_000_000_000)
+        }
+        return String(format: "$%.0fB", current / 1_000_000_000)
+    }
+
+    /// Overall trend signal based on weekly change
+    var overallSignal: MarketSignal {
+        if weeklyChange > 0.5 { return .bullish }
+        if weeklyChange < -0.5 { return .bearish }
+        return .neutral
+    }
+}
+
 // MARK: - Liquidity Timeframe
 enum LiquidityTimeframe: String, CaseIterable {
     case daily = "1D"
@@ -172,7 +198,9 @@ enum FREDSeries: String {
     case m2Weekly = "WM2NS"             // US M2 Weekly
 
     // Other Fed series
-    case fedBalance = "WALCL"           // Fed Total Assets
+    case fedBalance = "WALCL"           // Fed Total Assets (Millions, Weekly Wed)
+    case tga = "WTREGEN"               // Treasury General Account (Millions, Weekly Wed)
+    case rrp = "RRPONTSYD"             // Reverse Repo (Billions, Daily)
     case federalFundsRate = "FEDFUNDS"  // Federal Funds Rate
 
     // FX Rates (used for Global M2 aggregation)
@@ -186,6 +214,8 @@ enum FREDSeries: String {
         case .m2: return "US M2 Money Supply"
         case .m2Weekly: return "M2 Weekly"
         case .fedBalance: return "Fed Balance Sheet"
+        case .tga: return "Treasury General Account"
+        case .rrp: return "Reverse Repo"
         case .federalFundsRate: return "Federal Funds Rate"
         case .fxCNYUSD: return "CNY/USD Exchange Rate"
         case .fxEURUSD: return "EUR/USD Exchange Rate"

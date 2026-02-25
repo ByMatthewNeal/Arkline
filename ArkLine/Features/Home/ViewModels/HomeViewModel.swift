@@ -64,6 +64,9 @@ class HomeViewModel {
     var globalLiquidityChanges: GlobalLiquidityChanges?
     var supplyInProfitData: SupplyProfitData?
 
+    // Net Liquidity (Fed balance sheet - TGA - RRP)
+    var netLiquidityData: NetLiquidityChanges?
+
     // Macro Z-Scores (statistical analysis)
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
 
@@ -410,6 +413,7 @@ class HomeViewModel {
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
         async let liquidityTask = fetchGlobalLiquiditySafe()
+        async let netLiqTask = fetchNetLiquiditySafe()
         async let supplyProfitTask = fetchSupplyInProfitSafe()
         async let fedWatchTask = fetchFedWatchMeetingsSafe()
         async let upcomingEventsTask = fetchUpcomingEventsSafe()
@@ -493,6 +497,7 @@ class HomeViewModel {
         let vix = await vixTask
         let dxy = await dxyTask
         let liquidity = await liquidityTask
+        let netLiq = await netLiqTask
         let supplyProfit = await supplyProfitTask
         let fedMeetings = await fedWatchTask
         let riskResults = await riskResultsTask
@@ -501,6 +506,7 @@ class HomeViewModel {
             self.vixData = vix
             self.dxyData = dxy
             self.globalLiquidityChanges = liquidity
+            self.netLiquidityData = netLiq
             self.supplyInProfitData = supplyProfit
             self.fedWatchMeetings = fedMeetings ?? []
             for (coin, level, history) in riskResults {
@@ -529,6 +535,12 @@ class HomeViewModel {
                     await collector.recordIndicator(
                         name: "global_m2", value: m2.current,
                         metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
+                    )
+                }
+                if let nl = netLiq {
+                    await collector.recordIndicator(
+                        name: "net_liquidity", value: nl.current,
+                        metadata: ["weekly_change": .double(nl.weeklyChange), "monthly_change": .double(nl.monthlyChange), "yearly_change": .double(nl.yearlyChange)]
                     )
                 }
                 if let sp = supplyProfit {
@@ -782,6 +794,15 @@ class HomeViewModel {
             return try await globalLiquidityService.fetchLiquidityChanges()
         } catch {
             logError("Global liquidity fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+
+    private func fetchNetLiquiditySafe() async -> NetLiquidityChanges? {
+        do {
+            return try await globalLiquidityService.fetchNetLiquidityChanges()
+        } catch {
+            logError("Net liquidity fetch failed: \(error.localizedDescription)", category: .network)
             return nil
         }
     }

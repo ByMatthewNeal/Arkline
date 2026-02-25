@@ -6,6 +6,7 @@ struct MacroDashboardWidget: View {
     let vixData: VIXData?
     let dxyData: DXYData?
     let liquidityData: GlobalLiquidityChanges?
+    var netLiquidityData: NetLiquidityChanges? = nil
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     var size: WidgetSize = .standard
 
@@ -58,8 +59,18 @@ struct MacroDashboardWidget: View {
             else if m2.monthlyChange < -0.5 { bearishSignals += 1 }
         }
 
+        if let netLiq = netLiquidityData {
+            totalSignals += 1
+            if netLiq.weeklyChange > 0.5 { bullishSignals += 1 }
+            else if netLiq.weeklyChange < -0.5 { bearishSignals += 1 }
+        }
+
         guard totalSignals >= 2 else { return .noData }
 
+        // With 4 indicators: require ≥3 for conviction
+        if bullishSignals >= 3 && bearishSignals == 0 { return .riskOn }
+        if bearishSignals >= 3 && bullishSignals == 0 { return .riskOff }
+        // Fallback for 3-indicator scenarios
         if bullishSignals >= 2 && bearishSignals == 0 { return .riskOn }
         if bearishSignals >= 2 && bullishSignals == 0 { return .riskOff }
         return .mixed
@@ -146,6 +157,27 @@ struct MacroDashboardWidget: View {
         return (AppColors.error, "Bearish")
     }
 
+    // MARK: - Net Liquidity Signals
+    private var netLiqSignal: (color: Color, label: String) {
+        guard let nl = netLiquidityData else { return (.secondary, "--") }
+        if nl.weeklyChange > 0.5 { return (AppColors.success, "Bullish") }
+        if nl.weeklyChange < -0.5 { return (AppColors.error, "Bearish") }
+        return (AppColors.warning, "Neutral")
+    }
+
+    private var netLiqCryptoSignal: (color: Color, label: String) {
+        netLiqSignal  // Same as indicator signal (positive correlation)
+    }
+
+    private var netLiqCorrelation: CorrelationStrength {
+        guard let nl = netLiquidityData else { return .weak }
+        let absChange = abs(nl.weeklyChange)
+        if absChange > 2.0 { return .veryStrong }
+        if absChange > 1.0 { return .strong }
+        if absChange > 0.5 { return .moderate }
+        return .weak
+    }
+
     private func formatLiquidity(_ value: Double) -> String {
         if value >= 1_000_000_000_000 {
             return String(format: "%.1fT", value / 1_000_000_000_000)
@@ -170,6 +202,15 @@ struct MacroDashboardWidget: View {
             history: m2.history,
             current: m2.current,
             monthlyChange: m2.monthlyChange
+        )
+    }
+
+    private var netLiqSparkline: [CGFloat] {
+        guard let nl = netLiquidityData else { return [] }
+        return SparklineGenerator.m2Sparkline(
+            history: nl.history,
+            current: nl.current,
+            monthlyChange: nl.weeklyChange
         )
     }
 
@@ -242,6 +283,23 @@ struct MacroDashboardWidget: View {
                         sparklineData: m2Sparkline,
                         size: size,
                         zScoreData: macroZScores[.m2]
+                    )
+
+                    Rectangle()
+                        .fill(textPrimary.opacity(0.08))
+                        .frame(width: 1)
+                        .padding(.vertical, 4)
+
+                    MacroIndicatorColumn(
+                        label: "Net Liq",
+                        value: netLiquidityData.map { formatLiquidity($0.current) } ?? "--",
+                        change: netLiquidityData?.weeklyChange,
+                        signal: netLiqSignal,
+                        cryptoSignal: netLiqCryptoSignal,
+                        correlation: netLiqCorrelation,
+                        sparklineData: netLiqSparkline,
+                        size: size,
+                        zScoreData: macroZScores[.netLiquidity]
                     )
                 }
                 .padding(.vertical, size == .compact ? 8 : 12)
@@ -329,6 +387,7 @@ struct MacroDashboardWidget: View {
                     vixData: vixData,
                     dxyData: dxyData,
                     liquidityData: liquidityData,
+                    netLiquidityData: netLiquidityData,
                     regime: marketRegime,
                     vixCorrelation: vixCorrelation,
                     dxyCorrelation: dxyCorrelation,
@@ -363,7 +422,7 @@ struct MacroDashboardWidget: View {
 
     private var correlationInsight: String {
         // Dynamic insight based on current correlations
-        let strongCorrelations = [vixCorrelation, dxyCorrelation, m2Correlation].filter { $0.rawValue >= 3 }
+        let strongCorrelations = [vixCorrelation, dxyCorrelation, m2Correlation, netLiqCorrelation].filter { $0.rawValue >= 3 }
 
         if strongCorrelations.count >= 2 {
             return "Multiple indicators showing strong correlation. High conviction environment for macro-driven moves."

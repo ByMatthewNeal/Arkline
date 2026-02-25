@@ -463,6 +463,7 @@ struct MacroIndicatorsSection: View {
     let vixData: VIXData?
     let dxyData: DXYData?
     let globalM2Data: GlobalLiquidityChanges?
+    var netLiquidityData: NetLiquidityChanges? = nil
     var crudeOilData: CrudeOilData? = nil
     var goldData: GoldData? = nil
     var geiData: GEIData? = nil
@@ -542,6 +543,17 @@ struct MacroIndicatorsSection: View {
                     icon: "chart.bar.fill",
                     liquidityData: globalM2Data,
                     zScoreData: macroZScores[.m2]
+                )
+
+                // US Net Liquidity Card
+                MacroIndicatorCard(
+                    title: "Net Liq",
+                    subtitle: "US Net Liquidity",
+                    value: netLiquidityData.map { formatNetLiq($0.current) } ?? "--",
+                    signal: netLiqSignal,
+                    description: netLiqDescription,
+                    icon: "building.columns.fill",
+                    liquidityData: nil
                 )
 
                 // WTI Crude Oil Card
@@ -630,6 +642,23 @@ struct MacroIndicatorsSection: View {
         if m2.monthlyChange > 0 { return "Bullish" }
         if m2.monthlyChange > -1.0 { return "Neutral" }
         return "Bearish"
+    }
+
+    // Net Liquidity helpers
+    private var netLiqSignal: MacroTrendSignal {
+        guard let nl = netLiquidityData else { return .neutral }
+        if nl.weeklyChange > 0.5 { return .bullish }
+        if nl.weeklyChange < -0.5 { return .bearish }
+        return .neutral
+    }
+
+    private var netLiqDescription: String {
+        guard netLiquidityData != nil else { return "Fed liquidity" }
+        return netLiqSignal == .bullish ? "Bullish" : (netLiqSignal == .bearish ? "Bearish" : "Neutral")
+    }
+
+    private func formatNetLiq(_ value: Double) -> String {
+        String(format: "$%.1fT", value / 1_000_000_000_000)
     }
 
     // Oil helpers — moderate oil = manageable inflation = bullish for risk assets

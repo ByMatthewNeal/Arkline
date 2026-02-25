@@ -232,6 +232,84 @@ struct GlobalLiquidityWidget: View {
     }
 }
 
+// MARK: - Net Liquidity Widget
+struct NetLiquidityWidget: View {
+    let netLiquidityData: NetLiquidityChanges?
+    var size: WidgetSize = .standard
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    private var signalColor: Color {
+        guard let nl = netLiquidityData else { return .secondary }
+        if nl.weeklyChange > 0.5 { return AppColors.success }
+        if nl.weeklyChange < -0.5 { return AppColors.error }
+        return AppColors.warning
+    }
+
+    private var trendDescription: String {
+        guard let nl = netLiquidityData else { return "--" }
+        if nl.weeklyChange > 0.5 { return "Bullish" }
+        if nl.weeklyChange < -0.5 { return "Bearish" }
+        return "Neutral"
+    }
+
+    private func formatValue(_ value: Double) -> String {
+        if value >= 1_000_000_000_000 {
+            return String(format: "$%.1fT", value / 1_000_000_000_000)
+        } else if value >= 1_000_000_000 {
+            return String(format: "$%.1fB", value / 1_000_000_000)
+        }
+        return String(format: "$%.0f", value)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: size == .compact ? 6 : 10) {
+            HStack(alignment: .center) {
+                Text("Net Liquidity")
+                    .font(.system(size: size == .compact ? 14 : 16, weight: .semibold))
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                Circle()
+                    .fill(signalColor)
+                    .frame(width: 8, height: 8)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(netLiquidityData.map { formatValue($0.current) } ?? "--")
+                    .font(.system(size: size == .compact ? 28 : 36, weight: .semibold, design: .default))
+                    .foregroundColor(textPrimary)
+                    .monospacedDigit()
+
+                if let change = netLiquidityData?.weeklyChange {
+                    Text(String(format: "%+.2f%%", change))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                }
+            }
+
+            HStack {
+                Text("Fed − TGA − RRP")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text(trendDescription)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(signalColor)
+            }
+        }
+        .padding(size == .compact ? 12 : 16)
+        .glassCard(cornerRadius: 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("US Net Liquidity, \(netLiquidityData.map { formatValue($0.current) } ?? "loading"), \(trendDescription)")
+    }
+}
+
 // MARK: - VIX Detail View
 struct VIXDetailView: View {
     let vixData: VIXData?
@@ -525,7 +603,7 @@ Global M2 represents the total money supply across major economies, including ca
                                 dollarChange: liquidity.formatDollars(liquidity.yearlyChangeDollars)
                             )
 
-                            Text("M2 data is released monthly by the Federal Reserve with a 2-3 week lag.")
+                            Text("M2 data is released weekly by the Federal Reserve.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .padding(.top, 4)

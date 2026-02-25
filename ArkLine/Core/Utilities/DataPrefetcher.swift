@@ -27,8 +27,11 @@ enum DataPrefetcher {
             async let dxy: Void = {
                 _ = try? await container.dxyService.fetchLatestDXY()
             }()
+            async let netLiq: Void = {
+                _ = try? await container.globalLiquidityService.fetchNetLiquidityChanges()
+            }()
 
-            _ = await (crypto, vix, dxy)
+            _ = await (crypto, vix, dxy, netLiq)
             logDebug("DataPrefetcher: critical data warmed", category: .network)
         }
     }

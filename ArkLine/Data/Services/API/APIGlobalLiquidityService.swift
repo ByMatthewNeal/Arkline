@@ -7,7 +7,7 @@ import Foundation
 /// Methodology matches TradingView's "M2 Global Liquidity Index" by Mik3Christ3ns3n:
 ///   total = (CNM2×CNYUSD + USM2 + EUM2×EURUSD + JPM2×JPYUSD + GBM2×GBPUSD)
 ///
-/// - US M2: Actual data from FRED (M2SL series, monthly)
+/// - US M2: Actual data from FRED (WM2NS series, weekly)
 /// - FX Rates: Live daily data from FRED (DEXCHUS, DEXUSEU, DEXJPUS, DEXUSUK)
 /// - Non-US M2: Calibrated base values with estimated growth rates,
 ///   since FRED's international M2 series were discontinued (2017-2019).
@@ -94,8 +94,8 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
             throw LiquidityError.apiKeyNotConfigured
         }
 
-        // Fetch US M2 and all FX rates in parallel
-        async let usM2Task = fetchFREDObservations(seriesId: FREDSeries.m2.rawValue, days: days)
+        // Fetch US M2 (weekly) and all FX rates in parallel
+        async let usM2Task = fetchFREDObservations(seriesId: FREDSeries.m2Weekly.rawValue, days: days)
         async let cnyTask = fetchFREDObservationsSafe(seriesId: FXSeriesID.cnyusd, days: days)
         async let eurTask = fetchFREDObservationsSafe(seriesId: FXSeriesID.eurusd, days: days)
         async let jpyTask = fetchFREDObservationsSafe(seriesId: FXSeriesID.jpyusd, days: days)
@@ -130,6 +130,105 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
             throw LiquidityError.noData
         }
         return latest.value
+    }
+
+    // MARK: - US Net Liquidity
+
+    func fetchNetLiquidityChanges() async throws -> NetLiquidityChanges {
+        let history = try await fetchNetLiquidity(days: 400)
+
+        guard !history.isEmpty else {
+            throw LiquidityError.noData
+        }
+
+        let current = history.last?.value ?? 0
+        let sortedHistory = history.sorted { $0.date < $1.date }
+
+        let weeklyChange = calculateChange(from: sortedHistory, daysAgo: 7)
+        let monthlyChange = calculateChange(from: sortedHistory, daysAgo: 30)
+        let yearlyChange = calculateChange(from: sortedHistory, daysAgo: 365)
+
+        return NetLiquidityChanges(
+            current: current,
+            weeklyChange: weeklyChange ?? 0,
+            monthlyChange: monthlyChange ?? 0,
+            yearlyChange: yearlyChange ?? 0,
+            history: sortedHistory
+        )
+    }
+
+    func fetchNetLiquidity(days: Int) async throws -> [GlobalLiquidityData] {
+        guard SupabaseManager.shared.isConfigured else {
+            throw LiquidityError.apiKeyNotConfigured
+        }
+
+        // Fetch 3 FRED series in parallel
+        async let walclTask = fetchFREDObservations(seriesId: FREDSeries.fedBalance.rawValue, days: days)
+        async let tgaTask = fetchFREDObservationsSafe(seriesId: FREDSeries.tga.rawValue, days: days)
+        async let rrpTask = fetchFREDObservationsSafe(seriesId: FREDSeries.rrp.rawValue, days: days)
+
+        let walclObs = try await walclTask
+        let tgaObs = await tgaTask
+        let rrpObs = await rrpTask
+
+        return buildNetLiquidity(walcl: walclObs, tga: tgaObs, rrp: rrpObs)
+    }
+
+    // MARK: - Net Liquidity Aggregation
+
+    private func buildNetLiquidity(
+        walcl: [FREDObservation],
+        tga: [FREDObservation],
+        rrp: [FREDObservation]
+    ) -> [GlobalLiquidityData] {
+        // Parse TGA and RRP into date-value lookups
+        let tgaLookup = parseFXRates(tga)   // Reuse FXDataPoint for date-value pairs
+        let rrpLookup = parseFXRates(rrp)
+
+        var results: [GlobalLiquidityData] = []
+        var previousValue: Double = 0
+
+        for obs in walcl {
+            guard let date = dateFormatter.date(from: obs.date),
+                  let walclValue = Double(obs.value) else {
+                continue
+            }
+
+            // WALCL: millions USD → actual USD
+            let fedAssets = walclValue * 1_000_000
+
+            // Find closest TGA value (within 7 days)
+            // WTREGEN: millions USD → actual USD
+            let tgaValue: Double
+            if let match = findClosestRate(for: date, in: tgaLookup, invert: false) {
+                tgaValue = match * 1_000_000
+            } else {
+                tgaValue = 750_000_000_000  // ~$750B default TGA
+            }
+
+            // Find closest RRP value (within 7 days)
+            // RRPONTSYD: billions USD → actual USD
+            let rrpValue: Double
+            if let match = findClosestRate(for: date, in: rrpLookup, invert: false) {
+                rrpValue = match * 1_000_000_000
+            } else {
+                rrpValue = 100_000_000_000  // ~$100B default RRP
+            }
+
+            // Net Liquidity = Fed Assets - TGA - RRP
+            let netLiq = fedAssets - tgaValue - rrpValue
+
+            let dataPoint = GlobalLiquidityData(
+                date: date,
+                value: netLiq,
+                previousValue: previousValue > 0 ? previousValue : netLiq
+            )
+
+            results.append(dataPoint)
+            previousValue = netLiq
+        }
+
+        return results
     }
 
     // MARK: - FRED API Fetching

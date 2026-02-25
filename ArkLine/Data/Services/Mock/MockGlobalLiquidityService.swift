@@ -57,4 +57,30 @@ final class MockGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     func fetchLatestM2() async throws -> Double {
         return currentM2
     }
+
+    func fetchNetLiquidityChanges() async throws -> NetLiquidityChanges {
+        let currentNetLiq: Double = 5_700_000_000_000  // ~$5.7T
+
+        var history: [GlobalLiquidityData] = []
+        let calendar = Calendar.current
+        let now = Date()
+        let dailyGrowthRate = 0.00005
+        var value = currentNetLiq
+
+        for daysAgo in (0..<min(365, 365)).reversed() {
+            guard let date = calendar.date(byAdding: .day, value: -daysAgo, to: now) else { continue }
+            let noise = Double.random(in: -0.002...0.002)
+            value = value / (1 + dailyGrowthRate + noise)
+            let previousValue = value / (1 + dailyGrowthRate)
+            history.append(GlobalLiquidityData(date: date, value: value, previousValue: previousValue))
+        }
+
+        return NetLiquidityChanges(
+            current: currentNetLiq,
+            weeklyChange: 0.3,
+            monthlyChange: 1.1,
+            yearlyChange: 4.8,
+            history: history.sorted { $0.date < $1.date }
+        )
+    }
 }
