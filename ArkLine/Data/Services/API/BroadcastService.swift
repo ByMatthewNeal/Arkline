@@ -124,6 +124,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             appReferences: broadcast.appReferences,
             portfolioAttachment: broadcast.portfolioAttachment,
             meetingLink: broadcast.meetingLink,
+            videoURL: broadcast.videoURL,
             targetAudience: broadcast.targetAudience,
             status: broadcast.status,
             publishedAt: broadcast.publishedAt,
@@ -460,6 +461,7 @@ private struct BroadcastUpdate: Encodable {
     let appReferences: [AppReference]
     let portfolioAttachment: BroadcastPortfolioAttachment?
     let meetingLink: URL?
+    let videoURL: URL?
     let targetAudience: TargetAudience
     let status: BroadcastStatus
     let publishedAt: Date?
@@ -473,6 +475,7 @@ private struct BroadcastUpdate: Encodable {
         case appReferences = "app_references"
         case portfolioAttachment = "portfolio_attachment"
         case meetingLink = "meeting_link"
+        case videoURL = "video_url"
         case targetAudience = "target_audience"
         case publishedAt = "published_at"
         case scheduledAt = "scheduled_at"

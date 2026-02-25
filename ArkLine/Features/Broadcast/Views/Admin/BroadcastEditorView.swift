@@ -21,6 +21,7 @@ struct BroadcastEditorView: View {
     @State private var targetAudience: TargetAudience = .all
     @State private var selectedTags: [String] = []
     @State private var meetingLink: String = ""
+    @State private var videoLink: String = ""
     @State private var isScheduled = false
     @State private var scheduledDate = Date().addingTimeInterval(3600)
     @State private var showingVoiceRecorder = false
@@ -126,6 +127,9 @@ struct BroadcastEditorView: View {
                     // Meeting Link Section
                     meetingLinkSection
 
+                    // Video Recording Section
+                    videoLinkSection
+
                     // App References Section
                     appReferencesSection
 
@@ -208,6 +212,7 @@ struct BroadcastEditorView: View {
                     appReferences = broadcast.appReferences
                     portfolioAttachment = broadcast.portfolioAttachment
                     meetingLink = broadcast.meetingLink?.absoluteString ?? ""
+                    videoLink = broadcast.videoURL?.absoluteString ?? ""
                     targetAudience = broadcast.targetAudience
                     selectedTags = broadcast.tags
                     if let scheduled = broadcast.scheduledAt {
@@ -379,6 +384,59 @@ struct BroadcastEditorView: View {
             .cornerRadius(ArkSpacing.sm)
 
             if !meetingLink.isEmpty && meetingLinkURL == nil {
+                Text("Enter a valid URL starting with https://")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.error)
+            }
+        }
+    }
+
+    // MARK: - Video Recording Section
+
+    /// Parsed URL from the video link text field (nil if empty or invalid)
+    private var videoLinkURL: URL? {
+        let trimmed = videoLink.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            return nil
+        }
+        return url
+    }
+
+    private var videoLinkSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            Text("Video Recording")
+                .font(ArkFonts.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            HStack(spacing: ArkSpacing.sm) {
+                Image(systemName: "play.rectangle.fill")
+                    .foregroundColor(AppColors.accent)
+                    .frame(width: 24)
+
+                TextField("https://loom.com/share/...", text: $videoLink)
+                    .font(ArkFonts.body)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                if !videoLink.isEmpty {
+                    Button {
+                        videoLink = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(AppColors.textTertiary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(ArkSpacing.md)
+            .background(AppColors.cardBackground(colorScheme))
+            .cornerRadius(ArkSpacing.sm)
+
+            if !videoLink.isEmpty && videoLinkURL == nil {
                 Text("Enter a valid URL starting with https://")
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.error)
@@ -965,6 +1023,7 @@ struct BroadcastEditorView: View {
                     updated.appReferences = appReferences
                     updated.portfolioAttachment = portfolioAttachment
                     updated.meetingLink = meetingLinkURL
+                    updated.videoURL = videoLinkURL
                     updated.targetAudience = targetAudience
                     updated.tags = selectedTags
 
@@ -1014,6 +1073,7 @@ struct BroadcastEditorView: View {
                         appReferences: appReferences,
                         portfolioAttachment: portfolioAttachment,
                         meetingLink: meetingLinkURL,
+                        videoURL: videoLinkURL,
                         targetAudience: targetAudience,
                         status: status,
                         publishedAt: publishedAt,

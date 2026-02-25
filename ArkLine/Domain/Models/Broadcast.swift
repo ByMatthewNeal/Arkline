@@ -13,6 +13,7 @@ struct Broadcast: Codable, Identifiable, Equatable {
     var appReferences: [AppReference]
     var portfolioAttachment: BroadcastPortfolioAttachment?
     var meetingLink: URL?
+    var videoURL: URL?
     var targetAudience: TargetAudience
     var status: BroadcastStatus
     let createdAt: Date
@@ -35,6 +36,7 @@ struct Broadcast: Codable, Identifiable, Equatable {
         case appReferences = "app_references"
         case portfolioAttachment = "portfolio_attachment"
         case meetingLink = "meeting_link"
+        case videoURL = "video_url"
         case targetAudience = "target_audience"
         case status
         case createdAt = "created_at"
@@ -56,6 +58,7 @@ struct Broadcast: Codable, Identifiable, Equatable {
         appReferences: [AppReference] = [],
         portfolioAttachment: BroadcastPortfolioAttachment? = nil,
         meetingLink: URL? = nil,
+        videoURL: URL? = nil,
         targetAudience: TargetAudience = .all,
         status: BroadcastStatus = .draft,
         createdAt: Date = Date(),
@@ -75,6 +78,7 @@ struct Broadcast: Codable, Identifiable, Equatable {
         self.appReferences = appReferences
         self.portfolioAttachment = portfolioAttachment
         self.meetingLink = meetingLink
+        self.videoURL = videoURL
         self.targetAudience = targetAudience
         self.status = status
         self.createdAt = createdAt
@@ -96,6 +100,7 @@ struct Broadcast: Codable, Identifiable, Equatable {
         try container.encode(images, forKey: .images)
         try container.encode(appReferences, forKey: .appReferences)
         try container.encodeIfPresent(meetingLink, forKey: .meetingLink)
+        try container.encodeIfPresent(videoURL, forKey: .videoURL)
         try container.encodeIfPresent(portfolioAttachment, forKey: .portfolioAttachment)
         try container.encode(targetAudience, forKey: .targetAudience)
         try container.encode(status, forKey: .status)
@@ -118,6 +123,7 @@ struct Broadcast: Codable, Identifiable, Equatable {
         appReferences = (try? container.decodeIfPresent([AppReference].self, forKey: .appReferences)) ?? []
         portfolioAttachment = try? container.decodeIfPresent(BroadcastPortfolioAttachment.self, forKey: .portfolioAttachment)
         meetingLink = try? container.decodeIfPresent(URL.self, forKey: .meetingLink)
+        videoURL = try? container.decodeIfPresent(URL.self, forKey: .videoURL)
         targetAudience = (try? container.decode(TargetAudience.self, forKey: .targetAudience)) ?? .all
         status = try container.decode(BroadcastStatus.self, forKey: .status)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
@@ -1095,6 +1101,7 @@ enum BroadcastTag: String, CaseIterable {
     case news = "News"
     case xPost = "X Post"
     case marketUpdate = "Market Update"
+    case myPortfolio = "My Portfolio"
     case outOfOffice = "Out of Office"
 
     var displayName: String { rawValue }
@@ -1114,6 +1121,7 @@ enum BroadcastTag: String, CaseIterable {
         case .news: return Color(hex: "64748B")
         case .xPost: return Color(hex: "000000")
         case .marketUpdate: return Color(hex: "0EA5E9")
+        case .myPortfolio: return Color(hex: "22C55E")
         case .outOfOffice: return Color(hex: "A3A3A3")
         }
     }

@@ -47,6 +47,12 @@ struct BroadcastCardView: View {
                                 .font(.caption)
                                 .foregroundColor(AppColors.accent)
                         }
+
+                        if broadcast.videoURL != nil {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.caption)
+                                .foregroundColor(Color(hex: "8B5CF6"))
+                        }
                     }
                 }
 
@@ -187,6 +193,40 @@ struct BroadcastDetailView: View {
                             }
                             .padding(ArkSpacing.md)
                             .background(AppColors.accent.opacity(0.1))
+                            .cornerRadius(ArkSpacing.sm)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    // Video Recording
+                    if let videoURL = broadcast.videoURL {
+                        Button {
+                            openURL(videoURL)
+                        } label: {
+                            HStack(spacing: ArkSpacing.md) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(Color(hex: "8B5CF6"))
+
+                                VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
+                                    Text("Watch Recording")
+                                        .font(ArkFonts.bodySemibold)
+                                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                                    Text(videoURL.host ?? videoURL.absoluteString)
+                                        .font(ArkFonts.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundColor(Color(hex: "8B5CF6"))
+                            }
+                            .padding(ArkSpacing.md)
+                            .background(Color(hex: "8B5CF6").opacity(0.1))
                             .cornerRadius(ArkSpacing.sm)
                         }
                         .buttonStyle(.plain)

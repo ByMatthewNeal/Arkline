@@ -160,7 +160,7 @@ final class BroadcastTagTests: XCTestCase {
     }
 
     func test_allCases_containsExpectedTags() {
-        XCTAssertEqual(BroadcastTag.allCases.count, 14)
+        XCTAssertEqual(BroadcastTag.allCases.count, 15)
     }
 }
 
