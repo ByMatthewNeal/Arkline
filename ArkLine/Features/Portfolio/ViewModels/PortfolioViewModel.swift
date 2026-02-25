@@ -289,6 +289,23 @@ final class PortfolioViewModel {
         }
     }
 
+    /// Lightweight refresh that only re-fetches holdings + prices (skips transactions, history, portfolios).
+    private func refreshHoldingsOnly() async {
+        guard let portfolioId = portfolioId else { return }
+
+        do {
+            let fetchedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+            let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: fetchedHoldings)
+
+            await MainActor.run {
+                self.holdings = holdingsWithPrices
+                self.allocations = self.computeAllocations(from: holdingsWithPrices)
+            }
+        } catch {
+            logError("Holdings refresh failed: \(error)", category: .data)
+        }
+    }
+
     // MARK: - Actions
     func selectTab(_ tab: PortfolioTab) {
         selectedTab = tab
@@ -772,8 +789,8 @@ final class PortfolioViewModel {
                 try await recalculateHolding(holdingId: holdingId)
             }
 
-            // Refresh holdings since removing a transaction affects quantity/avg price
-            await refresh()
+            // Refresh holdings with live prices (no need for full refresh)
+            await refreshHoldingsOnly()
         } catch {
             await MainActor.run {
                 self.error = AppError.from(error)
@@ -796,7 +813,8 @@ final class PortfolioViewModel {
                 try await recalculateHolding(holdingId: holdingId)
             }
 
-            await refresh()
+            // Refresh holdings with live prices (no need for full refresh)
+            await refreshHoldingsOnly()
         } catch {
             await MainActor.run {
                 self.error = AppError.from(error)

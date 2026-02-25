@@ -95,6 +95,7 @@ struct HoldingDetailView: View {
                                     .font(AppFonts.title18SemiBold)
                             }
                             .foregroundColor(liveHolding.isProfit ? AppColors.success : AppColors.error)
+                            .accessibilityLabel("\(liveHolding.isProfit ? "Profit" : "Loss") \(liveHolding.profitLoss.asCurrency(code: currency))")
                         }
 
                         Spacer()
@@ -208,16 +209,19 @@ struct HoldingDetailView: View {
                             .font(.system(size: 15))
                             .foregroundColor(AppColors.accent)
                     }
+                    .accessibilityLabel("Edit holding")
                     Button(action: { showDeleteHoldingConfirmation = true }) {
                         Image(systemName: "trash")
                             .font(.system(size: 15))
                             .foregroundColor(AppColors.error)
                     }
+                    .accessibilityLabel("Delete holding")
                     Button(action: { showSellSheet = true }) {
                         Text("Sell")
                             .font(AppFonts.body16Medium)
                             .foregroundColor(AppColors.error)
                     }
+                    .accessibilityLabel("Sell \(liveHolding.symbol.uppercased())")
                 }
             }
         }
@@ -254,6 +258,11 @@ struct HoldingDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("Are you sure? This will recalculate your holdings.")
+        }
+        .onChange(of: viewModel.holdings) { _, newHoldings in
+            if !newHoldings.contains(where: { $0.id == holding.id }) {
+                dismiss()
+            }
         }
         .alert("Delete \(liveHolding.symbol.uppercased())?", isPresented: $showDeleteHoldingConfirmation) {
             Button("Delete", role: .destructive) {

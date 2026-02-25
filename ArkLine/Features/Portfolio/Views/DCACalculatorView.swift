@@ -13,9 +13,7 @@ struct DCACalculatorView: View {
         AppColors.textPrimary(colorScheme)
     }
 
-    private var totalSteps: Int {
-        calculatorState.strategyType == .timeBased ? 6 : 6
-    }
+    private var totalSteps: Int { 6 }
 
     var body: some View {
         ZStack {
@@ -129,22 +127,13 @@ struct DCACalculatorView: View {
             }
 
         case 6:
-            // Step 6: Portfolio (time-based) or Portfolio (risk-based)
-            if calculatorState.strategyType == .timeBased {
-                DCAPortfolioPickerCard(
-                    selectedPortfolioId: $calculatorState.selectedPortfolioId,
-                    selectedPortfolioName: $calculatorState.selectedPortfolioName,
-                    availablePortfolios: calculatorState.availablePortfolios
-                )
-                .padding(.horizontal, 20)
-            } else {
-                DCAPortfolioPickerCard(
-                    selectedPortfolioId: $calculatorState.selectedPortfolioId,
-                    selectedPortfolioName: $calculatorState.selectedPortfolioName,
-                    availablePortfolios: calculatorState.availablePortfolios
-                )
-                .padding(.horizontal, 20)
-            }
+            // Step 6: Portfolio selection (both strategies)
+            DCAPortfolioPickerCard(
+                selectedPortfolioId: $calculatorState.selectedPortfolioId,
+                selectedPortfolioName: $calculatorState.selectedPortfolioName,
+                availablePortfolios: calculatorState.availablePortfolios
+            )
+            .padding(.horizontal, 20)
 
         case 7:
             // Step 7: Summary (both strategies)

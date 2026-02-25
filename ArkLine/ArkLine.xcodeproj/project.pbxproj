@@ -70,6 +70,7 @@
 		320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */; };
 		335C702F0D9E1CFF7480EC8B /* SocialLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D7DB64239C464966F42017 /* SocialLinksView.swift */; };
 		34F28A15245DD8CEAF8D0917 /* PerformanceCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA6D89396B94ACB0433199B /* PerformanceCards.swift */; };
+		AL10CATARG3D1T0002 /* AllocationTargetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AL10CATARG3D1T0001 /* AllocationTargetEditor.swift */; };
 		3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */; };
 		38403ADBC04AB8CD95F00E3E /* MetalTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4477F7D7272D23B31C4B0199 /* MetalTechnicalAnalysisService.swift */; };
 		386CF39874D6A2F1687A3828 /* EventRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD95D54C81F435AFABAE82A /* EventRowView.swift */; };
@@ -666,6 +667,7 @@
 		AA110001AABB00110001AA01 /* PortfolioCommonComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioCommonComponents.swift; sourceTree = "<group>"; };
 		AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioHeaderComponents.swift; sourceTree = "<group>"; };
 		AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioTabComponents.swift; sourceTree = "<group>"; };
+		AL10CATARG3D1T0001 /* AllocationTargetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationTargetEditor.swift; sourceTree = "<group>"; };
 		AA1122334455667788990011 /* StockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockDetailView.swift; sourceTree = "<group>"; };
 		AA1122334455667788990022 /* MetalDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalDetailView.swift; sourceTree = "<group>"; };
 		AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubEconomicCalendarService.swift; sourceTree = "<group>"; };
@@ -1345,6 +1347,7 @@
 				AA110002AABB00110002AA02 /* PortfolioHeaderComponents.swift */,
 				AA110003AABB00110003AA03 /* PortfolioTabComponents.swift */,
 				DFA6D89396B94ACB0433199B /* PerformanceCards.swift */,
+				AL10CATARG3D1T0001 /* AllocationTargetEditor.swift */,
 				6C06924AB1053BEBE96D201B /* TransactionRow.swift */,
 			);
 			path = Components;
@@ -2405,6 +2408,7 @@
 				A7A3EAB5EA825A265A6C244C /* PasscodeKeypad.swift in Sources */,
 				6381F7DC80B6158842FC7AE2 /* PercentageChangeView.swift in Sources */,
 				34F28A15245DD8CEAF8D0917 /* PerformanceCards.swift in Sources */,
+				AL10CATARG3D1T0002 /* AllocationTargetEditor.swift in Sources */,
 				0622105383FB4CA6C1E1D8AC /* PerformanceMetrics.swift in Sources */,
 				124D9971E61229596EEB9C25 /* PerformanceMetricsCalculator.swift in Sources */,
 				B5B94550426F78EBD884FBCC /* PerformanceView.swift in Sources */,

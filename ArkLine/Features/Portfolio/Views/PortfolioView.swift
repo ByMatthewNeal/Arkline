@@ -4,11 +4,17 @@ struct PortfolioView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @State private var viewModel = PortfolioViewModel()
-    @State private var showAddTransaction = false
-    @State private var showCreatePortfolio = false
-    @State private var showPortfolioPicker = false
-    @State private var showShowcase = false
+    @State private var activeSheet: PortfolioSheet?
     @State private var navigationPath = NavigationPath()
+
+    private enum PortfolioSheet: Identifiable {
+        case addTransaction
+        case createPortfolio
+        case portfolioPicker
+        case showcase
+
+        var id: Int { hashValue }
+    }
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -122,7 +128,7 @@ struct PortfolioView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showPortfolioPicker = true }) {
+                    Button(action: { activeSheet = .portfolioPicker }) {
                         HStack(spacing: 4) {
                             Text(viewModel.selectedPortfolio?.name ?? "Portfolio")
                                 .font(AppFonts.title18SemiBold)
@@ -131,18 +137,19 @@ struct PortfolioView: View {
                         }
                         .foregroundColor(AppColors.textPrimary(colorScheme))
                     }
+                    .accessibilityLabel("Switch portfolio, current: \(viewModel.selectedPortfolio?.name ?? "Portfolio")")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: ArkSpacing.sm) {
                         // Showcase button
-                        Button(action: { showShowcase = true }) {
+                        Button(action: { activeSheet = .showcase }) {
                             Image(systemName: "square.split.2x1")
                                 .foregroundColor(AppColors.accent)
                         }
                         .accessibilityLabel("Portfolio showcase")
 
                         // Add transaction button
-                        Button(action: { showAddTransaction = true }) {
+                        Button(action: { activeSheet = .addTransaction }) {
                             Image(systemName: "plus")
                                 .foregroundColor(AppColors.accent)
                         }
@@ -151,46 +158,46 @@ struct PortfolioView: View {
                 }
             }
             #endif
-            .sheet(isPresented: $showPortfolioPicker) {
-                PortfolioSwitcherSheet(
-                    portfolios: viewModel.portfolios,
-                    selectedPortfolio: Binding(
-                        get: { viewModel.selectedPortfolio },
-                        set: { portfolio in
-                            if let portfolio = portfolio {
-                                viewModel.selectPortfolio(portfolio)
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .portfolioPicker:
+                    PortfolioSwitcherSheet(
+                        portfolios: viewModel.portfolios,
+                        selectedPortfolio: Binding(
+                            get: { viewModel.selectedPortfolio },
+                            set: { portfolio in
+                                if let portfolio = portfolio {
+                                    viewModel.selectPortfolio(portfolio)
+                                }
                             }
+                        ),
+                        viewModel: viewModel,
+                        onCreatePortfolio: {
+                            activeSheet = .createPortfolio
                         }
-                    ),
-                    viewModel: viewModel,
-                    onCreatePortfolio: {
-                        showCreatePortfolio = true
-                    }
-                )
-            }
-            .sheet(isPresented: $showAddTransaction) {
-                AddTransactionView(viewModel: viewModel)
-            }
-            .sheet(isPresented: $showCreatePortfolio) {
-                CreatePortfolioView(viewModel: viewModel)
-            }
-            .sheet(isPresented: $showShowcase) {
-                PortfolioShowcaseView()
+                    )
+                case .addTransaction:
+                    AddTransactionView(viewModel: viewModel)
+                case .createPortfolio:
+                    CreatePortfolioView(viewModel: viewModel)
+                case .showcase:
+                    PortfolioShowcaseView()
+                }
             }
             .onChange(of: appState.shouldShowPortfolioCreation) { _, shouldShow in
                 if shouldShow {
-                    // Small delay to allow view transition to complete
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showCreatePortfolio = true
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        activeSheet = .createPortfolio
                         appState.shouldShowPortfolioCreation = false
                     }
                 }
             }
             .onAppear {
-                // Also check on appear in case onChange missed it
                 if appState.shouldShowPortfolioCreation {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showCreatePortfolio = true
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        activeSheet = .createPortfolio
                         appState.shouldShowPortfolioCreation = false
                     }
                 }
