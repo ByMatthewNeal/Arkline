@@ -137,6 +137,10 @@ struct AddTransactionView: View {
                                 searchResults = []
                                 searchTask?.cancel()
                                 isSearching = false
+                                symbol = ""
+                                name = ""
+                                pricePerUnit = ""
+                                priceWasAutoFetched = false
                             }
 
                         // Inline search results
