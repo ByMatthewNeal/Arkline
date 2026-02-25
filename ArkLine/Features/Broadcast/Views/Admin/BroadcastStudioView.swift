@@ -12,8 +12,8 @@ struct BroadcastStudioView: View {
 
     @State private var showingEditor = false
     @State private var showingAnalytics = false
-    @State private var showingDetail = false
     @State private var selectedBroadcast: Broadcast?
+    @State private var detailBroadcast: Broadcast?
 
     var body: some View {
         NavigationStack {
@@ -92,13 +92,11 @@ struct BroadcastStudioView: View {
             .sheet(isPresented: $showingEditor) {
                 BroadcastEditorView(broadcast: selectedBroadcast, viewModel: viewModel)
             }
-            .sheet(isPresented: $showingDetail) {
-                if let broadcast = selectedBroadcast {
-                    AdminBroadcastDetailView(broadcast: broadcast, viewModel: viewModel) {
-                        showingDetail = false
-                        selectedBroadcast = broadcast
-                        showingEditor = true
-                    }
+            .sheet(item: $detailBroadcast) { broadcast in
+                AdminBroadcastDetailView(broadcast: broadcast, viewModel: viewModel) {
+                    detailBroadcast = nil
+                    selectedBroadcast = broadcast
+                    showingEditor = true
                 }
             }
             .sheet(isPresented: $showingAnalytics) {
@@ -188,10 +186,10 @@ struct BroadcastStudioView: View {
                 BroadcastRowView(
                     broadcast: broadcast,
                     onTap: {
-                        selectedBroadcast = broadcast
                         if broadcast.status == .published {
-                            showingDetail = true
+                            detailBroadcast = broadcast
                         } else {
+                            selectedBroadcast = broadcast
                             showingEditor = true
                         }
                     },
