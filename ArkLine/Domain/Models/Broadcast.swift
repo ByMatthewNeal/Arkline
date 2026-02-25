@@ -96,14 +96,16 @@ struct Broadcast: Codable, Identifiable, Equatable {
         try container.encode(images, forKey: .images)
         try container.encode(appReferences, forKey: .appReferences)
         try container.encodeIfPresent(meetingLink, forKey: .meetingLink)
+        try container.encodeIfPresent(portfolioAttachment, forKey: .portfolioAttachment)
         try container.encode(targetAudience, forKey: .targetAudience)
         try container.encode(status, forKey: .status)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encodeIfPresent(publishedAt, forKey: .publishedAt)
         try container.encodeIfPresent(scheduledAt, forKey: .scheduledAt)
+        try container.encodeIfPresent(templateId, forKey: .templateId)
+        try container.encode(tags, forKey: .tags)
         try container.encode(authorId, forKey: .authorId)
-        // Note: viewCount, reactionCount, portfolioAttachment, templateId, tags
-        // are NOT encoded — they don't exist as columns in the broadcasts table
+        // Note: viewCount, reactionCount are read-only server fields — not encoded
     }
 
     init(from decoder: Decoder) throws {
