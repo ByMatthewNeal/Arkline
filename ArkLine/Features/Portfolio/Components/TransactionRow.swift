@@ -38,6 +38,10 @@ struct TransactionRow: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(AppColors.textTertiary)
         }
         .padding(16)
         .glassCard(cornerRadius: 12)
