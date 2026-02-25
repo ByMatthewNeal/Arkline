@@ -75,6 +75,12 @@ protocol BroadcastServiceProtocol {
     /// - Returns: Number of unread broadcasts
     func unreadCount(for userId: UUID) async throws -> Int
 
+    // MARK: - View Tracking
+
+    /// Increments the total view count for a broadcast
+    /// - Parameter broadcastId: The broadcast ID
+    func incrementViewCount(broadcastId: UUID) async throws
+
     // MARK: - File Upload
 
     /// Uploads an audio file for a broadcast

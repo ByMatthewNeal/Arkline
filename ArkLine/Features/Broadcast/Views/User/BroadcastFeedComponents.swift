@@ -234,6 +234,8 @@ struct BroadcastDetailView: View {
                 if let userId = appState.currentUser?.id {
                     try? await viewModel.markAsRead(broadcastId: broadcast.id, userId: userId)
                 }
+                // Increment total view count
+                viewModel.incrementViewCount(broadcastId: broadcast.id)
                 // Track broadcast read
                 Task {
                     await AnalyticsService.shared.track("broadcast_read", properties: [

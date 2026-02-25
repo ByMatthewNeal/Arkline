@@ -49,6 +49,7 @@ fileprivate final class MockBroadcastService: BroadcastServiceProtocol {
     func markAsRead(broadcastId: UUID, userId: UUID) async throws { markAsReadCalled = true }
     func hasBeenRead(broadcastId: UUID, userId: UUID) async throws -> Bool { markAsReadCalled }
     func unreadCount(for userId: UUID) async throws -> Int { unreadCountValue }
+    func incrementViewCount(broadcastId: UUID) async throws {}
 
     func uploadAudio(data: Data, for broadcastId: UUID) async throws -> URL { URL(string: "https://example.com/audio.mp3")! }
     func uploadImage(data: Data, for broadcastId: UUID) async throws -> URL { URL(string: "https://example.com/image.png")! }

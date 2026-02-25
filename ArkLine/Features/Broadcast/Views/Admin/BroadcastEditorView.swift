@@ -33,6 +33,7 @@ struct BroadcastEditorView: View {
     @State private var isSaving = false
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
     @State private var showingPreview = false
+    @State private var pendingImageData: [UUID: Data] = [:]
 
     var body: some View {
         NavigationStack {
@@ -138,8 +139,8 @@ struct BroadcastEditorView: View {
                     // Scheduling Section
                     schedulingSection
 
-                    // Target Audience — always broadcast to all users
-                    // targetAudienceSection
+                    // Target Audience
+                    targetAudienceSection
                 }
                 .padding(ArkSpacing.md)
             }
@@ -223,7 +224,19 @@ struct BroadcastEditorView: View {
                 BroadcastPortfolioPicker(attachment: $portfolioAttachment)
             }
             .sheet(isPresented: $showingImageAnnotation) {
-                ImageAnnotationView(images: $images)
+                ImageAnnotationView(images: $images) { jpegData, annotations in
+                    let imageId = UUID()
+                    // Store JPEG data for upload when broadcast is saved
+                    pendingImageData[imageId] = jpegData
+                    // Create a placeholder BroadcastImage (URL will be replaced after upload)
+                    let placeholder = BroadcastImage(
+                        id: imageId,
+                        imageURL: URL(filePath: NSTemporaryDirectory()).appending(path: imageId.uuidString),
+                        annotations: annotations,
+                        caption: nil
+                    )
+                    images.append(placeholder)
+                }
             }
             .sheet(isPresented: $showingAudiencePicker) {
                 AudiencePickerView(targetAudience: $targetAudience)
@@ -870,6 +883,8 @@ struct BroadcastEditorView: View {
 
         Task {
             do {
+                var savedBroadcastId: UUID
+
                 if let existing = broadcast {
                     var updated = existing
                     updated.title = title
@@ -898,6 +913,7 @@ struct BroadcastEditorView: View {
                     }
 
                     try await viewModel.updateBroadcast(updated)
+                    savedBroadcastId = updated.id
 
                     // Send notification if publishing
                     if publish && updated.status == .published {
@@ -935,6 +951,7 @@ struct BroadcastEditorView: View {
                         authorId: userId
                     )
                     try await viewModel.createBroadcast(newBroadcast)
+                    savedBroadcastId = newBroadcast.id
 
                     // Send notification if publishing immediately
                     if publish {
@@ -942,6 +959,31 @@ struct BroadcastEditorView: View {
                             for: newBroadcast,
                             audience: targetAudience
                         )
+                    }
+                }
+
+                // Upload pending annotated images, then update broadcast with real URLs
+                if !pendingImageData.isEmpty {
+                    var updatedImages = images
+                    var didUpload = false
+
+                    for (imageId, data) in pendingImageData {
+                        do {
+                            let url = try await viewModel.uploadImage(data: data, for: savedBroadcastId)
+                            if let idx = updatedImages.firstIndex(where: { $0.id == imageId }) {
+                                updatedImages[idx].imageURL = url
+                                didUpload = true
+                            }
+                        } catch {
+                            logError("Failed to upload annotated image \(imageId): \(error)", category: .data)
+                        }
+                    }
+
+                    // Follow-up update to replace placeholder URLs with real storage URLs
+                    if didUpload, let saved = viewModel.broadcasts.first(where: { $0.id == savedBroadcastId }) {
+                        var patched = saved
+                        patched.images = updatedImages
+                        try await viewModel.updateBroadcast(patched)
                     }
                 }
 

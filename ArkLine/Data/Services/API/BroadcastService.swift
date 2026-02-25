@@ -254,6 +254,16 @@ final class BroadcastService: BroadcastServiceProtocol {
         return publishedIds.filter { !readSet.contains($0.id) }.count
     }
 
+    // MARK: - View Tracking
+
+    func incrementViewCount(broadcastId: UUID) async throws {
+        guard supabase.isConfigured else { return }
+
+        try await supabase.database
+            .rpc("increment_view_count", params: ["broadcast_uuid": broadcastId.uuidString])
+            .execute()
+    }
+
     // MARK: - File Upload
 
     func uploadAudio(data: Data, for broadcastId: UUID) async throws -> URL {

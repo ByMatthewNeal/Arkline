@@ -151,6 +151,19 @@ class BroadcastViewModel: ObservableObject {
         await updateUnreadCount(for: userId)
     }
 
+    // MARK: - View Tracking
+
+    /// Increment the total view count for a broadcast (fire-and-forget)
+    func incrementViewCount(broadcastId: UUID) {
+        Task {
+            do {
+                try await broadcastService.incrementViewCount(broadcastId: broadcastId)
+            } catch {
+                logError("Failed to increment view count: \(error)", category: .data)
+            }
+        }
+    }
+
     // MARK: - File Upload
 
     /// Upload audio file for a broadcast

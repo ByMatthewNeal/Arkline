@@ -10,6 +10,8 @@ struct ImageAnnotationView: View {
     @Environment(\.dismiss) var dismiss
 
     @Binding var images: [BroadcastImage]
+    /// Callback with rendered JPEG data and annotations when user taps Done
+    var onSave: ((Data, [ImageAnnotation]) -> Void)?
 
     @State private var selectedImage: UIImage?
     @State private var currentAnnotations: [ImageAnnotation] = []
@@ -466,18 +468,122 @@ struct ImageAnnotationView: View {
     // MARK: - Save
 
     private func saveAnnotatedImage() {
-        guard selectedImage != nil else { return }
+        guard let image = selectedImage else { return }
 
-        // For now, just save the annotations without rendering
-        // In production, you'd render the image with annotations to a new UIImage
-        let broadcastImage = BroadcastImage(
-            imageURL: URL(filePath: NSTemporaryDirectory()).appending(path: UUID().uuidString),
-            annotations: currentAnnotations,
-            caption: nil
-        )
+        // Render composite image (base + annotations) via UIGraphicsImageRenderer
+        let renderer = UIGraphicsImageRenderer(size: image.size)
+        let compositeData = renderer.jpegData(withCompressionQuality: 0.85) { ctx in
+            // Draw base image
+            image.draw(at: .zero)
 
-        images.append(broadcastImage)
+            let cgContext = ctx.cgContext
+
+            // Annotations use pixel coordinates relative to the displayed image size
+            // (as set by calculateImageSize). We scale them up to the full image resolution.
+            let displaySize = calculateDisplaySize(for: image)
+            let sx = image.size.width / displaySize.width
+            let sy = image.size.height / displaySize.height
+
+            for annotation in currentAnnotations {
+                drawAnnotationToContext(annotation, context: cgContext, scaleX: sx, scaleY: sy)
+            }
+        }
+
+        if let onSave {
+            onSave(compositeData, currentAnnotations)
+        } else {
+            // Fallback: create a placeholder BroadcastImage (legacy behavior)
+            let broadcastImage = BroadcastImage(
+                imageURL: URL(filePath: NSTemporaryDirectory()).appending(path: UUID().uuidString),
+                annotations: currentAnnotations,
+                caption: nil
+            )
+            images.append(broadcastImage)
+        }
+
         dismiss()
+    }
+
+    /// Calculate the display size for an image in a standard canvas area.
+    /// Mirrors calculateImageSize but with a reasonable default container.
+    private func calculateDisplaySize(for image: UIImage) -> CGSize {
+        // Use screen width as a reasonable proxy for the container width
+        let screenWidth = UIScreen.main.bounds.width - 32 // minus padding
+        let screenHeight = UIScreen.main.bounds.height * 0.6
+        return calculateImageSize(for: image, in: CGSize(width: screenWidth, height: screenHeight))
+    }
+
+    // MARK: - Core Graphics Rendering
+
+    /// Draw a single annotation into a CGContext, scaling from display coordinates to image coordinates.
+    private func drawAnnotationToContext(_ annotation: ImageAnnotation, context: CGContext, scaleX: CGFloat, scaleY: CGFloat) {
+        let uiColor = UIColor(Color(hex: annotation.color))
+        let lineWidth = annotation.strokeWidth * min(scaleX, scaleY)
+        let scaledPoints = annotation.points.map { CGPoint(x: $0.x * scaleX, y: $0.y * scaleY) }
+
+        context.setStrokeColor(uiColor.cgColor)
+        context.setLineWidth(lineWidth)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+
+        switch annotation.type {
+        case .arrow:
+            guard let start = scaledPoints.first, let end = scaledPoints.last, scaledPoints.count >= 2 else { return }
+            // Line
+            context.move(to: start)
+            context.addLine(to: end)
+            context.strokePath()
+            // Arrowhead
+            let angle = atan2(end.y - start.y, end.x - start.x)
+            let arrowLength: CGFloat = 15 * min(scaleX, scaleY)
+            let arrowAngle: CGFloat = .pi / 6
+            context.move(to: end)
+            context.addLine(to: CGPoint(x: end.x - arrowLength * cos(angle - arrowAngle),
+                                        y: end.y - arrowLength * sin(angle - arrowAngle)))
+            context.move(to: end)
+            context.addLine(to: CGPoint(x: end.x - arrowLength * cos(angle + arrowAngle),
+                                        y: end.y - arrowLength * sin(angle + arrowAngle)))
+            context.strokePath()
+
+        case .line:
+            guard let start = scaledPoints.first, let end = scaledPoints.last, scaledPoints.count >= 2 else { return }
+            context.move(to: start)
+            context.addLine(to: end)
+            context.strokePath()
+
+        case .circle:
+            guard let start = scaledPoints.first, let end = scaledPoints.last, scaledPoints.count >= 2 else { return }
+            let center = CGPoint(x: (start.x + end.x) / 2, y: (start.y + end.y) / 2)
+            let radius = sqrt(pow(end.x - start.x, 2) + pow(end.y - start.y, 2)) / 2
+            context.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+            context.strokePath()
+
+        case .rectangle:
+            guard let start = scaledPoints.first, let end = scaledPoints.last, scaledPoints.count >= 2 else { return }
+            let rect = CGRect(x: min(start.x, end.x), y: min(start.y, end.y),
+                              width: abs(end.x - start.x), height: abs(end.y - start.y))
+            context.addRect(rect)
+            context.strokePath()
+
+        case .freehand:
+            guard let first = scaledPoints.first, scaledPoints.count >= 2 else { return }
+            context.move(to: first)
+            for point in scaledPoints.dropFirst() {
+                context.addLine(to: point)
+            }
+            context.strokePath()
+
+        case .text:
+            guard let text = annotation.text, let position = scaledPoints.first else { return }
+            let fontSize: CGFloat = 16 * min(scaleX, scaleY)
+            let font = UIFont.boldSystemFont(ofSize: fontSize)
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: uiColor
+            ]
+            let nsString = text as NSString
+            nsString.draw(at: position, withAttributes: attributes)
+        }
     }
 }
 

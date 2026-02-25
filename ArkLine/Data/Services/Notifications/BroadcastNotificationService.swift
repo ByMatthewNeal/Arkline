@@ -126,13 +126,13 @@ class BroadcastNotificationService: ObservableObject {
         do {
             // Upsert device token (insert or update if exists)
             try await SupabaseManager.shared.client
-                .from("device_tokens")
+                .from("user_devices")
                 .upsert([
                     "user_id": userId.uuidString,
-                    "token": token,
+                    "device_token": token,
                     "platform": "ios",
                     "updated_at": ISO8601DateFormatter().string(from: Date())
-                ], onConflict: "user_id,platform")
+                ], onConflict: "user_id,device_token")
                 .execute()
 
             logInfo("Device token stored in Supabase", category: .data)
@@ -188,13 +188,44 @@ class BroadcastNotificationService: ObservableObject {
         }
     }
 
-    /// Send notification to specific audience
-    /// For local notifications, this sends to the current device only
-    /// For server-side push, this would filter by user IDs
+    /// Send notification to specific audience.
+    /// Tries the server-side edge function first; falls back to local notification on failure.
     func sendBroadcastNotification(for broadcast: Broadcast, audience: TargetAudience) async {
-        // For local notifications, we just send to the current device
-        // Server-side push would handle audience filtering
-        await sendBroadcastNotification(for: broadcast)
+        guard SupabaseManager.shared.isConfigured else {
+            await sendBroadcastNotification(for: broadcast)
+            return
+        }
+
+        // Build request body matching the edge function schema
+        var body: [String: Any] = [
+            "broadcast_id": broadcast.id.uuidString,
+            "title": "New Insight",
+            "body": broadcast.title
+        ]
+
+        switch audience {
+        case .all:
+            body["target_audience"] = ["type": "all"]
+        case .premium:
+            body["target_audience"] = ["type": "premium"]
+        case .specific(let userIds):
+            body["target_audience"] = [
+                "type": "specific",
+                "user_ids": userIds.map { $0.uuidString }
+            ] as [String: Any]
+        }
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: body)
+            let _: Data = try await SupabaseManager.shared.functions.invoke(
+                "send-broadcast-notification",
+                options: .init(body: jsonData)
+            )
+            logInfo("Server-side notification triggered for broadcast: \(broadcast.title)", category: .data)
+        } catch {
+            logWarning("Edge function notification failed, falling back to local: \(error)", category: .data)
+            await sendBroadcastNotification(for: broadcast)
+        }
     }
 
     // MARK: - Badge Management
