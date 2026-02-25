@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import Kingfisher
 
 // MARK: - Broadcast Editor View
@@ -34,6 +35,7 @@ struct BroadcastEditorView: View {
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
     @State private var showingPreview = false
     @State private var pendingImageData: [UUID: Data] = [:]
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
 
     var body: some View {
         NavigationStack {
@@ -130,8 +132,8 @@ struct BroadcastEditorView: View {
                     // Portfolio Showcase Section
                     portfolioShowcaseSection
 
-                    // Image Annotation Section
-                    imageAnnotationSection
+                    // Images Section
+                    imagesSection
 
                     // Tags Section
                     tagsSection
@@ -579,40 +581,67 @@ struct BroadcastEditorView: View {
         }
     }
 
-    // MARK: - Image Annotation Section
+    // MARK: - Images Section
 
-    private var imageAnnotationSection: some View {
+    private var imagesSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            Text("Annotated Images")
+            Text("Images")
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textSecondary)
 
             if images.isEmpty {
-                // No images - show add button
-                Button {
-                    showingImageAnnotation = true
-                } label: {
-                    HStack {
-                        Image(systemName: "scribble")
-                            .foregroundColor(AppColors.accent)
+                // No images — show add buttons
+                VStack(spacing: ArkSpacing.xs) {
+                    PhotosPicker(
+                        selection: $selectedPhotoItems,
+                        maxSelectionCount: 10,
+                        matching: .images
+                    ) {
+                        HStack {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .foregroundColor(AppColors.accent)
 
-                        Text("Add Annotated Image")
-                            .font(ArkFonts.body)
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            Text("Add from Photo Library")
+                                .font(ArkFonts.body)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                        Spacer()
+                            Spacer()
 
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(AppColors.textTertiary)
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textTertiary)
+                        }
+                        .padding(ArkSpacing.md)
+                        .background(AppColors.cardBackground(colorScheme))
+                        .cornerRadius(ArkSpacing.sm)
                     }
-                    .padding(ArkSpacing.md)
-                    .background(AppColors.cardBackground(colorScheme))
-                    .cornerRadius(ArkSpacing.sm)
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showingImageAnnotation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "scribble")
+                                .foregroundColor(AppColors.accent)
+
+                            Text("Add Annotated Image")
+                                .font(ArkFonts.body)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textTertiary)
+                        }
+                        .padding(ArkSpacing.md)
+                        .background(AppColors.cardBackground(colorScheme))
+                        .cornerRadius(ArkSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             } else {
-                // Show image thumbnails
+                // Show image thumbnails with add buttons
                 VStack(spacing: ArkSpacing.sm) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: ArkSpacing.sm) {
@@ -620,14 +649,19 @@ struct BroadcastEditorView: View {
                                 imagePreviewThumbnail(image)
                             }
 
-                            // Add more button
-                            Button {
-                                showingImageAnnotation = true
-                            } label: {
-                                VStack {
-                                    Image(systemName: "plus")
+                            // Add more photo button
+                            PhotosPicker(
+                                selection: $selectedPhotoItems,
+                                maxSelectionCount: 10,
+                                matching: .images
+                            ) {
+                                VStack(spacing: ArkSpacing.xxs) {
+                                    Image(systemName: "plus.circle.fill")
                                         .font(.title2)
                                         .foregroundColor(AppColors.accent)
+                                    Text("Photos")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(AppColors.textSecondary)
                                 }
                                 .frame(width: 80, height: 80)
                                 .background(AppColors.cardBackground(colorScheme))
@@ -637,12 +671,49 @@ struct BroadcastEditorView: View {
                         }
                     }
 
-                    Text("\(images.count) image\(images.count == 1 ? "" : "s") attached")
-                        .font(ArkFonts.caption)
-                        .foregroundColor(AppColors.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack {
+                        Text("\(images.count) image\(images.count == 1 ? "" : "s") attached")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        Spacer()
+
+                        Button {
+                            showingImageAnnotation = true
+                        } label: {
+                            HStack(spacing: ArkSpacing.xxs) {
+                                Image(systemName: "scribble")
+                                    .font(.caption)
+                                Text("Annotate")
+                                    .font(ArkFonts.caption)
+                            }
+                            .foregroundColor(AppColors.accent)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
+        }
+        .onChange(of: selectedPhotoItems) { _, newItems in
+            Task {
+                await processSelectedPhotos(newItems)
+                selectedPhotoItems = []
+            }
+        }
+    }
+
+    private func processSelectedPhotos(_ items: [PhotosPickerItem]) async {
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+            let imageId = UUID()
+            pendingImageData[imageId] = data
+            let placeholder = BroadcastImage(
+                id: imageId,
+                imageURL: URL(filePath: NSTemporaryDirectory()).appending(path: imageId.uuidString),
+                annotations: [],
+                caption: nil
+            )
+            images.append(placeholder)
         }
     }
 
