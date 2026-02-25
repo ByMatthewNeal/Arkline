@@ -106,7 +106,7 @@ struct BroadcastAnalyticsView: View {
 
                 AnalyticsStatCard(
                     title: "Avg Views",
-                    value: String(format: "%.1f", summary?.avgViewsPerBroadcast ?? 0),
+                    value: String(format: "%.1f", summary?.avgViewsPerBroadcast ?? 0.0),
                     icon: "chart.bar.fill",
                     color: AppColors.warning
                 )

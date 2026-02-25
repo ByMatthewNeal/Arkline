@@ -173,8 +173,41 @@ class BroadcastViewModel: ObservableObject {
             let summary = try await broadcastService.fetchAnalyticsSummary(periodDays: periodDays)
             analyticsSummary = summary
         } catch {
-            logError("Failed to load analytics: \(error)", category: .data)
+            logDebug("RPC analytics unavailable, computing locally: \(error)", category: .data)
+            analyticsSummary = computeLocalAnalytics(periodDays: periodDays)
         }
+    }
+
+    /// Compute analytics from already-loaded broadcasts when the DB function isn't available
+    private func computeLocalAnalytics(periodDays: Int) -> BroadcastAnalyticsSummary {
+        let periodStart: Date
+        if periodDays <= 0 {
+            periodStart = .distantPast
+        } else {
+            periodStart = Calendar.current.date(byAdding: .day, value: -periodDays, to: Date()) ?? .distantPast
+        }
+
+        let filtered = published.filter { broadcast in
+            let date = broadcast.publishedAt ?? broadcast.createdAt
+            return date >= periodStart
+        }
+
+        let totalViews = filtered.compactMap(\.viewCount).reduce(0, +)
+        let totalReactions = filtered.compactMap(\.reactionCount).reduce(0, +)
+        let count = filtered.count
+        let topBroadcast = filtered.max { ($0.viewCount ?? 0) < ($1.viewCount ?? 0) }
+
+        return BroadcastAnalyticsSummary(
+            totalBroadcasts: count,
+            totalViews: totalViews,
+            totalReactions: totalReactions,
+            avgViewsPerBroadcast: count > 0 ? Double(totalViews) / Double(count) : 0.0,
+            avgReactionsPerBroadcast: count > 0 ? Double(totalReactions) / Double(count) : 0.0,
+            topPerformingBroadcastId: topBroadcast?.id,
+            mostUsedReaction: nil,
+            periodStart: periodStart,
+            periodEnd: Date()
+        )
     }
 
     // MARK: - File Upload

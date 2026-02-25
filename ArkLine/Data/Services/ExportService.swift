@@ -184,8 +184,8 @@ final class ExportService {
             csv += "\(holding.symbol),"
             csv += "\"\(name)\","
             csv += "\(String(format: "%.8f", holding.quantity)),"
-            csv += "\(String(format: "%.2f", holding.averageBuyPrice ?? 0)),"
-            csv += "\(String(format: "%.2f", holding.currentPrice ?? 0)),"
+            csv += "\(String(format: "%.2f", holding.averageBuyPrice ?? 0.0)),"
+            csv += "\(String(format: "%.2f", holding.currentPrice ?? 0.0)),"
             csv += "\(String(format: "%.2f", holding.currentValue)),"
             csv += "\(String(format: "%.2f", holding.profitLoss)),"
             csv += "\(String(format: "%.2f", holding.profitLossPercentage))%\n"
@@ -202,7 +202,7 @@ final class ExportService {
             csv += "\(String(format: "%.8f", tx.quantity)),"
             csv += "\(String(format: "%.2f", tx.pricePerUnit)),"
             csv += "\(String(format: "%.2f", tx.totalValue)),"
-            csv += "\(String(format: "%.2f", tx.realizedProfitLoss ?? 0)),"
+            csv += "\(String(format: "%.2f", tx.realizedProfitLoss ?? 0.0)),"
             csv += "\"\(notes)\"\n"
         }
 
