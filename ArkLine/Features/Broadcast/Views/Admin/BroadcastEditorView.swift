@@ -889,6 +889,12 @@ struct BroadcastEditorView: View {
                         updated.status = .published
                         updated.publishedAt = Date()
                         updated.scheduledAt = nil
+                    } else if !isScheduled && updated.scheduledAt != nil {
+                        // User toggled scheduling off — clear it and revert to draft
+                        updated.scheduledAt = nil
+                        if updated.status == .scheduled {
+                            updated.status = .draft
+                        }
                     }
 
                     try await viewModel.updateBroadcast(updated)

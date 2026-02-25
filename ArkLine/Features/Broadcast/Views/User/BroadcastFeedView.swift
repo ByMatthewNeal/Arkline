@@ -9,6 +9,23 @@ enum BroadcastDateFilter: String, CaseIterable {
     case thisMonth = "This Month"
 }
 
+// MARK: - Category Filter
+
+enum BroadcastCategoryFilter: String, CaseIterable {
+    case all = "All"
+    case marketUpdate = "Market Update"
+    case outOfOffice = "Out of Office"
+
+    /// The BroadcastTag to filter by, or nil for "All"
+    var matchingTag: String? {
+        switch self {
+        case .all: return nil
+        case .marketUpdate: return BroadcastTag.marketUpdate.rawValue
+        case .outOfOffice: return BroadcastTag.outOfOffice.rawValue
+        }
+    }
+}
+
 // MARK: - Date Section Key
 
 private struct DateSectionKey: Hashable, Comparable {
@@ -34,6 +51,7 @@ struct BroadcastFeedView: View {
     @State private var hasCheckedNotifications = false
     @State private var searchText = ""
     @State private var selectedDateFilter: BroadcastDateFilter = .all
+    @State private var selectedCategoryFilter: BroadcastCategoryFilter = .all
     @State private var selectedTags: Set<String> = []
     @State private var navigationPath = NavigationPath()
 
@@ -59,6 +77,11 @@ struct BroadcastFeedView: View {
                     return date >= monthAgo
                 }
             }
+        }
+
+        // Category filter
+        if let categoryTag = selectedCategoryFilter.matchingTag {
+            result = result.filter { $0.tags.contains(categoryTag) }
         }
 
         // Tag filter
@@ -216,6 +239,29 @@ struct BroadcastFeedView: View {
             .padding(.vertical, ArkSpacing.xs + 2)
             .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(ArkSpacing.sm)
+
+            // Category tabs
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: ArkSpacing.xs) {
+                    ForEach(BroadcastCategoryFilter.allCases, id: \.self) { category in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedCategoryFilter = category
+                            }
+                        } label: {
+                            Text(category.rawValue)
+                                .font(ArkFonts.caption)
+                                .fontWeight(selectedCategoryFilter == category ? .semibold : .regular)
+                                .foregroundColor(selectedCategoryFilter == category ? .white : AppColors.textSecondary)
+                                .padding(.horizontal, ArkSpacing.sm)
+                                .padding(.vertical, ArkSpacing.xs)
+                                .background(selectedCategoryFilter == category ? AppColors.accent : AppColors.cardBackground(colorScheme))
+                                .cornerRadius(ArkSpacing.sm)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
 
             // Date filter chips
             ScrollView(.horizontal, showsIndicators: false) {

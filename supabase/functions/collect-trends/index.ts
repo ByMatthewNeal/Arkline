@@ -78,6 +78,20 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Fetch current BTC price from CoinGecko
+    let btcPrice: number | null = null
+    try {
+      const cgRes = await fetch(
+        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+      )
+      if (cgRes.ok) {
+        const cgData = await cgRes.json()
+        btcPrice = cgData?.bitcoin?.usd ?? null
+      }
+    } catch {
+      // Non-fatal — records will have btc_price = null
+    }
+
     // Find min/max for normalization
     const views = items.map((i) => i.views)
     const minViews = Math.min(...views)
@@ -85,13 +99,14 @@ Deno.serve(async (req) => {
     const range = maxViews - minViews || 1 // Avoid division by zero
 
     // Normalize to 0-100 index and prepare records
+    const today = formatDateISO(new Date())
     const records = items.map((item) => {
       const index = Math.round(((item.views - minViews) / range) * 100)
       const date = parseWikiTimestamp(item.timestamp)
       return {
         search_index: index,
         recorded_date: date,
-        btc_price: null, // Edge function doesn't fetch BTC price
+        btc_price: date === today || date === formatDateISO(end) ? btcPrice : null,
       }
     })
 
@@ -109,7 +124,7 @@ Deno.serve(async (req) => {
       // Check if record exists for this date
       const { data: existing } = await supabase
         .from("google_trends_history")
-        .select("id, search_index")
+        .select("id, search_index, btc_price")
         .eq("recorded_date", record.recorded_date)
         .limit(1)
 
@@ -120,16 +135,26 @@ Deno.serve(async (req) => {
           .insert(record)
 
         if (!error) inserted++
-      } else if (existing[0].search_index !== record.search_index) {
-        // Update if value changed
-        const { error } = await supabase
-          .from("google_trends_history")
-          .update({ search_index: record.search_index })
-          .eq("id", existing[0].id)
-
-        if (!error) updated++
       } else {
-        skipped++
+        // Build update payload — always update search_index if changed,
+        // and backfill btc_price if we have one and the record is missing it
+        const needsIndexUpdate = existing[0].search_index !== record.search_index
+        const needsPriceBackfill = record.btc_price != null && existing[0].btc_price == null
+
+        if (needsIndexUpdate || needsPriceBackfill) {
+          const updatePayload: Record<string, unknown> = {}
+          if (needsIndexUpdate) updatePayload.search_index = record.search_index
+          if (needsPriceBackfill) updatePayload.btc_price = record.btc_price
+
+          const { error } = await supabase
+            .from("google_trends_history")
+            .update(updatePayload)
+            .eq("id", existing[0].id)
+
+          if (!error) updated++
+        } else {
+          skipped++
+        }
       }
     }
 
@@ -168,4 +193,12 @@ function formatDate(d: Date): string {
 /** Parse Wikipedia timestamp "2025010100" → "2025-01-01" */
 function parseWikiTimestamp(ts: string): string {
   return `${ts.slice(0, 4)}-${ts.slice(4, 6)}-${ts.slice(6, 8)}`
+}
+
+/** Format Date as "YYYY-MM-DD" for ISO date comparison */
+function formatDateISO(d: Date): string {
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0")
+  const day = String(d.getUTCDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
 }

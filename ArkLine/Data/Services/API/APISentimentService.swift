@@ -368,16 +368,26 @@ final class APISentimentService: SentimentServiceProtocol {
         }
     }
 
-    /// Fetch current BTC price from CoinGecko
+    /// Fetch current BTC price from CoinGecko, falling back to cached market data
     private func fetchCurrentBTCPrice() async -> Double? {
+        // Try CoinGecko simple price first
         do {
             let endpoint = CoinGeckoEndpoint.simplePrice(ids: ["bitcoin"], currencies: ["usd"])
             let response: [String: [String: Double]] = try await networkManager.request(endpoint)
-            return response["bitcoin"]?["usd"]
+            if let price = response["bitcoin"]?["usd"] {
+                return price
+            }
         } catch {
-            logWarning("Failed to fetch BTC price: \(error.localizedDescription)", category: .network)
-            return nil
+            logWarning("CoinGecko BTC price failed, trying cache fallback: \(error.localizedDescription)", category: .network)
         }
+
+        // Fallback: use cached crypto assets (pre-fetched during splash)
+        if let assets = try? await ServiceContainer.shared.marketService.fetchCryptoAssets(page: 1, perPage: 10),
+           let btc = assets.first(where: { $0.symbol.lowercased() == "btc" }) {
+            return btc.currentPrice
+        }
+
+        return nil
     }
 
     /// Fetch historical App Store rankings from Supabase

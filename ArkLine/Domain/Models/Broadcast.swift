@@ -1092,6 +1092,8 @@ enum BroadcastTag: String, CaseIterable {
     case dca = "DCA"
     case news = "News"
     case xPost = "X Post"
+    case marketUpdate = "Market Update"
+    case outOfOffice = "Out of Office"
 
     var displayName: String { rawValue }
 
@@ -1109,6 +1111,8 @@ enum BroadcastTag: String, CaseIterable {
         case .dca: return Color(hex: "14B8A6")
         case .news: return Color(hex: "64748B")
         case .xPost: return Color(hex: "000000")
+        case .marketUpdate: return Color(hex: "0EA5E9")
+        case .outOfOffice: return Color(hex: "A3A3A3")
         }
     }
 }
