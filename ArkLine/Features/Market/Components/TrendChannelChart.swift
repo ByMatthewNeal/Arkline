@@ -67,14 +67,23 @@ struct TrendChannelChart: View {
     /// Full-height background columns colored by zone (green/yellow/red)
     /// This creates the TradingView-style colored background that makes
     /// bullish vs bearish periods immediately obvious
+    /// Width per zone bar, computed so bars tile the full chart width with no gaps.
+    private var zoneBarWidth: CGFloat {
+        let count = max(points.count, 1)
+        // Target ~350pt chart plot area; +1 gives slight overlap to prevent hairline gaps
+        return max(1, 350.0 / CGFloat(count) + 1)
+    }
+
     @ChartContentBuilder
     private var backgroundZones: some ChartContent {
         let domain = yDomain
+        let width = zoneBarWidth
         ForEach(points) { point in
-            BarMark(
+            RectangleMark(
                 x: .value("Date", point.date),
                 yStart: .value("Low", domain.lowerBound),
-                yEnd: .value("High", domain.upperBound)
+                yEnd: .value("High", domain.upperBound),
+                width: .fixed(width)
             )
             .foregroundStyle(zoneBackgroundColor(point.zone))
         }
