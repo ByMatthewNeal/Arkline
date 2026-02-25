@@ -41,6 +41,9 @@ struct ContentView: View {
         .toastContainer()
         .animation(.easeInOut(duration: 0.5), value: showSplash)
         .onAppear {
+            // Pre-fetch critical market data while splash plays
+            DataPrefetcher.start()
+
             // Show splash for minimum duration
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 withAnimation {

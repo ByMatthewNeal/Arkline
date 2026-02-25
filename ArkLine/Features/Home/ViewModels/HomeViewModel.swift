@@ -619,7 +619,7 @@ class HomeViewModel {
     func loadPortfolios() async {
         do {
             // Wait for auth session to finish restoring (avoids race on cold launch)
-            for _ in 0..<20 {
+            for _ in 0..<5 {
                 let ready = await MainActor.run { !SupabaseAuthManager.shared.isLoading }
                 if ready { break }
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms

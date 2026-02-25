@@ -230,6 +230,7 @@
 		E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* EmptyStateView.swift */; };
 		ABC5BF8C2864FD576A61F29D /* InviteCodeAdminViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C2577E07104640FD669F8F3 /* InviteCodeAdminViewModel.swift */; };
 		ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FA3DE47F563466AB15A7AEA /* APICache.swift */; };
+		7CE17237EFC0CD35F85705B1 /* DataPrefetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60C92EA963C7A8B668467866 /* DataPrefetcher.swift */; };
 		ADD1TRAN51CT10N5V13W0002 /* AddTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD1TRAN51CT10N5V13W0001 /* AddTransactionView.swift */; };
 		AFB03EBBC5378A973BB88170 /* SupplyInProfitHistorical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130AFC1808DDE23C84A31C0B /* SupplyInProfitHistorical.swift */; };
 		ALL0CAT10NP13CHART0002 /* AllocationPieChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = ALL0CAT10NP13CHART0001 /* AllocationPieChart.swift */; };
@@ -459,6 +460,7 @@
 		0EE37B0AF46F26C1EBB5BCE9 /* SentimentMarketCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SentimentMarketCards.swift; sourceTree = "<group>"; };
 		0F899A618850ED4F1DCABE67 /* QuickActionsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsBar.swift; sourceTree = "<group>"; };
 		0FA3DE47F563466AB15A7AEA /* APICache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APICache.swift; sourceTree = "<group>"; };
+		60C92EA963C7A8B668467866 /* DataPrefetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPrefetcher.swift; sourceTree = "<group>"; };
 		1095DFF4EC5B4A9D135D3A0B /* APISantimentService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = APISantimentService.swift; path = Data/Services/API/APISantimentService.swift; sourceTree = "<group>"; };
 		10A686812E99010957F5176C /* HistoricalContextService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalContextService.swift; sourceTree = "<group>"; };
 		11255E8D99752FF4FB569E1F /* BaseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseCard.swift; sourceTree = "<group>"; };
@@ -1995,6 +1997,7 @@
 			isa = PBXGroup;
 			children = (
 				0FA3DE47F563466AB15A7AEA /* APICache.swift */,
+				60C92EA963C7A8B668467866 /* DataPrefetcher.swift */,
 				4C7163E8A84CD6F7F613F75C /* AppError.swift */,
 				3C61F540DDA869CAAFC93657 /* Constants.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */,
@@ -2203,6 +2206,7 @@
 				DBB8730372590CFDFDDEC5AB /* APIAppStoreRankingService.swift in Sources */,
 				3AAE62EC51CEE26B90FC075B /* APIBinanceFundingService.swift in Sources */,
 				ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */,
+				7CE17237EFC0CD35F85705B1 /* DataPrefetcher.swift in Sources */,
 				9DBBCFAFDA17CB2DC3BF5071 /* APICoinglassService.swift in Sources */,
 				4A0014C464DAD4B555371050 /* APIDCAService.swift in Sources */,
 				2D705F6BFE7C3BF5DE8CBBF0 /* APIEndpoint.swift in Sources */,
