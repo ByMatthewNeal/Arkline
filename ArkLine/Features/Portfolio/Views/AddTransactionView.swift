@@ -10,12 +10,20 @@ private struct TransactionSearchResult: Identifiable {
     let iconUrl: String?
 }
 
+// MARK: - Entry Mode
+private enum EntryMode: String, CaseIterable {
+    case simple = "Simple"
+    case advanced = "Advanced"
+    case holding = "Holding"
+}
+
 // MARK: - Add Transaction View
 struct AddTransactionView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: PortfolioViewModel
 
+    @State private var entryMode: EntryMode = .simple
     @State private var transactionType: TransactionType = .buy
     @State private var symbol = ""
     @State private var name = ""
@@ -45,10 +53,11 @@ struct AddTransactionView: View {
     private var isFormValid: Bool {
         // Real estate uses its own form
         if assetType == .realEstate { return false }
-        return !symbol.isEmpty &&
-        !name.isEmpty &&
-        parseNumber(quantity) > 0 &&
-        parseNumber(pricePerUnit) > 0
+        let base = !symbol.isEmpty && !name.isEmpty && parseNumber(quantity) > 0
+        if entryMode == .holding {
+            return base
+        }
+        return base && parseNumber(pricePerUnit) > 0
     }
 
     private var totalValue: Double {
@@ -84,16 +93,44 @@ struct AddTransactionView: View {
                 noPortfolioView
             } else {
             Form {
-                // Transaction Type
+                // Entry Mode
                 Section {
-                    Picker("Type", selection: $transactionType) {
-                        ForEach(TransactionType.allCases, id: \.self) { type in
-                            Text(type.displayName).tag(type)
+                    Picker("Mode", selection: $entryMode) {
+                        ForEach(EntryMode.allCases, id: \.self) { mode in
+                            Text(mode.rawValue).tag(mode)
                         }
                     }
                     .pickerStyle(.segmented)
-                    .onChange(of: transactionType) { _, _ in
+                    .onChange(of: entryMode) { _, newMode in
                         Haptics.selection()
+                        switch newMode {
+                        case .simple:
+                            transactionType = .buy
+                            selectedEmotionalState = nil
+                            notes = ""
+                        case .advanced:
+                            break
+                        case .holding:
+                            pricePerUnit = ""
+                            priceWasAutoFetched = false
+                            selectedEmotionalState = nil
+                            notes = ""
+                        }
+                    }
+                }
+
+                // Transaction Type (Advanced only)
+                if entryMode == .advanced {
+                    Section {
+                        Picker("Type", selection: $transactionType) {
+                            ForEach(TransactionType.allCases, id: \.self) { type in
+                                Text(type.displayName).tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: transactionType) { _, _ in
+                            Haptics.selection()
+                        }
                     }
                 }
 
@@ -207,7 +244,7 @@ struct AddTransactionView: View {
                 }
 
                 if assetType != .realEstate {
-                // Transaction Details
+                // Details
                 Section("Details") {
                     HStack {
                         Text("Quantity")
@@ -217,63 +254,82 @@ struct AddTransactionView: View {
                             .multilineTextAlignment(.trailing)
                     }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text("Price per Unit")
-                            Spacer()
-                            TextField("$0.00", text: $pricePerUnit)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
+                    if entryMode != .holding {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Price per Unit")
+                                Spacer()
+                                TextField("$0.00", text: $pricePerUnit)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                            }
+
+                            if priceWasAutoFetched {
+                                Text("Live price")
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.accent)
+                            }
                         }
 
-                        if priceWasAutoFetched {
-                            Text("Live price")
+                        DatePicker("Date", selection: $transactionDate, displayedComponents: [.date, .hourAndMinute])
+                    }
+                }
+
+                // Holding info banner
+                if entryMode == .holding {
+                    Section {
+                        HStack(spacing: ArkSpacing.sm) {
+                            Image(systemName: "info.circle.fill")
+                                .foregroundColor(AppColors.accent)
+                            Text("No cost basis or date will be recorded. Use this when you don't remember purchase details.")
                                 .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+                }
+
+                // Total (not in Holding mode)
+                if entryMode != .holding {
+                    Section {
+                        HStack {
+                            Text("Total Value")
+                                .font(AppFonts.body14Bold)
+                            Spacer()
+                            Text(totalValue.asCurrency)
+                                .font(AppFonts.title18SemiBold)
                                 .foregroundColor(AppColors.accent)
                         }
                     }
-
-                    DatePicker("Date", selection: $transactionDate, displayedComponents: [.date, .hourAndMinute])
                 }
 
-                // Total
-                Section {
-                    HStack {
-                        Text("Total Value")
-                            .font(AppFonts.body14Bold)
-                        Spacer()
-                        Text(totalValue.asCurrency)
-                            .font(AppFonts.title18SemiBold)
-                            .foregroundColor(AppColors.accent)
+                // Emotional State (Advanced only)
+                if entryMode == .advanced {
+                    Section {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("How are you feeling?")
+                                .font(AppFonts.body14Bold)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                            Text("Track your emotional state when making this decision")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary)
+
+                            EmotionalStatePicker(selectedState: $selectedEmotionalState)
+                        }
+                        .padding(.vertical, 4)
                     }
-                }
 
-                // Emotional State
-                Section {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("How are you feeling?")
-                            .font(AppFonts.body14Bold)
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                        Text("Track your emotional state when making this decision")
-                            .font(AppFonts.caption12)
-                            .foregroundColor(AppColors.textSecondary)
-
-                        EmotionalStatePicker(selectedState: $selectedEmotionalState)
+                    // Notes (Advanced only)
+                    Section("Notes (Optional)") {
+                        TextField("Add notes...", text: $notes, axis: .vertical)
+                            .lineLimit(3...6)
                     }
-                    .padding(.vertical, 4)
-                }
-
-                // Notes
-                Section("Notes (Optional)") {
-                    TextField("Add notes...", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
                 }
                 } // End of if assetType != .realEstate
             }
             .scrollContentBackground(.hidden)
             .background(AppColors.background(colorScheme))
-            .navigationTitle("Add Transaction")
+            .navigationTitle(entryMode == .holding ? "Add Holding" : "Add Transaction")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -402,17 +458,36 @@ struct AddTransactionView: View {
 
         isSaving = true
 
+        if entryMode == .holding {
+            Task {
+                await viewModel.addOrUpdateHolding(
+                    portfolioId: portfolioId,
+                    symbol: symbol.uppercased(),
+                    name: name,
+                    assetType: assetType.rawValue,
+                    quantity: parseNumber(quantity)
+                )
+                await MainActor.run {
+                    Haptics.success()
+                    isSaving = false
+                    dismiss()
+                }
+            }
+            return
+        }
+
+        let type = entryMode == .simple ? TransactionType.buy : transactionType
         let transaction = Transaction(
             portfolioId: portfolioId,
             holdingId: nil,
-            type: transactionType,
+            type: type,
             assetType: assetType.rawValue,
             symbol: symbol.uppercased(),
             quantity: parseNumber(quantity),
             pricePerUnit: parseNumber(pricePerUnit),
             transactionDate: transactionDate,
-            notes: notes.isEmpty ? nil : notes,
-            emotionalState: selectedEmotionalState
+            notes: entryMode == .advanced && !notes.isEmpty ? notes : nil,
+            emotionalState: entryMode == .advanced ? selectedEmotionalState : nil
         )
 
         Task {
@@ -519,11 +594,13 @@ struct AddTransactionView: View {
         searchTask?.cancel()
         isSearching = false
 
-        if let price = result.currentPrice, price > 0 {
-            pricePerUnit = String(format: "%.2f", price)
-            priceWasAutoFetched = true
-        } else if assetType == .stock {
-            fetchStockPrice(symbol: result.symbol)
+        if entryMode != .holding {
+            if let price = result.currentPrice, price > 0 {
+                pricePerUnit = String(format: "%.2f", price)
+                priceWasAutoFetched = true
+            } else if assetType == .stock {
+                fetchStockPrice(symbol: result.symbol)
+            }
         }
 
         Haptics.selection()

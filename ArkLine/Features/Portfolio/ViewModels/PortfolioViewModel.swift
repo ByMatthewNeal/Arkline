@@ -588,6 +588,59 @@ final class PortfolioViewModel {
         await refresh()
     }
 
+    func addOrUpdateHolding(
+        portfolioId: UUID,
+        symbol: String,
+        name: String,
+        assetType: String,
+        quantity: Double
+    ) async {
+        do {
+            let existingHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+            let existing = existingHoldings.first {
+                $0.symbol.uppercased() == symbol.uppercased() && $0.assetType == assetType
+            }
+
+            let isUpdate = existing != nil
+            if let existing = existing {
+                var updated = existing
+                updated.quantity += quantity
+                try await portfolioService.updateHolding(updated)
+            } else {
+                let holding = PortfolioHolding(
+                    portfolioId: portfolioId,
+                    assetType: assetType,
+                    symbol: symbol,
+                    name: name,
+                    quantity: quantity,
+                    averageBuyPrice: nil
+                )
+                _ = try await portfolioService.addHolding(holding)
+            }
+
+            Task {
+                await AnalyticsService.shared.track("holding_added", properties: [
+                    "coin": .string(symbol),
+                    "quantity": .double(quantity),
+                    "is_update": .bool(isUpdate)
+                ])
+            }
+
+            // Refresh holdings with live prices
+            let updatedHoldings = try await portfolioService.fetchHoldings(portfolioId: portfolioId)
+            let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: updatedHoldings)
+
+            await MainActor.run {
+                self.holdings = holdingsWithPrices
+                self.allocations = self.computeAllocations(from: holdingsWithPrices)
+            }
+        } catch {
+            await MainActor.run {
+                self.error = error as? AppError ?? .unknown(message: "Failed to add holding")
+            }
+        }
+    }
+
     func addTransaction(_ transaction: Transaction, assetName: String? = nil) async {
         do {
             guard let portfolioId = portfolioId else {
