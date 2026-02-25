@@ -179,18 +179,58 @@ struct NotificationSettings: Codable, Equatable {
     var pushEnabled: Bool
     var emailEnabled: Bool
     var dcaReminders: Bool
-    var priceAlerts: Bool
-    var communityUpdates: Bool
-    var marketNews: Bool
+    var extremeMoves: Bool
+    var sentimentShifts: Bool
+    var insights: Bool
 
     static let `default` = NotificationSettings(
         pushEnabled: true,
         emailEnabled: true,
         dcaReminders: true,
-        priceAlerts: true,
-        communityUpdates: true,
-        marketNews: true
+        extremeMoves: true,
+        sentimentShifts: true,
+        insights: true
     )
+
+    enum CodingKeys: String, CodingKey {
+        case pushEnabled, emailEnabled, dcaReminders
+        case extremeMoves, sentimentShifts, insights
+        // Legacy keys for backward-compatible decoding
+        case communityUpdates
+    }
+
+    init(pushEnabled: Bool, emailEnabled: Bool, dcaReminders: Bool,
+         extremeMoves: Bool, sentimentShifts: Bool, insights: Bool) {
+        self.pushEnabled = pushEnabled
+        self.emailEnabled = emailEnabled
+        self.dcaReminders = dcaReminders
+        self.extremeMoves = extremeMoves
+        self.sentimentShifts = sentimentShifts
+        self.insights = insights
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        pushEnabled = try container.decodeIfPresent(Bool.self, forKey: .pushEnabled) ?? true
+        emailEnabled = try container.decodeIfPresent(Bool.self, forKey: .emailEnabled) ?? true
+        dcaReminders = try container.decodeIfPresent(Bool.self, forKey: .dcaReminders) ?? true
+        extremeMoves = try container.decodeIfPresent(Bool.self, forKey: .extremeMoves) ?? true
+        sentimentShifts = try container.decodeIfPresent(Bool.self, forKey: .sentimentShifts) ?? true
+        // Map old communityUpdates → insights for backward compatibility
+        insights = try container.decodeIfPresent(Bool.self, forKey: .insights)
+            ?? container.decodeIfPresent(Bool.self, forKey: .communityUpdates)
+            ?? true
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(pushEnabled, forKey: .pushEnabled)
+        try container.encode(emailEnabled, forKey: .emailEnabled)
+        try container.encode(dcaReminders, forKey: .dcaReminders)
+        try container.encode(extremeMoves, forKey: .extremeMoves)
+        try container.encode(sentimentShifts, forKey: .sentimentShifts)
+        try container.encode(insights, forKey: .insights)
+    }
 }
 
 // MARK: - Experience Level

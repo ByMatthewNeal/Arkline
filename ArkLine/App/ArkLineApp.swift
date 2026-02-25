@@ -18,6 +18,7 @@ struct ArkLineApp: App {
                 .onAppear {
                     setupAppearance()
                     setupNotifications()
+                    migrateNotificationKeys()
                     Task {
                         await appState.refreshUserProfile()
                         await AnalyticsService.shared.trackAppOpen()
@@ -37,6 +38,20 @@ struct ArkLineApp: App {
                 BroadcastNotificationService.shared.clearBadge()
             }
         }
+    }
+
+    /// One-time migration: copy the old DCA reminder key to the new service key.
+    private func migrateNotificationKeys() {
+        let defaults = Foundation.UserDefaults.standard
+        let migrationKey = "arkline_notification_keys_migrated_v1"
+        guard !defaults.bool(forKey: migrationKey) else { return }
+
+        // The only old key that was functional was "notifyDCAReminders"
+        if let oldValue = defaults.object(forKey: "notifyDCAReminders") as? Bool {
+            defaults.set(oldValue, forKey: Constants.UserDefaults.notifyDCAReminders)
+        }
+
+        defaults.set(true, forKey: migrationKey)
     }
 
     private func setupNotifications() {

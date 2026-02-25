@@ -9,6 +9,8 @@ enum DCANotificationScheduler {
     /// Schedule (or re-schedule) a local notification for a DCA reminder.
     /// Removes any existing notification for this reminder before adding a new one.
     static func schedule(_ reminder: DCAReminder) async {
+        guard UserDefaults.standard.object(forKey: Constants.UserDefaults.notifyDCAReminders) as? Bool ?? true else { return }
+
         let center = UNUserNotificationCenter.current()
 
         // Request permission if needed
@@ -79,6 +81,9 @@ enum DCANotificationScheduler {
         let pending = await center.pendingNotificationRequests()
         let dcaIds = pending.filter { $0.identifier.hasPrefix("dca_reminder_") }.map(\.identifier)
         center.removePendingNotificationRequests(withIdentifiers: dcaIds)
+
+        // If DCA reminders are disabled, stop after clearing
+        guard UserDefaults.standard.object(forKey: Constants.UserDefaults.notifyDCAReminders) as? Bool ?? true else { return }
 
         // Re-schedule active, non-completed reminders
         for reminder in reminders where reminder.isActive && !reminder.isCompleted {

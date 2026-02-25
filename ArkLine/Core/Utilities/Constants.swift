@@ -130,10 +130,10 @@ enum Constants {
         static let selectedNewsTopics = "selectedNewsTopics"
         static let customNewsTopics = "customNewsTopics"
         static let notificationsPrompted = "arkline_notifications_prompted"
-        static let notifyDCAReminders = "notifyDCAReminders"
-        static let notifyPriceAlerts = "notifyPriceAlerts"
-        static let notifyMarketNews = "notifyMarketNews"
-        static let notifyCommunityUpdates = "notifyCommunityUpdates"
+        static let notifyDCAReminders = "arkline_dca_reminders_enabled"
+        static let notifyExtremeMoves = "arkline_extreme_alerts_enabled"
+        static let notifySentimentShifts = "arkline_sentiment_regime_notifications_enabled"
+        static let notifyInsights = "arkline_broadcast_notifications_enabled"
         static let notifyEmail = "notifyEmail"
     }
 

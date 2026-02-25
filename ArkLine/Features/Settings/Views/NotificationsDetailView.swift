@@ -1,95 +1,110 @@
 import SwiftUI
+import UserNotifications
 
 // MARK: - Notifications Detail View
 struct NotificationsDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
 
-    @State private var dcaReminders: Bool
-    @State private var priceAlerts: Bool
-    @State private var marketNews: Bool
-    @State private var communityUpdates: Bool
-    @State private var emailNotifications: Bool
+    @AppStorage(Constants.UserDefaults.notifyDCAReminders)
+    private var dcaReminders = true
 
-    init() {
-        let defaults = Foundation.UserDefaults.standard
-        _dcaReminders = State(initialValue: defaults.object(forKey: Constants.UserDefaults.notifyDCAReminders) as? Bool ?? true)
-        _priceAlerts = State(initialValue: defaults.object(forKey: Constants.UserDefaults.notifyPriceAlerts) as? Bool ?? true)
-        _marketNews = State(initialValue: defaults.object(forKey: Constants.UserDefaults.notifyMarketNews) as? Bool ?? true)
-        _communityUpdates = State(initialValue: defaults.object(forKey: Constants.UserDefaults.notifyCommunityUpdates) as? Bool ?? false)
-        _emailNotifications = State(initialValue: defaults.object(forKey: Constants.UserDefaults.notifyEmail) as? Bool ?? true)
-    }
+    @AppStorage(Constants.UserDefaults.notifyExtremeMoves)
+    private var extremeMoves = true
 
-    private var isDarkMode: Bool {
-        appState.darkModePreference == .dark ||
-        (appState.darkModePreference == .automatic && colorScheme == .dark)
-    }
+    @AppStorage(Constants.UserDefaults.notifySentimentShifts)
+    private var sentimentShifts = true
+
+    @AppStorage(Constants.UserDefaults.notifyInsights)
+    private var insights = true
+
+    @AppStorage(Constants.UserDefaults.notifyEmail)
+    private var emailNotifications = true
 
     var body: some View {
         ZStack {
             MeshGradientBackground()
             List {
+                // MARK: - Investment Reminders
                 Section {
                     Toggle(isOn: $dcaReminders) {
                         NotificationRow(
                             icon: "calendar.badge.clock",
                             iconColor: AppColors.accent,
                             title: "DCA Reminders",
-                            description: "Get reminded about your scheduled purchases"
+                            description: "Reminders for your scheduled purchases"
                         )
                     }
                     .onChange(of: dcaReminders) { _, newValue in
                         Haptics.selection()
-                        Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyDCAReminders)
-                    }
-
-                    Toggle(isOn: $priceAlerts) {
-                        NotificationRow(
-                            icon: "chart.line.uptrend.xyaxis",
-                            iconColor: AppColors.success,
-                            title: "Price Alerts",
-                            description: "Notifications when prices hit your targets"
-                        )
-                    }
-                    .onChange(of: priceAlerts) { _, newValue in
-                        Haptics.selection()
-                        Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyPriceAlerts)
-                    }
-
-                    Toggle(isOn: $marketNews) {
-                        NotificationRow(
-                            icon: "newspaper",
-                            iconColor: AppColors.warning,
-                            title: "Market News",
-                            description: "Breaking news and market updates"
-                        )
-                    }
-                    .onChange(of: marketNews) { _, newValue in
-                        Haptics.selection()
-                        Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyMarketNews)
-                    }
-
-                    Toggle(isOn: $communityUpdates) {
-                        NotificationRow(
-                            icon: "person.3",
-                            iconColor: AppColors.info,
-                            title: "Community Updates",
-                            description: "Posts and discussions from the community"
-                        )
-                    }
-                    .onChange(of: communityUpdates) { _, newValue in
-                        Haptics.selection()
-                        Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyCommunityUpdates)
+                        if !newValue {
+                            cancelAllDCANotifications()
+                        }
                     }
                 } header: {
-                    Text("Push Notifications")
+                    Text("Investment Reminders")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
+                // MARK: - Market Alerts
+                Section {
+                    Toggle(isOn: $extremeMoves) {
+                        NotificationRow(
+                            icon: "exclamationmark.triangle.fill",
+                            iconColor: AppColors.warning,
+                            title: "Extreme Moves",
+                            description: "Alerts when macro indicators hit rare levels"
+                        )
+                    }
+                    .onChange(of: extremeMoves) { _, newValue in
+                        Haptics.selection()
+                        ExtremeMoveAlertManager.shared.extremeAlertsEnabled = newValue
+                        if !newValue {
+                            ExtremeMoveAlertManager.shared.significantAlertsEnabled = false
+                        }
+                    }
+
+                    Toggle(isOn: $sentimentShifts) {
+                        NotificationRow(
+                            icon: "brain.head.profile",
+                            iconColor: AppColors.error,
+                            title: "Sentiment Shifts",
+                            description: "Alerts when market mood changes (Panic, FOMO, etc.)"
+                        )
+                    }
+                    .onChange(of: sentimentShifts) { _, newValue in
+                        Haptics.selection()
+                        SentimentRegimeAlertManager.shared.notificationsEnabled = newValue
+                    }
+                } header: {
+                    Text("Market Alerts")
+                }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                // MARK: - Insights
+                Section {
+                    Toggle(isOn: $insights) {
+                        NotificationRow(
+                            icon: "megaphone.fill",
+                            iconColor: AppColors.accent,
+                            title: "Insights & Broadcasts",
+                            description: "New insights published in the Insights tab"
+                        )
+                    }
+                    .onChange(of: insights) { _, newValue in
+                        Haptics.selection()
+                        BroadcastNotificationService.shared.broadcastNotificationsEnabled = newValue
+                    }
+                } header: {
+                    Text("Insights")
+                }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                // MARK: - Email
                 Section {
                     Toggle(isOn: $emailNotifications) {
                         NotificationRow(
-                            icon: "envelope",
+                            icon: "envelope.fill",
                             iconColor: AppColors.accent,
                             title: "Email Notifications",
                             description: "Receive important updates via email"
@@ -97,7 +112,6 @@ struct NotificationsDetailView: View {
                     }
                     .onChange(of: emailNotifications) { _, newValue in
                         Haptics.selection()
-                        Foundation.UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.notifyEmail)
                     }
                 } header: {
                     Text("Email")
@@ -115,6 +129,16 @@ struct NotificationsDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private func cancelAllDCANotifications() {
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { requests in
+            let dcaIds = requests.filter { $0.identifier.hasPrefix("dca_reminder_") }.map(\.identifier)
+            if !dcaIds.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: dcaIds)
+            }
+        }
     }
 }
 
