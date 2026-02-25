@@ -116,9 +116,25 @@ final class BroadcastService: BroadcastServiceProtocol {
             throw AppError.supabaseNotConfigured
         }
 
+        let payload = BroadcastUpdate(
+            title: broadcast.title,
+            content: broadcast.content,
+            audioURL: broadcast.audioURL,
+            images: broadcast.images,
+            appReferences: broadcast.appReferences,
+            portfolioAttachment: broadcast.portfolioAttachment,
+            meetingLink: broadcast.meetingLink,
+            targetAudience: broadcast.targetAudience,
+            status: broadcast.status,
+            publishedAt: broadcast.publishedAt,
+            scheduledAt: broadcast.scheduledAt,
+            templateId: broadcast.templateId,
+            tags: broadcast.tags
+        )
+
         let updated: Broadcast = try await supabase.database
             .from(SupabaseTable.broadcasts.rawValue)
-            .update(broadcast)
+            .update(payload)
             .eq("id", value: broadcast.id.uuidString)
             .select()
             .single()
@@ -434,6 +450,35 @@ final class BroadcastService: BroadcastServiceProtocol {
 }
 
 // MARK: - Atomic Update Structs
+
+/// Mutable fields only — excludes server-managed columns (id, created_at, author_id, view_count, reaction_count).
+private struct BroadcastUpdate: Encodable {
+    let title: String
+    let content: String
+    let audioURL: URL?
+    let images: [BroadcastImage]
+    let appReferences: [AppReference]
+    let portfolioAttachment: BroadcastPortfolioAttachment?
+    let meetingLink: URL?
+    let targetAudience: TargetAudience
+    let status: BroadcastStatus
+    let publishedAt: Date?
+    let scheduledAt: Date?
+    let templateId: UUID?
+    let tags: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case title, content, images, status, tags
+        case audioURL = "audio_url"
+        case appReferences = "app_references"
+        case portfolioAttachment = "portfolio_attachment"
+        case meetingLink = "meeting_link"
+        case targetAudience = "target_audience"
+        case publishedAt = "published_at"
+        case scheduledAt = "scheduled_at"
+        case templateId = "template_id"
+    }
+}
 
 private struct PublishUpdate: Encodable {
     let status: String
