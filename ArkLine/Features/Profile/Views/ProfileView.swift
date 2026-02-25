@@ -51,6 +51,10 @@ struct ProfileView: View {
                     )
                         .padding(.horizontal, 20)
 
+                    // Portfolio Allocation
+                    ProfileAllocationSection(allocations: viewModel.allocations)
+                        .padding(.horizontal, 20)
+
                     // Recent Activity
                     ProfileRecentActivity(activities: viewModel.recentActivity)
                         .padding(.horizontal, 20)

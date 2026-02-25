@@ -112,6 +112,7 @@ struct SupplyInProfitDetailView: View {
     @State private var historyData: [SupplyProfitData] = []
     @State private var isLoading = false
     @State private var selectedPoint: SupplyProfitData?
+    @State private var selectedTimeRange: MacroChartTimeRange = .weekly
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -141,8 +142,9 @@ struct SupplyInProfitDetailView: View {
                     }
                     .padding(.top, 20)
 
-                    // Historical Chart
+                    // Timeframe selector + Historical Chart
                     if !historyData.isEmpty {
+                        timeRangeSelector
                         chartSection
                     } else if isLoading {
                         ProgressView()
@@ -199,6 +201,43 @@ Note: Data is updated daily with approximately a 30-day lag.
         }
     }
 
+    private var filteredHistory: [SupplyProfitData] {
+        let calendar = Calendar.current
+        guard let cutoff = calendar.date(byAdding: .day, value: -selectedTimeRange.days, to: Date()) else {
+            return historyData
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return historyData.filter { point in
+            guard let date = formatter.date(from: point.date) else { return false }
+            return date >= cutoff
+        }
+    }
+
+    private var timeRangeSelector: some View {
+        HStack(spacing: 8) {
+            ForEach(MacroChartTimeRange.allCases, id: \.self) { range in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedTimeRange = range
+                        selectedPoint = nil
+                    }
+                } label: {
+                    Text(range.rawValue)
+                        .font(.system(size: 13, weight: selectedTimeRange == range ? .semibold : .regular))
+                        .foregroundColor(selectedTimeRange == range ? .white : .secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(selectedTimeRange == range ? AppColors.accent : Color(.systemGray5))
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+    }
+
     @ViewBuilder
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -215,11 +254,12 @@ Note: Data is updated daily with approximately a 30-day lag.
             }
 
             SupplyInProfitChart(
-                history: historyData,
+                history: filteredHistory,
                 colorScheme: colorScheme,
                 selectedPoint: $selectedPoint
             )
             .frame(height: 200)
+            .animation(.easeInOut(duration: 0.3), value: selectedTimeRange)
         }
         .padding()
         .background(Color(.systemGray6))
@@ -231,7 +271,7 @@ Note: Data is updated daily with approximately a 30-day lag.
         Task {
             do {
                 let service = ServiceContainer.shared.santimentService
-                let history = try await service.fetchSupplyInProfitHistory(days: 90)
+                let history = try await service.fetchSupplyInProfitHistory(days: 365)
                 await MainActor.run {
                     // Reverse to get oldest first for charting
                     self.historyData = history.reversed()

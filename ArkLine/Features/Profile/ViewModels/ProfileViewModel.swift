@@ -81,6 +81,9 @@ final class ProfileViewModel {
     // MARK: - Stats
     var stats = ProfileStatsData()
 
+    // MARK: - Portfolio Allocation
+    var allocations: [PortfolioAllocation] = []
+
     // MARK: - Activity
     var recentActivity: [ActivityItem] = []
 
@@ -146,7 +149,8 @@ final class ProfileViewModel {
         async let statsTask: () = loadStats()
         async let activityTask: () = loadRecentActivity()
         async let referralTask: () = loadReferralCode()
-        _ = await (statsTask, activityTask, referralTask)
+        async let allocationTask: () = loadPortfolioAllocation()
+        _ = await (statsTask, activityTask, referralTask, allocationTask)
     }
 
     func loadStats() async {
@@ -179,6 +183,23 @@ final class ProfileViewModel {
             }
         } catch {
             logError("Failed to load profile stats: \(error)", category: .data)
+        }
+    }
+
+    func loadPortfolioAllocation() async {
+        guard let userId = user?.id else { return }
+        do {
+            let portfolioService = ServiceContainer.shared.portfolioService
+            let portfolios = try await portfolioService.fetchPortfolios(userId: userId)
+            guard let primary = portfolios.first else { return }
+            let holdings = try await portfolioService.fetchHoldings(portfolioId: primary.id)
+            let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: holdings)
+            let computed = PortfolioAllocation.calculate(from: holdingsWithPrices)
+            await MainActor.run {
+                self.allocations = computed
+            }
+        } catch {
+            logError("Failed to load portfolio allocation: \(error)", category: .data)
         }
     }
 

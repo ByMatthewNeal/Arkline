@@ -297,6 +297,66 @@ struct ProfileStatItem: View {
     }
 }
 
+// MARK: - Profile Allocation Section
+struct ProfileAllocationSection: View {
+    @Environment(\.colorScheme) var colorScheme
+    let allocations: [PortfolioAllocation]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Portfolio Allocation")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            if allocations.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "chart.pie")
+                            .font(.title2)
+                            .foregroundColor(AppColors.textTertiary)
+                        Text("No holdings yet")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.vertical, 20)
+                    Spacer()
+                }
+                .glassCard(cornerRadius: 12)
+            } else {
+                VStack(spacing: 16) {
+                    AllocationPieChart(allocations: allocations, colorScheme: colorScheme)
+                        .frame(height: 160)
+
+                    // Legend
+                    VStack(spacing: 8) {
+                        ForEach(allocations) { alloc in
+                            HStack(spacing: 10) {
+                                Circle()
+                                    .fill(Color(hex: alloc.color))
+                                    .frame(width: 10, height: 10)
+
+                                Text(alloc.category)
+                                    .font(AppFonts.body14)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                                Spacer()
+
+                                Text(String(format: "%.1f%%", alloc.percentage))
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .monospacedDigit()
+                            }
+                        }
+                    }
+                }
+                .padding(ArkSpacing.md)
+                .glassCard(cornerRadius: 12)
+            }
+        }
+    }
+}
+
 // MARK: - Recent Activity
 struct ProfileRecentActivity: View {
     @Environment(\.colorScheme) var colorScheme
