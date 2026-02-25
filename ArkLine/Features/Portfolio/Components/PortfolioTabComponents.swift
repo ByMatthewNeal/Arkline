@@ -259,7 +259,8 @@ struct PortfolioAllocationContent: View {
                 Text("\(allocation.actualPercentage, specifier: "%.1f")%")
                     .font(AppFonts.body14Bold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
-                    .frame(width: 50, alignment: .trailing)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
         }
         .accessibilityLabel(allocationAccessibilityLabel(allocation))
