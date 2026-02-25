@@ -148,4 +148,71 @@ final class InviteCodeService: InviteCodeServiceProtocol {
 
         logInfo("Deleted invite code: \(id)", category: .data)
     }
+
+    // MARK: - Referral Code (User)
+
+    func fetchReferralCode(for userId: UUID) async throws -> InviteCode? {
+        guard supabase.isConfigured else {
+            return nil
+        }
+
+        let codes: [InviteCode] = try await supabase.database
+            .from(SupabaseTable.inviteCodes.rawValue)
+            .select()
+            .eq("created_by", value: userId.uuidString)
+            .eq("note", value: "referral")
+            .limit(1)
+            .execute()
+            .value
+
+        return codes.first
+    }
+
+    func createReferralCode(for userId: UUID) async throws -> InviteCode {
+        guard supabase.isConfigured else {
+            throw AppError.custom(message: "Service unavailable")
+        }
+
+        let tenYears = 365 * 10
+        let request = CreateInviteCodeRequest(
+            code: InviteCode.generateCode(),
+            createdBy: userId,
+            expiresAt: Calendar.current.date(byAdding: .day, value: tenYears, to: Date()) ?? Date(),
+            recipientName: nil,
+            note: "referral",
+            email: nil,
+            paymentStatus: "none",
+            trialDays: nil
+        )
+
+        let created: [InviteCode] = try await supabase.database
+            .from(SupabaseTable.inviteCodes.rawValue)
+            .insert(request)
+            .select()
+            .execute()
+            .value
+
+        guard let inviteCode = created.first else {
+            throw AppError.custom(message: "Failed to create referral code")
+        }
+
+        logInfo("Created referral code: \(inviteCode.code) for user: \(userId)", category: .data)
+        return inviteCode
+    }
+
+    func fetchReferralCount(for userId: UUID) async throws -> Int {
+        guard supabase.isConfigured else {
+            return 0
+        }
+
+        let result = try await supabase.database
+            .from(SupabaseTable.inviteCodes.rawValue)
+            .select("id", head: true, count: .exact)
+            .eq("created_by", value: userId.uuidString)
+            .eq("note", value: "referral")
+            .not("used_by", operator: .is, value: "null")
+            .execute()
+
+        return result.count ?? 0
+    }
 }

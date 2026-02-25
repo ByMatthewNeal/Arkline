@@ -29,6 +29,15 @@ protocol InviteCodeServiceProtocol {
 
     /// Deletes an invite code (admin only).
     func deleteCode(id: UUID) async throws
+
+    /// Fetches the user's existing referral code, if any.
+    func fetchReferralCode(for userId: UUID) async throws -> InviteCode?
+
+    /// Creates a referral code for the user.
+    func createReferralCode(for userId: UUID) async throws -> InviteCode
+
+    /// Counts how many of the user's referral codes have been redeemed.
+    func fetchReferralCount(for userId: UUID) async throws -> Int
 }
 
 // MARK: - Default Parameters

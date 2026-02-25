@@ -102,7 +102,7 @@ final class MacroStatisticsService: MacroStatisticsServiceProtocol {
             return try await calculateVIXZScore()
         case .dxy:
             return try await calculateDXYZScore()
-        case .m2:
+        case .m2, .netLiquidity:
             return try await calculateM2ZScore()
         case .crudeOil:
             return try await calculateCrudeOilZScore()

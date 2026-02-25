@@ -85,6 +85,22 @@ struct ProfileHeader: View {
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 
+            // Short User ID
+            if !viewModel.shortUserId.isEmpty {
+                Button(action: { viewModel.copyUserId() }) {
+                    HStack(spacing: 4) {
+                        Text("ID: \(viewModel.shortUserId)")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textTertiary)
+
+                        Image(systemName: viewModel.copiedUserId ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 10))
+                            .foregroundColor(viewModel.copiedUserId ? AppColors.success : AppColors.textTertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+
             // Social Links
             if let social = viewModel.user?.socialLinks {
                 HStack(spacing: 16) {
@@ -235,6 +251,8 @@ struct AdminPanelCard: View {
 struct ProfileStats: View {
     @Environment(\.colorScheme) var colorScheme
     let stats: ProfileStatsData
+    var onDCATap: () -> Void = {}
+    var onPortfoliosTap: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -243,9 +261,15 @@ struct ProfileStats: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             HStack(spacing: 12) {
-                ProfileStatItem(value: "\(stats.dcaReminders)", label: "DCA Reminders")
-                ProfileStatItem(value: "\(stats.chatSessions)", label: "Chat Sessions")
-                ProfileStatItem(value: "\(stats.portfolios)", label: "Portfolios")
+                Button(action: onDCATap) {
+                    ProfileStatItem(value: "\(stats.dcaReminders)", label: "DCA Reminders")
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onPortfoliosTap) {
+                    ProfileStatItem(value: "\(stats.portfolios)", label: "Portfolios")
+                }
+                .buttonStyle(.plain)
             }
         }
     }
@@ -373,19 +397,24 @@ struct ReferFriendView: View {
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
 
-                    HStack {
-                        Text(viewModel.referralCode)
-                            .font(AppFonts.number24)
-                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                    if viewModel.isLoadingReferral && viewModel.referralCode.isEmpty {
+                        ProgressView()
+                            .padding(.vertical, 16)
+                    } else {
+                        HStack {
+                            Text(viewModel.referralCode)
+                                .font(AppFonts.number24)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                        Button(action: { viewModel.copyReferralCode() }) {
-                            Image(systemName: "doc.on.doc")
-                                .foregroundColor(AppColors.accent)
+                            Button(action: { viewModel.copyReferralCode() }) {
+                                Image(systemName: "doc.on.doc")
+                                    .foregroundColor(AppColors.accent)
+                            }
                         }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                        .glassCard(cornerRadius: 12)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 16)
-                    .glassCard(cornerRadius: 12)
                 }
 
                 // Stats
@@ -415,11 +444,16 @@ struct ReferFriendView: View {
                     .background(AppColors.accent)
                     .cornerRadius(12)
                 }
+                .disabled(viewModel.referralCode.isEmpty)
+                .opacity(viewModel.referralCode.isEmpty ? 0.5 : 1)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
             .background(AppColors.background(colorScheme))
             .navigationTitle("Refer Friends")
+            .onAppear {
+                Task { await viewModel.loadReferralCode() }
+            }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -432,61 +466,3 @@ struct ReferFriendView: View {
     }
 }
 
-// MARK: - Portfolio Sheet View
-struct PortfolioSheetView: View {
-    @Environment(\.dismiss) var dismiss
-    @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var appState: AppState
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
-
-                Image(systemName: "chart.pie.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(AppColors.accent)
-
-                Text("My Portfolio")
-                    .font(AppFonts.title24)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                Text("Track your crypto holdings and performance in one place.")
-                    .font(AppFonts.body14)
-                    .foregroundColor(AppColors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-
-                Spacer()
-
-                Button {
-                    dismiss()
-                    // Navigate to Portfolio tab
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        appState.selectedTab = .portfolio
-                    }
-                } label: {
-                    Text("View Portfolio")
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(AppColors.accent)
-                        .cornerRadius(12)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-            }
-            .background(AppColors.background(colorScheme))
-            .navigationTitle("Portfolio")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") { dismiss() }
-                }
-            }
-            #endif
-        }
-    }
-}

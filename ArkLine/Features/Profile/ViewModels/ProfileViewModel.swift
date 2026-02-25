@@ -10,7 +10,6 @@ import AppKit
 // MARK: - Profile Stats
 struct ProfileStatsData {
     var dcaReminders: Int = 0
-    var chatSessions: Int = 0
     var portfolios: Int = 0
 }
 
@@ -30,6 +29,46 @@ struct ActivityItem: Identifiable {
     }
 }
 
+// MARK: - Activity Query Rows
+private struct PortfolioActivityRow: Decodable {
+    let id: UUID
+    let name: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, name
+        case createdAt = "created_at"
+    }
+}
+
+private struct PortfolioIdRow: Decodable {
+    let id: UUID
+}
+
+private struct TransactionActivityRow: Decodable {
+    let id: UUID
+    let symbol: String
+    let type: String
+    let transactionDate: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, symbol, type
+        case transactionDate = "transaction_date"
+    }
+}
+
+private struct DCAActivityRow: Decodable {
+    let id: UUID
+    let name: String
+    let symbol: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, symbol
+        case createdAt = "created_at"
+    }
+}
+
 // MARK: - Profile View Model
 @MainActor
 @Observable
@@ -46,8 +85,32 @@ final class ProfileViewModel {
     var recentActivity: [ActivityItem] = []
 
     // MARK: - Referral
-    var referralCode = "ARKLINE2024"
-    var referralCount = 3
+    var referralCode = ""
+    var referralCount = 0
+    var isLoadingReferral = false
+    private let inviteCodeService = InviteCodeService()
+
+    // MARK: - User ID
+    var copiedUserId = false
+
+    var shortUserId: String {
+        guard let id = user?.id else { return "" }
+        return String(id.uuidString.replacingOccurrences(of: "-", with: "").prefix(8)).uppercased()
+    }
+
+    func copyUserId() {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = shortUserId
+        #elseif canImport(AppKit)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(shortUserId, forType: .string)
+        #endif
+        copiedUserId = true
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            await MainActor.run { copiedUserId = false }
+        }
+    }
 
     // MARK: - Computed Properties
     var displayName: String {
@@ -80,7 +143,10 @@ final class ProfileViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        await loadStats()
+        async let statsTask: () = loadStats()
+        async let activityTask: () = loadRecentActivity()
+        async let referralTask: () = loadReferralCode()
+        _ = await (statsTask, activityTask, referralTask)
     }
 
     func loadStats() async {
@@ -103,23 +169,136 @@ final class ProfileViewModel {
                 .eq("user_id", value: userId.uuidString)
                 .execute()
 
-            async let chatResult = db
-                .from(SupabaseTable.chatSessions.rawValue)
-                .select("id", head: true, count: .exact)
-                .eq("user_id", value: userId.uuidString)
-                .execute()
-
-            let (dca, portfolios, chats) = try await (dcaResult, portfolioResult, chatResult)
+            let (dca, portfolios) = try await (dcaResult, portfolioResult)
 
             await MainActor.run {
                 self.stats = ProfileStatsData(
                     dcaReminders: dca.count ?? 0,
-                    chatSessions: chats.count ?? 0,
                     portfolios: portfolios.count ?? 0
                 )
             }
         } catch {
             logError("Failed to load profile stats: \(error)", category: .data)
+        }
+    }
+
+    func loadRecentActivity() async {
+        guard let userId = await MainActor.run(body: { SupabaseAuthManager.shared.currentUserId }) else {
+            return
+        }
+
+        do {
+            let db = SupabaseManager.shared.database
+
+            // Fetch portfolio IDs for the user
+            let portfolioIds: [PortfolioIdRow] = try await db
+                .from(SupabaseTable.portfolios.rawValue)
+                .select("id")
+                .eq("user_id", value: userId.uuidString)
+                .execute()
+                .value
+
+            let ids = portfolioIds.map { $0.id.uuidString }
+
+            // Fetch recent data in parallel
+            async let recentPortfolios: [PortfolioActivityRow] = db
+                .from(SupabaseTable.portfolios.rawValue)
+                .select("id, name, created_at")
+                .eq("user_id", value: userId.uuidString)
+                .order("created_at", ascending: false)
+                .limit(5)
+                .execute()
+                .value
+
+            async let recentDCA: [DCAActivityRow] = db
+                .from(SupabaseTable.dcaReminders.rawValue)
+                .select("id, name, symbol, created_at")
+                .eq("user_id", value: userId.uuidString)
+                .order("created_at", ascending: false)
+                .limit(5)
+                .execute()
+                .value
+
+            var items: [ActivityItem] = []
+
+            let (portfolios, dcaReminders) = try await (recentPortfolios, recentDCA)
+
+            // Map portfolios
+            for p in portfolios {
+                items.append(ActivityItem(
+                    icon: "chart.pie.fill",
+                    iconColor: AppColors.accent,
+                    title: "Created portfolio \"\(p.name)\"",
+                    subtitle: "",
+                    timestamp: p.createdAt
+                ))
+            }
+
+            // Map DCA reminders
+            for d in dcaReminders {
+                items.append(ActivityItem(
+                    icon: "clock.arrow.circlepath",
+                    iconColor: AppColors.warning,
+                    title: "DCA reminder for \(d.symbol.uppercased())",
+                    subtitle: "",
+                    timestamp: d.createdAt
+                ))
+            }
+
+            // Fetch transactions if user has portfolios
+            if !ids.isEmpty {
+                let recentTransactions: [TransactionActivityRow] = try await db
+                    .from(SupabaseTable.transactions.rawValue)
+                    .select("id, symbol, type, transaction_date")
+                    .in("portfolio_id", values: ids)
+                    .order("transaction_date", ascending: false)
+                    .limit(5)
+                    .execute()
+                    .value
+
+                for t in recentTransactions {
+                    let isBuy = t.type.lowercased() == "buy"
+                    items.append(ActivityItem(
+                        icon: isBuy ? "arrow.down.circle.fill" : "arrow.up.circle.fill",
+                        iconColor: isBuy ? AppColors.success : AppColors.error,
+                        title: "\(isBuy ? "Bought" : "Sold") \(t.symbol.uppercased())",
+                        subtitle: "",
+                        timestamp: t.transactionDate
+                    ))
+                }
+            }
+
+            // Sort by timestamp descending, take top 10
+            items.sort { $0.timestamp > $1.timestamp }
+            let topItems = Array(items.prefix(10))
+
+            await MainActor.run {
+                self.recentActivity = topItems
+            }
+        } catch {
+            logError("Failed to load recent activity: \(error)", category: .data)
+        }
+    }
+
+    func loadReferralCode() async {
+        guard let userId = user?.id else { return }
+
+        isLoadingReferral = true
+        defer { isLoadingReferral = false }
+
+        do {
+            // Fetch existing referral code, or create one
+            if let existing = try await inviteCodeService.fetchReferralCode(for: userId) {
+                referralCode = existing.code
+            } else {
+                let created = try await inviteCodeService.createReferralCode(for: userId)
+                referralCode = created.code
+            }
+
+            // Fetch how many friends redeemed
+            referralCount = try await inviteCodeService.fetchReferralCount(for: userId)
+        } catch {
+            logError("Failed to load referral code: \(error)", category: .data)
         }
     }
 

@@ -274,7 +274,7 @@ struct ExtremeMove: Codable, Identifiable, Equatable {
             valueFormatted = String(format: "%.1f", currentValue)
         case .dxy:
             valueFormatted = String(format: "%.2f", currentValue)
-        case .m2:
+        case .m2, .netLiquidity:
             valueFormatted = formatLargeNumber(currentValue)
         case .crudeOil:
             valueFormatted = String(format: "$%.2f", currentValue)

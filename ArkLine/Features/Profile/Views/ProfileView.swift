@@ -5,7 +5,6 @@ struct ProfileView: View {
     @EnvironmentObject var appState: AppState
     @State private var viewModel = ProfileViewModel()
     @State private var showReferral = false
-    @State private var showPortfolio = false
 
     @State private var showEditProfile = false
     @State private var navigationPath = NavigationPath()
@@ -32,7 +31,7 @@ struct ProfileView: View {
                     // Quick Actions
                     ProfileQuickActions(
                         onReferral: { showReferral = true },
-                        onPortfolio: { showPortfolio = true }
+                        onPortfolio: { appState.selectedTab = .portfolio }
                     )
                     .padding(.horizontal, 20)
 
@@ -45,7 +44,11 @@ struct ProfileView: View {
                     }
 
                     // Stats
-                    ProfileStats(stats: viewModel.stats)
+                    ProfileStats(
+                        stats: viewModel.stats,
+                        onDCATap: { navigationPath.append("dcaList") },
+                        onPortfoliosTap: { appState.selectedTab = .portfolio }
+                    )
                         .padding(.horizontal, 20)
 
                     // Recent Activity
@@ -64,6 +67,11 @@ struct ProfileView: View {
                 }
             } // ScrollViewReader
             }
+            .navigationDestination(for: String.self) { route in
+                if route == "dcaList" {
+                    DCAListView()
+                }
+            }
             .navigationTitle("Profile")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
@@ -78,9 +86,6 @@ struct ProfileView: View {
             #endif
             .sheet(isPresented: $showReferral) {
                 ReferFriendView(viewModel: viewModel)
-            }
-            .sheet(isPresented: $showPortfolio) {
-                PortfolioSheetView()
             }
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(user: viewModel.user) { updatedUser in
@@ -99,6 +104,7 @@ struct ProfileView: View {
                     if let updatedUser = appState.currentUser {
                         viewModel.user = updatedUser
                     }
+                    await viewModel.refresh()
                 }
                 Task { await AnalyticsService.shared.trackScreenView("profile") }
             }
