@@ -11,24 +11,20 @@ struct VIXData: Codable, Identifiable {
 
     var id: String { date }
 
-    /// Signal based on VIX levels (matches UI interpretation)
-    /// Below 15: Complacent (very low volatility)
-    /// 15-20: Normal market conditions
-    /// 20-25: Elevated uncertainty
-    /// 25-30: High fear
-    /// Above 30: Extreme fear
+    /// Signal based on VIX levels for spot investing
+    /// Below 20: Low volatility = Bullish for risk assets
+    /// 20-25: Neutral
+    /// Above 25: Bearish
     var signal: MarketSignal {
-        if value < 15 { return .bullish }
-        else if value < 20 { return .neutral }
+        if value < 20 { return .bullish }
+        else if value < 25 { return .neutral }
         else { return .bearish }
     }
 
     var signalDescription: String {
-        if value < 15 { return "Complacent" }
-        else if value < 20 { return "Normal" }
-        else if value < 25 { return "Elevated" }
-        else if value < 30 { return "High Fear" }
-        else { return "Extreme Fear" }
+        if value < 20 { return "Bullish" }
+        else if value < 25 { return "Neutral" }
+        else { return "Bearish" }
     }
 }
 

@@ -18,21 +18,19 @@ struct DXYData: Codable, Identifiable {
         return ((value - prev) / prev) * 100
     }
 
-    /// Signal based on DXY absolute level (matches Historical Ranges)
-    /// Below 90: Weak dollar - Risk-on (bullish for crypto)
-    /// 90-100: Normal range
-    /// 100-105: Strong dollar
-    /// Above 105: Very strong - Risk-off (bearish for crypto)
+    /// Signal based on DXY absolute level for spot investing
+    /// Below 100: Weak dollar = Bullish for risk assets
+    /// 100-105: Neutral
+    /// Above 105: Bearish
     var signal: MarketSignal {
-        if value < 90 { return .bullish }
-        else if value < 100 { return .neutral }
+        if value < 100 { return .bullish }
+        else if value < 105 { return .neutral }
         else { return .bearish }
     }
 
     var signalDescription: String {
-        if value < 90 { return "Weak Dollar" }
-        else if value < 100 { return "Normal" }
-        else if value < 105 { return "Strong Dollar" }
-        else { return "Very Strong" }
+        if value < 100 { return "Bullish" }
+        else if value < 105 { return "Neutral" }
+        else { return "Bearish" }
     }
 }

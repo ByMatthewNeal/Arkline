@@ -98,28 +98,26 @@ struct MacroDashboardWidget: View {
         return .weak
     }
 
-    // MARK: - Signals
+    // MARK: - Signals (indicator-level labels, shown in expanded mode)
     private var vixSignal: (color: Color, label: String) {
         guard let vix = vixData?.value else { return (.secondary, "--") }
-        if vix < 15 { return (AppColors.success, "Low") }
-        if vix < 20 { return (Color(hex: "4ADE80"), "Normal") }
-        if vix < 25 { return (AppColors.warning, "Elevated") }
-        return (AppColors.error, "High")
+        if vix < 20 { return (AppColors.success, "Bullish") }
+        if vix < 25 { return (AppColors.warning, "Neutral") }
+        return (AppColors.error, "Bearish")
     }
 
     private var dxySignal: (color: Color, label: String) {
-        guard let change = dxyData?.changePercent else { return (.secondary, "--") }
-        if change < -0.3 { return (AppColors.success, "Weak") }
-        if change > 0.3 { return (AppColors.error, "Strong") }
-        return (AppColors.warning, "Stable")
+        guard let dxy = dxyData?.value else { return (.secondary, "--") }
+        if dxy < 100 { return (AppColors.success, "Bullish") }
+        if dxy < 105 { return (AppColors.warning, "Neutral") }
+        return (AppColors.error, "Bearish")
     }
 
     private var m2Signal: (color: Color, label: String) {
         guard let m2 = liquidityData else { return (.secondary, "--") }
-        if m2.monthlyChange > 1.0 { return (AppColors.success, "Expanding") }
-        if m2.monthlyChange > 0 { return (Color(hex: "4ADE80"), "Growing") }
-        if m2.monthlyChange > -1.0 { return (AppColors.warning, "Flat") }
-        return (AppColors.error, "Contracting")
+        if m2.monthlyChange > 0 { return (AppColors.success, "Bullish") }
+        if m2.monthlyChange > -1.0 { return (AppColors.warning, "Neutral") }
+        return (AppColors.error, "Bearish")
     }
 
     // MARK: - Crypto Signal Mappings

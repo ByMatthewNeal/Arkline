@@ -13,19 +13,16 @@ struct VIXWidget: View {
 
     private var signalColor: Color {
         guard let vix = vixData?.value else { return .secondary }
-        if vix < 15 { return AppColors.success }      // Green - Complacent
-        if vix < 20 { return Color(hex: "3B82F6") }   // Blue - Normal
-        if vix < 25 { return AppColors.warning }      // Orange - Elevated
-        if vix < 30 { return AppColors.error }        // Red - High fear
-        return Color(hex: "991B1B")                   // Maroon - Extreme
+        if vix < 20 { return AppColors.success }
+        if vix < 25 { return AppColors.warning }
+        return AppColors.error
     }
 
     private var levelDescription: String {
         guard let vix = vixData?.value else { return "--" }
-        if vix < 15 { return "Low" }
-        if vix < 20 { return "Normal" }
-        if vix < 25 { return "Elevated" }
-        return "High"
+        if vix < 20 { return "Bullish" }
+        if vix < 25 { return "Neutral" }
+        return "Bearish"
     }
 
     var body: some View {
@@ -85,18 +82,16 @@ struct DXYWidget: View {
 
     private var signalColor: Color {
         guard let dxy = dxyData?.value else { return .secondary }
-        if dxy < 90 { return AppColors.success }      // Green - Weak dollar
-        if dxy < 100 { return Color(hex: "3B82F6") }  // Blue - Normal range
-        if dxy < 105 { return AppColors.warning }     // Orange - Strong dollar
-        return AppColors.error                        // Red - Very strong
+        if dxy < 100 { return AppColors.success }
+        if dxy < 105 { return AppColors.warning }
+        return AppColors.error
     }
 
     private var trendDescription: String {
         guard let dxy = dxyData?.value else { return "--" }
-        if dxy < 90 { return "Weak" }
-        if dxy < 100 { return "Normal" }
-        if dxy < 105 { return "Strong" }
-        return "Very Strong"
+        if dxy < 100 { return "Bullish" }
+        if dxy < 105 { return "Neutral" }
+        return "Bearish"
     }
 
     var body: some View {
@@ -164,17 +159,16 @@ struct GlobalLiquidityWidget: View {
 
     private var signalColor: Color {
         guard let liquidity = liquidityChanges else { return .secondary }
-        if liquidity.monthlyChange > 1.0 { return AppColors.success }
-        if liquidity.monthlyChange < -1.0 { return AppColors.error }
-        return AppColors.warning
+        if liquidity.monthlyChange > 0 { return AppColors.success }
+        if liquidity.monthlyChange > -1.0 { return AppColors.warning }
+        return AppColors.error
     }
 
     private var trendDescription: String {
         guard let liquidity = liquidityChanges else { return "--" }
-        if liquidity.monthlyChange > 2.0 { return "Expanding" }
-        if liquidity.monthlyChange > 0 { return "Growing" }
-        if liquidity.monthlyChange > -2.0 { return "Contracting" }
-        return "Shrinking"
+        if liquidity.monthlyChange > 0 { return "Bullish" }
+        if liquidity.monthlyChange > -1.0 { return "Neutral" }
+        return "Bearish"
     }
 
     private func formatLiquidity(_ value: Double) -> String {
