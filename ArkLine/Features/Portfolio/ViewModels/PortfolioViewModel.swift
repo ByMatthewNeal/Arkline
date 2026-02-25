@@ -796,22 +796,23 @@ final class PortfolioViewModel {
     }
 
     func updateTargetAllocations(_ targets: [UUID: Double?]) async {
+        // Update local state immediately (optimistic) so the UI reflects targets right away
+        await MainActor.run {
+            for (id, target) in targets {
+                if let index = self.holdings.firstIndex(where: { $0.id == id }) {
+                    self.holdings[index].targetPercentage = target
+                }
+            }
+            self.allocations = self.computeAllocations(from: self.holdings)
+        }
+
+        // Persist to Supabase
         do {
             for holding in holdings {
                 guard let target = targets[holding.id] else { continue }
                 var updatedHolding = holding
                 updatedHolding.targetPercentage = target
                 try await portfolioService.updateHolding(updatedHolding)
-            }
-
-            // Update local state
-            await MainActor.run {
-                for (id, target) in targets {
-                    if let index = self.holdings.firstIndex(where: { $0.id == id }) {
-                        self.holdings[index].targetPercentage = target
-                    }
-                }
-                self.allocations = self.computeAllocations(from: self.holdings)
             }
         } catch {
             await MainActor.run {
