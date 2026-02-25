@@ -24,6 +24,7 @@ struct SupplyProfitColors {
 
 // MARK: - Supply Chart Time Range
 enum SupplyChartTimeRange: String, CaseIterable {
+    case oneMonth = "1M"
     case threeMonths = "3M"
     case sixMonths = "6M"
     case oneYear = "1Y"
@@ -31,10 +32,11 @@ enum SupplyChartTimeRange: String, CaseIterable {
 
     var days: Int? {
         switch self {
+        case .oneMonth: return 30
         case .threeMonths: return 90
         case .sixMonths: return 180
         case .oneYear: return 365
-        case .all: return nil // No cutoff
+        case .all: return nil
         }
     }
 }
@@ -127,6 +129,7 @@ struct SupplyInProfitDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     @State private var historyData: [SupplyProfitData] = []
+    @State private var btcPriceMap: [String: Double] = [:] // date string → BTC price
     @State private var isLoading = false
     @State private var selectedPoint: SupplyProfitData?
     @State private var selectedTimeRange: SupplyChartTimeRange = .oneYear
@@ -220,13 +223,15 @@ Note: Data is updated daily with approximately a 30-day lag.
 
     private var filteredHistory: [SupplyProfitData] {
         guard let days = selectedTimeRange.days else { return historyData }
-        let calendar = Calendar.current
-        guard let cutoff = calendar.date(byAdding: .day, value: -days, to: Date()) else {
-            return historyData
-        }
+        // Use the latest data point as reference (not today) to account for Santiment's ~30 day lag
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(identifier: "UTC")
+        let latestDate = historyData.last.flatMap { formatter.date(from: $0.date) } ?? Date()
+        let calendar = Calendar.current
+        guard let cutoff = calendar.date(byAdding: .day, value: -days, to: latestDate) else {
+            return historyData
+        }
         return historyData.filter { point in
             guard let date = formatter.date(from: point.date) else { return false }
             return date >= cutoff
@@ -259,15 +264,25 @@ Note: Data is updated daily with approximately a 30-day lag.
     @ViewBuilder
     private var chartSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Historical Trend")
-                    .font(.headline)
-                    .foregroundColor(textPrimary)
-                Spacer()
-                if let point = selectedPoint {
-                    Text("\(point.date): \(point.formattedValue)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Historical Trend")
+                        .font(.headline)
+                        .foregroundColor(textPrimary)
+                    Spacer()
+                    if let point = selectedPoint {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("\(point.date): \(point.formattedValue)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            if let price = btcPrice(for: point.date) {
+                                Text("BTC $\(Int(price).formatted())")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -289,10 +304,15 @@ Note: Data is updated daily with approximately a 30-day lag.
         Task {
             do {
                 let service = ServiceContainer.shared.santimentService
-                let history = try await service.fetchSupplyInProfitHistory(days: 5000)
+                async let supplyTask = service.fetchSupplyInProfitHistory(days: 5000)
+                async let btcTask = fetchBTCPriceHistory()
+
+                let history = try await supplyTask
+                let priceMap = await btcTask
+
                 await MainActor.run {
-                    // Reverse to get oldest first for charting
                     self.historyData = history.reversed()
+                    self.btcPriceMap = priceMap
                     self.isLoading = false
                 }
             } catch {
@@ -300,6 +320,65 @@ Note: Data is updated daily with approximately a 30-day lag.
                     self.isLoading = false
                 }
             }
+        }
+    }
+
+    /// Look up BTC price for a date, falling back to nearest available date (within 3 days)
+    private func btcPrice(for dateString: String) -> Double? {
+        if let exact = btcPriceMap[dateString] { return exact }
+        // Try nearby dates (data might be off by a day)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        guard let date = formatter.date(from: dateString) else { return nil }
+        for offset in 1...3 {
+            for dir in [-1, 1] {
+                if let nearby = Calendar.current.date(byAdding: .day, value: offset * dir, to: date) {
+                    let key = formatter.string(from: nearby)
+                    if let price = btcPriceMap[key] { return price }
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Fetch BTC price history from CoinGecko and build a date → price map
+    private func fetchBTCPriceHistory() async -> [String: Double] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+
+        // Try daily-granularity endpoint first (365 days = daily data points)
+        if let map = await fetchBTCChart(days: 365, formatter: formatter), !map.isEmpty {
+            return map
+        }
+
+        // Fallback: use cached market data for just the current price
+        if let assets = try? await ServiceContainer.shared.marketService.fetchCryptoAssets(page: 1, perPage: 10),
+           let btc = assets.first(where: { $0.symbol.lowercased() == "btc" }) {
+            let today = formatter.string(from: Date())
+            return [today: btc.currentPrice]
+        }
+
+        return [:]
+    }
+
+    private func fetchBTCChart(days: Int, formatter: DateFormatter) async -> [String: Double]? {
+        do {
+            let endpoint = CoinGeckoEndpoint.coinMarketChart(id: "bitcoin", currency: "usd", days: days)
+            let chart: CoinGeckoMarketChart = try await NetworkManager.shared.request(endpoint)
+
+            var map: [String: Double] = [:]
+            for point in chart.prices {
+                guard point.count >= 2 else { continue }
+                let date = Date(timeIntervalSince1970: point[0] / 1000)
+                let dateStr = formatter.string(from: date)
+                map[dateStr] = point[1]
+            }
+            return map
+        } catch {
+            logWarning("BTC chart fetch failed (days=\(days)): \(error.localizedDescription)", category: .network)
+            return nil
         }
     }
 }
