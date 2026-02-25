@@ -182,7 +182,10 @@ struct MainTabView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Floating Tab Bar
-            CustomTabBar(selectedTab: $appState.selectedTab)
+            CustomTabBar(
+                selectedTab: $appState.selectedTab,
+                badges: appState.insightsUnreadCount > 0 ? [.insights: appState.insightsUnreadCount] : [:]
+            )
         }
         .ignoresSafeArea(.keyboard)
         .background(AppColors.background(colorScheme))

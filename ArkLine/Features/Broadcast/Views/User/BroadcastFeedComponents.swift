@@ -1,5 +1,4 @@
 import SwiftUI
-import AVFoundation
 import Kingfisher
 
 // MARK: - Broadcast Card View
@@ -120,10 +119,9 @@ struct BroadcastDetailView: View {
 
     @State private var reactionSummary: [ReactionSummary] = []
     @State private var isLoadingReactions = false
-    @State private var audioPlayer: AVPlayer?
-    @State private var isPlayingAudio = false
     @Environment(\.openURL) private var openURL
-    @State private var audioEndObserver: NSObjectProtocol?
+    @State private var showingImageViewer = false
+    @State private var selectedImageIndex = 0
 
     var body: some View {
         NavigationStack {
@@ -155,9 +153,9 @@ struct BroadcastDetailView: View {
                         }
                     }
 
-                    // Audio Player (placeholder)
-                    if broadcast.audioURL != nil {
-                        audioPlayerPlaceholder
+                    // Audio Player
+                    if let audioURL = broadcast.audioURL {
+                        AudioPlayerView(url: audioURL)
                     }
 
                     // Meeting Link
@@ -202,9 +200,12 @@ struct BroadcastDetailView: View {
                         EmbeddedPortfolioWidget(attachment: portfolioAttachment)
                     }
 
-                    // Images (placeholder)
+                    // Images
                     if !broadcast.images.isEmpty {
                         imagesSection
+                            .fullScreenCover(isPresented: $showingImageViewer) {
+                                FullscreenImageViewer(images: broadcast.images, initialIndex: selectedImageIndex)
+                            }
                     }
 
                     // App References
@@ -339,68 +340,6 @@ struct BroadcastDetailView: View {
         }
     }
 
-    // MARK: - Audio Player
-
-    private var audioPlayerPlaceholder: some View {
-        HStack(spacing: ArkSpacing.md) {
-            Button {
-                toggleAudioPlayback()
-            } label: {
-                Image(systemName: isPlayingAudio ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 44))
-                    .foregroundColor(AppColors.accent)
-            }
-
-            VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
-                Text("Voice Note")
-                    .font(ArkFonts.bodySemibold)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                Text(isPlayingAudio ? "Playing..." : "Tap to play")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            Spacer()
-        }
-        .padding(ArkSpacing.md)
-        .background(AppColors.cardBackground(colorScheme))
-        .cornerRadius(ArkSpacing.sm)
-        .onDisappear {
-            audioPlayer?.pause()
-            audioPlayer = nil
-            isPlayingAudio = false
-            if let observer = audioEndObserver {
-                NotificationCenter.default.removeObserver(observer)
-                audioEndObserver = nil
-            }
-        }
-    }
-
-    private func toggleAudioPlayback() {
-        if isPlayingAudio {
-            audioPlayer?.pause()
-            isPlayingAudio = false
-        } else {
-            if audioPlayer == nil, let url = broadcast.audioURL {
-                let player = AVPlayer(url: url)
-                audioPlayer = player
-
-                // Observe when playback finishes
-                audioEndObserver = NotificationCenter.default.addObserver(
-                    forName: .AVPlayerItemDidPlayToEndTime,
-                    object: player.currentItem,
-                    queue: .main
-                ) { _ in
-                    isPlayingAudio = false
-                    player.seek(to: .zero)
-                }
-            }
-            audioPlayer?.play()
-            isPlayingAudio = true
-        }
-    }
-
     // MARK: - Images Section
 
     private var imagesSection: some View {
@@ -411,17 +350,23 @@ struct BroadcastDetailView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.sm) {
-                    ForEach(broadcast.images) { image in
-                        KFImage(image.imageURL)
-                            .resizable()
-                            .placeholder {
-                                ProgressView()
-                            }
-                            .fade(duration: 0.2)
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 200, height: 150)
-                            .cornerRadius(ArkSpacing.sm)
-                            .clipped()
+                    ForEach(Array(broadcast.images.enumerated()), id: \.element.id) { index, image in
+                        Button {
+                            selectedImageIndex = index
+                            showingImageViewer = true
+                        } label: {
+                            KFImage(image.imageURL)
+                                .resizable()
+                                .placeholder {
+                                    ProgressView()
+                                }
+                                .fade(duration: 0.2)
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 200, height: 150)
+                                .cornerRadius(ArkSpacing.sm)
+                                .clipped()
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

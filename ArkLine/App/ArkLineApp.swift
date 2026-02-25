@@ -199,6 +199,9 @@ class AppState: ObservableObject {
     // Deep link pending broadcast (from notification tap or URL scheme)
     @Published var pendingBroadcastId: String?
 
+    // Unread broadcast badge count for Insights tab
+    @Published var insightsUnreadCount: Int = 0
+
     // Tab navigation
     @Published var selectedTab: AppTab = .home
     @Published var shouldShowPortfolioCreation = false

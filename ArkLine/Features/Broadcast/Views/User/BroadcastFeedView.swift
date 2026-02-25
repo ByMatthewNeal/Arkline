@@ -9,23 +9,6 @@ enum BroadcastDateFilter: String, CaseIterable {
     case thisMonth = "This Month"
 }
 
-// MARK: - Category Filter
-
-enum BroadcastCategoryFilter: String, CaseIterable {
-    case all = "All"
-    case marketUpdate = "Market Update"
-    case outOfOffice = "Out of Office"
-
-    /// The BroadcastTag to filter by, or nil for "All"
-    var matchingTag: String? {
-        switch self {
-        case .all: return nil
-        case .marketUpdate: return BroadcastTag.marketUpdate.rawValue
-        case .outOfOffice: return BroadcastTag.outOfOffice.rawValue
-        }
-    }
-}
-
 // MARK: - Date Section Key
 
 private struct DateSectionKey: Hashable, Comparable {
@@ -51,7 +34,6 @@ struct BroadcastFeedView: View {
     @State private var hasCheckedNotifications = false
     @State private var searchText = ""
     @State private var selectedDateFilter: BroadcastDateFilter = .all
-    @State private var selectedCategoryFilter: BroadcastCategoryFilter = .all
     @State private var selectedTags: Set<String> = []
     @State private var navigationPath = NavigationPath()
 
@@ -77,11 +59,6 @@ struct BroadcastFeedView: View {
                     return date >= monthAgo
                 }
             }
-        }
-
-        // Category filter
-        if let categoryTag = selectedCategoryFilter.matchingTag {
-            result = result.filter { $0.tags.contains(categoryTag) }
         }
 
         // Tag filter
@@ -194,6 +171,7 @@ struct BroadcastFeedView: View {
                 if let userId = appState.currentUser?.id {
                     await viewModel.loadPublishedBroadcasts(for: userId)
                     await viewModel.updateUnreadCount(for: userId)
+                    appState.insightsUnreadCount = viewModel.unreadCount
                 }
                 await checkNotificationStatus()
             }
@@ -225,6 +203,14 @@ struct BroadcastFeedView: View {
                    let broadcast = viewModel.published.first(where: { $0.id.uuidString == id }) {
                     selectedBroadcast = broadcast
                     appState.pendingBroadcastId = nil
+                }
+            }
+            .onChange(of: viewModel.unreadCount) { _, newCount in
+                appState.insightsUnreadCount = newCount
+            }
+            .onChange(of: appState.selectedTab) { _, newTab in
+                if newTab == .insights {
+                    appState.insightsUnreadCount = 0
                 }
             }
             } // ScrollViewReader
@@ -264,29 +250,6 @@ struct BroadcastFeedView: View {
             .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(ArkSpacing.sm)
 
-            // Category tabs
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: ArkSpacing.xs) {
-                    ForEach(BroadcastCategoryFilter.allCases, id: \.self) { category in
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedCategoryFilter = category
-                            }
-                        } label: {
-                            Text(category.rawValue)
-                                .font(ArkFonts.caption)
-                                .fontWeight(selectedCategoryFilter == category ? .semibold : .regular)
-                                .foregroundColor(selectedCategoryFilter == category ? .white : AppColors.textSecondary)
-                                .padding(.horizontal, ArkSpacing.sm)
-                                .padding(.vertical, ArkSpacing.xs)
-                                .background(selectedCategoryFilter == category ? AppColors.accent : AppColors.cardBackground(colorScheme))
-                                .cornerRadius(ArkSpacing.sm)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-
             // Date filter chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.xs) {
@@ -309,31 +272,45 @@ struct BroadcastFeedView: View {
                 }
             }
 
-            // Tag pills (only if tags exist)
-            if !availableTags.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: ArkSpacing.xs) {
-                        ForEach(availableTags, id: \.self) { tag in
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    if selectedTags.contains(tag) {
-                                        selectedTags.remove(tag)
-                                    } else {
-                                        selectedTags.insert(tag)
-                                    }
-                                }
-                            } label: {
-                                let color = tagColor(for: tag)
-                                Text("#\(tag)")
-                                    .font(ArkFonts.caption)
-                                    .foregroundColor(selectedTags.contains(tag) ? .white : color)
-                                    .padding(.horizontal, ArkSpacing.sm)
-                                    .padding(.vertical, ArkSpacing.xxs)
-                                    .background(selectedTags.contains(tag) ? color : color.opacity(0.1))
-                                    .cornerRadius(ArkSpacing.xs)
-                            }
-                            .buttonStyle(.plain)
+            // Tag pills with "All" reset chip
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: ArkSpacing.xs) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedTags.removeAll()
                         }
+                    } label: {
+                        Text("All")
+                            .font(ArkFonts.caption)
+                            .fontWeight(selectedTags.isEmpty ? .semibold : .regular)
+                            .foregroundColor(selectedTags.isEmpty ? .white : AppColors.textSecondary)
+                            .padding(.horizontal, ArkSpacing.sm)
+                            .padding(.vertical, ArkSpacing.xxs)
+                            .background(selectedTags.isEmpty ? AppColors.accent : AppColors.cardBackground(colorScheme))
+                            .cornerRadius(ArkSpacing.xs)
+                    }
+                    .buttonStyle(.plain)
+
+                    ForEach(availableTags, id: \.self) { tag in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                if selectedTags.contains(tag) {
+                                    selectedTags.remove(tag)
+                                } else {
+                                    selectedTags.insert(tag)
+                                }
+                            }
+                        } label: {
+                            let color = tagColor(for: tag)
+                            Text("#\(tag)")
+                                .font(ArkFonts.caption)
+                                .foregroundColor(selectedTags.contains(tag) ? .white : color)
+                                .padding(.horizontal, ArkSpacing.sm)
+                                .padding(.vertical, ArkSpacing.xxs)
+                                .background(selectedTags.contains(tag) ? color : color.opacity(0.1))
+                                .cornerRadius(ArkSpacing.xs)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
