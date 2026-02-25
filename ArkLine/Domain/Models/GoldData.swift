@@ -19,18 +19,17 @@ struct GoldData: Codable, Identifiable {
     }
 
     /// Signal based on gold price level for spot investing
-    /// Below $6000: Bullish (uptrend intact)
-    /// $6000-8000: Neutral
-    /// Above $8000: Bearish
+    /// Gold in a secular uptrend — only a collapse below $3,000
+    /// (major trend break) would signal bearish
     var signal: MarketSignal {
-        if value < 6000 { return .bullish }
-        else if value < 8000 { return .neutral }
+        if value > 3000 { return .bullish }
+        else if value > 2000 { return .neutral }
         else { return .bearish }
     }
 
     var signalDescription: String {
-        if value < 6000 { return "Bullish" }
-        else if value < 8000 { return "Neutral" }
+        if value > 3000 { return "Bullish" }
+        else if value > 2000 { return "Neutral" }
         else { return "Bearish" }
     }
 }
