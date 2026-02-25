@@ -85,12 +85,60 @@ struct AppStoreRankingDetailView: View {
         isLoading = true
         do {
             let sentimentService = APISentimentService()
-            rankingHistory = try await sentimentService.fetchAppStoreRankingHistory(limit: 30)
-            logInfo("Loaded \(rankingHistory.count) historical rankings", category: .data)
+            var history = try await sentimentService.fetchAppStoreRankingHistory(limit: 30)
+            logInfo("Loaded \(history.count) historical rankings", category: .data)
+
+            // Backfill any missing BTC prices from CoinGecko
+            let missingPriceRecords = history.filter { $0.btcPrice == nil }
+            if !missingPriceRecords.isEmpty {
+                history = await backfillMissingBTCPrices(in: history)
+            }
+
+            rankingHistory = history
         } catch {
             logError("Failed to load ranking history: \(error.localizedDescription)", category: .data)
         }
         isLoading = false
+    }
+
+    /// Fetch BTC price history and fill in any records with missing prices
+    private func backfillMissingBTCPrices(in rankings: [AppStoreRankingDTO]) async -> [AppStoreRankingDTO] {
+        // Fetch daily BTC prices from CoinGecko
+        let priceMap: [String: Double]
+        do {
+            let endpoint = CoinGeckoEndpoint.coinMarketChart(id: "bitcoin", currency: "usd", days: 365)
+            let chart: CoinGeckoMarketChart = try await NetworkManager.shared.request(endpoint)
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "UTC")
+
+            var map: [String: Double] = [:]
+            for point in chart.prices where point.count >= 2 {
+                let date = Date(timeIntervalSince1970: point[0] / 1000)
+                map[formatter.string(from: date)] = point[1]
+            }
+            priceMap = map
+        } catch {
+            return rankings // Can't backfill, return as-is
+        }
+
+        // Fill in missing prices and persist to DB
+        var updated = rankings
+        for i in updated.indices where updated[i].btcPrice == nil {
+            if let price = priceMap[updated[i].recordedDate] {
+                // Update the DB record permanently
+                Task {
+                    try? await SupabaseDatabase.shared.updateRankingBTCPrice(id: updated[i].id, btcPrice: price)
+                }
+                // Update local display
+                updated[i] = AppStoreRankingDTO(
+                    original: updated[i],
+                    btcPrice: price
+                )
+            }
+        }
+        return updated
     }
 
     // MARK: - Current Ranking Header

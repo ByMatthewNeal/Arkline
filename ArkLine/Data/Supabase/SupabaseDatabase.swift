@@ -177,6 +177,17 @@ extension SupabaseDatabase {
             .value
     }
 
+    /// Update BTC price for a specific ranking record
+    func updateRankingBTCPrice(id: UUID, btcPrice: Double) async throws {
+        guard SupabaseManager.shared.isConfigured else { return }
+        let client = SupabaseManager.shared.client
+        try await client
+            .from(SupabaseTable.appStoreRankings.rawValue)
+            .update(["btc_price": btcPrice])
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
     /// Get all historical rankings (sorted by date descending)
     func getAllAppStoreRankings(limit: Int = 90) async throws -> [AppStoreRankingDTO] {
         let client = SupabaseManager.shared.client
@@ -419,6 +430,16 @@ struct AppStoreRankingDTO: Codable {
         formatter.dateFormat = "yyyy-MM-dd"
         self.recordedDate = formatter.string(from: date)
         self.createdAt = Date()
+    }
+
+    // Copy with backfilled BTC price
+    init(original: AppStoreRankingDTO, btcPrice: Double) {
+        self.id = original.id
+        self.appName = original.appName
+        self.ranking = original.ranking
+        self.btcPrice = btcPrice
+        self.recordedDate = original.recordedDate
+        self.createdAt = original.createdAt
     }
 
     // For decoding from database
