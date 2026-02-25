@@ -19,7 +19,7 @@ EXCEPTION WHEN OTHERS THEN
     NULL; -- Job didn't exist, that's fine
 END $$;
 
-DO $$
+DO $outer$
 BEGIN
     PERFORM cron.schedule(
         'publish-scheduled-broadcasts',
@@ -37,7 +37,7 @@ BEGIN
     );
 EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'pg_cron scheduling failed — configure an external cron or use the SQL fallback below';
-END $$;
+END $outer$;
 
 -- Fallback: pure-SQL cron that can be run directly without the edge function.
 -- This is simpler but cannot trigger push notifications.
