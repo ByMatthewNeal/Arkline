@@ -22,6 +22,23 @@ struct SupplyProfitColors {
     }
 }
 
+// MARK: - Supply Chart Time Range
+enum SupplyChartTimeRange: String, CaseIterable {
+    case threeMonths = "3M"
+    case sixMonths = "6M"
+    case oneYear = "1Y"
+    case all = "All"
+
+    var days: Int? {
+        switch self {
+        case .threeMonths: return 90
+        case .sixMonths: return 180
+        case .oneYear: return 365
+        case .all: return nil // No cutoff
+        }
+    }
+}
+
 // MARK: - Supply in Profit Widget
 struct SupplyInProfitWidget: View {
     let supplyData: SupplyProfitData?
@@ -112,7 +129,7 @@ struct SupplyInProfitDetailView: View {
     @State private var historyData: [SupplyProfitData] = []
     @State private var isLoading = false
     @State private var selectedPoint: SupplyProfitData?
-    @State private var selectedTimeRange: MacroChartTimeRange = .weekly
+    @State private var selectedTimeRange: SupplyChartTimeRange = .oneYear
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -202,8 +219,9 @@ Note: Data is updated daily with approximately a 30-day lag.
     }
 
     private var filteredHistory: [SupplyProfitData] {
+        guard let days = selectedTimeRange.days else { return historyData }
         let calendar = Calendar.current
-        guard let cutoff = calendar.date(byAdding: .day, value: -selectedTimeRange.days, to: Date()) else {
+        guard let cutoff = calendar.date(byAdding: .day, value: -days, to: Date()) else {
             return historyData
         }
         let formatter = DateFormatter()
@@ -217,7 +235,7 @@ Note: Data is updated daily with approximately a 30-day lag.
 
     private var timeRangeSelector: some View {
         HStack(spacing: 8) {
-            ForEach(MacroChartTimeRange.allCases, id: \.self) { range in
+            ForEach(SupplyChartTimeRange.allCases, id: \.self) { range in
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedTimeRange = range
@@ -271,7 +289,7 @@ Note: Data is updated daily with approximately a 30-day lag.
         Task {
             do {
                 let service = ServiceContainer.shared.santimentService
-                let history = try await service.fetchSupplyInProfitHistory(days: 365)
+                let history = try await service.fetchSupplyInProfitHistory(days: 5000)
                 await MainActor.run {
                     // Reverse to get oldest first for charting
                     self.historyData = history.reversed()
