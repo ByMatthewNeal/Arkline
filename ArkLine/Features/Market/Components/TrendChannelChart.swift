@@ -169,7 +169,7 @@ struct TrendChannelChart: View {
     /// Returns a background color blending brand blue with green/red zone tinting.
     /// Value zones get a blue-green tint, overextended zones get a blue-red tint.
     private func zoneBackgroundColor(_ zone: TrendChannelZone) -> Color {
-        let base = colorScheme == .dark ? 0.12 : 0.10
+        let base = colorScheme == .dark ? 0.20 : 0.18
         switch zone {
         case .deepValue:
             return Color(hex: "22C55E").opacity(base * 1.2)
