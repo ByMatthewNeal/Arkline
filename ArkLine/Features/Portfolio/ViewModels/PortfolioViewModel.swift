@@ -124,6 +124,17 @@ final class PortfolioViewModel {
         holdings.contains { $0.targetPercentage != nil }
     }
 
+    /// Computes allocations using targets (for pie chart) when available, otherwise by market value.
+    private func computeAllocations(from holdings: [PortfolioHolding]) -> [PortfolioAllocation] {
+        let hasTargets = holdings.contains { $0.targetPercentage != nil }
+        if hasTargets {
+            let total = holdings.reduce(0) { $0 + $1.currentValue }
+            return PortfolioAllocation.calculateWithTargets(from: holdings, totalValue: total)
+        } else {
+            return PortfolioAllocation.calculate(from: holdings)
+        }
+    }
+
     // MARK: - Performance Metrics
     var performanceMetrics: PerformanceMetrics {
         PerformanceMetricsCalculator.calculate(
@@ -217,7 +228,7 @@ final class PortfolioViewModel {
                     self.holdings = holdingsWithPrices
                     self.transactions = fetchedTransactions
                     self.historyPoints = history
-                    self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
+                    self.allocations = self.computeAllocations(from: holdingsWithPrices)
                     self.isLoading = false
                 }
 
@@ -258,7 +269,7 @@ final class PortfolioViewModel {
 
             await MainActor.run {
                 self.holdings = updatedHoldings
-                self.allocations = PortfolioAllocation.calculate(from: updatedHoldings)
+                self.allocations = self.computeAllocations(from: updatedHoldings)
                 self.priceRefreshFailed = false
             }
         } catch {
@@ -677,7 +688,7 @@ final class PortfolioViewModel {
 
             await MainActor.run {
                 self.holdings = holdingsWithPrices
-                self.allocations = PortfolioAllocation.calculate(from: holdingsWithPrices)
+                self.allocations = self.computeAllocations(from: holdingsWithPrices)
             }
         } catch {
             await MainActor.run {
@@ -775,7 +786,7 @@ final class PortfolioViewModel {
             await MainActor.run {
                 self.holdings.removeAll { $0.id == holding.id }
                 self.transactions.removeAll { $0.holdingId == holding.id }
-                self.allocations = PortfolioAllocation.calculate(from: self.holdings)
+                self.allocations = self.computeAllocations(from: self.holdings)
             }
         } catch {
             await MainActor.run {
@@ -800,7 +811,7 @@ final class PortfolioViewModel {
                         self.holdings[index].targetPercentage = target
                     }
                 }
-                self.allocations = PortfolioAllocation.calculate(from: self.holdings)
+                self.allocations = self.computeAllocations(from: self.holdings)
             }
         } catch {
             await MainActor.run {

@@ -193,12 +193,13 @@ struct PortfolioAllocation: Identifiable, Equatable {
     let category: String
     let value: Double
     let percentage: Double
+    let actualPercentage: Double
     let color: String
     let targetPercentage: Double?
 
     /// Drift from target: positive means overweight, negative means underweight
     var drift: Double {
-        percentage - (targetPercentage ?? percentage)
+        actualPercentage - (targetPercentage ?? actualPercentage)
     }
 
     private static let holdingColors = [
@@ -215,10 +216,12 @@ struct PortfolioAllocation: Identifiable, Equatable {
             .sorted { $0.currentValue > $1.currentValue }
             .enumerated()
             .map { index, holding in
-                PortfolioAllocation(
+                let pct = (holding.currentValue / totalValue) * 100
+                return PortfolioAllocation(
                     category: holding.symbol.uppercased(),
                     value: holding.currentValue,
-                    percentage: (holding.currentValue / totalValue) * 100,
+                    percentage: pct,
+                    actualPercentage: pct,
                     color: holdingColors[index % holdingColors.count],
                     targetPercentage: holding.targetPercentage
                 )
@@ -235,10 +238,35 @@ struct PortfolioAllocation: Identifiable, Equatable {
             .sorted { $0.currentValue > $1.currentValue }
             .enumerated()
             .map { index, holding in
-                PortfolioAllocation(
+                let pct = (holding.currentValue / categoryTotal) * 100
+                return PortfolioAllocation(
                     category: holding.symbol.uppercased(),
                     value: holding.currentValue,
-                    percentage: (holding.currentValue / categoryTotal) * 100,
+                    percentage: pct,
+                    actualPercentage: pct,
+                    color: holdingColors[index % holdingColors.count],
+                    targetPercentage: holding.targetPercentage
+                )
+            }
+    }
+
+    /// Calculates allocations using target percentages for the pie chart.
+    /// The `percentage` field (read by the pie chart) is set to the target value,
+    /// while `actualPercentage` holds the real market-weight percentage.
+    static func calculateWithTargets(from holdings: [PortfolioHolding], totalValue: Double) -> [PortfolioAllocation] {
+        guard totalValue > 0 else { return [] }
+
+        return holdings
+            .sorted { ($0.targetPercentage ?? 0) > ($1.targetPercentage ?? 0) }
+            .enumerated()
+            .map { index, holding in
+                let actual = (holding.currentValue / totalValue) * 100
+                let target = holding.targetPercentage ?? actual
+                return PortfolioAllocation(
+                    category: holding.symbol.uppercased(),
+                    value: holding.currentValue,
+                    percentage: target,
+                    actualPercentage: actual,
                     color: holdingColors[index % holdingColors.count],
                     targetPercentage: holding.targetPercentage
                 )

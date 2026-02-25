@@ -181,6 +181,12 @@ struct PortfolioAllocationContent: View {
                     .padding(.horizontal, 20)
                     .accessibilityLabel("Portfolio allocation pie chart")
 
+                if viewModel.hasTargetAllocations {
+                    Text("Showing target allocation")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
                 // Header with Edit Targets button
                 HStack {
                     Text("Allocation")
@@ -232,33 +238,51 @@ struct PortfolioAllocationContent: View {
 
             Spacer()
 
-            Text(allocation.value.asCurrency(code: currency))
-                .font(AppFonts.body14)
-                .foregroundColor(AppColors.textSecondary)
+            if allocation.targetPercentage != nil {
+                // Target mode: show target %, actual %, and drift badge
+                Text("\(allocation.percentage, specifier: "%.0f")%")
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .frame(width: 40, alignment: .trailing)
 
-            Text("\(allocation.percentage, specifier: "%.1f")%")
-                .font(AppFonts.body14Bold)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-                .frame(width: 50, alignment: .trailing)
+                Text("(\(allocation.actualPercentage, specifier: "%.1f")% actual)")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
 
-            if let target = allocation.targetPercentage {
-                driftBadge(actual: allocation.percentage, target: target)
+                driftBadge(drift: allocation.drift)
+            } else {
+                // No-target mode: show value and actual %
+                Text(allocation.value.asCurrency(code: currency))
+                    .font(AppFonts.body14)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Text("\(allocation.actualPercentage, specifier: "%.1f")%")
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .frame(width: 50, alignment: .trailing)
             }
         }
         .accessibilityLabel(allocationAccessibilityLabel(allocation))
     }
 
     @ViewBuilder
-    private func driftBadge(actual: Double, target: Double) -> some View {
-        let drift = actual - target
+    private func driftBadge(drift: Double) -> some View {
         let absDrift = abs(drift)
-        let color: Color = absDrift <= 2 ? AppColors.success : absDrift <= 5 ? AppColors.warning : AppColors.error
+        let onTarget = absDrift < 1
+        let color: Color = onTarget ? AppColors.success : absDrift <= 5 ? AppColors.warning : AppColors.error
 
         HStack(spacing: 2) {
-            Image(systemName: drift >= 0 ? "arrow.up.right" : "arrow.down.right")
-                .font(.system(size: 8))
-            Text("\(target, specifier: "%.0f")%")
-                .font(AppFonts.caption12Medium)
+            if onTarget {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 8, weight: .bold))
+                Text("On target")
+                    .font(AppFonts.caption12Medium)
+            } else {
+                Image(systemName: drift > 0 ? "arrow.up.right" : "arrow.down.right")
+                    .font(.system(size: 8))
+                Text("\(drift > 0 ? "Over" : "Under") \(Int(absDrift.rounded()))%")
+                    .font(AppFonts.caption12Medium)
+            }
         }
         .foregroundColor(color)
         .padding(.horizontal, 6)
@@ -268,12 +292,12 @@ struct PortfolioAllocationContent: View {
     }
 
     private func allocationAccessibilityLabel(_ allocation: PortfolioAllocation) -> String {
-        var label = "\(allocation.category), \(String(format: "%.1f", allocation.percentage)) percent, \(allocation.value.asCurrency(code: currency))"
         if let target = allocation.targetPercentage {
-            let drift = allocation.percentage - target
-            label += ", target \(String(format: "%.0f", target)) percent, \(abs(drift) < 0.1 ? "on target" : drift > 0 ? "overweight" : "underweight")"
+            let drift = allocation.drift
+            let driftLabel = abs(drift) < 1 ? "on target" : drift > 0 ? "over by \(Int(abs(drift).rounded())) percent" : "under by \(Int(abs(drift).rounded())) percent"
+            return "\(allocation.category), target \(String(format: "%.0f", target)) percent, actual \(String(format: "%.1f", allocation.actualPercentage)) percent, \(driftLabel)"
         }
-        return label
+        return "\(allocation.category), \(String(format: "%.1f", allocation.actualPercentage)) percent, \(allocation.value.asCurrency(code: currency))"
     }
 }
 
