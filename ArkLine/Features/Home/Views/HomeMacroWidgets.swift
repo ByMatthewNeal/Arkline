@@ -385,11 +385,9 @@ The CBOE Volatility Index (VIX) measures the market's expectation of 30-day vola
 
     private var signalColor: Color {
         guard let vix = vixData?.value else { return .gray }
-        if vix < 15 { return .green }                 // Complacent
-        if vix < 20 { return Color(hex: "3B82F6") }   // Blue - Normal
-        if vix < 25 { return .orange }                // Elevated
-        if vix < 30 { return .red }                   // High fear
-        return Color(hex: "991B1B")                   // Maroon - Extreme
+        if vix < 20 { return AppColors.success }    // Bullish
+        if vix < 25 { return AppColors.warning }    // Neutral
+        return AppColors.error                      // Bearish
     }
 }
 
@@ -423,13 +421,12 @@ struct DXYDetailView: View {
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
-    /// Color based on absolute DXY level (matches Historical Ranges)
+    /// Color based on absolute DXY level
     private var levelColor: Color {
         guard let dxy = dxyData?.value else { return .gray }
-        if dxy < 90 { return .green }           // Weak dollar
-        if dxy < 100 { return Color(hex: "3B82F6") }  // Blue - Normal range
-        if dxy < 105 { return .orange }         // Strong dollar
-        return .red                             // Very strong
+        if dxy < 100 { return AppColors.success }   // Bullish (weak dollar)
+        if dxy < 105 { return AppColors.warning }   // Neutral
+        return AppColors.error                      // Bearish (strong dollar)
     }
 
     var body: some View {
@@ -667,6 +664,111 @@ struct M2ChangeRow: View {
                     Text(dollar)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Net Liquidity Detail View
+struct NetLiquidityDetailView: View {
+    let netLiquidityData: NetLiquidityChanges?
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    private var levelColor: Color {
+        guard let change = netLiquidityData?.monthlyChange else { return .gray }
+        if change > 0 { return AppColors.success }
+        if change > -1.0 { return AppColors.warning }
+        return AppColors.error
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    VStack(spacing: 16) {
+                        Text(netLiquidityData?.formattedCurrent ?? "--")
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundColor(levelColor)
+
+                        if let change = netLiquidityData?.monthlyChange {
+                            HStack(spacing: 8) {
+                                Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                Text(String(format: "%+.2f%% MoM", change))
+                            }
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background((change >= 0 ? AppColors.success : AppColors.error).opacity(0.15))
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding(.top, 20)
+
+                    MacroInfoSection(title: "What is US Net Liquidity?", content: """
+US Net Liquidity measures the effective dollars available in the financial system:
+
+Fed Balance Sheet (WALCL)
+− Treasury General Account (TGA)
+− Reverse Repo Facility (RRP)
+
+When net liquidity rises, more dollars chase risk assets like crypto. When it falls, liquidity is being drained from markets.
+""")
+
+                    if let data = netLiquidityData {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Change Overview")
+                                .font(.headline)
+                                .foregroundColor(textPrimary)
+
+                            M2ChangeRow(period: "Weekly", change: data.weeklyChange)
+                            M2ChangeRow(period: "Monthly", change: data.monthlyChange)
+                            M2ChangeRow(period: "Yearly", change: data.yearlyChange)
+
+                            Text("Updated weekly from Federal Reserve data (WALCL, WTREGEN, RRPONTSYD).")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 4)
+                        }
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(16)
+                    }
+
+                    MacroInfoSection(title: "Impact on Crypto", content: """
+• Rising net liquidity: Bullish. More dollars flow into risk assets including crypto.
+• Falling net liquidity: Bearish. QT and TGA refills drain capital from markets.
+• Net liquidity is the #1 short-term driver of BTC price, often moving in lockstep.
+• Weekly FRED data gives 1-2 week lag — far more timely than monthly M2 data.
+""")
+
+                    MacroInfoSection(title: "Why Net Liquidity Over Global M2?", content: """
+• Global M2 is released monthly with multi-week delay. Net liquidity updates weekly.
+• International M2 data from FRED is discontinued (last updated 2017-2019).
+• Net liquidity captures the actual plumbing: when the Fed shrinks its balance sheet or Treasury refills TGA, dollars are physically removed from markets.
+• Institutional traders watch net liquidity as the primary macro signal for crypto.
+""")
+
+                    Text("This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 16)
+                        .padding(.horizontal)
+                }
+                .padding()
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("US Net Liquidity")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
                 }
             }
         }

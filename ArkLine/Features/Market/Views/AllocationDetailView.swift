@@ -147,16 +147,16 @@ struct AllocationDetailView: View {
                 zScoreData: sentimentViewModel.macroZScores[.dxy]
             )
 
-            // Global M2
+            // US Net Liquidity
             MacroIndicatorCard(
-                title: "Global M2",
-                subtitle: "Money Supply",
-                value: sentimentViewModel.globalM2Data.map { String(format: "$%.1fT", $0.current / 1_000_000_000_000) } ?? "--",
-                signal: m2Signal,
-                description: m2Description,
+                title: "Net Liquidity",
+                subtitle: "Fed − TGA − RRP",
+                value: sentimentViewModel.netLiquidityData?.formattedCurrent ?? "--",
+                signal: netLiqSignal,
+                description: netLiqDescription,
                 icon: "chart.bar.fill",
-                liquidityData: sentimentViewModel.globalM2Data,
-                zScoreData: sentimentViewModel.macroZScores[.m2]
+                netLiquidityData: sentimentViewModel.netLiquidityData,
+                zScoreData: sentimentViewModel.macroZScores[.netLiquidity]
             )
 
             // WTI Crude Oil
@@ -230,17 +230,17 @@ struct AllocationDetailView: View {
         return "Bearish"
     }
 
-    private var m2Signal: MacroTrendSignal {
-        guard let m2 = sentimentViewModel.globalM2Data else { return .neutral }
-        if m2.monthlyChange > 0 { return .bullish }
-        if m2.monthlyChange > -1.0 { return .neutral }
+    private var netLiqSignal: MacroTrendSignal {
+        guard let netLiq = sentimentViewModel.netLiquidityData else { return .neutral }
+        if netLiq.monthlyChange > 0 { return .bullish }
+        if netLiq.monthlyChange > -1.0 { return .neutral }
         return .bearish
     }
 
-    private var m2Description: String {
-        guard let m2 = sentimentViewModel.globalM2Data else { return "Global liquidity" }
-        if m2.monthlyChange > 0 { return "Bullish" }
-        if m2.monthlyChange > -1.0 { return "Neutral" }
+    private var netLiqDescription: String {
+        guard let netLiq = sentimentViewModel.netLiquidityData else { return "US liquidity" }
+        if netLiq.monthlyChange > 0 { return "Bullish" }
+        if netLiq.monthlyChange > -1.0 { return "Neutral" }
         return "Bearish"
     }
 
@@ -444,7 +444,7 @@ struct AllocationDetailView: View {
 
             guideRow(
                 title: "What is the Macro Regime?",
-                text: "We analyze VIX (volatility), DXY (dollar strength), Global M2 (money supply), and WTI Crude Oil (inflation pressure) to classify the current macro environment into one of four regimes. Each regime has different implications for crypto performance."
+                text: "We analyze VIX (volatility), DXY (dollar strength), US Net Liquidity (Fed balance sheet minus TGA and reverse repo), and WTI Crude Oil (inflation pressure) to classify the current macro environment into one of four regimes. Each regime has different implications for crypto performance."
             )
 
             guideRow(

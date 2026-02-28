@@ -10,10 +10,9 @@ struct CrudeOilDetailView: View {
 
     private var levelColor: Color {
         guard let oil = crudeOilData?.value else { return .gray }
-        if oil < 65 { return .green }
-        if oil < 75 { return Color(hex: "3B82F6") }
-        if oil < 85 { return .orange }
-        return .red
+        if oil < 80 { return AppColors.success }    // Bullish
+        if oil < 95 { return AppColors.warning }    // Neutral
+        return AppColors.error                      // Bearish
     }
 
     var body: some View {

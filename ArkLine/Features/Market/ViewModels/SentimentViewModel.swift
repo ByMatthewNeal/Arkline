@@ -34,10 +34,11 @@ class SentimentViewModel {
     var altcoinSeason: AltcoinSeasonIndex?
     var globalLiquidity: GlobalLiquidity?
 
-    // Macro Indicators (VIX, DXY, Global M2, WTI, Gold)
+    // Macro Indicators (VIX, DXY, Global M2, Net Liquidity, WTI, Gold)
     var vixData: VIXData?
     var dxyData: DXYData?
     var globalM2Data: GlobalLiquidityChanges?
+    var netLiquidityData: NetLiquidityChanges?
     var crudeOilData: CrudeOilData?
     var goldData: GoldData?
 
@@ -320,10 +321,11 @@ class SentimentViewModel {
         // Market cap sparkline (7-day BTC market cap as proxy)
         async let marketCapHistoryTask = fetchMarketCapHistorySafe()
 
-        // Macro Indicators (VIX, DXY, Global M2, WTI, Gold, GEI)
+        // Macro Indicators (VIX, DXY, Global M2, Net Liquidity, WTI, Gold, GEI)
         async let vixTask = fetchVIXSafe()
         async let dxyTask = fetchDXYSafe()
         async let globalM2Task = fetchGlobalM2Safe()
+        async let netLiqTask = fetchNetLiquiditySafe()
         async let crudeOilTask = fetchCrudeOilSafe()
         async let goldTask = fetchGoldSafe()
         async let geiTask = fetchGEISafe()
@@ -341,6 +343,7 @@ class SentimentViewModel {
         let marketOverview = await marketOverviewTask
         let marketCapSparkline = await marketCapHistoryTask
         let (vix, dxy, globalM2) = await (vixTask, dxyTask, globalM2Task)
+        let netLiq = await netLiqTask
         let crudeOil = await crudeOilTask
         let gold = await goldTask
         let gei = await geiTask
@@ -382,6 +385,7 @@ class SentimentViewModel {
         self.vixData = vix
         self.dxyData = dxy
         self.globalM2Data = globalM2
+        self.netLiquidityData = netLiq
         self.crudeOilData = crudeOil
         self.goldData = gold
         self.geiData = gei
@@ -845,6 +849,10 @@ class SentimentViewModel {
 
     private func fetchGlobalM2Safe() async -> GlobalLiquidityChanges? {
         try? await globalLiquidityService.fetchLiquidityChanges()
+    }
+
+    private func fetchNetLiquiditySafe() async -> NetLiquidityChanges? {
+        try? await globalLiquidityService.fetchNetLiquidityChanges()
     }
 
     private func fetchCrudeOilSafe() async -> CrudeOilData? {

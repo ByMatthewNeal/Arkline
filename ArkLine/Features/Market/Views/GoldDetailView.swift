@@ -10,10 +10,9 @@ struct GoldDetailView: View {
 
     private var levelColor: Color {
         guard let gold = goldData?.value else { return .gray }
-        if gold < 2000 { return .green }
-        if gold < 2200 { return Color(hex: "3B82F6") }
-        if gold < 2400 { return .orange }
-        return .red
+        if gold > 3000 { return AppColors.success }    // Bullish (strong safe haven)
+        if gold > 2000 { return AppColors.warning }    // Neutral
+        return AppColors.error                         // Bearish
     }
 
     var body: some View {

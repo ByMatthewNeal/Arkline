@@ -707,6 +707,7 @@ struct MacroIndicatorCard: View {
     var vixData: VIXData? = nil
     var dxyData: DXYData? = nil
     var liquidityData: GlobalLiquidityChanges? = nil
+    var netLiquidityData: NetLiquidityChanges? = nil
     var crudeOilData: CrudeOilData? = nil
     var goldData: GoldData? = nil
     var geiData: GEIData? = nil
@@ -781,6 +782,8 @@ struct MacroIndicatorCard: View {
             CrudeOilDetailView(crudeOilData: crudeOilData)
         case "Gold":
             GoldDetailView(goldData: goldData)
+        case "Net Liquidity":
+            NetLiquidityDetailView(netLiquidityData: netLiquidityData)
         default:
             GlobalM2DetailView(liquidityChanges: liquidityData)
         }
