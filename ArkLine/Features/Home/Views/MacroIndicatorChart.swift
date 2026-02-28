@@ -3,17 +3,17 @@ import Charts
 
 // MARK: - Macro Chart Time Range
 enum MacroChartTimeRange: String, CaseIterable {
-    case daily = "D"
-    case threeDays = "3D"
-    case weekly = "W"
-    case monthly = "M"
+    case oneMonth = "1M"
+    case threeMonths = "3M"
+    case sixMonths = "6M"
+    case oneYear = "1Y"
 
     var days: Int {
         switch self {
-        case .daily: return 7
-        case .threeDays: return 30
-        case .weekly: return 90
-        case .monthly: return 365
+        case .oneMonth: return 30
+        case .threeMonths: return 90
+        case .sixMonths: return 180
+        case .oneYear: return 365
         }
     }
 }
@@ -119,20 +119,20 @@ struct MacroIndicatorChart: View {
 
     private var xAxisLabelCount: Int {
         switch selectedTimeRange {
-        case .daily: return 4
-        case .threeDays: return 5
-        case .weekly: return 4
-        case .monthly: return 6
+        case .oneMonth: return 4
+        case .threeMonths: return 5
+        case .sixMonths: return 4
+        case .oneYear: return 6
         }
     }
 
     private func formatLabel(for date: Date) -> String {
         let formatter = DateFormatter()
         switch selectedTimeRange {
-        case .daily: formatter.dateFormat = "EEE"
-        case .threeDays: formatter.dateFormat = "MMM d"
-        case .weekly: formatter.dateFormat = "MMM"
-        case .monthly: formatter.dateFormat = "MMM yy"
+        case .oneMonth: formatter.dateFormat = "MMM d"
+        case .threeMonths: formatter.dateFormat = "MMM d"
+        case .sixMonths: formatter.dateFormat = "MMM"
+        case .oneYear: formatter.dateFormat = "MMM yy"
         }
         return formatter.string(from: date)
     }

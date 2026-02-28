@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // MARK: - VIX Widget
 struct VIXWidget: View {
@@ -316,7 +317,22 @@ struct VIXDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
+    @State private var timeRange: MacroChartTimeRange = .oneMonth
+    @State private var selectedDate: Date? = nil
+    @State private var history: [VIXData] = []
+    @State private var isLoadingChart = false
+
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    private var chartData: [MacroChartPoint] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let cutoff = Calendar.current.date(byAdding: .day, value: -timeRange.days, to: Date()) ?? Date()
+        return history.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date), date >= cutoff else { return nil }
+            return MacroChartPoint(date: date, value: item.value)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -337,6 +353,15 @@ struct VIXDetailView: View {
                             .cornerRadius(12)
                     }
                     .padding(.top, 20)
+
+                    MacroIndicatorChart(
+                        data: chartData,
+                        lineColor: signalColor,
+                        valueFormatter: { String(format: "%.1f", $0) },
+                        selectedTimeRange: $timeRange,
+                        selectedDate: $selectedDate,
+                        isLoading: isLoadingChart
+                    )
 
                     MacroInfoSection(title: "What is VIX?", content: """
 The CBOE Volatility Index (VIX) measures the market's expectation of 30-day volatility implied by S&P 500 index options. Often called the "fear gauge," it reflects investor sentiment and uncertainty in the market.
@@ -380,6 +405,16 @@ The CBOE Volatility Index (VIX) measures the market's expectation of 30-day vola
                     Button("Done") { dismiss() }
                 }
             }
+            .task {
+                guard history.isEmpty else { return }
+                isLoadingChart = true
+                do {
+                    history = try await ServiceContainer.shared.vixService.fetchVIXHistory(days: 365)
+                } catch {
+                    // Silently fail — chart shows empty state
+                }
+                isLoadingChart = false
+            }
         }
     }
 
@@ -419,6 +454,11 @@ struct DXYDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
+    @State private var timeRange: MacroChartTimeRange = .oneMonth
+    @State private var selectedDate: Date? = nil
+    @State private var history: [DXYData] = []
+    @State private var isLoadingChart = false
+
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
     /// Color based on absolute DXY level
@@ -427,6 +467,16 @@ struct DXYDetailView: View {
         if dxy < 100 { return AppColors.success }   // Bullish (weak dollar)
         if dxy < 105 { return AppColors.warning }   // Neutral
         return AppColors.error                      // Bearish (strong dollar)
+    }
+
+    private var chartData: [MacroChartPoint] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let cutoff = Calendar.current.date(byAdding: .day, value: -timeRange.days, to: Date()) ?? Date()
+        return history.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date), date >= cutoff else { return nil }
+            return MacroChartPoint(date: date, value: item.value)
+        }
     }
 
     var body: some View {
@@ -453,6 +503,15 @@ struct DXYDetailView: View {
                         }
                     }
                     .padding(.top, 20)
+
+                    MacroIndicatorChart(
+                        data: chartData,
+                        lineColor: levelColor,
+                        valueFormatter: { String(format: "%.1f", $0) },
+                        selectedTimeRange: $timeRange,
+                        selectedDate: $selectedDate,
+                        isLoading: isLoadingChart
+                    )
 
                     MacroInfoSection(title: "What is DXY?", content: """
 The US Dollar Index (DXY) measures the value of the US dollar relative to a basket of foreign currencies: Euro (57.6%), Japanese Yen (13.6%), British Pound (11.9%), Canadian Dollar (9.1%), Swedish Krona (4.2%), and Swiss Franc (3.6%).
@@ -494,6 +553,16 @@ The US Dollar Index (DXY) measures the value of the US dollar relative to a bask
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .task {
+                guard history.isEmpty else { return }
+                isLoadingChart = true
+                do {
+                    history = try await ServiceContainer.shared.dxyService.fetchDXYHistory(days: 365)
+                } catch {
+                    // Silently fail — chart shows empty state
+                }
+                isLoadingChart = false
             }
         }
     }
@@ -676,6 +745,9 @@ struct NetLiquidityDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
+    @State private var timeRange: MacroChartTimeRange = .oneMonth
+    @State private var selectedDate: Date? = nil
+
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
     private var levelColor: Color {
@@ -683,6 +755,15 @@ struct NetLiquidityDetailView: View {
         if change > 0 { return AppColors.success }
         if change > -1.0 { return AppColors.warning }
         return AppColors.error
+    }
+
+    private var chartData: [MacroChartPoint] {
+        guard let history = netLiquidityData?.history else { return [] }
+        let cutoff = Calendar.current.date(byAdding: .day, value: -timeRange.days, to: Date()) ?? Date()
+        return history.compactMap { item -> MacroChartPoint? in
+            guard item.date >= cutoff else { return nil }
+            return MacroChartPoint(date: item.date, value: item.value)
+        }
     }
 
     var body: some View {
@@ -709,6 +790,20 @@ struct NetLiquidityDetailView: View {
                         }
                     }
                     .padding(.top, 20)
+
+                    MacroIndicatorChart(
+                        data: chartData,
+                        lineColor: levelColor,
+                        valueFormatter: { value in
+                            if value >= 1_000_000_000_000 {
+                                return String(format: "$%.2fT", value / 1_000_000_000_000)
+                            }
+                            return String(format: "$%.0fB", value / 1_000_000_000)
+                        },
+                        selectedTimeRange: $timeRange,
+                        selectedDate: $selectedDate,
+                        isLoading: false
+                    )
 
                     MacroInfoSection(title: "What is US Net Liquidity?", content: """
 US Net Liquidity measures the effective dollars available in the financial system:

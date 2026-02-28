@@ -1,10 +1,16 @@
 import SwiftUI
+import Charts
 
 // MARK: - Crude Oil Detail View
 struct CrudeOilDetailView: View {
     let crudeOilData: CrudeOilData?
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+
+    @State private var timeRange: MacroChartTimeRange = .oneMonth
+    @State private var selectedDate: Date? = nil
+    @State private var history: [CrudeOilData] = []
+    @State private var isLoadingChart = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -13,6 +19,16 @@ struct CrudeOilDetailView: View {
         if oil < 80 { return AppColors.success }    // Bullish
         if oil < 95 { return AppColors.warning }    // Neutral
         return AppColors.error                      // Bearish
+    }
+
+    private var chartData: [MacroChartPoint] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let cutoff = Calendar.current.date(byAdding: .day, value: -timeRange.days, to: Date()) ?? Date()
+        return history.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date), date >= cutoff else { return nil }
+            return MacroChartPoint(date: date, value: item.value)
+        }
     }
 
     var body: some View {
@@ -44,6 +60,15 @@ struct CrudeOilDetailView: View {
                             .foregroundColor(levelColor)
                     }
                     .padding(.top, 20)
+
+                    MacroIndicatorChart(
+                        data: chartData,
+                        lineColor: levelColor,
+                        valueFormatter: { String(format: "$%.2f", $0) },
+                        selectedTimeRange: $timeRange,
+                        selectedDate: $selectedDate,
+                        isLoading: isLoadingChart
+                    )
 
                     MacroInfoSection(title: "What is WTI Crude Oil?", content: """
 WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one of the most-watched commodity prices globally and a leading indicator of inflation expectations. Oil prices directly affect transportation, manufacturing, and energy costs across the economy.
@@ -89,6 +114,16 @@ WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .task {
+                guard history.isEmpty else { return }
+                isLoadingChart = true
+                do {
+                    history = try await ServiceContainer.shared.crudeOilService.fetchCrudeOilHistory(days: 365)
+                } catch {
+                    // Silently fail — chart shows empty state
+                }
+                isLoadingChart = false
             }
         }
     }

@@ -31,7 +31,7 @@ struct MacroDashboardDetailView: View {
 
     @State private var showLearnMore = false
     @State private var expandedIndicator: MacroIndicatorType? = nil
-    @State private var macroTimeRange: MacroChartTimeRange = .threeDays
+    @State private var macroTimeRange: MacroChartTimeRange = .oneMonth
     @State private var macroSelectedDate: Date? = nil
     @State private var vixHistory: [VIXData] = []
     @State private var dxyHistory: [DXYData] = []

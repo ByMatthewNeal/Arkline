@@ -1,10 +1,16 @@
 import SwiftUI
+import Charts
 
 // MARK: - Gold Detail View
 struct GoldDetailView: View {
     let goldData: GoldData?
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+
+    @State private var timeRange: MacroChartTimeRange = .oneMonth
+    @State private var selectedDate: Date? = nil
+    @State private var history: [GoldData] = []
+    @State private var isLoadingChart = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -13,6 +19,16 @@ struct GoldDetailView: View {
         if gold > 3000 { return AppColors.success }    // Bullish (strong safe haven)
         if gold > 2000 { return AppColors.warning }    // Neutral
         return AppColors.error                         // Bearish
+    }
+
+    private var chartData: [MacroChartPoint] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let cutoff = Calendar.current.date(byAdding: .day, value: -timeRange.days, to: Date()) ?? Date()
+        return history.reversed().compactMap { item -> MacroChartPoint? in
+            guard let date = formatter.date(from: item.date), date >= cutoff else { return nil }
+            return MacroChartPoint(date: date, value: item.value)
+        }
     }
 
     var body: some View {
@@ -44,6 +60,15 @@ struct GoldDetailView: View {
                             .foregroundColor(levelColor)
                     }
                     .padding(.top, 20)
+
+                    MacroIndicatorChart(
+                        data: chartData,
+                        lineColor: levelColor,
+                        valueFormatter: { String(format: "$%.0f", $0) },
+                        selectedTimeRange: $timeRange,
+                        selectedDate: $selectedDate,
+                        isLoading: isLoadingChart
+                    )
 
                     MacroInfoSection(title: "What is Gold?", content: """
 Gold (XAU/USD) is the world's oldest safe-haven asset and inflation hedge. Central banks hold gold as a reserve asset, and investors flock to it during periods of economic uncertainty, geopolitical tension, or currency debasement. Gold prices are quoted in US dollars per troy ounce.
@@ -89,6 +114,16 @@ Gold (XAU/USD) is the world's oldest safe-haven asset and inflation hedge. Centr
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .task {
+                guard history.isEmpty else { return }
+                isLoadingChart = true
+                do {
+                    history = try await ServiceContainer.shared.goldService.fetchGoldHistory(days: 365)
+                } catch {
+                    // Silently fail — chart shows empty state
+                }
+                isLoadingChart = false
             }
         }
     }
