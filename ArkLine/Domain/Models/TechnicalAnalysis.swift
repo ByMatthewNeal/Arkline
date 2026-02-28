@@ -121,7 +121,7 @@ enum AssetTrendDirection: String, Equatable {
         case .strongUptrend: return AppColors.success
         case .uptrend: return Color(hex: "84CC16")
         case .sideways: return AppColors.warning
-        case .downtrend: return Color(hex: "F97316")
+        case .downtrend: return AppColors.error
         case .strongDowntrend: return AppColors.error
         }
     }
@@ -211,7 +211,7 @@ enum SMASignal: String {
         case .strongBullish: return AppColors.success
         case .bullish: return Color(hex: "84CC16")
         case .mixed: return AppColors.warning
-        case .bearish: return Color(hex: "F97316")
+        case .bearish: return AppColors.error
         case .strongBearish: return AppColors.error
         }
     }
@@ -332,7 +332,7 @@ enum AssetSentiment: String, Equatable {
         case .stronglyBullish: return AppColors.success
         case .bullish: return Color(hex: "84CC16")
         case .neutral: return AppColors.warning
-        case .bearish: return Color(hex: "F97316")
+        case .bearish: return AppColors.error
         case .stronglyBearish: return AppColors.error
         }
     }

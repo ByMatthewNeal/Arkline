@@ -102,6 +102,9 @@ struct AssetTechnicalDetailSheet: View {
                         }
                         .padding(.top, 40)
                     } else if let analysis = technicalAnalysis {
+                        // Investment Insight - dynamic summary + educational guide
+                        InvestmentInsightCard(analysis: analysis, colorScheme: colorScheme)
+
                         // Hero: Dual Scores - Trend direction + Entry opportunity
                         DualScoreCard(trendScore: analysis.trendScore, opportunityScore: analysis.opportunityScore, colorScheme: colorScheme)
 
@@ -126,9 +129,6 @@ struct AssetTechnicalDetailSheet: View {
 
                         // Price Position - simplified Bollinger
                         PricePositionCard(bollinger: analysis.bollingerBands.daily, colorScheme: colorScheme)
-
-                        // Investment Insight - dynamic summary + educational guide
-                        InvestmentInsightCard(analysis: analysis, colorScheme: colorScheme)
                     }
 
                     Spacer(minLength: ArkSpacing.xxl)
