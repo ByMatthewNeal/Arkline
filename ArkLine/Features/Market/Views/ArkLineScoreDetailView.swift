@@ -234,13 +234,13 @@ private struct ComponentBreakdownSection: View {
     }
 
     private var macroComponents: [RiskScoreComponent] {
-        components.filter { ["VIX (Volatility)", "DXY (Dollar)", "Global M2"].contains($0.name) }
+        components.filter { ["VIX (Volatility)", "DXY (Dollar)", "US Net Liquidity"].contains($0.name) }
     }
 
     private var marketStructureComponents: [RiskScoreComponent] {
         components.filter {
             !["Fear & Greed", "Altcoin Season", "App Store FOMO",
-              "VIX (Volatility)", "DXY (Dollar)", "Global M2"].contains($0.name)
+              "VIX (Volatility)", "DXY (Dollar)", "US Net Liquidity"].contains($0.name)
         }
     }
 

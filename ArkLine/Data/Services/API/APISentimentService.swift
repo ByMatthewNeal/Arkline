@@ -417,7 +417,7 @@ final class APISentimentService: SentimentServiceProtocol {
 
         async let vixTask = try? vixService.fetchLatestVIX()
         async let dxyTask = try? dxyService.fetchLatestDXY()
-        async let liquidityTask = try? liquidityService.fetchLiquidityChanges()
+        async let liquidityTask = try? liquidityService.fetchNetLiquidityChanges()
         async let itcRiskTask = try? itcRiskService.fetchLatestRiskLevel(coin: "BTC")
 
         // Await all results
@@ -511,13 +511,13 @@ final class APISentimentService: SentimentServiceProtocol {
             totalWeight += 0.09
         }
 
-        // 7. Global M2 Liquidity (9% weight) - Expanding liquidity = risk-on
+        // 7. US Net Liquidity (9% weight) - Expanding liquidity = risk-on
         if let liq = liquidity {
             // Normalize: -5% to +5% monthly change -> 0-1
-            let m2Normalized = min(1.0, max(0.0, (liq.monthlyChange + 5.0) / 10.0))
+            let liqNormalized = min(1.0, max(0.0, (liq.monthlyChange + 5.0) / 10.0))
             components.append(RiskScoreComponent(
-                name: "Global M2",
-                value: m2Normalized,
+                name: "US Net Liquidity",
+                value: liqNormalized,
                 weight: 0.09,
                 signal: liquiditySignalTier(liq.monthlyChange)
             ))
