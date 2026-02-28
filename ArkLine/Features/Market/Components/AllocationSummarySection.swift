@@ -88,7 +88,7 @@ struct AllocationSummarySection: View {
     // MARK: - Regime Badge
 
     private func regimeBadge(regime: MacroRegimeResult) -> some View {
-        Text("Macro: \(regime.quadrant.shortLabel)")
+        Text(regime.quadrant.rawValue)
             .font(AppFonts.caption12Medium)
             .foregroundColor(regime.quadrant.color)
             .padding(.horizontal, 10)

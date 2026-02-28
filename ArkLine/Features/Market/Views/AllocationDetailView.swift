@@ -55,19 +55,9 @@ struct AllocationDetailView: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
 
-                HStack(spacing: 8) {
-                    Text(summary.regime.quadrant.rawValue)
-                        .font(AppFonts.title18SemiBold)
-                        .foregroundColor(textPrimary)
-
-                    Text(summary.regime.quadrant.shortLabel)
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(summary.regime.quadrant.color)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(summary.regime.quadrant.color.opacity(0.12))
-                        .cornerRadius(6)
-                }
+                Text(summary.regime.quadrant.rawValue)
+                    .font(AppFonts.title18SemiBold)
+                    .foregroundColor(summary.regime.quadrant.color)
             }
 
             Text(summary.regime.quadrant.description)
