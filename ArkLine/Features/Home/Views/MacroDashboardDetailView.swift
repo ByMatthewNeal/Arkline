@@ -63,7 +63,7 @@ struct MacroDashboardDetailView: View {
 
                         // Last change info
                         if let lastChange = regimeManager.lastRegimeChange {
-                            Text("Regime since \(lastChange.formatted(date: .abbreviated, time: .shortened))")
+                            Text("\(regime.rawValue) since \(lastChange.formatted(date: .abbreviated, time: .shortened))")
                                 .font(.system(size: 12))
                                 .foregroundColor(textPrimary.opacity(0.4))
                         }
