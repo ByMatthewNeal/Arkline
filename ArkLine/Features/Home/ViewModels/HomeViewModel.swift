@@ -378,17 +378,31 @@ class HomeViewModel {
         refreshTimer = nil
     }
 
-    /// Refresh only events data (lighter weight than full refresh)
+    /// Refresh events and news data (lighter weight than full refresh)
     func refreshEvents() async {
         guard !isRefreshing else { return }
         do {
-            let upcoming = try await newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
+            async let upcomingTask = newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
+            async let newsTask: [NewsItem] = {
+                do {
+                    return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
+                } catch {
+                    logError("HomeViewModel: Failed to refresh news: \(error)", category: .network)
+                    return []
+                }
+            }()
+
+            let upcoming = try await upcomingTask
+            let news = await newsTask
 
             await MainActor.run {
                 self.upcomingEvents = upcoming
                 self.eventsLastUpdated = Date()
+                if !news.isEmpty {
+                    self.newsItems = news
+                }
             }
-            logInfo("HomeViewModel: Auto-refreshed events at \(Date())", category: .data)
+            logInfo("HomeViewModel: Auto-refreshed events and news at \(Date())", category: .data)
         } catch {
             logError("HomeViewModel: Failed to refresh events: \(error)", category: .data)
         }

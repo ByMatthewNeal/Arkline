@@ -161,7 +161,6 @@ struct HomeDailyNewsWidget: View {
     let news: [NewsItem]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
-    @Environment(\.openURL) var openURL
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -226,11 +225,7 @@ struct HomeDailyNewsWidget: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(news.prefix(maxItems).enumerated()), id: \.element.id) { index, item in
-                        Button {
-                            if let url = URL(string: item.url) {
-                                openURL(url)
-                            }
-                        } label: {
+                        NavigationLink(destination: NewsDetailView(allNews: Array(news.prefix(maxItems)), initialIndex: index)) {
                             HomeNewsRow(item: item, isCompact: size == .compact)
                         }
                         .buttonStyle(.plain)
@@ -301,7 +296,6 @@ struct HomeNewsRow: View {
 struct FullNewsListView: View {
     let news: [NewsItem]
     @Environment(\.colorScheme) var colorScheme
-    @Environment(\.openURL) var openURL
     @State private var allNews: [NewsItem] = []
     @State private var currentPage = 1
     @State private var isLoadingMore = false
@@ -319,12 +313,8 @@ struct FullNewsListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(allNews) { item in
-                    Button {
-                        if let url = URL(string: item.url) {
-                            openURL(url)
-                        }
-                    } label: {
+                ForEach(Array(allNews.enumerated()), id: \.element.id) { index, item in
+                    NavigationLink(destination: NewsDetailView(allNews: allNews, initialIndex: index)) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(item.title)
                                 .font(.system(size: 15, weight: .medium))
@@ -332,7 +322,8 @@ struct FullNewsListView: View {
                                 .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                            if let description = item.description, !description.isEmpty {
+                            if let description = item.description, !description.isEmpty,
+                               !item.title.lowercased().hasPrefix(description.lowercased().prefix(40)) {
                                 Text(description)
                                     .font(.system(size: 13))
                                     .foregroundColor(textPrimary.opacity(0.7))
@@ -356,7 +347,7 @@ struct FullNewsListView: View {
 
                                 Spacer()
 
-                                Image(systemName: "arrow.up.right")
+                                Image(systemName: "chevron.right")
                                     .font(.system(size: 10))
                                     .foregroundColor(AppColors.accent)
                             }
@@ -397,10 +388,24 @@ struct FullNewsListView: View {
                 }
             }
         }
+        .refreshable { await refreshNews() }
         .background(colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F5"))
         .navigationTitle("Daily News")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { allNews = news }
+    }
+
+    private func refreshNews() async {
+        do {
+            let freshNews = try await newsService.fetchNews(category: nil, page: 1, perPage: 20)
+            if !freshNews.isEmpty {
+                allNews = freshNews
+                currentPage = 1
+                hasMore = true
+            }
+        } catch {
+            logError("Failed to refresh news: \(error.localizedDescription)", category: .network)
+        }
     }
 
     private func loadMore() async {
