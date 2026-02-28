@@ -164,53 +164,6 @@ struct MacroDashboardDetailView: View {
 
                             Divider().background(textPrimary.opacity(0.08))
 
-                            // Global M2
-                            Button(action: { toggleIndicator(.m2) }) {
-                                SimpleIndicatorRow(
-                                    icon: "chart.bar.fill",
-                                    title: "Global M2",
-                                    value: liquidityData.map { formatLiquidity($0.current) } ?? "--",
-                                    change: liquidityData?.monthlyChange,
-                                    status: m2Status,
-                                    statusColor: m2StatusColor,
-                                    isExpanded: expandedIndicator == .m2
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-
-                            if expandedIndicator == .m2 {
-                                MacroIndicatorChart(
-                                    data: m2ChartData,
-                                    lineColor: m2StatusColor,
-                                    valueFormatter: { value in
-                                        if value >= 1_000_000_000_000 {
-                                            return String(format: "$%.1fT", value / 1_000_000_000_000)
-                                        }
-                                        return String(format: "$%.0fB", value / 1_000_000_000)
-                                    },
-                                    selectedTimeRange: $macroTimeRange,
-                                    selectedDate: $macroSelectedDate,
-                                    isLoading: false
-                                )
-                                .padding(.horizontal, 14)
-
-                                // Economies info note
-                                HStack(spacing: 6) {
-                                    Image(systemName: "info.circle")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(textPrimary.opacity(0.35))
-                                    Text("Aggregates US, China, Eurozone, Japan & UK M2 supply converted to USD")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(textPrimary.opacity(0.35))
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.bottom, 14)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                            }
-
-                            Divider().background(textPrimary.opacity(0.08))
-
                             // US Net Liquidity
                             Button(action: { toggleIndicator(.netLiquidity) }) {
                                 SimpleIndicatorRow(
@@ -349,14 +302,6 @@ struct MacroDashboardDetailView: View {
         return "Dollar stable"
     }
 
-    private var m2Interpretation: String {
-        guard let m2 = liquidityData else { return "No data" }
-        if m2.monthlyChange > 1.0 { return "Liquidity expanding rapidly" }
-        if m2.monthlyChange > 0 { return "Gradual liquidity growth" }
-        if m2.monthlyChange > -1.0 { return "Liquidity flat to declining" }
-        return "Liquidity contracting"
-    }
-
     // MARK: - Z-Score Enhanced Interpretations
 
     private var vixZScoreInterpretation: String {
@@ -389,21 +334,6 @@ struct MacroDashboardDetailView: View {
         return dxyInterpretation
     }
 
-    private var m2ZScoreInterpretation: String {
-        if let zScore = macroZScores[.m2] {
-            if zScore.isExtreme {
-                return zScore.zScore.zScore > 0
-                    ? "Rapid expansion (\(zScore.zScore.formatted)) - bullish lag"
-                    : "Severe contraction (\(zScore.zScore.formatted)) - headwind"
-            } else if zScore.isSignificant {
-                return zScore.zScore.zScore > 0
-                    ? "Above-average growth (\(zScore.zScore.formatted))"
-                    : "Below-average growth (\(zScore.zScore.formatted))"
-            }
-        }
-        return m2Interpretation
-    }
-
     // MARK: - Chart Expand/Collapse
 
     private func toggleIndicator(_ type: MacroIndicatorType) {
@@ -427,8 +357,10 @@ struct MacroDashboardDetailView: View {
         case .dxy:
             guard dxyHistory.isEmpty else { return }
             loadDXYHistory()
-        case .m2, .netLiquidity:
-            break // Already available in liquidityData.history
+        case .m2:
+            break // Unused — Global M2 removed in favor of Net Liquidity
+        case .netLiquidity:
+            break // Already available in netLiquidityData.history
         case .crudeOil:
             break // History loaded via z-score service
         case .gold:
@@ -494,15 +426,6 @@ struct MacroDashboardDetailView: View {
         }
     }
 
-    private var m2ChartData: [MacroChartPoint] {
-        guard let history = liquidityData?.history else { return [] }
-        let cutoff = dateCutoff(for: macroTimeRange)
-        return history.compactMap { item -> MacroChartPoint? in
-            guard item.date >= cutoff else { return nil }
-            return MacroChartPoint(date: item.date, value: item.value)
-        }
-    }
-
     private var netLiqChartData: [MacroChartPoint] {
         guard let history = netLiquidityData?.history else { return [] }
         let cutoff = dateCutoff(for: macroTimeRange)
@@ -539,20 +462,6 @@ struct MacroDashboardDetailView: View {
         guard let dxy = dxyData?.value else { return .secondary }
         if dxy < 100 { return AppColors.success }
         if dxy < 105 { return AppColors.warning }
-        return AppColors.error
-    }
-
-    private var m2Status: String {
-        guard let m2 = liquidityData else { return "No data" }
-        if m2.monthlyChange > 0 { return "Bullish" }
-        if m2.monthlyChange > -1.0 { return "Neutral" }
-        return "Bearish"
-    }
-
-    private var m2StatusColor: Color {
-        guard let m2 = liquidityData else { return .secondary }
-        if m2.monthlyChange > 0 { return AppColors.success }
-        if m2.monthlyChange > -1.0 { return AppColors.warning }
         return AppColors.error
     }
 
@@ -707,7 +616,6 @@ private struct MacroInsightCard: View {
                 VStack(alignment: .leading, spacing: ArkSpacing.md) {
                     guideRow(title: "VIX (Volatility Index)", description: "Measures expected market volatility. Below 15 signals complacency and a risk-on environment. Above 25 indicates elevated fear, which often pressures crypto and risk assets. Spikes above 35 can signal capitulation and potential bottoming.")
                     guideRow(title: "DXY (US Dollar Index)", description: "Tracks the US dollar against a basket of major currencies. A weakening dollar (below ~100) is historically bullish for crypto and commodities, while a strengthening dollar (above ~105) creates headwinds for risk assets.")
-                    guideRow(title: "Global M2 (Money Supply)", description: "Aggregates money supply from the US, China, Eurozone, Japan & UK. Expanding M2 increases liquidity in financial markets and tends to flow into risk assets like BTC with a 2-3 month lag. Contraction signals tighter conditions.")
                     guideRow(title: "US Net Liquidity", description: "Tracks the Federal Reserve's balance sheet minus money locked in the Treasury General Account and reverse repos. When Net Liquidity rises, more cash is available in financial markets. This is the #1 short-term driver of crypto and risk asset prices.")
                     guideRow(title: "Market Regime", description: "Combines all four indicators into a single signal. Risk-On means favorable conditions across the board. Risk-Off means multiple headwinds. Mixed means conflicting signals — patience is warranted.")
 
