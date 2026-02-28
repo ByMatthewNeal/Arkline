@@ -157,6 +157,11 @@ struct HomeView: View {
                 async let refresh: () = viewModel.refresh()
                 _ = await (portfolios, refresh)
             }
+            .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.authStateChanged)) { _ in
+                if !viewModel.hasLoadedPortfolios || (viewModel.portfolioValue == 0 && SupabaseAuthManager.shared.isAuthenticated) {
+                    Task { await viewModel.loadPortfolios() }
+                }
+            }
             .onAppear {
                 viewModel.userName = appState.currentUser?.firstName ?? "User"
                 Task { await AnalyticsService.shared.trackScreenView("home") }
