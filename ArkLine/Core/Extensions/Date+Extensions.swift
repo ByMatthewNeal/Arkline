@@ -176,17 +176,19 @@ extension Date {
         }
     }
 
-    // MARK: - Trading Hours (simplified)
+    // MARK: - Trading Hours (US market hours in Eastern Time)
     var isMarketOpen: Bool {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
         let components = calendar.dateComponents([.hour, .minute, .weekday], from: self)
-        guard let hour = components.hour, let weekday = components.weekday else { return false }
+        guard let hour = components.hour, let minute = components.minute, let weekday = components.weekday else { return false }
 
         // Weekday: 1 = Sunday, 7 = Saturday
         let isWeekday = weekday >= 2 && weekday <= 6
 
-        // Market hours: 9:30 AM - 4:00 PM ET (simplified)
-        let isMarketHours = hour >= 9 && hour < 16
+        // Market hours: 9:30 AM - 4:00 PM ET
+        let minutesSinceMidnight = hour * 60 + minute
+        let isMarketHours = minutesSinceMidnight >= 570 && minutesSinceMidnight < 960 // 9:30=570, 16:00=960
 
         return isWeekday && isMarketHours
     }

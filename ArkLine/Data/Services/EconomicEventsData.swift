@@ -20,29 +20,23 @@ enum EconomicEventsData {
         }.sorted { $0.date < $1.date }
     }
 
-    /// Returns upcoming events from today
-    /// Uses NY timezone to match how events are stored (economic data is in Eastern time)
+    /// Returns upcoming events (events whose scheduled time hasn't passed yet)
     static func getUpcomingEvents(days: Int = 7, impactFilter: [EventImpact] = [.high, .medium]) -> [EconomicEvent] {
         let now = Date()
-        var calendar = Calendar.current
-        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
-        let startOfToday = calendar.startOfDay(for: now)
-        guard let endDate = calendar.date(byAdding: .day, value: days, to: startOfToday) else {
+        let calendar = Calendar.current
+        guard let endDate = calendar.date(byAdding: .day, value: days, to: now) else {
             return []
         }
 
         return allEvents.filter { event in
-            event.date >= startOfToday && event.date <= endDate && impactFilter.contains(event.impact)
+            event.date >= now && event.date <= endDate && impactFilter.contains(event.impact)
         }.sorted { $0.date < $1.date }
     }
 
-    /// Returns today's events
-    /// Uses NY timezone to match how events are stored (economic data is in Eastern time)
+    /// Returns today's events (based on user's local timezone)
     static func getTodaysEvents(impactFilter: [EventImpact] = [.high, .medium]) -> [EconomicEvent] {
-        var calendar = Calendar.current
-        calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .current
         return allEvents.filter { event in
-            calendar.isDateInToday(event.date) && impactFilter.contains(event.impact)
+            Calendar.current.isDateInToday(event.date) && impactFilter.contains(event.impact)
         }.sorted { $0.date < $1.date }
     }
 
