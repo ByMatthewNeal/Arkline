@@ -651,9 +651,17 @@ class HomeViewModel {
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms, up to 3s total
             }
 
-            let resolvedUserId: UUID? = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
+            // Prefer cached user from UserDefaults (available immediately), fall back to Supabase auth
+            let cachedUserId: UUID? = {
+                guard let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser),
+                      let user = try? JSONDecoder().decode(User.self, from: data) else { return nil }
+                return user.id
+            }()
+            let supabaseUserId: UUID? = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
+            let resolvedUserId: UUID? = cachedUserId ?? supabaseUserId
             guard let userId = resolvedUserId else {
                 logWarning("No authenticated user for portfolio fetch", category: .data)
+                await MainActor.run { self.hasLoadedPortfolios = true }
                 return
             }
             let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
