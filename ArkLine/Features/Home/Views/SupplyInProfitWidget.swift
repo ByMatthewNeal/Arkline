@@ -90,7 +90,7 @@ struct SupplyInProfitWidget: View {
 
                 Text(supplyData?.formattedValue ?? "--")
                     .font(.system(size: size == .compact ? 28 : 36, weight: .semibold, design: .default))
-                    .foregroundColor(textPrimary)
+                    .foregroundColor(signalColor)
                     .monospacedDigit()
 
                 HStack {
@@ -149,7 +149,7 @@ struct SupplyInProfitDetailView: View {
                     VStack(spacing: 16) {
                         Text(supplyData?.formattedValue ?? "--")
                             .font(.system(size: 56, weight: .bold, design: .rounded))
-                            .foregroundColor(textPrimary)
+                            .foregroundColor(signalColor)
 
                         Text(supplyData?.signalDescription ?? "Loading...")
                             .font(.title3)
