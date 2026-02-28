@@ -72,7 +72,7 @@ class SentimentRegimeAlertManager: ObservableObject {
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(
-            identifier: "sentiment_regime_\(Date().timeIntervalSince1970)",
+            identifier: "sentiment_regime_\(UUID().uuidString)",
             content: content,
             trigger: trigger
         )

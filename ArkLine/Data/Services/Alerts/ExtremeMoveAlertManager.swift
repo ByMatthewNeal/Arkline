@@ -140,12 +140,17 @@ class ExtremeMoveAlertManager: ObservableObject {
         pendingAlerts.removeAll()
     }
 
-    /// Dismiss the current alert
+    /// Dismiss the current alert and advance to the next pending one
     func dismissAlert() {
         showExtremeMoveAlert = false
-        currentAlert = nil
         if !pendingAlerts.isEmpty {
             pendingAlerts.removeFirst()
+        }
+        if let next = pendingAlerts.first {
+            currentAlert = next
+            showExtremeMoveAlert = true
+        } else {
+            currentAlert = nil
         }
     }
 

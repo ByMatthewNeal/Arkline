@@ -60,6 +60,13 @@ struct ArkLineApp: App {
 
         // Set notification delegate
         UNUserNotificationCenter.current().delegate = appDelegate
+
+        // Request notification permission (no-op if already granted/denied)
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if let error = error {
+                logError("Notification permission error: \(error)", category: .data)
+            }
+        }
     }
 
     private func handleDeepLink(_ url: URL) async {

@@ -166,7 +166,7 @@ class RegimeChangeManager: ObservableObject {
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
 
         let request = UNNotificationRequest(
-            identifier: "regime_change_\(Date().timeIntervalSince1970)",
+            identifier: "regime_change_\(UUID().uuidString)",
             content: content,
             trigger: trigger
         )
