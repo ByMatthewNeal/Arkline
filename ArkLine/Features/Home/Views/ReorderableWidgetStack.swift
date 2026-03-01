@@ -56,32 +56,14 @@ struct ReorderableWidgetStack: View {
                     widgetView(for: widgetType)
                 }
                 .cardAppearance(delay: index)
-                .onDrag {
-                    self.draggingWidget = widgetType
-                    return NSItemProvider(object: widgetType.rawValue as NSString)
-                }
-                .onDrop(of: [.text], delegate: WidgetDropDelegate(
-                    item: widgetType,
-                    items: visibleWidgets,
-                    draggingItem: $draggingWidget,
-                    draggedOverItem: $draggedOverWidget,
-                    onReorder: { newOrder in
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            // Merge with full order (including disabled widgets)
-                            var fullOrder = appState.widgetConfiguration.widgetOrder
-                            let enabledSet = Set(newOrder)
-                            fullOrder.removeAll { enabledSet.contains($0) }
-                            // Insert enabled widgets in new order at their positions
-                            for widget in newOrder.reversed() {
-                                if let originalIndex = appState.widgetConfiguration.widgetOrder.firstIndex(of: widget) {
-                                    fullOrder.insert(widget, at: min(originalIndex, fullOrder.count))
-                                } else {
-                                    fullOrder.insert(widget, at: 0)
-                                }
-                            }
-                            appState.updateWidgetOrder(newOrder + fullOrder.filter { !enabledSet.contains($0) })
-                        }
-                    }
+                .modifier(ConditionalDragModifier(
+                    enabled: isEditMode,
+                    widgetType: widgetType,
+                    visibleWidgets: visibleWidgets,
+                    draggingWidget: $draggingWidget,
+                    draggedOverWidget: $draggedOverWidget,
+                    widgetOrder: appState.widgetConfiguration.widgetOrder,
+                    onUpdateOrder: { appState.updateWidgetOrder($0) }
                 ))
             }
         }
@@ -329,6 +311,51 @@ struct WidgetRowContainer<Content: View>: View {
             y: isDragging ? 8 : 0
         )
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
+    }
+}
+
+// MARK: - Conditional Drag Modifier
+/// Only attaches onDrag/onDrop when enabled, preventing gesture conflicts with vertical scrolling.
+struct ConditionalDragModifier: ViewModifier {
+    let enabled: Bool
+    let widgetType: HomeWidgetType
+    let visibleWidgets: [HomeWidgetType]
+    @Binding var draggingWidget: HomeWidgetType?
+    @Binding var draggedOverWidget: HomeWidgetType?
+    let widgetOrder: [HomeWidgetType]
+    let onUpdateOrder: ([HomeWidgetType]) -> Void
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .onDrag {
+                    draggingWidget = widgetType
+                    return NSItemProvider(object: widgetType.rawValue as NSString)
+                }
+                .onDrop(of: [.text], delegate: WidgetDropDelegate(
+                    item: widgetType,
+                    items: visibleWidgets,
+                    draggingItem: $draggingWidget,
+                    draggedOverItem: $draggedOverWidget,
+                    onReorder: { newOrder in
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            var fullOrder = widgetOrder
+                            let enabledSet = Set(newOrder)
+                            fullOrder.removeAll { enabledSet.contains($0) }
+                            for widget in newOrder.reversed() {
+                                if let originalIndex = widgetOrder.firstIndex(of: widget) {
+                                    fullOrder.insert(widget, at: min(originalIndex, fullOrder.count))
+                                } else {
+                                    fullOrder.insert(widget, at: 0)
+                                }
+                            }
+                            onUpdateOrder(newOrder + fullOrder.filter { !enabledSet.contains($0) })
+                        }
+                    }
+                ))
+        } else {
+            content
+        }
     }
 }
 
