@@ -65,11 +65,15 @@ final class HomeViewModelTests: XCTestCase {
         let mockRainbow = MockRainbowChartService()
         let mockLiquidity = MockGlobalLiquidityService()
         let mockSantiment = MockSantimentService(); mockSantiment.simulatedDelay = 0
+        let mockCrudeOil = MockCrudeOilService(); mockCrudeOil.simulatedDelay = 0
+        let mockGold = MockGoldService(); mockGold.simulatedDelay = 0
 
         let macroStats = MacroStatisticsService(
             vixService: mockVIX,
             dxyService: mockDXY,
-            globalLiquidityService: mockLiquidity
+            globalLiquidityService: mockLiquidity,
+            crudeOilService: mockCrudeOil,
+            goldService: mockGold
         )
 
         let vm = HomeViewModel(
@@ -91,11 +95,11 @@ final class HomeViewModelTests: XCTestCase {
         return vm
     }
 
-    /// Calls refresh and yields to ensure all @MainActor work completes.
+    /// Calls refresh and waits for all @MainActor work to complete.
     private func refreshAndSettle(_ vm: HomeViewModel) async {
         await vm.refresh()
-        // Yield to allow any pending MainActor-dispatched work to complete
-        await Task.yield()
+        // Allow pending MainActor-dispatched work to complete
+        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
     }
 
     // MARK: - Group A: Happy Path

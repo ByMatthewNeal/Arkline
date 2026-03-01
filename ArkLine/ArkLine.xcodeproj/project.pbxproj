@@ -57,7 +57,9 @@
 		225A1070FCDF3751115B7F4F /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B778AE7F7AE7B07921A533 /* ToastManager.swift */; };
 		238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */; };
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
-		268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */; };
+				447676B899DF057E /* MockCrudeOilService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C71420FEAD831DF3 /* MockCrudeOilService.swift */; };
+		A1A7C64917430768 /* MockGoldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32413FFE14DC79 /* MockGoldService.swift */; };
+268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */; };
 		2B22CF69504B08756CCC2A49 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E515D0E6990FFEF0DA3183 /* ServiceContainer.swift */; };
 		2C64471C1DA2261CE83B3164 /* FearGreedWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */; };
 		2D705F6BFE7C3BF5DE8CBBF0 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B235140A3BEE72D20E513F81 /* APIEndpoint.swift */; };
@@ -590,7 +592,9 @@
 		6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioSparkline.swift; sourceTree = "<group>"; };
 		6C06924AB1053BEBE96D201B /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
 		6D6633C62AA788C16E0342E7 /* RiskTooltipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskTooltipView.swift; sourceTree = "<group>"; };
-		6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockVIXService.swift; sourceTree = "<group>"; };
+				C71420FEAD831DF3 /* MockCrudeOilService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCrudeOilService.swift; sourceTree = "<group>"; };
+		7D32413FFE14DC79 /* MockGoldService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockGoldService.swift; sourceTree = "<group>"; };
+6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockVIXService.swift; sourceTree = "<group>"; };
 		702FD4F7C52A8914F7A26CFD /* EconomicCalendarScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EconomicCalendarScraper.swift; sourceTree = "<group>"; };
 		715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskLevel.swift; sourceTree = "<group>"; };
 		72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesWidget.swift; sourceTree = "<group>"; };
@@ -1974,7 +1978,9 @@
 				4DE31EC644A8E8CB01AE37BB /* MockRainbowChartService.swift */,
 				E5FD717CBEAFF16D0F0E926C /* MockSentimentService.swift */,
 				267B802EB8458A0C8582EA6F /* MockTechnicalAnalysisService.swift */,
-				6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */,
+								C71420FEAD831DF3 /* MockCrudeOilService.swift */,
+				7D32413FFE14DC79 /* MockGoldService.swift */,
+6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */,
 			);
 			path = Mock;
 			sourceTree = "<group>";
@@ -2415,7 +2421,9 @@
 				D950DFBED705ACD245EF485F /* MockRainbowChartService.swift in Sources */,
 				A891AEE6810F28F71B65F2A2 /* MockSentimentService.swift in Sources */,
 				A2D7CC6E4E64921E64FB4270 /* MockTechnicalAnalysisService.swift in Sources */,
-				268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */,
+								447676B899DF057E /* MockCrudeOilService.swift in Sources */,
+				A1A7C64917430768 /* MockGoldService.swift in Sources */,
+268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */,
 				E94401772FE34BE9B93DACA0 /* MultiFactorRisk.swift in Sources */,
 				A6ADF52AE83E1B4060375E01 /* NetworkManager.swift in Sources */,
 				BA80C58197F5138E504E51A2 /* NewsCard.swift in Sources */,
