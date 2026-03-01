@@ -21,6 +21,18 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifyEmail)
     private var emailNotifications = true
 
+    @AppStorage(Constants.UserDefaults.notifyEmailMarketAlerts)
+    private var emailMarketAlerts = true
+
+    @AppStorage(Constants.UserDefaults.notifyEmailInsights)
+    private var emailInsights = true
+
+    @AppStorage(Constants.UserDefaults.notifyEmailDCAReminders)
+    private var emailDCAReminders = true
+
+    @AppStorage(Constants.UserDefaults.notifyEmailAccountUpdates)
+    private var emailAccountUpdates = true
+
     var body: some View {
         ZStack {
             MeshGradientBackground()
@@ -107,11 +119,53 @@ struct NotificationsDetailView: View {
                             icon: "envelope.fill",
                             iconColor: AppColors.accent,
                             title: "Email Notifications",
-                            description: "Receive important updates via email"
+                            description: "Master toggle for all email notifications"
                         )
                     }
                     .onChange(of: emailNotifications) { _, newValue in
                         Haptics.selection()
+                    }
+
+                    if emailNotifications {
+                        Toggle(isOn: $emailMarketAlerts) {
+                            NotificationRow(
+                                icon: "chart.line.uptrend.xyaxis",
+                                iconColor: AppColors.warning,
+                                title: "Market Alerts",
+                                description: "Significant market movements and macro events"
+                            )
+                        }
+                        .onChange(of: emailMarketAlerts) { _, _ in Haptics.selection() }
+
+                        Toggle(isOn: $emailInsights) {
+                            NotificationRow(
+                                icon: "megaphone",
+                                iconColor: AppColors.accent,
+                                title: "Insights & Broadcasts",
+                                description: "New insights and broadcasts from the team"
+                            )
+                        }
+                        .onChange(of: emailInsights) { _, _ in Haptics.selection() }
+
+                        Toggle(isOn: $emailDCAReminders) {
+                            NotificationRow(
+                                icon: "calendar.badge.clock",
+                                iconColor: AppColors.success,
+                                title: "DCA Reminders",
+                                description: "Scheduled purchase reminders"
+                            )
+                        }
+                        .onChange(of: emailDCAReminders) { _, _ in Haptics.selection() }
+
+                        Toggle(isOn: $emailAccountUpdates) {
+                            NotificationRow(
+                                icon: "person.crop.circle",
+                                iconColor: AppColors.textSecondary,
+                                title: "Account Updates",
+                                description: "Security alerts and account changes"
+                            )
+                        }
+                        .onChange(of: emailAccountUpdates) { _, _ in Haptics.selection() }
                     }
                 } header: {
                     Text("Email")

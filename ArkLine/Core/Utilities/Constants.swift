@@ -135,6 +135,10 @@ enum Constants {
         static let notifySentimentShifts = "arkline_sentiment_regime_notifications_enabled"
         static let notifyInsights = "arkline_broadcast_notifications_enabled"
         static let notifyEmail = "notifyEmail"
+        static let notifyEmailMarketAlerts = "notifyEmailMarketAlerts"
+        static let notifyEmailInsights = "notifyEmailInsights"
+        static let notifyEmailDCAReminders = "notifyEmailDCAReminders"
+        static let notifyEmailAccountUpdates = "notifyEmailAccountUpdates"
     }
 
     // MARK: - Notification Names

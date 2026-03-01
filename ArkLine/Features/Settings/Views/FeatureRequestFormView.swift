@@ -183,6 +183,7 @@ struct FeatureRequestFormView: View {
             TextEditor(text: $description)
                 .font(ArkFonts.body)
                 .frame(minHeight: 150)
+                .scrollContentBackground(.hidden)
                 .padding(ArkSpacing.sm)
                 .background(AppColors.cardBackground(colorScheme))
                 .cornerRadius(ArkSpacing.Radius.md)

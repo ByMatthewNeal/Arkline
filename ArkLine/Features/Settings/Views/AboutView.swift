@@ -14,9 +14,15 @@ struct AboutView: View {
         ZStack {
             MeshGradientBackground()
             VStack(spacing: 20) {
-                Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(AppColors.accent)
+                #if canImport(UIKit)
+                if let uiImage = UIImage(named: "AppIcon") {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 100, height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 22))
+                }
+                #endif
 
                 Text("ArkLine")
                     .font(AppFonts.title30)

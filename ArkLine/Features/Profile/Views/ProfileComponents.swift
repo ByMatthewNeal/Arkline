@@ -440,16 +440,9 @@ struct ReferFriendView: View {
                     .foregroundColor(AppColors.accent)
 
                 // Title
-                VStack(spacing: 8) {
-                    Text("Invite Friends")
-                        .font(AppFonts.title30)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    Text("Share your referral code and earn rewards together!")
-                        .font(AppFonts.body14)
-                        .foregroundColor(AppColors.textSecondary)
-                        .multilineTextAlignment(.center)
-                }
+                Text("Invite Friends")
+                    .font(AppFonts.title30)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 // Referral Code
                 VStack(spacing: 12) {

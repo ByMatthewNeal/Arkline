@@ -47,6 +47,20 @@ struct CurrencySelectView: View {
         ZStack {
             MeshGradientBackground()
             List {
+            Section {
+                HStack(spacing: 10) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("This changes how values are displayed across your portfolio and home screen.")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .padding(.vertical, 4)
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+            }
+
             ForEach(viewModel.currencyOptions, id: \.0) { code, name in
                 Button(action: {
                     viewModel.saveCurrency(code)
@@ -202,6 +216,8 @@ struct RiskLevelSelectView: View {
                 .listRowBackground(AppColors.cardBackground(colorScheme))
             } header: {
                 Text("Select coins to track for risk analysis")
+            } footer: {
+                Text("Selected coins will be displayed as risk widgets on your Home Screen.")
             }
         }
         #if os(iOS)

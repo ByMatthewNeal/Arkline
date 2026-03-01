@@ -338,8 +338,13 @@ final class ProfileViewModel {
 
         #if canImport(UIKit)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let rootViewController = windowScene.windows.first?.rootViewController else {
+              var topController = windowScene.windows.first?.rootViewController else {
             return
+        }
+
+        // Walk up the presentation chain to find the topmost presented controller
+        while let presented = topController.presentedViewController {
+            topController = presented
         }
 
         let activityViewController = UIActivityViewController(
@@ -349,14 +354,14 @@ final class ProfileViewModel {
 
         // For iPad: Set the source view for the popover
         if let popover = activityViewController.popoverPresentationController {
-            popover.sourceView = rootViewController.view
-            popover.sourceRect = CGRect(x: rootViewController.view.bounds.midX,
-                                        y: rootViewController.view.bounds.midY,
+            popover.sourceView = topController.view
+            popover.sourceRect = CGRect(x: topController.view.bounds.midX,
+                                        y: topController.view.bounds.midY,
                                         width: 0, height: 0)
             popover.permittedArrowDirections = []
         }
 
-        rootViewController.present(activityViewController, animated: true)
+        topController.present(activityViewController, animated: true)
         #endif
     }
 }
