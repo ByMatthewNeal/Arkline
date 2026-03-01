@@ -895,14 +895,23 @@ class HomeViewModel {
 
         let service = MarketSummaryService.shared
 
-        // Fetch index quotes and sentiment data in parallel
+        // Fetch index quotes, sentiment data, and financial news in parallel
         async let indexQuotes = service.fetchIndexQuotes()
         async let sentimentRefresh: () = { [weak self] in
             await self?.sentimentViewModel?.refresh()
         }()
+        async let financialNews: [NewsItem] = {
+            do {
+                return try await GoogleNewsRSSService().fetchNews(
+                    query: "stock market OR federal reserve OR economy OR inflation OR interest rates OR earnings",
+                    limit: 5
+                )
+            } catch { return [] }
+        }()
 
         let (sp500, nasdaq) = await indexQuotes
         _ = await sentimentRefresh
+        let finNews = await financialNews
 
         // Build net liquidity signal
         var netLiqSignal: String? = nil
@@ -960,7 +969,19 @@ class HomeViewModel {
             economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map { event in
                 .init(title: event.title, time: event.timeFormatted)
             },
-            newsHeadlines: Array(newsItems.prefix(5).map { $0.title })
+            newsHeadlines: {
+                // Merge crypto + financial headlines, deduped
+                var seen = Set<String>()
+                var headlines: [String] = []
+                for item in (Array(newsItems.prefix(3)) + Array(finNews.prefix(3))) {
+                    let key = item.title.lowercased()
+                    if !seen.contains(key) {
+                        seen.insert(key)
+                        headlines.append(item.title)
+                    }
+                }
+                return Array(headlines.prefix(6))
+            }()
         )
 
         do {
