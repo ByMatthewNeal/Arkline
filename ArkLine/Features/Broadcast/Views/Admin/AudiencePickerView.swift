@@ -17,13 +17,11 @@ struct AudiencePickerView: View {
 
     private enum AudienceOption: String, CaseIterable {
         case all
-        case premium
         case specific
 
         var displayName: String {
             switch self {
             case .all: return "All Users"
-            case .premium: return "Premium Only"
             case .specific: return "Specific Users"
             }
         }
@@ -31,7 +29,6 @@ struct AudiencePickerView: View {
         var description: String {
             switch self {
             case .all: return "Send to everyone who has the app"
-            case .premium: return "Only users with premium subscription"
             case .specific: return "Select individual users to receive this broadcast"
             }
         }
@@ -39,7 +36,6 @@ struct AudiencePickerView: View {
         var iconName: String {
             switch self {
             case .all: return "person.3.fill"
-            case .premium: return "star.fill"
             case .specific: return "person.crop.circle.badge.checkmark"
             }
         }
@@ -47,7 +43,6 @@ struct AudiencePickerView: View {
         var iconColor: Color {
             switch self {
             case .all: return AppColors.accent
-            case .premium: return AppColors.warning
             case .specific: return AppColors.success
             }
         }
@@ -218,8 +213,6 @@ struct AudiencePickerView: View {
         switch selectedOption {
         case .all:
             return "All Users"
-        case .premium:
-            return "Premium Subscribers"
         case .specific:
             let count = selectedUserIds.count
             return count == 0 ? "No users selected" : "\(count) user\(count == 1 ? "" : "s")"
@@ -230,11 +223,9 @@ struct AudiencePickerView: View {
 
     private func loadCurrentSelection() {
         switch targetAudience {
-        case .all:
+        case .all, .premium:
+            // Map legacy .premium to .all for backward compatibility
             selectedOption = .all
-            selectedUserIds = []
-        case .premium:
-            selectedOption = .premium
             selectedUserIds = []
         case .specific(let userIds):
             selectedOption = .specific
@@ -246,8 +237,6 @@ struct AudiencePickerView: View {
         switch selectedOption {
         case .all:
             targetAudience = .all
-        case .premium:
-            targetAudience = .premium
         case .specific:
             targetAudience = .specific(userIds: selectedUserIds)
         }
@@ -264,10 +253,40 @@ private struct UserSearchSheet: View {
     @Binding var userNames: [UUID: String]
 
     @State private var searchText = ""
-    @State private var searchResults: [AdminMember] = []
-    @State private var isSearching = false
+    @State private var allMembers: [AdminMember] = []
+    @State private var isLoading = false
+    @State private var activeFilter: MemberFilter = .all
 
     private let adminService = AdminService()
+
+    private enum MemberFilter: String, CaseIterable {
+        case all = "All"
+        case active = "Active"
+        case inactive = "Inactive"
+    }
+
+    /// Members filtered by search text and active filter, sorted alphabetically.
+    private var filteredMembers: [AdminMember] {
+        var result = allMembers
+
+        // Apply active/inactive filter
+        switch activeFilter {
+        case .all: break
+        case .active: result = result.filter { $0.isActive }
+        case .inactive: result = result.filter { !$0.isActive }
+        }
+
+        // Apply search text filter
+        let trimmed = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        if !trimmed.isEmpty {
+            result = result.filter {
+                $0.displayName.lowercased().contains(trimmed) ||
+                $0.email.lowercased().contains(trimmed)
+            }
+        }
+
+        return result
+    }
 
     var body: some View {
         NavigationStack {
@@ -284,7 +303,6 @@ private struct UserSearchSheet: View {
                     if !searchText.isEmpty {
                         Button {
                             searchText = ""
-                            searchResults = []
                         } label: {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(AppColors.textTertiary)
@@ -296,14 +314,35 @@ private struct UserSearchSheet: View {
                 .padding(.vertical, ArkSpacing.sm)
                 .background(AppColors.cardBackground(colorScheme))
 
+                // Filter chips
+                HStack(spacing: ArkSpacing.xs) {
+                    ForEach(MemberFilter.allCases, id: \.self) { filter in
+                        Button {
+                            activeFilter = filter
+                        } label: {
+                            Text(filter.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(activeFilter == filter ? .white : AppColors.textSecondary)
+                                .padding(.horizontal, ArkSpacing.sm)
+                                .padding(.vertical, ArkSpacing.xxs)
+                                .background(activeFilter == filter ? AppColors.accent : AppColors.cardBackground(colorScheme))
+                                .cornerRadius(ArkSpacing.xs)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, ArkSpacing.md)
+                .padding(.vertical, ArkSpacing.xs)
+
                 Divider()
 
                 // Results
-                if isSearching {
+                if isLoading {
                     Spacer()
                     ProgressView()
                     Spacer()
-                } else if searchResults.isEmpty && !searchText.isEmpty {
+                } else if filteredMembers.isEmpty {
                     Spacer()
                     VStack(spacing: ArkSpacing.sm) {
                         Image(systemName: "person.slash")
@@ -314,19 +353,8 @@ private struct UserSearchSheet: View {
                             .foregroundColor(AppColors.textSecondary)
                     }
                     Spacer()
-                } else if searchResults.isEmpty {
-                    Spacer()
-                    VStack(spacing: ArkSpacing.sm) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.largeTitle)
-                            .foregroundColor(AppColors.textTertiary)
-                        Text("Search for users to add")
-                            .font(ArkFonts.body)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                    Spacer()
                 } else {
-                    List(searchResults) { member in
+                    List(filteredMembers) { member in
                         memberRow(member)
                     }
                     .listStyle(.plain)
@@ -340,10 +368,8 @@ private struct UserSearchSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .onChange(of: searchText) { _, newValue in
-                Task {
-                    await search(query: newValue)
-                }
+            .task {
+                await loadAllMembers()
             }
         }
     }
@@ -362,9 +388,21 @@ private struct UserSearchSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(member.displayName)
-                    .font(ArkFonts.body)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                HStack(spacing: ArkSpacing.xs) {
+                    Text(member.displayName)
+                        .font(ArkFonts.body)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    if !member.isActive {
+                        Text("Inactive")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.textTertiary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(AppColors.textTertiary.opacity(0.15))
+                            .cornerRadius(3)
+                    }
+                }
                 Text(member.email)
                     .font(ArkFonts.caption)
                     .foregroundColor(AppColors.textSecondary)
@@ -390,24 +428,15 @@ private struct UserSearchSheet: View {
         .padding(.vertical, ArkSpacing.xxs)
     }
 
-    private func search(query: String) async {
-        let trimmed = query.trimmingCharacters(in: .whitespaces)
-        guard trimmed.count >= 2 else {
-            searchResults = []
-            return
-        }
-
-        isSearching = true
+    private func loadAllMembers() async {
+        isLoading = true
         do {
-            let response = try await adminService.fetchMembers(search: trimmed, status: nil, page: 1)
-            // Only apply results if the search text hasn't changed
-            if searchText.trimmingCharacters(in: .whitespaces) == trimmed {
-                searchResults = response.members
-            }
+            let response = try await adminService.fetchMembers(search: nil, status: nil, page: 1)
+            allMembers = response.members.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
         } catch {
-            logError("User search failed: \(error)", category: .data)
+            logError("Failed to load members: \(error)", category: .data)
         }
-        isSearching = false
+        isLoading = false
     }
 }
 

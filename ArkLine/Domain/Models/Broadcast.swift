@@ -801,10 +801,12 @@ extension Broadcast {
             }
         }
 
-        // Strip list prefixes
+        // Strip list prefixes, heading prefixes, and blockquote prefixes
         let listPatterns: [(String, String)] = [
-            (#"(?m)^\d+\.\s+"#, ""),  // ordered list prefix
-            (#"(?m)^- "#, ""),         // unordered list prefix
+            (#"(?m)^\d+\.\s+"#, ""),   // ordered list prefix
+            (#"(?m)^- "#, ""),          // unordered list prefix
+            (#"(?m)^#{1,3}\s+"#, ""),   // heading prefixes (# ## ###)
+            (#"(?m)^>\s+"#, ""),        // blockquote prefix (>)
         ]
 
         for (pattern, replacement) in listPatterns {
@@ -1119,7 +1121,7 @@ enum BroadcastTag: String, CaseIterable {
         case .education: return Color(hex: "EC4899")
         case .dca: return Color(hex: "14B8A6")
         case .news: return Color(hex: "64748B")
-        case .xPost: return Color(hex: "000000")
+        case .xPost: return Color(hex: "71767B")
         case .marketUpdate: return Color(hex: "0EA5E9")
         case .myPortfolio: return Color(hex: "22C55E")
         case .outOfOffice: return Color(hex: "A3A3A3")

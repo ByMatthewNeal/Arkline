@@ -11,6 +11,10 @@ enum MarkdownFormat: CaseIterable {
     case link
     case orderedList
     case unorderedList
+    case title
+    case heading
+    case subheading
+    case indent
 }
 
 // MARK: - Markdown Formatter
@@ -41,6 +45,14 @@ enum MarkdownFormatter {
             return applyListPrefix(text: text, range: selectedRange, ordered: true)
         case .unorderedList:
             return applyListPrefix(text: text, range: selectedRange, ordered: false)
+        case .title:
+            return applyLinePrefix(text: text, range: selectedRange, prefix: "# ")
+        case .heading:
+            return applyLinePrefix(text: text, range: selectedRange, prefix: "## ")
+        case .subheading:
+            return applyLinePrefix(text: text, range: selectedRange, prefix: "### ")
+        case .indent:
+            return applyLinePrefix(text: text, range: selectedRange, prefix: "> ")
         }
     }
 
@@ -82,6 +94,43 @@ enum MarkdownFormatter {
         let urlStart = range.location + 1 + linkText.count + 2 // past "[linkText]("
         let newSelection = NSRange(location: urlStart, length: 3) // "url"
 
+        return Result(newText: newText, newSelection: newSelection)
+    }
+
+    // MARK: - Line Prefix (Headings / Blockquote)
+
+    /// Toggles a line prefix (`# `, `## `, `### `, `> `) on the line(s) in the selection.
+    /// If the line already has the prefix, it's removed; otherwise it replaces any existing heading/blockquote prefix and adds the new one.
+    private static func applyLinePrefix(text: String, range: NSRange, prefix: String) -> Result {
+        let nsText = text as NSString
+        let lineRange = nsText.lineRange(for: range)
+        let linesSubstring = nsText.substring(with: lineRange)
+        let lines = linesSubstring.components(separatedBy: "\n")
+
+        // Regex to strip any existing heading or blockquote prefix
+        let existingPrefixPattern = #"^(#{1,3}\s+|>\s+)"#
+
+        var newLines: [String] = []
+        for (index, line) in lines.enumerated() {
+            if index == lines.count - 1 && line.isEmpty {
+                newLines.append(line)
+                continue
+            }
+
+            if line.hasPrefix(prefix) {
+                // Toggle off — remove this prefix
+                newLines.append(String(line.dropFirst(prefix.count)))
+            } else if let match = line.range(of: existingPrefixPattern, options: .regularExpression) {
+                // Replace existing prefix with the new one
+                newLines.append(prefix + line[match.upperBound...])
+            } else {
+                newLines.append(prefix + line)
+            }
+        }
+
+        let replacement = newLines.joined(separator: "\n")
+        let newText = nsText.replacingCharacters(in: lineRange, with: replacement)
+        let newSelection = NSRange(location: lineRange.location + replacement.count, length: 0)
         return Result(newText: newText, newSelection: newSelection)
     }
 

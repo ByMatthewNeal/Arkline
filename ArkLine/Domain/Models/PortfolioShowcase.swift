@@ -134,6 +134,23 @@ struct PortfolioSnapshot: Codable, Identifiable, Equatable {
         self.primaryAssetType = Self.determinePrimaryAssetType(holdings)
     }
 
+    /// Convenience initializer that accepts a set of privacy levels, using the effective level.
+    init(
+        from portfolio: Portfolio,
+        holdings: [PortfolioHolding],
+        privacyLevels: Set<PrivacyLevel>
+    ) {
+        let effective: PrivacyLevel
+        if privacyLevels.contains(.anonymous) { effective = .anonymous }
+        else if privacyLevels.contains(.full) { effective = .full }
+        else if privacyLevels.contains(.percentageOnly) && privacyLevels.contains(.performanceOnly) {
+            effective = .percentageOnly
+        } else {
+            effective = privacyLevels.first ?? .percentageOnly
+        }
+        self.init(from: portfolio, holdings: holdings, privacyLevel: effective)
+    }
+
     /// Manual initializer for decoding
     init(
         id: UUID,
@@ -404,7 +421,7 @@ struct BroadcastPortfolioAttachment: Codable, Identifiable, Equatable {
     let leftSnapshot: PortfolioSnapshot?
     let rightSnapshot: PortfolioSnapshot?
     let renderedImageURL: URL?
-    let privacyLevel: PrivacyLevel
+    let privacyLevels: Set<PrivacyLevel>
     let caption: String?
     let createdAt: Date
 
@@ -414,6 +431,7 @@ struct BroadcastPortfolioAttachment: Codable, Identifiable, Equatable {
         case rightSnapshot = "right_snapshot"
         case renderedImageURL = "rendered_image_url"
         case privacyLevel = "privacy_level"
+        case privacyLevels = "privacy_levels"
         case caption
         case createdAt = "created_at"
     }
@@ -423,7 +441,7 @@ struct BroadcastPortfolioAttachment: Codable, Identifiable, Equatable {
         leftSnapshot: PortfolioSnapshot? = nil,
         rightSnapshot: PortfolioSnapshot? = nil,
         renderedImageURL: URL? = nil,
-        privacyLevel: PrivacyLevel = .percentageOnly,
+        privacyLevels: Set<PrivacyLevel> = [.percentageOnly],
         caption: String? = nil,
         createdAt: Date = Date()
     ) {
@@ -431,9 +449,62 @@ struct BroadcastPortfolioAttachment: Codable, Identifiable, Equatable {
         self.leftSnapshot = leftSnapshot
         self.rightSnapshot = rightSnapshot
         self.renderedImageURL = renderedImageURL
-        self.privacyLevel = privacyLevel
+        self.privacyLevels = privacyLevels
         self.caption = caption
         self.createdAt = createdAt
+    }
+
+    // Backward-compatible decoding: handles old `privacy_level` string or new `privacy_levels` array
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        leftSnapshot = try container.decodeIfPresent(PortfolioSnapshot.self, forKey: .leftSnapshot)
+        rightSnapshot = try container.decodeIfPresent(PortfolioSnapshot.self, forKey: .rightSnapshot)
+        renderedImageURL = try container.decodeIfPresent(URL.self, forKey: .renderedImageURL)
+        caption = try container.decodeIfPresent(String.self, forKey: .caption)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+
+        // Try new array format first, fall back to old single value
+        if let levels = try? container.decode(Set<PrivacyLevel>.self, forKey: .privacyLevels), !levels.isEmpty {
+            privacyLevels = levels
+        } else if let single = try? container.decode(PrivacyLevel.self, forKey: .privacyLevel) {
+            privacyLevels = [single]
+        } else {
+            privacyLevels = [.percentageOnly]
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encodeIfPresent(leftSnapshot, forKey: .leftSnapshot)
+        try container.encodeIfPresent(rightSnapshot, forKey: .rightSnapshot)
+        try container.encodeIfPresent(renderedImageURL, forKey: .renderedImageURL)
+        try container.encode(privacyLevels, forKey: .privacyLevels)
+        // Write old key too for backward compat with older clients
+        try container.encode(effectivePrivacyLevel, forKey: .privacyLevel)
+        try container.encodeIfPresent(caption, forKey: .caption)
+        try container.encode(createdAt, forKey: .createdAt)
+    }
+
+    /// The most restrictive privacy level from the selected set, used for snapshot generation.
+    var effectivePrivacyLevel: PrivacyLevel {
+        if privacyLevels.contains(.anonymous) { return .anonymous }
+        if privacyLevels.contains(.full) { return .full }
+        // Combined percentageOnly + performanceOnly shows both (i.e. percentageOnly is broader)
+        if privacyLevels.contains(.percentageOnly) && privacyLevels.contains(.performanceOnly) {
+            return .percentageOnly
+        }
+        return privacyLevels.first ?? .percentageOnly
+    }
+
+    /// Display name summarizing the selected privacy levels.
+    var privacyDisplayName: String {
+        if privacyLevels.count == 1 {
+            return privacyLevels.first?.displayName ?? "Percentages Only"
+        }
+        let sorted = privacyLevels.sorted { $0.rawValue < $1.rawValue }
+        return sorted.map(\.displayName).joined(separator: " + ")
     }
 
     /// Whether this attachment has at least one portfolio

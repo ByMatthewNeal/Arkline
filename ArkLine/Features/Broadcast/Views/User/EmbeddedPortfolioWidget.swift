@@ -24,9 +24,9 @@ struct EmbeddedPortfolioWidget: View {
 
                 // Privacy badge
                 HStack(spacing: 2) {
-                    Image(systemName: attachment.privacyLevel.icon)
+                    Image(systemName: attachment.effectivePrivacyLevel.icon)
                         .font(.caption2)
-                    Text(attachment.privacyLevel.displayName)
+                    Text(attachment.privacyDisplayName)
                         .font(.system(size: 9))
                 }
                 .foregroundColor(AppColors.textTertiary)
@@ -183,7 +183,7 @@ private struct CompactSnapshotCard: View {
                     assetCount: 5,
                     primaryAssetType: "crypto"
                 ),
-                privacyLevel: .percentageOnly,
+                privacyLevels: [.percentageOnly],
                 caption: "My crypto holdings are looking strong!"
             )
         )
@@ -225,7 +225,7 @@ private struct CompactSnapshotCard: View {
                     assetCount: 8,
                     primaryAssetType: "stock"
                 ),
-                privacyLevel: .performanceOnly,
+                privacyLevels: [.performanceOnly],
                 caption: "Crypto vs Stocks this quarter"
             )
         )

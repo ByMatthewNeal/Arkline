@@ -186,7 +186,7 @@ final class PortfolioShowcaseViewModel {
         BroadcastPortfolioAttachment(
             leftSnapshot: leftSnapshot,
             rightSnapshot: rightSnapshot,
-            privacyLevel: configuration.privacyLevel,
+            privacyLevels: [configuration.privacyLevel],
             caption: caption
         )
     }

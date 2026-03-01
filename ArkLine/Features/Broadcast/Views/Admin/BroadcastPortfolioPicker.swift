@@ -13,7 +13,7 @@ struct BroadcastPortfolioPicker: View {
     @State private var holdings: [UUID: [PortfolioHolding]] = [:]
     @State private var leftPortfolio: Portfolio?
     @State private var rightPortfolio: Portfolio?
-    @State private var privacyLevel: PrivacyLevel = .percentageOnly
+    @State private var selectedPrivacyLevels: Set<PrivacyLevel> = [.percentageOnly]
     @State private var caption: String = ""
     @State private var isLoading = true
     @State private var showLeftPicker = false
@@ -82,7 +82,7 @@ struct BroadcastPortfolioPicker: View {
             .onAppear {
                 // Load existing attachment if editing
                 if let existing = attachment {
-                    privacyLevel = existing.privacyLevel
+                    selectedPrivacyLevels = existing.privacyLevels
                     caption = existing.caption ?? ""
                 }
             }
@@ -255,13 +255,14 @@ struct BroadcastPortfolioPicker: View {
 
             VStack(spacing: ArkSpacing.xs) {
                 ForEach(PrivacyLevel.allCases) { level in
+                    let isSelected = selectedPrivacyLevels.contains(level)
                     Button {
-                        privacyLevel = level
+                        togglePrivacyLevel(level)
                     } label: {
                         HStack(spacing: ArkSpacing.md) {
                             Image(systemName: level.icon)
                                 .font(.body)
-                                .foregroundColor(privacyLevel == level ? AppColors.accent : AppColors.textSecondary)
+                                .foregroundColor(isSelected ? AppColors.accent : AppColors.textSecondary)
                                 .frame(width: 24)
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -276,14 +277,12 @@ struct BroadcastPortfolioPicker: View {
 
                             Spacer()
 
-                            if privacyLevel == level {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(AppColors.accent)
-                            }
+                            Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                                .foregroundColor(isSelected ? AppColors.accent : AppColors.textTertiary)
                         }
                         .padding(ArkSpacing.md)
                         .background(
-                            privacyLevel == level
+                            isSelected
                                 ? AppColors.accent.opacity(0.1)
                                 : AppColors.cardBackground(colorScheme)
                         )
@@ -291,6 +290,28 @@ struct BroadcastPortfolioPicker: View {
                     }
                     .buttonStyle(.plain)
                 }
+            }
+        }
+    }
+
+    /// Toggles a privacy level with mutual exclusivity rules:
+    /// - `.full` and `.anonymous` are exclusive (selecting either clears others)
+    /// - `.percentageOnly` and `.performanceOnly` can be combined
+    private func togglePrivacyLevel(_ level: PrivacyLevel) {
+        if selectedPrivacyLevels.contains(level) {
+            // Don't allow deselecting if it's the only one
+            guard selectedPrivacyLevels.count > 1 else { return }
+            selectedPrivacyLevels.remove(level)
+        } else {
+            switch level {
+            case .full, .anonymous:
+                // Exclusive — selecting clears everything else
+                selectedPrivacyLevels = [level]
+            case .percentageOnly, .performanceOnly:
+                // Remove exclusive levels, allow combining these two
+                selectedPrivacyLevels.remove(.full)
+                selectedPrivacyLevels.remove(.anonymous)
+                selectedPrivacyLevels.insert(level)
             }
         }
     }
@@ -362,7 +383,7 @@ struct BroadcastPortfolioPicker: View {
             let totalCost = holdings.reduce(0) { $0 + $1.totalCost }
             let performance = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0
 
-            if privacyLevel != .anonymous {
+            if !selectedPrivacyLevels.contains(.anonymous) {
                 HStack(spacing: 2) {
                     Image(systemName: performance >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 10))
@@ -409,17 +430,17 @@ struct BroadcastPortfolioPicker: View {
         var rightSnapshot: PortfolioSnapshot?
 
         if let left = leftPortfolio, let leftHoldings = holdings[left.id] {
-            leftSnapshot = PortfolioSnapshot(from: left, holdings: leftHoldings, privacyLevel: privacyLevel)
+            leftSnapshot = PortfolioSnapshot(from: left, holdings: leftHoldings, privacyLevels: selectedPrivacyLevels)
         }
 
         if let right = rightPortfolio, let rightHoldings = holdings[right.id] {
-            rightSnapshot = PortfolioSnapshot(from: right, holdings: rightHoldings, privacyLevel: privacyLevel)
+            rightSnapshot = PortfolioSnapshot(from: right, holdings: rightHoldings, privacyLevels: selectedPrivacyLevels)
         }
 
         attachment = BroadcastPortfolioAttachment(
             leftSnapshot: leftSnapshot,
             rightSnapshot: rightSnapshot,
-            privacyLevel: privacyLevel,
+            privacyLevels: selectedPrivacyLevels,
             caption: caption.isEmpty ? nil : caption
         )
     }

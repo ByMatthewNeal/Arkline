@@ -24,6 +24,8 @@ struct MarkdownContentView: View {
         case paragraph(String)
         case orderedList([String])
         case unorderedList([String])
+        case heading(level: Int, text: String)
+        case blockquote(String)
     }
 
     /// Splits content into blocks: paragraphs, ordered list groups, unordered list groups.
@@ -58,7 +60,18 @@ struct MarkdownContentView: View {
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
-            if let match = trimmed.range(of: #"^\d+\.\s+"#, options: .regularExpression) {
+            if let match = trimmed.range(of: #"^(#{1,3})\s+"#, options: .regularExpression) {
+                flushParagraph()
+                flushOL()
+                flushUL()
+                let hashCount = trimmed[trimmed.startIndex..<match.upperBound].filter { $0 == "#" }.count
+                blocks.append(.heading(level: hashCount, text: String(trimmed[match.upperBound...])))
+            } else if trimmed.hasPrefix("> ") {
+                flushParagraph()
+                flushOL()
+                flushUL()
+                blocks.append(.blockquote(String(trimmed.dropFirst(2))))
+            } else if let match = trimmed.range(of: #"^\d+\.\s+"#, options: .regularExpression) {
                 flushParagraph()
                 flushUL()
                 currentOL.append(String(trimmed[match.upperBound...]))
@@ -125,6 +138,24 @@ struct MarkdownContentView: View {
                             .tint(AppColors.accent)
                     }
                 }
+            }
+
+        case .heading(let level, let text):
+            Text(parseInlineMarkdown(text))
+                .font(.system(size: level == 1 ? 22 : level == 2 ? 18 : 16, weight: .bold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .tint(AppColors.accent)
+
+        case .blockquote(let text):
+            HStack(alignment: .top, spacing: ArkSpacing.sm) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(AppColors.accent)
+                    .frame(width: 3)
+
+                Text(parseInlineMarkdown(text))
+                    .font(ArkFonts.body)
+                    .foregroundColor(AppColors.textSecondary)
+                    .tint(AppColors.accent)
             }
         }
     }

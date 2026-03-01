@@ -597,9 +597,9 @@ struct BroadcastEditorView: View {
 
                     // Privacy badge
                     HStack {
-                        Image(systemName: attachment.privacyLevel.icon)
+                        Image(systemName: attachment.effectivePrivacyLevel.icon)
                             .font(.caption)
-                        Text(attachment.privacyLevel.displayName)
+                        Text(attachment.privacyDisplayName)
                             .font(ArkFonts.caption)
                     }
                     .foregroundColor(AppColors.accent)
@@ -764,7 +764,7 @@ struct BroadcastEditorView: View {
         for item in items {
             guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
             let imageId = UUID()
-            pendingImageData[imageId] = data
+            pendingImageData[imageId] = downscaleImageData(data)
             let placeholder = BroadcastImage(
                 id: imageId,
                 imageURL: URL(filePath: NSTemporaryDirectory()).appending(path: imageId.uuidString),
@@ -774,6 +774,35 @@ struct BroadcastEditorView: View {
             images.append(placeholder)
         }
     }
+
+    #if canImport(UIKit)
+    /// Downscales image data to a maximum dimension and compresses to JPEG.
+    /// Reduces raw HEIC/PNG (5-15MB) to ~100-300KB for faster thumbnails and uploads.
+    private func downscaleImageData(_ data: Data, maxDimension: CGFloat = 1200) -> Data {
+        guard let image = UIImage(data: data) else { return data }
+
+        let size = image.size
+        let scale: CGFloat
+        if size.width > maxDimension || size.height > maxDimension {
+            scale = min(maxDimension / size.width, maxDimension / size.height)
+        } else {
+            // Still compress even if small enough — raw data may be uncompressed PNG/HEIC
+            scale = 1.0
+        }
+
+        let targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let resized = renderer.jpegData(withCompressionQuality: 0.85) { context in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+
+        return resized
+    }
+    #else
+    private func downscaleImageData(_ data: Data, maxDimension: CGFloat = 1200) -> Data {
+        return data
+    }
+    #endif
 
     private func imagePreviewThumbnail(_ image: BroadcastImage) -> some View {
         ZStack(alignment: .topTrailing) {
@@ -858,24 +887,21 @@ struct BroadcastEditorView: View {
 
     private var audienceIcon: String {
         switch targetAudience {
-        case .all: return "person.3.fill"
-        case .premium: return "star.fill"
+        case .all, .premium: return "person.3.fill"
         case .specific: return "person.crop.circle.badge.checkmark"
         }
     }
 
     private var audienceColor: Color {
         switch targetAudience {
-        case .all: return AppColors.accent
-        case .premium: return AppColors.warning
+        case .all, .premium: return AppColors.accent
         case .specific: return AppColors.success
         }
     }
 
     private var audienceDescription: String {
         switch targetAudience {
-        case .all: return "Everyone will receive this broadcast"
-        case .premium: return "Only premium subscribers"
+        case .all, .premium: return "Everyone will receive this broadcast"
         case .specific(let ids): return "\(ids.count) selected user\(ids.count == 1 ? "" : "s")"
         }
     }
