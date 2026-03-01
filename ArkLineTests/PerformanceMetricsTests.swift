@@ -219,11 +219,13 @@ final class PerformanceMetricsTests: XCTestCase {
     // MARK: - Monthly Investments
 
     func testMonthlyInvestments_groupsByMonth() {
-        let now = Date()
+        // Use a mid-month date so subtracting days stays in the same month
+        let calendar = Calendar.current
+        let midMonth = calendar.date(from: DateComponents(year: 2026, month: 6, day: 15))!
         let transactions = [
-            makeBuyTransaction(symbol: "BTC", quantity: 0.1, pricePerUnit: 50000, date: now),
-            makeBuyTransaction(symbol: "ETH", quantity: 2.0, pricePerUnit: 3000, date: now.adding(days: -5)),
-            makeBuyTransaction(symbol: "BTC", quantity: 0.05, pricePerUnit: 48000, date: now.adding(days: -2)),
+            makeBuyTransaction(symbol: "BTC", quantity: 0.1, pricePerUnit: 50000, date: midMonth),
+            makeBuyTransaction(symbol: "ETH", quantity: 2.0, pricePerUnit: 3000, date: midMonth.adding(days: -5)),
+            makeBuyTransaction(symbol: "BTC", quantity: 0.05, pricePerUnit: 48000, date: midMonth.adding(days: -2)),
         ]
         let result = PerformanceMetricsCalculator.calculateMonthlyInvestments(transactions)
 

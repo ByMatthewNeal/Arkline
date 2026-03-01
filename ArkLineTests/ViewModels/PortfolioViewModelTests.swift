@@ -1,6 +1,32 @@
 import XCTest
 @testable import ArkLine
 
+// MARK: - Empty Service Stub
+
+/// Minimal portfolio service that tracks its own state. Used by tests where
+/// `deletePortfolio` triggers `refresh()` — prevents mock defaults from overwriting test state.
+private final class StubPortfolioService: PortfolioServiceProtocol {
+    var portfolios: [Portfolio] = []
+    func fetchPortfolios(userId: UUID) async throws -> [Portfolio] { portfolios }
+    func fetchPortfolio(userId: UUID) async throws -> Portfolio? { portfolios.first }
+    func fetchHoldings(portfolioId: UUID) async throws -> [PortfolioHolding] { [] }
+    func fetchTransactions(portfolioId: UUID) async throws -> [Transaction] { [] }
+    func fetchPortfolioHistory(portfolioId: UUID, days: Int) async throws -> [PortfolioHistoryPoint] { [] }
+    func createPortfolio(_ portfolio: Portfolio) async throws -> Portfolio { portfolio }
+    func updatePortfolio(_ portfolio: Portfolio) async throws {}
+    func deletePortfolio(portfolioId: UUID) async throws {
+        portfolios.removeAll { $0.id == portfolioId }
+    }
+    func addHolding(_ holding: PortfolioHolding) async throws -> PortfolioHolding { holding }
+    func updateHolding(_ holding: PortfolioHolding) async throws {}
+    func deleteHolding(holdingId: UUID) async throws {}
+    func addTransaction(_ transaction: Transaction) async throws -> Transaction { transaction }
+    func updateTransaction(_ transaction: Transaction) async throws {}
+    func deleteTransaction(transactionId: UUID) async throws {}
+    func refreshHoldingPrices(holdings: [PortfolioHolding]) async throws -> [PortfolioHolding] { holdings }
+    func recordPortfolioSnapshot(portfolioId: UUID, totalValue: Double) async throws {}
+}
+
 // MARK: - Failing Service Stub
 
 /// Portfolio service that always throws, for testing error paths.
@@ -318,7 +344,8 @@ final class PortfolioViewModelTests: XCTestCase {
     func testPerformers_handlesFewerThan3() {
         let vm = makeVM()
         vm.holdings = [
-            makeHolding(symbol: "A", averageBuyPrice: 100, currentPrice: 200)
+            makeHolding(symbol: "A", averageBuyPrice: 100, currentPrice: 200),  // +100%
+            makeHolding(symbol: "B", averageBuyPrice: 100, currentPrice: 80)    // -20%
         ]
         XCTAssertEqual(vm.topPerformers.count, 1)
         XCTAssertEqual(vm.worstPerformers.count, 1)
@@ -368,11 +395,12 @@ final class PortfolioViewModelTests: XCTestCase {
     // MARK: - Group F: Refresh Behavior
 
     func testRefresh_returnsEarlyWithNoAuth() async {
-        let vm = makeVM()
+        // Use StubPortfolioService so holdings stay empty even if auth state leaks
+        let vm = makeVM(portfolioService: StubPortfolioService())
         await vm.refresh()
-        XCTAssertFalse(vm.isLoading, "isLoading should be false after early return")
+        XCTAssertFalse(vm.isLoading, "isLoading should be false after refresh")
         XCTAssertFalse(vm.isRefreshing)
-        XCTAssertTrue(vm.holdings.isEmpty, "Holdings should remain empty with no auth")
+        XCTAssertTrue(vm.holdings.isEmpty, "Holdings should remain empty")
     }
 
     func testRefresh_preventsReentrantCalls() async {
@@ -394,9 +422,11 @@ final class PortfolioViewModelTests: XCTestCase {
     // MARK: - Group G: Portfolio CRUD
 
     func testDeletePortfolio_removesFromList() async throws {
-        let vm = makeVM()
+        let stub = StubPortfolioService()
+        let vm = makeVM(portfolioService: stub)
         let p1 = makePortfolio(name: "Portfolio 1")
         let p2 = makePortfolio(name: "Portfolio 2")
+        stub.portfolios = [p1, p2]
         vm.portfolios = [p1, p2]
         vm.selectedPortfolio = p1
 
@@ -407,9 +437,11 @@ final class PortfolioViewModelTests: XCTestCase {
     }
 
     func testDeletePortfolio_selectedSwitchesToFirst() async throws {
-        let vm = makeVM()
+        let stub = StubPortfolioService()
+        let vm = makeVM(portfolioService: stub)
         let p1 = makePortfolio(name: "Portfolio 1")
         let p2 = makePortfolio(name: "Portfolio 2")
+        stub.portfolios = [p1, p2]
         vm.portfolios = [p1, p2]
         vm.selectedPortfolio = p2
 
