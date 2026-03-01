@@ -29,6 +29,11 @@ struct PerformanceMetrics: Equatable {
     // DCA activity
     let monthlyInvestments: [MonthlyInvestment]
 
+    // Whether risk metrics have meaningful data (need 3+ daily history snapshots)
+    var hasRiskData: Bool {
+        sharpeRatio != 0 || volatility != 0 || maxDrawdown != 0
+    }
+
     // Derived properties
     var sharpeRating: String {
         switch sharpeRatio {

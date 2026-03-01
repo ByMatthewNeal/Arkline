@@ -3,7 +3,10 @@ import SwiftUI
 // MARK: - Return Summary Card
 struct ReturnSummaryCard: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let metrics: PerformanceMetrics
+
+    private var currency: String { appState.preferredCurrency }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -13,7 +16,7 @@ struct ReturnSummaryCard: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
 
-                Text(metrics.totalReturn.asCurrency)
+                Text(metrics.totalReturn.asCurrency(code: currency))
                     .font(AppFonts.number36)
                     .foregroundColor(metrics.totalReturn >= 0 ? AppColors.success : AppColors.error)
 
@@ -30,9 +33,9 @@ struct ReturnSummaryCard: View {
 
             // Quick Stats Row
             HStack(spacing: 0) {
-                QuickMetricItem(title: "Invested", value: metrics.totalInvested.asCurrency)
+                QuickMetricItem(title: "Invested", value: metrics.totalInvested.asCurrency(code: currency))
                 Divider().frame(height: 40)
-                QuickMetricItem(title: "Current", value: metrics.currentValue.asCurrency)
+                QuickMetricItem(title: "Current", value: metrics.currentValue.asCurrency(code: currency))
                 Divider().frame(height: 40)
                 QuickMetricItem(title: "Assets", value: "\(metrics.numberOfAssets)")
             }
@@ -45,7 +48,10 @@ struct ReturnSummaryCard: View {
 // MARK: - Risk Metrics Card
 struct RiskMetricsCard: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let metrics: PerformanceMetrics
+
+    private var currency: String { appState.preferredCurrency }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -53,59 +59,78 @@ struct RiskMetricsCard: View {
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            HStack(spacing: 0) {
-                // Sharpe Ratio
-                VStack(spacing: 6) {
-                    Text("Sharpe Ratio")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
+            if metrics.hasRiskData {
+                HStack(spacing: 0) {
+                    // Sharpe Ratio
+                    VStack(spacing: 6) {
+                        Text("Sharpe Ratio")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
 
-                    Text(String(format: "%.2f", metrics.sharpeRatio))
-                        .font(AppFonts.number20)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                        Text(String(format: "%.2f", metrics.sharpeRatio))
+                            .font(AppFonts.number20)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text(metrics.sharpeRating)
-                        .font(AppFonts.caption12)
-                        .fontWeight(.semibold)
-                        .foregroundColor(metrics.sharpeColor)
+                        Text(metrics.sharpeRating)
+                            .font(AppFonts.caption12)
+                            .fontWeight(.semibold)
+                            .foregroundColor(metrics.sharpeColor)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Divider().frame(height: 60)
+
+                    // Max Drawdown
+                    VStack(spacing: 6) {
+                        Text("Max Drawdown")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        Text(String(format: "-%.1f%%", metrics.maxDrawdown))
+                            .font(AppFonts.number20)
+                            .foregroundColor(metrics.maxDrawdownColor)
+
+                        Text(metrics.maxDrawdownValue.asCurrency(code: currency))
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Divider().frame(height: 60)
+
+                    // Volatility
+                    VStack(spacing: 6) {
+                        Text("Volatility")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        Text(String(format: "%.1f%%", metrics.volatility))
+                            .font(AppFonts.number20)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        Text("Annualized")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+            } else {
+                HStack(spacing: 10) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 20))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
 
-                Divider().frame(height: 60)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Collecting data")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                // Max Drawdown
-                VStack(spacing: 6) {
-                    Text("Max Drawdown")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text(String(format: "-%.1f%%", metrics.maxDrawdown))
-                        .font(AppFonts.number20)
-                        .foregroundColor(metrics.maxDrawdownColor)
-
-                    Text(metrics.maxDrawdownValue.asCurrency)
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
+                        Text("Sharpe ratio, drawdown, and volatility require a few days of portfolio history to calculate.")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-
-                Divider().frame(height: 60)
-
-                // Volatility
-                VStack(spacing: 6) {
-                    Text("Volatility")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text(String(format: "%.1f%%", metrics.volatility))
-                        .font(AppFonts.number20)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    Text("Annualized")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
         }
         .padding(20)
@@ -162,8 +187,11 @@ struct AssetPerformanceCard: View {
 // MARK: - Asset Performance Row
 private struct AssetPerformanceRow: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let holding: PortfolioHolding
     let totalValue: Double
+
+    private var currency: String { appState.preferredCurrency }
 
     private var contribution: Double {
         guard totalValue > 0 else { return 0 }
@@ -201,7 +229,7 @@ private struct AssetPerformanceRow: View {
                     .font(AppFonts.body14Bold)
                     .foregroundColor(holding.isProfit ? AppColors.success : AppColors.error)
 
-                Text(holding.profitLoss.asCurrency)
+                Text(holding.profitLoss.asCurrency(code: currency))
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -212,7 +240,10 @@ private struct AssetPerformanceRow: View {
 // MARK: - Investment Activity Card
 struct InvestmentActivityCard: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let monthlyInvestments: [MonthlyInvestment]
+
+    private var currency: String { appState.preferredCurrency }
 
     private var maxAmount: Double {
         monthlyInvestments.map(\.amount).max() ?? 1
@@ -250,7 +281,7 @@ struct InvestmentActivityCard: View {
                             }
                             .frame(height: 20)
 
-                            Text(month.amount.asCurrency)
+                            Text(month.amount.asCurrency(code: currency))
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textPrimary(colorScheme))
                                 .frame(width: 80, alignment: .trailing)
