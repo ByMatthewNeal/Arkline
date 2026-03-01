@@ -305,6 +305,10 @@ class HomeViewModel {
         return cachedCryptoAssets.filter { favoriteIds.contains($0.id) }
     }
 
+    // AI Market Summary
+    var marketSummary: MarketSummary? = nil
+    var isLoadingSummary = true
+
     // Top Movers
     var topGainers: [CryptoAsset] = []
     var topLosers: [CryptoAsset] = []
@@ -635,6 +639,9 @@ class HomeViewModel {
                 await MainActor.run { self.rainbowChartData = rainbow }
             }
         }
+
+        // Fetch AI market summary (uses already-loaded state)
+        Task { await self.fetchMarketSummary() }
     }
 
     func markReminderComplete(_ reminder: DCAReminder) async {
@@ -876,6 +883,55 @@ class HomeViewModel {
         } catch {
             logError("Macro Z-scores fetch failed: \(error.localizedDescription)", category: .network)
             return [:]
+        }
+    }
+
+    // MARK: - AI Market Summary
+
+    func fetchMarketSummary() async {
+        guard enableSideEffects else { return }
+        isLoadingSummary = true
+        defer { isLoadingSummary = false }
+
+        // Build M2 signal string
+        var m2Signal: String? = nil
+        if let m2 = globalLiquidityChanges {
+            m2Signal = "\(m2.overallSignal.rawValue) (monthly \(String(format: "%+.1f", m2.monthlyChange))%)"
+        }
+
+        let payload = MarketSummaryService.MarketSummaryPayload(
+            btcPrice: btcPrice > 0 ? btcPrice : nil,
+            btcChange24h: btcPrice > 0 ? btcChange24h : nil,
+            ethPrice: ethPrice > 0 ? ethPrice : nil,
+            ethChange24h: ethPrice > 0 ? ethChange24h : nil,
+            solPrice: solPrice > 0 ? solPrice : nil,
+            solChange24h: solPrice > 0 ? solChange24h : nil,
+            fearGreedValue: fearGreedIndex.map { $0.value },
+            fearGreedClassification: fearGreedIndex?.classification,
+            riskScore: arkLineRiskScore?.score,
+            riskTier: arkLineRiskScore?.tier.rawValue,
+            vixValue: vixData?.value,
+            vixSignal: vixData?.signalDescription,
+            dxyValue: dxyData?.value,
+            dxySignal: dxyData?.signalDescription,
+            m2Signal: m2Signal,
+            topGainers: topGainers.prefix(3).map {
+                .init(symbol: $0.symbol.uppercased(), change: $0.priceChangePercentage24h)
+            },
+            topLosers: topLosers.prefix(3).map {
+                .init(symbol: $0.symbol.uppercased(), change: $0.priceChangePercentage24h)
+            },
+            economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map {
+                .init(title: $0.title)
+            },
+            newsHeadlines: Array(newsItems.prefix(3).map { $0.title })
+        )
+
+        do {
+            let summary = try await MarketSummaryService.shared.fetchSummary(payload: payload)
+            await MainActor.run { self.marketSummary = summary }
+        } catch {
+            logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)
         }
     }
 }

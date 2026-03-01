@@ -143,6 +143,8 @@ struct ReorderableWidgetStack: View {
             return [hasVix, hasDxy, hasM2].filter { $0 }.count >= 2
         case .favorites:
             return true
+        case .aiMarketSummary:
+            return false
         }
     }
 
@@ -243,6 +245,13 @@ struct ReorderableWidgetStack: View {
             FavoritesSection(
                 assets: viewModel.favoriteAssets,
                 size: appState.widgetSize(.favorites)
+            )
+
+        case .aiMarketSummary:
+            HomeAISummaryWidget(
+                summary: viewModel.marketSummary,
+                isLoading: viewModel.isLoadingSummary,
+                size: appState.widgetSize(.aiMarketSummary)
             )
         }
     }

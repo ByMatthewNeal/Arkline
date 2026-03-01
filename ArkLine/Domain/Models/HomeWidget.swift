@@ -45,6 +45,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case macroDashboard = "macro_dashboard"
     case supplyInProfit = "supply_in_profit"
     case favorites = "favorites"
+    case aiMarketSummary = "ai_market_summary"
 
     var id: String { rawValue }
 
@@ -64,6 +65,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .macroDashboard: return "Macro Dashboard"
         case .supplyInProfit: return "BTC Supply in Profit"
         case .favorites: return "Favorites"
+        case .aiMarketSummary: return "Daily Briefing"
         }
     }
 
@@ -83,6 +85,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .macroDashboard: return "Combined macro indicators with market regime analysis"
         case .supplyInProfit: return "Percentage of BTC supply currently in profit"
         case .favorites: return "Your starred coins at a glance"
+        case .aiMarketSummary: return "AI-generated daily market summary"
         }
     }
 
@@ -102,6 +105,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .macroDashboard: return "chart.bar.xaxis"
         case .supplyInProfit: return "chart.pie"
         case .favorites: return "star.fill"
+        case .aiMarketSummary: return "sparkles"
         }
     }
 
@@ -113,7 +117,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites:
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit:
             return true
@@ -122,12 +126,12 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders]
+        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.upcomingEvents, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .dcaReminders])
+        Set([.upcomingEvents, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .dcaReminders])
     }
 }
 

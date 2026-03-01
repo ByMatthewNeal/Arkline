@@ -72,6 +72,7 @@
 		34F28A15245DD8CEAF8D0917 /* PerformanceCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA6D89396B94ACB0433199B /* PerformanceCards.swift */; };
 		AL10CATARG3D1T0002 /* AllocationTargetEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AL10CATARG3D1T0001 /* AllocationTargetEditor.swift */; };
 		3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */; };
+		699801B7DC4F427487CD5533 /* HomeAISummaryWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8214808EDBB64E938F3779F5 /* HomeAISummaryWidget.swift */; };
 		38403ADBC04AB8CD95F00E3E /* MetalTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4477F7D7272D23B31C4B0199 /* MetalTechnicalAnalysisService.swift */; };
 		386CF39874D6A2F1687A3828 /* EventRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD95D54C81F435AFABAE82A /* EventRowView.swift */; };
 		3912372E5D7BB736DB249146 /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87CF0E5EC762D968DCBE4F7D /* Colors.swift */; };
@@ -367,6 +368,7 @@
 		E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */; };
 		E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */; };
 		E2D1C0B9A8F7E6D5C4B3A2F1 /* ArticleSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F7A8B9C0D1E2 /* ArticleSummaryService.swift */; };
+		2468C41EA54E4F60BE5F4E6E /* MarketSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6BACE34C9446559D45628B /* MarketSummaryService.swift */; };
 		E819430F3E00303F1A55EFAE /* MacroDashboardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7ABF94C0D0269A2DE157EA /* MacroDashboardModels.swift */; };
 		E8B61F5290537F3B5234979B /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0055D207871438FBAECAE1 /* Portfolio.swift */; };
 		E94401772FE34BE9B93DACA0 /* MultiFactorRisk.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC73CFDFB027E944D3D8798 /* MultiFactorRisk.swift */; };
@@ -497,6 +499,7 @@
 		28D7DB64239C464966F42017 /* SocialLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocialLinksView.swift; sourceTree = "<group>"; };
 		292C58ACAF95259468F7C280 /* HistoricalPriceData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalPriceData.swift; sourceTree = "<group>"; };
 		29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMarketWidgets.swift; sourceTree = "<group>"; };
+		8214808EDBB64E938F3779F5 /* HomeAISummaryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAISummaryWidget.swift; sourceTree = "<group>"; };
 		2AD0C37E21E4AD24118B5820 /* DailyNewsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyNewsSection.swift; sourceTree = "<group>"; };
 		2B441A5BF9F6E02BFEAD3BB8 /* BroadcastFeedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastFeedView.swift; sourceTree = "<group>"; };
 		2B4BE3343EF57E36A6D3A2C8 /* SupabaseDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseDatabase.swift; sourceTree = "<group>"; };
@@ -808,6 +811,7 @@
 		EFAE6203E090C957B000DF24 /* CoinglassServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoinglassServiceProtocol.swift; sourceTree = "<group>"; };
 		F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APISentimentService.swift; sourceTree = "<group>"; };
 		F1A2B3C4D5E6F7A8B9C0D1E2 /* ArticleSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleSummaryService.swift; sourceTree = "<group>"; };
+		9F6BACE34C9446559D45628B /* MarketSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSummaryService.swift; sourceTree = "<group>"; };
 		F1B8485392D8FDF725D94732 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
 		F1NANC1ALD15CLA1M3R01 /* FinancialDisclaimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinancialDisclaimer.swift; sourceTree = "<group>"; };
 		F4D010FAE4110F01A75275BB /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
@@ -1073,6 +1077,7 @@
 				B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */,
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
 				F1A2B3C4D5E6F7A8B9C0D1E2 /* ArticleSummaryService.swift */,
+				9F6BACE34C9446559D45628B /* MarketSummaryService.swift */,
 				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
 				4477F7D7272D23B31C4B0199 /* MetalTechnicalAnalysisService.swift */,
 				5E7A9B3C1D2F4E6A8B0C3D5E /* SentimentRegimeService.swift */,
@@ -1540,6 +1545,7 @@
 				72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */,
 				3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */,
 				29A99CEE59ED1882D8CF3EBA /* HomeMarketWidgets.swift */,
+				8214808EDBB64E938F3779F5 /* HomeAISummaryWidget.swift */,
 				7A1C05960B8B6F9455FAE91A /* HomeView.swift */,
 				AC7551915A761FBD11F4A866 /* HomeRiskComponents.swift */,
 				1C39D88A8D207BF39F8B272E /* HomePortfolioComponents.swift */,
@@ -2242,6 +2248,7 @@
 				4732DC10C2E52D8A1C1016DE /* APIRainbowChartService.swift in Sources */,
 				E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */,
 				E2D1C0B9A8F7E6D5C4B3A2F1 /* ArticleSummaryService.swift in Sources */,
+				2468C41EA54E4F60BE5F4E6E /* MarketSummaryService.swift in Sources */,
 				A7B3C8D9E2F401568A3D7E02 /* AltcoinSeasonStore.swift in Sources */,
 				F01FE94D4879AC67E00D0369 /* APITechnicalAnalysisService.swift in Sources */,
 				38403ADBC04AB8CD95F00E3E /* MetalTechnicalAnalysisService.swift in Sources */,
@@ -2347,6 +2354,7 @@
 				AA110002AABB00110002BB02 /* PortfolioHeaderComponents.swift in Sources */,
 				AA110003AABB00110003BB03 /* PortfolioTabComponents.swift in Sources */,
 				3809916180D51D448CEDCF50 /* HomeMarketWidgets.swift in Sources */,
+				699801B7DC4F427487CD5533 /* HomeAISummaryWidget.swift in Sources */,
 				58758A7C9170D7678030686C /* HomeView.swift in Sources */,
 				03511C8F239A1869BE9FCF6B /* HomeRiskComponents.swift in Sources */,
 				9CF38AE112C1EA8A9BB5A4EC /* HomePortfolioComponents.swift in Sources */,

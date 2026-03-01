@@ -103,6 +103,15 @@ struct HomeView: View {
                         )
                         .padding(.horizontal, 20)
 
+                        // AI Daily Briefing (fixed position under portfolio)
+                        if appState.isWidgetEnabled(.aiMarketSummary) {
+                            HomeAISummaryWidget(
+                                summary: viewModel.marketSummary,
+                                isLoading: viewModel.isLoadingSummary || viewModel.isLoading
+                            )
+                            .padding(.horizontal, 20)
+                        }
+
                         // Dynamic Widget Section with Drag-and-Drop
                         ReorderableWidgetStack(
                             viewModel: viewModel,
