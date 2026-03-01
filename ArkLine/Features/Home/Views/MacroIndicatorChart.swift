@@ -41,6 +41,9 @@ struct MacroIndicatorChart: View {
     var overlayValueFormatter: ((Double) -> String)? = nil
     var primaryLabel: String = ""
 
+    // Optional threshold lines (e.g. cycle zones on GEI chart)
+    var thresholdLines: [(value: Double, label: String, color: Color)]? = nil
+
     @Environment(\.colorScheme) var colorScheme
     @Namespace private var macroTimeframeAnimation
 
@@ -109,9 +112,16 @@ struct MacroIndicatorChart: View {
         if hasOverlay {
             return -0.05...1.05 // Normalized range with padding
         }
-        guard let minVal = data.map(\.value).min(),
-              let maxVal = data.map(\.value).max() else {
+        guard var minVal = data.map(\.value).min(),
+              var maxVal = data.map(\.value).max() else {
             return 0...1
+        }
+        // Expand to include threshold lines
+        if let thresholds = thresholdLines {
+            for threshold in thresholds {
+                minVal = min(minVal, threshold.value)
+                maxVal = max(maxVal, threshold.value)
+            }
         }
         let padding = (maxVal - minVal) * 0.1
         return (minVal - padding)...(maxVal + padding)
@@ -330,6 +340,20 @@ struct MacroIndicatorChart: View {
                     .lineStyle(StrokeStyle(lineWidth: 0.5))
             }
 
+            // Threshold lines
+            if let thresholds = thresholdLines {
+                ForEach(Array(thresholds.enumerated()), id: \.offset) { _, threshold in
+                    RuleMark(y: .value("Threshold", threshold.value))
+                        .foregroundStyle(threshold.color.opacity(0.5))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                        .annotation(position: .topLeading) {
+                            Text(threshold.label)
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundColor(threshold.color.opacity(0.7))
+                        }
+                }
+            }
+
             // Primary line (M2)
             ForEach(normalizedPrimary) { point in
                 LineMark(
@@ -411,6 +435,20 @@ struct MacroIndicatorChart: View {
                             : Color.black.opacity(0.08)
                     )
                     .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [4, 3]))
+            }
+
+            // Threshold lines
+            if let thresholds = thresholdLines {
+                ForEach(Array(thresholds.enumerated()), id: \.offset) { _, threshold in
+                    RuleMark(y: .value("Threshold", threshold.value))
+                        .foregroundStyle(threshold.color.opacity(0.5))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                        .annotation(position: .topLeading) {
+                            Text(threshold.label)
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundColor(threshold.color.opacity(0.7))
+                        }
+                }
             }
 
             // Area fill

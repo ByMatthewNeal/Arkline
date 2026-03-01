@@ -6,7 +6,27 @@ struct GEIDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
+    @State private var geiHistory: [MacroChartPoint] = []
+    @State private var isLoadingChart = false
+    @State private var chartTimeRange: MacroChartTimeRange = .threeMonths
+    @State private var chartSelectedDate: Date? = nil
+
+    private let geiService: GEIServiceProtocol = ServiceContainer.shared.geiService
+
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    private var filteredHistory: [MacroChartPoint] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -chartTimeRange.days, to: Date()) ?? Date()
+        return geiHistory.filter { $0.date >= cutoff }
+    }
+
+    private var geiThresholdLines: [(value: Double, label: String, color: Color)] {
+        [
+            (value: 1.5, label: "Cycle Peaking Zone", color: Color(hex: "22C55E")),
+            (value: 0, label: "", color: .gray),
+            (value: -1.5, label: "Cycle Troughing Zone", color: Color(hex: "EF4444")),
+        ]
+    }
 
     var body: some View {
         NavigationStack {
@@ -14,6 +34,9 @@ struct GEIDetailView: View {
                 VStack(spacing: 24) {
                     // Score Display
                     scoreHeader
+
+                    // Historical Chart
+                    geiChartSection
 
                     // Component Breakdown
                     if let gei = geiData, !gei.components.isEmpty {
@@ -50,6 +73,42 @@ The Global Economy Index (GEI) is a composite leading indicator that combines 6 
                     Button("Done") { dismiss() }
                 }
             }
+            .task {
+                await loadGEIHistory()
+            }
+        }
+    }
+
+    // MARK: - GEI Chart Section
+
+    private var geiChartSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Historical Trend")
+                .font(.headline)
+                .foregroundColor(textPrimary)
+
+            MacroIndicatorChart(
+                data: filteredHistory,
+                lineColor: Color(hex: "EAB308"),
+                valueFormatter: { String(format: "%.2f", $0) },
+                selectedTimeRange: $chartTimeRange,
+                selectedDate: $chartSelectedDate,
+                isLoading: isLoadingChart,
+                thresholdLines: geiThresholdLines
+            )
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(16)
+    }
+
+    private func loadGEIHistory() async {
+        isLoadingChart = true
+        defer { isLoadingChart = false }
+        do {
+            geiHistory = try await geiService.fetchGEIHistory()
+        } catch {
+            logError("GEI history fetch failed: \(error)", category: .data)
         }
     }
 

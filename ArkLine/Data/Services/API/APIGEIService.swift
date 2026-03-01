@@ -18,6 +18,7 @@ final class APIGEIService: GEIServiceProtocol {
     // MARK: - Constants
 
     private static let cacheKey = "gei_composite_data"
+    private static let historyCacheKey = "gei_history_data"
     private static let cacheTTL: TimeInterval = 1800 // 30 minutes
 
     private let yahooService = YahooFinanceService.shared
@@ -132,6 +133,157 @@ final class APIGEIService: GEIServiceProtocol {
         logInfo("GEI computed: \(geiData.formattedScore) (\(signal.label)), \(components.count)/6 components", category: .data)
 
         return geiData
+    }
+
+    // MARK: - Historical GEI
+
+    func fetchGEIHistory() async throws -> [MacroChartPoint] {
+        // Check cache first
+        if let cached: [MacroChartPoint] = APICache.shared.get(Self.historyCacheKey) {
+            return cached
+        }
+
+        // Fetch all components with dates in parallel
+        async let copperTask = fetchYahooHistoryWithDates(symbol: "HG=F")
+        async let tnxTask = fetchYahooHistoryWithDates(symbol: "^TNX")
+        async let yieldCurveTask = fetchFREDHistoryWithDates(seriesId: "T10Y2Y")
+        async let creditSpreadTask = fetchFREDHistoryWithDates(seriesId: "BAMLH0A0HYM2")
+        async let claimsTask = fetchFREDHistoryWithDates(seriesId: "ICSA")
+        async let sentimentTask = fetchFREDHistoryWithDates(seriesId: "UMCSENT")
+
+        let allSeries: [(ComponentDef, [(Date, Double)])] = [
+            (componentDefs[0], await copperTask),
+            (componentDefs[1], await tnxTask),
+            (componentDefs[2], await yieldCurveTask),
+            (componentDefs[3], await creditSpreadTask),
+            (componentDefs[4], await claimsTask),
+            (componentDefs[5], await sentimentTask),
+        ]
+
+        // Collect all unique trading dates (sorted ascending)
+        var dateSet = Set<Date>()
+        for (_, series) in allSeries {
+            for (date, _) in series {
+                let day = Calendar.current.startOfDay(for: date)
+                dateSet.insert(day)
+            }
+        }
+        let allDates = dateSet.sorted()
+        guard allDates.count >= 20 else { throw GEIError.noData }
+
+        // Forward-fill each series to daily granularity
+        let filledSeries: [[(Date, Double)]] = allSeries.map { (def, series) in
+            forwardFill(series: series, toDates: allDates)
+        }
+
+        // Compute GEI at each date using expanding-window z-scores
+        var history: [MacroChartPoint] = []
+
+        for dateIndex in 0..<allDates.count {
+            let date = allDates[dateIndex]
+            var zScores: [Double] = []
+
+            for (compIndex, (def, _)) in allSeries.enumerated() {
+                let filled = filledSeries[compIndex]
+                // Values up to and including this date
+                let valuesUpToNow = filled.prefix(dateIndex + 1).map(\.1)
+                guard valuesUpToNow.count >= 10 else { continue }
+
+                guard let current = valuesUpToNow.last else { continue }
+                let mean = valuesUpToNow.reduce(0, +) / Double(valuesUpToNow.count)
+                let variance = valuesUpToNow.reduce(0) { $0 + pow($1 - mean, 2) } / Double(valuesUpToNow.count - 1)
+                let sd = sqrt(variance)
+                guard sd > 0 else { continue }
+
+                var z = (current - mean) / sd
+                if def.isInverted { z = -z }
+                zScores.append(z)
+            }
+
+            guard zScores.count >= 3 else { continue }
+            let geiScore = zScores.reduce(0, +) / Double(zScores.count)
+            history.append(MacroChartPoint(date: date, value: geiScore))
+        }
+
+        // Cache result
+        APICache.shared.set(Self.historyCacheKey, value: history, ttl: Self.cacheTTL)
+        logInfo("GEI history computed: \(history.count) data points", category: .data)
+
+        return history
+    }
+
+    /// Forward-fill a sparse series to a full set of daily dates
+    private func forwardFill(series: [(Date, Double)], toDates: [Date]) -> [(Date, Double)] {
+        // Build a lookup from the sparse series (keyed by start-of-day)
+        var lookup: [Date: Double] = [:]
+        for (date, value) in series {
+            lookup[Calendar.current.startOfDay(for: date)] = value
+        }
+
+        var result: [(Date, Double)] = []
+        var lastValue: Double?
+
+        for date in toDates {
+            if let value = lookup[date] {
+                lastValue = value
+            }
+            if let value = lastValue {
+                result.append((date, value))
+            }
+        }
+        return result
+    }
+
+    // MARK: - Date-Preserving Fetch Helpers
+
+    /// Fetches ~90 days of daily close prices from Yahoo Finance, preserving dates
+    private func fetchYahooHistoryWithDates(symbol: String) async -> [(Date, Double)] {
+        do {
+            let result = try await yahooService.fetchChartBars(
+                symbol: symbol,
+                interval: "1d",
+                range: "3mo"
+            )
+            return result.bars.map { ($0.date, $0.close) }
+        } catch {
+            logError("GEI: Yahoo fetch failed for \(symbol): \(error)", category: .data)
+            return []
+        }
+    }
+
+    /// Fetches ~90 days of observations from FRED, preserving dates
+    private func fetchFREDHistoryWithDates(seriesId: String) async -> [(Date, Double)] {
+        do {
+            let calendar = Calendar.current
+            let endDate = Date()
+            guard let startDate = calendar.date(byAdding: .day, value: -120, to: endDate) else {
+                return []
+            }
+
+            let queryItems: [String: String] = [
+                "series_id": seriesId,
+                "file_type": "json",
+                "observation_start": dateFormatter.string(from: startDate),
+                "observation_end": dateFormatter.string(from: endDate),
+                "sort_order": "asc"
+            ]
+
+            let data = try await APIProxy.shared.request(
+                service: .fred,
+                path: "/series/observations",
+                queryItems: queryItems
+            )
+
+            let response = try JSONDecoder().decode(FREDResponse.self, from: data)
+            return response.observations.compactMap { obs in
+                guard let value = Double(obs.value),
+                      let date = self.dateFormatter.date(from: obs.date) else { return nil }
+                return (date, value)
+            }
+        } catch {
+            logError("GEI: FRED fetch failed for \(seriesId): \(error)", category: .data)
+            return []
+        }
     }
 
     // MARK: - Yahoo Finance Fetching
