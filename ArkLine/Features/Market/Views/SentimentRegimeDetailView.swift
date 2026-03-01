@@ -569,10 +569,29 @@ private struct RegimeUpdateInfoSection: View {
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "EEE, MMM d 'at' HH:mm"
-        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "EEE, MMM d 'at' h:mm a zzz"
+        f.timeZone = .current
         return f
     }()
+
+    private var localScheduleText: String {
+        // Convert the UTC 00:15 schedule to the user's local timezone
+        let utcCalendar: Calendar = {
+            var c = Calendar(identifier: .gregorian)
+            c.timeZone = TimeZone(identifier: "UTC")!
+            return c
+        }()
+        var components = utcCalendar.dateComponents([.hour, .minute], from: Date())
+        components.hour = 0
+        components.minute = 15
+        guard let utcDate = utcCalendar.date(from: components) else {
+            return "Sundays & Wednesdays at 00:15 UTC"
+        }
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a zzz"
+        timeFormatter.timeZone = .current
+        return "Sundays & Wednesdays at \(timeFormatter.string(from: utcDate))"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -586,7 +605,7 @@ private struct RegimeUpdateInfoSection: View {
                     .foregroundColor(AppColors.textPrimary(colorScheme))
             }
 
-            Text("Sundays & Wednesdays at 00:15 UTC")
+            Text(localScheduleText)
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
 
@@ -609,7 +628,7 @@ private struct RegimeUpdateInfoSection: View {
                     Text("Next update")
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary)
-                    Text(Self.dateFormatter.string(from: nextUpdate) + " UTC")
+                    Text(Self.dateFormatter.string(from: nextUpdate))
                         .font(.caption.weight(.medium))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
                 }
@@ -622,7 +641,7 @@ private struct RegimeUpdateInfoSection: View {
 
     private var lastUpdatedText: String {
         guard let date = lastUpdated else { return "—" }
-        return Self.dateFormatter.string(from: date) + " UTC"
+        return Self.dateFormatter.string(from: date)
     }
 }
 
