@@ -156,13 +156,13 @@ class SentimentViewModel {
 
     /// Is it Bitcoin season based on altcoin index?
     var isBitcoinSeason: Bool {
-        altcoinSeason?.isBitcoinSeason ?? true
+        (altcoinSeason?.value ?? 0) < 40
     }
 
-    /// Season display text
+    /// Season display text (5-tier)
     var seasonDisplayText: String {
         guard let alt = altcoinSeason else { return "Loading..." }
-        return alt.isBitcoinSeason ? "Bitcoin Season" : "Altcoin Season"
+        return alt.season
     }
 
     // MARK: - Computed Properties

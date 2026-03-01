@@ -73,6 +73,11 @@ actor AltcoinSeasonStore {
     /// Compute altcoin season index using the best available window.
     /// Uses up to 90 days of local data. Returns nil if we have ≤30 days
     /// (CoinGecko 30d is equivalent, so local data adds no value until day 31+).
+    ///
+    /// Composite score blends:
+    ///   1. Weighted outperformance vs BTC by >5% (40%)
+    ///   2. Absolute positive performance in USD (30%)
+    ///   3. Stored 30d score trend as dominance proxy (30%)
     func computeBestIndex() -> AltcoinSeasonIndex? {
         guard let daySpan = availableWindowDays,
               daySpan >= Self.minimumLocalDays,
@@ -98,9 +103,13 @@ actor AltcoinSeasonStore {
             uniquingKeysWith: { first, _ in first }
         )
 
-        let btcChange = (today.btcPrice - baseSnapshot.btcPrice) / baseSnapshot.btcPrice
+        let btcChangePct = ((today.btcPrice - baseSnapshot.btcPrice) / baseSnapshot.btcPrice) * 100.0
 
-        var outperformers = 0
+        // ── Component 1: Weighted Outperformance (40%) ──
+        // Altcoin must beat BTC by >5pp. Weight by inverse rank (higher rank = more weight).
+        var weightedOutperformers: Double = 0
+        var totalWeight: Double = 0
+        var altsUp = 0
         var totalAltcoins = 0
 
         for coin in today.coins {
@@ -108,18 +117,39 @@ actor AltcoinSeasonStore {
             guard let basePrice = basePrices[coin.coinId], basePrice > 0 else { continue }
 
             totalAltcoins += 1
-            let coinChange = (coin.price - basePrice) / basePrice
-            if coinChange > btcChange {
-                outperformers += 1
+            let coinChangePct = ((coin.price - basePrice) / basePrice) * 100.0
+            // Weight: rank 1 gets weight ~50, rank 50 gets weight ~1
+            let weight = max(1.0, 51.0 - Double(coin.marketCapRank))
+            totalWeight += weight
+
+            if coinChangePct > btcChangePct + 5.0 {
+                weightedOutperformers += weight
+            }
+            if coinChangePct > 0 {
+                altsUp += 1
             }
         }
 
         guard totalAltcoins > 0 else { return nil }
 
-        let index = Int((Double(outperformers) / Double(totalAltcoins)) * 100)
+        let outperformanceScore = totalWeight > 0
+            ? min(100.0, (weightedOutperformers / totalWeight) * 100.0)
+            : 0
+
+        // ── Component 2: Absolute Performance (30%) ──
+        let absoluteScore = (Double(altsUp) / Double(totalAltcoins)) * 100.0
+
+        // ── Component 3: Recent 30d score as dominance proxy (30%) ──
+        // Use the most recent stored 30d score (computed from CoinGecko with dominance).
+        let dominanceProxy = Double(today.score30d)
+
+        // ── Composite ──
+        let composite = outperformanceScore * 0.4 + absoluteScore * 0.3 + dominanceProxy * 0.3
+        let index = Int(max(0, min(100, composite)))
+
         return AltcoinSeasonIndex(
             value: index,
-            isBitcoinSeason: index < 50,
+            isBitcoinSeason: index < 25,
             timestamp: Date(),
             calculationWindow: windowDays
         )

@@ -218,13 +218,15 @@ struct BitcoinSeasonCard: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: index.isBitcoinSeason ? "bitcoinsign.circle.fill" : "sparkles")
+                    Image(systemName: index.value < 40 ? "bitcoinsign.circle.fill" : "sparkles")
                         .font(.system(size: 20))
                         .foregroundColor(AppColors.accent)
 
-                    Text(index.isBitcoinSeason ? "Bitcoin" : "Altcoin")
+                    Text(index.season)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .minimumScaleFactor(0.7)
+                        .lineLimit(1)
                 }
 
                 // Season Progress Bar

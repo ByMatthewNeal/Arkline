@@ -183,48 +183,62 @@ final class APISentimentService: SentimentServiceProtocol {
                 "weth", "wbtc", "steth", "reth", "cbeth"
             ]
 
-            // Filter out stablecoins and wrapped tokens, take top 100
-            let validCoins = coins.filter { !excludedCoins.contains($0.id) }.prefix(100)
+            // Filter out stablecoins and wrapped tokens, take top 50 by market cap
+            let validCoins = Array(coins
+                .filter { !excludedCoins.contains($0.id) && $0.id != "bitcoin" }
+                .prefix(50))
 
             // Find Bitcoin's 30-day change
             guard let btcCoin = coins.first(where: { $0.id == "bitcoin" }) else {
                 // Fallback: dominance-based calculation
-                let globalEndpoint = CoinGeckoEndpoint.globalData
-                let globalData: CoinGeckoGlobalData = try await networkManager.request(globalEndpoint)
-                let dominance = globalData.data.marketCapPercentage["btc"] ?? 50
-                let fallbackIndex = Int(max(0, min(100, (65 - dominance) * 3)))
-                return AltcoinSeasonIndex(value: fallbackIndex, isBitcoinSeason: fallbackIndex < 50, timestamp: Date())
+                return try await self.calculateAltcoinSeasonFromDominance()
             }
 
             let btcChange30d = btcCoin.priceChangePercentage30dInCurrency ?? 0
 
-            // Count altcoins outperforming BTC
-            var outperformers = 0
-            var totalAltcoins = 0
+            guard !validCoins.isEmpty else {
+                return try await self.calculateAltcoinSeasonFromDominance()
+            }
+
+            // ── Component 1: Market-Cap-Weighted Outperformance (40%) ──
+            // Altcoin must beat BTC by >5pp to count. Weighted by market cap.
+            let totalAltMcap = validCoins.compactMap(\.marketCap).reduce(0, +)
+            var weightedOutperformers: Double = 0
 
             for coin in validCoins {
-                if coin.id == "bitcoin" { continue }
-                totalAltcoins += 1
-
                 let coinChange = coin.priceChangePercentage30dInCurrency ?? 0
-                if coinChange > btcChange30d {
-                    outperformers += 1
+                let mcap = coin.marketCap ?? 0
+                let weight = totalAltMcap > 0 ? mcap / totalAltMcap : 1.0 / Double(validCoins.count)
+
+                if coinChange > btcChange30d + 5.0 {
+                    weightedOutperformers += weight
                 }
             }
+            let outperformanceScore = min(100.0, weightedOutperformers * 100.0)
 
-            guard totalAltcoins > 0 else {
-                // Fallback: dominance-based calculation
-                let globalEndpoint = CoinGeckoEndpoint.globalData
-                let globalData: CoinGeckoGlobalData = try await networkManager.request(globalEndpoint)
-                let dominance = globalData.data.marketCapPercentage["btc"] ?? 50
-                let fallbackIndex = Int(max(0, min(100, (65 - dominance) * 3)))
-                return AltcoinSeasonIndex(value: fallbackIndex, isBitcoinSeason: fallbackIndex < 50, timestamp: Date())
+            // ── Component 2: Absolute Performance (30%) ──
+            // What % of top-50 alts are actually UP in USD over 30d?
+            var altsUp = 0
+            for coin in validCoins {
+                let coinChange = coin.priceChangePercentage30dInCurrency ?? 0
+                if coinChange > 0 {
+                    altsUp += 1
+                }
             }
+            let absoluteScore = (Double(altsUp) / Double(validCoins.count)) * 100.0
 
-            // Calculate index (0-100)
-            let score30d = Int((Double(outperformers) / Double(totalAltcoins)) * 100)
+            // ── Component 3: BTC Dominance (30%) ──
+            // Lower dominance = higher score. Map 40-65% range to 100-0.
+            let globalEndpoint = CoinGeckoEndpoint.globalData
+            let globalData: CoinGeckoGlobalData = try await networkManager.request(globalEndpoint)
+            let btcDominance = globalData.data.marketCapPercentage["btc"] ?? 55
+            let dominanceScore = max(0.0, min(100.0, (65.0 - btcDominance) * (100.0 / 25.0)))
 
-            // Persist daily snapshot for 90-day calculation
+            // ── Composite ──
+            let composite = outperformanceScore * 0.4 + absoluteScore * 0.3 + dominanceScore * 0.3
+            let score30d = Int(max(0, min(100, composite)))
+
+            // Persist daily snapshot for progressive 90-day calculation
             let todayStr = Self.snapshotDateFormatter.string(from: Date())
             let snapshotCoins = validCoins.compactMap { coin -> AltcoinSnapshotCoin? in
                 guard let price = coin.currentPrice, price > 0,
@@ -248,30 +262,26 @@ final class APISentimentService: SentimentServiceProtocol {
                 return localIndex
             }
 
-            // Fall back to 30-day CoinGecko data
+            // Fall back to 30-day composite
             return AltcoinSeasonIndex(
                 value: score30d,
-                isBitcoinSeason: score30d < 50,
+                isBitcoinSeason: score30d < 25,
                 timestamp: Date(),
                 calculationWindow: 30
             )
         }
     }
 
-    /// Fallback calculation using BTC dominance
+    /// Fallback calculation using BTC dominance only
     private func calculateAltcoinSeasonFromDominance() async throws -> AltcoinSeasonIndex {
         let btcDominance = try await fetchBTCDominance()
 
-        // Map dominance to index:
-        // BTC dom 65% -> index ~20 (Bitcoin Season)
-        // BTC dom 55% -> index ~50 (Neutral)
-        // BTC dom 45% -> index ~80 (Altcoin Season)
-        let index = Int(max(0, min(100, (65 - btcDominance.value) * 3)))
-        let isBitcoinSeason = index < 50
+        // Map dominance 40-65% → score 100-0
+        let index = Int(max(0, min(100, (65 - btcDominance.value) * (100.0 / 25.0))))
 
         return AltcoinSeasonIndex(
             value: index,
-            isBitcoinSeason: isBitcoinSeason,
+            isBitcoinSeason: index < 25,
             timestamp: Date()
         )
     }

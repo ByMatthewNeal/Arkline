@@ -84,8 +84,15 @@ struct AltcoinSeasonIndex: Codable, Equatable {
         self.calculationWindow = calculationWindow
     }
 
+    /// 5-tier season label based on composite score
     var season: String {
-        isBitcoinSeason ? "Bitcoin Season" : "Altcoin Season"
+        switch value {
+        case 0..<25: return "Bitcoin Season"
+        case 25..<40: return "BTC Leaning"
+        case 40..<60: return "Neutral"
+        case 60..<75: return "Alt Leaning"
+        default: return "Altcoin Season"
+        }
     }
 
     var displayValue: String {
