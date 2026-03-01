@@ -35,7 +35,8 @@ struct SentimentRegimeDetailView: View {
                         .frame(maxWidth: .infinity, minHeight: 300)
                 }
             }
-            .padding(.vertical, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 100)
         }
         .background(
             colorScheme == .dark
