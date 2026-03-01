@@ -168,17 +168,24 @@ struct RiskLevelChart: View {
                 Rectangle()
                     .fill(Color.clear)
                     .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.2)
+                            .sequenced(before: DragGesture(minimumDistance: 0))
                             .onChanged { value in
-                                let x = value.location.x
-                                if let date: Date = proxy.value(atX: x),
-                                   let closest = nearestByDate(in: data, to: date, dateOf: { $0.date }) {
-                                    if closest.date != lastHapticDate {
-                                        Haptics.selection()
-                                        lastHapticDate = closest.date
+                                switch value {
+                                case .second(true, let drag):
+                                    guard let drag else { return }
+                                    let x = drag.location.x
+                                    if let date: Date = proxy.value(atX: x),
+                                       let closest = nearestByDate(in: data, to: date, dateOf: { $0.date }) {
+                                        if closest.date != lastHapticDate {
+                                            Haptics.selection()
+                                            lastHapticDate = closest.date
+                                        }
+                                        selectedDate = closest.date
                                     }
-                                    selectedDate = closest.date
+                                default:
+                                    break
                                 }
                             }
                             .onEnded { _ in

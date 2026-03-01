@@ -69,10 +69,12 @@ struct TappableCard<Content: View>: View {
         }
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
+            DragGesture(minimumDistance: 10)
+                .onChanged { _ in isPressed = false }
         )
+        .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
     }
 }
 

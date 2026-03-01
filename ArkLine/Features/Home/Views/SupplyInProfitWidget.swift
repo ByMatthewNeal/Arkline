@@ -514,15 +514,22 @@ struct SupplyInProfitChart: View {
                 Rectangle()
                     .fill(Color.clear)
                     .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.2)
+                            .sequenced(before: DragGesture(minimumDistance: 0))
                             .onChanged { value in
-                                let x = value.location.x
-                                if let date: Date = proxy.value(atX: x) {
-                                    let closest = chartData.min { a, b in
-                                        abs(a.date.timeIntervalSince(date)) < abs(b.date.timeIntervalSince(date))
+                                switch value {
+                                case .second(true, let drag):
+                                    guard let drag else { return }
+                                    let x = drag.location.x
+                                    if let date: Date = proxy.value(atX: x) {
+                                        let closest = chartData.min { a, b in
+                                            abs(a.date.timeIntervalSince(date)) < abs(b.date.timeIntervalSince(date))
+                                        }
+                                        selectedPoint = closest?.original
                                     }
-                                    selectedPoint = closest?.original
+                                default:
+                                    break
                                 }
                             }
                             .onEnded { _ in }
