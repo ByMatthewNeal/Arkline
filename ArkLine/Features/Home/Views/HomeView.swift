@@ -47,7 +47,7 @@ struct HomeView: View {
 
                 // Content
                 ScrollViewReader { scrollProxy in
-                ScrollView(showsIndicators: false) {
+                ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 20) {
                         Color.clear.frame(height: 0).id("scrollTop")
                         // Header
@@ -107,7 +107,8 @@ struct HomeView: View {
                         if appState.isWidgetEnabled(.aiMarketSummary) {
                             HomeAISummaryWidget(
                                 summary: viewModel.marketSummary,
-                                isLoading: viewModel.isLoadingSummary || viewModel.isLoading
+                                isLoading: viewModel.isLoadingSummary || viewModel.isLoading,
+                                userName: appState.currentUser?.firstName ?? "there"
                             )
                             .padding(.horizontal, 20)
                         }
