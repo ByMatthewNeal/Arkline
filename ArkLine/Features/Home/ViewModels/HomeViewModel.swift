@@ -425,7 +425,7 @@ class HomeViewModel {
             async let upcomingTask = newsService.fetchUpcomingEvents(days: 7, impactFilter: [.high, .medium])
             async let newsTask: [NewsItem] = {
                 do {
-                    return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
+                    return try await self.fetchNewsCombined()
                 } catch {
                     logError("HomeViewModel: Failed to refresh news: \(error)", category: .network)
                     return []
@@ -505,7 +505,7 @@ class HomeViewModel {
 
         async let newsResult: [NewsItem] = {
             do {
-                return try await newsService.fetchNews(category: nil, page: 1, perPage: 5)
+                return try await self.fetchNewsCombined()
             } catch {
                 logError("News fetch failed: \(error.localizedDescription)", category: .network)
                 return []
@@ -896,6 +896,35 @@ class HomeViewModel {
             logError("Today's events fetch failed: \(error.localizedDescription)", category: .network)
             return []
         }
+    }
+
+    /// Fetches combined news feed using the same logic as Market Overview,
+    /// respecting user topic preferences and pulling from multiple sources.
+    private func fetchNewsCombined() async throws -> [NewsItem] {
+        var selectedTopics: Set<Constants.NewsTopic>? = nil
+        var customKeywords: [String]? = nil
+
+        if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.selectedNewsTopics),
+           let topics = try? JSONDecoder().decode(Set<Constants.NewsTopic>.self, from: data),
+           !topics.isEmpty {
+            selectedTopics = topics
+        }
+
+        if let custom = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.customNewsTopics),
+           !custom.isEmpty {
+            customKeywords = custom
+        }
+
+        let hasCustomization = selectedTopics != nil || customKeywords != nil
+        let fetchLimit = hasCustomization ? 30 : 15
+
+        return try await newsService.fetchCombinedNewsFeed(
+            limit: fetchLimit,
+            includeTwitter: true,
+            includeGoogleNews: true,
+            topics: selectedTopics,
+            customKeywords: customKeywords
+        )
     }
 
     private func fetchMacroZScoresSafe() async -> [MacroIndicatorType: MacroZScoreData] {
