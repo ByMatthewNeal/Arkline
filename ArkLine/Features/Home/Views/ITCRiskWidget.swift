@@ -6,6 +6,7 @@ struct RiskLevelWidget: View {
     let riskLevel: ITCRiskLevel?
     var coinSymbol: String = "BTC"
     var daysAtLevel: Int? = nil
+    var weeklyAvgRisk: Double? = nil
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
@@ -91,6 +92,28 @@ struct RiskLevelWidget: View {
                     Text("\(days) day\(days == 1 ? "" : "s") at this level")
                         .font(.system(size: size == .compact ? 9 : 11))
                         .foregroundColor(textPrimary.opacity(0.5))
+                }
+
+                if let weeklyAvg = weeklyAvgRisk {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("7-Day Avg:")
+                            .font(.system(size: size == .compact ? 10 : 12))
+                            .foregroundColor(textPrimary.opacity(0.6))
+                        Text(String(format: "%.3f", weeklyAvg))
+                            .font(.system(size: size == .compact ? 10 : 12, weight: .bold, design: .rounded))
+                            .foregroundColor(RiskColors.color(for: weeklyAvg))
+                        if let current = riskLevel?.riskLevel {
+                            let delta = current - weeklyAvg
+                            if abs(delta) > 0.005 {
+                                Image(systemName: delta > 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(delta > 0 ? AppColors.error : AppColors.success)
+                            }
+                        }
+                    }
                 }
 
                 if size == .expanded {

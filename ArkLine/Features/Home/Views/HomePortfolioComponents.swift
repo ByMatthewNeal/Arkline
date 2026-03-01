@@ -12,6 +12,9 @@ struct PortfolioHeroCard: View {
     @Binding var selectedTimePeriod: TimePeriod
     var hasLoadedPortfolios: Bool = true
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
+
+    private var currency: String { appState.preferredCurrency }
 
     // Track time period changes to re-trigger animation
     @State private var chartAnimationId = UUID()
@@ -130,7 +133,7 @@ struct PortfolioHeroCard: View {
                     .foregroundColor(textPrimary.opacity(0.5))
                     .tracking(1)
 
-                Text(totalValue.asCurrency)
+                Text(totalValue.asCurrency(code: currency))
                     .font(.system(size: 42, weight: .bold))
                     .foregroundColor(textPrimary)
                     .contentTransition(.numericText())
@@ -139,7 +142,7 @@ struct PortfolioHeroCard: View {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 14, weight: .semibold))
 
-                    Text("\(isPositive ? "+" : "")\(change.asCurrency)")
+                    Text("\(isPositive ? "+" : "")\(change.asCurrency(code: currency))")
                         .font(.system(size: 16, weight: .semibold))
                         .contentTransition(.numericText())
 
@@ -157,7 +160,7 @@ struct PortfolioHeroCard: View {
                 )
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(portfolioName) portfolio, \(totalValue.asCurrency), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
+            .accessibilityLabel("\(portfolioName) portfolio, \(totalValue.asCurrency(code: currency)), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
 
             PortfolioSparkline(
                 dataPoints: chartData,
@@ -420,7 +423,7 @@ enum MacroTrendSignal: String {
 
 // MARK: - Multi-Coin Risk Section
 struct MultiCoinRiskSection: View {
-    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?)]
+    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?)]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
 
@@ -453,6 +456,7 @@ struct MultiCoinRiskSection: View {
                     riskLevel: first.riskLevel,
                     coinSymbol: first.coin,
                     daysAtLevel: first.daysAtLevel,
+                    weeklyAvgRisk: first.weeklyAvgRisk,
                     size: size
                 )
             } else if riskLevels.count == 2 {
@@ -462,7 +466,8 @@ struct MultiCoinRiskSection: View {
                         CompactRiskCard(
                             riskLevel: item.riskLevel,
                             coinSymbol: item.coin,
-                            daysAtLevel: item.daysAtLevel
+                            daysAtLevel: item.daysAtLevel,
+                            weeklyAvgRisk: item.weeklyAvgRisk
                         )
                     }
                 }
@@ -474,7 +479,8 @@ struct MultiCoinRiskSection: View {
                             CompactRiskCard(
                                 riskLevel: item.riskLevel,
                                 coinSymbol: item.coin,
-                                daysAtLevel: item.daysAtLevel
+                                daysAtLevel: item.daysAtLevel,
+                                weeklyAvgRisk: item.weeklyAvgRisk
                             )
                             .frame(width: 160)
                         }
@@ -491,6 +497,7 @@ struct CompactRiskCard: View {
     let riskLevel: ITCRiskLevel?
     let coinSymbol: String
     var daysAtLevel: Int? = nil
+    var weeklyAvgRisk: Double? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -542,6 +549,23 @@ struct CompactRiskCard: View {
                             .font(.system(size: 9))
                             .foregroundColor(textPrimary.opacity(0.5))
                             .padding(.top, 2)
+                    }
+
+                    // 7-day rolling average
+                    if let weeklyAvg = weeklyAvgRisk {
+                        Divider().padding(.vertical, 2)
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 8))
+                                .foregroundColor(AppColors.textSecondary)
+                            Text("7d Avg")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundColor(AppColors.textSecondary)
+                            Spacer()
+                            Text(String(format: "%.3f", weeklyAvg))
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundColor(RiskColors.color(for: weeklyAvg))
+                        }
                     }
                 } else {
                     // Loading state

@@ -246,12 +246,12 @@ class HomeViewModel {
         riskLevels[selectedRiskCoin]
     }
 
-    // Get all risk levels for user's selected coins (with consecutive days)
-    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?)] {
+    // Get all risk levels for user's selected coins (with consecutive days + weekly avg)
+    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?)] {
         userRiskCoins.map { coin in
             let level = riskLevels[coin]
             let history = riskHistories[coin] ?? []
-            return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level))
+            return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level), weeklyAverageRiskLevel(for: coin))
         }
     }
 
@@ -278,6 +278,21 @@ class HomeViewModel {
         }
 
         return count >= 1 ? count : nil
+    }
+
+    // Calculate rolling 7-day average risk level from history
+    private func weeklyAverageRiskLevel(for coin: String) -> Double? {
+        guard let history = riskHistories[coin], !history.isEmpty else { return nil }
+        let calendar = Calendar.current
+        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let recentPoints = history.filter { level in
+            guard let date = formatter.date(from: level.date) else { return false }
+            return date >= sevenDaysAgo
+        }
+        guard recentPoints.count >= 3 else { return nil }
+        return recentPoints.reduce(0.0) { $0 + $1.riskLevel } / Double(recentPoints.count)
     }
 
     // Cached crypto assets for favorites filtering
