@@ -4,7 +4,10 @@ import Kingfisher
 // MARK: - Holding Row (Full)
 struct HoldingRow: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let holding: PortfolioHolding
+
+    private var currency: String { appState.preferredCurrency }
 
     private var isRealEstate: Bool {
         holding.assetType == Constants.AssetType.realEstate.rawValue
@@ -36,7 +39,7 @@ struct HoldingRow: View {
 
             // Value & P/L
             VStack(alignment: .trailing, spacing: 4) {
-                Text(holding.currentValue.asCurrency)
+                Text(holding.currentValue.asCurrency(code: currency))
                     .font(AppFonts.body14Bold)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -70,7 +73,10 @@ struct HoldingRow: View {
 // MARK: - Holding Row (Compact)
 struct HoldingRowCompact: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let holding: PortfolioHolding
+
+    private var currency: String { appState.preferredCurrency }
 
     private var isRealEstate: Bool {
         holding.assetType == Constants.AssetType.realEstate.rawValue
@@ -96,7 +102,7 @@ struct HoldingRowCompact: View {
                         .foregroundColor(AppColors.textSecondary)
                         .lineLimit(1)
                 } else {
-                    Text("\(holding.quantity, specifier: "%.4f") • \((holding.currentPrice ?? 0).asCurrency)")
+                    Text("\(holding.quantity, specifier: "%.4f") • \((holding.currentPrice ?? 0).asCurrency(code: currency))")
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
                 }
@@ -105,7 +111,7 @@ struct HoldingRowCompact: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(holding.currentValue.asCurrency)
+                Text(holding.currentValue.asCurrency(code: currency))
                     .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 

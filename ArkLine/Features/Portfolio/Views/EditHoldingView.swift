@@ -3,6 +3,7 @@ import SwiftUI
 struct EditHoldingView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     let holding: PortfolioHolding
     let onSave: (PortfolioHolding) -> Void
@@ -10,6 +11,8 @@ struct EditHoldingView: View {
     @State private var quantity: String
     @State private var averageBuyPrice: String
     @State private var isSaving = false
+
+    private var currency: String { appState.preferredCurrency }
 
     init(holding: PortfolioHolding, onSave: @escaping (PortfolioHolding) -> Void) {
         self.holding = holding
@@ -80,7 +83,7 @@ struct EditHoldingView: View {
                             Text("Total Cost")
                                 .font(AppFonts.body14Bold)
                             Spacer()
-                            Text((parseNumber(quantity) * parseNumber(averageBuyPrice)).asCurrency)
+                            Text((parseNumber(quantity) * parseNumber(averageBuyPrice)).asCurrency(code: currency))
                                 .font(AppFonts.title18SemiBold)
                                 .foregroundColor(AppColors.accent)
                         }

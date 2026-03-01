@@ -3,6 +3,7 @@ import SwiftUI
 struct TransactionDetailView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     let transaction: Transaction
     let portfolioName: String?
@@ -26,6 +27,8 @@ struct TransactionDetailView: View {
         self.onDelete = onDelete
         self.onUpdate = onUpdate
     }
+
+    private var currency: String { appState.preferredCurrency }
 
     private var isRealEstate: Bool {
         transaction.assetType == Constants.AssetType.realEstate.rawValue
@@ -169,7 +172,7 @@ struct TransactionDetailView: View {
             }
 
             // Total Value
-            Text(transaction.totalValue.asCurrency)
+            Text(transaction.totalValue.asCurrency(code: currency))
                 .font(.system(size: 32, weight: .bold))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -196,19 +199,19 @@ struct TransactionDetailView: View {
             Divider()
                 .padding(.horizontal)
 
-            detailRow(label: "Price per Unit", value: transaction.pricePerUnit.asCryptoPrice)
+            detailRow(label: "Price per Unit", value: transaction.pricePerUnit.asCryptoPrice(code: currency))
 
             if transaction.gasFee > 0 {
                 Divider()
                     .padding(.horizontal)
 
-                detailRow(label: "Fee", value: transaction.gasFee.asCurrency)
+                detailRow(label: "Fee", value: transaction.gasFee.asCurrency(code: currency))
             }
 
             Divider()
                 .padding(.horizontal)
 
-            detailRow(label: "Total", value: transaction.totalValue.asCurrency, isHighlighted: true)
+            detailRow(label: "Total", value: transaction.totalValue.asCurrency(code: currency), isHighlighted: true)
 
             if let portfolioName = portfolioName {
                 Divider()
@@ -229,21 +232,21 @@ struct TransactionDetailView: View {
             sectionHeader("Realized Profit/Loss")
 
             if let costBasis = transaction.costBasisPerUnit {
-                detailRow(label: "Cost Basis per Unit", value: costBasis.asCryptoPrice)
+                detailRow(label: "Cost Basis per Unit", value: costBasis.asCryptoPrice(code: currency))
 
                 Divider()
                     .padding(.horizontal)
 
                 detailRow(
                     label: "Total Cost Basis",
-                    value: (transaction.quantity * costBasis).asCurrency
+                    value: (transaction.quantity * costBasis).asCurrency(code: currency)
                 )
 
                 Divider()
                     .padding(.horizontal)
             }
 
-            detailRow(label: "Sale Proceeds", value: transaction.totalValue.asCurrency)
+            detailRow(label: "Sale Proceeds", value: transaction.totalValue.asCurrency(code: currency))
 
             if let realizedPL = transaction.realizedProfitLoss {
                 Divider()
@@ -257,7 +260,7 @@ struct TransactionDetailView: View {
                     Spacer()
 
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(realizedPL >= 0 ? "+" : "")\(realizedPL.asCurrency)")
+                        Text("\(realizedPL >= 0 ? "+" : "")\(realizedPL.asCurrency(code: currency))")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(realizedPL >= 0 ? AppColors.success : AppColors.error)
 

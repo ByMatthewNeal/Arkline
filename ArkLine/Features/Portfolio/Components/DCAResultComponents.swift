@@ -3,7 +3,10 @@ import SwiftUI
 // MARK: - Calculation Summary Card
 struct DCACalculationSummaryCard: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let calculation: DCACalculation
+
+    private var currency: String { appState.preferredCurrency }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -234,7 +237,7 @@ struct DCACalculationSummaryCard: View {
 
                             Spacer()
 
-                            Text(amountPerBand.asCurrency)
+                            Text(amountPerBand.asCurrency(code: currency))
                                 .font(AppFonts.caption12Medium)
                                 .foregroundColor(AppColors.accent)
                         }

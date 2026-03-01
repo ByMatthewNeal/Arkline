@@ -3,6 +3,7 @@ import SwiftUI
 struct EditTransactionView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     let transaction: Transaction
     let onSave: (Transaction) -> Void
@@ -13,6 +14,8 @@ struct EditTransactionView: View {
     @State private var notes: String
     @State private var selectedEmotionalState: EmotionalState?
     @State private var isSaving = false
+
+    private var currency: String { appState.preferredCurrency }
 
     init(transaction: Transaction, onSave: @escaping (Transaction) -> Void) {
         self.transaction = transaction
@@ -91,7 +94,7 @@ struct EditTransactionView: View {
                         Text("Total Value")
                             .font(AppFonts.body14Bold)
                         Spacer()
-                        Text(totalValue.asCurrency)
+                        Text(totalValue.asCurrency(code: currency))
                             .font(AppFonts.title18SemiBold)
                             .foregroundColor(AppColors.accent)
                     }

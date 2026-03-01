@@ -2,7 +2,10 @@ import SwiftUI
 
 struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     let transaction: Transaction
+
+    private var currency: String { appState.preferredCurrency }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -34,7 +37,7 @@ struct TransactionRow: View {
                     .font(AppFonts.body14Medium)
                     .foregroundColor(transaction.type.isIncoming ? AppColors.success : AppColors.error)
 
-                Text(transaction.totalValue.asCurrency)
+                Text(transaction.totalValue.asCurrency(code: currency))
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }

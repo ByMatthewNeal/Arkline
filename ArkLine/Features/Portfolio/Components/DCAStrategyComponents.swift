@@ -482,6 +482,9 @@ struct DCAPortfolioOptionRow: View {
     let isSelected: Bool
     let onSelect: () -> Void
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
+
+    private var currency: String { appState.preferredCurrency }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -506,7 +509,7 @@ struct DCAPortfolioOptionRow: View {
                         .font(AppFonts.body14Bold)
                         .foregroundColor(textPrimary)
 
-                    Text("\(portfolio.holdings?.count ?? 0) holdings • \((portfolio.totalValue ?? 0).asCurrency)")
+                    Text("\(portfolio.holdings?.count ?? 0) holdings • \((portfolio.totalValue ?? 0).asCurrency(code: currency))")
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
                 }

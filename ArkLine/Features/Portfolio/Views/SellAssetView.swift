@@ -3,8 +3,11 @@ import SwiftUI
 struct SellAssetView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
     let holding: PortfolioHolding
+
+    private var currency: String { appState.preferredCurrency }
 
     // Form state
     @State private var quantityString = ""
@@ -138,7 +141,7 @@ struct SellAssetView: View {
                     }
 
                     if let currentPrice = holding.currentPrice {
-                        Button("Use current price: \(currentPrice.asCurrency)") {
+                        Button("Use current price: \(currentPrice.asCurrency(code: currency))") {
                             priceString = String(format: "%.2f", currentPrice)
                         }
                         .font(AppFonts.caption13)
@@ -164,14 +167,14 @@ struct SellAssetView: View {
                         HStack {
                             Text("Total Proceeds")
                             Spacer()
-                            Text(totalProceeds.asCurrency)
+                            Text(totalProceeds.asCurrency(code: currency))
                                 .font(AppFonts.title16)
                         }
 
                         HStack {
                             Text("Cost Basis")
                             Spacer()
-                            Text(costBasis.asCurrency)
+                            Text(costBasis.asCurrency(code: currency))
                                 .foregroundColor(AppColors.textSecondary)
                         }
 
@@ -179,7 +182,7 @@ struct SellAssetView: View {
                             Text("Profit / Loss")
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
-                                Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency)")
+                                Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency(code: currency))")
                                     .font(AppFonts.title16)
                                     .foregroundColor(profitLoss >= 0 ? AppColors.success : AppColors.error)
 

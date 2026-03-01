@@ -21,7 +21,10 @@ private enum EntryMode: String, CaseIterable {
 struct AddTransactionView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+
+    private var currency: String { appState.preferredCurrency }
 
     @State private var entryMode: EntryMode = .simple
     @State private var transactionType: TransactionType = .buy
@@ -228,7 +231,7 @@ struct AddTransactionView: View {
                                     Spacer()
 
                                     if let price = result.currentPrice, price > 0 {
-                                        Text(price.asCurrency)
+                                        Text(price.asCurrency(code: currency))
                                             .font(AppFonts.caption12)
                                             .foregroundColor(AppColors.textSecondary)
                                     }
@@ -295,7 +298,7 @@ struct AddTransactionView: View {
                             Text("Total Value")
                                 .font(AppFonts.body14Bold)
                             Spacer()
-                            Text(totalValue.asCurrency)
+                            Text(totalValue.asCurrency(code: currency))
                                 .font(AppFonts.title18SemiBold)
                                 .foregroundColor(AppColors.accent)
                         }

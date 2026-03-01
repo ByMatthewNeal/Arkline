@@ -97,8 +97,11 @@ struct PortfolioOverviewContent: View {
 // MARK: - Holdings Content
 struct PortfolioHoldingsContent: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
     @Namespace private var zoomNamespace
+
+    private var currency: String { appState.preferredCurrency }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -145,7 +148,7 @@ struct PortfolioHoldingsContent: View {
                         }
                         .zoomSource(id: holding.id, in: zoomNamespace)
                         .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel("\(holding.name), value \(holding.currentValue.asCurrency), \(holding.isProfit ? "profit" : "loss") of \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
+                        .accessibilityLabel("\(holding.name), value \(holding.currentValue.asCurrency(code: currency)), \(holding.isProfit ? "profit" : "loss") of \(abs(holding.profitLossPercentage), specifier: "%.1f") percent")
                     }
                 }
                 .padding(.horizontal, 20)
@@ -348,7 +351,10 @@ func groupTransactionsByDate(_ transactions: [Transaction]) -> [(String, [Transa
 // MARK: - Transactions Content
 struct PortfolioTransactionsContent: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+
+    private var currency: String { appState.preferredCurrency }
     @State private var selectedTransaction: Transaction?
     @State private var showTransactionDetail = false
     @State private var transactionToDelete: Transaction?
@@ -430,7 +436,7 @@ struct PortfolioTransactionsContent: View {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
-                            .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency)")
+                            .accessibilityLabel("\(transaction.type.displayName) \(transaction.quantity, specifier: "%.4f") \(transaction.symbol) for \(transaction.totalValue.asCurrency(code: currency))")
                         }
                     }
                 }

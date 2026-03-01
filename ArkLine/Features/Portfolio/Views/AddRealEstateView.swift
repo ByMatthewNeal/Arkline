@@ -3,7 +3,10 @@ import SwiftUI
 struct AddRealEstateView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
     @Bindable var viewModel: PortfolioViewModel
+
+    private var currency: String { appState.preferredCurrency }
 
     // Property Details
     @State private var propertyName = ""
@@ -118,7 +121,7 @@ struct AddRealEstateView: View {
                             Text("Appreciation")
                             Spacer()
                             VStack(alignment: .trailing, spacing: 2) {
-                                Text(appreciation.asCurrency)
+                                Text(appreciation.asCurrency(code: currency))
                                     .foregroundColor(appreciation >= 0 ? AppColors.success : AppColors.error)
                                 Text("\(appreciationPercentage >= 0 ? "+" : "")\(String(format: "%.1f", appreciationPercentage))%")
                                     .font(.caption)
@@ -154,7 +157,7 @@ struct AddRealEstateView: View {
                         HStack {
                             Text("Net Monthly Income")
                             Spacer()
-                            Text(monthlyNetIncome.asCurrency)
+                            Text(monthlyNetIncome.asCurrency(code: currency))
                                 .foregroundColor(monthlyNetIncome >= 0 ? AppColors.success : AppColors.error)
                         }
                     }
