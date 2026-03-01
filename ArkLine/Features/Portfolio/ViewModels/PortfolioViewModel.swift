@@ -113,11 +113,13 @@ final class PortfolioViewModel {
     }
 
     var topPerformers: [PortfolioHolding] {
-        holdings.sorted { $0.profitLossPercentage > $1.profitLossPercentage }.prefix(3).map { $0 }
+        holdings.filter { $0.profitLossPercentage > 0 }
+            .sorted { $0.profitLossPercentage > $1.profitLossPercentage }.prefix(3).map { $0 }
     }
 
     var worstPerformers: [PortfolioHolding] {
-        holdings.sorted { $0.profitLossPercentage < $1.profitLossPercentage }.prefix(3).map { $0 }
+        holdings.filter { $0.profitLossPercentage < 0 }
+            .sorted { $0.profitLossPercentage < $1.profitLossPercentage }.prefix(3).map { $0 }
     }
 
     var hasTargetAllocations: Bool {
