@@ -220,6 +220,7 @@ struct ReorderableWidgetStack: View {
                 liquidityData: viewModel.globalLiquidityChanges,
                 netLiquidityData: viewModel.netLiquidityData,
                 macroZScores: viewModel.macroZScores,
+                regime: viewModel.computedRegime,
                 size: appState.widgetSize(.macroDashboard)
             )
 

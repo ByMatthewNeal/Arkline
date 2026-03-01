@@ -8,6 +8,7 @@ struct MacroDashboardWidget: View {
     let liquidityData: GlobalLiquidityChanges?
     var netLiquidityData: NetLiquidityChanges? = nil
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
+    var regime: MarketRegime = .noData
     var size: WidgetSize = .standard
 
     @EnvironmentObject var appState: AppState
@@ -33,47 +34,6 @@ struct MacroDashboardWidget: View {
 
     private var subtleBackground: Color {
         colorScheme == .dark ? Color(hex: "242424") : Color(hex: "F5F5F7")
-    }
-
-    // MARK: - Market Regime Calculation
-    private var marketRegime: MarketRegime {
-        var bullishSignals = 0
-        var bearishSignals = 0
-        var totalSignals = 0
-
-        if let vix = vixData {
-            totalSignals += 1
-            if vix.value < 18 { bullishSignals += 1 }
-            else if vix.value > 25 { bearishSignals += 1 }
-        }
-
-        if let dxy = dxyData, let change = dxy.changePercent {
-            totalSignals += 1
-            if change < -0.2 { bullishSignals += 1 }
-            else if change > 0.2 { bearishSignals += 1 }
-        }
-
-        if let m2 = liquidityData {
-            totalSignals += 1
-            if m2.monthlyChange > 0.5 { bullishSignals += 1 }
-            else if m2.monthlyChange < -0.5 { bearishSignals += 1 }
-        }
-
-        if let netLiq = netLiquidityData {
-            totalSignals += 1
-            if netLiq.weeklyChange > 0.5 { bullishSignals += 1 }
-            else if netLiq.weeklyChange < -0.5 { bearishSignals += 1 }
-        }
-
-        guard totalSignals >= 2 else { return .noData }
-
-        // With 4 indicators: require ≥3 for conviction
-        if bullishSignals >= 3 && bearishSignals == 0 { return .riskOn }
-        if bearishSignals >= 3 && bullishSignals == 0 { return .riskOff }
-        // Fallback for 3-indicator scenarios
-        if bullishSignals >= 2 && bearishSignals == 0 { return .riskOn }
-        if bearishSignals >= 2 && bullishSignals == 0 { return .riskOff }
-        return .mixed
     }
 
     // MARK: - Correlation Strength Calculations
@@ -297,13 +257,13 @@ struct MacroDashboardWidget: View {
                         // Pulsing regime indicator
                         ZStack {
                             Circle()
-                                .fill(marketRegime.color.opacity(0.3))
+                                .fill(regime.color.opacity(0.3))
                                 .frame(width: 16, height: 16)
                                 .scaleEffect(isPulsing ? 1.3 : 1.0)
                                 .opacity(isPulsing ? 0 : 0.5)
 
                             Circle()
-                                .fill(marketRegime.color)
+                                .fill(regime.color)
                                 .frame(width: 8, height: 8)
                         }
                         .onAppear {
@@ -312,11 +272,11 @@ struct MacroDashboardWidget: View {
                             }
                         }
 
-                        Text(marketRegime.rawValue)
+                        Text(regime.rawValue)
                             .font(.system(size: 12, weight: .bold, design: .default))
-                            .foregroundColor(marketRegime.color)
+                            .foregroundColor(regime.color)
 
-                        Text(marketRegime.description)
+                        Text(regime.description)
                             .font(.system(size: 11, weight: .regular))
                             .foregroundColor(textPrimary.opacity(0.5))
                             .lineLimit(1)
@@ -362,7 +322,7 @@ struct MacroDashboardWidget: View {
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Macro Dashboard, \(marketRegime.rawValue), \(marketRegime.description)")
+        .accessibilityLabel("Macro Dashboard, \(regime.rawValue), \(regime.description)")
         .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             if appState.isPro {
@@ -371,7 +331,7 @@ struct MacroDashboardWidget: View {
                     dxyData: dxyData,
                     liquidityData: liquidityData,
                     netLiquidityData: netLiquidityData,
-                    regime: marketRegime,
+                    regime: regime,
                     vixCorrelation: vixCorrelation,
                     dxyCorrelation: dxyCorrelation,
                     m2Correlation: m2Correlation,
@@ -395,9 +355,9 @@ struct MacroDashboardWidget: View {
             }
         }
         .onAppear {
-            regimeManager.checkRegimeChange(newRegime: marketRegime)
+            regimeManager.checkRegimeChange(newRegime: regime)
         }
-        .onChange(of: marketRegime) { _, newRegime in
+        .onChange(of: regime) { _, newRegime in
             regimeManager.checkRegimeChange(newRegime: newRegime)
         }
         } // Close outer VStack
@@ -411,7 +371,7 @@ struct MacroDashboardWidget: View {
             return "Multiple indicators showing strong correlation. High conviction environment for macro-driven moves."
         }
 
-        switch marketRegime {
+        switch regime {
         case .riskOn:
             return "Low volatility and expanding liquidity historically favor crypto appreciation."
         case .riskOff:
@@ -495,6 +455,7 @@ struct MacroIndicatorColumn: View {
             vixData: VIXData(date: "2024-01-25", value: 16.5, open: 17.0, high: 17.5, low: 16.0, close: 16.5),
             dxyData: DXYData(date: "2024-01-25", value: 103.42, open: 103.5, high: 103.8, low: 103.1, close: 103.42, previousClose: 103.7),
             liquidityData: GlobalLiquidityChanges(current: 21_300_000_000_000, dailyChange: 0.1, weeklyChange: 0.3, monthlyChange: 1.2, yearlyChange: 4.5, history: []),
+            regime: .riskOn,
             size: .standard
         )
 
@@ -502,6 +463,7 @@ struct MacroIndicatorColumn: View {
             vixData: VIXData(date: "2024-01-25", value: 28.5, open: 27.0, high: 29.5, low: 26.0, close: 28.5),
             dxyData: DXYData(date: "2024-01-25", value: 105.42, open: 104.5, high: 105.8, low: 104.1, close: 105.42, previousClose: 104.7),
             liquidityData: GlobalLiquidityChanges(current: 20_100_000_000_000, dailyChange: -0.1, weeklyChange: -0.5, monthlyChange: -1.8, yearlyChange: -2.5, history: []),
+            regime: .mixed,
             size: .expanded
         )
     }

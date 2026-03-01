@@ -121,6 +121,9 @@ Deno.serve(async (req) => {
   if (payload.netLiquiditySignal) {
     macroLines.push(`US Net Liquidity: ${payload.netLiquiditySignal}`)
   }
+  if (payload.macroRegime) {
+    macroLines.push(`Macro Regime: ${payload.macroRegime}`)
+  }
   if (macroLines.length) sections.push(`MACRO:\n${macroLines.join("\n")}`)
 
   // --- Sentiment & Signals ---
@@ -188,7 +191,7 @@ Deno.serve(async (req) => {
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
 
 ## Posture
-One sentence with the overall market stance. Start with exactly one of "Risk-on", "Risk-off", or "Neutral", then a brief reason why. Example: "Risk-off — crypto bouncing but macro headwinds remain."
+One sentence with the overall market stance. If the MACRO section includes a "Macro Regime" value, your posture MUST align with it — use "Risk-on" if RISK-ON, "Risk-off" if RISK-OFF, or "Neutral" if MIXED. Then add a brief reason why. Example: "Risk-off — crypto bouncing but macro headwinds remain."
 
 ## The Rundown
 2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally.

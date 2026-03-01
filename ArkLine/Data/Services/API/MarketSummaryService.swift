@@ -41,6 +41,8 @@ final class MarketSummaryService {
         let dxySignal: String?
         let netLiquiditySignal: String?
         let goldSignal: String?
+        // Canonical macro regime from MacroRegimeCalculator
+        let macroRegime: String?
         // App signals
         let btcRiskZone: String?
         let ethRiskZone: String?

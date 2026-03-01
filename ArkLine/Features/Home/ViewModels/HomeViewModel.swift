@@ -70,6 +70,14 @@ class HomeViewModel {
     // Macro Z-Scores (statistical analysis)
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
 
+    // Canonical macro regime (single source of truth for all widgets)
+    var currentRegimeResult: MacroRegimeResult?
+
+    /// Simple 3-state regime derived from MacroRegimeCalculator
+    var computedRegime: MarketRegime {
+        currentRegimeResult?.baseRegime ?? .noData
+    }
+
     /// Whether any macro indicator has an extreme z-score
     var hasExtremeMacroMove: Bool {
         macroZScores.values.contains { $0.isExtreme }
@@ -625,6 +633,12 @@ class HomeViewModel {
             }
             self.newsItems = news
             self.macroZScores = zScores
+            self.currentRegimeResult = MacroRegimeCalculator.computeRegime(
+                vixData: self.vixData,
+                dxyData: self.dxyData,
+                globalM2Data: self.globalLiquidityChanges,
+                macroZScores: zScores
+            )
             if self.enableSideEffects {
                 ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
             }
@@ -1040,6 +1054,9 @@ class HomeViewModel {
             dxySignal: dxyData?.signalDescription,
             netLiquiditySignal: netLiqSignal,
             goldSignal: goldSignal,
+            macroRegime: currentRegimeResult.map {
+                "\($0.baseRegime.rawValue) (\($0.quadrant.rawValue), Growth: \(Int($0.growthScore))/100, Inflation: \(Int($0.inflationScore))/100)"
+            },
             btcRiskZone: riskLevels["BTC"]?.riskCategory,
             ethRiskZone: riskLevels["ETH"]?.riskCategory,
             altcoinSeason: sentimentViewModel?.altcoinSeason?.season,

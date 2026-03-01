@@ -81,6 +81,14 @@ struct MacroRegimeResult: Hashable {
     /// 0-100, higher = more inflationary
     let inflationScore: Double
     let timestamp: Date
+
+    /// Simple 3-state regime derived from the growth axis, used as the
+    /// single source of truth for all widgets (Macro Dashboard, Daily Briefing).
+    var baseRegime: MarketRegime {
+        if growthScore >= 55 { return .riskOn }
+        if growthScore <= 35 { return .riskOff }
+        return .mixed
+    }
 }
 
 // MARK: - Asset Allocation
