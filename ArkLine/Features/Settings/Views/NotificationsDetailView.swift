@@ -171,6 +171,12 @@ struct NotificationsDetailView: View {
                     Text("Email")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                // Extra space so last row isn't hidden behind tab bar
+                Section {} footer: {
+                    Spacer().frame(height: 40)
+                }
+                .listRowBackground(Color.clear)
             }
             #if os(iOS)
             .listStyle(.insetGrouped)
