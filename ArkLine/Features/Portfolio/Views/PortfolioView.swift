@@ -39,7 +39,7 @@ struct PortfolioView: View {
                 }
 
                 // Stale Price Warning
-                if viewModel.priceRefreshFailed {
+                if viewModel.priceRefreshFailed && !viewModel.holdings.isEmpty {
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 12))

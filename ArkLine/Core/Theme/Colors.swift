@@ -53,7 +53,7 @@ struct AppColors {
 
     /// Secondary fill color
     static func fillSecondary(_ colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? Color(hex: "2F2858") : Color(hex: "F5F5F5")
+        colorScheme == .dark ? Color(hex: "2A2A2E") : Color(hex: "F5F5F5")
     }
 
     /// Primary text color
