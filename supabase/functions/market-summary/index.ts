@@ -28,8 +28,6 @@ Deno.serve(async (req) => {
   }
 
   // Determine current slot based on EST time
-  // Morning: generated at 10:00 AM EST (valid until evening)
-  // Evening: generated at 4:30 PM EST (valid until next morning)
   const now = new Date()
   const estHour = getESTHour(now)
   const slot = estHour >= 16 ? "evening" : "morning"
@@ -66,63 +64,90 @@ Deno.serve(async (req) => {
   }
 
   // Build market data context
-  const lines: string[] = []
+  const sections: string[] = []
 
-  // Equities
+  // --- Markets ---
+  const marketLines: string[] = []
   if (payload.sp500Price) {
-    lines.push(`S&P 500: ${formatPrice(payload.sp500Price)} (${formatChange(payload.sp500Change)})`)
+    marketLines.push(`S&P 500: ${formatPrice(payload.sp500Price)} (${formatChange(payload.sp500Change)})`)
   }
   if (payload.nasdaqPrice) {
-    lines.push(`Nasdaq: ${formatPrice(payload.nasdaqPrice)} (${formatChange(payload.nasdaqChange)})`)
+    marketLines.push(`Nasdaq: ${formatPrice(payload.nasdaqPrice)} (${formatChange(payload.nasdaqChange)})`)
   }
-
-  // Crypto
   if (payload.btcPrice) {
-    lines.push(`BTC: $${Number(payload.btcPrice).toLocaleString()} (${formatChange(payload.btcChange24h)})`)
+    marketLines.push(`BTC: $${Number(payload.btcPrice).toLocaleString()} (${formatChange(payload.btcChange24h)})`)
   }
   if (payload.ethPrice) {
-    lines.push(`ETH: $${Number(payload.ethPrice).toLocaleString()} (${formatChange(payload.ethChange24h)})`)
+    marketLines.push(`ETH: $${Number(payload.ethPrice).toLocaleString()} (${formatChange(payload.ethChange24h)})`)
   }
   if (payload.solPrice) {
-    lines.push(`SOL: $${Number(payload.solPrice).toLocaleString()} (${formatChange(payload.solChange24h)})`)
+    marketLines.push(`SOL: $${Number(payload.solPrice).toLocaleString()} (${formatChange(payload.solChange24h)})`)
   }
+  if (payload.goldSignal) {
+    marketLines.push(`Gold: ${payload.goldSignal}`)
+  }
+  if (marketLines.length) sections.push(`MARKETS:\n${marketLines.join("\n")}`)
 
-  // Sentiment & Risk
-  if (payload.fearGreedValue != null) {
-    lines.push(`Crypto Fear & Greed Index: ${payload.fearGreedValue} (${payload.fearGreedClassification ?? "N/A"})`)
-  }
-  if (payload.riskScore != null) {
-    lines.push(`ArkLine Risk Score: ${payload.riskScore}/100 (${payload.riskTier ?? "N/A"})`)
-  }
-
-  // Macro indicators
+  // --- Macro ---
+  const macroLines: string[] = []
   if (payload.vixValue != null) {
-    lines.push(`VIX: ${payload.vixValue}${payload.vixSignal ? ` — ${payload.vixSignal}` : ""}`)
+    macroLines.push(`VIX: ${payload.vixValue}${payload.vixSignal ? ` — ${payload.vixSignal}` : ""}`)
   }
   if (payload.dxyValue != null) {
-    lines.push(`DXY: ${payload.dxyValue}${payload.dxySignal ? ` — ${payload.dxySignal}` : ""}`)
+    macroLines.push(`DXY: ${payload.dxyValue}${payload.dxySignal ? ` — ${payload.dxySignal}` : ""}`)
   }
   if (payload.netLiquiditySignal) {
-    lines.push(`US Net Liquidity: ${payload.netLiquiditySignal}`)
+    macroLines.push(`US Net Liquidity: ${payload.netLiquiditySignal}`)
   }
+  if (macroLines.length) sections.push(`MACRO:\n${macroLines.join("\n")}`)
 
-  // Economic events (with optional times)
+  // --- Sentiment & Signals ---
+  const signalLines: string[] = []
+  if (payload.fearGreedValue != null) {
+    signalLines.push(`Fear & Greed: ${payload.fearGreedValue} (${payload.fearGreedClassification ?? "N/A"})`)
+  }
+  if (payload.riskScore != null) {
+    signalLines.push(`ArkLine Risk Score: ${payload.riskScore}/100 (${payload.riskTier ?? "N/A"})`)
+  }
+  if (payload.btcRiskZone) {
+    signalLines.push(`BTC Risk Zone: ${payload.btcRiskZone}`)
+  }
+  if (payload.ethRiskZone) {
+    signalLines.push(`ETH Risk Zone: ${payload.ethRiskZone}`)
+  }
+  if (payload.sentimentRegime) {
+    signalLines.push(`Sentiment Regime: ${payload.sentimentRegime}`)
+  }
+  if (payload.altcoinSeason) {
+    signalLines.push(`Season Indicator: ${payload.altcoinSeason}`)
+  }
+  if (payload.coinbaseRank != null) {
+    signalLines.push(`Coinbase App Store Rank: #${payload.coinbaseRank}`)
+  }
+  if (payload.btcSearchInterest) {
+    signalLines.push(`BTC Search Interest: ${payload.btcSearchInterest}`)
+  }
+  if (payload.topGainer) {
+    signalLines.push(`Top Performer Today: ${payload.topGainer}`)
+  }
+  if (signalLines.length) sections.push(`SIGNALS:\n${signalLines.join("\n")}`)
+
+  // --- Events ---
   if (Array.isArray(payload.economicEvents) && payload.economicEvents.length > 0) {
     const events = payload.economicEvents.map((e: any) => {
       if (e.time) return `${e.title} (${e.time})`
       return e.title
     }).join("; ")
-    lines.push(`Today's high-impact events: ${events}`)
+    sections.push(`EVENTS: ${events}`)
   }
 
-  // News headlines
+  // --- Headlines ---
   if (Array.isArray(payload.newsHeadlines) && payload.newsHeadlines.length > 0) {
-    const headlines = payload.newsHeadlines.join("; ")
-    lines.push(`Headlines: ${headlines}`)
+    sections.push(`HEADLINES: ${payload.newsHeadlines.join("; ")}`)
   }
 
-  const marketContext = lines.join("\n")
-  const timeLabel = slot === "morning" ? "morning (post-market-open)" : "evening (post-market-close)"
+  const marketContext = sections.join("\n\n")
+  const timeLabel = slot === "morning" ? "morning" : "evening"
   console.log(`Market context for Claude (${timeLabel}):\n${marketContext}`)
 
   try {
@@ -135,30 +160,32 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 700,
-        system: `You are a market analyst writing a ${timeLabel} briefing for ArkLine, a crypto and macro tracking app.
+        max_tokens: 800,
+        system: `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual update — clear, conversational, no jargon.
 
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
 
 ## Posture
-A single short phrase describing the overall market stance. Use exactly one of: "risk-on", "risk-off", or "neutral". Example: "Risk-on — equities and crypto rallying on liquidity tailwinds." Keep to one sentence max.
+One sentence with the overall market stance. Start with exactly one of "Risk-on", "Risk-off", or "Neutral", then a brief reason why. Example: "Risk-off — crypto bouncing but macro headwinds remain."
 
-## What Moved
-1-2 sentences on what happened in markets. Cover equities (S&P 500, Nasdaq) and crypto (BTC, ETH, SOL) with specific prices and percentage moves. If a high-impact economic event occurred (Fed decision, CPI, jobs report), mention it with its scheduled time if provided. Be factual.
+## The Rundown
+2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally.
 
-## What It Means
-1-2 sentences interpreting the moves. Connect VIX, DXY, Fear & Greed, ArkLine Risk Score, and net liquidity to explain why markets moved. Focus on the narrative — what's driving sentiment and what to watch.
+## Signals
+2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime (Apathy/FOMO/Panic/Complacency), BTC/ETH risk zones (good for DCA timing), season indicator (BTC vs Alt season), Coinbase app ranking (retail interest proxy), BTC search interest. Explain what each means in plain language. For example: "BTC is in a Low Risk zone — historically a solid DCA window" or "Coinbase sitting outside the top 200 tells you retail hasn't shown up yet."
 
 Rules:
-- Be direct and cite specific numbers
-- Connect data points — don't just list them
-- Never start any section with "Today" or "The market"
-- Never give investment advice or suggest buying/selling
-- Keep total length under 120 words`,
+- Write for someone checking their phone over coffee, not a Wall Street analyst
+- Explain what things mean, don't just state numbers
+- Connect dots — if Fear & Greed is at Extreme Fear but crypto is green, say that's unusual
+- Never give investment advice or say "buy" / "sell"
+- If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
+- Keep total length under 150 words
+- Never start any section with "Today" or "The market"`,
         messages: [
           {
             role: "user",
-            content: `Here is the latest market data:\n\n${marketContext}\n\nWrite the structured ${timeLabel} market briefing.`,
+            content: `Here is the latest market data:\n\n${marketContext}\n\nWrite the ${timeLabel} briefing.`,
           },
         ],
       }),
@@ -218,19 +245,16 @@ function formatPrice(value: unknown): string {
 }
 
 function getESTHour(date: Date): number {
-  // Convert UTC to EST (UTC-5) or EDT (UTC-4)
-  // Simple DST check: March second Sunday to November first Sunday
   const year = date.getUTCFullYear()
-  const marchSecondSunday = nthSunday(year, 2, 2) // March, 2nd Sunday
-  const novFirstSunday = nthSunday(year, 10, 1) // November, 1st Sunday
-
+  const marchSecondSunday = nthSunday(year, 2, 2)
+  const novFirstSunday = nthSunday(year, 10, 1)
   const isDST = date >= marchSecondSunday && date < novFirstSunday
   const offset = isDST ? 4 : 5
   return (date.getUTCHours() - offset + 24) % 24
 }
 
 function nthSunday(year: number, month: number, n: number): Date {
-  const date = new Date(Date.UTC(year, month, 1, 7, 0, 0)) // 7 UTC = ~2-3 AM EST
+  const date = new Date(Date.UTC(year, month, 1, 7, 0, 0))
   let count = 0
   while (count < n) {
     if (date.getUTCDay() === 0) count++

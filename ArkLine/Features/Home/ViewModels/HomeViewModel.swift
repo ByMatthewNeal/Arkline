@@ -895,13 +895,38 @@ class HomeViewModel {
 
         let service = MarketSummaryService.shared
 
-        // Fetch S&P 500 and NASDAQ quotes in parallel
-        let (sp500, nasdaq) = await service.fetchIndexQuotes()
+        // Fetch index quotes and sentiment data in parallel
+        async let indexQuotes = service.fetchIndexQuotes()
+        async let sentimentRefresh: () = { [weak self] in
+            await self?.sentimentViewModel?.refresh()
+        }()
+
+        let (sp500, nasdaq) = await indexQuotes
+        _ = await sentimentRefresh
 
         // Build net liquidity signal
         var netLiqSignal: String? = nil
         if let nl = netLiquidityData {
             netLiqSignal = "\(nl.overallSignal.rawValue) (\(nl.formattedCurrent), weekly \(String(format: "%+.1f", nl.weeklyChange))%)"
+        }
+
+        // Build gold signal
+        var goldSignal: String? = nil
+        if let gold = sentimentViewModel?.goldData {
+            let changeStr = gold.changePercent.map { String(format: "%+.1f%%", $0) } ?? ""
+            goldSignal = "\(gold.signalDescription) ($\(String(format: "%.0f", gold.value))\(changeStr.isEmpty ? "" : " \(changeStr)"))"
+        }
+
+        // Build top gainer string
+        var topGainerStr: String? = nil
+        if let top = topGainers.first, top.priceChangePercentage24h > 0 {
+            topGainerStr = "\(top.symbol.uppercased()) \(String(format: "%+.1f", top.priceChangePercentage24h))%"
+        }
+
+        // Build BTC search interest signal
+        var btcSearchStr: String? = nil
+        if let trends = sentimentViewModel?.googleTrends {
+            btcSearchStr = "\(trends.currentIndex)/100 (\(trends.trend.rawValue))"
         }
 
         let payload = MarketSummaryService.MarketSummaryPayload(
@@ -924,10 +949,18 @@ class HomeViewModel {
             dxyValue: dxyData?.value,
             dxySignal: dxyData?.signalDescription,
             netLiquiditySignal: netLiqSignal,
+            goldSignal: goldSignal,
+            btcRiskZone: riskLevels["BTC"]?.riskCategory,
+            ethRiskZone: riskLevels["ETH"]?.riskCategory,
+            altcoinSeason: sentimentViewModel?.altcoinSeason?.season,
+            sentimentRegime: sentimentViewModel?.sentimentRegimeData?.currentRegime.rawValue,
+            coinbaseRank: sentimentViewModel?.primaryAppRanking?.ranking,
+            btcSearchInterest: btcSearchStr,
+            topGainer: topGainerStr,
             economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map { event in
                 .init(title: event.title, time: event.timeFormatted)
             },
-            newsHeadlines: Array(newsItems.prefix(3).map { $0.title })
+            newsHeadlines: Array(newsItems.prefix(5).map { $0.title })
         )
 
         do {

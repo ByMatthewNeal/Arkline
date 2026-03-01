@@ -17,25 +17,39 @@ final class MarketSummaryService {
     // MARK: - Request / Response
 
     struct MarketSummaryPayload: Encodable {
+        // Crypto prices
         let btcPrice: Double?
         let btcChange24h: Double?
         let ethPrice: Double?
         let ethChange24h: Double?
         let solPrice: Double?
         let solChange24h: Double?
+        // Equities
         let sp500Price: Double?
         let sp500Change: Double?
         let nasdaqPrice: Double?
         let nasdaqChange: Double?
+        // Sentiment & Risk
         let fearGreedValue: Int?
         let fearGreedClassification: String?
         let riskScore: Int?
         let riskTier: String?
+        // Macro
         let vixValue: Double?
         let vixSignal: String?
         let dxyValue: Double?
         let dxySignal: String?
         let netLiquiditySignal: String?
+        let goldSignal: String?
+        // App signals
+        let btcRiskZone: String?
+        let ethRiskZone: String?
+        let altcoinSeason: String?
+        let sentimentRegime: String?
+        let coinbaseRank: Int?
+        let btcSearchInterest: String?
+        let topGainer: String?
+        // Events & News
         let economicEvents: [EventEntry]?
         let newsHeadlines: [String]?
     }
