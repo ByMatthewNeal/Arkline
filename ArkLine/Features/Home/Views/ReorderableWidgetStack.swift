@@ -252,14 +252,6 @@ struct ReorderableWidgetStack: View {
                 summary: viewModel.marketSummary,
                 isLoading: viewModel.isLoadingSummary,
                 userName: "there",
-                prices: BriefingPriceData(
-                    btcPrice: viewModel.btcPrice,
-                    btcChange: viewModel.btcChange24h,
-                    ethPrice: viewModel.ethPrice,
-                    ethChange: viewModel.ethChange24h,
-                    solPrice: viewModel.solPrice,
-                    solChange: viewModel.solChange24h
-                ),
                 size: appState.widgetSize(.aiMarketSummary)
             )
         }

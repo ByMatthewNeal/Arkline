@@ -1,21 +1,10 @@
 import SwiftUI
 
-// MARK: - Briefing Price Data
-struct BriefingPriceData {
-    let btcPrice: Double
-    let btcChange: Double
-    let ethPrice: Double
-    let ethChange: Double
-    let solPrice: Double
-    let solChange: Double
-}
-
 // MARK: - AI Daily Market Summary Widget
 struct HomeAISummaryWidget: View {
     let summary: MarketSummary?
     let isLoading: Bool
     let userName: String
-    var prices: BriefingPriceData?
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
 
@@ -54,11 +43,6 @@ struct HomeAISummaryWidget: View {
             // Sentiment pill
             if let posture = parsedPosture {
                 sentimentPill(posture)
-            }
-
-            // Inline price cards
-            if let prices, prices.btcPrice > 0, size != .compact {
-                priceCardsRow(prices)
             }
 
             // Body
@@ -166,53 +150,6 @@ struct HomeAISummaryWidget: View {
         .clipShape(Capsule())
     }
 
-    // MARK: - Price Cards
-
-    private func priceCardsRow(_ data: BriefingPriceData) -> some View {
-        HStack(spacing: 8) {
-            priceCard(symbol: "BTC", price: data.btcPrice, change: data.btcChange)
-            priceCard(symbol: "ETH", price: data.ethPrice, change: data.ethChange)
-            priceCard(symbol: "SOL", price: data.solPrice, change: data.solChange)
-        }
-    }
-
-    private func priceCard(symbol: String, price: Double, change: Double) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(symbol)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(textPrimary.opacity(0.5))
-
-            Text(formatCompactPrice(price))
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundColor(textPrimary)
-
-            HStack(spacing: 2) {
-                Image(systemName: change >= 0 ? "arrow.up" : "arrow.down")
-                    .font(.system(size: 8, weight: .bold))
-                Text(String(format: "%.1f%%", abs(change)))
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-            }
-            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
-        )
-    }
-
-    private func formatCompactPrice(_ price: Double) -> String {
-        if price >= 1000 {
-            return "$\(String(format: "%.0f", price).formattedWithCommas)"
-        } else if price >= 1 {
-            return "$\(String(format: "%.2f", price))"
-        } else {
-            return "$\(String(format: "%.4f", price))"
-        }
-    }
-
     // MARK: - Structured Summary
 
     @ViewBuilder
@@ -290,15 +227,6 @@ struct HomeAISummaryWidget: View {
                 .fill(shimmerFill)
                 .frame(width: 80, height: 24)
 
-            // Price cards shimmer
-            HStack(spacing: 8) {
-                ForEach(0..<3, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(shimmerFill)
-                        .frame(maxWidth: .infinity, minHeight: 56, maxHeight: 56)
-                }
-            }
-
             // Section shimmer
             shimmerSection()
             // Section shimmer
@@ -340,16 +268,5 @@ struct HomeAISummaryWidget: View {
         let hours = minutes / 60
         if hours < 24 { return "\(hours)h ago" }
         return "\(hours / 24)d ago"
-    }
-}
-
-// MARK: - Number Formatting Helper
-private extension String {
-    var formattedWithCommas: String {
-        guard let number = Double(self) else { return self }
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: number)) ?? self
     }
 }

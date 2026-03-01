@@ -108,15 +108,7 @@ struct HomeView: View {
                             HomeAISummaryWidget(
                                 summary: viewModel.marketSummary,
                                 isLoading: viewModel.isLoadingSummary || viewModel.isLoading,
-                                userName: appState.currentUser?.firstName ?? "there",
-                                prices: BriefingPriceData(
-                                    btcPrice: viewModel.btcPrice,
-                                    btcChange: viewModel.btcChange24h,
-                                    ethPrice: viewModel.ethPrice,
-                                    ethChange: viewModel.ethChange24h,
-                                    solPrice: viewModel.solPrice,
-                                    solChange: viewModel.solChange24h
-                                )
+                                userName: appState.currentUser?.firstName ?? "there"
                             )
                             .padding(.horizontal, 20)
                         }
