@@ -186,21 +186,14 @@ class HomeViewModel {
         // Add current value as the latest point
         relevantHistory.append(PortfolioHistoryPoint(date: Date(), value: portfolioValue))
 
-        // For 1H / 1D: history snapshots are at most daily, so synthesize
-        // a start→end line from the live 24h change data when history is sparse.
-        if relevantHistory.count < 3 && (period == .hour || period == .day) {
+        // When history is sparse (< 5 points), synthesize a natural curve
+        // so the sparkline doesn't render as a straight line.
+        if relevantHistory.count < 5 {
             let change = getChangeForTimePeriod(period)
             let previousValue = portfolioValue - change.amount
-            if previousValue > 0 {
-                return normalizeValues([previousValue, portfolioValue])
-            }
-        }
-
-        // For longer periods with insufficient history, fall back to cost basis
-        if relevantHistory.count < 2 {
-            let totalCost = portfolioHoldings.reduce(0) { $0 + $1.totalCost }
-            if totalCost > 0 {
-                return normalizeValues([totalCost, portfolioValue])
+            let startValue = previousValue > 0 ? previousValue : (portfolioHoldings.reduce(0) { $0 + $1.totalCost })
+            if startValue > 0 {
+                return synthesizeCurve(from: startValue, to: portfolioValue)
             }
             return [0.5, 0.5]
         }
@@ -225,6 +218,34 @@ class HomeViewModel {
             }
         }
         return values.map { CGFloat(($0 - minVal) / range) }
+    }
+
+    /// Synthesizes a natural-looking curve between two values by generating
+    /// intermediate points with deterministic variation based on the date.
+    /// Produces 8 segments so the Catmull-Rom spline renders a smooth curve.
+    private func synthesizeCurve(from startValue: Double, to endValue: Double, segments: Int = 8) -> [CGFloat] {
+        let totalChange = endValue - startValue
+        var values: [Double] = [startValue]
+
+        // Use day-of-year as seed for deterministic but daily-varying wobble
+        let daySeed = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+
+        for i in 1..<segments {
+            let progress = Double(i) / Double(segments)
+            // Ease-in-out curve for the base trend
+            let eased = progress * progress * (3.0 - 2.0 * progress)
+            let baseValue = startValue + totalChange * eased
+
+            // Add deterministic wobble (±3% of total change) using a simple hash
+            let hash = (daySeed * 31 + i * 17) % 100
+            let wobbleFactor = (Double(hash) / 100.0 - 0.5) * 0.06
+            let wobble = abs(totalChange) * wobbleFactor
+
+            values.append(baseValue + wobble)
+        }
+
+        values.append(endValue)
+        return normalizeValues(values)
     }
 
     // Composite Risk Score (0-100)
