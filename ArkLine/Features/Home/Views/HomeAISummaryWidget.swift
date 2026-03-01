@@ -6,6 +6,10 @@ struct HomeAISummaryWidget: View {
     let isLoading: Bool
     let userName: String
     var size: WidgetSize = .standard
+    var isAdmin: Bool = false
+    var onFeedback: ((Bool, String?) -> Void)? = nil
+    @State private var showNoteField = false
+    @State private var feedbackNote = ""
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -55,9 +59,89 @@ struct HomeAISummaryWidget: View {
                     .font(AppFonts.body14)
                     .foregroundColor(textPrimary.opacity(0.3))
             }
+
+            // Admin feedback row
+            if isAdmin, summary != nil {
+                feedbackRow
+            }
         }
         .padding(size == .compact ? 14 : 18)
         .glassCard(cornerRadius: 16)
+    }
+
+    // MARK: - Admin Feedback
+
+    private var currentRating: Bool? {
+        summary?.feedbackRating
+    }
+
+    @ViewBuilder
+    private var feedbackRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Divider().opacity(0.2)
+
+            HStack(spacing: 12) {
+                Text("Rate this briefing")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(textPrimary.opacity(0.5))
+
+                Spacer()
+
+                // Thumbs up
+                Button {
+                    onFeedback?(true, nil)
+                    showNoteField = false
+                    feedbackNote = ""
+                } label: {
+                    Image(systemName: currentRating == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+                        .font(.system(size: 16))
+                        .foregroundColor(currentRating == true ? AppColors.success : textPrimary.opacity(0.4))
+                }
+
+                // Thumbs down
+                Button {
+                    onFeedback?(false, nil)
+                    showNoteField = true
+                } label: {
+                    Image(systemName: currentRating == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                        .font(.system(size: 16))
+                        .foregroundColor(currentRating == false ? AppColors.error : textPrimary.opacity(0.4))
+                }
+            }
+
+            // Note field (shown after thumbs down)
+            if showNoteField || (currentRating == false && summary?.feedbackNote != nil) {
+                HStack(spacing: 8) {
+                    TextField("What could be better?", text: $feedbackNote)
+                        .font(AppFonts.caption12)
+                        .textFieldStyle(.plain)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+                        )
+
+                    Button {
+                        let note = feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines)
+                        onFeedback?(false, note.isEmpty ? nil : note)
+                        showNoteField = false
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? textPrimary.opacity(0.2) : AppColors.accent)
+                    }
+                    .disabled(feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                .onAppear {
+                    // Pre-fill with existing note if any
+                    if let existingNote = summary?.feedbackNote, feedbackNote.isEmpty {
+                        feedbackNote = existingNote
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Parsed Posture

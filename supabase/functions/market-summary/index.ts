@@ -63,6 +63,28 @@ Deno.serve(async (req) => {
     return ok({ error: "Summary service unavailable" })
   }
 
+  // Query recent negative feedback to improve future briefings
+  let feedbackBlock = ""
+  try {
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    const { data: feedback } = await supabase
+      .from("briefing_feedback")
+      .select("note")
+      .eq("rating", false)
+      .not("note", "is", null)
+      .gte("summary_date", fourteenDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(5)
+
+    if (feedback && feedback.length > 0) {
+      const notes = feedback.map((f: { note: string }) => `- ${f.note}`).join("\n")
+      feedbackBlock = `\n\nRecent user feedback to improve your writing:\n${notes}\nPlease incorporate this feedback into your style.`
+      console.log(`Injecting ${feedback.length} feedback notes into prompt`)
+    }
+  } catch (err) {
+    console.error("Feedback query failed:", err instanceof Error ? err.message : String(err))
+  }
+
   // Build market data context
   const sections: string[] = []
 
@@ -181,7 +203,7 @@ Rules:
 - Never give investment advice or say "buy" / "sell"
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
 - Keep total length under 150 words
-- Never start any section with "Today" or "The market"`,
+- Never start any section with "Today" or "The market"${feedbackBlock}`,
         messages: [
           {
             role: "user",

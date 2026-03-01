@@ -89,6 +89,27 @@ final class MarketSummaryService {
         }
     }
 
+    // MARK: - Feedback Types
+
+    struct BriefingFeedback: Encodable {
+        let userId: String
+        let summaryDate: String
+        let slot: String
+        let rating: Bool
+        let note: String?
+
+        enum CodingKeys: String, CodingKey {
+            case userId = "user_id"
+            case summaryDate = "summary_date"
+            case slot, rating, note
+        }
+    }
+
+    private struct BriefingFeedbackRow: Decodable {
+        let rating: Bool
+        let note: String?
+    }
+
     // MARK: - Public API
 
     func fetchSummary(payload: MarketSummaryPayload) async throws -> MarketSummary {
@@ -100,6 +121,8 @@ final class MarketSummaryService {
         guard SupabaseManager.shared.isConfigured else {
             throw MarketSummaryError.notConfigured
         }
+
+        let (summaryDate, slot) = currentESTSlot()
 
         do {
             let data: Data = try await SupabaseManager.shared.functions.invoke(
@@ -114,7 +137,18 @@ final class MarketSummaryService {
 
             if let summary = response.summary, !summary.isEmpty {
                 let generatedAt = parseDate(response.generatedAt)
-                let result = MarketSummary(summary: summary, generatedAt: generatedAt)
+
+                // Hydrate feedback state for this briefing
+                let feedback = await fetchFeedback(summaryDate: summaryDate, slot: slot)
+
+                let result = MarketSummary(
+                    summary: summary,
+                    generatedAt: generatedAt,
+                    summaryDate: summaryDate,
+                    slot: slot,
+                    feedbackRating: feedback?.rating,
+                    feedbackNote: feedback?.note
+                )
                 APICache.shared.set(Self.cacheKey, value: result, ttl: Self.cacheTTL)
                 return result
             }
@@ -139,6 +173,84 @@ final class MarketSummaryService {
         }
     }
 
+    // MARK: - Feedback
+
+    func submitFeedback(userId: UUID, summaryDate: String, slot: String, rating: Bool, note: String?) async throws {
+        guard SupabaseManager.shared.isConfigured else { return }
+
+        let feedback = BriefingFeedback(
+            userId: userId.uuidString,
+            summaryDate: summaryDate,
+            slot: slot,
+            rating: rating,
+            note: note
+        )
+
+        try await SupabaseManager.shared.database
+            .from("briefing_feedback")
+            .upsert(feedback, onConflict: "summary_date,slot")
+            .execute()
+
+        // Invalidate client cache so feedback state refreshes
+        APICache.shared.remove(Self.cacheKey)
+
+        logDebug("Briefing feedback submitted: \(rating ? "👍" : "👎") for \(summaryDate)/\(slot)", category: .data)
+    }
+
+    // MARK: - Private
+
+    private func fetchFeedback(summaryDate: String, slot: String) async -> BriefingFeedbackRow? {
+        guard SupabaseManager.shared.isConfigured else { return nil }
+        do {
+            let rows: [BriefingFeedbackRow] = try await SupabaseManager.shared.database
+                .from("briefing_feedback")
+                .select("rating, note")
+                .eq("summary_date", value: summaryDate)
+                .eq("slot", value: slot)
+                .limit(1)
+                .execute()
+                .value
+            return rows.first
+        } catch {
+            logError("Feedback query failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+
+    /// Returns (YYYY-MM-DD, slot) for the current EST time, mirroring edge function logic.
+    func currentESTSlot(from date: Date = Date()) -> (String, String) {
+        let year = Calendar(identifier: .gregorian).component(.year, from: date)
+
+        // DST: second Sunday of March to first Sunday of November
+        let marchSecondSunday = nthSunday(year: year, month: 3, n: 2)
+        let novFirstSunday = nthSunday(year: year, month: 11, n: 1)
+        let isDST = date >= marchSecondSunday && date < novFirstSunday
+        let offset = isDST ? 4 : 5
+
+        let utcHour = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC")!, from: date).hour ?? 0
+        let estHour = (utcHour - offset + 24) % 24
+
+        let slot = estHour >= 16 ? "evening" : "morning"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        let summaryDate = formatter.string(from: date)
+        return (summaryDate, slot)
+    }
+
+    private func nthSunday(year: Int, month: Int, n: Int) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        var components = DateComponents(year: year, month: month, day: 1, hour: 7)
+        guard var date = calendar.date(from: components) else { return Date() }
+        var count = 0
+        while count < n {
+            if calendar.component(.weekday, from: date) == 1 { count += 1 }
+            if count < n { date = calendar.date(byAdding: .day, value: 1, to: date)! }
+        }
+        return date
+    }
+
     private func parseDate(_ string: String?) -> Date {
         guard let string else { return Date() }
         let formatter = ISO8601DateFormatter()
@@ -151,6 +263,10 @@ final class MarketSummaryService {
 struct MarketSummary {
     let summary: String
     let generatedAt: Date
+    let summaryDate: String
+    let slot: String
+    var feedbackRating: Bool?
+    var feedbackNote: String?
 }
 
 // MARK: - Error

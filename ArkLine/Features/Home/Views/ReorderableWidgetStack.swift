@@ -234,7 +234,12 @@ struct ReorderableWidgetStack: View {
                 summary: viewModel.marketSummary,
                 isLoading: viewModel.isLoadingSummary,
                 userName: "there",
-                size: appState.widgetSize(.aiMarketSummary)
+                size: appState.widgetSize(.aiMarketSummary),
+                isAdmin: appState.currentUser?.isAdmin == true,
+                onFeedback: appState.currentUser?.isAdmin == true ? { rating, note in
+                    guard let userId = appState.currentUser?.id else { return }
+                    Task { await viewModel.submitBriefingFeedback(rating: rating, note: note, userId: userId) }
+                } : nil
             )
         }
     }

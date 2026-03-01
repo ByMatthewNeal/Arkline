@@ -886,6 +886,37 @@ class HomeViewModel {
         }
     }
 
+    // MARK: - Briefing Feedback
+
+    func submitBriefingFeedback(rating: Bool, note: String?, userId: UUID) async {
+        guard let summary = marketSummary else { return }
+        let service = MarketSummaryService.shared
+
+        // Optimistic update
+        await MainActor.run {
+            self.marketSummary = MarketSummary(
+                summary: summary.summary,
+                generatedAt: summary.generatedAt,
+                summaryDate: summary.summaryDate,
+                slot: summary.slot,
+                feedbackRating: rating,
+                feedbackNote: note
+            )
+        }
+
+        do {
+            try await service.submitFeedback(
+                userId: userId,
+                summaryDate: summary.summaryDate,
+                slot: summary.slot,
+                rating: rating,
+                note: note
+            )
+        } catch {
+            logError("Failed to submit briefing feedback: \(error.localizedDescription)", category: .network)
+        }
+    }
+
     // MARK: - AI Market Summary
 
     func fetchMarketSummary() async {
