@@ -1,9 +1,21 @@
 import SwiftUI
 
+// MARK: - Briefing Price Data
+struct BriefingPriceData {
+    let btcPrice: Double
+    let btcChange: Double
+    let ethPrice: Double
+    let ethChange: Double
+    let solPrice: Double
+    let solChange: Double
+}
+
 // MARK: - AI Daily Market Summary Widget
 struct HomeAISummaryWidget: View {
     let summary: MarketSummary?
     let isLoading: Bool
+    let userName: String
+    var prices: BriefingPriceData?
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
 
@@ -34,15 +46,26 @@ struct HomeAISummaryWidget: View {
                 }
             }
 
+            // Greeting with market posture
+            Text(enhancedGreeting)
+                .font(AppFonts.body14)
+                .foregroundColor(textPrimary.opacity(0.85))
+
+            // Sentiment pill
+            if let posture = parsedPosture {
+                sentimentPill(posture)
+            }
+
+            // Inline price cards
+            if let prices, prices.btcPrice > 0, size != .compact {
+                priceCardsRow(prices)
+            }
+
             // Body
             if summary == nil && isLoading {
                 shimmerPlaceholder
             } else if let summary {
-                Text(summary.summary)
-                    .font(AppFonts.body14)
-                    .foregroundColor(textPrimary.opacity(0.7))
-                    .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
+                structuredSummary(summary.summary)
             } else {
                 Text("Market briefing unavailable")
                     .font(AppFonts.body14)
@@ -53,11 +76,245 @@ struct HomeAISummaryWidget: View {
         .glassCard(cornerRadius: 16)
     }
 
+    // MARK: - Parsed Posture
+
+    private enum MarketPosture {
+        case riskOn(String)
+        case riskOff(String)
+        case neutral(String)
+
+        var label: String {
+            switch self {
+            case .riskOn: return "Risk-On"
+            case .riskOff: return "Risk-Off"
+            case .neutral: return "Neutral"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .riskOn: return AppColors.success
+            case .riskOff: return AppColors.error
+            case .neutral: return AppColors.warning
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .riskOn: return "arrow.up.right"
+            case .riskOff: return "arrow.down.right"
+            case .neutral: return "arrow.right"
+            }
+        }
+
+        var detail: String {
+            switch self {
+            case .riskOn(let d), .riskOff(let d), .neutral(let d): return d
+            }
+        }
+    }
+
+    private var parsedPosture: MarketPosture? {
+        guard let text = summary?.summary else { return nil }
+        let sections = parseSections(text)
+        guard let postureSection = sections.first(where: { $0.header.lowercased() == "posture" }) else { return nil }
+        let body = postureSection.body.lowercased()
+        if body.contains("risk-on") || body.contains("risk on") {
+            return .riskOn(postureSection.body)
+        } else if body.contains("risk-off") || body.contains("risk off") {
+            return .riskOff(postureSection.body)
+        } else {
+            return .neutral(postureSection.body)
+        }
+    }
+
+    // MARK: - Enhanced Greeting
+
+    private var enhancedGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let timeGreeting: String
+        if hour < 12 {
+            timeGreeting = "Good morning"
+        } else if hour < 17 {
+            timeGreeting = "Good afternoon"
+        } else {
+            timeGreeting = "Good evening"
+        }
+
+        if let posture = parsedPosture {
+            let timeOfDay = hour >= 17 ? "tonight" : "today"
+            return "\(timeGreeting), \(userName). Markets are \(posture.label.lowercased()) \(timeOfDay)."
+        }
+
+        return "\(timeGreeting), \(userName)."
+    }
+
+    // MARK: - Sentiment Pill
+
+    private func sentimentPill(_ posture: MarketPosture) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: posture.icon)
+                .font(.system(size: 10, weight: .bold))
+
+            Text(posture.label)
+                .font(.system(size: 11, weight: .semibold))
+        }
+        .foregroundColor(posture.color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(posture.color.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
+    // MARK: - Price Cards
+
+    private func priceCardsRow(_ data: BriefingPriceData) -> some View {
+        HStack(spacing: 8) {
+            priceCard(symbol: "BTC", price: data.btcPrice, change: data.btcChange)
+            priceCard(symbol: "ETH", price: data.ethPrice, change: data.ethChange)
+            priceCard(symbol: "SOL", price: data.solPrice, change: data.solChange)
+        }
+    }
+
+    private func priceCard(symbol: String, price: Double, change: Double) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(symbol)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(textPrimary.opacity(0.5))
+
+            Text(formatCompactPrice(price))
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundColor(textPrimary)
+
+            HStack(spacing: 2) {
+                Image(systemName: change >= 0 ? "arrow.up" : "arrow.down")
+                    .font(.system(size: 8, weight: .bold))
+                Text(String(format: "%.1f%%", abs(change)))
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+            }
+            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
+        )
+    }
+
+    private func formatCompactPrice(_ price: Double) -> String {
+        if price >= 1000 {
+            return "$\(String(format: "%.0f", price).formattedWithCommas)"
+        } else if price >= 1 {
+            return "$\(String(format: "%.2f", price))"
+        } else {
+            return "$\(String(format: "%.4f", price))"
+        }
+    }
+
+    // MARK: - Structured Summary
+
+    @ViewBuilder
+    private func structuredSummary(_ text: String) -> some View {
+        let sections = parseSections(text).filter { $0.header.lowercased() != "posture" }
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(sections, id: \.header) { section in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(section.header)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.accent)
+                        .textCase(.uppercase)
+                        .tracking(0.5)
+
+                    Text(section.body)
+                        .font(AppFonts.body14)
+                        .foregroundColor(textPrimary.opacity(0.7))
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private struct SummarySection: Hashable {
+        let header: String
+        let body: String
+    }
+
+    private func parseSections(_ text: String) -> [SummarySection] {
+        let lines = text.components(separatedBy: "\n")
+        var sections: [SummarySection] = []
+        var currentHeader: String?
+        var currentLines: [String] = []
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("## ") {
+                // Save previous section
+                if let header = currentHeader {
+                    let body = currentLines.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                    if !body.isEmpty {
+                        sections.append(SummarySection(header: String(header.dropFirst(3)), body: body))
+                    }
+                }
+                currentHeader = trimmed
+                currentLines = []
+            } else if !trimmed.isEmpty {
+                currentLines.append(trimmed)
+            }
+        }
+
+        // Save last section
+        if let header = currentHeader {
+            let body = currentLines.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            if !body.isEmpty {
+                sections.append(SummarySection(header: String(header.dropFirst(3)), body: body))
+            }
+        }
+
+        // Fallback: if no sections parsed, show as single block
+        if sections.isEmpty && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            sections.append(SummarySection(header: "Overview", body: text.trimmingCharacters(in: .whitespacesAndNewlines)))
+        }
+
+        return sections
+    }
+
     // MARK: - Shimmer Placeholder
 
     private var shimmerPlaceholder: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            shimmerLine(maxWidth: .infinity)
+        VStack(alignment: .leading, spacing: 12) {
+            // Posture pill shimmer
+            RoundedRectangle(cornerRadius: 10)
+                .fill(shimmerFill)
+                .frame(width: 80, height: 24)
+
+            // Price cards shimmer
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { _ in
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(shimmerFill)
+                        .frame(maxWidth: .infinity, minHeight: 56, maxHeight: 56)
+                }
+            }
+
+            // Section shimmer
+            shimmerSection()
+            // Section shimmer
+            shimmerSection()
+        }
+    }
+
+    private var shimmerFill: some ShapeStyle {
+        colorScheme == .dark
+            ? Color.white.opacity(0.06)
+            : Color.black.opacity(0.06)
+    }
+
+    private func shimmerSection() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            shimmerLine(maxWidth: 120)
             shimmerLine(maxWidth: .infinity)
             shimmerLine(maxWidth: 200)
         }
@@ -86,3 +343,13 @@ struct HomeAISummaryWidget: View {
     }
 }
 
+// MARK: - Number Formatting Helper
+private extension String {
+    var formattedWithCommas: String {
+        guard let number = Double(self) else { return self }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: number)) ?? self
+    }
+}

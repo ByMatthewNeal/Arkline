@@ -893,10 +893,15 @@ class HomeViewModel {
         isLoadingSummary = true
         defer { isLoadingSummary = false }
 
-        // Build M2 signal string
-        var m2Signal: String? = nil
-        if let m2 = globalLiquidityChanges {
-            m2Signal = "\(m2.overallSignal.rawValue) (monthly \(String(format: "%+.1f", m2.monthlyChange))%)"
+        let service = MarketSummaryService.shared
+
+        // Fetch S&P 500 and NASDAQ quotes in parallel
+        let (sp500, nasdaq) = await service.fetchIndexQuotes()
+
+        // Build net liquidity signal
+        var netLiqSignal: String? = nil
+        if let nl = netLiquidityData {
+            netLiqSignal = "\(nl.overallSignal.rawValue) (\(nl.formattedCurrent), weekly \(String(format: "%+.1f", nl.weeklyChange))%)"
         }
 
         let payload = MarketSummaryService.MarketSummaryPayload(
@@ -906,6 +911,10 @@ class HomeViewModel {
             ethChange24h: ethPrice > 0 ? ethChange24h : nil,
             solPrice: solPrice > 0 ? solPrice : nil,
             solChange24h: solPrice > 0 ? solChange24h : nil,
+            sp500Price: sp500?.price,
+            sp500Change: sp500?.change,
+            nasdaqPrice: nasdaq?.price,
+            nasdaqChange: nasdaq?.change,
             fearGreedValue: fearGreedIndex.map { $0.value },
             fearGreedClassification: fearGreedIndex?.classification,
             riskScore: arkLineRiskScore?.score,
@@ -914,21 +923,15 @@ class HomeViewModel {
             vixSignal: vixData?.signalDescription,
             dxyValue: dxyData?.value,
             dxySignal: dxyData?.signalDescription,
-            m2Signal: m2Signal,
-            topGainers: topGainers.prefix(3).map {
-                .init(symbol: $0.symbol.uppercased(), change: $0.priceChangePercentage24h)
-            },
-            topLosers: topLosers.prefix(3).map {
-                .init(symbol: $0.symbol.uppercased(), change: $0.priceChangePercentage24h)
-            },
-            economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map {
-                .init(title: $0.title)
+            netLiquiditySignal: netLiqSignal,
+            economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map { event in
+                .init(title: event.title, time: event.timeFormatted)
             },
             newsHeadlines: Array(newsItems.prefix(3).map { $0.title })
         )
 
         do {
-            let summary = try await MarketSummaryService.shared.fetchSummary(payload: payload)
+            let summary = try await service.fetchSummary(payload: payload)
             await MainActor.run { self.marketSummary = summary }
         } catch {
             logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)

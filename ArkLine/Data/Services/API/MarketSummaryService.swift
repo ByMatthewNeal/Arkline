@@ -2,13 +2,15 @@ import Foundation
 import Supabase
 
 // MARK: - Market Summary Service
-/// Fetches AI-generated daily market summaries via the market-summary edge function.
-/// Summaries are cached server-side (one per day) so all users share the same result.
+/// Fetches AI-generated market summaries via the market-summary edge function.
+/// Generated twice daily (10:00 AM EST / 4:30 PM EST) and cached server-side.
 final class MarketSummaryService {
     static let shared = MarketSummaryService()
 
-    private static let cacheKey = "market_summary_daily"
-    private static let cacheTTL: TimeInterval = 14400 // 4 hours
+    private static let cacheKey = "market_summary_session"
+    private static let cacheTTL: TimeInterval = 7200 // 2 hours
+
+    private let yahooService = YahooFinanceService.shared
 
     private init() {}
 
@@ -21,6 +23,10 @@ final class MarketSummaryService {
         let ethChange24h: Double?
         let solPrice: Double?
         let solChange24h: Double?
+        let sp500Price: Double?
+        let sp500Change: Double?
+        let nasdaqPrice: Double?
+        let nasdaqChange: Double?
         let fearGreedValue: Int?
         let fearGreedClassification: String?
         let riskScore: Int?
@@ -29,26 +35,44 @@ final class MarketSummaryService {
         let vixSignal: String?
         let dxyValue: Double?
         let dxySignal: String?
-        let m2Signal: String?
-        let topGainers: [MoverEntry]?
-        let topLosers: [MoverEntry]?
+        let netLiquiditySignal: String?
         let economicEvents: [EventEntry]?
         let newsHeadlines: [String]?
     }
 
-    struct MoverEntry: Encodable {
-        let symbol: String
-        let change: Double
-    }
-
     struct EventEntry: Encodable {
         let title: String
+        let time: String?
     }
 
     private struct SummaryResponse: Decodable {
         let summary: String?
         let generatedAt: String?
         let error: String?
+    }
+
+    // MARK: - Index Quotes
+
+    /// Fetch S&P 500 and NASDAQ current price + daily change %
+    func fetchIndexQuotes() async -> (sp500: (price: Double, change: Double)?, nasdaq: (price: Double, change: Double)?) {
+        async let sp500Task: (price: Double, change: Double)? = fetchQuote(symbol: "^GSPC")
+        async let nasdaqTask: (price: Double, change: Double)? = fetchQuote(symbol: "^IXIC")
+        return await (sp500Task, nasdaqTask)
+    }
+
+    private func fetchQuote(symbol: String) async -> (price: Double, change: Double)? {
+        do {
+            let result = try await yahooService.fetchChartBars(symbol: symbol, interval: "1d", range: "5d")
+            let price = result.currentPrice
+            var change = 0.0
+            if let prevClose = result.previousClose, prevClose > 0 {
+                change = ((price - prevClose) / prevClose) * 100
+            }
+            return (price, change)
+        } catch {
+            logError("Index quote fetch failed for \(symbol): \(error.localizedDescription)", category: .network)
+            return nil
+        }
     }
 
     // MARK: - Public API
@@ -85,7 +109,13 @@ final class MarketSummaryService {
             logWarning("Market summary returned no summary, error: \(errorMsg)", category: .network)
             throw MarketSummaryError.emptyResponse
         } catch let error as FunctionsError {
-            logError("Market summary FunctionsError: \(error)", category: .network)
+            switch error {
+            case .httpError(let code, let data):
+                let body = String(data: data, encoding: .utf8) ?? "nil"
+                logError("Market summary HTTP \(code): \(body)", category: .network)
+            case .relayError:
+                logError("Market summary relay error", category: .network)
+            }
             throw MarketSummaryError.networkError(error)
         } catch let error as MarketSummaryError {
             throw error
