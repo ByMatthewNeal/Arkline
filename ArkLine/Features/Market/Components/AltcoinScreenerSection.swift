@@ -74,6 +74,7 @@ struct AltcoinScreenerSection: View {
     @State private var highlightedCoinId: String?
     @State private var timeRange: ScreenerTimeRange = .thirtyDays
     @State private var showFullscreen = false
+    @State private var showExpandedTable = false
 
     // Per-range cache
     @State private var dataCache: [ScreenerTimeRange: (data: [CoinScreenerData], fetchedAt: Date)] = [:]
@@ -134,8 +135,23 @@ struct AltcoinScreenerSection: View {
                     screenerChart
                         .padding(.horizontal, 20)
 
-                    rankedTable
-                        .padding(.horizontal, 20)
+                    VStack(spacing: 6) {
+                        rankedTable
+                            .padding(.horizontal, 20)
+
+                        Button {
+                            showExpandedTable = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("View Full Table")
+                                    .font(.system(size: 12, weight: .medium))
+                                Image(systemName: "arrow.up.forward")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .foregroundColor(AppColors.accent)
+                        }
+                        .padding(.top, 2)
+                    }
                 }
             }
         }
@@ -149,6 +165,13 @@ struct AltcoinScreenerSection: View {
                 onTimeRangeChange: { newRange in
                     Task { await switchTimeRange(to: newRange) }
                 }
+            )
+        }
+        .sheet(isPresented: $showExpandedTable) {
+            ExpandedScreenerTableView(
+                screenData: screenData,
+                timeRange: timeRange,
+                highlightedCoinId: $highlightedCoinId
             )
         }
     }
@@ -949,6 +972,114 @@ struct AltcoinScreenerFullscreenView: View {
             }
             #endif
         }
+    }
+}
+
+// MARK: - Expanded Screener Table View
+
+struct ExpandedScreenerTableView: View {
+    let screenData: [CoinScreenerData]
+    let timeRange: ScreenerTimeRange
+    @Binding var highlightedCoinId: String?
+
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    private var sorted: [CoinScreenerData] {
+        screenData.sorted { $0.totalReturn > $1.totalReturn }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header row
+                    HStack(spacing: 0) {
+                        Text("#")
+                            .frame(width: 36, alignment: .center)
+                        Text("Symbol")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(timeRange.columnLabel)
+                            .frame(width: 100, alignment: .trailing)
+                        Text("vs BTC")
+                            .frame(width: 90, alignment: .trailing)
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+
+                    Divider()
+                        .padding(.horizontal, 20)
+
+                    ForEach(Array(sorted.enumerated()), id: \.element.id) { index, coin in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                highlightedCoinId = highlightedCoinId == coin.id ? nil : coin.id
+                            }
+                        } label: {
+                            HStack(spacing: 0) {
+                                HStack(spacing: 6) {
+                                    Circle().fill(coin.color).frame(width: 10, height: 10)
+                                    Text("\(index + 1)")
+                                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                                        .foregroundColor(textPrimary.opacity(0.5))
+                                }
+                                .frame(width: 36, alignment: .center)
+
+                                Text(coin.symbol)
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(textPrimary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                Text(String(format: "%+.2f%%", coin.totalReturn))
+                                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+                                    .frame(width: 100, alignment: .trailing)
+
+                                if let vs = coin.vsBTC {
+                                    Text(String(format: "%+.2f%%", vs))
+                                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                                        .foregroundColor(vs >= 0 ? AppColors.success : AppColors.error)
+                                        .frame(width: 90, alignment: .trailing)
+                                } else {
+                                    Text("—")
+                                        .font(.system(size: 15))
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .frame(width: 90, alignment: .trailing)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(
+                                highlightedCoinId == coin.id
+                                    ? coin.color.opacity(0.1)
+                                    : Color.clear
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        if index < sorted.count - 1 {
+                            Divider()
+                                .padding(.horizontal, 20)
+                        }
+                    }
+                }
+                .padding(.bottom, 40)
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Altcoin Screener · \(timeRange.rawValue)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
     }
 }
 
