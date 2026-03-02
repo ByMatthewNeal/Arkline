@@ -114,6 +114,7 @@
 		55F1848F4D9A6BD6520409F6 /* MemberRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A7B78682470516CE6512242 /* MemberRow.swift */; };
 		5605DA56CF5EFF3F689E634B /* APIGlobalLiquidityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */; };
 		F3A1B2C3D4E5F6A7B8C9D0E2 /* DCANotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */; };
+		B4C5D6E7F8A9B0C1D2E3F4A5 /* BriefingNotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F7A8B9C0D1E2F4 /* BriefingNotificationScheduler.swift */; };
 		56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */; };
 		57CACD5F5AC3FA93AF2C8580 /* MockNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6E843529C78DE117880236 /* MockNewsService.swift */; };
 		581C2AB056474B7FBA017E4E /* InviteCodeServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4A8F1D3371F817035149AF /* InviteCodeServiceProtocol.swift */; };
@@ -464,6 +465,7 @@
 		09155A7D40A9D0C232F622A8 /* DXYServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DXYServiceProtocol.swift; sourceTree = "<group>"; };
 		09632E6060BBE9A1576A3022 /* APIPortfolioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIPortfolioService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCANotificationScheduler.swift; sourceTree = "<group>"; };
+		A2B3C4D5E6F7A8B9C0D1E2F4 /* BriefingNotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingNotificationScheduler.swift; sourceTree = "<group>"; };
 		0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCACalculatorService.swift; sourceTree = "<group>"; };
 		0C22DD319B73C871D34DC38B /* MemberManagementView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberManagementView.swift; sourceTree = "<group>"; };
 		0C8185913CA90DB0567893C5 /* CommunityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityView.swift; sourceTree = "<group>"; };
@@ -2032,6 +2034,7 @@
 				60C92EA963C7A8B668467866 /* DataPrefetcher.swift */,
 				4C7163E8A84CD6F7F613F75C /* AppError.swift */,
 				3C61F540DDA869CAAFC93657 /* Constants.swift */,
+				A2B3C4D5E6F7A8B9C0D1E2F4 /* BriefingNotificationScheduler.swift */,
 				A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */,
 				0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */,
 				6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */,
@@ -2308,6 +2311,7 @@
 				3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */,
 				56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */,
 				F3A1B2C3D4E5F6A7B8C9D0E2 /* DCANotificationScheduler.swift in Sources */,
+				B4C5D6E7F8A9B0C1D2E3F4A5 /* BriefingNotificationScheduler.swift in Sources */,
 				4C8160414F9E10ADFB569E1E /* DCACalculatorView.swift in Sources */,
 				7315E035C2C0BFD44CEDC052 /* DCAListView.swift in Sources */,
 				DCA0C0MP0N3NT5SW1FT0002 /* DCAComponents.swift in Sources */,

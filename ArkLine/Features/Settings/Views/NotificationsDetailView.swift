@@ -15,6 +15,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifySentimentShifts)
     private var sentimentShifts = true
 
+    @AppStorage(Constants.UserDefaults.notifyBriefings)
+    private var dailyBriefings = true
+
     @AppStorage(Constants.UserDefaults.notifyInsights)
     private var insights = true
 
@@ -37,6 +40,29 @@ struct NotificationsDetailView: View {
         ZStack {
             MeshGradientBackground()
             List {
+                // MARK: - Daily Briefings
+                Section {
+                    Toggle(isOn: $dailyBriefings) {
+                        NotificationRow(
+                            icon: "sparkles",
+                            iconColor: AppColors.accent,
+                            title: "Daily Briefings",
+                            description: "Morning Intel (10:15 AM) & Close & Context (5:00 PM)"
+                        )
+                    }
+                    .onChange(of: dailyBriefings) { _, newValue in
+                        Haptics.selection()
+                        if newValue {
+                            Task { await BriefingNotificationScheduler.scheduleAll() }
+                        } else {
+                            BriefingNotificationScheduler.cancelAll()
+                        }
+                    }
+                } header: {
+                    Text("Daily Briefings")
+                }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+
                 // MARK: - Investment Reminders
                 Section {
                     Toggle(isOn: $dcaReminders) {

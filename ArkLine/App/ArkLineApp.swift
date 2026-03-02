@@ -29,6 +29,9 @@ struct ArkLineApp: App {
                         await handleDeepLink(url)
                     }
                 }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BriefingNotificationTapped"))) { _ in
+                    appState.selectedTab = .home
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -67,6 +70,9 @@ struct ArkLineApp: App {
                 logError("Notification permission error: \(error)", category: .data)
             }
         }
+
+        // Sync daily briefing notifications
+        Task { await BriefingNotificationScheduler.sync() }
     }
 
     private func handleDeepLink(_ url: URL) async {
@@ -85,6 +91,8 @@ struct ArkLineApp: App {
                     userInfo: ["code": code]
                 )
             }
+        } else if url.host == "briefing" {
+            await MainActor.run { appState.selectedTab = .home }
         } else if url.host == "broadcast" {
             // Handle broadcast deep link: arkline://broadcast?id=UUID
             if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
@@ -599,9 +607,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) {
         // Handle notification response
         if let result = BroadcastNotificationService.shared.handleNotificationResponse(response) {
-            // Post notification for navigation
+            let notificationName: Notification.Name = result.type == "briefing"
+                ? Notification.Name("BriefingNotificationTapped")
+                : Notification.Name("BroadcastNotificationTapped")
             NotificationCenter.default.post(
-                name: Notification.Name("BroadcastNotificationTapped"),
+                name: notificationName,
                 object: nil,
                 userInfo: ["type": result.type, "id": result.id]
             )

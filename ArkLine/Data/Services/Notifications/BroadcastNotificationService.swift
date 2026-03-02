@@ -268,7 +268,14 @@ class BroadcastNotificationService: ObservableObject {
             options: [.customDismissAction]
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory])
+        let briefingCategory = UNNotificationCategory(
+            identifier: "BRIEFING",
+            actions: [],
+            intentIdentifiers: [],
+            options: []
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory])
     }
 }
 
@@ -286,6 +293,9 @@ extension BroadcastNotificationService {
             if let broadcastId = userInfo["broadcast_id"] as? String {
                 return (type: "broadcast", id: broadcastId)
             }
+        case "briefing":
+            let slot = userInfo["slot"] as? String ?? "morning"
+            return (type: "briefing", id: slot)
         default:
             break
         }
