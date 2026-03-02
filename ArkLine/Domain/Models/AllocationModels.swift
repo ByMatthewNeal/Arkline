@@ -69,6 +69,20 @@ enum MacroRegimeQuadrant: String, CaseIterable {
         case .riskOffDisinflation: return "Cautious"
         }
     }
+
+    /// Crypto-specific positioning guidance for the AI daily briefing
+    var cryptoPositioning: String {
+        switch self {
+        case .riskOnDisinflation:
+            return "Full exposure — growth is strong and liquidity conditions are easing. Historically the best regime for crypto."
+        case .riskOnInflation:
+            return "Selective exposure — growth is solid but inflation may trigger tightening. Favor large-caps (BTC, ETH), trim alts."
+        case .riskOffInflation:
+            return "Defensive — growth is slowing while inflation persists. Reduce crypto exposure, favor stablecoins and cash."
+        case .riskOffDisinflation:
+            return "Cautious accumulation — growth is weak but easing conditions are building. Small DCA positions, watch for regime shift."
+        }
+    }
 }
 
 // MARK: - Macro Regime Result

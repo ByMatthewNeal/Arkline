@@ -43,6 +43,8 @@ final class MarketSummaryService {
         let goldSignal: String?
         // Canonical macro regime from MacroRegimeCalculator
         let macroRegime: String?
+        // Crypto positioning derived from regime quadrant
+        let cryptoPositioning: String?
         // App signals
         let btcRiskZone: String?
         let ethRiskZone: String?

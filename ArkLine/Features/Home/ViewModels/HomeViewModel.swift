@@ -1065,6 +1065,7 @@ class HomeViewModel {
             macroRegime: currentRegimeResult.map {
                 "\($0.baseRegime.rawValue) (\($0.quadrant.rawValue), Growth: \(Int($0.growthScore))/100, Inflation: \(Int($0.inflationScore))/100)"
             },
+            cryptoPositioning: currentRegimeResult?.quadrant.cryptoPositioning,
             btcRiskZone: riskLevels["BTC"]?.riskCategory,
             ethRiskZone: riskLevels["ETH"]?.riskCategory,
             altcoinSeason: sentimentViewModel?.altcoinSeason?.season,
