@@ -185,8 +185,10 @@ struct HomeAISummaryWidget: View {
                         let rating = selectedRating ?? false
                         let hasNote = !note.isEmpty
                         onFeedback?(rating, hasNote ? note : nil)
-                        feedbackSentWithNote = hasNote
-                        regenerationStart = hasNote ? .now : nil
+                        // Only show regeneration banner for negative feedback with a note
+                        let willRegenerate = !rating && hasNote
+                        feedbackSentWithNote = willRegenerate
+                        regenerationStart = willRegenerate ? .now : nil
                         feedbackNote = ""
                         showNoteField = false
                         feedbackSent = true

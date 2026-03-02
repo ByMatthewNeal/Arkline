@@ -1024,8 +1024,8 @@ class HomeViewModel {
             logError("Failed to submit briefing feedback: \(error.localizedDescription)", category: .network)
         }
 
-        // When a note is provided, regenerate the briefing so feedback is reflected immediately
-        guard hasNote else { return }
+        // Only regenerate on negative feedback with a note (thumbs up = keep the briefing)
+        guard !rating, hasNote else { return }
 
         // Nil out summary so the widget shows shimmer during regeneration
         marketSummary = nil
