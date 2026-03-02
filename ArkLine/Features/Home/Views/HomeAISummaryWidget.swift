@@ -13,6 +13,7 @@ struct HomeAISummaryWidget: View {
     @State private var feedbackNote = ""
     @State private var feedbackSent = false
     @State private var feedbackSentWithNote = false
+    @State private var regenerationStart: Date?
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -54,6 +55,9 @@ struct HomeAISummaryWidget: View {
 
             // Body
             if summary == nil && isLoading {
+                if feedbackSentWithNote {
+                    regeneratingBanner
+                }
                 shimmerPlaceholder
             } else if let summary {
                 structuredSummary(summary.summary)
@@ -70,6 +74,30 @@ struct HomeAISummaryWidget: View {
         }
         .padding(size == .compact ? 14 : 18)
         .glassCard(cornerRadius: 16)
+        .onChange(of: summary?.generatedAt) {
+            // New briefing arrived — reset regeneration state
+            if summary != nil, feedbackSentWithNote {
+                feedbackSentWithNote = false
+                feedbackSent = false
+                selectedRating = nil
+                regenerationStart = nil
+            }
+        }
+    }
+
+    // MARK: - Regeneration Banner
+
+    private var regeneratingBanner: some View {
+        TimelineView(.periodic(from: regenerationStart ?? .now, by: 1)) { context in
+            let elapsed = Int(context.date.timeIntervalSince(regenerationStart ?? context.date))
+            HStack(spacing: 8) {
+                ProgressView()
+                    .scaleEffect(0.7)
+                Text("Regenerating briefing... \(elapsed)s")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(textPrimary.opacity(0.5))
+            }
+        }
     }
 
     // MARK: - Admin Feedback
@@ -152,6 +180,7 @@ struct HomeAISummaryWidget: View {
                         let hasNote = !note.isEmpty
                         onFeedback?(rating, hasNote ? note : nil)
                         feedbackSentWithNote = hasNote
+                        regenerationStart = hasNote ? .now : nil
                         feedbackNote = ""
                         showNoteField = false
                         feedbackSent = true

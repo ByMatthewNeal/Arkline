@@ -990,6 +990,8 @@ class HomeViewModel {
         // When a note is provided, regenerate the briefing so feedback is reflected immediately
         guard hasNote else { return }
 
+        // Nil out summary so the widget shows shimmer during regeneration
+        marketSummary = nil
         isLoadingSummary = true
         do {
             try await service.clearServerCache()
