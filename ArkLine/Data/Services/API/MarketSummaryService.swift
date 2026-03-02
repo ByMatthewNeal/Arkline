@@ -177,6 +177,26 @@ final class MarketSummaryService {
         }
     }
 
+    // MARK: - Cache Management
+
+    /// Clears the server-side cached summary for today (admin only) and the local client cache.
+    func clearServerCache() async throws {
+        guard SupabaseManager.shared.isConfigured else { return }
+
+        struct ClearCachePayload: Encodable {
+            let clearCache = true
+        }
+
+        let _: Data = try await SupabaseManager.shared.functions.invoke(
+            "market-summary",
+            options: FunctionInvokeOptions(body: ClearCachePayload()),
+            decode: { data, _ in data }
+        )
+
+        APICache.shared.remove(Self.cacheKey)
+        logDebug("Server cache cleared for today's briefing", category: .network)
+    }
+
     // MARK: - Feedback
 
     func submitFeedback(userId: UUID, summaryDate: String, slot: String, rating: Bool, note: String?) async throws {

@@ -9,8 +9,10 @@ struct HomeAISummaryWidget: View {
     var isAdmin: Bool = false
     var onFeedback: ((Bool, String?) -> Void)? = nil
     @State private var showNoteField = false
+    @State private var selectedRating: Bool?
     @State private var feedbackNote = ""
     @State private var feedbackSent = false
+    @State private var feedbackSentWithNote = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -76,6 +78,10 @@ struct HomeAISummaryWidget: View {
         summary?.feedbackRating
     }
 
+    private var notePlaceholder: String {
+        selectedRating == true ? "What did you like?" : "What could be better?"
+    }
+
     @ViewBuilder
     private var feedbackRow: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -90,39 +96,45 @@ struct HomeAISummaryWidget: View {
 
                 // Thumbs up
                 Button {
-                    onFeedback?(true, nil)
-                    showNoteField = false
-                    feedbackNote = ""
+                    selectedRating = true
+                    showNoteField = true
+                    feedbackSent = false
+                    feedbackSentWithNote = false
                 } label: {
-                    Image(systemName: currentRating == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+                    Image(systemName: (currentRating == true || selectedRating == true) ? "hand.thumbsup.fill" : "hand.thumbsup")
                         .font(.system(size: 16))
-                        .foregroundColor(currentRating == true ? AppColors.success : textPrimary.opacity(0.4))
+                        .foregroundColor((currentRating == true || selectedRating == true) ? AppColors.success : textPrimary.opacity(0.4))
                 }
 
                 // Thumbs down
                 Button {
-                    onFeedback?(false, nil)
+                    selectedRating = false
                     showNoteField = true
+                    feedbackSent = false
+                    feedbackSentWithNote = false
                 } label: {
-                    Image(systemName: currentRating == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                    Image(systemName: (currentRating == false || selectedRating == false) ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                         .font(.system(size: 16))
-                        .foregroundColor(currentRating == false ? AppColors.error : textPrimary.opacity(0.4))
+                        .foregroundColor((currentRating == false || selectedRating == false) ? AppColors.error : textPrimary.opacity(0.4))
                 }
             }
 
-            // Note field (shown after thumbs down)
+            // Confirmation text
             if feedbackSent {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.success)
-                    Text("Feedback sent")
+                    Text(feedbackSentWithNote ? "Feedback sent — regenerating briefing..." : "Feedback sent")
                         .font(AppFonts.caption12)
                         .foregroundColor(textPrimary.opacity(0.5))
                 }
-            } else if showNoteField || (currentRating == false && summary?.feedbackNote != nil) {
+            }
+
+            // Note field (shown after either thumb)
+            if showNoteField && !feedbackSent {
                 HStack(spacing: 8) {
-                    TextField("What could be better?", text: $feedbackNote)
+                    TextField(notePlaceholder, text: $feedbackNote)
                         .font(AppFonts.caption12)
                         .textFieldStyle(.plain)
                         .padding(.horizontal, 10)
@@ -132,25 +144,41 @@ struct HomeAISummaryWidget: View {
                                 .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
                         )
 
+                    LiveDictationButton(text: $feedbackNote)
+
                     Button {
                         let note = feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines)
-                        onFeedback?(false, note.isEmpty ? nil : note)
+                        let rating = selectedRating ?? false
+                        let hasNote = !note.isEmpty
+                        onFeedback?(rating, hasNote ? note : nil)
+                        feedbackSentWithNote = hasNote
                         feedbackNote = ""
                         showNoteField = false
                         feedbackSent = true
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundColor(feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                ? textPrimary.opacity(0.2) : AppColors.accent)
+                            .foregroundColor(AppColors.accent)
                     }
-                    .disabled(feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .onAppear {
-                    // Pre-fill with existing note if any
                     if let existingNote = summary?.feedbackNote, feedbackNote.isEmpty {
                         feedbackNote = existingNote
                     }
+                }
+
+                // Skip button — submit bare rating without a note
+                Button {
+                    let rating = selectedRating ?? false
+                    onFeedback?(rating, nil)
+                    feedbackSentWithNote = false
+                    feedbackNote = ""
+                    showNoteField = false
+                    feedbackSent = true
+                } label: {
+                    Text("Skip — just rate")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(textPrimary.opacity(0.35))
                 }
             }
         }

@@ -65,6 +65,7 @@
 		2D705F6BFE7C3BF5DE8CBBF0 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = B235140A3BEE72D20E513F81 /* APIEndpoint.swift */; };
 		2DFD1CE8B62B33F45CFAAC17 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0C3702BDFA6D77FCA3BD36 /* SettingsViewModel.swift */; };
 		2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5323582A6D49F73210E861F /* CustomTextField.swift */; };
+		D1C7A8E2F3B94C01A2E5F7B3 /* LiveDictationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7A8E2F3B94C01A2E5F7B4 /* LiveDictationButton.swift */; };
 		2EC5DA90B4B6556747D69F09 /* SentimentGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */; };
 		2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */; };
 		2FBE6DEE830180E1BC1A7EEC /* SantimentServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C54D797B805E0D51C2467C1 /* SantimentServiceProtocol.swift */; };
@@ -658,6 +659,7 @@
 		ED1TTRAN5ACT10N0001 /* EditTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTransactionView.swift; sourceTree = "<group>"; };
 		ED1TH0LD1NGV1EW0001 /* EditHoldingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditHoldingView.swift; sourceTree = "<group>"; };
 		A5323582A6D49F73210E861F /* CustomTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTextField.swift; sourceTree = "<group>"; };
+		D1C7A8E2F3B94C01A2E5F7B4 /* LiveDictationButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDictationButton.swift; sourceTree = "<group>"; };
 		A6AC5E0E4BBC995EA18E94FF /* HomeHeaderComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHeaderComponents.swift; sourceTree = "<group>"; };
 		A7B3C8D9E2F401568A3D7E01 /* AltcoinSeasonStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AltcoinSeasonStore.swift; sourceTree = "<group>"; };
 		A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalLiquidityServiceProtocol.swift; sourceTree = "<group>"; };
@@ -1786,6 +1788,7 @@
 			isa = PBXGroup;
 			children = (
 				A5323582A6D49F73210E861F /* CustomTextField.swift */,
+				D1C7A8E2F3B94C01A2E5F7B4 /* LiveDictationButton.swift */,
 				C020CF24D89DA500878B422B /* SearchBar.swift */,
 			);
 			path = Inputs;
@@ -2391,6 +2394,7 @@
 				7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */,
 				C985CEFF2F3B827C00E10778 /* SubscriptionService.swift in Sources */,
 				7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */,
+				D1C7A8E2F3B94C01A2E5F7B3 /* LiveDictationButton.swift in Sources */,
 				82A14A8136FCD48655B7A305 /* QRCodeGenerator.swift in Sources */,
 				81173E2E4A51178EFA18143F /* LoginView.swift in Sources */,
 				C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */,

@@ -963,18 +963,17 @@ class HomeViewModel {
     func submitBriefingFeedback(rating: Bool, note: String?, userId: UUID) async {
         guard let summary = marketSummary else { return }
         let service = MarketSummaryService.shared
+        let hasNote = !(note?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
 
         // Optimistic update
-        await MainActor.run {
-            self.marketSummary = MarketSummary(
-                summary: summary.summary,
-                generatedAt: summary.generatedAt,
-                summaryDate: summary.summaryDate,
-                slot: summary.slot,
-                feedbackRating: rating,
-                feedbackNote: note
-            )
-        }
+        self.marketSummary = MarketSummary(
+            summary: summary.summary,
+            generatedAt: summary.generatedAt,
+            summaryDate: summary.summaryDate,
+            slot: summary.slot,
+            feedbackRating: rating,
+            feedbackNote: note
+        )
 
         do {
             try await service.submitFeedback(
@@ -987,6 +986,17 @@ class HomeViewModel {
         } catch {
             logError("Failed to submit briefing feedback: \(error.localizedDescription)", category: .network)
         }
+
+        // When a note is provided, regenerate the briefing so feedback is reflected immediately
+        guard hasNote else { return }
+
+        isLoadingSummary = true
+        do {
+            try await service.clearServerCache()
+        } catch {
+            logError("Failed to clear server cache: \(error.localizedDescription)", category: .network)
+        }
+        await fetchMarketSummary()
     }
 
     // MARK: - AI Market Summary
