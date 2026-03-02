@@ -23,6 +23,9 @@ final class PasscodeManager: PasscodeVerifying {
     /// Number of PBKDF2 iterations (OWASP recommends ≥600k for PBKDF2-HMAC-SHA256)
     private static let iterations: UInt32 = 600_000
 
+    /// Legacy iteration count for migrating existing passcodes
+    private static let legacyIterations: UInt32 = 10_000
+
     /// Length of derived key in bytes
     private static let keyLength = 32
 
@@ -55,17 +58,29 @@ final class PasscodeManager: PasscodeVerifying {
         try keychain.save(lengthData, forKey: KeychainManager.Keys.passcodeLength)
     }
 
-    /// Verify a passcode against the stored hash
-    /// - Parameter passcode: The passcode to verify
-    /// - Returns: true if the passcode matches, false otherwise
+    /// Verify a passcode against the stored hash.
+    /// Transparently migrates legacy 10k-iteration hashes to 600k on successful match.
     func verify(_ passcode: String) -> Bool {
         guard let storedHash = keychain.loadOptional(forKey: KeychainManager.Keys.passcodeHash),
               let storedSalt = keychain.loadOptional(forKey: KeychainManager.Keys.passcodeSalt) else {
             return false
         }
 
+        // Try current iteration count first
         let computedHash = hashPasscode(passcode, salt: storedSalt)
-        return constantTimeCompare(computedHash, storedHash)
+        if constantTimeCompare(computedHash, storedHash) {
+            return true
+        }
+
+        // Fall back to legacy iterations for pre-migration hashes
+        let legacyHash = hashPasscode(passcode, salt: storedSalt, iterations: Self.legacyIterations)
+        if constantTimeCompare(legacyHash, storedHash) {
+            // Re-hash with current iterations transparently
+            try? setPasscode(passcode)
+            return true
+        }
+
+        return false
     }
 
     /// Check if a passcode has been set
@@ -121,7 +136,8 @@ final class PasscodeManager: PasscodeVerifying {
     }
 
     /// Hash a passcode using PBKDF2
-    private func hashPasscode(_ passcode: String, salt: Data) -> Data {
+    private func hashPasscode(_ passcode: String, salt: Data, iterations: UInt32? = nil) -> Data {
+        let iterations = iterations ?? Self.iterations
         let passcodeData = Data(passcode.utf8)
         var derivedKey = Data(count: Self.keyLength)
 
@@ -135,7 +151,7 @@ final class PasscodeManager: PasscodeVerifying {
                         saltPtr.baseAddress?.assumingMemoryBound(to: UInt8.self),
                         salt.count,
                         CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
-                        Self.iterations,
+                        iterations,
                         derivedKeyPtr.baseAddress?.assumingMemoryBound(to: UInt8.self),
                         Self.keyLength
                     )
