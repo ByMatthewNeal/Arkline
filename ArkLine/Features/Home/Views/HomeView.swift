@@ -188,7 +188,7 @@ struct HomeView: View {
                 // Re-fetch briefing if stale (older than 2 hours)
                 if let generated = viewModel.marketSummary?.generatedAt,
                    Date().timeIntervalSince(generated) > 7200 {
-                    Task { await viewModel.fetchMarketSummary() }
+                    Task { await viewModel.refresh(forceRefresh: true) }
                 }
             }
         }

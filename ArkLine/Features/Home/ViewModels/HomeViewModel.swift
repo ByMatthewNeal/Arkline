@@ -73,9 +73,33 @@ class HomeViewModel {
     // Canonical macro regime (single source of truth for all widgets)
     var currentRegimeResult: MacroRegimeResult?
 
-    /// The baseRegime that was active when the current briefing was generated.
-    /// Used to detect regime shifts that require a briefing refresh.
+    /// The baseRegime embedded in the current briefing's text.
+    /// Parsed from the ## Posture section so we detect when live regime diverges.
     private var briefingRegime: MarketRegime?
+
+    /// Extract the regime from a briefing's text (## Posture section).
+    private static func regimeFromBriefingText(_ text: String) -> MarketRegime {
+        // Parse the ## Posture section
+        let lines = text.components(separatedBy: "\n")
+        var inPosture = false
+        var postureText = ""
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.lowercased().hasPrefix("## posture") {
+                inPosture = true
+                continue
+            }
+            if inPosture {
+                if trimmed.hasPrefix("## ") { break }
+                postureText += " " + trimmed
+            }
+        }
+
+        let lower = postureText.isEmpty ? text.lowercased() : postureText.lowercased()
+        if lower.contains("risk-on") || lower.contains("risk on") { return .riskOn }
+        if lower.contains("risk-off") || lower.contains("risk off") { return .riskOff }
+        return .mixed
+    }
 
     /// Simple 3-state regime derived from MacroRegimeCalculator
     var computedRegime: MarketRegime {
@@ -1123,7 +1147,7 @@ class HomeViewModel {
             let summary = try await service.fetchSummary(payload: payload)
             await MainActor.run {
                 self.marketSummary = summary
-                self.briefingRegime = self.computedRegime
+                self.briefingRegime = Self.regimeFromBriefingText(summary.summary)
             }
         } catch {
             logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)
