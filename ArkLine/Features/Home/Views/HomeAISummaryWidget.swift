@@ -76,11 +76,13 @@ struct HomeAISummaryWidget: View {
         .padding(size == .compact ? 14 : 18)
         .glassCard(cornerRadius: 16)
         .onChange(of: summary?.generatedAt) {
-            // New briefing arrived — reset regeneration state
-            if summary != nil, feedbackSentWithNote {
+            // New briefing arrived — reset all feedback state
+            if summary != nil {
                 feedbackSentWithNote = false
                 feedbackSent = false
                 selectedRating = nil
+                feedbackNote = ""
+                showNoteField = false
                 regenerationStart = nil
             }
         }

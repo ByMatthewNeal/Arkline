@@ -710,20 +710,9 @@ class HomeViewModel {
             }
         }
 
-        // Fetch AI market summary (uses already-loaded state)
-        // If the macro regime shifted since the current briefing, clear caches
-        // so the server generates fresh text matching the new regime.
-        let newRegime = self.computedRegime
-        if let oldRegime = self.briefingRegime,
-           oldRegime != .noData, newRegime != .noData, oldRegime != newRegime {
-            logInfo("Macro regime shifted \(oldRegime.rawValue) → \(newRegime.rawValue), regenerating briefing", category: .data)
-            Task {
-                try? await MarketSummaryService.shared.clearServerCache()
-                await self.fetchMarketSummary()
-            }
-        } else {
-            Task { await self.fetchMarketSummary() }
-        }
+        // Fetch AI market summary (uses already-loaded state).
+        // Regime-shift detection happens inside fetchMarketSummary itself.
+        Task { await self.fetchMarketSummary() }
     }
 
     func markReminderComplete(_ reminder: DCAReminder) async {
@@ -1043,7 +1032,7 @@ class HomeViewModel {
 
     // MARK: - AI Market Summary
 
-    func fetchMarketSummary() async {
+    func fetchMarketSummary(checkRegimeShift: Bool = true) async {
         guard enableSideEffects else { return }
         isLoadingSummary = true
         defer { isLoadingSummary = false }
@@ -1145,9 +1134,22 @@ class HomeViewModel {
 
         do {
             let summary = try await service.fetchSummary(payload: payload)
+            let textRegime = Self.regimeFromBriefingText(summary.summary)
+            let liveRegime = self.computedRegime
+
+            // If the briefing text regime doesn't match live, clear caches and regenerate (once)
+            if checkRegimeShift,
+               liveRegime != .noData,
+               textRegime != liveRegime {
+                logInfo("Briefing text says \(textRegime.rawValue) but live is \(liveRegime.rawValue), regenerating", category: .data)
+                try? await service.clearServerCache()
+                await fetchMarketSummary(checkRegimeShift: false)
+                return
+            }
+
             await MainActor.run {
                 self.marketSummary = summary
-                self.briefingRegime = Self.regimeFromBriefingText(summary.summary)
+                self.briefingRegime = textRegime
             }
         } catch {
             logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)
