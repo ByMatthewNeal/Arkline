@@ -73,6 +73,10 @@ class HomeViewModel {
     // Canonical macro regime (single source of truth for all widgets)
     var currentRegimeResult: MacroRegimeResult?
 
+    /// The baseRegime that was active when the current briefing was generated.
+    /// Used to detect regime shifts that require a briefing refresh.
+    private var briefingRegime: MarketRegime?
+
     /// Simple 3-state regime derived from MacroRegimeCalculator
     var computedRegime: MarketRegime {
         currentRegimeResult?.baseRegime ?? .noData
@@ -683,7 +687,19 @@ class HomeViewModel {
         }
 
         // Fetch AI market summary (uses already-loaded state)
-        Task { await self.fetchMarketSummary() }
+        // If the macro regime shifted since the current briefing, clear caches
+        // so the server generates fresh text matching the new regime.
+        let newRegime = self.computedRegime
+        if let oldRegime = self.briefingRegime,
+           oldRegime != .noData, newRegime != .noData, oldRegime != newRegime {
+            logInfo("Macro regime shifted \(oldRegime.rawValue) → \(newRegime.rawValue), regenerating briefing", category: .data)
+            Task {
+                try? await MarketSummaryService.shared.clearServerCache()
+                await self.fetchMarketSummary()
+            }
+        } else {
+            Task { await self.fetchMarketSummary() }
+        }
     }
 
     func markReminderComplete(_ reminder: DCAReminder) async {
@@ -1105,7 +1121,10 @@ class HomeViewModel {
 
         do {
             let summary = try await service.fetchSummary(payload: payload)
-            await MainActor.run { self.marketSummary = summary }
+            await MainActor.run {
+                self.marketSummary = summary
+                self.briefingRegime = self.computedRegime
+            }
         } catch {
             logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)
         }
