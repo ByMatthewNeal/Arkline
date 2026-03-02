@@ -105,8 +105,9 @@ struct HomeAISummaryWidget: View {
 
     // MARK: - Admin Feedback
 
-    private var currentRating: Bool? {
-        summary?.feedbackRating
+    /// The effective rating: session selection overrides DB value.
+    private var effectiveRating: Bool? {
+        selectedRating ?? summary?.feedbackRating
     }
 
     private var notePlaceholder: String {
@@ -133,9 +134,9 @@ struct HomeAISummaryWidget: View {
                     feedbackSent = false
                     feedbackSentWithNote = false
                 } label: {
-                    Image(systemName: (currentRating == true || selectedRating == true) ? "hand.thumbsup.fill" : "hand.thumbsup")
+                    Image(systemName: effectiveRating == true ? "hand.thumbsup.fill" : "hand.thumbsup")
                         .font(.system(size: 16))
-                        .foregroundColor((currentRating == true || selectedRating == true) ? AppColors.success : textPrimary.opacity(0.4))
+                        .foregroundColor(effectiveRating == true ? AppColors.success : textPrimary.opacity(0.4))
                 }
 
                 // Thumbs down
@@ -146,9 +147,9 @@ struct HomeAISummaryWidget: View {
                     feedbackSent = false
                     feedbackSentWithNote = false
                 } label: {
-                    Image(systemName: (currentRating == false || selectedRating == false) ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                    Image(systemName: effectiveRating == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
                         .font(.system(size: 16))
-                        .foregroundColor((currentRating == false || selectedRating == false) ? AppColors.error : textPrimary.opacity(0.4))
+                        .foregroundColor(effectiveRating == false ? AppColors.error : textPrimary.opacity(0.4))
                 }
             }
 
@@ -195,12 +196,6 @@ struct HomeAISummaryWidget: View {
                             .foregroundColor(AppColors.accent)
                     }
                 }
-                .onAppear {
-                    if let existingNote = summary?.feedbackNote, feedbackNote.isEmpty {
-                        feedbackNote = existingNote
-                    }
-                }
-
                 // Skip button — submit bare rating without a note
                 Button {
                     let rating = selectedRating ?? false

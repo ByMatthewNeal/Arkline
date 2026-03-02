@@ -1156,8 +1156,15 @@ class HomeViewModel {
                 return
             }
 
+            // If this is a regenerated briefing (not first fetch), clear stale DB feedback
+            var result = summary
+            if !checkRegimeShift {
+                result.feedbackRating = nil
+                result.feedbackNote = nil
+            }
+
             await MainActor.run {
-                self.marketSummary = summary
+                self.marketSummary = result
                 self.briefingQuadrant = textQuadrant
             }
         } catch {
