@@ -75,7 +75,8 @@ struct ArkLineApp: App {
         if url.host == "invite" {
             // Handle invite deep link: arkline://invite?code=ARK-XXXXXX
             guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value else { return }
+                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value,
+                  code.range(of: #"^ARK-[A-Z0-9]{6}$"#, options: .regularExpression) != nil else { return }
 
             await MainActor.run {
                 NotificationCenter.default.post(
@@ -87,7 +88,8 @@ struct ArkLineApp: App {
         } else if url.host == "broadcast" {
             // Handle broadcast deep link: arkline://broadcast?id=UUID
             if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-               let id = components.queryItems?.first(where: { $0.name == "id" })?.value {
+               let id = components.queryItems?.first(where: { $0.name == "id" })?.value,
+               UUID(uuidString: id) != nil {
                 await MainActor.run {
                     appState.selectedTab = .insights
                     appState.pendingBroadcastId = id
@@ -190,6 +192,7 @@ class AppState: ObservableObject {
     @Published var chartColorPalette: Constants.ChartColorPalette = .classic
     @Published var preferredCurrency: String = "USD"
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
+    @Published var marketWidgetConfiguration: MarketWidgetConfiguration = MarketWidgetConfiguration()
     @Published var enabledCoreAssets: Set<CoreAsset> = CoreAsset.defaultEnabled
     @Published var didJustSignOut = false
 
@@ -293,6 +296,23 @@ class AppState: ObservableObject {
             setWidgetConfiguration(config)
         }
 
+        // Load market widget configuration
+        if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.marketWidgetConfiguration),
+           var config = try? JSONDecoder().decode(MarketWidgetConfiguration.self, from: data) {
+            // Migration: Add any new widget types that aren't in the saved order
+            let savedWidgetSet = Set(config.widgetOrder)
+            for widgetType in MarketWidgetType.allCases {
+                if !savedWidgetSet.contains(widgetType) {
+                    config.widgetOrder.append(widgetType)
+                    if MarketWidgetType.defaultEnabled.contains(widgetType) {
+                        config.enabledWidgets.insert(widgetType)
+                    }
+                }
+            }
+            marketWidgetConfiguration = config
+            setMarketWidgetConfiguration(config)
+        }
+
         // Load current user
         if let userData = UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser),
            let user = try? JSONDecoder().decode(User.self, from: userData) {
@@ -387,6 +407,32 @@ class AppState: ObservableObject {
         setWidgetConfiguration(widgetConfiguration)
     }
 
+    // MARK: - Market Widget Configuration
+
+    func setMarketWidgetConfiguration(_ config: MarketWidgetConfiguration) {
+        marketWidgetConfiguration = config
+        let key = Constants.UserDefaults.marketWidgetConfiguration
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(config) {
+                UserDefaults.standard.set(data, forKey: key)
+            }
+        }
+    }
+
+    func toggleMarketWidget(_ widget: MarketWidgetType) {
+        marketWidgetConfiguration.toggleWidget(widget)
+        setMarketWidgetConfiguration(marketWidgetConfiguration)
+    }
+
+    func isMarketWidgetEnabled(_ widget: MarketWidgetType) -> Bool {
+        marketWidgetConfiguration.isEnabled(widget)
+    }
+
+    func updateMarketWidgetOrder(_ newOrder: [MarketWidgetType]) {
+        marketWidgetConfiguration.widgetOrder = newOrder
+        setMarketWidgetConfiguration(marketWidgetConfiguration)
+    }
+
     func moveWidget(from source: IndexSet, to destination: Int) {
         var order = widgetConfiguration.widgetOrder
         order.move(fromOffsets: source, toOffset: destination)
@@ -434,6 +480,15 @@ class AppState: ObservableObject {
         // Keep currentUser and its UserDefaults cache — the login screen hides the UI,
         // and passcode re-login needs the cached user to restore the correct profile.
         PasscodeManager.shared.clearLockout()
+
+        // Clear Supabase auth session
+        Task {
+            try? await SupabaseManager.shared.client.auth.signOut()
+        }
+
+        // Clear in-memory and on-disk caches
+        APICache.shared.clearAll()
+        URLCache.shared.removeAllCachedResponses()
     }
 
     // MARK: - Profile Refresh

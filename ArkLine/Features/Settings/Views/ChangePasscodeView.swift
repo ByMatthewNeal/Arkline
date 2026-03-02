@@ -73,13 +73,26 @@ struct ChangePasscodeView: View {
     }
 
     private func changePasscode() {
+        // Enforce lockout before allowing any verification attempt
+        if PasscodeManager.shared.isLockedOut {
+            errorMessage = "Too many attempts. Try again in \(PasscodeManager.shared.lockoutTimeRemaining)"
+            showError = true
+            return
+        }
+
         // Verify current passcode if one is set
         if PasscodeManager.shared.hasPasscode {
             guard PasscodeManager.shared.verify(currentPasscode) else {
-                errorMessage = "Current passcode is incorrect"
+                let remaining = PasscodeManager.shared.recordFailedAttempt()
+                if let remaining {
+                    errorMessage = "Current passcode is incorrect (\(remaining) attempts remaining)"
+                } else {
+                    errorMessage = "Too many attempts. Try again in \(PasscodeManager.shared.lockoutTimeRemaining)"
+                }
                 showError = true
                 return
             }
+            PasscodeManager.shared.resetFailedAttempts()
         }
 
         guard newPasscode == confirmPasscode else {

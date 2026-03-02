@@ -54,7 +54,7 @@ final class InviteCodeService: InviteCodeServiceProtocol {
             .eq("code", value: normalized)
             .execute()
 
-        logInfo("Redeemed invite code: \(normalized) for user: \(userId)", category: .data)
+        logInfo("Redeemed invite code", category: .data)
     }
 
     // MARK: - Create Code (Admin)
@@ -196,7 +196,7 @@ final class InviteCodeService: InviteCodeServiceProtocol {
             throw AppError.custom(message: "Failed to create referral code")
         }
 
-        logInfo("Created referral code: \(inviteCode.code) for user: \(userId)", category: .data)
+        logInfo("Created referral code", category: .data)
         return inviteCode
     }
 

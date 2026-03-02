@@ -218,7 +218,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .upsert(readRecord)
             .execute()
 
-        logInfo("Marked broadcast \(broadcastId) as read by \(userId)", category: .data)
+        logInfo("Marked broadcast as read", category: .data)
     }
 
     func hasBeenRead(broadcastId: UUID, userId: UUID) async throws -> Bool {
@@ -382,7 +382,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .upsert(reaction)
             .execute()
 
-        logInfo("Added reaction \(emoji) to broadcast \(broadcastId) by \(userId)", category: .data)
+        logInfo("Added reaction to broadcast", category: .data)
     }
 
     func removeReaction(broadcastId: UUID, userId: UUID, emoji: String) async throws {
@@ -398,7 +398,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .eq("emoji", value: emoji)
             .execute()
 
-        logInfo("Removed reaction \(emoji) from broadcast \(broadcastId) by \(userId)", category: .data)
+        logInfo("Removed reaction from broadcast", category: .data)
     }
 
     func fetchReactions(for broadcastId: UUID) async throws -> [BroadcastReaction] {

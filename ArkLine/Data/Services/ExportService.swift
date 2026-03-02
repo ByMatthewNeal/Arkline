@@ -152,6 +152,15 @@ final class ExportService {
         #endif
     }
 
+    // MARK: - CSV Sanitization
+
+    /// Prevent CSV injection by prefixing formula-trigger characters with a single quote
+    private static func sanitizeCSVField(_ value: String) -> String {
+        let trimmed = value.replacingOccurrences(of: ",", with: " ")
+        guard let first = trimmed.first, "=+-@\t\r".contains(first) else { return trimmed }
+        return "'" + trimmed
+    }
+
     // MARK: - CSV Export
 
     static func generateCSV(
@@ -180,8 +189,8 @@ final class ExportService {
         csv += "HOLDINGS\n"
         csv += "Symbol,Name,Quantity,Avg Buy Price,Current Price,Current Value,P/L,P/L %\n"
         for holding in holdings {
-            let name = holding.name.replacingOccurrences(of: ",", with: " ")
-            csv += "\(holding.symbol),"
+            let name = Self.sanitizeCSVField(holding.name)
+            csv += "\(Self.sanitizeCSVField(holding.symbol)),"
             csv += "\"\(name)\","
             csv += "\(String(format: "%.8f", holding.quantity)),"
             csv += "\(String(format: "%.2f", holding.averageBuyPrice ?? 0.0)),"
@@ -195,7 +204,7 @@ final class ExportService {
         csv += "Date,Type,Symbol,Quantity,Price,Total Value,Realized P/L,Notes\n"
         let dateFormatter = ISO8601DateFormatter()
         for tx in transactions.sorted(by: { $0.transactionDate > $1.transactionDate }) {
-            let notes = (tx.notes ?? "").replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "\n", with: " ")
+            let notes = Self.sanitizeCSVField((tx.notes ?? "").replacingOccurrences(of: "\n", with: " "))
             csv += "\(dateFormatter.string(from: tx.transactionDate)),"
             csv += "\(tx.type.displayName),"
             csv += "\(tx.symbol),"

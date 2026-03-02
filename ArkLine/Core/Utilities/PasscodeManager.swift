@@ -20,8 +20,8 @@ final class PasscodeManager: PasscodeVerifying {
 
     // MARK: - Configuration
 
-    /// Number of PBKDF2 iterations (higher = more secure but slower)
-    private static let iterations: UInt32 = 10_000
+    /// Number of PBKDF2 iterations (OWASP recommends ≥600k for PBKDF2-HMAC-SHA256)
+    private static let iterations: UInt32 = 600_000
 
     /// Length of derived key in bytes
     private static let keyLength = 32

@@ -157,7 +157,7 @@ final class SettingsViewModel {
 
     func toggleBiometric(_ enabled: Bool) {
         biometricEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Constants.UserDefaults.biometricEnabled)
+        PasscodeManager.shared.isBiometricEnabled = enabled
     }
 
     func toggleRiskCoin(_ coin: String) {

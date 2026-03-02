@@ -172,7 +172,7 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .insert(record)
                 .execute()
 
-            logInfo("Recorded portfolio snapshot: \(totalValue.asCurrency)", category: .data)
+            logInfo("Recorded portfolio snapshot", category: .data)
         } catch {
             logError(error, context: "Record portfolio snapshot", category: .data)
             // Don't throw - history recording failure shouldn't block main operations

@@ -114,6 +114,32 @@ struct User: Codable, Identifiable, Equatable {
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
     }
 
+    // MARK: - Encodable (exclude passcodeHash)
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(username, forKey: .username)
+        try container.encode(email, forKey: .email)
+        try container.encodeIfPresent(fullName, forKey: .fullName)
+        try container.encodeIfPresent(avatarUrl, forKey: .avatarUrl)
+        try container.encode(usePhotoAvatar, forKey: .usePhotoAvatar)
+        try container.encodeIfPresent(dateOfBirth, forKey: .dateOfBirth)
+        try container.encodeIfPresent(careerIndustry, forKey: .careerIndustry)
+        try container.encodeIfPresent(experienceLevel, forKey: .experienceLevel)
+        try container.encodeIfPresent(socialLinks, forKey: .socialLinks)
+        try container.encode(preferredCurrency, forKey: .preferredCurrency)
+        try container.encode(riskCoins, forKey: .riskCoins)
+        try container.encode(darkMode, forKey: .darkMode)
+        try container.encodeIfPresent(notifications, forKey: .notifications)
+        // passcodeHash intentionally excluded — never serialize to disk or network
+        try container.encode(faceIdEnabled, forKey: .faceIdEnabled)
+        try container.encode(role, forKey: .role)
+        try container.encode(subscriptionStatus, forKey: .subscriptionStatus)
+        try container.encodeIfPresent(trialEnd, forKey: .trialEnd)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+    }
+
     // MARK: - Default Values
     init(
         id: UUID = UUID(),

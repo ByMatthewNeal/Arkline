@@ -41,7 +41,7 @@ actor AvatarUploadService {
             .from(SupabaseBucket.avatars.rawValue)
             .getPublicURL(path: fileName)
 
-        logInfo("Uploaded avatar for user \(userId): \(publicURL)", category: .data)
+        logInfo("Uploaded avatar for user \(userId.uuidString.prefix(8))***", category: .data)
         return publicURL
     }
 
