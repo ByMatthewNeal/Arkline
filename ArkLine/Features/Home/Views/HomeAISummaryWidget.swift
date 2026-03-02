@@ -7,6 +7,7 @@ struct HomeAISummaryWidget: View {
     let userName: String
     var size: WidgetSize = .standard
     var isAdmin: Bool = false
+    var liveRegime: MacroRegimeResult? = nil
     var onFeedback: ((Bool, String?) -> Void)? = nil
     @State private var showNoteField = false
     @State private var selectedRating: Bool?
@@ -48,8 +49,8 @@ struct HomeAISummaryWidget: View {
                 .font(AppFonts.body14)
                 .foregroundColor(textPrimary.opacity(0.85))
 
-            // Sentiment pill
-            if let posture = parsedPosture {
+            // Sentiment pill — prefer live regime over stale briefing text
+            if let posture = livePosture ?? parsedPosture {
                 sentimentPill(posture)
             }
 
@@ -256,6 +257,18 @@ struct HomeAISummaryWidget: View {
         "risk-on disinflation", "risk-on inflation",
         "risk-off inflation", "risk-off disinflation"
     ]
+
+    /// Live regime from the ViewModel — always current, unlike the briefing text.
+    private var livePosture: MarketPosture? {
+        guard let regime = liveRegime else { return nil }
+        let label = regime.quadrant.rawValue // e.g. "Risk-On Disinflation"
+        switch regime.baseRegime {
+        case .riskOn: return .riskOn("", label)
+        case .riskOff: return .riskOff("", label)
+        case .mixed: return .neutral("", "Mixed")
+        case .noData: return nil
+        }
+    }
 
     private var parsedPosture: MarketPosture? {
         guard let text = summary?.summary else { return nil }

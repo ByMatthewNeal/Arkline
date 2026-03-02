@@ -111,6 +111,7 @@ struct HomeView: View {
                                 isLoading: viewModel.isLoadingSummary || viewModel.isLoading,
                                 userName: appState.currentUser?.firstName ?? "there",
                                 isAdmin: appState.currentUser?.isAdmin == true,
+                                liveRegime: viewModel.currentRegimeResult,
                                 onFeedback: appState.currentUser?.isAdmin == true ? { rating, note in
                                     guard let userId = appState.currentUser?.id else { return }
                                     Task { await viewModel.submitBriefingFeedback(rating: rating, note: note, userId: userId) }
