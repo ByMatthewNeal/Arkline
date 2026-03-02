@@ -9,6 +9,7 @@ struct MacroDashboardWidget: View {
     var netLiquidityData: NetLiquidityChanges? = nil
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     var regime: MarketRegime = .noData
+    var quadrant: MacroRegimeQuadrant? = nil
     var size: WidgetSize = .standard
 
     @EnvironmentObject var appState: AppState
@@ -253,17 +254,20 @@ struct MacroDashboardWidget: View {
 
                 // Market Regime Summary
                 if size != .compact {
+                    let displayColor = quadrant?.color ?? regime.color
+                    let displayLabel = quadrant?.rawValue ?? regime.rawValue
+                    let displayDesc = quadrant?.description ?? regime.description
                     HStack(spacing: 8) {
                         // Pulsing regime indicator
                         ZStack {
                             Circle()
-                                .fill(regime.color.opacity(0.3))
+                                .fill(displayColor.opacity(0.3))
                                 .frame(width: 16, height: 16)
                                 .scaleEffect(isPulsing ? 1.3 : 1.0)
                                 .opacity(isPulsing ? 0 : 0.5)
 
                             Circle()
-                                .fill(regime.color)
+                                .fill(displayColor)
                                 .frame(width: 8, height: 8)
                         }
                         .onAppear {
@@ -272,11 +276,11 @@ struct MacroDashboardWidget: View {
                             }
                         }
 
-                        Text(regime.rawValue)
+                        Text(displayLabel)
                             .font(.system(size: 12, weight: .bold, design: .default))
-                            .foregroundColor(regime.color)
+                            .foregroundColor(displayColor)
 
-                        Text(regime.description)
+                        Text(displayDesc)
                             .font(.system(size: 11, weight: .regular))
                             .foregroundColor(textPrimary.opacity(0.5))
                             .lineLimit(1)
@@ -322,7 +326,7 @@ struct MacroDashboardWidget: View {
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Macro Dashboard, \(regime.rawValue), \(regime.description)")
+        .accessibilityLabel("Macro Dashboard, \(quadrant?.rawValue ?? regime.rawValue), \(quadrant?.description ?? regime.description)")
         .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             if appState.isPro {
@@ -332,6 +336,7 @@ struct MacroDashboardWidget: View {
                     liquidityData: liquidityData,
                     netLiquidityData: netLiquidityData,
                     regime: regime,
+                    quadrant: quadrant,
                     vixCorrelation: vixCorrelation,
                     dxyCorrelation: dxyCorrelation,
                     m2Correlation: m2Correlation,

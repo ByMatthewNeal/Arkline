@@ -73,12 +73,12 @@ class HomeViewModel {
     // Canonical macro regime (single source of truth for all widgets)
     var currentRegimeResult: MacroRegimeResult?
 
-    /// The baseRegime embedded in the current briefing's text.
-    /// Parsed from the ## Posture section so we detect when live regime diverges.
-    private var briefingRegime: MarketRegime?
+    /// The quadrant embedded in the current briefing's text.
+    /// Parsed from the ## Posture section so we detect when live quadrant diverges.
+    private var briefingQuadrant: MacroRegimeQuadrant?
 
-    /// Extract the regime from a briefing's text (## Posture section).
-    private static func regimeFromBriefingText(_ text: String) -> MarketRegime {
+    /// Extract the quadrant from a briefing's text (## Posture section).
+    private static func quadrantFromBriefingText(_ text: String) -> MacroRegimeQuadrant? {
         // Parse the ## Posture section
         let lines = text.components(separatedBy: "\n")
         var inPosture = false
@@ -96,9 +96,17 @@ class HomeViewModel {
         }
 
         let lower = postureText.isEmpty ? text.lowercased() : postureText.lowercased()
-        if lower.contains("risk-on") || lower.contains("risk on") { return .riskOn }
-        if lower.contains("risk-off") || lower.contains("risk off") { return .riskOff }
-        return .mixed
+        for q in MacroRegimeQuadrant.allCases {
+            if lower.contains(q.rawValue.lowercased()) { return q }
+        }
+        // Fallback: broad match
+        let isRiskOn = lower.contains("risk-on") || lower.contains("risk on")
+        let isInflation = lower.contains("inflation") && !lower.contains("disinflation")
+        if isRiskOn {
+            return isInflation ? .riskOnInflation : .riskOnDisinflation
+        } else {
+            return isInflation ? .riskOffInflation : .riskOffDisinflation
+        }
     }
 
     /// Simple 3-state regime derived from MacroRegimeCalculator
@@ -1134,14 +1142,15 @@ class HomeViewModel {
 
         do {
             let summary = try await service.fetchSummary(payload: payload)
-            let textRegime = Self.regimeFromBriefingText(summary.summary)
-            let liveRegime = self.computedRegime
+            let textQuadrant = Self.quadrantFromBriefingText(summary.summary)
+            let liveQuadrant = self.currentRegimeResult?.quadrant
 
-            // If the briefing text regime doesn't match live, clear caches and regenerate (once)
+            // If the briefing text quadrant doesn't match live, clear caches and regenerate (once)
             if checkRegimeShift,
-               liveRegime != .noData,
-               textRegime != liveRegime {
-                logInfo("Briefing text says \(textRegime.rawValue) but live is \(liveRegime.rawValue), regenerating", category: .data)
+               let live = liveQuadrant,
+               let text = textQuadrant,
+               text != live {
+                logInfo("Briefing text says \(text.rawValue) but live is \(live.rawValue), regenerating", category: .data)
                 try? await service.clearServerCache()
                 await fetchMarketSummary(checkRegimeShift: false)
                 return
@@ -1149,7 +1158,7 @@ class HomeViewModel {
 
             await MainActor.run {
                 self.marketSummary = summary
-                self.briefingRegime = textRegime
+                self.briefingQuadrant = textQuadrant
             }
         } catch {
             logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)

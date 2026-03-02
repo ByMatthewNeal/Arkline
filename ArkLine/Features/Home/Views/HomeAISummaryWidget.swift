@@ -260,14 +260,20 @@ struct HomeAISummaryWidget: View {
         "risk-off inflation", "risk-off disinflation"
     ]
 
-    /// Live regime from the ViewModel — always current, unlike the briefing text.
+    /// Live regime from the ViewModel — always uses the 4-quadrant label.
     private var livePosture: MarketPosture? {
         guard let regime = liveRegime else { return nil }
         let label = regime.quadrant.rawValue // e.g. "Risk-On Disinflation"
         switch regime.baseRegime {
         case .riskOn: return .riskOn("", label)
         case .riskOff: return .riskOff("", label)
-        case .mixed: return .neutral("", "Mixed")
+        case .mixed:
+            // Use quadrant to determine posture — no "Mixed" label
+            if label.lowercased().contains("risk-on") {
+                return .riskOn("", label)
+            } else {
+                return .riskOff("", label)
+            }
         case .noData: return nil
         }
     }

@@ -7,6 +7,7 @@ struct MacroDashboardDetailView: View {
     let liquidityData: GlobalLiquidityChanges?
     var netLiquidityData: NetLiquidityChanges? = nil
     let regime: MarketRegime
+    var quadrant: MacroRegimeQuadrant? = nil
     let vixCorrelation: CorrelationStrength
     let dxyCorrelation: CorrelationStrength
     let m2Correlation: CorrelationStrength
@@ -43,19 +44,22 @@ struct MacroDashboardDetailView: View {
                 VStack(spacing: 20) {
                     // Current Regime Card
                     VStack(spacing: 12) {
+                        let displayColor = quadrant?.color ?? regime.color
+                        let displayLabel = quadrant?.rawValue ?? regime.rawValue
+                        let displayDesc = quadrant?.description ?? regime.description
                         HStack {
                             Circle()
-                                .fill(regime.color)
+                                .fill(displayColor)
                                 .frame(width: 12, height: 12)
 
-                            Text(regime.rawValue)
+                            Text(displayLabel)
                                 .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(regime.color)
+                                .foregroundColor(displayColor)
                                 .minimumScaleFactor(0.7)
                                 .lineLimit(1)
                         }
 
-                        Text(regime.description)
+                        Text(displayDesc)
                             .font(.system(size: 15))
                             .foregroundColor(textPrimary.opacity(0.7))
                             .multilineTextAlignment(.center)
@@ -63,7 +67,7 @@ struct MacroDashboardDetailView: View {
 
                         // Last change info
                         if let lastChange = regimeManager.lastRegimeChange {
-                            Text("\(regime.rawValue) since \(lastChange.formatted(date: .abbreviated, time: .shortened))")
+                            Text("\(displayLabel) since \(lastChange.formatted(date: .abbreviated, time: .shortened))")
                                 .font(.system(size: 12))
                                 .foregroundColor(textPrimary.opacity(0.4))
                         }
@@ -82,9 +86,9 @@ struct MacroDashboardDetailView: View {
 
                         if showLearnMore {
                             VStack(alignment: .leading, spacing: 8) {
-                                LearnMoreRow(color: AppColors.success, label: "RISK-ON", text: "Low volatility, weak dollar, expanding liquidity")
-                                LearnMoreRow(color: AppColors.warning, label: "MIXED", text: "Conflicting signals across indicators")
-                                LearnMoreRow(color: AppColors.error, label: "RISK-OFF", text: "High volatility, strong dollar, or tightening liquidity")
+                                ForEach(MacroRegimeQuadrant.allCases, id: \.self) { q in
+                                    LearnMoreRow(color: q.color, label: q.rawValue, text: q.description)
+                                }
                             }
                             .padding(.top, 8)
                             .transition(.opacity.combined(with: .move(edge: .top)))
