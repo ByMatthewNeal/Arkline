@@ -126,6 +126,7 @@ struct HomeAISummaryWidget: View {
                 Button {
                     selectedRating = true
                     showNoteField = true
+                    feedbackNote = ""
                     feedbackSent = false
                     feedbackSentWithNote = false
                 } label: {
@@ -138,6 +139,7 @@ struct HomeAISummaryWidget: View {
                 Button {
                     selectedRating = false
                     showNoteField = true
+                    feedbackNote = ""
                     feedbackSent = false
                     feedbackSentWithNote = false
                 } label: {
