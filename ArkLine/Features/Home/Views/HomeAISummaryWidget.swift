@@ -10,6 +10,7 @@ struct HomeAISummaryWidget: View {
     var onFeedback: ((Bool, String?) -> Void)? = nil
     @State private var showNoteField = false
     @State private var feedbackNote = ""
+    @State private var feedbackSent = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -110,7 +111,16 @@ struct HomeAISummaryWidget: View {
             }
 
             // Note field (shown after thumbs down)
-            if showNoteField || (currentRating == false && summary?.feedbackNote != nil) {
+            if feedbackSent {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.success)
+                    Text("Feedback sent")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(textPrimary.opacity(0.5))
+                }
+            } else if showNoteField || (currentRating == false && summary?.feedbackNote != nil) {
                 HStack(spacing: 8) {
                     TextField("What could be better?", text: $feedbackNote)
                         .font(AppFonts.caption12)
@@ -125,7 +135,9 @@ struct HomeAISummaryWidget: View {
                     Button {
                         let note = feedbackNote.trimmingCharacters(in: .whitespacesAndNewlines)
                         onFeedback?(false, note.isEmpty ? nil : note)
+                        feedbackNote = ""
                         showNoteField = false
+                        feedbackSent = true
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 22))
