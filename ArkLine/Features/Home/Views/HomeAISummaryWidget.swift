@@ -220,37 +220,18 @@ struct HomeAISummaryWidget: View {
 
     // MARK: - Parsed Posture
 
-    private enum MarketPosture {
-        case riskOn(String, String) // (detail, quadrant label)
-        case riskOff(String, String)
-        case neutral(String, String)
+    private struct MarketPosture {
+        let label: String
+        let color: Color
+        let icon: String
+        let detail: String
 
-        var label: String {
-            switch self {
-            case .riskOn(_, let q), .riskOff(_, let q), .neutral(_, let q): return q
-            }
+        static func riskOn(_ detail: String, _ label: String, color: Color = AppColors.success) -> MarketPosture {
+            MarketPosture(label: label, color: color, icon: "arrow.up.right", detail: detail)
         }
 
-        var color: Color {
-            switch self {
-            case .riskOn: return AppColors.success
-            case .riskOff: return AppColors.error
-            case .neutral: return AppColors.warning
-            }
-        }
-
-        var icon: String {
-            switch self {
-            case .riskOn: return "arrow.up.right"
-            case .riskOff: return "arrow.down.right"
-            case .neutral: return "arrow.right"
-            }
-        }
-
-        var detail: String {
-            switch self {
-            case .riskOn(let d, _), .riskOff(let d, _), .neutral(let d, _): return d
-            }
+        static func riskOff(_ detail: String, _ label: String, color: Color = AppColors.error) -> MarketPosture {
+            MarketPosture(label: label, color: color, icon: "arrow.down.right", detail: detail)
         }
     }
 
@@ -260,21 +241,14 @@ struct HomeAISummaryWidget: View {
         "risk-off inflation", "risk-off disinflation"
     ]
 
-    /// Live regime from the ViewModel — always uses the 4-quadrant label.
+    /// Live regime from the ViewModel — uses quadrant color directly.
     private var livePosture: MarketPosture? {
         guard let regime = liveRegime else { return nil }
-        let label = regime.quadrant.rawValue // e.g. "Risk-On Disinflation"
-        switch regime.baseRegime {
-        case .riskOn: return .riskOn("", label)
-        case .riskOff: return .riskOff("", label)
-        case .mixed:
-            // Use quadrant to determine posture — no "Mixed" label
-            if label.lowercased().contains("risk-on") {
-                return .riskOn("", label)
-            } else {
-                return .riskOff("", label)
-            }
-        case .noData: return nil
+        let q = regime.quadrant
+        if q.rawValue.lowercased().contains("risk-on") {
+            return .riskOn("", q.rawValue, color: q.color)
+        } else {
+            return .riskOff("", q.rawValue, color: q.color)
         }
     }
 
@@ -284,29 +258,24 @@ struct HomeAISummaryWidget: View {
         guard let postureSection = sections.first(where: { $0.header.lowercased() == "posture" }) else { return nil }
         let body = postureSection.body.lowercased()
 
-        // Try to extract the full quadrant name (e.g. "Risk-On Disinflation")
-        let quadrantLabel: String = {
-            for q in Self.quadrantLabels {
-                if body.contains(q) {
-                    // Title-case it back from the original text
-                    if let range = body.range(of: q) {
-                        return String(postureSection.body[range])
-                    }
+        // Match against the 4 quadrants for exact label + color
+        for q in MacroRegimeQuadrant.allCases {
+            if body.contains(q.rawValue.lowercased()) {
+                if q.rawValue.lowercased().contains("risk-on") {
+                    return .riskOn(postureSection.body, q.rawValue, color: q.color)
+                } else {
+                    return .riskOff(postureSection.body, q.rawValue, color: q.color)
                 }
             }
-            // Fallback to simple labels
-            if body.contains("risk-on") || body.contains("risk on") { return "Risk-On" }
-            if body.contains("risk-off") || body.contains("risk off") { return "Risk-Off" }
-            return "Neutral"
-        }()
-
-        if body.contains("risk-on") || body.contains("risk on") {
-            return .riskOn(postureSection.body, quadrantLabel)
-        } else if body.contains("risk-off") || body.contains("risk off") {
-            return .riskOff(postureSection.body, quadrantLabel)
-        } else {
-            return .neutral(postureSection.body, quadrantLabel)
         }
+
+        // Fallback: broad match
+        if body.contains("risk-on") || body.contains("risk on") {
+            return .riskOn(postureSection.body, "Risk-On")
+        } else if body.contains("risk-off") || body.contains("risk off") {
+            return .riskOff(postureSection.body, "Risk-Off")
+        }
+        return nil
     }
 
     // MARK: - Enhanced Greeting
