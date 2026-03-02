@@ -134,7 +134,9 @@ struct HomeView: View {
                         Spacer(minLength: 120)
                     }
                     .padding(.top, 16)
+                    .frame(maxWidth: .infinity)
                 }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
                 .refreshable {
                     await viewModel.refresh(forceRefresh: true)
                 }
