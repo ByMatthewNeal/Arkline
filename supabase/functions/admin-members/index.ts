@@ -6,7 +6,7 @@ const supabase = createClient(
 )
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://web.arkline.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
@@ -66,7 +66,11 @@ Deno.serve(async (req) => {
     }
 
     if (search) {
-      query = query.or(`email.ilike.%${search}%,username.ilike.%${search}%,full_name.ilike.%${search}%`)
+      // Sanitize: strip PostgREST filter metacharacters to prevent filter injection
+      const sanitized = String(search).replace(/[,().\\%_]/g, "")
+      if (sanitized.length > 0) {
+        query = query.or(`email.ilike.%${sanitized}%,username.ilike.%${sanitized}%,full_name.ilike.%${sanitized}%`)
+      }
     }
 
     const { data: members, count, error } = await query

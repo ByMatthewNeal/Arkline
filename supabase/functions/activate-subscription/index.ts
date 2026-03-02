@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://web.arkline.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 

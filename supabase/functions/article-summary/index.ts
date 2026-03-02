@@ -91,10 +91,24 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Verify authorization header exists (Supabase infrastructure validates the JWT)
+  // Verify JWT via Supabase getUser()
   const authHeader = req.headers.get("Authorization")
   if (!authHeader) {
     return new Response(JSON.stringify({ error: "Missing authorization" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: authHeader } } }
+  )
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser()
+  if (authErr || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     })
@@ -116,6 +130,39 @@ Deno.serve(async (req) => {
 
   if (!url) {
     return new Response(JSON.stringify({ error: "Missing url parameter" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
+  // SSRF protection: only allow HTTPS URLs to public news domains
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== "https:") {
+      return new Response(JSON.stringify({ error: "Only HTTPS URLs are allowed" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+    // Block internal/private IPs and metadata endpoints
+    const hostname = parsed.hostname.toLowerCase()
+    if (
+      hostname === "localhost" ||
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("172.") ||
+      hostname === "169.254.169.254" ||
+      hostname.endsWith(".internal") ||
+      hostname.endsWith(".local")
+    ) {
+      return new Response(JSON.stringify({ error: "URL not allowed" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid URL" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     })

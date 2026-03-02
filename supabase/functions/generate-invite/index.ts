@@ -26,8 +26,8 @@ function generateCode(): string {
 
 const corsHeaders = {
   "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-service-call, content-type",
+  "Access-Control-Allow-Origin": "https://web.arkline.io",
+  "Access-Control-Allow-Headers": "authorization, content-type",
 }
 
 Deno.serve(async (req) => {
@@ -42,19 +42,22 @@ Deno.serve(async (req) => {
     })
   }
 
-  const isServiceCall = req.headers.get("X-Service-Call") === "true"
+  // Authenticate: require either a valid FUNCTION_SECRET or admin JWT
+  const functionSecret = Deno.env.get("FUNCTION_SECRET") ?? ""
+  const callerSecret = req.headers.get("X-Function-Secret") ?? ""
+  const isInternalCall = functionSecret.length > 0 && callerSecret === functionSecret
   const authHeader = req.headers.get("Authorization") ?? ""
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    isServiceCall
+    isInternalCall
       ? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
       : Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    isServiceCall ? {} : { global: { headers: { Authorization: authHeader } } }
+    isInternalCall ? {} : { global: { headers: { Authorization: authHeader } } }
   )
 
-  // Verify admin if not a service call (from stripe-webhook)
-  if (!isServiceCall) {
+  // Verify admin unless this is an authenticated internal service call
+  if (!isInternalCall) {
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {

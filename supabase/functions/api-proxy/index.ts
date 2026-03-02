@@ -103,6 +103,20 @@ Deno.serve(async (req) => {
     })
   }
 
+  // Path validation: prevent traversal and injection
+  if (
+    !path.startsWith("/") ||
+    path.includes("..") ||
+    path.includes("@") ||
+    path.includes("://") ||
+    path.includes("\\")
+  ) {
+    return new Response(JSON.stringify({ error: "Invalid path" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
   // Look up service config
   const config = SERVICES[service]
   if (!config) {

@@ -9,7 +9,7 @@ const MONTHLY_PRICE_CENTS = parseInt(Deno.env.get("MONTHLY_PRICE_CENTS") ?? "199
 const ANNUAL_PRICE_CENTS = parseInt(Deno.env.get("ANNUAL_PRICE_CENTS") ?? "14999")
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://web.arkline.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
