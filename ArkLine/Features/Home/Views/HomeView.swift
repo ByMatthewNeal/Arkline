@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -180,6 +181,14 @@ struct HomeView: View {
             .onAppear {
                 viewModel.userName = appState.currentUser?.firstName ?? "User"
                 Task { await AnalyticsService.shared.trackScreenView("home") }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                guard newPhase == .active else { return }
+                // Re-fetch briefing if stale (older than 2 hours)
+                if let generated = viewModel.marketSummary?.generatedAt,
+                   Date().timeIntervalSince(generated) > 7200 {
+                    Task { await viewModel.fetchMarketSummary() }
+                }
             }
         }
     }
