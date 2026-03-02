@@ -127,6 +127,7 @@ enum Constants {
         static let biometricEnabled = "biometricEnabled"
         static let lastSyncTimestamp = "lastSyncTimestamp"
         static let widgetConfiguration = "widgetConfiguration"
+        static let marketWidgetConfiguration = "marketWidgetConfiguration"
         static let selectedNewsTopics = "selectedNewsTopics"
         static let customNewsTopics = "customNewsTopics"
         static let notificationsPrompted = "arkline_notifications_prompted"

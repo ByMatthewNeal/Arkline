@@ -33,38 +33,16 @@ struct MarketOverviewView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
                     } else {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 0) {
                         Color.clear.frame(height: 0).id("scrollTop")
-                        // 1. Daily News Section
-                        DailyNewsSection(
-                            news: viewModel.newsItems
+
+                        ReorderableMarketWidgetStack(
+                            viewModel: viewModel,
+                            sentimentViewModel: sentimentViewModel,
+                            allocationViewModel: allocationViewModel,
+                            appState: appState
                         )
-
-                        // 2. Fed Watch Section
-                        FedWatchSection(meetings: viewModel.fedWatchMeetings)
-
-                        // 3. Crypto Positioning (includes macro indicators in detail)
-                        AllocationSummarySection(
-                            allocationSummary: allocationViewModel?.allocationSummary,
-                            isLoading: allocationViewModel?.isLoading ?? false,
-                            hasExtremeMove: sentimentViewModel.hasExtremeMacroMove,
-                            sentimentViewModel: sentimentViewModel
-                        )
-
-                        // 4. Traditional Markets (Indexes + Precious Metals)
-                        TraditionalMarketsSection()
-
-                        // 5. Top Coins Browser
-                        TopCoinsSection(viewModel: viewModel)
-
-                        // 6. Market Sentiment (compact summary → detail)
-                        SentimentSummarySection(
-                            viewModel: sentimentViewModel,
-                            isPro: appState.isPro
-                        )
-
-                        // 7. Altcoin Screener (30D returns)
-                        AltcoinScreenerSection()
+                        .padding(.top, 16)
 
                         // Disclaimer
                         FinancialDisclaimer()
@@ -73,7 +51,6 @@ struct MarketOverviewView: View {
 
                         Spacer(minLength: 100)
                     }
-                    .padding(.top, 16)
                     } // else
                 }
                 .refreshable {

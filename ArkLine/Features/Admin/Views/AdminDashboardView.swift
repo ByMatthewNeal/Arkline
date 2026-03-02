@@ -80,27 +80,6 @@ struct AdminDashboardView: View {
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
-                // Coming Soon
-                Section {
-                    AdminDashboardRow(
-                        icon: "person.badge.plus",
-                        iconColor: AppColors.textTertiary,
-                        title: "Leads",
-                        subtitle: "Coming soon"
-                    )
-                    .opacity(0.5)
-
-                    AdminDashboardRow(
-                        icon: "bell.fill",
-                        iconColor: AppColors.textTertiary,
-                        title: "Notifications",
-                        subtitle: "Coming soon"
-                    )
-                    .opacity(0.5)
-                } header: {
-                    Text("Coming Soon")
-                }
-                .listRowBackground(AppColors.cardBackground(colorScheme))
             }
             #if os(iOS)
             .listStyle(.insetGrouped)
