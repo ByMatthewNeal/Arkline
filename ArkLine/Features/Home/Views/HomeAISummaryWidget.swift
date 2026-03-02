@@ -147,15 +147,13 @@ struct HomeAISummaryWidget: View {
     // MARK: - Parsed Posture
 
     private enum MarketPosture {
-        case riskOn(String)
-        case riskOff(String)
-        case neutral(String)
+        case riskOn(String, String) // (detail, quadrant label)
+        case riskOff(String, String)
+        case neutral(String, String)
 
         var label: String {
             switch self {
-            case .riskOn: return "Risk-On"
-            case .riskOff: return "Risk-Off"
-            case .neutral: return "Neutral"
+            case .riskOn(_, let q), .riskOff(_, let q), .neutral(_, let q): return q
             }
         }
 
@@ -177,22 +175,45 @@ struct HomeAISummaryWidget: View {
 
         var detail: String {
             switch self {
-            case .riskOn(let d), .riskOff(let d), .neutral(let d): return d
+            case .riskOn(let d, _), .riskOff(let d, _), .neutral(let d, _): return d
             }
         }
     }
+
+    /// Extract the regime quadrant label from the posture text (e.g. "Risk-On Disinflation")
+    private static let quadrantLabels = [
+        "risk-on disinflation", "risk-on inflation",
+        "risk-off inflation", "risk-off disinflation"
+    ]
 
     private var parsedPosture: MarketPosture? {
         guard let text = summary?.summary else { return nil }
         let sections = parseSections(text)
         guard let postureSection = sections.first(where: { $0.header.lowercased() == "posture" }) else { return nil }
         let body = postureSection.body.lowercased()
+
+        // Try to extract the full quadrant name (e.g. "Risk-On Disinflation")
+        let quadrantLabel: String = {
+            for q in Self.quadrantLabels {
+                if body.contains(q) {
+                    // Title-case it back from the original text
+                    if let range = body.range(of: q) {
+                        return String(postureSection.body[range])
+                    }
+                }
+            }
+            // Fallback to simple labels
+            if body.contains("risk-on") || body.contains("risk on") { return "Risk-On" }
+            if body.contains("risk-off") || body.contains("risk off") { return "Risk-Off" }
+            return "Neutral"
+        }()
+
         if body.contains("risk-on") || body.contains("risk on") {
-            return .riskOn(postureSection.body)
+            return .riskOn(postureSection.body, quadrantLabel)
         } else if body.contains("risk-off") || body.contains("risk off") {
-            return .riskOff(postureSection.body)
+            return .riskOff(postureSection.body, quadrantLabel)
         } else {
-            return .neutral(postureSection.body)
+            return .neutral(postureSection.body, quadrantLabel)
         }
     }
 
@@ -210,8 +231,7 @@ struct HomeAISummaryWidget: View {
         }
 
         if let posture = parsedPosture {
-            let timeOfDay = hour >= 17 ? "tonight" : "today"
-            return "\(timeGreeting), \(userName). Markets are \(posture.label.lowercased()) \(timeOfDay)."
+            return "\(timeGreeting), \(userName). \(posture.label)."
         }
 
         return "\(timeGreeting), \(userName)."
