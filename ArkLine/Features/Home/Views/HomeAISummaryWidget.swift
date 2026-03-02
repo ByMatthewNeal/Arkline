@@ -299,11 +299,7 @@ struct HomeAISummaryWidget: View {
             timeGreeting = "Good evening"
         }
 
-        if let posture = parsedPosture {
-            return "\(timeGreeting), \(userName). \(posture.label)."
-        }
-
-        return "\(timeGreeting), \(userName)."
+        return "\(timeGreeting), \(userName). Here's your daily briefing."
     }
 
     // MARK: - Sentiment Pill
