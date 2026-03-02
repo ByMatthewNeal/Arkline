@@ -286,8 +286,14 @@ class SentimentViewModel {
         self.enableSideEffects = enableSideEffects
     }
 
+    // MARK: - Refresh Cooldown
+    private let refreshCooldown: TimeInterval = 30
+
     // MARK: - Public Methods
-    func refresh() async {
+    func refresh(forceRefresh: Bool = false) async {
+        // Skip re-fetch if data loaded within the last 30 seconds (unless forced)
+        if !forceRefresh, let last = lastRefreshed, Date().timeIntervalSince(last) < refreshCooldown { return }
+
         isLoading = true
         errorMessage = nil
 

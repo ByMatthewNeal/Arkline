@@ -456,92 +456,44 @@ class HomeViewModel {
         }
     }
 
+    // MARK: - Refresh Cooldown
+    private let refreshCooldown: TimeInterval = 30
+
     // MARK: - Public Methods
-    func refresh() async {
+    func refresh(forceRefresh: Bool = false) async {
         guard !isRefreshing else { return }
+        // Skip re-fetch if data loaded within the last 30 seconds (unless forced)
+        if !forceRefresh, let last = lastRefreshed, Date().timeIntervalSince(last) < refreshCooldown { return }
         isRefreshing = true
         isLoading = true
-        defer {
-            isLoading = false
-            isRefreshing = false
-        }
         errorMessage = nil
 
         let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
         let riskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
 
-        // Launch ALL fetches in parallel — crypto no longer blocks macro/sentiment
-        async let cryptoTask = fetchCryptoAssetsSafe()
-        async let vixTask = fetchVIXSafe()
-        async let dxyTask = fetchDXYSafe()
-        async let liquidityTask = fetchGlobalLiquiditySafe()
-        async let netLiqTask = fetchNetLiquiditySafe()
-        async let supplyProfitTask = fetchSupplyInProfitSafe()
-        async let fedWatchTask = fetchFedWatchMeetingsSafe()
-        async let upcomingEventsTask = fetchUpcomingEventsSafe()
-        async let todaysEventsTask = fetchTodaysEventsSafe()
-        async let riskResultsTask = fetchAllRiskLevels(coins: riskCoins)
-        async let zScoresTask = fetchMacroZScoresSafe()
+        // Launch ALL fetches concurrently, then progressively update UI as each group resolves.
+        // Each group is an independent Task so widgets render as data arrives.
 
-        async let fgResult: FearGreedIndex? = {
-            do {
-                return try await sentimentService.fetchFearGreedIndex()
-            } catch {
-                logError("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
-                return nil
-            }
-        }()
-
-        async let riskScoreResult: ArkLineRiskScore? = {
-            do {
-                return try await sentimentService.fetchArkLineRiskScore()
-            } catch {
-                logError("ArkLine Risk Score fetch failed: \(error.localizedDescription)", category: .network)
-                return nil
-            }
-        }()
-
-        async let remindersResult: [DCAReminder] = {
-            guard let uid = userId else { return [] }
-            do {
-                return try await dcaService.fetchReminders(userId: uid)
-            } catch {
-                logError("Reminders fetch failed: \(error.localizedDescription)", category: .network)
-                return []
-            }
-        }()
-
-        async let newsResult: [NewsItem] = {
-            do {
-                return try await self.fetchNewsCombined()
-            } catch {
-                logError("News fetch failed: \(error.localizedDescription)", category: .network)
-                return []
-            }
-        }()
-
-        // Process events first (hardcoded data, instant)
-        let upcoming = await upcomingEventsTask
-        let todaysEvts = await todaysEventsTask
-        await MainActor.run {
+        let eventsTask = Task { @MainActor in
+            let upcoming = await self.fetchUpcomingEventsSafe()
+            let todaysEvts = await self.fetchTodaysEventsSafe()
             self.upcomingEvents = upcoming
             self.todaysEvents = todaysEvts
             self.eventsLastUpdated = Date()
         }
 
-        // Process crypto prices as soon as they arrive
-        let crypto = await cryptoTask
+        let cryptoTask = Task { @MainActor [enableSideEffects] in
+            let crypto = await self.fetchCryptoAssetsSafe()
 
-        if !crypto.isEmpty {
-            if enableSideEffects { Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) } }
-            cachedCryptoAssets = crypto
-        }
+            if !crypto.isEmpty {
+                if enableSideEffects { Task { await MarketDataCollector.shared.recordCryptoAssets(crypto) } }
+                self.cachedCryptoAssets = crypto
+            }
 
-        let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
-        let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
-        let sol = crypto.first { $0.symbol.uppercased() == "SOL" }
+            let btc = crypto.first { $0.symbol.uppercased() == "BTC" }
+            let eth = crypto.first { $0.symbol.uppercased() == "ETH" }
+            let sol = crypto.first { $0.symbol.uppercased() == "SOL" }
 
-        await MainActor.run {
             withAnimation(.easeInOut(duration: 0.4)) {
                 self.btcPrice = btc?.currentPrice ?? 0
                 self.ethPrice = eth?.currentPrice ?? 0
@@ -553,78 +505,110 @@ class HomeViewModel {
             let sortedByGain = crypto.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }
             self.topGainers = Array(sortedByGain.prefix(3))
             self.topLosers = Array(sortedByGain.suffix(3).reversed())
+            return crypto
         }
 
-        // Process macro indicators
-        let vix = await vixTask
-        let dxy = await dxyTask
-        let liquidity = await liquidityTask
-        let netLiq = await netLiqTask
-        let supplyProfit = await supplyProfitTask
-        let fedMeetings = await fedWatchTask
-        let riskResults = await riskResultsTask
+        let macroTask = Task { @MainActor [enableSideEffects] in
+            async let vixFetch = self.fetchVIXSafe()
+            async let dxyFetch = self.fetchDXYSafe()
+            async let liquidityFetch = self.fetchGlobalLiquiditySafe()
+            async let netLiqFetch = self.fetchNetLiquiditySafe()
+            async let supplyProfitFetch = self.fetchSupplyInProfitSafe()
+            async let fedWatchFetch = self.fetchFedWatchMeetingsSafe()
 
-        await MainActor.run {
+            let (vix, dxy, liquidity, netLiq, supplyProfit, fedMeetings) = await (vixFetch, dxyFetch, liquidityFetch, netLiqFetch, supplyProfitFetch, fedWatchFetch)
+
             self.vixData = vix
             self.dxyData = dxy
             self.globalLiquidityChanges = liquidity
             self.netLiquidityData = netLiq
             self.supplyInProfitData = supplyProfit
             self.fedWatchMeetings = fedMeetings ?? []
+
+            // Archive macro indicators (fire-and-forget)
+            if enableSideEffects {
+                Task {
+                    let collector = MarketDataCollector.shared
+                    if let vix = vix {
+                        await collector.recordIndicator(
+                            name: "vix", value: vix.value,
+                            metadata: vix.open.map { ["open": .double($0), "high": .double(vix.high ?? 0), "low": .double(vix.low ?? 0), "close": .double(vix.close ?? 0)] }
+                        )
+                    }
+                    if let dxy = dxy {
+                        await collector.recordIndicator(
+                            name: "dxy", value: dxy.value,
+                            metadata: dxy.open.map { ["open": .double($0), "high": .double(dxy.high ?? 0), "low": .double(dxy.low ?? 0), "close": .double(dxy.close ?? 0)] }
+                        )
+                    }
+                    if let m2 = liquidity {
+                        await collector.recordIndicator(
+                            name: "global_m2", value: m2.current,
+                            metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
+                        )
+                    }
+                    if let nl = netLiq {
+                        await collector.recordIndicator(
+                            name: "net_liquidity", value: nl.current,
+                            metadata: ["weekly_change": .double(nl.weeklyChange), "monthly_change": .double(nl.monthlyChange), "yearly_change": .double(nl.yearlyChange)]
+                        )
+                    }
+                    if let sp = supplyProfit {
+                        await collector.recordIndicator(name: "supply_in_profit", value: sp.value)
+                    }
+                }
+            }
+
+            return (vix, dxy, liquidity)
+        }
+
+        let riskTask = Task { @MainActor in
+            let riskResults = await self.fetchAllRiskLevels(coins: riskCoins)
             for (coin, level, history) in riskResults {
                 self.riskLevels[coin] = level
                 self.riskHistories[coin] = history
             }
         }
 
-        // Archive macro indicators (fire-and-forget)
-        if enableSideEffects {
-            Task {
-                let collector = MarketDataCollector.shared
-                if let vix = vix {
-                    await collector.recordIndicator(
-                        name: "vix", value: vix.value,
-                        metadata: vix.open.map { ["open": .double($0), "high": .double(vix.high ?? 0), "low": .double(vix.low ?? 0), "close": .double(vix.close ?? 0)] }
-                    )
+        let sentimentTask = Task { @MainActor [enableSideEffects, sentimentService, dcaService] in
+            async let fgFetch: FearGreedIndex? = {
+                do { return try await sentimentService.fetchFearGreedIndex() }
+                catch {
+                    logError("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
+                    return nil
                 }
-                if let dxy = dxy {
-                    await collector.recordIndicator(
-                        name: "dxy", value: dxy.value,
-                        metadata: dxy.open.map { ["open": .double($0), "high": .double(dxy.high ?? 0), "low": .double(dxy.low ?? 0), "close": .double(dxy.close ?? 0)] }
-                    )
+            }()
+            async let riskScoreFetch: ArkLineRiskScore? = {
+                do { return try await sentimentService.fetchArkLineRiskScore() }
+                catch {
+                    logError("ArkLine Risk Score fetch failed: \(error.localizedDescription)", category: .network)
+                    return nil
                 }
-                if let m2 = liquidity {
-                    await collector.recordIndicator(
-                        name: "global_m2", value: m2.current,
-                        metadata: ["weekly_change": .double(m2.weeklyChange), "monthly_change": .double(m2.monthlyChange), "yearly_change": .double(m2.yearlyChange)]
-                    )
+            }()
+            async let remindersFetch: [DCAReminder] = {
+                guard let uid = userId else { return [] }
+                do { return try await dcaService.fetchReminders(userId: uid) }
+                catch {
+                    logError("Reminders fetch failed: \(error.localizedDescription)", category: .network)
+                    return []
                 }
-                if let nl = netLiq {
-                    await collector.recordIndicator(
-                        name: "net_liquidity", value: nl.current,
-                        metadata: ["weekly_change": .double(nl.weeklyChange), "monthly_change": .double(nl.monthlyChange), "yearly_change": .double(nl.yearlyChange)]
-                    )
+            }()
+            async let newsFetch: [NewsItem] = {
+                do { return try await self.fetchNewsCombined() }
+                catch {
+                    logError("News fetch failed: \(error.localizedDescription)", category: .network)
+                    return []
                 }
-                if let sp = supplyProfit {
-                    await collector.recordIndicator(name: "supply_in_profit", value: sp.value)
-                }
-            }
-        }
+            }()
 
-        // Process secondary data (sentiment, news, reminders, z-scores)
-        let (fg, riskScore, reminders, news) = await (fgResult, riskScoreResult, remindersResult, newsResult)
-        let zScores = await zScoresTask
+            let (fg, riskScore, reminders, news) = await (fgFetch, riskScoreFetch, remindersFetch, newsFetch)
 
-        let failureCount = (crypto.isEmpty ? 1 : 0) + (fg == nil ? 1 : 0) + (riskScore == nil ? 1 : 0)
-
-        await MainActor.run {
             if let fg = fg {
                 self.fearGreedIndex = fg
             }
             self.activeReminders = reminders.filter { $0.isActive }
             self.todayReminders = reminders.filter { $0.isDueToday }
-            // Sync DCA notifications on home refresh (app launch)
-            if self.enableSideEffects {
+            if enableSideEffects {
                 Task { await DCANotificationScheduler.syncAll(reminders) }
             }
             if let riskScore = riskScore {
@@ -632,40 +616,63 @@ class HomeViewModel {
                 self.arkLineRiskScore = riskScore
             }
             self.newsItems = news
+
+            // Archive fear/greed and risk score (fire-and-forget)
+            if enableSideEffects {
+                Task {
+                    let collector = MarketDataCollector.shared
+                    if let fg = fg {
+                        await collector.recordIndicator(
+                            name: "fear_greed", value: Double(fg.value),
+                            metadata: [
+                                "classification": .string(fg.classification),
+                                "previous_close": .int(fg.previousClose ?? 0),
+                                "week_ago": .int(fg.weekAgo ?? 0),
+                                "month_ago": .int(fg.monthAgo ?? 0)
+                            ]
+                        )
+                    }
+                    if let riskScore = riskScore {
+                        await collector.recordRiskScore(riskScore)
+                    }
+                }
+            }
+
+            return (fg, riskScore)
+        }
+
+        let zScoreTask = Task { @MainActor [enableSideEffects] in
+            let zScores = await self.fetchMacroZScoresSafe()
             self.macroZScores = zScores
-            self.currentRegimeResult = MacroRegimeCalculator.computeRegime(
-                vixData: self.vixData,
-                dxyData: self.dxyData,
-                globalM2Data: self.globalLiquidityChanges,
-                macroZScores: zScores
-            )
-            if self.enableSideEffects {
+            if enableSideEffects {
                 ExtremeMoveAlertManager.shared.checkAllForExtremeMoves(zScores)
             }
-            self.failedFetchCount = failureCount
-            self.lastRefreshed = Date()
+            return zScores
         }
+
+        // Await all progressive tasks, then compute regime + failure count
+        _ = await eventsTask.value
+        let crypto = await cryptoTask.value
+        let (vix, dxy, liquidity) = await macroTask.value
+        _ = await riskTask.value
+        let (fg, riskScore) = await sentimentTask.value
+        let zScores = await zScoreTask.value
+
+        // Regime computation depends on macro + z-scores
+        self.currentRegimeResult = MacroRegimeCalculator.computeRegime(
+            vixData: vix,
+            dxyData: dxy,
+            globalM2Data: liquidity,
+            macroZScores: zScores
+        )
+        self.failedFetchCount = (crypto.isEmpty ? 1 : 0) + (fg == nil ? 1 : 0) + (riskScore == nil ? 1 : 0)
+
+        // All data has arrived — finalize
+        self.lastRefreshed = Date()
+        self.isLoading = false
+        self.isRefreshing = false
 
         guard enableSideEffects else { return }
-
-        // Archive fear/greed and risk score (fire-and-forget)
-        Task {
-            let collector = MarketDataCollector.shared
-            if let fg = fg {
-                await collector.recordIndicator(
-                    name: "fear_greed", value: Double(fg.value),
-                    metadata: [
-                        "classification": .string(fg.classification),
-                        "previous_close": .int(fg.previousClose ?? 0),
-                        "week_ago": .int(fg.weekAgo ?? 0),
-                        "month_ago": .int(fg.monthAgo ?? 0)
-                    ]
-                )
-            }
-            if let riskScore = riskScore {
-                await collector.recordRiskScore(riskScore)
-            }
-        }
 
         // Fetch Rainbow Chart data (needs BTC price) in background
         if btcPrice > 0 {
@@ -699,7 +706,8 @@ class HomeViewModel {
         }
     }
 
-    func loadPortfolios() async {
+    func loadPortfolios(forceRefresh: Bool = false) async {
+        guard !hasLoadedPortfolios || forceRefresh else { return }
         do {
             // Wait for auth session to finish restoring (avoids race on cold launch)
             for _ in 0..<30 {

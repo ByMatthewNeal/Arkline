@@ -68,7 +68,7 @@ struct HomeView: View {
                             StaleDataBanner(
                                 failedCount: viewModel.failedFetchCount,
                                 lastRefreshed: viewModel.lastRefreshed,
-                                onRetry: { Task { await viewModel.refresh() } }
+                                onRetry: { Task { await viewModel.refresh(forceRefresh: true) } }
                             )
                             .padding(.horizontal, 20)
                         }
@@ -134,7 +134,7 @@ struct HomeView: View {
                     .padding(.top, 16)
                 }
                 .refreshable {
-                    await viewModel.refresh()
+                    await viewModel.refresh(forceRefresh: true)
                 }
                 .onChange(of: appState.homeNavigationReset) { _, _ in
                     navigationPath = NavigationPath()
@@ -169,12 +169,12 @@ struct HomeView: View {
             }
             .task {
                 async let portfolios: () = viewModel.loadPortfolios()
-                async let refresh: () = viewModel.refresh()
-                _ = await (portfolios, refresh)
+                async let refreshTask: () = viewModel.refresh()
+                _ = await (portfolios, refreshTask)
             }
             .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.authStateChanged)) { _ in
                 if !viewModel.hasLoadedPortfolios || (viewModel.portfolioValue == 0 && SupabaseAuthManager.shared.isAuthenticated) {
-                    Task { await viewModel.loadPortfolios() }
+                    Task { await viewModel.loadPortfolios(forceRefresh: true) }
                 }
             }
             .onAppear {

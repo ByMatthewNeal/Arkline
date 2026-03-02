@@ -36,6 +36,10 @@ class MarketViewModel {
     var topCoinsSearchQuery: String = ""
     var isSearchingTopCoins = false
 
+    // MARK: - Refresh Cooldown
+    var lastRefreshed: Date?
+    private let refreshCooldown: TimeInterval = 30
+
     // MARK: - Properties
     var selectedTab: MarketTab = .overview
     var selectedCategory: AssetCategoryFilter = .all
@@ -92,7 +96,10 @@ class MarketViewModel {
     }
 
     // MARK: - Public Methods
-    func refresh() async {
+    func refresh(forceRefresh: Bool = false) async {
+        // Skip re-fetch if data loaded within the last 30 seconds (unless forced)
+        if !forceRefresh, let last = lastRefreshed, Date().timeIntervalSince(last) < refreshCooldown { return }
+
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -109,6 +116,7 @@ class MarketViewModel {
         self.fedWatchData = meetings?.first
         self.cachedTopCoins = coins
         self.topCoins = coins
+        self.lastRefreshed = Date()
     }
 
     /// Safely fetches news without throwing errors

@@ -54,8 +54,8 @@ struct MarketOverviewView: View {
                     } // else
                 }
                 .refreshable {
-                    async let market: () = viewModel.refresh()
-                    async let sentiment: () = sentimentViewModel.refresh()
+                    async let market: () = viewModel.refresh(forceRefresh: true)
+                    async let sentiment: () = sentimentViewModel.refresh(forceRefresh: true)
                     async let allocation: () = allocationViewModel?.refresh() ?? ()
                     _ = await (market, sentiment, allocation)
                 }
