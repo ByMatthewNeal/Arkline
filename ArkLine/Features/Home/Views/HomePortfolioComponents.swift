@@ -487,6 +487,7 @@ struct MultiCoinRiskSection: View {
                     }
                     .padding(.horizontal, ArkSpacing.xs)
                 }
+                .clipped()
             }
         }
     }

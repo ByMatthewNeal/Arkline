@@ -64,6 +64,7 @@ struct FavoritesSection: View {
                         }
                     }
                 }
+                .clipped()
             }
         }
         .padding(size == .compact ? 14 : 20)
