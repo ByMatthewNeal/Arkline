@@ -178,7 +178,7 @@ struct GlobalLiquidityWidget: View {
         } else if value >= 1_000_000_000 {
             return String(format: "$%.1fB", value / 1_000_000_000)
         }
-        return String(format: "$%.0f", value)
+        return String(format: "$%,.0f", value)
     }
 
     var body: some View {
@@ -263,7 +263,7 @@ struct NetLiquidityWidget: View {
         } else if value >= 1_000_000_000 {
             return String(format: "$%.1fB", value / 1_000_000_000)
         }
-        return String(format: "$%.0f", value)
+        return String(format: "$%,.0f", value)
     }
 
     var body: some View {

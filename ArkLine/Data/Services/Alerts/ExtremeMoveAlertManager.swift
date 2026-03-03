@@ -282,9 +282,9 @@ struct ExtremeMove: Codable, Identifiable, Equatable {
         case .m2, .netLiquidity:
             valueFormatted = formatLargeNumber(currentValue)
         case .crudeOil:
-            valueFormatted = String(format: "$%.2f", currentValue)
+            valueFormatted = String(format: "$%,.2f", currentValue)
         case .gold:
-            valueFormatted = String(format: "$%.0f", currentValue)
+            valueFormatted = String(format: "$%,.0f", currentValue)
         }
 
         let rarityText: String
@@ -320,7 +320,7 @@ struct ExtremeMove: Codable, Identifiable, Equatable {
         } else if value >= 1_000_000_000 {
             return String(format: "$%.1fB", value / 1_000_000_000)
         } else {
-            return String(format: "$%.0f", value)
+            return String(format: "$%,.0f", value)
         }
     }
 }

@@ -102,7 +102,7 @@ struct RevenueDashboardView: View {
         if value >= 1000 {
             return String(format: "$%.1fk", value / 1000)
         }
-        return String(format: "$%.0f", value)
+        return String(format: "$%,.0f", value)
     }
 }
 

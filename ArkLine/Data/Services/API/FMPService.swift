@@ -285,7 +285,7 @@ struct FMPQuote: Codable, Identifiable {
         } else if price < 1 {
             return String(format: "$%.4f", price)
         } else {
-            return String(format: "$%.2f", price)
+            return String(format: "$%,.2f", price)
         }
     }
 
@@ -305,7 +305,7 @@ struct FMPQuote: Codable, Identifiable {
         } else if cap >= 1_000_000 {
             return String(format: "$%.2fM", cap / 1_000_000)
         }
-        return String(format: "$%.0f", cap)
+        return String(format: "$%,.0f", cap)
     }
 
     /// Is price up or down
@@ -376,7 +376,7 @@ struct FMPMover: Codable, Identifiable {
 
     /// Formatted price
     var priceFormatted: String {
-        String(format: "$%.2f", price)
+        String(format: "$%,.2f", price)
     }
 
     /// Formatted change percentage
@@ -440,6 +440,6 @@ struct FMPCompanyProfile: Codable, Identifiable {
         } else if cap >= 1_000_000 {
             return String(format: "$%.2fM", cap / 1_000_000)
         }
-        return String(format: "$%.0f", cap)
+        return String(format: "$%,.0f", cap)
     }
 }

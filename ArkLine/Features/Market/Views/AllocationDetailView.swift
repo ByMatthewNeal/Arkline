@@ -163,7 +163,7 @@ struct AllocationDetailView: View {
             MacroIndicatorCard(
                 title: "WTI",
                 subtitle: "Crude Oil",
-                value: sentimentViewModel.crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--",
+                value: sentimentViewModel.crudeOilData.map { String(format: "$%,.2f", $0.value) } ?? "--",
                 signal: crudeOilSignal,
                 description: crudeOilDescription,
                 icon: "drop.fill",
@@ -175,7 +175,7 @@ struct AllocationDetailView: View {
             MacroIndicatorCard(
                 title: "Gold",
                 subtitle: "XAU/USD",
-                value: sentimentViewModel.goldData.map { String(format: "$%.0f", $0.value) } ?? "--",
+                value: sentimentViewModel.goldData.map { String(format: "$%,.0f", $0.value) } ?? "--",
                 signal: goldSignal,
                 description: goldDescription,
                 icon: "diamond.fill",

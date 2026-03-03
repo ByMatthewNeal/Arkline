@@ -36,7 +36,7 @@ struct CrudeOilDetailView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
-                        Text(crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--")
+                        Text(crudeOilData.map { String(format: "$%,.2f", $0.value) } ?? "--")
                             .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
@@ -64,7 +64,7 @@ struct CrudeOilDetailView: View {
                     MacroIndicatorChart(
                         data: chartData,
                         lineColor: levelColor,
-                        valueFormatter: { String(format: "$%.2f", $0) },
+                        valueFormatter: { String(format: "$%,.2f", $0) },
                         selectedTimeRange: $timeRange,
                         selectedDate: $selectedDate,
                         isLoading: isLoadingChart

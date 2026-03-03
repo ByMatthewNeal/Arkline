@@ -426,7 +426,7 @@ struct EmbeddedWidgetView: View {
 
     private func formatCoreAssetPrice(_ price: Double) -> String {
         if price >= 1000 { return String(format: "$%,.0f", price) }
-        if price >= 1 { return String(format: "$%.2f", price) }
+        if price >= 1 { return String(format: "$%,.2f", price) }
         return String(format: "$%.4f", price)
     }
 

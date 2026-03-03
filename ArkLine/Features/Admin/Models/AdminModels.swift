@@ -117,7 +117,7 @@ struct PaymentRecord: Codable, Identifiable, Equatable {
 
     var formattedAmount: String {
         let dollars = Double(amount) / 100.0
-        return String(format: "$%.2f", dollars)
+        return String(format: "$%,.2f", dollars)
     }
 
     var date: Date {
