@@ -317,7 +317,17 @@ private struct SwipeBackModifier: ViewModifier {
 
 private class SwipeBackDelegate: NSObject, UIGestureRecognizerDelegate {
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        true
+        // Only allow the pop gesture when there's actually a view to pop back to.
+        // Without this check, the gesture fires at root and causes horizontal drift.
+        guard let view = gestureRecognizer.view else { return false }
+        var responder: UIResponder? = view
+        while let next = responder?.next {
+            if let nav = next as? UINavigationController {
+                return nav.viewControllers.count > 1
+            }
+            responder = next
+        }
+        return true
     }
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
