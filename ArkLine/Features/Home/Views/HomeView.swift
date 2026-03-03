@@ -1,5 +1,40 @@
 import SwiftUI
 
+// MARK: - Directional Lock Modifier
+/// Enables UIScrollView.isDirectionalLockEnabled on the nearest ancestor scroll view,
+/// preventing horizontal drift during vertical scrolling.
+private struct DirectionalLockModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(DirectionalLockHelper())
+    }
+}
+
+private struct DirectionalLockHelper: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            if let scrollView = findScrollView(in: view) {
+                scrollView.isDirectionalLockEnabled = true
+            }
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    private func findScrollView(in view: UIView) -> UIScrollView? {
+        var current: UIView? = view
+        while let parent = current?.superview {
+            if let scrollView = parent as? UIScrollView {
+                return scrollView
+            }
+            current = parent
+        }
+        return nil
+    }
+}
+
 struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var showPortfolioPicker = false
@@ -134,9 +169,8 @@ struct HomeView: View {
                         Spacer(minLength: 120)
                     }
                     .padding(.top, 16)
-                    .frame(maxWidth: .infinity)
                 }
-                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                .modifier(DirectionalLockModifier())
                 .refreshable {
                     await viewModel.refresh(forceRefresh: true)
                 }
