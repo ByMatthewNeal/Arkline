@@ -51,15 +51,13 @@ struct CustomTabBar: View {
                         triggerNavigationReset(for: tab)
                     } else {
                         Haptics.light()
-                        triggerNavigationReset(for: tab)
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = tab
-                        }
+                        selectedTab = tab
                         Task { await AnalyticsService.shared.trackTabSwitch(tab.rawValue) }
                     }
                 }
             }
         }
+        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: selectedTab)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(
