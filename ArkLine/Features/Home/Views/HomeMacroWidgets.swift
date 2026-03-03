@@ -366,10 +366,6 @@ struct VIXDetailView: View {
                         isLoading: isLoadingChart
                     )
 
-                    MacroInfoSection(title: "What is VIX?", content: """
-The CBOE Volatility Index (VIX) measures the market's expectation of 30-day volatility implied by S&P 500 index options. Often called the "fear gauge," it reflects investor sentiment and uncertainty in the market.
-""")
-
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Level Interpretation")
                             .font(.headline)
@@ -384,6 +380,10 @@ The CBOE Volatility Index (VIX) measures the market's expectation of 30-day vola
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
+
+                    MacroInfoSection(title: "What is VIX?", content: """
+The CBOE Volatility Index (VIX) measures the market's expectation of 30-day volatility implied by S&P 500 index options. Often called the "fear gauge," it reflects investor sentiment and uncertainty in the market.
+""")
 
                     MacroInfoSection(title: "Impact on Crypto", content: """
 • High VIX (>25): Risk-off environment. Investors flee to safety, often selling crypto.
@@ -546,18 +546,8 @@ struct DXYDetailView: View {
                         isLoading: isLoadingChart
                     )
 
-                    MacroInfoSection(title: "What is DXY?", content: """
-The US Dollar Index (DXY) measures the value of the US dollar relative to a basket of foreign currencies: Euro (57.6%), Japanese Yen (13.6%), British Pound (11.9%), Canadian Dollar (9.1%), Swedish Krona (4.2%), and Swiss Franc (3.6%).
-""")
-
-                    MacroInfoSection(title: "Impact on Crypto", content: """
-• Rising DXY: Bearish for crypto. A stronger dollar reduces appetite for risk assets.
-• Falling DXY: Bullish for crypto. Dollar weakness often drives investors to alternatives.
-• BTC and DXY typically show inverse correlation, especially during macro-driven markets.
-""")
-
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Historical Ranges")
+                        Text("Price Level Interpretation")
                             .font(.headline)
                             .foregroundColor(textPrimary)
 
@@ -569,6 +559,16 @@ The US Dollar Index (DXY) measures the value of the US dollar relative to a bask
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
+
+                    MacroInfoSection(title: "What is DXY?", content: """
+The US Dollar Index (DXY) measures the value of the US dollar relative to a basket of foreign currencies: Euro (57.6%), Japanese Yen (13.6%), British Pound (11.9%), Canadian Dollar (9.1%), Swedish Krona (4.2%), and Swiss Franc (3.6%).
+""")
+
+                    MacroInfoSection(title: "Impact on Crypto", content: """
+• Rising DXY: Bearish for crypto. A stronger dollar reduces appetite for risk assets.
+• Falling DXY: Bullish for crypto. Dollar weakness often drives investors to alternatives.
+• BTC and DXY typically show inverse correlation, especially during macro-driven markets.
+""")
 
                     MacroInfoSection(title: "Historical Context", content: """
 • 2022 Peak: DXY reached ~114, highest in 20 years

@@ -81,10 +81,6 @@ struct CrudeOilDetailView: View {
                         isLoading: isLoadingChart
                     )
 
-                    MacroInfoSection(title: "What is WTI Crude Oil?", content: """
-WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one of the most-watched commodity prices globally and a leading indicator of inflation expectations. Oil prices directly affect transportation, manufacturing, and energy costs across the economy.
-""")
-
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Price Level Interpretation")
                             .font(.headline)
@@ -100,6 +96,10 @@ WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
+
+                    MacroInfoSection(title: "What is WTI Crude Oil?", content: """
+WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one of the most-watched commodity prices globally and a leading indicator of inflation expectations. Oil prices directly affect transportation, manufacturing, and energy costs across the economy.
+""")
 
                     MacroInfoSection(title: "Impact on Crypto", content: """
 \u{2022} Rising oil prices drive inflation expectations, making the Fed more hawkish. Higher rates are bearish for risk assets like crypto.
