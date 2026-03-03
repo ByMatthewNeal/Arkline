@@ -47,7 +47,7 @@ struct NotificationsDetailView: View {
                             icon: "sparkles",
                             iconColor: AppColors.accent,
                             title: "Daily Briefings",
-                            description: "Morning Intel (10:15 AM) & Close & Context (5:00 PM)"
+                            description: "Morning Intel (10:15 AM ET) & Close & Context (5:00 PM ET)"
                         )
                     }
                     .onChange(of: dailyBriefings) { _, newValue in

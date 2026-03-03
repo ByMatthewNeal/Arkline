@@ -1,9 +1,13 @@
 import UserNotifications
 import Foundation
 
-/// Schedules repeating daily briefing notifications (morning + evening).
+/// Schedules repeating daily briefing notifications (morning + evening) in US Eastern time.
+/// Pinned to ET so notifications align with US market hours regardless of user's timezone.
 /// Uses `UNCalendarNotificationTrigger(repeats: true)` — no APNs needed.
 enum BriefingNotificationScheduler {
+
+    /// US Eastern timezone (handles EST/EDT automatically)
+    private static let eastern = TimeZone(identifier: "America/New_York")!
 
     // MARK: - Slots
 
@@ -13,6 +17,7 @@ enum BriefingNotificationScheduler {
 
         var identifier: String { "briefing_\(rawValue)" }
 
+        /// Hour in US Eastern time
         var hour: Int {
             switch self {
             case .morning: return 10
@@ -85,6 +90,7 @@ enum BriefingNotificationScheduler {
             ]
 
             var dateComponents = DateComponents()
+            dateComponents.timeZone = eastern
             dateComponents.hour = slot.hour
             dateComponents.minute = slot.minute
 
