@@ -146,6 +146,8 @@ struct HomeView: View {
                 }
             } // ScrollViewReader
             }
+            .navigationTitle("")
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showPortfolioPicker) {
                 PortfolioPickerSheet(
                     portfolios: viewModel.portfolios,
