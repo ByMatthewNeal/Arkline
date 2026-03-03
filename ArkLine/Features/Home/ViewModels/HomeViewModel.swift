@@ -719,6 +719,10 @@ class HomeViewModel {
 
         // Fetch AI market summary (uses already-loaded state).
         // Regime-shift detection happens inside fetchMarketSummary itself.
+        // On force refresh (pull-to-refresh), clear stale briefing cache first.
+        if forceRefresh {
+            APICache.shared.remove("market_summary_session")
+        }
         Task { await self.fetchMarketSummary() }
     }
 
