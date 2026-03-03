@@ -37,7 +37,7 @@ struct CrudeOilDetailView: View {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
                         Text(crudeOilData.map { String(format: "$%.2f", $0.value) } ?? "--")
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
                         if let change = crudeOilData?.changePercent {

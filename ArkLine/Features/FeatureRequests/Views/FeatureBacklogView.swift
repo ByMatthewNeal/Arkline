@@ -171,7 +171,7 @@ private struct StatCard: View {
             }
 
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold, design: .default))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Text(title)

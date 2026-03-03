@@ -275,7 +275,7 @@ private struct AnalyticsStatCard: View {
             }
 
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold, design: .default))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Text(title)
@@ -299,7 +299,7 @@ private struct TopBroadcastRow: View {
         HStack(spacing: ArkSpacing.md) {
             // Rank
             Text("#\(rank)")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(size: 14, weight: .bold, design: .default))
                 .foregroundColor(rankColor)
                 .frame(width: 30)
 

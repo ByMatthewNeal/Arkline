@@ -65,7 +65,7 @@ struct PortfolioSnapshotCardView: View {
                     Image(systemName: percentage >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 14, weight: .semibold))
                     Text(String(format: "%+.1f%%", percentage))
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .default))
                 }
                 .foregroundColor(percentage >= 0 ? AppColors.success : AppColors.error)
             } else {

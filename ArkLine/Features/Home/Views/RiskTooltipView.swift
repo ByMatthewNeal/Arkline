@@ -53,7 +53,7 @@ struct RiskTooltipView: View {
                     .frame(width: 10, height: 10)
 
                 Text(String(format: "%.3f", riskLevel))
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .bold, design: .default))
                     .foregroundColor(riskColor)
             }
 

@@ -295,7 +295,7 @@ struct RiskChartFullscreenView: View {
                                     .fill(RiskColors.color(for: point.riskLevel))
                                     .frame(width: 8, height: 8)
                                 Text(String(format: "%.3f", point.riskLevel))
-                                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    .font(.system(size: 20, weight: .bold, design: .default))
                                     .foregroundColor(RiskColors.color(for: point.riskLevel))
                                 Text(RiskColors.category(for: point.riskLevel))
                                     .font(.system(size: 13, weight: .medium))

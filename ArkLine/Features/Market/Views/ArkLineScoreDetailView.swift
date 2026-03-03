@@ -96,7 +96,7 @@ private struct ScoreGaugeSection: View {
                 // Score text
                 VStack(spacing: 2) {
                     Text("\(score)")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.system(size: 48, weight: .bold, design: .default))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("/ 100")

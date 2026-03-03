@@ -43,7 +43,7 @@ struct RiskFactorBreakdownView: View {
                         .font(.footnote)
                         .foregroundColor(textSecondary.opacity(0.85))
                     Text(String(format: "%.3f", multiFactorRisk.riskLevel))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(RiskColors.color(for: multiFactorRisk.riskLevel))
                 }
 

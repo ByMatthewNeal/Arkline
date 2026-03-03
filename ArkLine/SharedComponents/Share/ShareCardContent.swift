@@ -69,7 +69,7 @@ struct AssetShareCardContent: View {
                 Text(asset.currentPrice >= 1
                     ? asset.currentPrice.asCurrency
                     : String(format: "$%.6f", asset.currentPrice))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 28, weight: .bold, design: .default))
                     .foregroundColor(.white)
 
                 Spacer()
@@ -150,7 +150,7 @@ struct RiskShareCardContent: View {
                             .frame(width: 10, height: 10)
 
                         Text(String(format: "%.3f", riskValue))
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .font(.system(size: 28, weight: .bold, design: .default))
                             .foregroundColor(RiskColors.color(for: riskValue))
 
                         Text(RiskColors.category(for: riskValue))
@@ -189,7 +189,7 @@ struct RiskShareCardContent: View {
                         Text(price >= 1
                             ? String(format: "$%.0f", price)
                             : String(format: "$%.4f", price))
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.system(size: 14, weight: .semibold, design: .default))
                             .foregroundColor(.white)
                     }
                 }
@@ -204,7 +204,7 @@ struct RiskShareCardContent: View {
                         Text(fairValue >= 1
                             ? String(format: "$%.0f", fairValue)
                             : String(format: "$%.4f", fairValue))
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.system(size: 14, weight: .semibold, design: .default))
                             .foregroundColor(.white)
                     }
                 }
@@ -225,7 +225,7 @@ private struct ShareStatColumn: View {
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(Color.white.opacity(0.4))
             Text(value)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .font(.system(size: 12, weight: .semibold, design: .default))
                 .foregroundColor(.white)
                 .lineLimit(1)
         }

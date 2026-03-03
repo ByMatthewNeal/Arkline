@@ -114,7 +114,7 @@ struct RiskScoreCard: View {
                         .frame(width: circleSize * 0.6, height: circleSize * 0.6)
 
                     Text("\(displayScore)")
-                        .font(.system(size: size == .compact ? 18 : (size == .expanded ? 30 : 24), weight: .bold, design: .rounded))
+                        .font(.system(size: size == .compact ? 18 : (size == .expanded ? 30 : 24), weight: .bold, design: .default))
                         .foregroundColor(textPrimary)
                 }
 
@@ -289,7 +289,7 @@ struct RiskScoreDetailView: View {
 
                             VStack(spacing: 2) {
                                 Text("\(score)")
-                                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                                    .font(.system(size: 44, weight: .bold, design: .default))
                                     .foregroundColor(textPrimary)
                                 Text("/ 100")
                                     .font(.caption)

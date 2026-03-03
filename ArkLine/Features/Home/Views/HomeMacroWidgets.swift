@@ -340,7 +340,7 @@ struct VIXDetailView: View {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
                         Text(vixData.map { String(format: "%.2f", $0.value) } ?? "--")
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
                         Text(vixData?.signalDescription ?? "Loading...")
@@ -485,7 +485,7 @@ struct DXYDetailView: View {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
                         Text(dxyData.map { String(format: "%.2f", $0.value) } ?? "--")
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
                         if let change = dxyData?.changePercent {
@@ -611,7 +611,7 @@ struct GlobalM2DetailView: View {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
                         Text(liquidityChanges.map { formatLiquidity($0.current) } ?? "--")
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .font(.system(size: 48, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
                         if let change = liquidityChanges?.monthlyChange {
@@ -772,7 +772,7 @@ struct NetLiquidityDetailView: View {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
                         Text(netLiquidityData?.formattedCurrent ?? "--")
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .font(.system(size: 48, weight: .bold, design: .default))
                             .foregroundColor(levelColor)
 
                         if let change = netLiquidityData?.monthlyChange {

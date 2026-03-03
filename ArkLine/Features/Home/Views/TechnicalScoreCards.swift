@@ -149,7 +149,7 @@ struct ScoreGauge: View {
                     .rotationEffect(.degrees(-90))
 
                 Text("\(score)")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .bold, design: .default))
                     .foregroundColor(color)
             }
 
@@ -211,7 +211,7 @@ struct RSIIndicatorCard: View {
                 // Value display
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(rsi.displayValue)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(size: 32, weight: .bold, design: .default))
                         .foregroundColor(rsi.zone.color)
 
                     Text("/ 100")
@@ -447,7 +447,7 @@ struct TechnicalScoreCard: View {
 
                 VStack(spacing: 2) {
                     Text("\(score)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("/ 100")
@@ -521,7 +521,7 @@ struct PremiumScoreCard: View {
                     .rotationEffect(.degrees(-90))
 
                 Text("\(score)")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 24, weight: .bold, design: .default))
                     .foregroundColor(AppColors.textPrimary(colorScheme))
             }
 

@@ -60,7 +60,7 @@ struct AppFonts {
         if fontExists(name: urbanistFontName(for: weight), size: size) {
             return .custom(urbanistFontName(for: weight), size: size)
         }
-        return .system(size: size, weight: weight, design: .rounded)
+        return .system(size: size, weight: weight, design: .default)
     }
 
     /// Check if a font exists on the current platform

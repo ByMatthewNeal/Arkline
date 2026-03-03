@@ -108,7 +108,7 @@ struct EmbeddedWidgetView: View {
             if let vix = viewModel.vixData {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(format: "%.2f", vix.value))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(vixColor(vix.value))
 
                     Text(vixLabel(vix.value))
@@ -153,7 +153,7 @@ struct EmbeddedWidgetView: View {
             if let dxy = viewModel.dxyData {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(format: "%.2f", dxy.value))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("Dollar Index")
@@ -179,7 +179,7 @@ struct EmbeddedWidgetView: View {
             if let m2 = viewModel.liquidityData {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(formatLiquidity(m2.current))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     HStack(spacing: 4) {
@@ -219,7 +219,7 @@ struct EmbeddedWidgetView: View {
             if let risk = viewModel.riskLevel {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(format: "%.3f", risk.riskLevel))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(riskColor(risk.riskLevel))
 
                     Text(riskCategory(risk.riskLevel))
@@ -268,7 +268,7 @@ struct EmbeddedWidgetView: View {
             if let fg = viewModel.fearGreedIndex {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(fg.value)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(fearGreedColor(fg.value))
 
                     Text(fg.level.rawValue)
@@ -360,7 +360,7 @@ struct EmbeddedWidgetView: View {
             if let riskScore = viewModel.arklineRiskScore {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(riskScore.score)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(riskScoreColor(riskScore.score))
 
                     Text(riskScore.tier.rawValue)
@@ -437,7 +437,7 @@ struct EmbeddedWidgetView: View {
             if let supply = viewModel.supplyInProfit {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(format: "%.1f%%", supply.value))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(supplyColor(supply.value))
 
                     Text("BTC Supply in Profit")
@@ -493,7 +493,7 @@ struct EmbeddedWidgetView: View {
 
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(String(format: "%.0f%%", fedWatch.dominantProbability))
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .default))
                         .foregroundColor(fedWatch.dominantColor)
 
                     Text(fedWatch.marketSentiment)
@@ -555,7 +555,7 @@ struct EmbeddedWidgetView: View {
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textSecondary)
             Text(value)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .semibold, design: .default))
                 .foregroundColor(color)
         }
         .frame(maxWidth: .infinity)
@@ -606,7 +606,7 @@ struct EmbeddedWidgetView: View {
                         .font(ArkFonts.caption)
                         .foregroundColor(AppColors.textSecondary)
                     Text("\(riskScore.score)")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .default))
                         .foregroundColor(riskScoreColor(riskScore.score))
                 }
             }
@@ -617,7 +617,7 @@ struct EmbeddedWidgetView: View {
                         .font(ArkFonts.caption)
                         .foregroundColor(AppColors.textSecondary)
                     Text("\(fg.value)")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .default))
                         .foregroundColor(fearGreedColor(fg.value))
                 }
             }
@@ -669,7 +669,7 @@ struct EmbeddedWidgetView: View {
             if let rankings = viewModel.appStoreRankings, let coinbase = rankings.first(where: { $0.appName.lowercased().contains("coinbase") }) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("#\(coinbase.ranking)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(coinbase.ranking <= 50 ? AppColors.success : AppColors.textPrimary(colorScheme))
 
                     Text("App Store Finance")
@@ -706,7 +706,7 @@ struct EmbeddedWidgetView: View {
             if let trends = viewModel.googleTrends {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(trends.currentIndex)/100")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold, design: .default))
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("Search Interest")
@@ -934,7 +934,7 @@ struct EmbeddedAssetWidget: View {
                             .lineLimit(1)
 
                         Text(viewModel.formattedPrice)
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .font(.system(size: 28, weight: .bold, design: .default))
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                     }
 

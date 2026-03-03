@@ -513,7 +513,7 @@ struct RiskLevelChartView: View {
                 VStack(spacing: ArkSpacing.xs) {
                     // Large colored value
                     Text(String(format: "%.3f", risk.riskLevel))
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
+                        .font(.system(size: 56, weight: .bold, design: .default))
                         .foregroundColor(RiskColors.color(for: risk.riskLevel))
 
                     // Category with dot
@@ -544,7 +544,7 @@ struct RiskLevelChartView: View {
                 }
             } else {
                 Text("--")
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .font(.system(size: 56, weight: .bold, design: .default))
                     .foregroundColor(textPrimary.opacity(0.3))
             }
         }
@@ -572,7 +572,7 @@ struct RiskLevelChartView: View {
                         .foregroundColor(textSecondary.opacity(0.85))
 
                     Text(String(format: "%.3f", regressionValue))
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .default))
                         .foregroundColor(RiskColors.color(for: regressionValue))
 
                     Text(RiskColors.category(for: regressionValue))
@@ -593,7 +593,7 @@ struct RiskLevelChartView: View {
                         .foregroundColor(textSecondary.opacity(0.85))
 
                     Text(String(format: "%.3f", compositeValue))
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .default))
                         .foregroundColor(RiskColors.color(for: compositeValue))
 
                     Text(RiskColors.category(for: compositeValue))

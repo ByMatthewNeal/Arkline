@@ -77,7 +77,7 @@ struct TrendChannelFullscreenView: View {
     private func selectedPointInfo(_ point: LogRegressionPoint) -> some View {
         HStack(spacing: 6) {
             Text(formatCurrency(point.close))
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 20, weight: .bold, design: .default))
                 .foregroundColor(.white)
             Text(point.zone.rawValue)
                 .font(.system(size: 13, weight: .medium))
@@ -93,7 +93,7 @@ struct TrendChannelFullscreenView: View {
     private func currentPriceInfo(price: Double, zone: TrendChannelZone) -> some View {
         HStack(spacing: 6) {
             Text(formatCurrency(price))
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 20, weight: .bold, design: .default))
                 .foregroundColor(.white)
             Text(zone.rawValue)
                 .font(.system(size: 13, weight: .medium))

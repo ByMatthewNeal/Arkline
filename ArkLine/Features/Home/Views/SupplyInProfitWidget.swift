@@ -148,7 +148,7 @@ struct SupplyInProfitDetailView: View {
                     // Current Value
                     VStack(spacing: 16) {
                         Text(supplyData?.formattedValue ?? "--")
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(signalColor)
 
                         Text(supplyData?.signalDescription ?? "Loading...")

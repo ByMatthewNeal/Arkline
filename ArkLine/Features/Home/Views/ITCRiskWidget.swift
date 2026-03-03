@@ -73,7 +73,7 @@ struct RiskLevelWidget: View {
 
                 // Large colored risk value
                 Text(String(format: "%.3f", risk.riskLevel))
-                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .rounded))
+                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .default))
                     .foregroundColor(RiskColors.color(for: risk.riskLevel))
 
                 // Risk category badge with colored dot
@@ -103,7 +103,7 @@ struct RiskLevelWidget: View {
                             .font(.system(size: size == .compact ? 10 : 12))
                             .foregroundColor(textPrimary.opacity(0.6))
                         Text(String(format: "%.3f", weeklyAvg))
-                            .font(.system(size: size == .compact ? 10 : 12, weight: .bold, design: .rounded))
+                            .font(.system(size: size == .compact ? 10 : 12, weight: .bold, design: .default))
                             .foregroundColor(RiskColors.color(for: weeklyAvg))
                         if let current = riskLevel?.riskLevel {
                             let delta = current - weeklyAvg
@@ -150,7 +150,7 @@ struct RiskLevelWidget: View {
                     .foregroundColor(textPrimary)
 
                 Text("--")
-                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .rounded))
+                    .font(.system(size: size == .compact ? 24 : 32, weight: .bold, design: .default))
                     .foregroundColor(textPrimary.opacity(0.3))
 
                 Text("Loading...")

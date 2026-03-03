@@ -84,7 +84,7 @@ struct GlassFearGreedCard: View {
                 // Center value with sentiment color
                 VStack(spacing: size == .compact ? 2 : 4) {
                     Text("\(index.value)")
-                        .font(.system(size: size == .compact ? 28 : (size == .expanded ? 56 : 48), weight: .bold, design: .rounded))
+                        .font(.system(size: size == .compact ? 28 : (size == .expanded ? 56 : 48), weight: .bold, design: .default))
                         .foregroundColor(sentimentColor)
 
                     Text("/ 100")

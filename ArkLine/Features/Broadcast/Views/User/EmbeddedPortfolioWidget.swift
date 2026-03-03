@@ -124,7 +124,7 @@ private struct CompactSnapshotCard: View {
             // Value or masked
             if let value = snapshot.totalValue {
                 Text(value.asCurrency)
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .default))
                     .foregroundColor(AppColors.textPrimary(colorScheme))
             } else {
                 HStack(spacing: 2) {

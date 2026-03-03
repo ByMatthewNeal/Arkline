@@ -37,7 +37,7 @@ struct GoldDetailView: View {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
                         Text(goldData.map { String(format: "$%.0f", $0.value) } ?? "--")
-                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
                         if let change = goldData?.changePercent {

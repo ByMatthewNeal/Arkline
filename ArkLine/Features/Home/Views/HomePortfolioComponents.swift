@@ -528,7 +528,7 @@ struct CompactRiskCard: View {
                 if let risk = riskLevel {
                     // Risk value
                     Text(String(format: "%.3f", risk.riskLevel))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .default))
                         .foregroundColor(RiskColors.color(for: risk.riskLevel))
 
                     // Category badge
@@ -563,14 +563,14 @@ struct CompactRiskCard: View {
                                 .foregroundColor(AppColors.textSecondary)
                             Spacer()
                             Text(String(format: "%.3f", weeklyAvg))
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .font(.system(size: 11, weight: .bold, design: .default))
                                 .foregroundColor(RiskColors.color(for: weeklyAvg))
                         }
                     }
                 } else {
                     // Loading state
                     Text("--")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .default))
                         .foregroundColor(textPrimary.opacity(0.3))
 
                     Text("Loading...")

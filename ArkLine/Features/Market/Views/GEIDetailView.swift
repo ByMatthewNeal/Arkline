@@ -117,7 +117,7 @@ The Global Economy Index (GEI) is a composite leading indicator that combines 6 
     private var scoreHeader: some View {
         VStack(spacing: 16) {
             Text(geiData?.formattedScore ?? "--")
-                .font(.system(size: 56, weight: .bold, design: .rounded))
+                .font(.system(size: 56, weight: .bold, design: .default))
                 .foregroundColor(geiData?.scoreColor ?? .gray)
 
             if let gei = geiData {

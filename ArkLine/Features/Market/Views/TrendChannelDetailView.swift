@@ -642,7 +642,7 @@ struct IndexWidgetCard: View {
             HStack(spacing: 16) {
                 // Text-based ticker badge (professional finance style)
                 Text(abbreviation)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold, design: .default))
                     .foregroundStyle(AppColors.accent)
                     .frame(width: 44, height: 44)
                     .background(AppColors.accent.opacity(0.12))

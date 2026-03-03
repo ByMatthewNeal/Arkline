@@ -326,7 +326,7 @@ private struct ExportablePortfolioCard: View {
             // Value
             if let value = snapshot.totalValue {
                 Text(value.asCurrency)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(size: 20, weight: .bold, design: .default))
                     .foregroundColor(.white)
             } else {
                 HStack(spacing: 3) {

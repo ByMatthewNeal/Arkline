@@ -58,7 +58,7 @@ struct RiskGauge: View {
 
             // Risk level value (0.00 - 1.00 format)
             Text(displayValue)
-                .font(.system(size: size * 0.28, weight: .bold, design: .rounded))
+                .font(.system(size: size * 0.28, weight: .bold, design: .default))
                 .foregroundColor(AppColors.textPrimary(colorScheme))
         }
         .accessibilityElement(children: .ignore)
