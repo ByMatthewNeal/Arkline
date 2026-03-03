@@ -45,10 +45,11 @@ struct HomeView: View {
             ZStack {
                 // Gradient background with subtle blue glow
                 MeshGradientBackground()
+                    .allowsHitTesting(false)
 
                 // Content
                 ScrollViewReader { scrollProxy in
-                ScrollView(.vertical, showsIndicators: false) {
+                ScrollView {
                     VStack(spacing: 20) {
                         Color.clear.frame(height: 0).id("scrollTop")
                         // Header
@@ -135,6 +136,7 @@ struct HomeView: View {
                     }
                     .padding(.top, 16)
                 }
+                .scrollIndicators(.hidden)
                 .refreshable {
                     await viewModel.refresh(forceRefresh: true)
                 }
@@ -146,8 +148,6 @@ struct HomeView: View {
                 }
             } // ScrollViewReader
             }
-            .navigationTitle("")
-            .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showPortfolioPicker) {
                 PortfolioPickerSheet(
                     portfolios: viewModel.portfolios,
