@@ -265,16 +265,14 @@ struct MacroDashboardWidget: View {
                                 .frame(width: 16, height: 16)
                                 .scaleEffect(isPulsing ? 1.3 : 1.0)
                                 .opacity(isPulsing ? 0 : 0.5)
+                                .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isPulsing)
 
                             Circle()
                                 .fill(displayColor)
                                 .frame(width: 8, height: 8)
                         }
-                        .onAppear {
-                            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                                isPulsing = true
-                            }
-                        }
+                        .onAppear { isPulsing = true }
+                        .onDisappear { isPulsing = false }
 
                         Text(displayLabel)
                             .font(.system(size: 12, weight: .bold, design: .default))

@@ -436,7 +436,6 @@ class HomeViewModel {
         self.enableSideEffects = enableSideEffects
         // Initialize user data synchronously; data loading is triggered by HomeView.task
         self.sentimentViewModel = SentimentViewModel()
-        startAutoRefresh()
     }
 
     nonisolated deinit {
