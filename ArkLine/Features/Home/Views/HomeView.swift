@@ -1,37 +1,41 @@
 import SwiftUI
 
-// MARK: - Directional Lock Modifier
-/// Enables UIScrollView.isDirectionalLockEnabled on the nearest ancestor scroll view,
-/// preventing horizontal drift during vertical scrolling.
-private struct DirectionalLockModifier: ViewModifier {
+// MARK: - Vertical-Only Scroll Lock
+/// Finds the nearest UIScrollView ancestor and locks it to vertical-only scrolling.
+private struct VerticalScrollLockModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .background(DirectionalLockHelper())
+            .background(VerticalScrollLockHelper())
     }
 }
 
-private struct DirectionalLockHelper: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        DispatchQueue.main.async {
-            if let scrollView = findScrollView(in: view) {
-                scrollView.isDirectionalLockEnabled = true
-            }
-        }
-        return view
+private struct VerticalScrollLockHelper: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> VerticalScrollLockVC { VerticalScrollLockVC() }
+    func updateUIViewController(_ vc: VerticalScrollLockVC, context: Context) {}
+}
+
+private class VerticalScrollLockVC: UIViewController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        configureScrollView()
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        configureScrollView()
+    }
 
-    private func findScrollView(in view: UIView) -> UIScrollView? {
+    private func configureScrollView() {
         var current: UIView? = view
         while let parent = current?.superview {
             if let scrollView = parent as? UIScrollView {
-                return scrollView
+                scrollView.isDirectionalLockEnabled = true
+                scrollView.alwaysBounceHorizontal = false
+                scrollView.showsHorizontalScrollIndicator = false
+                return
             }
             current = parent
         }
-        return nil
     }
 }
 
@@ -170,7 +174,7 @@ struct HomeView: View {
                     }
                     .padding(.top, 16)
                 }
-                .modifier(DirectionalLockModifier())
+                .modifier(VerticalScrollLockModifier())
                 .refreshable {
                     await viewModel.refresh(forceRefresh: true)
                 }
