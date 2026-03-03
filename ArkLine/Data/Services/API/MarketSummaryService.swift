@@ -116,7 +116,11 @@ final class MarketSummaryService {
 
     // MARK: - Public API
 
-    func fetchSummary(payload: MarketSummaryPayload) async throws -> MarketSummary {
+    /// Maximum age of a briefing before we consider it stale and force regeneration (4 hours).
+    /// This ensures a morning request never returns the previous evening's briefing.
+    private static let maxBriefingAge: TimeInterval = 3600 * 4
+
+    func fetchSummary(payload: MarketSummaryPayload, allowServerCacheClear: Bool = true) async throws -> MarketSummary {
         // Check client cache
         if let cached: MarketSummary = APICache.shared.get(Self.cacheKey) {
             return cached
@@ -141,6 +145,15 @@ final class MarketSummaryService {
 
             if let summary = response.summary, !summary.isEmpty {
                 let generatedAt = parseDate(response.generatedAt)
+
+                // If the server returned a stale briefing (from a previous slot),
+                // clear the server cache and retry once to force fresh generation.
+                let age = Date().timeIntervalSince(generatedAt)
+                if age > Self.maxBriefingAge && allowServerCacheClear {
+                    logInfo("Server returned stale briefing (\(Int(age / 3600))h old), clearing cache and regenerating", category: .network)
+                    try? await clearServerCache()
+                    return try await fetchSummary(payload: payload, allowServerCacheClear: false)
+                }
 
                 // Hydrate feedback state for this briefing
                 let feedback = await fetchFeedback(summaryDate: summaryDate, slot: slot)
