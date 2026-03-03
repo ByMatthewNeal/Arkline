@@ -119,7 +119,7 @@ struct DXYWidget: View {
                     if let change = dxyData?.changePercent {
                         Text(String(format: "%+.2f%%", change))
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(change >= 0 ? AppColors.error : AppColors.success)
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                     }
                 }
 
@@ -178,7 +178,7 @@ struct GlobalLiquidityWidget: View {
         } else if value >= 1_000_000_000 {
             return String(format: "$%.1fB", value / 1_000_000_000)
         }
-        return String(format: "$%,.0f", value)
+        return value.asCurrencyWhole
     }
 
     var body: some View {
@@ -263,7 +263,7 @@ struct NetLiquidityWidget: View {
         } else if value >= 1_000_000_000 {
             return String(format: "$%.1fB", value / 1_000_000_000)
         }
-        return String(format: "$%,.0f", value)
+        return value.asCurrencyWhole
     }
 
     var body: some View {
@@ -343,14 +343,17 @@ struct VIXDetailView: View {
                             .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
-                        Text(vixData?.signalDescription ?? "Loading...")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(signalColor)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(signalColor.opacity(0.15))
-                            .cornerRadius(12)
+                        HStack(spacing: 8) {
+                            Image(systemName: signalIcon)
+                            Text(vixData?.signalDescription ?? "Loading...")
+                        }
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(signalColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(signalColor.opacity(0.15))
+                        .cornerRadius(12)
                     }
                     .padding(.top, 20)
 
@@ -424,6 +427,13 @@ The CBOE Volatility Index (VIX) measures the market's expectation of 30-day vola
         if vix < 25 { return AppColors.warning }    // Neutral
         return AppColors.error                      // Bearish
     }
+
+    private var signalIcon: String {
+        guard let vix = vixData?.value else { return "questionmark" }
+        if vix < 20 { return "arrow.up.right" }
+        if vix < 25 { return "minus" }
+        return "arrow.down.right"
+    }
 }
 
 struct VIXLevelRow: View {
@@ -469,6 +479,20 @@ struct DXYDetailView: View {
         return AppColors.error                      // Bearish (strong dollar)
     }
 
+    private var signalDescription: String {
+        guard let dxy = dxyData?.value else { return "Loading..." }
+        if dxy < 100 { return "Bullish" }
+        if dxy < 105 { return "Neutral" }
+        return "Bearish"
+    }
+
+    private var signalIcon: String {
+        guard let dxy = dxyData?.value else { return "questionmark" }
+        if dxy < 100 { return "arrow.up.right" }
+        if dxy < 105 { return "minus" }
+        return "arrow.down.right"
+    }
+
     private var chartData: [MacroChartPoint] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -488,18 +512,27 @@ struct DXYDetailView: View {
                             .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
+                        HStack(spacing: 8) {
+                            Image(systemName: signalIcon)
+                            Text(signalDescription)
+                        }
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(levelColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(levelColor.opacity(0.15))
+                        .cornerRadius(12)
+
                         if let change = dxyData?.changePercent {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 12))
                                 Text(String(format: "%+.2f%%", change))
                             }
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(levelColor)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(levelColor.opacity(0.15))
-                            .cornerRadius(12)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                         }
                     }
                     .padding(.top, 20)
@@ -598,6 +631,27 @@ struct GlobalM2DetailView: View {
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
+    private var signalColor: Color {
+        guard let liquidity = liquidityChanges else { return .gray }
+        if liquidity.monthlyChange > 0 { return AppColors.success }
+        if liquidity.monthlyChange > -1.0 { return AppColors.warning }
+        return AppColors.error
+    }
+
+    private var signalDescription: String {
+        guard let liquidity = liquidityChanges else { return "Loading..." }
+        if liquidity.monthlyChange > 0 { return "Bullish" }
+        if liquidity.monthlyChange > -1.0 { return "Neutral" }
+        return "Bearish"
+    }
+
+    private var signalIcon: String {
+        guard let liquidity = liquidityChanges else { return "questionmark" }
+        if liquidity.monthlyChange > 0 { return "arrow.up.right" }
+        if liquidity.monthlyChange > -1.0 { return "minus" }
+        return "arrow.down.right"
+    }
+
     private func formatLiquidity(_ value: Double) -> String {
         if value >= 1_000_000_000_000 {
             return String(format: "$%.2fT", value / 1_000_000_000_000)
@@ -614,18 +668,27 @@ struct GlobalM2DetailView: View {
                             .font(.system(size: 48, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
+                        HStack(spacing: 8) {
+                            Image(systemName: signalIcon)
+                            Text(signalDescription)
+                        }
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(signalColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(signalColor.opacity(0.15))
+                        .cornerRadius(12)
+
                         if let change = liquidityChanges?.monthlyChange {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 12))
                                 Text(String(format: "%+.2f%% MoM", change))
                             }
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(change >= 0 ? .green : .red)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background((change >= 0 ? Color.green : Color.red).opacity(0.15))
-                            .cornerRadius(12)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                         }
                     }
                     .padding(.top, 20)
@@ -728,7 +791,7 @@ struct M2ChangeRow: View {
                 Text(String(format: "%+.2f%%", change))
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundColor(change >= 0 ? .green : .red)
+                    .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
                 if let dollar = dollarChange {
                     Text(dollar)
                         .font(.caption)
@@ -757,6 +820,20 @@ struct NetLiquidityDetailView: View {
         return AppColors.error
     }
 
+    private var signalDescription: String {
+        guard let change = netLiquidityData?.monthlyChange else { return "Loading..." }
+        if change > 0 { return "Bullish" }
+        if change > -1.0 { return "Neutral" }
+        return "Bearish"
+    }
+
+    private var signalIcon: String {
+        guard let change = netLiquidityData?.monthlyChange else { return "questionmark" }
+        if change > 0 { return "arrow.up.right" }
+        if change > -1.0 { return "minus" }
+        return "arrow.down.right"
+    }
+
     private var chartData: [MacroChartPoint] {
         guard let history = netLiquidityData?.history else { return [] }
         let cutoff = Calendar.current.date(byAdding: .day, value: -timeRange.days, to: Date()) ?? Date()
@@ -773,20 +850,29 @@ struct NetLiquidityDetailView: View {
                     VStack(spacing: 16) {
                         Text(netLiquidityData?.formattedCurrent ?? "--")
                             .font(.system(size: 48, weight: .bold, design: .default))
-                            .foregroundColor(levelColor)
+                            .foregroundColor(textPrimary)
+
+                        HStack(spacing: 8) {
+                            Image(systemName: signalIcon)
+                            Text(signalDescription)
+                        }
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(levelColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(levelColor.opacity(0.15))
+                        .cornerRadius(12)
 
                         if let change = netLiquidityData?.monthlyChange {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 12))
                                 Text(String(format: "%+.2f%% MoM", change))
                             }
-                            .font(.title3)
-                            .fontWeight(.semibold)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
                             .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background((change >= 0 ? AppColors.success : AppColors.error).opacity(0.15))
-                            .cornerRadius(12)
                         }
                     }
                     .padding(.top, 20)

@@ -291,6 +291,9 @@ struct MarketSummary {
     let slot: String
     var feedbackRating: Bool?
     var feedbackNote: String?
+
+    /// Canonical key for read-tracking (e.g. "2026-03-03_morning")
+    var briefingKey: String { "\(summaryDate)_\(slot)" }
 }
 
 // MARK: - Error

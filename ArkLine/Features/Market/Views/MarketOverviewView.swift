@@ -537,7 +537,7 @@ struct MacroIndicatorsSection: View {
                 MacroIndicatorCard(
                     title: "WTI",
                     subtitle: "Crude Oil",
-                    value: crudeOilData.map { String(format: "$%,.2f", $0.value) } ?? "--",
+                    value: crudeOilData.map { $0.value.asCurrency } ?? "--",
                     signal: oilSignal,
                     description: oilZScoreDescription,
                     icon: "drop.fill",
@@ -549,7 +549,7 @@ struct MacroIndicatorsSection: View {
                 MacroIndicatorCard(
                     title: "Gold",
                     subtitle: "XAU/USD",
-                    value: goldData.map { String(format: "$%,.0f", $0.value) } ?? "--",
+                    value: goldData.map { $0.value.asCurrencyWhole } ?? "--",
                     signal: goldSignal,
                     description: goldZScoreDescription,
                     icon: "diamond.fill",

@@ -19,6 +19,11 @@ extension Double {
         formatAsCurrency()
     }
 
+    /// Format as currency with no decimal places (e.g. "$2,850")
+    var asCurrencyWhole: String {
+        formatAsCurrency(minimumFractionDigits: 0, maximumFractionDigits: 0)
+    }
+
     /// Format as currency with a specific currency code
     func asCurrency(code: String) -> String {
         formatAsCurrency(currencyCode: code)

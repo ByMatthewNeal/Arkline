@@ -21,6 +21,13 @@ struct GoldDetailView: View {
         return AppColors.error                         // Bearish
     }
 
+    private var signalIcon: String {
+        guard let gold = goldData?.value else { return "questionmark" }
+        if gold > 3000 { return "arrow.up.right" }
+        if gold > 2000 { return "minus" }
+        return "arrow.down.right"
+    }
+
     private var chartData: [MacroChartPoint] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -36,35 +43,39 @@ struct GoldDetailView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
-                        Text(goldData.map { String(format: "$%,.0f", $0.value) } ?? "--")
+                        Text(goldData.map { $0.value.asCurrencyWhole } ?? "--")
                             .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
+                        HStack(spacing: 8) {
+                            Image(systemName: signalIcon)
+                            Text(goldData?.signalDescription ?? "Loading...")
+                        }
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(levelColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(levelColor.opacity(0.15))
+                        .cornerRadius(12)
+
                         if let change = goldData?.changePercent {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 12))
                                 Text(String(format: "%+.2f%%", change))
                             }
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(levelColor)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(levelColor.opacity(0.15))
-                            .cornerRadius(12)
-                        }
-
-                        Text(goldData?.signalDescription ?? "Loading...")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundColor(levelColor)
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                        }
                     }
                     .padding(.top, 20)
 
                     MacroIndicatorChart(
                         data: chartData,
                         lineColor: levelColor,
-                        valueFormatter: { String(format: "$%,.0f", $0) },
+                        valueFormatter: { $0.asCurrencyWhole },
                         selectedTimeRange: $timeRange,
                         selectedDate: $selectedDate,
                         isLoading: isLoadingChart

@@ -15,34 +15,43 @@ struct HomeAISummaryWidget: View {
     @State private var feedbackSent = false
     @State private var feedbackSentWithNote = false
     @State private var regenerationStart: Date?
+    @AppStorage(Constants.UserDefaults.lastReadBriefingKey) private var lastReadBriefingKey = ""
+    @State private var isExpanded = true
+    @State private var hasBeenExpandedThisSession = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
     }
 
+    // MARK: - Expand / Collapse Helpers
+
+    private var currentBriefingKey: String {
+        summary?.briefingKey ?? ""
+    }
+
+    private var isNewBriefing: Bool {
+        !currentBriefingKey.isEmpty && currentBriefingKey != lastReadBriefingKey
+    }
+
+    private var showUnreadDot: Bool {
+        isNewBriefing && !hasBeenExpandedThisSession
+    }
+
+    private func resolveInitialExpandState() {
+        if isNewBriefing {
+            isExpanded = true
+            hasBeenExpandedThisSession = false
+        } else {
+            isExpanded = false
+            hasBeenExpandedThisSession = true
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
-            // Header
-            HStack {
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: size == .compact ? 12 : 14))
-                        .foregroundColor(AppColors.accent)
-
-                    Text("Daily Briefing")
-                        .font(size == .compact ? .subheadline : .headline)
-                        .foregroundColor(textPrimary)
-                }
-
-                Spacer()
-
-                if let summary {
-                    Text(relativeTime(from: summary.generatedAt))
-                        .font(AppFonts.caption12)
-                        .foregroundColor(textPrimary.opacity(0.4))
-                }
-            }
+            // Header — tappable to toggle expand/collapse
+            headerRow
 
             // Greeting with market posture
             Text(enhancedGreeting)
@@ -61,22 +70,33 @@ struct HomeAISummaryWidget: View {
                 }
                 shimmerPlaceholder
             } else if let summary {
-                structuredSummary(summary.summary)
+                if isExpanded {
+                    structuredSummary(summary.summary)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                } else {
+                    collapsedPreview(summary.summary)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             } else {
                 Text("Market briefing unavailable")
                     .font(AppFonts.body14)
                     .foregroundColor(textPrimary.opacity(0.3))
             }
 
-            // Admin feedback row
-            if isAdmin, summary != nil {
+            // Admin feedback row — only when expanded
+            if isAdmin, summary != nil, isExpanded {
                 feedbackRow
             }
         }
         .padding(size == .compact ? 14 : 18)
         .glassCard(cornerRadius: 16)
+        .onAppear {
+            if summary != nil {
+                resolveInitialExpandState()
+            }
+        }
         .onChange(of: summary?.generatedAt) {
-            // New briefing arrived — reset all feedback state
+            // New briefing arrived — reset all feedback state + re-resolve expand
             if summary != nil {
                 feedbackSentWithNote = false
                 feedbackSent = false
@@ -84,6 +104,85 @@ struct HomeAISummaryWidget: View {
                 feedbackNote = ""
                 showNoteField = false
                 regenerationStart = nil
+                resolveInitialExpandState()
+            }
+        }
+        .onChange(of: isExpanded) {
+            if isExpanded {
+                hasBeenExpandedThisSession = true
+                if !currentBriefingKey.isEmpty {
+                    lastReadBriefingKey = currentBriefingKey
+                }
+            }
+        }
+    }
+
+    // MARK: - Header Row
+
+    private var headerRow: some View {
+        Button {
+            withAnimation(.arkSpring) { isExpanded.toggle() }
+        } label: {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: size == .compact ? 12 : 14))
+                        .foregroundColor(AppColors.accent)
+
+                    Text("Daily Briefing")
+                        .font(size == .compact ? .subheadline : .headline)
+                        .foregroundColor(textPrimary)
+
+                    if showUnreadDot {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 7, height: 7)
+                    }
+                }
+
+                Spacer()
+
+                if let summary {
+                    Text(relativeTime(from: summary.generatedAt))
+                        .font(AppFonts.caption12)
+                        .foregroundColor(textPrimary.opacity(0.4))
+                }
+
+                if summary != nil {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textPrimary.opacity(0.3))
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Collapsed Preview
+
+    @ViewBuilder
+    private func collapsedPreview(_ text: String) -> some View {
+        let sections = parseSections(text).filter { $0.header.lowercased() != "posture" }
+        if let first = sections.first {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(first.header)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.accent)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+
+                Text(first.body)
+                    .font(AppFonts.body14)
+                    .foregroundColor(textPrimary.opacity(0.7))
+                    .lineSpacing(3)
+                    .lineLimit(2)
+                    .mask(
+                        VStack(spacing: 0) {
+                            Color.black
+                            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                                .frame(height: 12)
+                        }
+                    )
             }
         }
     }

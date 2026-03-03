@@ -308,7 +308,7 @@ struct RiskChartFullscreenView: View {
                                 if point.price > 0 {
                                     Text("·")
                                         .foregroundColor(.white.opacity(0.4))
-                                    Text(point.price >= 1 ? String(format: "$%,.0f", point.price) : String(format: "$%.4f", point.price))
+                                    Text(point.price >= 1 ? point.price.asCurrencyWhole : String(format: "$%.4f", point.price))
                                         .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(.white.opacity(0.7))
                                 }

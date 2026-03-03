@@ -425,8 +425,8 @@ struct EmbeddedWidgetView: View {
     }
 
     private func formatCoreAssetPrice(_ price: Double) -> String {
-        if price >= 1000 { return String(format: "$%,.0f", price) }
-        if price >= 1 { return String(format: "$%,.2f", price) }
+        if price >= 1000 { return price.asCurrencyWhole }
+        if price >= 1 { return price.asCurrency }
         return String(format: "$%.4f", price)
     }
 
@@ -802,7 +802,7 @@ struct EmbeddedWidgetView: View {
                             .foregroundColor(AppColors.textPrimary(colorScheme))
                             .frame(width: 50, alignment: .leading)
 
-                        Text(String(format: "$%,.0f", asset.currentPrice))
+                        Text(asset.currentPrice.asCurrencyWhole)
                             .font(ArkFonts.body)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -1045,7 +1045,7 @@ class EmbeddedAssetWidgetViewModel: ObservableObject {
 
     private func formatPrice(_ price: Double) -> String {
         if price >= 1 {
-            return String(format: "$%,.2f", price)
+            return price.asCurrency
         } else {
             return String(format: "$%.4f", price)
         }

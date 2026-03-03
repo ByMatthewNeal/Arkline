@@ -187,7 +187,7 @@ struct RiskShareCardContent: View {
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.4))
                         Text(price >= 1
-                            ? String(format: "$%,.0f", price)
+                            ? price.asCurrencyWhole
                             : String(format: "$%.4f", price))
                             .font(.system(size: 14, weight: .semibold, design: .default))
                             .foregroundColor(.white)
@@ -202,7 +202,7 @@ struct RiskShareCardContent: View {
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(Color.white.opacity(0.4))
                         Text(fairValue >= 1
-                            ? String(format: "$%,.0f", fairValue)
+                            ? fairValue.asCurrencyWhole
                             : String(format: "$%.4f", fairValue))
                             .font(.system(size: 14, weight: .semibold, design: .default))
                             .foregroundColor(.white)

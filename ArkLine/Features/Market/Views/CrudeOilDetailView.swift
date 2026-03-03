@@ -21,6 +21,13 @@ struct CrudeOilDetailView: View {
         return AppColors.error                      // Bearish
     }
 
+    private var signalIcon: String {
+        guard let oil = crudeOilData?.value else { return "questionmark" }
+        if oil < 80 { return "arrow.up.right" }
+        if oil < 95 { return "minus" }
+        return "arrow.down.right"
+    }
+
     private var chartData: [MacroChartPoint] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -36,35 +43,39 @@ struct CrudeOilDetailView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 16) {
-                        Text(crudeOilData.map { String(format: "$%,.2f", $0.value) } ?? "--")
+                        Text(crudeOilData.map { $0.value.asCurrency } ?? "--")
                             .font(.system(size: 56, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
 
+                        HStack(spacing: 8) {
+                            Image(systemName: signalIcon)
+                            Text(crudeOilData?.signalDescription ?? "Loading...")
+                        }
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(levelColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(levelColor.opacity(0.15))
+                        .cornerRadius(12)
+
                         if let change = crudeOilData?.changePercent {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 4) {
                                 Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 12))
                                 Text(String(format: "%+.2f%%", change))
                             }
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(levelColor)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(levelColor.opacity(0.15))
-                            .cornerRadius(12)
-                        }
-
-                        Text(crudeOilData?.signalDescription ?? "Loading...")
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundColor(levelColor)
+                            .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+                        }
                     }
                     .padding(.top, 20)
 
                     MacroIndicatorChart(
                         data: chartData,
                         lineColor: levelColor,
-                        valueFormatter: { String(format: "$%,.2f", $0) },
+                        valueFormatter: { $0.asCurrency },
                         selectedTimeRange: $timeRange,
                         selectedDate: $selectedDate,
                         isLoading: isLoadingChart

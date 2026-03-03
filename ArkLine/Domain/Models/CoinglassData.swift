@@ -34,7 +34,7 @@ struct OpenInterestData: Codable, Identifiable {
         } else if absValue >= 1_000 {
             return String(format: "$%.1fK", value / 1_000)
         }
-        return String(format: "$%,.0f", value)
+        return value.asCurrencyWhole
     }
 }
 
@@ -86,7 +86,7 @@ struct CoinglassLiquidationData: Codable, Identifiable {
         } else if absValue >= 1_000 {
             return String(format: "$%.1fK", value / 1_000)
         }
-        return String(format: "$%,.0f", value)
+        return value.asCurrencyWhole
     }
 }
 
@@ -105,7 +105,7 @@ struct LiquidationEvent: Codable, Identifiable {
         } else if amount >= 1_000 {
             return String(format: "$%.1fK", amount / 1_000)
         }
-        return String(format: "$%,.0f", amount)
+        return amount.asCurrencyWhole
     }
 }
 

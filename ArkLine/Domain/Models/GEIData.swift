@@ -20,7 +20,7 @@ struct GEIComponent: Identifiable {
     var formattedValue: String {
         switch seriesId {
         case "HG=F":
-            return String(format: "$%,.2f", currentValue)
+            return currentValue.asCurrency
         case "^TNX":
             return String(format: "%.2f%%", currentValue)
         case "T10Y2Y":

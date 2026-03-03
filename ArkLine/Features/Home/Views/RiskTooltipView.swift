@@ -32,7 +32,7 @@ struct RiskTooltipView: View {
         if price >= 1000 {
             return "$\(Int(price).formatted())"
         } else if price >= 1 {
-            return String(format: "$%,.2f", price)
+            return price.asCurrency
         } else {
             return String(format: "$%.4f", price)
         }

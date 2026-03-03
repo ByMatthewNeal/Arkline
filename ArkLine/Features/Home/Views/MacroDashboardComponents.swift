@@ -367,9 +367,9 @@ struct ZScoreAnalysisRow: View {
         case .m2, .netLiquidity:
             return formatLargeNumber(value)
         case .crudeOil:
-            return String(format: "$%,.2f", value)
+            return value.asCurrency
         case .gold:
-            return String(format: "$%,.0f", value)
+            return value.asCurrencyWhole
         }
     }
 
