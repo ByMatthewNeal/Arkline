@@ -59,7 +59,9 @@ class HomeViewModel {
 
     // Market Indicators (VIX, DXY, Rainbow, Liquidity, Supply in Profit)
     var vixData: VIXData?
+    var vixHistory: [VIXData] = []
     var dxyData: DXYData?
+    var dxyHistory: [DXYData] = []
     var rainbowChartData: RainbowChartData?
     var globalLiquidityChanges: GlobalLiquidityChanges?
     var supplyInProfitData: SupplyProfitData?
@@ -546,15 +548,19 @@ class HomeViewModel {
         let macroTask = Task { @MainActor [enableSideEffects] in
             async let vixFetch = self.fetchVIXSafe()
             async let dxyFetch = self.fetchDXYSafe()
+            async let vixHistFetch = self.fetchVIXHistorySafe()
+            async let dxyHistFetch = self.fetchDXYHistorySafe()
             async let liquidityFetch = self.fetchGlobalLiquiditySafe()
             async let netLiqFetch = self.fetchNetLiquiditySafe()
             async let supplyProfitFetch = self.fetchSupplyInProfitSafe()
             async let fedWatchFetch = self.fetchFedWatchMeetingsSafe()
 
-            let (vix, dxy, liquidity, netLiq, supplyProfit, fedMeetings) = await (vixFetch, dxyFetch, liquidityFetch, netLiqFetch, supplyProfitFetch, fedWatchFetch)
+            let (vix, dxy, vixHist, dxyHist, liquidity, netLiq, supplyProfit, fedMeetings) = await (vixFetch, dxyFetch, vixHistFetch, dxyHistFetch, liquidityFetch, netLiqFetch, supplyProfitFetch, fedWatchFetch)
 
             self.vixData = vix
             self.dxyData = dxy
+            self.vixHistory = vixHist
+            self.dxyHistory = dxyHist
             self.globalLiquidityChanges = liquidity
             self.netLiquidityData = netLiq
             self.supplyInProfitData = supplyProfit
@@ -903,6 +909,24 @@ class HomeViewModel {
         } catch {
             logError("DXY fetch failed: \(error.localizedDescription)", category: .network)
             return nil
+        }
+    }
+
+    private func fetchVIXHistorySafe() async -> [VIXData] {
+        do {
+            return try await vixService.fetchVIXHistory(days: 7)
+        } catch {
+            logError("VIX history fetch failed: \(error.localizedDescription)", category: .network)
+            return []
+        }
+    }
+
+    private func fetchDXYHistorySafe() async -> [DXYData] {
+        do {
+            return try await dxyService.fetchDXYHistory(days: 7)
+        } catch {
+            logError("DXY history fetch failed: \(error.localizedDescription)", category: .network)
+            return []
         }
     }
 

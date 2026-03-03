@@ -71,19 +71,26 @@ struct SparklineView: View {
 enum SparklineGenerator {
 
     /// Generate VIX sparkline (7 days)
-    /// VIX typically mean-reverts around 15-20, with occasional spikes
-    static func vixSparkline(current: Double, seed: Int = 0) -> [CGFloat] {
+    /// Uses real history when available, falls back to synthetic data
+    static func vixSparkline(history: [VIXData]? = nil, current: Double, seed: Int = 0) -> [CGFloat] {
+        // Use actual history if available (data arrives newest-first)
+        if let history = history, history.count >= 2 {
+            let values = history.prefix(7).reversed().map { $0.value }
+            let minVal = values.min() ?? current * 0.95
+            let maxVal = values.max() ?? current * 1.05
+            let range = max(maxVal - minVal, 0.5) // Avoid division by zero
+            return values.map { CGFloat(($0 - minVal) / range) }
+        }
+
+        // Synthetic fallback
         srand48(seed)
         var data: [CGFloat] = []
 
-        // Work backwards from current value
         var value = current
         for _ in 0..<7 {
-            // Normalize VIX to 0-1 scale (10-40 range)
             let normalized = CGFloat(max(0, min(1, (value - 10) / 30)))
             data.insert(normalized, at: 0)
 
-            // Generate previous day with mean reversion toward 18
             let meanReversion = (18 - value) * 0.1
             let noise = (drand48() - 0.5) * 3
             value = max(10, min(40, value - meanReversion + noise))
@@ -93,18 +100,26 @@ enum SparklineGenerator {
     }
 
     /// Generate DXY sparkline (7 days)
-    /// DXY is typically stable with small movements (90-110 range)
-    static func dxySparkline(current: Double, seed: Int = 0) -> [CGFloat] {
+    /// Uses real history when available, falls back to synthetic data
+    static func dxySparkline(history: [DXYData]? = nil, current: Double, seed: Int = 0) -> [CGFloat] {
+        // Use actual history if available (data arrives newest-first)
+        if let history = history, history.count >= 2 {
+            let values = history.prefix(7).reversed().map { $0.value }
+            let minVal = values.min() ?? current * 0.99
+            let maxVal = values.max() ?? current * 1.01
+            let range = max(maxVal - minVal, 0.1) // Avoid division by zero
+            return values.map { CGFloat(($0 - minVal) / range) }
+        }
+
+        // Synthetic fallback
         srand48(seed)
         var data: [CGFloat] = []
 
         var value = current
         for _ in 0..<7 {
-            // Normalize DXY to 0-1 scale (95-115 range)
             let normalized = CGFloat(max(0, min(1, (value - 95) / 20)))
             data.insert(normalized, at: 0)
 
-            // DXY moves slowly
             let noise = (drand48() - 0.5) * 0.8
             value = max(95, min(115, value + noise))
         }

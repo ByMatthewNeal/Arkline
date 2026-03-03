@@ -7,6 +7,8 @@ struct MacroDashboardWidget: View {
     let dxyData: DXYData?
     let liquidityData: GlobalLiquidityChanges?
     var netLiquidityData: NetLiquidityChanges? = nil
+    var vixHistory: [VIXData] = []
+    var dxyHistory: [DXYData] = []
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
     var regime: MarketRegime = .noData
     var quadrant: MacroRegimeQuadrant? = nil
@@ -149,12 +151,20 @@ struct MacroDashboardWidget: View {
     // MARK: - Sparkline Data
     private var vixSparkline: [CGFloat] {
         guard let vix = vixData?.value else { return [] }
-        return SparklineGenerator.vixSparkline(current: vix, seed: Int(Date().timeIntervalSince1970 / 86400))
+        return SparklineGenerator.vixSparkline(
+            history: vixHistory.isEmpty ? nil : vixHistory,
+            current: vix,
+            seed: Int(Date().timeIntervalSince1970 / 86400)
+        )
     }
 
     private var dxySparkline: [CGFloat] {
         guard let dxy = dxyData?.value else { return [] }
-        return SparklineGenerator.dxySparkline(current: dxy, seed: Int(Date().timeIntervalSince1970 / 86400))
+        return SparklineGenerator.dxySparkline(
+            history: dxyHistory.isEmpty ? nil : dxyHistory,
+            current: dxy,
+            seed: Int(Date().timeIntervalSince1970 / 86400)
+        )
     }
 
     private var m2Sparkline: [CGFloat] {

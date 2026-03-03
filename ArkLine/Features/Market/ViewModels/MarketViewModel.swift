@@ -49,9 +49,6 @@ class MarketViewModel {
 
     // Crypto Assets
     var cryptoAssets: [CryptoAsset] = []
-    var trendingAssets: [CryptoAsset] = []
-    var topGainers: [CryptoAsset] = []
-    var topLosers: [CryptoAsset] = []
 
     // Stock Assets (for segment control)
     var stockAssets: [StockAsset] = []
@@ -255,12 +252,6 @@ class MarketViewModel {
         }
     }
 
-    // MARK: - Private Methods
-    private func updateDerivedData() {
-        trendingAssets = Array(cryptoAssets.prefix(5))
-        topGainers = cryptoAssets.sorted { $0.priceChangePercentage24h > $1.priceChangePercentage24h }.prefix(5).map { $0 }
-        topLosers = cryptoAssets.sorted { $0.priceChangePercentage24h < $1.priceChangePercentage24h }.prefix(5).map { $0 }
-    }
 }
 
 // MARK: - News Item Model

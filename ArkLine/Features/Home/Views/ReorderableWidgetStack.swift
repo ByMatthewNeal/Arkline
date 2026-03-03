@@ -219,6 +219,8 @@ struct ReorderableWidgetStack: View {
                 dxyData: viewModel.dxyData,
                 liquidityData: viewModel.globalLiquidityChanges,
                 netLiquidityData: viewModel.netLiquidityData,
+                vixHistory: viewModel.vixHistory,
+                dxyHistory: viewModel.dxyHistory,
                 macroZScores: viewModel.macroZScores,
                 regime: viewModel.computedRegime,
                 quadrant: viewModel.currentRegimeResult?.quadrant,
