@@ -162,24 +162,41 @@ struct MainTabView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
 
+    /// Tracks which tabs have been visited so views are created lazily but kept alive.
+    @State private var loadedTabs: Set<AppTab> = [.home]
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Content based on selected tab
-            Group {
-                switch appState.selectedTab {
-                case .home:
+            // All visited tab views stay alive — no recreation on switch
+            ZStack {
+                if loadedTabs.contains(.home) {
                     HomeView()
-                case .market:
+                        .opacity(appState.selectedTab == .home ? 1 : 0)
+                        .allowsHitTesting(appState.selectedTab == .home)
+                }
+                if loadedTabs.contains(.market) {
                     MarketOverviewView()
-                case .portfolio:
+                        .opacity(appState.selectedTab == .market ? 1 : 0)
+                        .allowsHitTesting(appState.selectedTab == .market)
+                }
+                if loadedTabs.contains(.portfolio) {
                     PortfolioView()
-                case .insights:
+                        .opacity(appState.selectedTab == .portfolio ? 1 : 0)
+                        .allowsHitTesting(appState.selectedTab == .portfolio)
+                }
+                if loadedTabs.contains(.insights) {
                     BroadcastTabView()
-                case .profile:
+                        .opacity(appState.selectedTab == .insights ? 1 : 0)
+                        .allowsHitTesting(appState.selectedTab == .insights)
+                }
+                if loadedTabs.contains(.profile) {
                     ProfileView()
+                        .opacity(appState.selectedTab == .profile ? 1 : 0)
+                        .allowsHitTesting(appState.selectedTab == .profile)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.none, value: appState.selectedTab)
 
             // Floating Tab Bar
             CustomTabBar(
@@ -189,6 +206,9 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard)
         .background(AppColors.background(colorScheme))
+        .onChange(of: appState.selectedTab) { _, newTab in
+            loadedTabs.insert(newTab)
+        }
     }
 }
 
