@@ -10,7 +10,12 @@ class SentimentRegimeAlertManager: ObservableObject {
 
     private let regimeKey = "arkline_last_sentiment_regime"
     private let lastChangeKey = "arkline_last_sentiment_regime_change"
+    private let lastNotificationKey = "arkline_last_sentiment_notification"
     private let notificationsEnabledKey = "arkline_sentiment_regime_notifications_enabled"
+
+    /// Minimum time between sentiment shift notifications (6 hours).
+    /// Prevents flip-flop noise when sentiment oscillates near a boundary.
+    private let notificationCooldown: TimeInterval = 3600 * 6
 
     @Published var showRegimeShiftAlert = false
     @Published var regimeShiftInfo: (from: SentimentRegime, to: SentimentRegime)?
@@ -35,6 +40,11 @@ class SentimentRegimeAlertManager: ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: lastChangeKey) }
     }
 
+    private var lastNotificationDate: Date? {
+        get { UserDefaults.standard.object(forKey: lastNotificationKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: lastNotificationKey) }
+    }
+
     private init() {
         if UserDefaults.standard.object(forKey: notificationsEnabledKey) == nil {
             notificationsEnabled = true
@@ -46,14 +56,25 @@ class SentimentRegimeAlertManager: ObservableObject {
         let previousRegime = lastKnownRegime
 
         if let previous = previousRegime, previous != newRegime {
-            regimeShiftInfo = (from: previous, to: newRegime)
-
+            // Always update the stored regime
             lastKnownRegime = newRegime
             lastRegimeChange = Date()
 
-            if notificationsEnabled {
+            // Only notify if outside cooldown window
+            let inCooldown: Bool
+            if let lastNotif = lastNotificationDate {
+                inCooldown = Date().timeIntervalSince(lastNotif) < notificationCooldown
+            } else {
+                inCooldown = false
+            }
+
+            if notificationsEnabled && !inCooldown {
+                regimeShiftInfo = (from: previous, to: newRegime)
                 showRegimeShiftAlert = true
+                lastNotificationDate = Date()
                 scheduleLocalNotification(from: previous, to: newRegime)
+            } else if inCooldown {
+                logInfo("Sentiment shifted to \(newRegime.rawValue) — notification suppressed (cooldown)", category: .data)
             }
 
             logInfo("Sentiment regime shifted from \(previous.rawValue) to \(newRegime.rawValue)", category: .data)

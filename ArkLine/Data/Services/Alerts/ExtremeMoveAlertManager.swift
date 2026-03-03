@@ -18,8 +18,9 @@ class ExtremeMoveAlertManager: ObservableObject {
 
     // MARK: - Configuration
 
-    /// Cooldown period between alerts for the same indicator/direction (4 hours)
-    private let cooldownPeriod: TimeInterval = 3600 * 4
+    /// Cooldown period between alerts for the same indicator/direction (24 hours).
+    /// Prevents repeated alerts when an indicator stays in extreme territory.
+    private let cooldownPeriod: TimeInterval = 3600 * 24
 
     /// Maximum number of alerts to keep in history
     private let maxHistorySize = 50

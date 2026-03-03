@@ -88,7 +88,12 @@ class RegimeChangeManager: ObservableObject {
 
     private let regimeKey = "arkline_last_market_regime"
     private let lastChangeKey = "arkline_last_regime_change"
+    private let lastNotificationKey = "arkline_last_regime_notification"
     private let notificationsEnabledKey = "arkline_regime_notifications_enabled"
+
+    /// Minimum time between regime change notifications (6 hours).
+    /// Prevents flip-flop noise when indicators sit near a boundary.
+    private let notificationCooldown: TimeInterval = 3600 * 6
 
     @Published var showRegimeChangeAlert = false
     @Published var regimeChangeInfo: (from: MarketRegime, to: MarketRegime)?
@@ -113,6 +118,11 @@ class RegimeChangeManager: ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: lastChangeKey) }
     }
 
+    private var lastNotificationDate: Date? {
+        get { UserDefaults.standard.object(forKey: lastNotificationKey) as? Date }
+        set { UserDefaults.standard.set(newValue, forKey: lastNotificationKey) }
+    }
+
     private init() {
         // Default to notifications enabled
         if UserDefaults.standard.object(forKey: notificationsEnabledKey) == nil {
@@ -130,17 +140,25 @@ class RegimeChangeManager: ObservableObject {
 
         // Check if this is a meaningful change
         if let previous = previousRegime, previous != newRegime {
-            // Regime has changed
-            regimeChangeInfo = (from: previous, to: newRegime)
-
-            // Update stored regime
+            // Always update the stored regime
             lastKnownRegime = newRegime
             lastRegimeChange = Date()
 
-            // Trigger notifications if enabled
-            if notificationsEnabled {
+            // Only notify if outside cooldown window
+            let inCooldown: Bool
+            if let lastNotif = lastNotificationDate {
+                inCooldown = Date().timeIntervalSince(lastNotif) < notificationCooldown
+            } else {
+                inCooldown = false
+            }
+
+            if notificationsEnabled && !inCooldown {
+                regimeChangeInfo = (from: previous, to: newRegime)
                 showRegimeChangeAlert = true
+                lastNotificationDate = Date()
                 scheduleLocalNotification(for: newRegime, from: previous)
+            } else if inCooldown {
+                logInfo("Regime changed to \(newRegime.rawValue) — notification suppressed (cooldown)", category: .data)
             }
 
             logInfo("Market regime changed from \(previous.rawValue) to \(newRegime.rawValue)", category: .data)
