@@ -1,44 +1,5 @@
 import SwiftUI
 
-// MARK: - Vertical-Only Scroll Lock
-/// Finds the nearest UIScrollView ancestor and locks it to vertical-only scrolling.
-private struct VerticalScrollLockModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .background(VerticalScrollLockHelper())
-    }
-}
-
-private struct VerticalScrollLockHelper: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> VerticalScrollLockVC { VerticalScrollLockVC() }
-    func updateUIViewController(_ vc: VerticalScrollLockVC, context: Context) {}
-}
-
-private class VerticalScrollLockVC: UIViewController {
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        configureScrollView()
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        configureScrollView()
-    }
-
-    private func configureScrollView() {
-        var current: UIView? = view
-        while let parent = current?.superview {
-            if let scrollView = parent as? UIScrollView {
-                scrollView.isDirectionalLockEnabled = true
-                scrollView.alwaysBounceHorizontal = false
-                scrollView.showsHorizontalScrollIndicator = false
-                return
-            }
-            current = parent
-        }
-    }
-}
-
 struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var showPortfolioPicker = false
@@ -174,7 +135,6 @@ struct HomeView: View {
                     }
                     .padding(.top, 16)
                 }
-                .modifier(VerticalScrollLockModifier())
                 .refreshable {
                     await viewModel.refresh(forceRefresh: true)
                 }
