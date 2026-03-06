@@ -126,6 +126,10 @@ class HomeViewModel {
         macroZScores[indicator]
     }
 
+    // Flash Intel (strong swing signals)
+    var flashIntelSignals: [TradeSignal] = []
+    private let swingSetupService = SwingSetupService()
+
     // Market Summary
     var btcPrice: Double = 0
     var ethPrice: Double = 0
@@ -714,6 +718,25 @@ class HomeViewModel {
         self.isRefreshing = false
 
         guard enableSideEffects else { return }
+
+        // Fetch Flash Intel signals (strong buy/sell only)
+        Task {
+            do {
+                let active = try await self.swingSetupService.fetchActiveSignals()
+                let strong = active.filter { $0.signalType.isStrong }
+                await MainActor.run {
+                    // Notify for truly new signals (not seen before)
+                    let existingIds = Set(self.flashIntelSignals.map(\.id))
+                    let newSignals = strong.filter { !existingIds.contains($0.id) }
+                    for signal in newSignals where !existingIds.isEmpty {
+                        Task { await BroadcastNotificationService.shared.sendSwingSignalNotification(for: signal) }
+                    }
+                    self.flashIntelSignals = strong
+                }
+            } catch {
+                logWarning("Flash Intel fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
 
         // Fetch Rainbow Chart data (needs BTC price) in background
         if btcPrice > 0 {

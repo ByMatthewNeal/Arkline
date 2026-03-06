@@ -228,6 +228,51 @@ class BroadcastNotificationService: ObservableObject {
         }
     }
 
+    // MARK: - Swing Signal Notifications
+
+    /// Whether swing signal notifications are enabled
+    var swingSignalNotificationsEnabled: Bool {
+        UserDefaults.standard.object(forKey: Constants.UserDefaults.notifySwingSignals) as? Bool ?? true
+    }
+
+    /// Send a local notification for a strong swing trade signal
+    func sendSwingSignalNotification(for signal: TradeSignal) async {
+        guard swingSignalNotificationsEnabled else { return }
+        guard isNotificationsEnabled else { return }
+
+        let content = UNMutableNotificationContent()
+        let emoji = signal.signalType.isBuy ? "🎯" : "⚠️"
+        content.title = "\(emoji) \(signal.asset) Swing Setup"
+        content.body = "\(signal.signalType.displayName) zone at $\(formatNotifPrice(signal.entryZoneLow))–$\(formatNotifPrice(signal.entryZoneHigh)). R:R \(String(format: "%.1f", signal.riskRewardRatio))x"
+        content.sound = .default
+        content.badge = 1
+        content.categoryIdentifier = "SWING_SIGNAL"
+        content.userInfo = [
+            "type": "swing_signal",
+            "signal_id": signal.id.uuidString
+        ]
+
+        let request = UNNotificationRequest(
+            identifier: "swing_signal_\(signal.id.uuidString)",
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        )
+
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            logInfo("Swing signal notification sent for \(signal.asset) \(signal.signalType.displayName)", category: .data)
+        } catch {
+            logError("Failed to send swing signal notification: \(error)", category: .data)
+        }
+    }
+
+    private func formatNotifPrice(_ price: Double) -> String {
+        if price >= 1000 {
+            return String(format: "%.0f", price)
+        }
+        return String(format: "%.2f", price)
+    }
+
     // MARK: - Badge Management
 
     /// Clear the notification badge
@@ -275,7 +320,20 @@ class BroadcastNotificationService: ObservableObject {
             options: []
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory])
+        let viewSignalAction = UNNotificationAction(
+            identifier: "VIEW_SIGNAL",
+            title: "View Signal",
+            options: [.foreground]
+        )
+
+        let swingSignalCategory = UNNotificationCategory(
+            identifier: "SWING_SIGNAL",
+            actions: [viewSignalAction, dismissAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory])
     }
 }
 
@@ -296,6 +354,10 @@ extension BroadcastNotificationService {
         case "briefing":
             let slot = userInfo["slot"] as? String ?? "morning"
             return (type: "briefing", id: slot)
+        case "swing_signal":
+            if let signalId = userInfo["signal_id"] as? String {
+                return (type: "swing_signal", id: signalId)
+            }
         default:
             break
         }

@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var showPortfolioPicker = false
     @State private var showCustomizeSheet = false
     @State private var showNotificationsSheet = false
+    @State private var showTelegramExportSheet = false
     @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
@@ -60,6 +61,7 @@ struct HomeView: View {
                             appState: appState,
                             hasNotification: hasNotifications,
                             onCustomizeTap: { showCustomizeSheet = true },
+                            onExportTap: { showTelegramExportSheet = true },
                             onNotificationsTap: { showNotificationsSheet = true }
                         )
                         .padding(.horizontal, 20)
@@ -121,6 +123,15 @@ struct HomeView: View {
                             .padding(.horizontal, 20)
                         }
 
+                        // Flash Intel (strong swing signals)
+                        if !viewModel.flashIntelSignals.isEmpty {
+                            FlashIntelSection(
+                                signals: viewModel.flashIntelSignals,
+                                isPro: appState.isPro
+                            )
+                            .padding(.horizontal, 20)
+                        }
+
                         // Dynamic Widget Section with Drag-and-Drop
                         ReorderableWidgetStack(
                             viewModel: viewModel,
@@ -170,6 +181,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showNotificationsSheet) {
                 NotificationsSheet(notifications: currentNotifications)
+            }
+            .sheet(isPresented: $showTelegramExportSheet) {
+                DailyMarketUpdateShareSheet()
             }
             .task {
                 viewModel.startAutoRefresh()

@@ -607,9 +607,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) {
         // Handle notification response
         if let result = BroadcastNotificationService.shared.handleNotificationResponse(response) {
-            let notificationName: Notification.Name = result.type == "briefing"
-                ? Notification.Name("BriefingNotificationTapped")
-                : Notification.Name("BroadcastNotificationTapped")
+            let notificationName: Notification.Name
+            switch result.type {
+            case "briefing":
+                notificationName = Notification.Name("BriefingNotificationTapped")
+            case "swing_signal":
+                notificationName = Notification.Name("SwingSignalNotificationTapped")
+            default:
+                notificationName = Notification.Name("BroadcastNotificationTapped")
+            }
             NotificationCenter.default.post(
                 name: notificationName,
                 object: nil,

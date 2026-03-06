@@ -117,6 +117,9 @@ struct ReorderableMarketWidgetStack: View {
 
         case .altcoinScreener:
             AltcoinScreenerSection()
+
+        case .swingSetups:
+            SwingSetupsSummarySection(isPro: appState.isPro)
         }
     }
 }

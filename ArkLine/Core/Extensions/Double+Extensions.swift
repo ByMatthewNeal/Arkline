@@ -216,7 +216,25 @@ extension Int {
     }
 }
 
+// MARK: - Signal Price Formatting
+
+extension Double {
+    /// Format as signal price: comma-separated for >= $1000, 2 decimals otherwise
+    var asSignalPrice: String {
+        if self >= 1000 {
+            let formatted = String(format: "%.0f", self)
+            return formatted.replacingOccurrences(
+                of: "(?<=\\d)(?=(\\d{3})+$)",
+                with: ",",
+                options: .regularExpression
+            )
+        }
+        return String(format: "%.2f", self)
+    }
+}
+
 // MARK: - Decimal Extensions
+
 extension Decimal {
     var doubleValue: Double {
         NSDecimalNumber(decimal: self).doubleValue

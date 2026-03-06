@@ -5,6 +5,7 @@ struct MarketOverviewView: View {
     @State private var sentimentViewModel = SentimentViewModel()
     @State private var allocationViewModel: AllocationViewModel?
     @State private var navigationPath = NavigationPath()
+    @State private var pendingSignalId: UUID?
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
@@ -88,6 +89,25 @@ struct MarketOverviewView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             #endif
+            .navigationDestination(for: UUID.self) { signalId in
+                SignalDetailView(signalId: signalId)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SwingSignalNotificationTapped"))) { notification in
+                guard let signalIdString = notification.userInfo?["id"] as? String,
+                      let signalId = UUID(uuidString: signalIdString) else { return }
+                if appState.selectedTab == .market {
+                    navigationPath.append(signalId)
+                } else {
+                    pendingSignalId = signalId
+                    appState.selectedTab = .market
+                }
+            }
+            .onChange(of: appState.selectedTab) { _, newTab in
+                if newTab == .market, let signalId = pendingSignalId {
+                    pendingSignalId = nil
+                    navigationPath.append(signalId)
+                }
+            }
         }
     }
 }

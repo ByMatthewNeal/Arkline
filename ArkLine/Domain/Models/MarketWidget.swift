@@ -10,6 +10,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     case topCoins = "top_coins"
     case sentiment = "sentiment"
     case altcoinScreener = "altcoin_screener"
+    case swingSetups = "swing_setups"
 
     var id: String { rawValue }
 
@@ -22,6 +23,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .topCoins: return "Top Coins"
         case .sentiment: return "Market Sentiment"
         case .altcoinScreener: return "Altcoin Screener"
+        case .swingSetups: return "Swing Setups"
         }
     }
 
@@ -34,6 +36,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .topCoins: return "Browse top cryptocurrencies by market cap"
         case .sentiment: return "Market sentiment indicators summary"
         case .altcoinScreener: return "Altcoin 30-day return screener"
+        case .swingSetups: return "Multi-timeframe Fibonacci swing trade signals"
         }
     }
 
@@ -46,12 +49,13 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .topCoins: return "bitcoinsign.circle"
         case .sentiment: return "gauge.with.dots.needle.33percent"
         case .altcoinScreener: return "list.bullet.rectangle"
+        case .swingSetups: return "scope"
         }
     }
 
     /// Default order for Market widgets (matches original hardcoded layout)
     static var defaultOrder: [MarketWidgetType] {
-        [.dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .altcoinScreener]
+        [.dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .swingSetups, .altcoinScreener]
     }
 
     /// All widgets enabled by default

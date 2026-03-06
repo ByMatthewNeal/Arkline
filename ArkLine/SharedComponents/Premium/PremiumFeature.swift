@@ -13,6 +13,7 @@ enum PremiumFeature: String, CaseIterable {
     case premiumWidgets
     case exportData
     case fedWatchDetail
+    case swingSetups
 
     var title: String {
         switch self {
@@ -28,6 +29,7 @@ enum PremiumFeature: String, CaseIterable {
         case .premiumWidgets: return "Premium Widgets"
         case .exportData: return "Export Data"
         case .fedWatchDetail: return "Fed Watch Detail"
+        case .swingSetups: return "Swing Trade Setups"
         }
     }
 
@@ -57,6 +59,8 @@ enum PremiumFeature: String, CaseIterable {
             return "Export your portfolio data as PDF, CSV, or JSON."
         case .fedWatchDetail:
             return "Detailed Fed interest rate probabilities and meeting schedules."
+        case .swingSetups:
+            return "Multi-timeframe Fibonacci swing trade signals with defined entries, targets, and stop losses."
         }
     }
 
@@ -74,6 +78,7 @@ enum PremiumFeature: String, CaseIterable {
         case .premiumWidgets: return "square.grid.2x2.fill"
         case .exportData: return "square.and.arrow.up.fill"
         case .fedWatchDetail: return "building.columns.fill"
+        case .swingSetups: return "scope"
         }
     }
 }

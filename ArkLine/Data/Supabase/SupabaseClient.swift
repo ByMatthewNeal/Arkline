@@ -104,6 +104,10 @@ enum SupabaseTable: String {
     case dailyActiveUsers = "daily_active_users"
     case inviteCodes = "invite_codes"
     case subscriptions
+    case earlyAccessSignups = "early_access_signups"
+    case tradeSignals = "trade_signals"
+    case fibConfluenceZones = "fib_confluence_zones"
+    case ohlcCandles = "ohlc_candles"
 }
 
 // MARK: - Storage Buckets

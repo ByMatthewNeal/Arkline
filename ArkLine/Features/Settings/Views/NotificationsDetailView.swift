@@ -18,6 +18,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifyBriefings)
     private var dailyBriefings = true
 
+    @AppStorage(Constants.UserDefaults.notifySwingSignals)
+    private var swingSignals = true
+
     @AppStorage(Constants.UserDefaults.notifyInsights)
     private var insights = true
 
@@ -113,6 +116,18 @@ struct NotificationsDetailView: View {
                     .onChange(of: sentimentShifts) { _, newValue in
                         Haptics.selection()
                         SentimentRegimeAlertManager.shared.notificationsEnabled = newValue
+                    }
+
+                    Toggle(isOn: $swingSignals) {
+                        NotificationRow(
+                            icon: "scope",
+                            iconColor: AppColors.success,
+                            title: "Swing Trade Alerts",
+                            description: "Strong Buy/Sell signals from Fibonacci confluence zones"
+                        )
+                    }
+                    .onChange(of: swingSignals) { _, _ in
+                        Haptics.selection()
                     }
                 } header: {
                     Text("Market Alerts")

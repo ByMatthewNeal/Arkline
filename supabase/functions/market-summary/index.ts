@@ -201,6 +201,29 @@ Deno.serve(async (req) => {
     sections.push(`HEADLINES: ${payload.newsHeadlines.join("; ")}`)
   }
 
+  // --- Active Swing Trade Signals ---
+  try {
+    const { data: activeSignals } = await supabase
+      .from("trade_signals")
+      .select("asset, signal_type, status, entry_zone_low, entry_zone_high, target_1, stop_loss, risk_reward_ratio, generated_at, triggered_at")
+      .in("status", ["active", "triggered"])
+      .order("generated_at", { ascending: false })
+      .limit(3)
+
+    if (activeSignals && activeSignals.length > 0) {
+      const signalDescriptions = activeSignals.map((s: Record<string, unknown>) => {
+        const entryLow = Number(s.entry_zone_low).toLocaleString()
+        const entryHigh = Number(s.entry_zone_high).toLocaleString()
+        const t1 = s.target_1 ? `T1: $${Number(s.target_1).toLocaleString()}` : ""
+        const statusLabel = s.status === "triggered" ? "IN PLAY" : "WATCHING"
+        return `${s.asset} ${(s.signal_type as string).replace("_", " ").toUpperCase()} [${statusLabel}]: Entry $${entryLow}-$${entryHigh}, ${t1}, R:R ${s.risk_reward_ratio}x`
+      })
+      sections.push(`SWING SETUPS:\n${signalDescriptions.join("\n")}`)
+    }
+  } catch (err) {
+    console.error("Failed to fetch active signals:", err instanceof Error ? err.message : String(err))
+  }
+
   const marketContext = sections.join("\n\n")
   const timeLabel = slot === "morning" ? "morning" : "evening"
   console.log(`Market context for Claude (${timeLabel}):\n${marketContext}`)
@@ -236,7 +259,8 @@ Rules:
 - Never give investment advice or say "buy" / "sell"
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
 - Keep total length under 150 words
-- Never start any section with "Today" or "The market"${feedbackBlock}`,
+- Never start any section with "Today" or "The market"
+- If SWING SETUPS data is present, naturally reference any active or triggered signals in the Signals section. For setups that are "IN PLAY", mention the current status. For setups that are "WATCHING", note the zone price is being monitored. Keep it brief — one sentence max per setup.${feedbackBlock}`,
         messages: [
           {
             role: "user",
