@@ -143,6 +143,7 @@ enum Constants {
         static let notifyEmailInsights = "notifyEmailInsights"
         static let notifyEmailDCAReminders = "notifyEmailDCAReminders"
         static let notifyEmailAccountUpdates = "notifyEmailAccountUpdates"
+        static let leverageWalletSize = "arkline_leverage_wallet_size"
     }
 
     // MARK: - Notification Names

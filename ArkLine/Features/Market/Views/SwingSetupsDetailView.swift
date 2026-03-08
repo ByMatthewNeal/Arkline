@@ -5,6 +5,8 @@ import SwiftUI
 struct SwingSetupsDetailView: View {
     @State private var viewModel = SwingSetupsViewModel()
     @State private var selectedFilter: SignalFilter = .active
+    @State private var selectedAsset: String? = nil
+    @State private var showGuide = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -14,13 +16,24 @@ struct SwingSetupsDetailView: View {
         case history = "History"
     }
 
-    private var filteredSignals: [TradeSignal] {
+    private var baseSignals: [TradeSignal] {
         switch selectedFilter {
         case .active:
             return viewModel.activeSignals
         case .history:
             return viewModel.recentSignals.filter { !$0.status.isLive }
         }
+    }
+
+    private var filteredSignals: [TradeSignal] {
+        guard let asset = selectedAsset else { return baseSignals }
+        return baseSignals.filter { $0.asset == asset }
+    }
+
+    private var availableAssets: [String] {
+        let signals = selectedFilter == .active ? viewModel.activeSignals : viewModel.recentSignals.filter { !$0.status.isLive }
+        let assets = Set(signals.map(\.asset))
+        return assets.sorted()
     }
 
     var body: some View {
@@ -39,6 +52,31 @@ struct SwingSetupsDetailView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
+                .onChange(of: selectedFilter) { _, _ in
+                    // Reset asset filter when switching tabs if current asset not available
+                    if let asset = selectedAsset, !availableAssets.contains(asset) {
+                        selectedAsset = nil
+                    }
+                }
+
+                // Asset filter chips
+                if availableAssets.count > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            assetChip("All", isActive: selectedAsset == nil) {
+                                withAnimation(.easeInOut(duration: 0.2)) { selectedAsset = nil }
+                            }
+                            ForEach(availableAssets, id: \.self) { asset in
+                                assetChip(asset, isActive: selectedAsset == asset) {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        selectedAsset = selectedAsset == asset ? nil : asset
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
 
                 // Signal list
                 if viewModel.isLoading {
@@ -77,6 +115,20 @@ struct SwingSetupsDetailView: View {
         .background(AppColors.background(colorScheme))
         .navigationTitle("Swing Setups")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showGuide = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 15))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+        }
+        .sheet(isPresented: $showGuide) {
+            SignalGuideSheet()
+        }
         .task {
             await viewModel.loadAllData()
         }
@@ -188,6 +240,21 @@ struct SwingSetupsDetailView: View {
         .padding(.horizontal)
     }
 
+    // MARK: - Asset Chip
+
+    private func assetChip(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isActive ? .white : AppColors.accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isActive ? AppColors.accent : AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1))
+                .cornerRadius(14)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
     // MARK: - Empty State
 
     private var emptyState: some View {
@@ -221,123 +288,170 @@ struct SignalCard: View {
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Top row: asset, type badge, time
-            HStack {
-                Text(signal.asset)
-                    .font(.headline)
-                    .foregroundColor(textPrimary)
-
-                Text(signal.signalType.displayName)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(signalColor)
-                    .cornerRadius(6)
-
-                confidenceBadge
-
-                Spacer()
-
-                Text(signal.timeAgo)
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            // Entry zone
-            HStack {
-                Text("Entry")
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
-                Spacer()
-                Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(textPrimary)
-            }
-
-            // Targets + Stop
-            HStack(spacing: 16) {
-                if let t1 = signal.target1 {
-                    miniMetric(label: "T1", value: "$\(formatSignalPrice(t1))", color: AppColors.success)
-                }
-                if let t2 = signal.target2 {
-                    miniMetric(label: "T2", value: "$\(formatSignalPrice(t2))", color: AppColors.success)
-                }
-                miniMetric(label: "Stop", value: "$\(formatSignalPrice(signal.stopLoss))", color: AppColors.error)
-
-                Spacer()
-
-                // R:R badge
-                Text("\(signal.riskRewardRatio, specifier: "%.1f")x")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(AppColors.accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(AppColors.accent.opacity(0.15))
-                    .cornerRadius(8)
-            }
-
-            // Bottom row: runner info + status
-            HStack(spacing: 6) {
-                if signal.status.isLive {
-                    if signal.isRunnerPhase {
-                        chipView(text: "T1 Hit", color: AppColors.success)
-                        if let t1Pnl = signal.t1PnlPct {
-                            chipView(text: String(format: "50%% @ %+.1f%%", t1Pnl), color: AppColors.success)
-                        }
-                        chipView(text: "Runner trailing", color: AppColors.accent)
-                    } else {
-                        if signal.emaTrendAligned == true {
-                            chipView(text: "EMA Aligned", color: AppColors.accent)
-                        }
-                        if signal.isWeakDirection {
-                            chipView(text: "Off-trend")
-                        }
-                        if signal.isCounterTrend {
-                            chipView(text: "Counter-Trend", color: AppColors.warning)
-                        }
-                    }
-                } else {
-                    // Outcome details for closed signals
-                    if let pct = signal.outcomePct {
-                        chipView(
-                            text: String(format: "%+.1f%%", pct),
-                            color: pct >= 0 ? AppColors.success : AppColors.error
-                        )
-                    }
-                    if let rMult = signal.rMultiple {
-                        chipView(
-                            text: String(format: "%+.1fR", rMult),
-                            color: rMult >= 0 ? AppColors.success : AppColors.error
-                        )
-                    }
-                    if let hours = signal.durationHours {
-                        let display = hours >= 24 ? "\(hours / 24)d \(hours % 24)h" : "\(hours)h"
-                        chipView(text: display)
-                    }
-                    if signal.isT1Hit {
-                        chipView(text: "T1 Hit", color: AppColors.success)
-                    }
-                }
-
-                Spacer()
-
-                // Status badge
-                Text(signal.phaseDescription)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(statusColor)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(statusColor.opacity(0.15))
-                    .cornerRadius(6)
-            }
+    private var borderTintColor: Color? {
+        guard !signal.status.isLive else { return nil }
+        switch signal.outcome {
+        case .win: return AppColors.success
+        case .loss: return AppColors.error
+        case .partial: return AppColors.warning
+        case .none: return nil
         }
-        .padding()
+    }
+
+    private var expiryCountdown: String? {
+        guard signal.status == .active, let expires = signal.expiresAt else { return nil }
+        let remaining = expires.timeIntervalSince(Date())
+        guard remaining > 0 else { return "Expiring" }
+        let hours = Int(remaining / 3600)
+        if hours >= 24 {
+            return "\(hours / 24)d \(hours % 24)h left"
+        }
+        return "\(hours)h left"
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Colored left accent bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(signalColor)
+                .frame(width: 4)
+                .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 12) {
+                // Top row: asset, type badge, time
+                HStack {
+                    Text(signal.asset)
+                        .font(.headline)
+                        .foregroundColor(textPrimary)
+
+                    Text(signal.signalType.displayName)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(signalColor)
+                        .cornerRadius(6)
+
+                    confidenceBadge
+
+                    Spacer()
+
+                    if let countdown = expiryCountdown {
+                        HStack(spacing: 3) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 9))
+                            Text(countdown)
+                        }
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(AppColors.warning)
+                    } else {
+                        Text(signal.timeAgo)
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                // Entry zone
+                HStack {
+                    Text("Entry")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary)
+                }
+
+                // Targets + Stop
+                HStack(spacing: 16) {
+                    if let t1 = signal.target1 {
+                        miniMetric(label: "T1", value: "$\(formatSignalPrice(t1))", color: AppColors.success)
+                    }
+                    if let t2 = signal.target2 {
+                        miniMetric(label: "T2", value: "$\(formatSignalPrice(t2))", color: AppColors.success)
+                    }
+                    miniMetric(label: "Stop", value: "$\(formatSignalPrice(signal.stopLoss))", color: AppColors.error)
+
+                    Spacer()
+
+                    // R:R badge
+                    Text("\(signal.riskRewardRatio, specifier: "%.1f")x")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(AppColors.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(AppColors.accent.opacity(0.15))
+                        .cornerRadius(8)
+                }
+
+                // Bottom row: runner info + status
+                HStack(spacing: 6) {
+                    if signal.status.isLive {
+                        if signal.isRunnerPhase {
+                            chipView(text: "T1 Hit", color: AppColors.success)
+                            if let t1Pnl = signal.t1PnlPct {
+                                chipView(text: String(format: "50%% @ %+.1f%%", t1Pnl), color: AppColors.success)
+                            }
+                            chipView(text: "Runner trailing", color: AppColors.accent)
+                        } else {
+                            if signal.emaTrendAligned == true {
+                                chipView(text: "EMA Aligned", color: AppColors.accent)
+                            }
+                            if signal.isWeakDirection {
+                                chipView(text: "Off-trend")
+                            }
+                            if signal.isCounterTrend {
+                                chipView(text: "Counter-Trend", color: AppColors.warning)
+                            }
+                        }
+                    } else {
+                        // Outcome details for closed signals
+                        if let pct = signal.outcomePct {
+                            chipView(
+                                text: String(format: "%+.1f%%", pct),
+                                color: pct >= 0 ? AppColors.success : AppColors.error
+                            )
+                        }
+                        if let rMult = signal.rMultiple {
+                            chipView(
+                                text: String(format: "%+.1fR", rMult),
+                                color: rMult >= 0 ? AppColors.success : AppColors.error
+                            )
+                        }
+                        if let hours = signal.durationHours {
+                            let display = hours >= 24 ? "\(hours / 24)d \(hours % 24)h" : "\(hours)h"
+                            chipView(text: display)
+                        }
+                        if signal.isT1Hit {
+                            chipView(text: "T1 Hit", color: AppColors.success)
+                        }
+                    }
+
+                    Spacer()
+
+                    // Status badge
+                    Text(signal.phaseDescription)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(statusColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(statusColor.opacity(0.15))
+                        .cornerRadius(6)
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.vertical, 2)
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 16)
+        .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(borderTintColor?.opacity(0.35) ?? Color.clear, lineWidth: borderTintColor != nil ? 1.5 : 0)
+                )
         )
     }
 
@@ -394,5 +508,328 @@ struct SignalCard: View {
 
     private func formatSignalPrice(_ price: Double) -> String {
         price.asSignalPrice
+    }
+}
+
+// MARK: - Signal Guide Sheet
+
+struct SignalGuideSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+    private var cardBg: Color { colorScheme == .dark ? Color(hex: "1F1F1F") : .white }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Image(systemName: "book.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(AppColors.accent)
+
+                        Text("Reading Signal Cards")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        Text("A quick guide to understanding everything you see on signal cards and the detail view.")
+                            .font(.system(size: 14))
+                            .foregroundColor(AppColors.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 10)
+
+                    // 1. Direction Bar
+                    guideSection("Signal Direction") {
+                        legendRow(
+                            visual: AnyView(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(AppColors.success)
+                                    .frame(width: 4, height: 28)
+                            ),
+                            title: "Green bar",
+                            detail: "Long setup — expecting price to go up"
+                        )
+                        legendRow(
+                            visual: AnyView(
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(AppColors.error)
+                                    .frame(width: 4, height: 28)
+                            ),
+                            title: "Red bar",
+                            detail: "Short setup — expecting price to go down"
+                        )
+                    }
+
+                    // 2. Signal Type Badges
+                    guideSection("Signal Strength") {
+                        legendRow(
+                            visual: AnyView(badgeSample("Strong Long", color: AppColors.success)),
+                            title: "Strong Long / Strong Short",
+                            detail: "High-confluence zone with multi-timeframe alignment and EMA confirmation"
+                        )
+                        legendRow(
+                            visual: AnyView(badgeSample("Long Setup", color: AppColors.success)),
+                            title: "Long Setup / Short Setup",
+                            detail: "Valid zone with standard confluence — still meets all detection criteria"
+                        )
+                    }
+
+                    // 3. Confidence Tiers
+                    guideSection("Confidence Tiers") {
+                        Text("Based on backtested win rates per asset over 12+ months of data.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.bottom, 4)
+
+                        legendRow(
+                            visual: AnyView(confidenceSample("High", color: AppColors.success)),
+                            title: "High Confidence",
+                            detail: "Asset has 65%+ win rate in backtests (e.g. LINK, SUI)"
+                        )
+                        legendRow(
+                            visual: AnyView(confidenceSample("Medium", color: AppColors.warning)),
+                            title: "Medium Confidence",
+                            detail: "Asset has 60–65% win rate (e.g. ETH, SOL, ADA)"
+                        )
+                        legendRow(
+                            visual: AnyView(confidenceSample("Low", color: AppColors.error)),
+                            title: "Low Confidence",
+                            detail: "Asset has <60% win rate — extra caution warranted (e.g. BTC)"
+                        )
+                    }
+
+                    // 4. Status Lifecycle
+                    guideSection("Signal Lifecycle") {
+                        statusRow(label: "Watching", color: AppColors.warning,
+                                  detail: "Signal generated — price is approaching the zone but hasn't entered yet. The countdown shows time until expiry.")
+                        statusRow(label: "In Play", color: AppColors.accent,
+                                  detail: "Price confirmed inside the entry zone with a bounce signal. The trade is active.")
+                        statusRow(label: "Watching T1", color: AppColors.accent,
+                                  detail: "Trade triggered and now watching for Target 1 to be hit.")
+                        statusRow(label: "Runner trailing", color: AppColors.accent,
+                                  detail: "T1 was hit — 50% of the position closed in profit. The remaining 50% is trailing with a protective stop.")
+                        statusRow(label: "Target Hit", color: AppColors.success,
+                                  detail: "Full target reached. The signal closed as a win.")
+                        statusRow(label: "Stopped Out", color: AppColors.error,
+                                  detail: "Price hit the stop loss. The signal closed as a loss.")
+                        statusRow(label: "Expired", color: AppColors.textSecondary,
+                                  detail: "Price never reached the entry zone within the time window. No trade, no risk.")
+                    }
+
+                    // 5. Info Chips
+                    guideSection("Info Badges") {
+                        legendRow(
+                            visual: AnyView(chipSample("EMA Aligned", color: AppColors.accent)),
+                            title: "EMA Aligned",
+                            detail: "The 20 and 50 EMA on 4H confirm the signal direction — a positive confluence factor"
+                        )
+                        legendRow(
+                            visual: AnyView(chipSample("Counter-Trend", color: AppColors.warning)),
+                            title: "Counter-Trend",
+                            detail: "Signal goes against the Bull Market Support Band (20W SMA / 21W EMA). Auto-scaled to 0.5R in Your Setup."
+                        )
+                        legendRow(
+                            visual: AnyView(chipSample("Off-trend", color: nil)),
+                            title: "Off-trend",
+                            detail: "Signal direction is the weaker side for this asset based on backtests (e.g. longing BTC when shorts historically perform better)"
+                        )
+                        legendRow(
+                            visual: AnyView(chipSample("T1 Hit", color: AppColors.success)),
+                            title: "T1 Hit",
+                            detail: "Target 1 was reached — 50% of the position was closed at a profit"
+                        )
+                    }
+
+                    // 6. History Card Borders
+                    guideSection("History Card Borders") {
+                        Text("Closed signals show a subtle colored border so you can scan results at a glance.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.bottom, 4)
+
+                        borderRow(color: AppColors.success, label: "Green border", detail: "Win — target hit or profitable close")
+                        borderRow(color: AppColors.error, label: "Red border", detail: "Loss — stopped out")
+                        borderRow(color: AppColors.warning, label: "Amber border", detail: "Partial — T1 hit but runner stopped at breakeven")
+                    }
+
+                    // 7. Key Metrics
+                    guideSection("Key Numbers") {
+                        metricRow(label: "R:R (Risk/Reward)",
+                                  detail: "How much you stand to gain vs. how much you risk. A 2.5x R:R means the potential reward is 2.5 times the risk. Higher is better.")
+                        metricRow(label: "T1 / T2 (Targets)",
+                                  detail: "Target 1 is where 50% of the position closes. Target 2 is the extended target for the trailing runner.")
+                        metricRow(label: "Stop Loss",
+                                  detail: "The price where the trade is invalidated. Placed below/above the Fibonacci zone to limit downside.")
+                        metricRow(label: "+2.3R / -1.0R",
+                                  detail: "R-multiple — how many \"risk units\" the trade returned. +2.3R means you made 2.3x your risked amount. -1.0R means you lost exactly what you risked.")
+                        metricRow(label: "Hit Rate",
+                                  detail: "Percentage of closed signals that reached their target. Shown in the stats card at the top.")
+                        metricRow(label: "Streak",
+                                  detail: "Current consecutive wins (+) or losses (-). Useful for gauging momentum of the system.")
+                    }
+
+                    // 8. Detail View Sections
+                    guideSection("Signal Detail View") {
+                        metricRow(label: "Trade Structure Chart",
+                                  detail: "Visual diagram of entry zone, targets, and stop loss with R:R arrows. Green shading = profit zone, red shading = risk zone.")
+                        metricRow(label: "Signal Parameters",
+                                  detail: "Exact price levels for entry, targets, and stop loss with percentage moves from entry.")
+                        metricRow(label: "Your Setup",
+                                  detail: "Interactive calculator — set your wallet size, leverage, risk %, and entry strategy to see position sizing, liquidation price, and dollar payouts. Your wallet size is remembered between visits.")
+                        metricRow(label: "Entry Strategy",
+                                  detail: "Choose where in the entry zone to place your order: Optimal (best R:R edge), Midpoint (zone center), Aggressive (fast fill), or Split (two limit orders at 40/60 split).")
+                        metricRow(label: "Split Exit Tracking",
+                                  detail: "Shows the P&L for each half of the position — the 50% closed at T1 and the 50% runner. Combined P&L shown at the bottom.")
+                        metricRow(label: "AI Analysis",
+                                  detail: "Claude-generated narrative context for the signal, including macro conditions and technical reasoning.")
+                        metricRow(label: "Timeline",
+                                  detail: "Chronological record of every signal event — from generation to outcome.")
+                    }
+
+                    // Disclaimer
+                    Text("Swing Setups is an educational analysis tool, not financial advice. Always do your own research and consult a licensed financial advisor.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+
+                    Spacer(minLength: 40)
+                }
+                .padding(.top, 16)
+            }
+            .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
+            .navigationTitle("Signal Guide")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+    }
+
+    // MARK: - Section Builder
+
+    private func guideSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(textPrimary)
+
+            VStack(alignment: .leading, spacing: 10) {
+                content()
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 14).fill(cardBg))
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Legend Rows
+
+    private func legendRow(visual: AnyView, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            visual
+                .frame(width: 30, alignment: .center)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(textPrimary)
+                Text(detail)
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineSpacing(2)
+            }
+        }
+    }
+
+    private func statusRow(label: String, color: Color, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(color.opacity(0.15))
+                .cornerRadius(6)
+                .frame(width: 100, alignment: .leading)
+
+            Text(detail)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textSecondary)
+                .lineSpacing(2)
+        }
+    }
+
+    private func borderRow(color: Color, label: String, detail: String) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(color.opacity(0.5), lineWidth: 2)
+                .frame(width: 28, height: 20)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(textPrimary)
+                Text(detail)
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+    }
+
+    private func metricRow(label: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(textPrimary)
+            Text(detail)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textSecondary)
+                .lineSpacing(2)
+        }
+        .padding(.bottom, 2)
+    }
+
+    // MARK: - Sample Badges
+
+    private func badgeSample(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color)
+            .cornerRadius(4)
+    }
+
+    private func confidenceSample(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold))
+            .foregroundColor(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12))
+            .cornerRadius(4)
+    }
+
+    private func chipSample(_ text: String, color: Color?) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(color ?? AppColors.textSecondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background((color ?? Color.gray).opacity(0.12))
+            .cornerRadius(4)
     }
 }

@@ -132,6 +132,11 @@ struct LeverageCalculatorView: View {
             if signal.isCounterTrend {
                 riskSize = .halfR
             }
+            // Restore saved wallet size
+            let savedWallet = UserDefaults.standard.string(forKey: Constants.UserDefaults.leverageWalletSize) ?? ""
+            if !savedWallet.isEmpty && walletText.isEmpty {
+                walletText = savedWallet
+            }
             let key = "arkline_leverage_tooltip_shown"
             if !UserDefaults.standard.bool(forKey: key) {
                 showTooltip = true
@@ -141,7 +146,13 @@ struct LeverageCalculatorView: View {
         .onChange(of: leverage) { _, _ in onCalculationChange?(calculation) }
         .onChange(of: marginText) { _, _ in onCalculationChange?(calculation) }
         .onChange(of: entryStrategy) { _, _ in onCalculationChange?(calculation) }
-        .onChange(of: walletText) { _, _ in onCalculationChange?(calculation) }
+        .onChange(of: walletText) { _, newValue in
+            onCalculationChange?(calculation)
+            // Persist wallet size for next visit
+            if !newValue.isEmpty {
+                UserDefaults.standard.set(newValue, forKey: Constants.UserDefaults.leverageWalletSize)
+            }
+        }
         .onChange(of: riskPercent) { _, _ in onCalculationChange?(calculation) }
         .onChange(of: riskSize) { _, _ in onCalculationChange?(calculation) }
     }

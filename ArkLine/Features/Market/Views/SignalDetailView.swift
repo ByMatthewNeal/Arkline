@@ -55,6 +55,7 @@ struct SignalDetailView: View {
             } else if let signal {
                 VStack(spacing: 20) {
                     headerSection(signal)
+                    statusBanner(signal)
                     TradeStructureChart(signal: signal)
                     tradeParametersCard(signal)
 
@@ -208,6 +209,121 @@ struct SignalDetailView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Status Banner
+
+    @ViewBuilder
+    private func statusBanner(_ signal: TradeSignal) -> some View {
+        let bannerConfig = statusBannerConfig(signal)
+        if let config = bannerConfig {
+            HStack(spacing: 10) {
+                Image(systemName: config.icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(config.color)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(config.title)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(config.color)
+                    if let subtitle = config.subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.7))
+                    }
+                }
+
+                Spacer()
+
+                if let badge = config.badge {
+                    Text(badge)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(config.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(config.color.opacity(0.15))
+                        .cornerRadius(8)
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(config.color.opacity(colorScheme == .dark ? 0.1 : 0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(config.color.opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    private struct BannerConfig {
+        let icon: String
+        let title: String
+        let subtitle: String?
+        let badge: String?
+        let color: Color
+    }
+
+    private func statusBannerConfig(_ signal: TradeSignal) -> BannerConfig? {
+        if signal.isRunnerPhase {
+            return BannerConfig(
+                icon: "arrow.up.right.circle.fill",
+                title: "Runner Trailing",
+                subtitle: "T1 hit — 50% closed, remaining position trailing",
+                badge: signal.t1PnlPct.map { String(format: "%+.1f%%", $0) },
+                color: AppColors.accent
+            )
+        }
+
+        switch signal.status {
+        case .active:
+            let countdown: String? = signal.expiresAt.flatMap { expires in
+                let remaining = expires.timeIntervalSince(Date())
+                guard remaining > 0 else { return nil }
+                let hours = Int(remaining / 3600)
+                return hours >= 24 ? "\(hours / 24)d \(hours % 24)h" : "\(hours)h"
+            }
+            return BannerConfig(
+                icon: "eye.fill",
+                title: "Watching",
+                subtitle: "Waiting for price to enter the zone",
+                badge: countdown.map { "\($0) left" },
+                color: AppColors.warning
+            )
+        case .triggered:
+            return BannerConfig(
+                icon: "bolt.fill",
+                title: "In Play",
+                subtitle: "Price confirmed in zone — watching T1",
+                badge: nil,
+                color: AppColors.accent
+            )
+        case .targetHit:
+            return BannerConfig(
+                icon: "checkmark.circle.fill",
+                title: "Target Hit",
+                subtitle: signal.outcomePct.map { String(format: "Closed at %+.2f%%", $0) },
+                badge: signal.rMultiple.map { String(format: "%+.1fR", $0) },
+                color: AppColors.success
+            )
+        case .invalidated:
+            return BannerConfig(
+                icon: "xmark.circle.fill",
+                title: "Stopped Out",
+                subtitle: signal.outcomePct.map { String(format: "Closed at %+.2f%%", $0) },
+                badge: signal.rMultiple.map { String(format: "%+.1fR", $0) },
+                color: AppColors.error
+            )
+        case .expired:
+            return BannerConfig(
+                icon: "clock.badge.xmark",
+                title: "Expired",
+                subtitle: "Price never reached the entry zone",
+                badge: nil,
+                color: AppColors.textSecondary
+            )
         }
     }
 
