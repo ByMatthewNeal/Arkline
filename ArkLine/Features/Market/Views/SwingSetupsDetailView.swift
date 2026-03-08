@@ -140,33 +140,30 @@ struct SwingSetupsDetailView: View {
     // MARK: - Stats Card
 
     private func statsCard(_ stats: SignalStats) -> some View {
-        VStack(spacing: 12) {
-            // Primary stats row
-            HStack(spacing: 0) {
-                statColumn(label: "Signals", value: "\(stats.totalSignals)")
-                Divider().frame(height: 36)
-                statColumn(label: "Wins", value: "\(stats.wins)", color: AppColors.success)
-                Divider().frame(height: 36)
-                statColumn(label: "Partial", value: "\(stats.partials)", color: AppColors.warning)
-                Divider().frame(height: 36)
-                statColumn(label: "Losses", value: "\(stats.losses)", color: AppColors.error)
-            }
+        VStack(spacing: 14) {
+            // Top: Win rate gauge + primary counts
+            HStack(spacing: 16) {
+                // Circular win rate gauge
+                WinRateGauge(hitRate: stats.hitRate, wins: stats.wins, total: stats.totalSignals)
 
-            Divider()
+                // Win / Partial / Loss counts
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 16) {
+                        miniStat(value: "\(stats.wins)", label: "Wins", color: AppColors.success)
+                        miniStat(value: "\(stats.partials)", label: "Partial", color: AppColors.warning)
+                        miniStat(value: "\(stats.losses)", label: "Losses", color: AppColors.error)
+                    }
 
-            // Secondary stats row
-            HStack(spacing: 0) {
-                statColumn(label: "Hit Rate", value: String(format: "%.0f%%", stats.hitRate))
-                Divider().frame(height: 36)
-                statColumn(label: "Avg Win", value: String(format: "+%.1f%%", stats.avgWinPct), color: AppColors.success)
-                Divider().frame(height: 36)
-                statColumn(label: "Avg Loss", value: String(format: "%.1f%%", stats.avgLossPct), color: AppColors.error)
-                Divider().frame(height: 36)
-                statColumn(
-                    label: "Streak",
-                    value: stats.currentStreak >= 0 ? "+\(stats.currentStreak)" : "\(stats.currentStreak)",
-                    color: stats.currentStreak >= 0 ? AppColors.success : AppColors.error
-                )
+                    HStack(spacing: 16) {
+                        miniStat(value: String(format: "+%.1f%%", stats.avgWinPct), label: "Avg Win", color: AppColors.success)
+                        miniStat(value: String(format: "%.1f%%", stats.avgLossPct), label: "Avg Loss", color: AppColors.error)
+                        miniStat(
+                            value: stats.currentStreak >= 0 ? "+\(stats.currentStreak)" : "\(stats.currentStreak)",
+                            label: "Streak",
+                            color: stats.currentStreak >= 0 ? AppColors.success : AppColors.error
+                        )
+                    }
+                }
             }
         }
         .padding()
@@ -177,16 +174,17 @@ struct SwingSetupsDetailView: View {
         .padding(.horizontal)
     }
 
-    private func statColumn(label: String, value: String, color: Color? = nil) -> some View {
-        VStack(spacing: 4) {
-            Text(label)
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
+    private func miniStat(value: String, label: String, color: Color? = nil) -> some View {
+        VStack(spacing: 2) {
             Text(value)
-                .font(AppFonts.body14Bold)
+                .font(.system(size: 13, weight: .bold))
                 .foregroundColor(color ?? textPrimary)
+                .monospacedDigit()
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
         }
-        .frame(maxWidth: .infinity)
+        .frame(minWidth: 44)
     }
 
     // MARK: - Asset Breakdown
@@ -272,7 +270,87 @@ struct SwingSetupsDetailView: View {
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+
+            if selectedFilter == .active {
+                nextPipelineCheck
+            }
         }
+    }
+
+    private var nextPipelineCheck: some View {
+        let now = Date()
+        let calendar = Calendar.current
+        var utcCalendar = Calendar(identifier: .gregorian)
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+
+        // Pipeline runs at 12:05 and 16:05 UTC
+        let hour = utcCalendar.component(.hour, from: now)
+        let minute = utcCalendar.component(.minute, from: now)
+        let currentMinutes = hour * 60 + minute
+
+        let checkTimes = [12 * 60 + 5, 16 * 60 + 5] // 12:05 and 16:05 UTC in minutes
+        let nextCheck: Int = checkTimes.first(where: { $0 > currentMinutes }) ?? (checkTimes[0] + 24 * 60)
+        let minutesUntil = nextCheck - currentMinutes
+        let hoursUntil = minutesUntil / 60
+        let minsUntil = minutesUntil % 60
+
+        let timeString = hoursUntil > 0 ? "\(hoursUntil)h \(minsUntil)m" : "\(minsUntil)m"
+
+        return HStack(spacing: 6) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.accent)
+            Text("Next scan in ~\(timeString)")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(AppColors.accent)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(AppColors.accent.opacity(colorScheme == .dark ? 0.1 : 0.06))
+        .cornerRadius(10)
+        .padding(.top, 4)
+    }
+}
+
+// MARK: - Win Rate Gauge
+
+private struct WinRateGauge: View {
+    let hitRate: Double
+    let wins: Int
+    let total: Int
+
+    private var progress: Double { min(max(hitRate / 100, 0), 1) }
+
+    private var gaugeColor: Color {
+        if hitRate >= 60 { return AppColors.success }
+        if hitRate >= 45 { return AppColors.warning }
+        return AppColors.error
+    }
+
+    var body: some View {
+        ZStack {
+            // Background track
+            Circle()
+                .stroke(gaugeColor.opacity(0.15), lineWidth: 6)
+
+            // Progress arc
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(gaugeColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+
+            // Center text
+            VStack(spacing: 0) {
+                Text(String(format: "%.0f%%", hitRate))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(gaugeColor)
+                    .monospacedDigit()
+                Text("\(wins)/\(total)")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+        .frame(width: 70, height: 70)
     }
 }
 
