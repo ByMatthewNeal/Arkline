@@ -48,6 +48,7 @@ final class TradeSignalTests: XCTestCase {
             arklineScore: 42,
             bounceConfirmed: true,
             confirmationDetails: ConfirmationDetails(wickRejection: true, volumeSpike: false, consecutiveCloses: nil),
+            counterTrend: nil,
             bestPrice: nil,
             runnerStop: nil,
             runnerExitPrice: nil,
