@@ -58,6 +58,15 @@ struct AdminDashboardView: View {
                         )
                     }
 
+                    NavigationLink(destination: EarlyAccessSignupsView()) {
+                        AdminDashboardRow(
+                            icon: "envelope.fill",
+                            iconColor: AppColors.accent,
+                            title: "Early Access",
+                            subtitle: "Website signups"
+                        )
+                    }
+
                     NavigationLink(destination: MemberManagementView()) {
                         AdminDashboardRow(
                             icon: "person.2.fill",

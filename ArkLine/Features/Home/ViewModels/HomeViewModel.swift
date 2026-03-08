@@ -719,19 +719,20 @@ class HomeViewModel {
 
         guard enableSideEffects else { return }
 
-        // Fetch Flash Intel signals (strong buy/sell only)
+        // Fetch Flash Intel signals (all active signals)
         Task {
             do {
                 let active = try await self.swingSetupService.fetchActiveSignals()
-                let strong = active.filter { $0.signalType.isStrong }
                 await MainActor.run {
                     // Notify for truly new signals (not seen before)
                     let existingIds = Set(self.flashIntelSignals.map(\.id))
-                    let newSignals = strong.filter { !existingIds.contains($0.id) }
+                    let newSignals = active.filter { !existingIds.contains($0.id) }
                     for signal in newSignals where !existingIds.isEmpty {
                         Task { await BroadcastNotificationService.shared.sendSwingSignalNotification(for: signal) }
                     }
-                    self.flashIntelSignals = strong
+                    self.flashIntelSignals = active
+                        .filter(\.isFlashIntelWorthy)
+                        .sorted { $0.confidence < $1.confidence }
                 }
             } catch {
                 logWarning("Flash Intel fetch failed: \(error.localizedDescription)", category: .network)

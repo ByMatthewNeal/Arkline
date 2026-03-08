@@ -105,13 +105,21 @@ class AllocationViewModel {
     /// Updates the summary after each successful fetch for progressive loading.
     private func fetchTASequentially(configs: [AssetRiskConfig], regime: MacroRegimeResult) async {
         var isFirst = true
+        var fetchedAny = false
 
         for config in configs {
+            // Exit early if Task was cancelled (e.g. user navigated away)
+            guard !Task.isCancelled else { break }
             guard let binanceSymbol = config.binanceSymbol else { continue }
 
             // Rate limit delay (skip for first request)
             if !isFirst {
-                try? await Task.sleep(nanoseconds: Self.taapiDelay)
+                do {
+                    try await Task.sleep(nanoseconds: Self.taapiDelay)
+                } catch {
+                    // Task cancelled during sleep — stop fetching
+                    break
+                }
             }
             isFirst = false
 
@@ -124,15 +132,19 @@ class AllocationViewModel {
                     interval: .daily
                 )
                 taCache[config.assetId] = ta
+                fetchedAny = true
 
                 // Rebuild and publish updated summary
                 rebuildSummary(configs: configs, regime: regime)
             } catch {
-                // Keep fallback signal for this asset
+                logWarning("TA fetch failed for \(config.assetId): \(error)", category: .network)
             }
         }
 
-        taCacheTimestamp = Date()
+        // Only update timestamp if we completed successfully (not cancelled mid-way)
+        if !Task.isCancelled && fetchedAny {
+            taCacheTimestamp = Date()
+        }
     }
 
     /// Rebuild the allocation summary from current cache + fallbacks.

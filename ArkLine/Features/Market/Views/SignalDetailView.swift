@@ -5,8 +5,12 @@ import SwiftUI
 struct SignalDetailView: View {
     let signalId: UUID
     @State private var signal: TradeSignal?
-    @State private var confluenceZone: FibConfluenceZone?
     @State private var isLoading = true
+    @State private var loadError: String?
+    @State private var showMethodology = false
+    @State private var showEducationalModal = false
+    @State private var showShareSheet = false
+    @State private var currentLeverageCalc: LeverageCalculation?
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
 
@@ -22,12 +26,45 @@ struct SignalDetailView: View {
                     SkeletonCard()
                 }
                 .padding()
+            } else if let loadError {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 32))
+                        .foregroundColor(AppColors.warning)
+                    Text("Failed to load signal")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary)
+                    Text(loadError)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button {
+                        Task { await loadData() }
+                    } label: {
+                        Text("Retry")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .background(AppColors.accent)
+                            .cornerRadius(10)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let signal {
                 VStack(spacing: 20) {
                     headerSection(signal)
+                    TradeStructureChart(signal: signal)
                     tradeParametersCard(signal)
-                    confluenceVisualization(signal)
-                    supportingSignalsGrid(signal)
+
+                    LeverageCalculatorView(signal: signal, startExpanded: true) { calc in
+                        currentLeverageCalc = calc
+                    }
+
+                    if signal.isT1Hit || signal.isRunnerPhase {
+                        runnerTrackingCard(signal)
+                    }
 
                     if let briefing = signal.briefingText, !briefing.isEmpty {
                         aiAnalysisCard(briefing)
@@ -44,22 +81,69 @@ struct SignalDetailView: View {
         .background(AppColors.background(colorScheme))
         .navigationTitle("Signal Detail")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 16) {
+                    if signal != nil {
+                        Button {
+                            showShareSheet = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 15))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+
+                    Button {
+                        showMethodology = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showMethodology) {
+            SignalMethodologySheet()
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let signal {
+                TradeSignalShareSheet(
+                    signal: signal,
+                    leverageInfo: currentLeverageCalc.map { ShareLeverageInfo(from: $0) }
+                )
+            }
+        }
+        .alert("Educational Tool", isPresented: $showEducationalModal) {
+            Button("Got It", role: .cancel) { }
+        } message: {
+            Text("Arkline identifies technical pattern conditions across timeframes. These signals are educational tools, not financial or investment advice. Always do your own research.")
+        }
         .task {
             await loadData()
+        }
+        .onAppear {
+            let key = "arkline_signal_detail_education_shown"
+            if !UserDefaults.standard.bool(forKey: key) {
+                showEducationalModal = true
+                UserDefaults.standard.set(true, forKey: key)
+            }
         }
     }
 
     private func loadData() async {
         isLoading = true
+        loadError = nil
         defer { isLoading = false }
 
         do {
             signal = try await service.fetchSignal(id: signalId)
-            if let zoneId = signal?.confluenceZoneId {
-                confluenceZone = try? await service.fetchConfluenceZone(id: zoneId)
-            }
         } catch {
             logWarning("Failed to load signal: \(error)", category: .network)
+            if signal == nil {
+                loadError = error.localizedDescription
+            }
         }
     }
 
@@ -79,13 +163,51 @@ struct SignalDetailView: View {
 
             Spacer()
 
-            Text(signal.signalType.displayName)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(signal.signalType.isBuy ? AppColors.success : AppColors.error)
-                .cornerRadius(10)
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(signal.signalType.displayName)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(signal.signalType.isBuy ? AppColors.success : AppColors.error)
+                    .cornerRadius(10)
+
+                HStack(spacing: 6) {
+                    let confColor: Color = {
+                        switch signal.confidence {
+                        case .high: return AppColors.success
+                        case .medium: return AppColors.warning
+                        case .low: return AppColors.error
+                        }
+                    }()
+                    Text(signal.confidence.displayName)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(confColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(confColor.opacity(0.12))
+                        .cornerRadius(4)
+
+                    if signal.isWeakDirection {
+                        Text("Off-trend")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(AppColors.textSecondary.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                    if signal.isCounterTrend {
+                        Text("Counter-Trend")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.warning)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(AppColors.warning.opacity(0.12))
+                            .cornerRadius(4)
+                    }
+                }
+            }
         }
     }
 
@@ -93,9 +215,15 @@ struct SignalDetailView: View {
 
     private func tradeParametersCard(_ signal: TradeSignal) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Trade Parameters")
-                .font(.headline)
-                .foregroundColor(textPrimary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Signal Parameters")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+
+                Text("Pattern detected — not financial advice")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+            }
 
             VStack(spacing: 10) {
                 paramRow(label: "Entry Zone",
@@ -131,187 +259,97 @@ struct SignalDetailView: View {
         .background(cardBackground)
     }
 
-    // MARK: - 3. Confluence Visualization
+    // MARK: - Runner Tracking Card
 
-    private func confluenceVisualization(_ signal: TradeSignal) -> some View {
+    private func runnerTrackingCard(_ signal: TradeSignal) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Confluence Zone")
+            Text("Split Exit Tracking")
                 .font(.headline)
                 .foregroundColor(textPrimary)
 
-            if let zone = confluenceZone {
-                // Contributing levels
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(zone.contributingLevels.indices, id: \.self) { index in
-                        let level = zone.contributingLevels[index]
-                        HStack(spacing: 8) {
-                            Text(level.timeframe.uppercased())
-                                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(AppColors.accent)
-                                .cornerRadius(4)
+            VStack(spacing: 10) {
+                // T1 half
+                HStack {
+                    Text("50% closed at T1")
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    if let t1Pnl = signal.t1PnlPct {
+                        Text(String(format: "%+.2f%%", t1Pnl))
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(t1Pnl >= 0 ? AppColors.success : AppColors.error)
+                    }
+                }
 
-                            Text(formatLevelName(level.levelName))
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.textSecondary)
+                Divider()
 
-                            Spacer()
+                // Runner half
+                if signal.isRunnerPhase {
+                    HStack {
+                        Text("50% runner")
+                            .font(AppFonts.body14)
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        Text("Trailing")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.accent)
+                    }
 
-                            Text("$\(formatSignalPrice(level.price))")
+                    if let best = signal.bestPrice {
+                        paramRow(label: "Best Price",
+                                 value: "$\(formatSignalPrice(best))",
+                                 valueColor: AppColors.success)
+                    }
+                    if let trail = signal.runnerStop {
+                        paramRow(label: "Trail Stop",
+                                 value: "$\(formatSignalPrice(trail))",
+                                 valueColor: AppColors.warning)
+                    }
+                } else if let runnerPnl = signal.runnerPnlPct {
+                    HStack {
+                        Text("50% runner closed")
+                            .font(AppFonts.body14)
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        Text(String(format: "%+.2f%%", runnerPnl))
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(runnerPnl >= 0 ? AppColors.success : AppColors.error)
+                    }
+
+                    if let exitPrice = signal.runnerExitPrice {
+                        paramRow(label: "Runner Exit",
+                                 value: "$\(formatSignalPrice(exitPrice))")
+                    }
+                }
+
+                Divider()
+
+                // Combined result
+                if let totalPnl = signal.outcomePct {
+                    HStack {
+                        Text("Combined P&L")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(textPrimary)
+                        Spacer()
+                        Text(String(format: "%+.2f%%", totalPnl))
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(totalPnl >= 0 ? AppColors.success : AppColors.error)
+                        if let rMult = signal.rMultiple {
+                            Text(String(format: "(%+.1fR)", rMult))
                                 .font(AppFonts.caption12Medium)
-                                .foregroundColor(textPrimary)
-                                .monospacedDigit()
+                                .foregroundColor(rMult >= 0 ? AppColors.success : AppColors.error)
                         }
                     }
-                }
-
-                // Strength indicator
-                HStack(spacing: 4) {
-                    Text("Strength:")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-
-                    ForEach(0..<5, id: \.self) { i in
-                        Circle()
-                            .fill(i < zone.strength ? AppColors.accent : AppColors.accent.opacity(0.2))
-                            .frame(width: 8, height: 8)
+                } else if signal.isRunnerPhase, let t1Pnl = signal.t1PnlPct {
+                    HStack {
+                        Text("Locked P&L (T1 half)")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(textPrimary)
+                        Spacer()
+                        Text(String(format: "%+.2f%%", t1Pnl / 2))
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppColors.success)
                     }
-
-                    Text("\(zone.strength) levels from \(Set(zone.contributingLevels.map(\.timeframe)).count) timeframes")
-                        .font(AppFonts.footnote10)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .padding(.top, 4)
-            } else {
-                Text("Confluence data unavailable")
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            // Price scale visualization
-            priceScale(signal)
-        }
-        .padding()
-        .background(cardBackground)
-    }
-
-    private func priceScale(_ signal: TradeSignal) -> some View {
-        VStack(spacing: 0) {
-        GeometryReader { geo in
-            let width = geo.size.width
-            let allPrices = [signal.stopLoss, signal.entryZoneLow, signal.entryZoneHigh,
-                             signal.target1, signal.target2].compactMap { $0 }
-            let minP = allPrices.min() ?? signal.stopLoss
-            let maxP = allPrices.max() ?? (signal.target1 ?? signal.entryZoneHigh)
-            let range = maxP - minP
-
-            let safeRange = range > 0 ? range : 1.0
-
-            ZStack(alignment: .leading) {
-                // Base line
-                Rectangle()
-                    .fill(AppColors.textSecondary.opacity(0.2))
-                    .frame(height: 2)
-                    .frame(width: width)
-
-                // Stop loss marker
-                Circle()
-                    .fill(AppColors.error)
-                    .frame(width: 8, height: 8)
-                    .offset(x: CGFloat((signal.stopLoss - minP) / safeRange) * width - 4)
-
-                // Entry zone
-                Rectangle()
-                    .fill(AppColors.accent.opacity(0.3))
-                    .frame(width: max(1, CGFloat((signal.entryZoneHigh - signal.entryZoneLow) / safeRange) * width), height: 16)
-                    .offset(x: CGFloat((signal.entryZoneLow - minP) / safeRange) * width)
-                    .cornerRadius(3)
-
-                // Target markers
-                if let t1 = signal.target1 {
-                    Circle()
-                        .fill(AppColors.success)
-                        .frame(width: 8, height: 8)
-                        .offset(x: CGFloat((t1 - minP) / safeRange) * width - 4)
-                }
-                if let t2 = signal.target2 {
-                    Circle()
-                        .fill(AppColors.success.opacity(0.6))
-                        .frame(width: 8, height: 8)
-                        .offset(x: CGFloat((t2 - minP) / safeRange) * width - 4)
-                }
-            }
-        }
-        .frame(height: 20)
-        .padding(.top, 8)
-
-        // Legend
-        HStack(spacing: 12) {
-            legendDot(color: AppColors.error, label: "Stop")
-            legendDot(color: AppColors.accent.opacity(0.5), label: "Entry Zone")
-            legendDot(color: AppColors.success, label: "Targets")
-        }
-        .font(.system(size: 9))
-        .foregroundColor(AppColors.textSecondary)
-        } // VStack
-    }
-
-    private func legendDot(color: Color, label: String) -> some View {
-        HStack(spacing: 3) {
-            Circle().fill(color).frame(width: 6, height: 6)
-            Text(label)
-        }
-    }
-
-    // MARK: - 4. Supporting Signals
-
-    private func supportingSignalsGrid(_ signal: TradeSignal) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Supporting Signals")
-                .font(.headline)
-                .foregroundColor(textPrimary)
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                if let risk = signal.btcRiskScore {
-                    supportingMetric(
-                        icon: "gauge.with.needle",
-                        label: "BTC Risk Score",
-                        value: String(format: "%.2f", risk),
-                        detail: risk <= 0.3 ? "Low Risk" : (risk <= 0.5 ? "Moderate" : "Elevated"),
-                        color: risk <= 0.3 ? AppColors.success : (risk <= 0.5 ? AppColors.warning : AppColors.error)
-                    )
-                }
-
-                if let fg = signal.fearGreedIndex {
-                    supportingMetric(
-                        icon: "heart.fill",
-                        label: "Fear & Greed",
-                        value: "\(fg)",
-                        detail: fg < 25 ? "Extreme Fear" : (fg < 45 ? "Fear" : "Neutral"),
-                        color: fg < 25 ? AppColors.error : (fg < 45 ? Color(hex: "F97316") : AppColors.warning)
-                    )
-                }
-
-                if let regime = signal.macroRegime {
-                    supportingMetric(
-                        icon: "globe.americas",
-                        label: "Macro Regime",
-                        value: regime,
-                        detail: nil,
-                        color: AppColors.accent
-                    )
-                }
-
-                if let rank = signal.coinbaseRanking {
-                    supportingMetric(
-                        icon: "apps.iphone",
-                        label: "Coinbase Rank",
-                        value: rank > 200 ? ">200" : "#\(rank)",
-                        detail: rank > 200 ? "Retail absent" : (rank > 50 ? "Low interest" : "Retail active"),
-                        color: rank > 50 ? AppColors.success : AppColors.warning
-                    )
                 }
             }
         }
@@ -319,38 +357,7 @@ struct SignalDetailView: View {
         .background(cardBackground)
     }
 
-    private func supportingMetric(icon: String, label: String, value: String, detail: String?, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.accent)
-                Text(label)
-                    .font(AppFonts.footnote10)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            Text(value)
-                .font(AppFonts.body14Bold)
-                .foregroundColor(textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
-            if let detail {
-                Text(detail)
-                    .font(.system(size: 10))
-                    .foregroundColor(color)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.03))
-        )
-    }
-
-    // MARK: - 5. AI Analysis
+    // MARK: - 3. AI Analysis
 
     private func aiAnalysisCard(_ briefing: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -379,87 +386,130 @@ struct SignalDetailView: View {
                 .font(.headline)
                 .foregroundColor(textPrimary)
 
-            VStack(alignment: .leading, spacing: 12) {
-                timelineRow(label: "Signal Generated",
-                            time: signal.generatedAt.formatted(date: .abbreviated, time: .shortened),
-                            isCompleted: true)
+            let events = buildTimelineEvents(signal)
 
-                timelineRow(label: "Price Entered Zone",
-                            time: signal.triggeredAt?.formatted(date: .abbreviated, time: .shortened) ?? "Pending",
-                            isCompleted: signal.triggeredAt != nil)
-
-                if let t1Time = signal.t1HitAt {
-                    timelineRow(label: "Target 1 Hit",
-                                time: t1Time.formatted(date: .abbreviated, time: .shortened),
-                                isCompleted: true,
-                                color: AppColors.success)
-                }
-
-                if signal.outcome == .win {
-                    timelineRow(label: "Target Hit",
-                                time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
-                                isCompleted: true,
-                                color: AppColors.success)
-                } else if signal.outcome == .partial {
-                    timelineRow(label: "Stopped Out (Partial Win)",
-                                time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
-                                isCompleted: true,
-                                color: AppColors.warning)
-                } else if signal.outcome == .loss {
-                    timelineRow(label: "Stopped Out",
-                                time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
-                                isCompleted: true,
-                                color: AppColors.error)
-                } else {
-                    if let expires = signal.expiresAt {
-                        let remaining = expires.timeIntervalSince(Date())
-                        let hoursLeft = max(0, Int(remaining / 3600))
-                        timelineRow(label: "Expires in \(hoursLeft)h",
-                                    time: expires.formatted(date: .abbreviated, time: .shortened),
-                                    isCompleted: false)
-                    } else {
-                        timelineRow(label: "Outcome",
-                                    time: "Pending",
-                                    isCompleted: false)
-                    }
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(events.enumerated()), id: \.offset) { index, event in
+                    timelineRow(event: event, isLast: index == events.count - 1)
                 }
 
                 if let pct = signal.outcomePct {
-                    HStack {
+                    HStack(spacing: 6) {
                         Text("Result:")
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
                         Text(String(format: "%+.1f%%", pct))
                             .font(AppFonts.body14Bold)
                             .foregroundColor(pct >= 0 ? AppColors.success : AppColors.error)
+                        if let rMult = signal.rMultiple {
+                            Text(String(format: "(%+.1fR)", rMult))
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(rMult >= 0 ? AppColors.success : AppColors.error)
+                        }
                         if let hours = signal.durationHours {
-                            Text("(\(hours)h)")
+                            Text("(\(hours >= 24 ? "\(hours / 24)d \(hours % 24)h" : "\(hours)h"))")
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textSecondary)
                         }
                     }
-                    .padding(.leading, 28)
+                    .padding(.leading, 30)
+                    .padding(.top, 12)
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(cardBackground)
     }
 
-    private func timelineRow(label: String, time: String, isCompleted: Bool, color: Color? = nil) -> some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(isCompleted ? (color ?? AppColors.accent) : AppColors.textSecondary.opacity(0.3))
-                .frame(width: 10, height: 10)
+    private struct TimelineEvent {
+        let label: String
+        let time: String
+        let isCompleted: Bool
+        let color: Color?
+    }
+
+    private func buildTimelineEvents(_ signal: TradeSignal) -> [TimelineEvent] {
+        var events: [TimelineEvent] = []
+
+        events.append(TimelineEvent(
+            label: "Signal Generated",
+            time: signal.generatedAt.formatted(date: .abbreviated, time: .shortened),
+            isCompleted: true, color: nil))
+
+        events.append(TimelineEvent(
+            label: "Price Entered Zone",
+            time: signal.triggeredAt?.formatted(date: .abbreviated, time: .shortened) ?? "Pending",
+            isCompleted: signal.triggeredAt != nil, color: nil))
+
+        if let t1Time = signal.t1HitAt {
+            let t1Label = if let t1Pnl = signal.t1PnlPct {
+                "T1 Hit — 50% closed at \(String(format: "%+.1f%%", t1Pnl))"
+            } else {
+                "T1 Hit — 50% closed"
+            }
+            events.append(TimelineEvent(label: t1Label,
+                time: t1Time.formatted(date: .abbreviated, time: .shortened),
+                isCompleted: true, color: AppColors.success))
+        }
+
+        if signal.isRunnerPhase {
+            events.append(TimelineEvent(label: "Runner trailing (50% remaining)",
+                time: "In progress", isCompleted: false, color: AppColors.accent))
+        } else if signal.outcome == .win {
+            let label = signal.isT1Hit ? "Runner closed — Win" : "Target Hit"
+            events.append(TimelineEvent(label: label,
+                time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
+                isCompleted: true, color: AppColors.success))
+        } else if signal.outcome == .loss {
+            let label = signal.isT1Hit ? "Runner stopped at breakeven" : "Stopped Out"
+            events.append(TimelineEvent(label: label,
+                time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
+                isCompleted: true, color: signal.isT1Hit ? AppColors.warning : AppColors.error))
+        } else if signal.status == .expired {
+            events.append(TimelineEvent(label: "Expired",
+                time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
+                isCompleted: true, color: AppColors.textSecondary))
+        } else if let expires = signal.expiresAt {
+            let remaining = expires.timeIntervalSince(Date())
+            let hoursLeft = max(0, Int(remaining / 3600))
+            events.append(TimelineEvent(label: "Expires in \(hoursLeft)h",
+                time: expires.formatted(date: .abbreviated, time: .shortened),
+                isCompleted: false, color: nil))
+        } else {
+            events.append(TimelineEvent(label: "Outcome",
+                time: "Pending", isCompleted: false, color: nil))
+        }
+
+        return events
+    }
+
+    private func timelineRow(event: TimelineEvent, isLast: Bool) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            // Dot + connecting line
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(event.isCompleted ? (event.color ?? AppColors.accent) : AppColors.textSecondary.opacity(0.3))
+                    .frame(width: 10, height: 10)
+
+                if !isLast {
+                    Rectangle()
+                        .fill(event.isCompleted ? (event.color ?? AppColors.accent).opacity(0.3) : AppColors.textSecondary.opacity(0.15))
+                        .frame(width: 2)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+            .frame(width: 10)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(label)
+                Text(event.label)
                     .font(AppFonts.body14Medium)
                     .foregroundColor(textPrimary)
-                Text(time)
+                Text(event.time)
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
+            .padding(.bottom, isLast ? 0 : 16)
         }
     }
 
@@ -504,11 +554,4 @@ struct SignalDetailView: View {
         price.asSignalPrice
     }
 
-    private func formatLevelName(_ name: String) -> String {
-        name
-            .replacingOccurrences(of: "retracement_", with: "Ret ")
-            .replacingOccurrences(of: "extension_", with: "Ext ")
-            .replacingOccurrences(of: "ext_", with: "Ext ")
-            .replacingOccurrences(of: "_", with: ".")
-    }
 }

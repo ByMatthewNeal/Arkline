@@ -14,6 +14,7 @@ struct PortfolioSparkline: View {
     @State private var animationProgress: CGFloat = 0
     @State private var dotPulse: Bool = false
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
 
     private var effectiveLineColor: Color {
         isPositive ? AppColors.success : AppColors.error
@@ -98,6 +99,15 @@ struct PortfolioSparkline: View {
                     ) {
                         dotPulse = true
                     }
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                dotPulse = false
+            } else if animated && animationProgress >= 1 {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    dotPulse = true
                 }
             }
         }

@@ -237,6 +237,8 @@ struct SignalCard: View {
                     .background(signalColor)
                     .cornerRadius(6)
 
+                confidenceBadge
+
                 Spacer()
 
                 Text(signal.timeAgo)
@@ -277,17 +279,25 @@ struct SignalCard: View {
                     .cornerRadius(8)
             }
 
-            // Bottom row: supporting chips + status
+            // Bottom row: runner info + status
             HStack(spacing: 6) {
                 if signal.status.isLive {
-                    if let risk = signal.btcRiskScore {
-                        chipView(text: String(format: "Risk: %.2f", risk))
-                    }
-                    if let fg = signal.fearGreedIndex {
-                        chipView(text: "F&G: \(fg)")
-                    }
-                    if let rank = signal.coinbaseRanking {
-                        chipView(text: "CB: >\(rank)")
+                    if signal.isRunnerPhase {
+                        chipView(text: "T1 Hit", color: AppColors.success)
+                        if let t1Pnl = signal.t1PnlPct {
+                            chipView(text: String(format: "50%% @ %+.1f%%", t1Pnl), color: AppColors.success)
+                        }
+                        chipView(text: "Runner trailing", color: AppColors.accent)
+                    } else {
+                        if signal.emaTrendAligned == true {
+                            chipView(text: "EMA Aligned", color: AppColors.accent)
+                        }
+                        if signal.isWeakDirection {
+                            chipView(text: "Off-trend")
+                        }
+                        if signal.isCounterTrend {
+                            chipView(text: "Counter-Trend", color: AppColors.warning)
+                        }
                     }
                 } else {
                     // Outcome details for closed signals
@@ -297,19 +307,25 @@ struct SignalCard: View {
                             color: pct >= 0 ? AppColors.success : AppColors.error
                         )
                     }
+                    if let rMult = signal.rMultiple {
+                        chipView(
+                            text: String(format: "%+.1fR", rMult),
+                            color: rMult >= 0 ? AppColors.success : AppColors.error
+                        )
+                    }
                     if let hours = signal.durationHours {
                         let display = hours >= 24 ? "\(hours / 24)d \(hours % 24)h" : "\(hours)h"
                         chipView(text: display)
                     }
-                    if signal.outcome == .partial {
-                        chipView(text: "T1 Hit", color: AppColors.warning)
+                    if signal.isT1Hit {
+                        chipView(text: "T1 Hit", color: AppColors.success)
                     }
                 }
 
                 Spacer()
 
                 // Status badge
-                Text(signal.status.displayName)
+                Text(signal.phaseDescription)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(statusColor)
                     .padding(.horizontal, 8)
@@ -323,6 +339,23 @@ struct SignalCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
+    }
+
+    private var confidenceBadge: some View {
+        let color: Color = {
+            switch signal.confidence {
+            case .high: return AppColors.success
+            case .medium: return AppColors.warning
+            case .low: return AppColors.error
+            }
+        }()
+        return Text(signal.confidence.displayName)
+            .font(.system(size: 9, weight: .bold))
+            .foregroundColor(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12))
+            .cornerRadius(4)
     }
 
     private var statusColor: Color {

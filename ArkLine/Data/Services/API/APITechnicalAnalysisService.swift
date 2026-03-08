@@ -89,7 +89,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
         let monthlyBB: BollingerBandData
 
         switch interval {
-        case .daily:
+        case .oneHour, .fourHour, .daily:
             dailyBB = primaryBB
             weeklyBB = estimateBollingerData(from: primaryBB, timeframe: .weekly, currentPrice: currentPrice)
             monthlyBB = estimateBollingerData(from: primaryBB, timeframe: .monthly, currentPrice: currentPrice)

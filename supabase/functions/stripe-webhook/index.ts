@@ -12,8 +12,8 @@ const supabase = createClient(
 
 // Founding member price IDs
 const FOUNDING_PRICE_IDS = new Set([
-  "price_1T28pXIkKaS0zcmX7aKIiT2P", // founding monthly
-  "price_1T28pXIkKaS0zcmXx8NpKPQr", // founding annual
+  "price_1T7fMpIkKaS0zcmXlgr4orwA", // founding monthly
+  "price_1T7fNgIkKaS0zcmXmhkZDBl0", // founding annual
 ])
 const FOUNDING_MEMBER_CAP = 50
 

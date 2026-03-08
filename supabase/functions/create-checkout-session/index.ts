@@ -7,8 +7,8 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
 
 // Founding member price IDs
 const FOUNDING_PRICE_IDS = new Set([
-  "price_1T28pXIkKaS0zcmX7aKIiT2P", // founding monthly
-  "price_1T28pXIkKaS0zcmXx8NpKPQr", // founding annual
+  "price_1T7fMpIkKaS0zcmXlgr4orwA", // founding monthly
+  "price_1T7fNgIkKaS0zcmXmhkZDBl0", // founding annual
 ])
 
 // Matches iOS InviteCode.generateCode()

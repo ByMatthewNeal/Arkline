@@ -4,6 +4,7 @@ struct MarketOverviewView: View {
     @State private var viewModel = MarketViewModel()
     @State private var sentimentViewModel = SentimentViewModel()
     @State private var allocationViewModel: AllocationViewModel?
+    @State private var allocationInitialized = false
     @State private var navigationPath = NavigationPath()
     @State private var pendingSignalId: UUID?
     @EnvironmentObject var appState: AppState
@@ -23,7 +24,7 @@ struct MarketOverviewView: View {
                 // Content
                 ScrollViewReader { scrollProxy in
                 ScrollView {
-                    if viewModel.isLoading && viewModel.newsItems.isEmpty {
+                    if viewModel.lastRefreshed == nil && viewModel.isLoading {
                         // First load skeleton
                         VStack(spacing: 16) {
                             SkeletonCard()
@@ -75,9 +76,11 @@ struct MarketOverviewView: View {
                 async let sentiment: () = sentimentViewModel.refresh()
                 _ = await (market, sentiment)
 
-                // Macro data is now available — kick off allocations + history fetches in parallel
-                if allocationViewModel == nil {
-                    allocationViewModel = AllocationViewModel(sentimentViewModel: sentimentViewModel)
+                // Macro data is now available — create allocation VM (once) and kick off fetches
+                if !allocationInitialized {
+                    let vm = AllocationViewModel(sentimentViewModel: sentimentViewModel)
+                    allocationViewModel = vm
+                    allocationInitialized = true
                 }
                 async let allocation: () = allocationViewModel?.loadAllocations() ?? ()
                 async let history: () = sentimentViewModel.loadSupplementalData()

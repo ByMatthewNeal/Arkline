@@ -16,10 +16,12 @@ struct BrandedShareCard<Content: View>: View {
             // Branded header
             if showBranding {
                 HStack {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(AppColors.accent)
+                    HStack(spacing: 8) {
+                        Image("AppIcon")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 28, height: 28)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
 
                         Text("ArkLine")
                             .font(.system(size: 16, weight: .bold))

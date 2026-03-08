@@ -15,6 +15,7 @@ actor RiskFactorFetcher {
     private let sentimentService: SentimentServiceProtocol
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
+    private let crudeOilService: CrudeOilServiceProtocol
 
     // MARK: - Cache Configuration
 
@@ -61,12 +62,14 @@ actor RiskFactorFetcher {
         technicalService: TechnicalAnalysisServiceProtocol = ServiceContainer.shared.technicalAnalysisService,
         sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
-        dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService
+        dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
+        crudeOilService: CrudeOilServiceProtocol = ServiceContainer.shared.crudeOilService
     ) {
         self.technicalService = technicalService
         self.sentimentService = sentimentService
         self.vixService = vixService
         self.dxyService = dxyService
+        self.crudeOilService = crudeOilService
     }
 
     // MARK: - Public Methods
@@ -93,12 +96,14 @@ actor RiskFactorFetcher {
         // 2. Fetch Taapi.io data SEQUENTIALLY with delays (RSI, SMA, Price)
         let (rsi, sma, price) = await fetchTaapiDataSequentially(coin: coin)
 
-        // 3. Fetch non-rate-limited data in parallel (Binance funding, Alternative.me F&G)
+        // 3. Fetch non-rate-limited data in parallel (Binance funding, Alternative.me F&G, Yahoo oil)
         async let fundingResult = fetchFundingRate()
         async let fearGreedResult = fetchFearGreed()
+        async let oilResult = fetchCrudeOil()
 
         let funding = await fundingResult
         let fearGreed = await fearGreedResult
+        let oil = await oilResult
 
         // 4. Fetch Bull Market Support Bands (from Binance weekly data)
         let bullMarketBands = await fetchBullMarketBands(coin: coin, currentPrice: price)
@@ -112,6 +117,7 @@ actor RiskFactorFetcher {
             fearGreedValue: fearGreed,
             vixValue: vix,
             dxyValue: dxy,
+            oilValue: oil,
             fetchedAt: Date()
         )
 
@@ -427,6 +433,20 @@ actor RiskFactorFetcher {
             return Double(fearGreed.value)
         } catch {
             logWarning("Fear & Greed fetch failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+
+    private func fetchCrudeOil() async -> Double? {
+        do {
+            guard let oilData = try await crudeOilService.fetchLatestCrudeOil() else {
+                logWarning("Crude oil data unavailable (nil response)", category: .network)
+                return nil
+            }
+            logDebug("WTI Crude Oil: $\(oilData.value)", category: .network)
+            return oilData.value
+        } catch {
+            logWarning("Crude oil fetch failed: \(error.localizedDescription)", category: .network)
             return nil
         }
     }

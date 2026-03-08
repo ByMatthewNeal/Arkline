@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - Risk Factor Type
-/// Enum representing the 7 risk factors in the multi-factor model.
+/// Enum representing the 8 risk factors in the multi-factor model.
 enum RiskFactorType: String, CaseIterable, Codable {
     case logRegression = "Log Regression"
     case rsi = "RSI"
@@ -10,17 +10,19 @@ enum RiskFactorType: String, CaseIterable, Codable {
     case fundingRate = "Funding Rate"
     case fearGreed = "Fear & Greed"
     case macroRisk = "Macro Risk"
+    case oilRisk = "Oil Risk"
 
     /// Default weight for this factor in the composite calculation
     var defaultWeight: Double {
         switch self {
-        case .logRegression: return 0.35
-        case .rsi: return 0.12
-        case .smaPosition: return 0.12
-        case .bullMarketBands: return 0.11
+        case .logRegression: return 0.33
+        case .rsi: return 0.11
+        case .smaPosition: return 0.11
+        case .bullMarketBands: return 0.10
         case .fundingRate: return 0.10
         case .fearGreed: return 0.10
-        case .macroRisk: return 0.10
+        case .macroRisk: return 0.08
+        case .oilRisk: return 0.07
         }
     }
 
@@ -41,6 +43,8 @@ enum RiskFactorType: String, CaseIterable, Codable {
             return "Crypto Fear & Greed Index"
         case .macroRisk:
             return "Macro indicators (VIX + DXY average)"
+        case .oilRisk:
+            return "WTI Crude Oil inflation pressure"
         }
     }
 
@@ -54,6 +58,7 @@ enum RiskFactorType: String, CaseIterable, Codable {
         case .fundingRate: return "percent"
         case .fearGreed: return "face.smiling"
         case .macroRisk: return "globe"
+        case .oilRisk: return "drop.fill"
         }
     }
 }
@@ -104,6 +109,8 @@ struct RiskFactor: Identifiable, Codable, Equatable {
             return String(format: "%.0f", raw)
         case .macroRisk:
             return String(format: "%.1f", raw)
+        case .oilRisk:
+            return String(format: "$%.2f", raw)
         }
     }
 
@@ -131,38 +138,42 @@ struct RiskFactorWeights: Codable, Equatable {
     let fundingRate: Double
     let fearGreed: Double
     let macroRisk: Double
+    let oilRisk: Double
 
-    /// Default weights (7 factors)
+    /// Default weights (8 factors)
     static let `default` = RiskFactorWeights(
-        logRegression: 0.35,
-        rsi: 0.12,
-        smaPosition: 0.12,
-        bullMarketBands: 0.11,
+        logRegression: 0.33,
+        rsi: 0.11,
+        smaPosition: 0.11,
+        bullMarketBands: 0.10,
         fundingRate: 0.10,
         fearGreed: 0.10,
-        macroRisk: 0.10
+        macroRisk: 0.08,
+        oilRisk: 0.07
     )
 
     /// Conservative weights (more emphasis on regression)
     static let conservative = RiskFactorWeights(
-        logRegression: 0.50,
-        rsi: 0.10,
-        smaPosition: 0.10,
-        bullMarketBands: 0.10,
-        fundingRate: 0.08,
-        fearGreed: 0.06,
-        macroRisk: 0.06
+        logRegression: 0.47,
+        rsi: 0.09,
+        smaPosition: 0.09,
+        bullMarketBands: 0.09,
+        fundingRate: 0.07,
+        fearGreed: 0.05,
+        macroRisk: 0.05,
+        oilRisk: 0.09
     )
 
     /// Sentiment-focused weights
     static let sentimentFocused = RiskFactorWeights(
-        logRegression: 0.25,
-        rsi: 0.12,
-        smaPosition: 0.12,
-        bullMarketBands: 0.11,
-        fundingRate: 0.15,
-        fearGreed: 0.15,
-        macroRisk: 0.10
+        logRegression: 0.23,
+        rsi: 0.11,
+        smaPosition: 0.11,
+        bullMarketBands: 0.10,
+        fundingRate: 0.14,
+        fearGreed: 0.14,
+        macroRisk: 0.10,
+        oilRisk: 0.07
     )
 
     /// Get weight for a specific factor type
@@ -175,12 +186,13 @@ struct RiskFactorWeights: Codable, Equatable {
         case .fundingRate: return fundingRate
         case .fearGreed: return fearGreed
         case .macroRisk: return macroRisk
+        case .oilRisk: return oilRisk
         }
     }
 
     /// Total of all weights (should equal 1.0)
     var total: Double {
-        logRegression + rsi + smaPosition + bullMarketBands + fundingRate + fearGreed + macroRisk
+        logRegression + rsi + smaPosition + bullMarketBands + fundingRate + fearGreed + macroRisk + oilRisk
     }
 
     /// Check if weights are valid (sum to 1.0)
@@ -274,6 +286,11 @@ struct MultiFactorRiskPoint: Identifiable, Codable, Equatable {
     /// Macro risk factor (VIX + DXY)
     var macroFactor: RiskFactor? {
         factor(for: .macroRisk)
+    }
+
+    /// Oil risk factor (WTI Crude)
+    var oilFactor: RiskFactor? {
+        factor(for: .oilRisk)
     }
 
     // MARK: - Conversion

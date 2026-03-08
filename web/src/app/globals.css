@@ -1,0 +1,343 @@
+@import "tailwindcss";
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
+
+/* ── Arkline Design Tokens ── */
+/* Matches iOS AppColors for full brand cohesion */
+
+:root {
+  --ark-primary: #3B82F6;
+  --ark-accent: #3B82F6;
+  --ark-accent-dark: #2563EB;
+  --ark-accent-light: #60A5FA;
+  --ark-success: #22C55E;
+  --ark-success-muted: #16A34A;
+  --ark-warning: #F59E0B;
+  --ark-error: #DC2626;
+  --ark-info: #3B82F6;
+  --ark-focus: #0EA5E9;
+
+  /* Secondary accents (used in gradients, categories) */
+  --ark-purple: #8B5CF6;
+  --ark-violet: #7C3AED;
+  --ark-cyan: #06B6D4;
+
+  /* Non-adaptive text */
+  --ark-text-secondary: #475569;
+  --ark-text-tertiary: #64748B;
+
+  /* Mesh gradient */
+  --ark-mesh-purple: #2F2858;
+  --ark-mesh-blue: #3B82F6;
+  --ark-mesh-pink: #6366F1;
+  --ark-mesh-indigo: #1E3A8A;
+}
+
+/* Light mode (default) */
+:root {
+  --ark-bg: #F8F8F8;
+  --ark-surface: #FFFFFF;
+  --ark-card: #FFFFFF;
+  --ark-divider: #E2E8F0;
+  --ark-card-border: #E2E8F0;
+  --ark-fill-secondary: #F5F5F5;
+  --ark-fill-tertiary: #E2E8F0;
+  --ark-text-primary: #1E293B;
+  --ark-text-disabled: #CCCCCC;
+  --ark-glass-bg: rgba(255, 255, 255, 0.72);
+  --ark-glass-border: rgba(226, 232, 240, 0.6);
+}
+
+/* Dark mode — Bloomberg terminal depth */
+.dark {
+  --ark-bg: #0F0F0F;
+  --ark-surface: #0A0A0B;
+  --ark-card: #1F1F1F;
+  --ark-divider: #2A2A2A;
+  --ark-card-border: transparent;
+  --ark-fill-secondary: #2A2A2E;
+  --ark-fill-tertiary: #303038;
+  --ark-text-primary: #FFFFFF;
+  --ark-text-secondary: #A1A1AA;
+  --ark-text-tertiary: #71717A;
+  --ark-text-disabled: #4A4A5A;
+  --ark-glass-bg: rgba(20, 20, 25, 0.85);
+  --ark-glass-border: rgba(255, 255, 255, 0.15);
+  --ark-error: #EF4444;
+}
+
+/* ── Tailwind v4 Theme Extension ── */
+
+@theme inline {
+  --color-ark-primary: var(--ark-primary);
+  --color-ark-accent: var(--ark-accent);
+  --color-ark-accent-dark: var(--ark-accent-dark);
+  --color-ark-accent-light: var(--ark-accent-light);
+  --color-ark-success: var(--ark-success);
+  --color-ark-success-muted: var(--ark-success-muted);
+  --color-ark-warning: var(--ark-warning);
+  --color-ark-error: var(--ark-error);
+  --color-ark-info: var(--ark-info);
+  --color-ark-focus: var(--ark-focus);
+  --color-ark-purple: var(--ark-purple);
+  --color-ark-violet: var(--ark-violet);
+  --color-ark-cyan: var(--ark-cyan);
+
+  --color-ark-bg: var(--ark-bg);
+  --color-ark-surface: var(--ark-surface);
+  --color-ark-card: var(--ark-card);
+  --color-ark-divider: var(--ark-divider);
+  --color-ark-card-border: var(--ark-card-border);
+  --color-ark-fill-secondary: var(--ark-fill-secondary);
+  --color-ark-fill-tertiary: var(--ark-fill-tertiary);
+
+  --color-ark-text: var(--ark-text-primary);
+  --color-ark-text-secondary: var(--ark-text-secondary);
+  --color-ark-text-tertiary: var(--ark-text-tertiary);
+  --color-ark-text-disabled: var(--ark-text-disabled);
+
+  --color-ark-glass-bg: var(--ark-glass-bg);
+  --color-ark-glass-border: var(--ark-glass-border);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-urbanist);
+}
+
+/* ── Base Styles ── */
+
+body {
+  background: var(--ark-bg);
+  color: var(--ark-text-primary);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+}
+
+/* ── Financial Data Typography ── */
+
+.fig {
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
+}
+
+.fig-mono {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
+}
+
+.currency-sign {
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+/* ── Mesh Gradient Background ── */
+
+.mesh-gradient {
+  background:
+    radial-gradient(ellipse at 20% 50%, var(--ark-mesh-purple) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, var(--ark-mesh-blue) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 80%, var(--ark-mesh-pink) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 70%, var(--ark-mesh-indigo) 0%, transparent 50%),
+    var(--ark-bg);
+}
+
+/* ── Glass Card ── */
+
+.glass {
+  background: var(--ark-glass-bg);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid var(--ark-glass-border);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.glass:hover {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+.dark .glass {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.dark .glass:hover {
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+/* ── Scrollbar ── */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ark-divider);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ark-text-tertiary);
+}
+
+/* ── Orb float (animated background) ── */
+
+@keyframes orb-float {
+  0%   { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+  25%  { transform: translate(-50%, -50%) translate(30px, -25px) scale(1.1); }
+  50%  { transform: translate(-50%, -50%) translate(-20px, 15px) scale(0.95); }
+  75%  { transform: translate(-50%, -50%) translate(10px, -10px) scale(1.05); }
+  100% { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
+}
+
+.animate-orb-float {
+  animation: orb-float 20s ease-in-out infinite;
+}
+
+/* ── Animations ── */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s ease-out forwards;
+}
+
+/* ── Shimmer ── */
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* ── Pulse dot (notification) ── */
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+
+/* ── Status indicator ── */
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-status {
+  animation: status-pulse 3s ease-in-out infinite;
+}
+
+/* ── Line clamp ── */
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Selection ── */
+
+::selection {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* ── Focus ring ── */
+
+:focus-visible {
+  outline: 2px solid var(--ark-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Smooth scroll ── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ── React Grid Layout Overrides ── */
+
+.arkline-grid .react-grid-item {
+  transition: all 200ms ease;
+}
+
+.arkline-grid .react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 50;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
+  opacity: 0.92;
+}
+
+.arkline-grid .react-grid-placeholder {
+  background: var(--ark-primary);
+  opacity: 0.08;
+  border-radius: 16px;
+  border: 2px dashed var(--ark-primary);
+}
+
+.dark .arkline-grid .react-grid-placeholder {
+  opacity: 0.12;
+}
+
+/* Resize handle — only visible on hover */
+.arkline-grid .react-grid-item > .react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.arkline-grid .react-grid-item:hover > .react-resizable-handle {
+  opacity: 0.5;
+}
+
+.arkline-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: var(--ark-text-tertiary) !important;
+}
+
+/* Drag handle */
+.drag-handle {
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}

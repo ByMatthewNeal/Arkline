@@ -178,9 +178,9 @@ struct SignalSummaryRow: View {
                     .font(AppFonts.caption12Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text(signal.status.displayName)
+                Text(signal.phaseDescription)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(statusColor)
+                    .foregroundColor(signal.isRunnerPhase ? AppColors.accent : statusColor)
             }
         }
     }

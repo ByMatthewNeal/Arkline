@@ -27,6 +27,10 @@ struct SendInviteView: View {
                         trialInfoCard
                     }
 
+                    if viewModel.inviteMode == .comped {
+                        compedInfoCard
+                    }
+
                     sendButton
                     resultSection
                 }
@@ -180,6 +184,23 @@ struct SendInviteView: View {
                 .foregroundColor(AppColors.accent)
 
             Text("7-day free trial. Card collected upfront. Auto-converts to paid on day 8.")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+
+            Spacer()
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.accent.opacity(0.1))
+        .cornerRadius(ArkSpacing.Radius.sm)
+    }
+
+    private var compedInfoCard: some View {
+        HStack(spacing: ArkSpacing.sm) {
+            Image(systemName: "gift.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(AppColors.accent)
+
+            Text("Free full access for 15 days — no payment required. Use for friends, supporters, or beta testers.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 

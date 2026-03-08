@@ -314,6 +314,7 @@ struct NetLiquidityWidget: View {
 // MARK: - VIX Detail View
 struct VIXDetailView: View {
     let vixData: VIXData?
+    var initialHistory: [VIXData] = []
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
@@ -409,6 +410,11 @@ The CBOE Volatility Index (VIX) measures the market's expectation of 30-day vola
                 }
             }
             .task {
+                // Use pre-loaded history if available, otherwise fetch
+                if !initialHistory.isEmpty {
+                    history = initialHistory
+                    return
+                }
                 guard history.isEmpty else { return }
                 isLoadingChart = true
                 do {
@@ -461,6 +467,7 @@ struct VIXLevelRow: View {
 // MARK: - DXY Detail View
 struct DXYDetailView: View {
     let dxyData: DXYData?
+    var initialHistory: [DXYData] = []
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
@@ -588,6 +595,11 @@ The US Dollar Index (DXY) measures the value of the US dollar relative to a bask
                 }
             }
             .task {
+                // Use pre-loaded history if available, otherwise fetch
+                if !initialHistory.isEmpty {
+                    history = initialHistory
+                    return
+                }
                 guard history.isEmpty else { return }
                 isLoadingChart = true
                 do {

@@ -52,6 +52,7 @@ struct SkeletonView: View {
     var cornerRadius: CGFloat = 4
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isAnimating = false
 
     private var baseColor: Color {
@@ -83,6 +84,15 @@ struct SkeletonView: View {
                         .repeatForever(autoreverses: true)
                 ) {
                     isAnimating = true
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase != .active {
+                    isAnimating = false
+                } else {
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                        isAnimating = true
+                    }
                 }
             }
     }

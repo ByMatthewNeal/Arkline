@@ -167,34 +167,17 @@ struct MainTabView: View {
         ZStack(alignment: .bottom) {
             // All visited tab views stay alive — no recreation on switch
             ZStack {
-                if loadedTabs.contains(.home) {
-                    HomeView()
-                        .opacity(appState.selectedTab == .home ? 1 : 0)
-                        .allowsHitTesting(appState.selectedTab == .home)
-                }
-                if loadedTabs.contains(.market) {
-                    MarketOverviewView()
-                        .opacity(appState.selectedTab == .market ? 1 : 0)
-                        .allowsHitTesting(appState.selectedTab == .market)
-                }
-                if loadedTabs.contains(.portfolio) {
-                    PortfolioView()
-                        .opacity(appState.selectedTab == .portfolio ? 1 : 0)
-                        .allowsHitTesting(appState.selectedTab == .portfolio)
-                }
-                if loadedTabs.contains(.insights) {
-                    BroadcastTabView()
-                        .opacity(appState.selectedTab == .insights ? 1 : 0)
-                        .allowsHitTesting(appState.selectedTab == .insights)
-                }
-                if loadedTabs.contains(.profile) {
-                    ProfileView()
-                        .opacity(appState.selectedTab == .profile ? 1 : 0)
-                        .allowsHitTesting(appState.selectedTab == .profile)
+                ForEach(AppTab.allCases, id: \.self) { tab in
+                    if loadedTabs.contains(tab) {
+                        tabContent(for: tab)
+                            .zIndex(appState.selectedTab == tab ? 1 : 0)
+                            .opacity(appState.selectedTab == tab ? 1 : 0)
+                            .allowsHitTesting(appState.selectedTab == tab)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.none, value: appState.selectedTab)
+            .transaction { $0.animation = nil }
 
             // Floating Tab Bar
             CustomTabBar(
@@ -206,6 +189,21 @@ struct MainTabView: View {
         .background(AppColors.background(colorScheme))
         .onChange(of: appState.selectedTab) { _, newTab in
             loadedTabs.insert(newTab)
+        }
+        .task {
+            try? await Task.sleep(for: .milliseconds(500))
+            loadedTabs = Set(AppTab.allCases)
+        }
+    }
+
+    @ViewBuilder
+    private func tabContent(for tab: AppTab) -> some View {
+        switch tab {
+        case .home: HomeView()
+        case .market: MarketOverviewView()
+        case .portfolio: PortfolioView()
+        case .insights: BroadcastTabView()
+        case .profile: ProfileView()
         }
     }
 }

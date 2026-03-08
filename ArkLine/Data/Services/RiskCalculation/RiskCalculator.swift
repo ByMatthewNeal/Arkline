@@ -170,7 +170,7 @@ final class RiskCalculator {
     // MARK: - Multi-Factor Risk Calculation
 
     /// Calculate multi-factor risk for a single price point.
-    /// Combines logarithmic regression with 5 supplementary factors.
+    /// Combines logarithmic regression with 7 supplementary factors.
     /// - Parameters:
     ///   - price: Current price of the asset
     ///   - date: Date of the price point
@@ -299,6 +299,18 @@ final class RiskCalculator {
             ))
         } else {
             factors.append(.unavailable(.macroRisk, weight: weights.macroRisk))
+        }
+
+        // Factor 8: Oil Risk (WTI Crude Oil)
+        if let oil = factorData.oilValue {
+            factors.append(RiskFactor(
+                type: .oilRisk,
+                rawValue: oil,
+                normalizedValue: RiskFactorNormalizer.normalizeOilRisk(oil),
+                weight: weights.oilRisk
+            ))
+        } else {
+            factors.append(.unavailable(.oilRisk, weight: weights.oilRisk))
         }
 
         // Step 3: Renormalize weights based on available factors

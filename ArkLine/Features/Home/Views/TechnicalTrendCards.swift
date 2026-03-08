@@ -40,7 +40,7 @@ struct MultiTimeframeTrendCard: View {
                 .padding(.vertical, ArkSpacing.md)
             } else {
                 HStack(spacing: ArkSpacing.sm) {
-                    ForEach(AnalysisTimeframe.allCases) { timeframe in
+                    ForEach(AnalysisTimeframe.standardCases) { timeframe in
                         TimeframeTrendCell(
                             timeframe: timeframe,
                             trend: trends[timeframe],
@@ -137,7 +137,7 @@ struct TimeframePicker: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(AnalysisTimeframe.allCases) { timeframe in
+            ForEach(AnalysisTimeframe.standardCases) { timeframe in
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedTimeframe = timeframe

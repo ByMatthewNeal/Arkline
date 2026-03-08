@@ -27,18 +27,22 @@ struct RiskFactorData {
     /// DXY value
     let dxyValue: Double?
 
+    /// WTI Crude Oil price (USD)
+    let oilValue: Double?
+
     /// Timestamp when data was fetched
     let fetchedAt: Date
 
     /// Check if at least some supplementary data is available
     var hasAnyData: Bool {
         rsi != nil || fundingRate != nil || fearGreedValue != nil ||
-        vixValue != nil || dxyValue != nil || sma200 != nil || bullMarketBands != nil
+        vixValue != nil || dxyValue != nil || sma200 != nil || bullMarketBands != nil ||
+        oilValue != nil
     }
 
     /// Number of available data points
     var availableCount: Int {
-        var count = [rsi, sma200, fundingRate, fearGreedValue, vixValue, dxyValue]
+        var count = [rsi, sma200, fundingRate, fearGreedValue, vixValue, dxyValue, oilValue]
             .compactMap { $0 }
             .count
         if bullMarketBands != nil { count += 1 }
@@ -56,6 +60,7 @@ struct RiskFactorData {
         fearGreedValue: nil,
         vixValue: nil,
         dxyValue: nil,
+        oilValue: nil,
         fetchedAt: Date()
     )
 }
@@ -218,6 +223,35 @@ enum RiskFactorNormalizer {
             return d
         case (.none, .none):
             return nil
+        }
+    }
+
+    // MARK: - WTI Crude Oil Normalization
+
+    /// Normalize WTI Crude Oil price to risk (0-1)
+    /// - Parameter oil: WTI price in USD
+    /// - Returns: Normalized risk where high oil = inflationary pressure = bearish crypto
+    ///
+    /// Calibration:
+    /// - < $60: Disinflationary, bullish for crypto (0.15)
+    /// - $60-70: Low inflation pressure (0.25)
+    /// - $70-80: Moderate (0.40)
+    /// - $80-90: Mild headwind (0.55)
+    /// - $90-100: Inflationary pressure (0.75)
+    /// - > $100: High inflation risk (0.90)
+    static func normalizeOilRisk(_ oil: Double) -> Double {
+        if oil < 60 {
+            return 0.15
+        } else if oil < 70 {
+            return 0.25
+        } else if oil < 80 {
+            return 0.40
+        } else if oil < 90 {
+            return 0.55
+        } else if oil < 100 {
+            return 0.75
+        } else {
+            return 0.90
         }
     }
 

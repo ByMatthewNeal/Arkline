@@ -57,10 +57,19 @@ Deno.serve(async (req) => {
   // Build prompt data
   const confluenceLevels = signal.fib_confluence_zones?.contributing_levels ?? []
 
+  // Map signal_type to compliant labels
+  const signalTypeLabel: Record<string, string> = {
+    strong_buy: "Strong Long Setup",
+    buy: "Long Setup",
+    strong_sell: "Strong Short Setup",
+    sell: "Short Setup",
+  }
+  const setupLabel = signalTypeLabel[signal.signal_type] ?? signal.signal_type
+
   const signalData = `
 - Asset: ${signal.asset}
-- Signal type: ${signal.signal_type}
-- Entry zone: $${Number(signal.entry_zone_low).toLocaleString()} - $${Number(signal.entry_zone_high).toLocaleString()}
+- Setup type: ${setupLabel}
+- Pattern entry zone: $${Number(signal.entry_zone_low).toLocaleString()} - $${Number(signal.entry_zone_high).toLocaleString()}
 - Target 1: $${signal.target_1 ? Number(signal.target_1).toLocaleString() : "N/A"}
 - Target 2: $${signal.target_2 ? Number(signal.target_2).toLocaleString() : "N/A"}
 - Stop loss: $${Number(signal.stop_loss).toLocaleString()}
@@ -84,17 +93,24 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 600,
-        system: `You are Arkline's market intelligence engine. Generate a concise, actionable swing trade briefing from the following signal data. Write in a direct, confident tone — no hedging language. Format the output as a JSON object with these fields:
-- headline (max 60 chars, e.g. "BTC Approaching Key Support — Strong Buy Setup")
-- summary (2-3 sentences explaining the setup and why conditions align)
-- supporting_signals (array of 2-3 short bullet point strings highlighting the strongest confirming data)
-- disclaimer ("This is not financial advice. Always DYOR and consult a licensed advisor before making crypto-related decisions.")
+        system: `You are Arkline's pattern analysis engine. Generate a concise educational briefing describing the detected Fibonacci pattern conditions. This is a pattern observation tool, NOT trading advice. Format the output as a JSON object with these fields:
+- headline (max 60 chars, e.g. "BTC Fibonacci Confluence at Key Support — Long Setup Detected")
+- summary (2-3 sentences describing the pattern setup and what conditions have aligned. Frame as observations: "conditions detected", "pattern suggests", "levels are aligning". Never say "buy", "sell", "time to enter", or give action directives.)
+- supporting_signals (array of 2-3 short bullet point strings highlighting the strongest confirming data points as observations)
+- disclaimer ("This is not financial advice. These are pattern observations for educational purposes. Always DYOR and consult a licensed advisor before making crypto-related decisions.")
+
+IMPORTANT language rules:
+- Use "Long Setup" / "Short Setup" instead of "Buy" / "Sell"
+- Use "pattern entry zone" or "setup zone" instead of "entry point"
+- Frame everything as pattern observations, not recommendations
+- Never say "time to buy/sell", "you should", "we recommend", or similar action directives
+- End with context, not a call to action
 
 Return ONLY the JSON object, no markdown fences or extra text.`,
         messages: [
           {
             role: "user",
-            content: `Generate a trade signal briefing from this data:\n\n${signalData}`,
+            content: `Generate a pattern analysis briefing from this data:\n\n${signalData}`,
           },
         ],
       }),

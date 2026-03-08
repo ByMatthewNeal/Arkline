@@ -9,6 +9,7 @@ struct GlassHeader: View {
     @ObservedObject var appState: AppState
     var hasNotification: Bool = false
     var onCustomizeTap: (() -> Void)? = nil
+    var onExportTap: (() -> Void)? = nil
     var onNotificationsTap: (() -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
 
@@ -49,6 +50,10 @@ struct GlassHeader: View {
 
             // Action buttons - minimal, refined
             HStack(spacing: 8) {
+                if let onExportTap = onExportTap {
+                    HeaderIconButton(icon: "square.and.arrow.up", action: onExportTap)
+                }
+
                 if let onCustomizeTap = onCustomizeTap {
                     HeaderIconButton(icon: "slider.horizontal.3", action: onCustomizeTap)
                 }
@@ -125,7 +130,7 @@ struct ProfessionalAvatar: View {
 
     var body: some View {
         ZStack {
-            if let url = imageUrl {
+            if let url = imageUrl, appState.currentUser?.usePhotoAvatar ?? true {
                 // Image avatar
                 KFImage(url)
                     .resizable()

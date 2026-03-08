@@ -285,7 +285,7 @@ struct CardAppearanceModifier: ViewModifier {
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 8)
             .onAppear {
-                withAnimation(.easeOut(duration: 0.35).delay(Double(delay) * 0.06)) {
+                withAnimation(.easeOut(duration: 0.2).delay(Double(delay) * 0.03)) {
                     appeared = true
                 }
             }

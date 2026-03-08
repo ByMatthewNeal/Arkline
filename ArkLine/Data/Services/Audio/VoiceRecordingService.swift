@@ -134,15 +134,15 @@ final class VoiceRecordingService: NSObject, ObservableObject {
     // MARK: - Timer Management
 
     private func startTimers() {
-        // Recording time timer
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        // Recording time timer — 1s is sufficient for MM:SS display
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.recordingTime += 0.1
+                self?.recordingTime += 1.0
             }
         }
 
-        // Audio level timer
-        levelTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+        // Audio level timer — 200ms (5 fps) is smooth enough for a level meter
+        levelTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateAudioLevel()
             }
@@ -168,8 +168,7 @@ final class VoiceRecordingService: NSObject, ObservableObject {
     func formattedTime(_ time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
-        let tenths = Int((time.truncatingRemainder(dividingBy: 1)) * 10)
-        return String(format: "%02d:%02d.%d", minutes, seconds, tenths)
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     func deleteRecording(at url: URL) {

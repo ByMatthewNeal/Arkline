@@ -12,8 +12,8 @@ const supabase = createClient(
 
 // Price IDs for plan changes
 const PRICE_IDS: Record<string, string> = {
-  monthly: Deno.env.get("STANDARD_MONTHLY_PRICE") ?? "price_1T28pYIkKaS0zcmX5iNFEZxi",
-  annual: Deno.env.get("STANDARD_ANNUAL_PRICE") ?? "price_1T28pZIkKaS0zcmXOsgwiMH5",
+  monthly: Deno.env.get("STANDARD_MONTHLY_PRICE") ?? "price_1T7fOAIkKaS0zcmX3ZwtcSZO",
+  annual: Deno.env.get("STANDARD_ANNUAL_PRICE") ?? "price_1T7fOlIkKaS0zcmXop5vY67x",
 }
 
 const corsHeaders = {

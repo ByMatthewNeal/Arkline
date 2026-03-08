@@ -50,7 +50,7 @@ struct HomeView: View {
 
                 // Content
                 ScrollViewReader { scrollProxy in
-                ScrollView {
+                ScrollView(.vertical) {
                     VStack(spacing: 20) {
                         Color.clear.frame(height: 0).id("scrollTop")
                         // Header
@@ -123,15 +123,6 @@ struct HomeView: View {
                             .padding(.horizontal, 20)
                         }
 
-                        // Flash Intel (strong swing signals)
-                        if !viewModel.flashIntelSignals.isEmpty {
-                            FlashIntelSection(
-                                signals: viewModel.flashIntelSignals,
-                                isPro: appState.isPro
-                            )
-                            .padding(.horizontal, 20)
-                        }
-
                         // Dynamic Widget Section with Drag-and-Drop
                         ReorderableWidgetStack(
                             viewModel: viewModel,
@@ -146,6 +137,7 @@ struct HomeView: View {
                         Spacer(minLength: 120)
                     }
                     .padding(.top, 16)
+                    .containerRelativeFrame(.horizontal)
                 }
                 .scrollIndicators(.hidden)
                 .refreshable {
@@ -202,9 +194,10 @@ struct HomeView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 guard newPhase == .active, appState.selectedTab == .home else { return }
-                // Re-fetch briefing if stale (older than 2 hours)
+                // Re-fetch briefing if stale (older than 2 hours), but respect the isRefreshing guard
                 if let generated = viewModel.marketSummary?.generatedAt,
-                   Date().timeIntervalSince(generated) > 7200 {
+                   Date().timeIntervalSince(generated) > 7200,
+                   !viewModel.isLoading {
                     Task { await viewModel.refresh(forceRefresh: true) }
                 }
             }

@@ -424,11 +424,13 @@ final class APISentimentService: SentimentServiceProtocol {
         let dxyService = ServiceContainer.shared.dxyService
         let liquidityService = ServiceContainer.shared.globalLiquidityService
         let itcRiskService = ServiceContainer.shared.itcRiskService
+        let crudeOilService = ServiceContainer.shared.crudeOilService
 
         async let vixTask = try? vixService.fetchLatestVIX()
         async let dxyTask = try? dxyService.fetchLatestDXY()
         async let liquidityTask = try? liquidityService.fetchNetLiquidityChanges()
         async let itcRiskTask = try? itcRiskService.fetchLatestRiskLevel(coin: "BTC")
+        async let oilTask = try? crudeOilService.fetchLatestCrudeOil()
 
         // Await all results
         let fg = try await fearGreedTask
@@ -442,70 +444,71 @@ final class APISentimentService: SentimentServiceProtocol {
         let dxy = await dxyTask
         let liquidity = await liquidityTask
         let itcRisk = await itcRiskTask
+        let oil = await oilTask
 
         // Build components from all available data
         var components: [RiskScoreComponent] = []
         var totalWeight: Double = 0
 
-        // 1. Fear & Greed (14% weight) - Direct sentiment
+        // 1. Fear & Greed (13% weight) - Direct sentiment
         let fgValue = Double(fg.value) / 100.0
         components.append(RiskScoreComponent(
             name: "Fear & Greed",
             value: fgValue,
-            weight: 0.14,
+            weight: 0.13,
             signal: SentimentTier.from(score: fg.value)
         ))
-        totalWeight += 0.14
+        totalWeight += 0.13
 
-        // 2. ITC Risk Level (14% weight) - Bitcoin cycle risk
+        // 2. ITC Risk Level (13% weight) - Bitcoin cycle risk
         if let risk = itcRisk {
             let riskValue = risk.riskLevel  // Already 0-1
             components.append(RiskScoreComponent(
                 name: "BTC Cycle Risk",
                 value: riskValue,
-                weight: 0.14,
+                weight: 0.13,
                 signal: riskSignalTier(riskValue)
             ))
-            totalWeight += 0.14
+            totalWeight += 0.13
         }
 
-        // 3. Open Interest (10% weight) - Leverage buildup = risk
+        // 3. Open Interest (9% weight) - Leverage buildup = risk
         if let oi = btcOI {
             // Normalize: -10% to +10% OI 24h change -> 0-1 (rising OI = more leverage = more risk)
             let oiNormalized = min(1.0, max(0.0, (oi.openInterestChangePercent24h + 10.0) / 20.0))
             components.append(RiskScoreComponent(
                 name: "Open Interest",
                 value: oiNormalized,
-                weight: 0.10,
+                weight: 0.09,
                 signal: oiSignalTier(oi.openInterestChangePercent24h)
             ))
-            totalWeight += 0.10
+            totalWeight += 0.09
         }
 
-        // 4. Funding Rates (10% weight) - Leverage sentiment
+        // 4. Funding Rates (9% weight) - Leverage sentiment
         if let fund = funding {
             // Normalize: -0.1% to +0.1% range -> 0-1 (higher funding = more greed)
             let fundingValue = min(1.0, max(0.0, (fund.averageRate + 0.001) / 0.002))
             components.append(RiskScoreComponent(
                 name: "Funding Rates",
                 value: fundingValue,
-                weight: 0.10,
+                weight: 0.09,
                 signal: fundingSignalTier(fund.averageRate)
             ))
-            totalWeight += 0.10
+            totalWeight += 0.09
         }
 
-        // 5. VIX (10% weight) - Market fear gauge (INVERSE - low VIX = complacency/greed)
+        // 5. VIX (9% weight) - Market fear gauge (INVERSE - low VIX = complacency/greed)
         if let vixData = vix {
             // Normalize: VIX 10-40 range -> 0-1 (INVERTED: low VIX = high risk/greed)
             let vixNormalized = min(1.0, max(0.0, (40.0 - vixData.value) / 30.0))
             components.append(RiskScoreComponent(
                 name: "VIX (Volatility)",
                 value: vixNormalized,
-                weight: 0.10,
+                weight: 0.09,
                 signal: vixSignalTier(vixData.value)
             ))
-            totalWeight += 0.10
+            totalWeight += 0.09
         }
 
         // 6. DXY (9% weight) - Dollar strength (INVERSE - weak dollar = risk-on/greed)
@@ -521,20 +524,33 @@ final class APISentimentService: SentimentServiceProtocol {
             totalWeight += 0.09
         }
 
-        // 7. US Net Liquidity (9% weight) - Expanding liquidity = risk-on
+        // 7. US Net Liquidity (8% weight) - Expanding liquidity = risk-on
         if let liq = liquidity {
             // Normalize: -5% to +5% monthly change -> 0-1
             let liqNormalized = min(1.0, max(0.0, (liq.monthlyChange + 5.0) / 10.0))
             components.append(RiskScoreComponent(
                 name: "US Net Liquidity",
                 value: liqNormalized,
-                weight: 0.09,
+                weight: 0.08,
                 signal: liquiditySignalTier(liq.monthlyChange)
             ))
-            totalWeight += 0.09
+            totalWeight += 0.08
         }
 
-        // 8. App Store Ranking (8% weight) - Retail FOMO indicator
+        // 8. WTI Crude Oil (7% weight) - Inflation pressure (INVERSE - low oil = risk-on)
+        if let oilData = oil {
+            // Normalize: $40-120 range -> 0-1 (INVERTED: low oil = disinflationary = bullish)
+            let oilNormalized = min(1.0, max(0.0, (120.0 - oilData.value) / 80.0))
+            components.append(RiskScoreComponent(
+                name: "WTI Crude Oil",
+                value: oilNormalized,
+                weight: 0.07,
+                signal: oilSignalTier(oilData.value)
+            ))
+            totalWeight += 0.07
+        }
+
+        // 9. App Store Ranking (7% weight) - Retail FOMO indicator
         if let rankings = appStore, let coinbase = rankings.first(where: { $0.appName == "Coinbase" }) {
             // Normalize: Rank 1-200 -> 0-1 (INVERTED: lower rank = more FOMO/greed)
             let rankValue: Double
@@ -546,13 +562,13 @@ final class APISentimentService: SentimentServiceProtocol {
             components.append(RiskScoreComponent(
                 name: "App Store FOMO",
                 value: rankValue,
-                weight: 0.08,
+                weight: 0.07,
                 signal: appStoreSignalTier(coinbase.ranking)
             ))
-            totalWeight += 0.08
+            totalWeight += 0.07
         }
 
-        // 9. Capital Flow (8% weight) - Multi-dominance rotation signal
+        // 10. Capital Flow (7% weight) - Multi-dominance rotation signal
         if let snapshot = domSnapshot {
             let previous = CapitalRotationService.loadPreviousSnapshot()
             let rotation = CapitalRotationService.computeRotationSignal(current: snapshot, previous: previous)
@@ -560,32 +576,32 @@ final class APISentimentService: SentimentServiceProtocol {
             components.append(RiskScoreComponent(
                 name: "Capital Flow",
                 value: rotation.score / 100.0,
-                weight: 0.08,
+                weight: 0.07,
                 signal: rotationSignalTier(rotation.score)
             ))
-            totalWeight += 0.08
+            totalWeight += 0.07
         } else {
             // Fallback to raw BTC dominance if snapshot unavailable
             let btcDomValue = 1.0 - (btc.value / 100.0)
             components.append(RiskScoreComponent(
                 name: "Capital Flow",
                 value: btcDomValue,
-                weight: 0.08,
+                weight: 0.07,
                 signal: btcDomSignalTier(btc.value)
             ))
-            totalWeight += 0.08
+            totalWeight += 0.07
         }
 
-        // 10. Altcoin Season (8% weight) - Higher = altcoin greed
+        // 11. Altcoin Season (7% weight) - Higher = altcoin greed
         if let alt = altcoin {
             let altValue = Double(alt.value) / 100.0
             components.append(RiskScoreComponent(
                 name: "Altcoin Season",
                 value: altValue,
-                weight: 0.08,
+                weight: 0.07,
                 signal: altcoinSignalTier(alt.value)
             ))
-            totalWeight += 0.08
+            totalWeight += 0.07
         }
 
         // Normalize weights if some indicators are missing
@@ -655,6 +671,15 @@ final class APISentimentService: SentimentServiceProtocol {
         if change > 0.5 { return .bullish }
         if change > -0.5 { return .neutral }
         if change > -2.0 { return .bearish }
+        return .extremelyBearish
+    }
+
+    private func oilSignalTier(_ price: Double) -> SentimentTier {
+        // Low oil = disinflationary (bullish for crypto), High oil = inflationary (bearish)
+        if price < 60 { return .extremelyBullish }
+        if price < 70 { return .bullish }
+        if price < 80 { return .neutral }
+        if price < 90 { return .bearish }
         return .extremelyBearish
     }
 

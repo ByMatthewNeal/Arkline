@@ -33,6 +33,16 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     // Confirmation
     let bounceConfirmed: Bool
     let confirmationDetails: ConfirmationDetails?
+    let counterTrend: Bool?
+
+    // Runner tracking (split exit: 50% at T1, trail runner)
+    let bestPrice: Double?
+    let runnerStop: Double?
+    let runnerExitPrice: Double?
+    let risk1r: Double?
+    let t1PnlPct: Double?
+    let runnerPnlPct: Double?
+    let emaTrendAligned: Bool?
 
     // Outcomes
     let outcome: SignalOutcome?
@@ -66,6 +76,14 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case arklineScore = "arkline_score"
         case bounceConfirmed = "bounce_confirmed"
         case confirmationDetails = "confirmation_details"
+        case counterTrend = "counter_trend"
+        case bestPrice = "best_price"
+        case runnerStop = "runner_stop"
+        case runnerExitPrice = "runner_exit_price"
+        case risk1r = "risk_1r"
+        case t1PnlPct = "t1_pnl_pct"
+        case runnerPnlPct = "runner_pnl_pct"
+        case emaTrendAligned = "ema_trend_aligned"
         case outcomePct = "outcome_pct"
         case durationHours = "duration_hours"
         case generatedAt = "generated_at"
@@ -87,10 +105,10 @@ enum SignalType: String, Codable {
 
     var displayName: String {
         switch self {
-        case .strongBuy: return "Strong Buy"
-        case .buy: return "Buy"
-        case .strongSell: return "Strong Sell"
-        case .sell: return "Sell"
+        case .strongBuy: return "Strong Long"
+        case .buy: return "Long Setup"
+        case .strongSell: return "Strong Short"
+        case .sell: return "Short Setup"
         }
     }
 
@@ -187,6 +205,87 @@ struct ContributingLevel: Codable, Equatable {
     }
 }
 
+// MARK: - Asset Confidence Profile (Backtest-derived)
+
+/// Backtested performance data per asset used for confidence tiers and direction filtering.
+/// Based on 1-year golden pocket backtests (Feb 2025 – Mar 2026).
+enum SignalConfidence: String, Comparable {
+    case high, medium, low
+
+    var displayName: String {
+        switch self {
+        case .high: return "High"
+        case .medium: return "Medium"
+        case .low: return "Low"
+        }
+    }
+
+    private var sortOrder: Int {
+        switch self {
+        case .high: return 0
+        case .medium: return 1
+        case .low: return 2
+        }
+    }
+
+    static func < (lhs: SignalConfidence, rhs: SignalConfidence) -> Bool {
+        lhs.sortOrder < rhs.sortOrder
+    }
+}
+
+enum DirectionBias: String {
+    case longPreferred = "long_preferred"
+    case shortPreferred = "short_preferred"
+    case balanced = "balanced"
+}
+
+struct AssetProfile {
+    let confidence: SignalConfidence
+    let directionBias: DirectionBias
+    let longWinRate: Double
+    let shortWinRate: Double
+    let profitFactor: Double
+
+    /// Whether a given signal direction is weak for this asset.
+    func isWeakDirection(isBuy: Bool) -> Bool {
+        switch directionBias {
+        case .longPreferred: return !isBuy && (longWinRate - shortWinRate) > 10
+        case .shortPreferred: return isBuy && (shortWinRate - longWinRate) > 10
+        case .balanced: return false
+        }
+    }
+}
+
+extension TradeSignal {
+    /// Backtest-derived profiles. Update these when backtests are re-run.
+    static let assetProfiles: [String: AssetProfile] = [
+        "LINK": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 68.9, shortWinRate: 70.4, profitFactor: 3.25),
+        "SUI":  AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 67.5, shortWinRate: 68.1, profitFactor: 3.85),
+        "ETH":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 60.0, profitFactor: 2.59),
+        "ADA":  AssetProfile(confidence: .medium, directionBias: .shortPreferred, longWinRate: 55.2, shortWinRate: 69.0, profitFactor: 2.68),
+        "SOL":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 52.9, profitFactor: 2.34),
+        "BTC":  AssetProfile(confidence: .low, directionBias: .shortPreferred, longWinRate: 48.5, shortWinRate: 63.0, profitFactor: 1.95),
+    ]
+
+    var assetProfile: AssetProfile {
+        Self.assetProfiles[asset] ?? AssetProfile(
+            confidence: .medium, directionBias: .balanced,
+            longWinRate: 50, shortWinRate: 50, profitFactor: 1.5
+        )
+    }
+
+    var confidence: SignalConfidence { assetProfile.confidence }
+
+    /// True when this signal goes against the asset's backtested strong direction.
+    var isWeakDirection: Bool { assetProfile.isWeakDirection(isBuy: signalType.isBuy) }
+
+    /// True when signal goes against the Bull Market Support Band macro regime.
+    var isCounterTrend: Bool { counterTrend == true }
+
+    /// All assets with backtest data are eligible for Flash Intel.
+    var isFlashIntelWorthy: Bool { true }
+}
+
 // MARK: - Computed Helpers
 
 extension TradeSignal {
@@ -211,5 +310,27 @@ extension TradeSignal {
         if hours < 24 { return "\(hours)h ago" }
         let days = hours / 24
         return "\(days)d ago"
+    }
+
+    var isT1Hit: Bool { t1HitAt != nil }
+
+    var isRunnerPhase: Bool { isT1Hit && status == .triggered }
+
+    var rMultiple: Double? {
+        guard let pnl = outcomePct, let r1r = risk1r, r1r > 0 else { return nil }
+        let rPct = (r1r / entryPriceMid) * 100
+        return rPct > 0 ? pnl / rPct : nil
+    }
+
+    var combinedPnlDisplay: String? {
+        guard let pnl = outcomePct else { return nil }
+        return String(format: "%+.2f%%", pnl)
+    }
+
+    var phaseDescription: String {
+        if status == .triggered {
+            return isT1Hit ? "Runner trailing" : "Watching T1"
+        }
+        return status.displayName
     }
 }

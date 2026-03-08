@@ -5,6 +5,7 @@ import SwiftUI
 struct FlashIntelCard: View {
     let signal: TradeSignal
     @Environment(\.colorScheme) var colorScheme
+    @State private var isPulsing = false
 
     private var signalColor: Color {
         signal.signalType.isBuy ? AppColors.success : AppColors.error
@@ -17,6 +18,12 @@ struct FlashIntelCard: View {
             // Pulsing indicator
             ZStack {
                 Circle()
+                    .fill(signalColor.opacity(0.15))
+                    .frame(width: 44, height: 44)
+                    .scaleEffect(isPulsing ? 1.25 : 1.0)
+                    .opacity(isPulsing ? 0 : 0.6)
+
+                Circle()
                     .fill(signalColor.opacity(0.2))
                     .frame(width: 40, height: 40)
 
@@ -27,6 +34,16 @@ struct FlashIntelCard: View {
                 Image(systemName: "scope")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(signalColor)
+            }
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                    isPulsing = true
+                }
+            }
+            .onDisappear {
+                withAnimation(.linear(duration: 0)) {
+                    isPulsing = false
+                }
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -46,6 +63,18 @@ struct FlashIntelCard: View {
                     Text(String(format: "%.1fx R:R", signal.riskRewardRatio))
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(AppColors.accent)
+
+                    confidenceBadge
+
+                    if signal.isCounterTrend {
+                        Text("CT")
+                            .font(.system(size: 8, weight: .heavy))
+                            .foregroundColor(AppColors.warning)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(AppColors.warning.opacity(0.15))
+                            .cornerRadius(3)
+                    }
                 }
 
                 Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
@@ -74,34 +103,70 @@ struct FlashIntelCard: View {
         )
     }
 
+    private var confidenceBadge: some View {
+        let color: Color = signal.confidence == .high ? AppColors.success : AppColors.warning
+        return Text(signal.confidence.displayName)
+            .font(.system(size: 8, weight: .heavy))
+            .foregroundColor(color)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            .background(color.opacity(0.15))
+            .cornerRadius(3)
+    }
+
     private func formatSignalPrice(_ price: Double) -> String {
         price.asSignalPrice
     }
 }
 
-// MARK: - Flash Intel Section
+// MARK: - Swing Setups Section
 
 struct FlashIntelSection: View {
     let signals: [TradeSignal]
     let isPro: Bool
+    var size: WidgetSize = .standard
+    @State private var showMethodology = false
+    @State private var showPaywall = false
     @Environment(\.colorScheme) var colorScheme
 
-    var body: some View {
-        if !signals.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(AppColors.warning)
+    private var maxSignals: Int {
+        switch size {
+        case .compact: return 1
+        case .standard: return 2
+        case .expanded: return 4
+        }
+    }
 
-                    Text("FLASH INTEL")
-                        .font(AppFonts.caption12Medium)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "scope")
+                    .foregroundColor(AppColors.accent)
+                Text("Swing Setups")
+                    .font(size == .compact ? .subheadline : .title3)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Button {
+                    showMethodology = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14))
                         .foregroundColor(AppColors.textSecondary)
-                        .tracking(1)
                 }
 
-                if isPro {
-                    ForEach(signals.prefix(2)) { signal in
+                Spacer()
+            }
+
+            if isPro {
+                if signals.isEmpty {
+                    NavigationLink {
+                        SwingSetupsDetailView()
+                    } label: {
+                        emptyStateCard
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                } else {
+                    ForEach(signals.prefix(maxSignals)) { signal in
                         NavigationLink {
                             SignalDetailView(signalId: signal.id)
                         } label: {
@@ -109,35 +174,315 @@ struct FlashIntelSection: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                } else {
-                    // Teaser for free users
-                    HStack(spacing: 12) {
-                        Image(systemName: "lock.fill")
+
+                    if signals.count > maxSignals {
+                        NavigationLink {
+                            SwingSetupsDetailView()
+                        } label: {
+                            Text("View all \(signals.count) setups")
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(AppColors.accent)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            } else {
+                Button { showPaywall = true } label: { lockedCard }
+                    .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .sheet(isPresented: $showMethodology) {
+            SignalMethodologySheet()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(feature: .swingSetups)
+        }
+    }
+
+    private var emptyStateCard: some View {
+        VStack(spacing: 8) {
+            Text("No active setups")
+                .font(AppFonts.body14Medium)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Text("Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+
+            HStack {
+                Spacer()
+                HStack(spacing: 4) {
+                    Text("View history")
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(AppColors.accent)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+        )
+    }
+
+    private var lockedCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.textSecondary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Fibonacci trade signal detection")
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text("Upgrade to Pro for swing setup analysis")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+        )
+    }
+}
+
+// MARK: - Signal Methodology Sheet
+
+struct SignalMethodologySheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Image(systemName: "scope")
+                            .font(.system(size: 36))
+                            .foregroundColor(AppColors.accent)
+
+                        Text("How Signal Detection Works")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        Text("Fibonacci-based pattern detection optimized for the US session during peak volume hours. For educational purposes only.")
                             .font(.system(size: 14))
                             .foregroundColor(AppColors.textSecondary)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("\(signals.count) active swing signal\(signals.count == 1 ? "" : "s")")
-                                .font(AppFonts.body14Medium)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                            Text("Upgrade to Pro for Fibonacci swing trade alerts")
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-
-                        Spacer()
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
                     }
-                    .padding(14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(
-                                colorScheme == .dark
-                                    ? Color(hex: "1A1A1A")
-                                    : Color.white
-                            )
-                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 10)
+
+                    // Conditions
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Detection Criteria")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        conditionRow(
+                            icon: "chart.xyaxis.line",
+                            title: "Fibonacci Golden Pocket",
+                            detail: "Price must reach a 0.618\u{2013}0.786 retracement zone, the highest-probability reversal area."
+                        )
+
+                        conditionRow(
+                            icon: "arrow.triangle.merge",
+                            title: "Multi-Timeframe Confluence",
+                            detail: "The zone must align across 4H and Daily timeframes. More overlapping levels = stronger pattern."
+                        )
+
+                        conditionRow(
+                            icon: "arrow.up.arrow.down",
+                            title: "EMA Trend Alignment",
+                            detail: "The 20 and 50 EMA on the 4H chart must confirm the pattern direction."
+                        )
+
+                        conditionRow(
+                            icon: "checkmark.circle",
+                            title: "Bounce Confirmation",
+                            detail: "A wick rejection or volume spike at the zone is required before a pattern is flagged."
+                        )
+
+                        conditionRow(
+                            icon: "scalemass",
+                            title: "Minimum 1:1 Risk/Reward",
+                            detail: "Every pattern must have at least a 1:1 risk-to-reward ratio. Strong patterns require 2:1+ with multi-timeframe confluence."
+                        )
+
+                        conditionRow(
+                            icon: "waveform.path.ecg",
+                            title: "Bull Market Support Band",
+                            detail: "The 20-week SMA and 21-week EMA define the macro regime. Signals that go against this regime are tagged \"Counter-Trend\" and auto-scaled to 0.5R in Your Setup."
+                        )
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Execution window
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Detection Window")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppColors.accent)
+                                .frame(width: 24)
+
+                            Text("Patterns are evaluated during **US session 4H candle closes** (12:00 and 16:00 UTC) \u{2014} when BTC sees the most volume and the cleanest price action. Patterns expire after 72 hours if conditions are not met.")
+                                .font(.system(size: 14))
+                                .foregroundColor(textPrimary.opacity(0.8))
+                                .lineSpacing(3)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Backtesting
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Backtested & Validated")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "checkmark.shield.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppColors.success)
+                                .frame(width: 24)
+
+                            Text("This detection methodology has been backtested on over a year of BTC price data across multiple market regimes. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
+                                .font(.system(size: 14))
+                                .foregroundColor(textPrimary.opacity(0.8))
+                                .lineSpacing(3)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    // How to use signals
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("How to Use Signals")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        stepRow(
+                            number: "1",
+                            title: "Signal Appears — \"Watching\"",
+                            detail: "The system detected price near a golden pocket zone. This is your alert to pay attention, not to enter yet."
+                        )
+
+                        stepRow(
+                            number: "2",
+                            title: "Set Limit Orders",
+                            detail: "Place a limit order within the entry zone (low–high range). Use the Entry Strategy selector in Your Setup to pick optimal, midpoint, or split entry."
+                        )
+
+                        stepRow(
+                            number: "3",
+                            title: "Wait for Confirmation — \"In Play\"",
+                            detail: "The signal moves to In Play when a bounce is confirmed (wick rejection, volume spike, or consecutive closes). Your limit order fills during this move."
+                        )
+
+                        stepRow(
+                            number: "4",
+                            title: "Manage the Trade",
+                            detail: "Set your stop loss at the signal's stop level. When T1 hits, 50% closes automatically. The remaining 50% trails with a 1R stop for extended gains."
+                        )
+
+                        stepRow(
+                            number: "5",
+                            title: "Expiry — No Trade",
+                            detail: "If price never reaches the zone or confirmation fails within 24 hours, the signal expires. No entry, no risk. Patience is the edge."
+                        )
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "lightbulb.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppColors.warning)
+                                .frame(width: 24)
+
+                            Text("These are **limit entry** signals at key reversal levels — not market orders. If price has already moved well past the entry zone, skip the signal. The risk/reward is no longer favorable.")
+                                .font(.system(size: 13))
+                                .foregroundColor(textPrimary.opacity(0.7))
+                                .lineSpacing(2)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Disclaimer
+                    Text("Swing Setups is an educational analysis tool, not financial advice. Arkline does not recommend any specific trades. Always do your own research and consult a licensed financial advisor.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+
+                    Spacer(minLength: 40)
                 }
+                .padding(.top, 16)
+            }
+            .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
+            .navigationTitle("Swing Setups")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+    }
+
+    private func conditionRow(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(AppColors.accent)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(textPrimary)
+
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundColor(textPrimary.opacity(0.7))
+                    .lineSpacing(2)
+            }
+        }
+    }
+
+    private func stepRow(number: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(number)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 24, height: 24)
+                .background(AppColors.accent)
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(textPrimary)
+
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundColor(textPrimary.opacity(0.7))
+                    .lineSpacing(2)
             }
         }
     }

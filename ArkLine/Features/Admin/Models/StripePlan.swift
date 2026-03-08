@@ -28,19 +28,19 @@ enum StripePlan: String, CaseIterable, Identifiable {
 
     var paymentURL: String {
         switch self {
-        case .foundingMonthly: return "https://buy.stripe.com/test_4gMdR926zfPNg9QaoC6Ri0c"
-        case .foundingAnnual: return "https://buy.stripe.com/test_4gM9ATcLd5b92j08gu6Ri0d"
-        case .standardMonthly: return "https://buy.stripe.com/test_00w00jdPh331bTAdAO6Ri0e"
-        case .standardAnnual: return "https://buy.stripe.com/test_28E8wP9z1avtcXE40e6Ri0f"
+        case .foundingMonthly: return "https://buy.stripe.com/test_14AfZhfXpbzx8Ho8gu6Ri0j"
+        case .foundingAnnual: return "https://buy.stripe.com/test_14A28r26zfPN5vceES6Ri0i"
+        case .standardMonthly: return "https://buy.stripe.com/test_5kQ3cvbH91YX4r8bsG6Ri0h"
+        case .standardAnnual: return "https://buy.stripe.com/test_9B6cN5fXpeLJ9Ls54i6Ri0g"
         }
     }
 
     var price: String {
         switch self {
-        case .foundingMonthly: return "$199/mo"
-        case .foundingAnnual: return "$1,499/yr"
-        case .standardMonthly: return "$249/mo"
-        case .standardAnnual: return "$1,999/yr"
+        case .foundingMonthly: return "$39.99/mo"
+        case .foundingAnnual: return "$400/yr"
+        case .standardMonthly: return "$59.99/mo"
+        case .standardAnnual: return "$650/yr"
         }
     }
 
@@ -50,10 +50,10 @@ enum StripePlan: String, CaseIterable, Identifiable {
 
     var priceId: String {
         switch self {
-        case .foundingMonthly: return "price_1T28pXIkKaS0zcmX7aKIiT2P"
-        case .foundingAnnual: return "price_1T28pXIkKaS0zcmXx8NpKPQr"
-        case .standardMonthly: return "price_1T28pYIkKaS0zcmX5iNFEZxi"
-        case .standardAnnual: return "price_1T28pZIkKaS0zcmXOsgwiMH5"
+        case .foundingMonthly: return "price_1T7fMpIkKaS0zcmXlgr4orwA"
+        case .foundingAnnual: return "price_1T7fNgIkKaS0zcmXmhkZDBl0"
+        case .standardMonthly: return "price_1T7fOAIkKaS0zcmX3ZwtcSZO"
+        case .standardAnnual: return "price_1T7fOlIkKaS0zcmXop5vY67x"
         }
     }
 }

@@ -211,12 +211,19 @@ Deno.serve(async (req) => {
       .limit(3)
 
     if (activeSignals && activeSignals.length > 0) {
+      const setupLabels: Record<string, string> = {
+        strong_buy: "STRONG LONG SETUP",
+        buy: "LONG SETUP",
+        strong_sell: "STRONG SHORT SETUP",
+        sell: "SHORT SETUP",
+      }
       const signalDescriptions = activeSignals.map((s: Record<string, unknown>) => {
         const entryLow = Number(s.entry_zone_low).toLocaleString()
         const entryHigh = Number(s.entry_zone_high).toLocaleString()
         const t1 = s.target_1 ? `T1: $${Number(s.target_1).toLocaleString()}` : ""
         const statusLabel = s.status === "triggered" ? "IN PLAY" : "WATCHING"
-        return `${s.asset} ${(s.signal_type as string).replace("_", " ").toUpperCase()} [${statusLabel}]: Entry $${entryLow}-$${entryHigh}, ${t1}, R:R ${s.risk_reward_ratio}x`
+        const label = setupLabels[s.signal_type as string] ?? (s.signal_type as string).replace("_", " ").toUpperCase()
+        return `${s.asset} ${label} [${statusLabel}]: Zone $${entryLow}-$${entryHigh}, ${t1}, R:R ${s.risk_reward_ratio}x`
       })
       sections.push(`SWING SETUPS:\n${signalDescriptions.join("\n")}`)
     }
@@ -260,7 +267,7 @@ Rules:
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
 - Keep total length under 150 words
 - Never start any section with "Today" or "The market"
-- If SWING SETUPS data is present, naturally reference any active or triggered signals in the Signals section. For setups that are "IN PLAY", mention the current status. For setups that are "WATCHING", note the zone price is being monitored. Keep it brief — one sentence max per setup.${feedbackBlock}`,
+- If SWING SETUPS data is present, naturally reference any active or triggered setups in the Signals section. Use ONLY these terms: "Long Setup conditions detected" or "Short Setup conditions detected". Never use the words "buy", "sell", "buy signal", or "sell signal". Refer to entry zones as "pattern entry zone" or "setup zone". For setups that are "IN PLAY", note conditions are active. For setups that are "WATCHING", note the zone is being monitored. Frame setups as pattern observations, not action directives. Never say "time to buy/sell". End any setup mention with context, not a call to action. Keep it brief — one sentence max per setup.${feedbackBlock}`,
         messages: [
           {
             role: "user",

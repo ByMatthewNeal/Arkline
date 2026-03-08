@@ -39,7 +39,7 @@ enum DCAScoreType: String, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .regression: return "Uses logarithmic fair-value deviation only. Simple, time-tested model based on historical price trends."
-        case .composite: return "Combines 7 factors: regression, RSI, SMA, bull market bands, funding rate, fear & greed, and macro risk."
+        case .composite: return "Combines 8 factors: regression, RSI, SMA, bull market bands, funding rate, fear & greed, macro risk, and oil risk."
         }
     }
 }

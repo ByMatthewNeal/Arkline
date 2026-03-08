@@ -234,13 +234,13 @@ private struct ComponentBreakdownSection: View {
     }
 
     private var macroComponents: [RiskScoreComponent] {
-        components.filter { ["VIX (Volatility)", "DXY (Dollar)", "US Net Liquidity"].contains($0.name) }
+        components.filter { ["VIX (Volatility)", "DXY (Dollar)", "US Net Liquidity", "WTI Crude Oil"].contains($0.name) }
     }
 
     private var marketStructureComponents: [RiskScoreComponent] {
         components.filter {
             !["Fear & Greed", "Altcoin Season", "App Store FOMO",
-              "VIX (Volatility)", "DXY (Dollar)", "US Net Liquidity"].contains($0.name)
+              "VIX (Volatility)", "DXY (Dollar)", "US Net Liquidity", "WTI Crude Oil"].contains($0.name)
         }
     }
 
@@ -369,7 +369,7 @@ private struct HowItWorksSection: View {
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            Text("The ArkLine Score is a proprietary composite indicator combining 10 market signals across sentiment, macro conditions, and market structure. Each component is normalized to 0-100 and weighted by its predictive relevance. Missing data points redistribute weight to available indicators.")
+            Text("The ArkLine Score is a proprietary composite indicator combining 11 market signals across sentiment, macro conditions, and market structure. Each component is normalized to 0-100 and weighted by its predictive relevance. Missing data points redistribute weight to available indicators.")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
                 .lineSpacing(4)

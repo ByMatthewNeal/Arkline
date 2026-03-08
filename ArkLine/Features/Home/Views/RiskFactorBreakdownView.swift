@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Risk Factor Breakdown View
-/// Displays the 6 risk factors with their raw values, normalized values, and weights.
+/// Displays the 8 risk factors with their raw values, normalized values, and weights.
 struct RiskFactorBreakdownView: View {
     let multiFactorRisk: MultiFactorRiskPoint
     @Environment(\.colorScheme) var colorScheme
@@ -244,17 +244,19 @@ struct RiskFactorSummaryRow: View {
 // MARK: - Preview
 #Preview("Risk Factor Breakdown") {
     let mockFactors: [RiskFactor] = [
-        RiskFactor(type: .logRegression, rawValue: 0.15, normalizedValue: 0.48, weight: 0.40),
-        RiskFactor(type: .rsi, rawValue: 58.0, normalizedValue: 0.70, weight: 0.15),
-        RiskFactor(type: .smaPosition, rawValue: 0.3, normalizedValue: 0.30, weight: 0.15),
+        RiskFactor(type: .logRegression, rawValue: 0.15, normalizedValue: 0.48, weight: 0.33),
+        RiskFactor(type: .rsi, rawValue: 58.0, normalizedValue: 0.70, weight: 0.11),
+        RiskFactor(type: .smaPosition, rawValue: 0.3, normalizedValue: 0.30, weight: 0.11),
+        RiskFactor(type: .bullMarketBands, rawValue: 5.2, normalizedValue: 0.30, weight: 0.10),
         RiskFactor(type: .fundingRate, rawValue: 0.0003, normalizedValue: 0.65, weight: 0.10),
         RiskFactor(type: .fearGreed, rawValue: 62.0, normalizedValue: 0.62, weight: 0.10),
-        RiskFactor(type: .macroRisk, rawValue: 22.5, normalizedValue: 0.45, weight: 0.10)
+        RiskFactor(type: .macroRisk, rawValue: 22.5, normalizedValue: 0.45, weight: 0.08),
+        RiskFactor(type: .oilRisk, rawValue: 72.50, normalizedValue: 0.40, weight: 0.07)
     ]
 
     let mockRisk = MultiFactorRiskPoint(
         date: Date(),
-        riskLevel: 0.52,
+        riskLevel: 0.49,
         price: 97500,
         fairValue: 85000,
         deviation: 0.06,
@@ -270,12 +272,14 @@ struct RiskFactorSummaryRow: View {
 
 #Preview("Risk Factor Breakdown - Some Unavailable") {
     let mockFactors: [RiskFactor] = [
-        RiskFactor(type: .logRegression, rawValue: 0.15, normalizedValue: 0.48, weight: 0.40),
-        RiskFactor(type: .rsi, rawValue: 58.0, normalizedValue: 0.70, weight: 0.15),
-        RiskFactor.unavailable(.smaPosition, weight: 0.15),
+        RiskFactor(type: .logRegression, rawValue: 0.15, normalizedValue: 0.48, weight: 0.33),
+        RiskFactor(type: .rsi, rawValue: 58.0, normalizedValue: 0.70, weight: 0.11),
+        RiskFactor.unavailable(.smaPosition, weight: 0.11),
+        RiskFactor.unavailable(.bullMarketBands, weight: 0.10),
         RiskFactor.unavailable(.fundingRate, weight: 0.10),
         RiskFactor(type: .fearGreed, rawValue: 62.0, normalizedValue: 0.62, weight: 0.10),
-        RiskFactor.unavailable(.macroRisk, weight: 0.10)
+        RiskFactor.unavailable(.macroRisk, weight: 0.08),
+        RiskFactor(type: .oilRisk, rawValue: 85.30, normalizedValue: 0.55, weight: 0.07)
     ]
 
     let mockRisk = MultiFactorRiskPoint(

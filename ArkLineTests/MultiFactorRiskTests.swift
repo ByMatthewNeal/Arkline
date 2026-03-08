@@ -6,7 +6,7 @@ final class MultiFactorRiskTests: XCTestCase {
     // MARK: - RiskFactorType
 
     func testAllCases_count() {
-        XCTAssertEqual(RiskFactorType.allCases.count, 7)
+        XCTAssertEqual(RiskFactorType.allCases.count, 8)
     }
 
     func testDefaultWeights_sumToOne() {
@@ -101,13 +101,14 @@ final class MultiFactorRiskTests: XCTestCase {
 
     func testWeights_weightForType() {
         let weights = RiskFactorWeights.default
-        XCTAssertEqual(weights.weight(for: .logRegression), 0.35, accuracy: 0.001)
-        XCTAssertEqual(weights.weight(for: .rsi), 0.12, accuracy: 0.001)
-        XCTAssertEqual(weights.weight(for: .smaPosition), 0.12, accuracy: 0.001)
-        XCTAssertEqual(weights.weight(for: .bullMarketBands), 0.11, accuracy: 0.001)
+        XCTAssertEqual(weights.weight(for: .logRegression), 0.33, accuracy: 0.001)
+        XCTAssertEqual(weights.weight(for: .rsi), 0.11, accuracy: 0.001)
+        XCTAssertEqual(weights.weight(for: .smaPosition), 0.11, accuracy: 0.001)
+        XCTAssertEqual(weights.weight(for: .bullMarketBands), 0.10, accuracy: 0.001)
         XCTAssertEqual(weights.weight(for: .fundingRate), 0.10, accuracy: 0.001)
         XCTAssertEqual(weights.weight(for: .fearGreed), 0.10, accuracy: 0.001)
-        XCTAssertEqual(weights.weight(for: .macroRisk), 0.10, accuracy: 0.001)
+        XCTAssertEqual(weights.weight(for: .macroRisk), 0.08, accuracy: 0.001)
+        XCTAssertEqual(weights.weight(for: .oilRisk), 0.07, accuracy: 0.001)
     }
 
     func testWeights_codableRoundtrip() throws {
@@ -120,7 +121,7 @@ final class MultiFactorRiskTests: XCTestCase {
     func testWeights_invalidTotal() {
         let invalid = RiskFactorWeights(
             logRegression: 0.5, rsi: 0.5, smaPosition: 0.5,
-            bullMarketBands: 0.5, fundingRate: 0.5, fearGreed: 0.5, macroRisk: 0.5
+            bullMarketBands: 0.5, fundingRate: 0.5, fearGreed: 0.5, macroRisk: 0.5, oilRisk: 0.5
         )
         XCTAssertFalse(invalid.isValid)
     }
@@ -134,8 +135,8 @@ final class MultiFactorRiskTests: XCTestCase {
 
     func testMultiFactorRiskPoint_availableWeight() {
         let point = makeMultiFactorPoint(availableTypes: [.logRegression, .rsi])
-        // 0.35 + 0.12 = 0.47
-        XCTAssertEqual(point.availableWeight, 0.47, accuracy: 0.001)
+        // 0.33 + 0.11 = 0.44
+        XCTAssertEqual(point.availableWeight, 0.44, accuracy: 0.001)
     }
 
     func testMultiFactorRiskPoint_hasSupplementaryFactors_true() {

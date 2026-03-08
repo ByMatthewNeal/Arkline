@@ -28,59 +28,28 @@ ALTER TABLE public.trade_signals
   ON DELETE SET NULL;
 
 -- RLS: Deny direct writes from authenticated users (service role bypasses RLS)
-DO $$ BEGIN
-  -- ohlc_candles
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny writes on ohlc_candles' AND tablename = 'ohlc_candles') THEN
-    CREATE POLICY "Deny writes on ohlc_candles" ON public.ohlc_candles FOR INSERT TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny updates on ohlc_candles' AND tablename = 'ohlc_candles') THEN
-    CREATE POLICY "Deny updates on ohlc_candles" ON public.ohlc_candles FOR UPDATE TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny deletes on ohlc_candles' AND tablename = 'ohlc_candles') THEN
-    CREATE POLICY "Deny deletes on ohlc_candles" ON public.ohlc_candles FOR DELETE TO authenticated USING (false);
-  END IF;
+-- INSERT requires WITH CHECK, UPDATE requires both USING + WITH CHECK, DELETE requires USING
 
-  -- swing_points
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny writes on swing_points' AND tablename = 'swing_points') THEN
-    CREATE POLICY "Deny writes on swing_points" ON public.swing_points FOR INSERT TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny updates on swing_points' AND tablename = 'swing_points') THEN
-    CREATE POLICY "Deny updates on swing_points" ON public.swing_points FOR UPDATE TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny deletes on swing_points' AND tablename = 'swing_points') THEN
-    CREATE POLICY "Deny deletes on swing_points" ON public.swing_points FOR DELETE TO authenticated USING (false);
-  END IF;
+-- Helper to create deny policies for each table
+DO $$
+DECLARE
+  tbl TEXT;
+  tbls TEXT[] := ARRAY['ohlc_candles', 'swing_points', 'fib_levels', 'fib_confluence_zones', 'trade_signals'];
+BEGIN
+  FOREACH tbl IN ARRAY tbls LOOP
+    -- INSERT deny
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny inserts on ' || tbl AND tablename = tbl) THEN
+      EXECUTE format('CREATE POLICY "Deny inserts on %I" ON public.%I FOR INSERT TO authenticated WITH CHECK (false)', tbl, tbl);
+    END IF;
 
-  -- fib_levels
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny writes on fib_levels' AND tablename = 'fib_levels') THEN
-    CREATE POLICY "Deny writes on fib_levels" ON public.fib_levels FOR INSERT TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny updates on fib_levels' AND tablename = 'fib_levels') THEN
-    CREATE POLICY "Deny updates on fib_levels" ON public.fib_levels FOR UPDATE TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny deletes on fib_levels' AND tablename = 'fib_levels') THEN
-    CREATE POLICY "Deny deletes on fib_levels" ON public.fib_levels FOR DELETE TO authenticated USING (false);
-  END IF;
+    -- UPDATE deny
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny updates on ' || tbl AND tablename = tbl) THEN
+      EXECUTE format('CREATE POLICY "Deny updates on %I" ON public.%I FOR UPDATE TO authenticated USING (false) WITH CHECK (false)', tbl, tbl);
+    END IF;
 
-  -- fib_confluence_zones
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny writes on fib_confluence_zones' AND tablename = 'fib_confluence_zones') THEN
-    CREATE POLICY "Deny writes on fib_confluence_zones" ON public.fib_confluence_zones FOR INSERT TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny updates on fib_confluence_zones' AND tablename = 'fib_confluence_zones') THEN
-    CREATE POLICY "Deny updates on fib_confluence_zones" ON public.fib_confluence_zones FOR UPDATE TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny deletes on fib_confluence_zones' AND tablename = 'fib_confluence_zones') THEN
-    CREATE POLICY "Deny deletes on fib_confluence_zones" ON public.fib_confluence_zones FOR DELETE TO authenticated USING (false);
-  END IF;
-
-  -- trade_signals
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny writes on trade_signals' AND tablename = 'trade_signals') THEN
-    CREATE POLICY "Deny writes on trade_signals" ON public.trade_signals FOR INSERT TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny updates on trade_signals' AND tablename = 'trade_signals') THEN
-    CREATE POLICY "Deny updates on trade_signals" ON public.trade_signals FOR UPDATE TO authenticated USING (false);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny deletes on trade_signals' AND tablename = 'trade_signals') THEN
-    CREATE POLICY "Deny deletes on trade_signals" ON public.trade_signals FOR DELETE TO authenticated USING (false);
-  END IF;
+    -- DELETE deny
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Deny deletes on ' || tbl AND tablename = tbl) THEN
+      EXECUTE format('CREATE POLICY "Deny deletes on %I" ON public.%I FOR DELETE TO authenticated USING (false)', tbl, tbl);
+    END IF;
+  END LOOP;
 END $$;

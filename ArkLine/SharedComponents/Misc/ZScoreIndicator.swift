@@ -251,6 +251,7 @@ struct PulsingExtremeIndicator: View {
     var color: Color = AppColors.error
 
     @State private var isPulsing = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Circle()
@@ -269,6 +270,9 @@ struct PulsingExtremeIndicator: View {
             }
             .onChange(of: isActive) { _, newValue in
                 isPulsing = newValue
+            }
+            .onChange(of: scenePhase) { _, phase in
+                isPulsing = (phase == .active) && isActive
             }
     }
 }

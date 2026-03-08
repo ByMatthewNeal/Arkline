@@ -3,6 +3,8 @@ import Foundation
 // MARK: - Analysis Timeframe
 /// Timeframe for technical analysis
 enum AnalysisTimeframe: String, CaseIterable, Identifiable {
+    case oneHour = "1h"
+    case fourHour = "4h"
     case daily = "1d"
     case weekly = "1w"
     case monthly = "1M"
@@ -11,6 +13,8 @@ enum AnalysisTimeframe: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
+        case .oneHour: return "1H"
+        case .fourHour: return "4H"
         case .daily: return "1D"
         case .weekly: return "1W"
         case .monthly: return "1M"
@@ -19,15 +23,23 @@ enum AnalysisTimeframe: String, CaseIterable, Identifiable {
 
     var fullLabel: String {
         switch self {
+        case .oneHour: return "1 Hour"
+        case .fourHour: return "4 Hour"
         case .daily: return "Daily"
         case .weekly: return "Weekly"
         case .monthly: return "Monthly"
         }
     }
 
+    /// Standard timeframes used in the main app (excludes intraday)
+    static let standardCases: [AnalysisTimeframe] = [.daily, .weekly, .monthly]
+
+    /// Intraday + daily timeframes for multi-timeframe analysis
+    static let tradingCases: [AnalysisTimeframe] = [.oneHour, .fourHour, .daily]
+
     var bollingerTimeframe: BollingerTimeframe {
         switch self {
-        case .daily: return .daily
+        case .oneHour, .fourHour, .daily: return .daily
         case .weekly: return .weekly
         case .monthly: return .monthly
         }

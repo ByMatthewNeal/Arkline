@@ -127,6 +127,8 @@ struct ReorderableWidgetStack: View {
             return true
         case .aiMarketSummary:
             return false
+        case .flashIntel:
+            return true
         }
     }
 
@@ -244,6 +246,13 @@ struct ReorderableWidgetStack: View {
                     guard let userId = appState.currentUser?.id else { return }
                     Task { await viewModel.submitBriefingFeedback(rating: rating, note: note, userId: userId) }
                 } : nil
+            )
+
+        case .flashIntel:
+            FlashIntelSection(
+                signals: viewModel.flashIntelSignals,
+                isPro: appState.isPro,
+                size: appState.widgetSize(.flashIntel)
             )
         }
     }

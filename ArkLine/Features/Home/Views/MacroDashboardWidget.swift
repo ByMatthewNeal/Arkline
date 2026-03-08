@@ -21,6 +21,7 @@ struct MacroDashboardWidget: View {
     @State private var showingDetail = false
     @State private var showPaywall = false
     @State private var isPulsing = false
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Whether any indicator has an extreme z-score
     private var hasExtremeMove: Bool {
@@ -282,7 +283,6 @@ struct MacroDashboardWidget: View {
                                 .frame(width: 8, height: 8)
                         }
                         .onAppear { isPulsing = true }
-                        .onDisappear { isPulsing = false }
 
                         Text(displayLabel)
                             .font(.system(size: 12, weight: .bold, design: .default))
@@ -372,6 +372,9 @@ struct MacroDashboardWidget: View {
         }
         .onChange(of: regime) { _, newRegime in
             regimeManager.checkRegimeChange(newRegime: newRegime)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            isPulsing = (phase == .active)
         }
         } // Close outer VStack
     }

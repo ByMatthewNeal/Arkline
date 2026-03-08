@@ -46,6 +46,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case supplyInProfit = "supply_in_profit"
     case favorites = "favorites"
     case aiMarketSummary = "ai_market_summary"
+    case flashIntel = "flash_intel"
 
     var id: String { rawValue }
 
@@ -66,6 +67,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .supplyInProfit: return "BTC Supply in Profit"
         case .favorites: return "Favorites"
         case .aiMarketSummary: return "Daily Briefing"
+        case .flashIntel: return "Swing Setups"
         }
     }
 
@@ -86,6 +88,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .supplyInProfit: return "Percentage of BTC supply currently in profit"
         case .favorites: return "Your starred coins at a glance"
         case .aiMarketSummary: return "AI-generated daily market summary"
+        case .flashIntel: return "Fibonacci pattern detection across timeframes"
         }
     }
 
@@ -106,6 +109,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .supplyInProfit: return "chart.pie"
         case .favorites: return "star.fill"
         case .aiMarketSummary: return "sparkles"
+        case .flashIntel: return "scope"
         }
     }
 
@@ -119,19 +123,19 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary:
             return false
-        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit:
+        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel:
             return true
         }
     }
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.upcomingEvents, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.upcomingEvents, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .dcaReminders])
+        Set([.upcomingEvents, .flashIntel, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .dcaReminders])
     }
 }
 

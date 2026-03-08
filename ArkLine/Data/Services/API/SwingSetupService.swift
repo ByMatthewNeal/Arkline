@@ -6,9 +6,22 @@ import Foundation
 final class SwingSetupService {
     private let supabase = SupabaseManager.shared
 
+    /// Short-lived cache to avoid duplicate fetches across multiple ViewModels
+    private static var activeSignalsCache: [TradeSignal]?
+    private static var activeSignalsCacheTime: Date?
+    private static let cacheTTL: TimeInterval = 30
+
     // MARK: - Active Signals
 
-    func fetchActiveSignals() async throws -> [TradeSignal] {
+    func fetchActiveSignals(forceRefresh: Bool = false) async throws -> [TradeSignal] {
+        // Return cached data if fresh
+        if !forceRefresh,
+           let cached = Self.activeSignalsCache,
+           let cacheTime = Self.activeSignalsCacheTime,
+           Date().timeIntervalSince(cacheTime) < Self.cacheTTL {
+            return cached
+        }
+
         let signals: [TradeSignal] = try await supabase.database
             .from(SupabaseTable.tradeSignals.rawValue)
             .select()
@@ -17,6 +30,8 @@ final class SwingSetupService {
             .execute()
             .value
 
+        Self.activeSignalsCache = signals
+        Self.activeSignalsCacheTime = Date()
         return signals
     }
 
