@@ -300,7 +300,7 @@ struct SwingSetupsDetailView: View {
             Image(systemName: "clock.arrow.circlepath")
                 .font(.system(size: 11))
                 .foregroundColor(AppColors.accent)
-            Text("Next scan in ~\(timeString)")
+            Text("Next scan in \(timeString)")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(AppColors.accent)
         }
@@ -815,9 +815,9 @@ struct SignalGuideSheet: View {
     // MARK: - Legend Rows
 
     private func legendRow(visual: AnyView, title: String, detail: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 10) {
             visual
-                .frame(width: 30, alignment: .center)
+                .frame(width: 100, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -885,6 +885,7 @@ struct SignalGuideSheet: View {
         Text(text)
             .font(.system(size: 10, weight: .bold))
             .foregroundColor(.white)
+            .lineLimit(1)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(color)
@@ -895,6 +896,7 @@ struct SignalGuideSheet: View {
         Text(text)
             .font(.system(size: 9, weight: .bold))
             .foregroundColor(color)
+            .lineLimit(1)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .background(color.opacity(0.12))
@@ -905,6 +907,7 @@ struct SignalGuideSheet: View {
         Text(text)
             .font(.system(size: 9, weight: .medium))
             .foregroundColor(color ?? AppColors.textSecondary)
+            .lineLimit(1)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background((color ?? Color.gray).opacity(0.12))
