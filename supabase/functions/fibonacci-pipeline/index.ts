@@ -5,7 +5,8 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *
  * Multi-Asset Golden Pocket Strategy — 4H Entry / 1D Bias
  *
- * Runs at 12:05 and 16:05 UTC (US session 4h candles):
+ * Runs every 4 hours at 0:05, 4:05, 8:05, 12:05, 16:05, 20:05 UTC
+ * (all six 4H candle closes):
  *   1. Fetches 4h + 1D OHLC candles from Binance for each asset
  *   2. Detects swing highs/lows
  *   3. Computes 0.618/0.786 Fibonacci retracement levels
@@ -14,9 +15,6 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *   6. Evaluates bounce confirmation
  *   7. Generates signals with targets/stops
  *   8. Resolves open signals (T1, runner trail, SL, expiry)
- *
- * Also runs at 0:05, 4:05, 8:05, 20:05 UTC in resolve-only mode
- * to check SL/T1/runner on open signals.
  */
 
 // ─── Multi-Asset Configuration ──────────────────────────────────────────────
@@ -119,14 +117,8 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   )
 
-  // Check if this is a resolve-only run
-  let resolveOnly = false
-  try {
-    const body = await req.json()
-    resolveOnly = body?.resolve_only === true
-  } catch {
-    // No body or invalid JSON — full pipeline run
-  }
+  // Consume request body (ignored — all runs are full pipeline)
+  try { await req.json() } catch {}
 
   const allResults: Record<string, unknown> = {}
 
@@ -145,26 +137,24 @@ Deno.serve(async (req) => {
       const resolveResult = await resolveOpenSignals(supabase, asset.ticker, candles)
       assetResults.resolved = resolveResult
 
-      if (!resolveOnly) {
-        // Full pipeline: detect swings, compute fibs, find zones, generate signals
-        const swings = detectAllSwings(candles)
-        await storeSwings(supabase, asset.ticker, swings)
-        assetResults.swings = { "4h": swings["4h"].length, "1d": swings["1d"].length }
+      // Full pipeline: detect swings, compute fibs, find zones, generate signals
+      const swings = detectAllSwings(candles)
+      await storeSwings(supabase, asset.ticker, swings)
+      assetResults.swings = { "4h": swings["4h"].length, "1d": swings["1d"].length }
 
-        const fibs = computeAllFibs(swings)
-        await storeFibs(supabase, asset.ticker, fibs)
-        assetResults.fibs = fibs.length
+      const fibs = computeAllFibs(swings)
+      await storeFibs(supabase, asset.ticker, fibs)
+      assetResults.fibs = fibs.length
 
-        const currentPrice = candles["4h"][candles["4h"].length - 1].close
-        const zones = clusterLevels(fibs, currentPrice)
-        await storeZones(supabase, asset.ticker, zones, currentPrice)
-        assetResults.zones = zones.length
+      const currentPrice = candles["4h"][candles["4h"].length - 1].close
+      const zones = clusterLevels(fibs, currentPrice)
+      await storeZones(supabase, asset.ticker, zones, currentPrice)
+      assetResults.zones = zones.length
 
-        const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice)
-        assetResults.newSignals = newSignals
+      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice)
+      assetResults.newSignals = newSignals
 
-        await pruneOldCandles(supabase, asset.ticker)
-      }
+      await pruneOldCandles(supabase, asset.ticker)
 
       allResults[asset.ticker] = assetResults
 
@@ -172,7 +162,7 @@ Deno.serve(async (req) => {
       await sleep(INTER_ASSET_DELAY_MS)
     }
 
-    return jsonResponse({ success: true, resolveOnly, assets: allResults })
+    return jsonResponse({ success: true, assets: allResults })
   } catch (err) {
     return jsonResponse({ error: "Pipeline failed", detail: String(err), partial: allResults }, 500)
   }

@@ -1,0 +1,23 @@
+-- Switch fibonacci-pipeline to run FULL pipeline on ALL six 4H candle closes
+-- (previously only 12:05 + 16:05 UTC were full, others were resolve-only)
+--
+-- Backtest results: 24/7 mode significantly outperforms US-session-only
+--   24/7: 67.9% WR, 2.66 PF, +53.9% P&L
+--   US:   61.5% WR, 1.76 PF, +14.3% P&L
+--
+-- pg_cron jobs: configure manually in Supabase Dashboard SQL Editor.
+--
+-- Step 1: Remove old split schedule (full + resolve-only)
+--   SELECT cron.unschedule('fibonacci-pipeline-4h');
+--   SELECT cron.unschedule('fibonacci-resolver-4h');
+--   SELECT cron.unschedule('fibonacci-pipeline-sunday-afternoon');
+--   SELECT cron.unschedule('fibonacci-pipeline-sunday-evening');
+--
+-- Step 2: Single job for all 6 candle closes (full pipeline every time)
+--   SELECT cron.schedule('fibonacci-pipeline-4h', '5 0,4,8,12,16,20 * * *', $$
+--     SELECT net.http_post(
+--       url := 'https://<project-ref>.supabase.co/functions/v1/fibonacci-pipeline',
+--       headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
+--       body := '{}'::jsonb
+--     );
+--   $$);

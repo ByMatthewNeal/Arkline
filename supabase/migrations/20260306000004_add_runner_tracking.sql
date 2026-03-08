@@ -19,20 +19,6 @@ ALTER TABLE public.trade_signals
 -- Supabase does not support custom app.* config parameters, so cron jobs
 -- must hardcode the project URL and CRON_SECRET directly.
 --
--- Full pipeline (US session 4h candles — 7:05am + 11:05am EST):
---   SELECT cron.schedule('fibonacci-pipeline-4h', '5 12,16 * * *', $$
---     SELECT net.http_post(
---       url := 'https://<project-ref>.supabase.co/functions/v1/fibonacci-pipeline',
---       headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
---       body := '{}'::jsonb
---     );
---   $$);
---
--- Resolve-only (off-candle hours):
---   SELECT cron.schedule('fibonacci-resolver-4h', '5 0,4,8,20 * * *', $$
---     SELECT net.http_post(
---       url := 'https://<project-ref>.supabase.co/functions/v1/fibonacci-pipeline',
---       headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
---       body := '{"resolve_only":true}'::jsonb
---     );
---   $$);
+-- NOTE: Schedule updated in 20260308000001 — full pipeline now runs on ALL
+-- six 4H candle closes (0:05, 4:05, 8:05, 12:05, 16:05, 20:05 UTC).
+-- See that migration for the current cron setup.

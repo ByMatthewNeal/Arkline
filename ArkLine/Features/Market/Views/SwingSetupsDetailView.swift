@@ -283,12 +283,12 @@ struct SwingSetupsDetailView: View {
         var utcCalendar = Calendar(identifier: .gregorian)
         utcCalendar.timeZone = TimeZone(identifier: "UTC")!
 
-        // Pipeline runs at 12:05 and 16:05 UTC
+        // Pipeline runs every 4h at 0:05, 4:05, 8:05, 12:05, 16:05, 20:05 UTC
         let hour = utcCalendar.component(.hour, from: now)
         let minute = utcCalendar.component(.minute, from: now)
         let currentMinutes = hour * 60 + minute
 
-        let checkTimes = [12 * 60 + 5, 16 * 60 + 5] // 12:05 and 16:05 UTC in minutes
+        let checkTimes = [0 * 60 + 5, 4 * 60 + 5, 8 * 60 + 5, 12 * 60 + 5, 16 * 60 + 5, 20 * 60 + 5]
         let nextCheck: Int = checkTimes.first(where: { $0 > currentMinutes }) ?? (checkTimes[0] + 24 * 60)
         let minutesUntil = nextCheck - currentMinutes
         let hoursUntil = minutesUntil / 60
