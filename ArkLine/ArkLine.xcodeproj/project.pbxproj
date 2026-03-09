@@ -58,6 +58,7 @@
 		225A1070FCDF3751115B7F4F /* ToastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B778AE7F7AE7B07921A533 /* ToastManager.swift */; };
 		238703EC82D905CE83DDE55D /* MetalAsset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */; };
 		2468C41EA54E4F60BE5F4E6E /* MarketSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6BACE34C9446559D45628B /* MarketSummaryService.swift */; };
+		3A7D1E9F5B8C4D2A6E0F1B3C /* BriefingAudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4E2F8A1D6B3E9C5A0D7F2E /* BriefingAudioService.swift */; };
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
 		25C648A271174A9662409B17 /* GoldDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */; };
 		268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */; };
@@ -681,6 +682,7 @@
 		9A7B78682470516CE6512242 /* MemberRow.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberRow.swift; sourceTree = "<group>"; };
 		9F0DADEBAA9FA8124260B057 /* DerivativesDataSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DerivativesDataSection.swift; sourceTree = "<group>"; };
 		9F447EEE9DD02CC43E731078 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		7C4E2F8A1D6B3E9C5A0D7F2E /* BriefingAudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingAudioService.swift; sourceTree = "<group>"; };
 		9F6BACE34C9446559D45628B /* MarketSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSummaryService.swift; sourceTree = "<group>"; };
 		A0659CA02D3A55140C6B3897 /* CMEFedWatchScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CMEFedWatchScraper.swift; sourceTree = "<group>"; };
 		A06F487DE3C8CD0C873C97E0 /* InviteCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCode.swift; sourceTree = "<group>"; };
@@ -1125,6 +1127,7 @@
 				B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */,
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
 				F1A2B3C4D5E6F7A8B9C0D1E2 /* ArticleSummaryService.swift */,
+				7C4E2F8A1D6B3E9C5A0D7F2E /* BriefingAudioService.swift */,
 				9F6BACE34C9446559D45628B /* MarketSummaryService.swift */,
 				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
 				4477F7D7272D23B31C4B0199 /* MetalTechnicalAnalysisService.swift */,
@@ -2329,6 +2332,7 @@
 				E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */,
 				E2D1C0B9A8F7E6D5C4B3A2F1 /* ArticleSummaryService.swift in Sources */,
 				2468C41EA54E4F60BE5F4E6E /* MarketSummaryService.swift in Sources */,
+				3A7D1E9F5B8C4D2A6E0F1B3C /* BriefingAudioService.swift in Sources */,
 				A7B3C8D9E2F401568A3D7E02 /* AltcoinSeasonStore.swift in Sources */,
 				F01FE94D4879AC67E00D0369 /* APITechnicalAnalysisService.swift in Sources */,
 				38403ADBC04AB8CD95F00E3E /* MetalTechnicalAnalysisService.swift in Sources */,

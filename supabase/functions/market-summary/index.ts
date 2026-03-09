@@ -378,6 +378,36 @@ Rules:
       console.error("Failed to cache summary:", insertError.message)
     }
 
+    // --- Push notification + TTS pre-generation (fire-and-forget) ---
+    const briefingKey = `${todayUTC}_${slot}`
+    const postureMatch = summary.match(/## Posture\n([^\n]+)/)
+    const posture = postureMatch?.[1]?.trim() ?? ""
+    const slotLabel = slot === "morning" ? "Morning Intel" : "Close & Context"
+    const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+
+    // Send push notification to all users
+    fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cron-secret": cronSecret,
+      },
+      body: JSON.stringify({
+        broadcast_id: `briefing_${briefingKey}`,
+        title: `${slotLabel} Ready`,
+        body: posture.length > 80 ? posture.substring(0, 77) + "..." : (posture || `Your ${slot} market briefing is ready.`),
+        target_audience: { type: "all" },
+        custom_data: { type: "briefing", slot },
+      }),
+    }).catch((err) => console.error("Briefing push failed:", err))
+
+    // Pre-generate TTS audio
+    fetch(`${supabaseUrl}/functions/v1/briefing-tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ briefingKey, summaryText: summary }),
+    }).catch((err) => console.error("TTS pre-generation failed:", err))
+
     return ok({ summary, generatedAt: new Date().toISOString() })
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err)

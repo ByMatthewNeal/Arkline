@@ -9,6 +9,7 @@ struct HomeAISummaryWidget: View {
     var isAdmin: Bool = false
     var liveRegime: MacroRegimeResult? = nil
     var onFeedback: ((Bool, String?) -> Void)? = nil
+    var audioService: BriefingAudioService = .shared
     @State private var showNoteField = false
     @State private var selectedRating: Bool?
     @State private var feedbackNote = ""
@@ -53,6 +54,22 @@ struct HomeAISummaryWidget: View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
             // Header — tappable to toggle expand/collapse
             headerRow
+
+            // Audio progress bar
+            if audioService.playbackState == .playing || audioService.playbackState == .paused {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(textPrimary.opacity(0.08))
+                            .frame(height: 3)
+                        Capsule()
+                            .fill(AppColors.accent)
+                            .frame(width: geo.size.width * audioService.playbackProgress, height: 3)
+                            .animation(.linear(duration: 0.25), value: audioService.playbackProgress)
+                    }
+                }
+                .frame(height: 3)
+            }
 
             // Greeting with market posture
             Text(enhancedGreeting)
@@ -159,6 +176,9 @@ struct HomeAISummaryWidget: View {
                     Text(relativeTime(from: summary.generatedAt))
                         .font(AppFonts.caption12)
                         .foregroundColor(textPrimary.opacity(0.4))
+
+                    // Audio play/pause button
+                    audioButton(for: summary)
                 }
 
                 if summary != nil {
@@ -167,6 +187,41 @@ struct HomeAISummaryWidget: View {
                         .foregroundColor(textPrimary.opacity(0.3))
                 }
             }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Audio Button
+
+    private func audioButton(for summary: MarketSummary) -> some View {
+        Button {
+            switch audioService.playbackState {
+            case .idle:
+                Task { await audioService.play(summary: summary) }
+            case .loading:
+                break
+            case .playing, .paused:
+                audioService.togglePlayPause()
+            }
+        } label: {
+            Group {
+                switch audioService.playbackState {
+                case .idle:
+                    Image(systemName: "play.circle.fill")
+                        .foregroundColor(AppColors.accent)
+                case .loading:
+                    ProgressView()
+                        .scaleEffect(0.6)
+                case .playing:
+                    Image(systemName: "pause.circle.fill")
+                        .foregroundColor(AppColors.accent)
+                case .paused:
+                    Image(systemName: "play.circle.fill")
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+            .font(.system(size: 18))
+            .frame(width: 28, height: 28)
         }
         .buttonStyle(.plain)
     }
