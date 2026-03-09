@@ -21,6 +21,21 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifySwingSignals)
     private var swingSignals = true
 
+    @AppStorage(Constants.UserDefaults.notifySignalNew)
+    private var signalNew = true
+
+    @AppStorage(Constants.UserDefaults.notifySignalT1Hit)
+    private var signalT1Hit = true
+
+    @AppStorage(Constants.UserDefaults.notifySignalStopLoss)
+    private var signalStopLoss = true
+
+    @AppStorage(Constants.UserDefaults.notifySignalRunnerClose)
+    private var signalRunnerClose = true
+
+    @AppStorage(Constants.UserDefaults.notifySignalExpiry)
+    private var signalExpiry = true
+
     @AppStorage(Constants.UserDefaults.notifyInsights)
     private var insights = true
 
@@ -123,16 +138,90 @@ struct NotificationsDetailView: View {
                             icon: "scope",
                             iconColor: AppColors.success,
                             title: "Swing Trade Alerts",
-                            description: "Strong Buy/Sell signals from Fibonacci confluence zones"
+                            description: "Master toggle for all signal notifications"
                         )
                     }
-                    .onChange(of: swingSignals) { _, _ in
+                    .onChange(of: swingSignals) { _, newValue in
                         Haptics.selection()
+                        syncSignalPreferences()
                     }
                 } header: {
                     Text("Market Alerts")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                // MARK: - Signal Alert Types
+                if swingSignals {
+                    Section {
+                        Toggle(isOn: $signalNew) {
+                            NotificationRow(
+                                icon: "plus.circle.fill",
+                                iconColor: AppColors.accent,
+                                title: "New Signals",
+                                description: "When a new trade signal is generated"
+                            )
+                        }
+                        .onChange(of: signalNew) { _, _ in
+                            Haptics.selection()
+                            syncSignalPreferences()
+                        }
+
+                        Toggle(isOn: $signalT1Hit) {
+                            NotificationRow(
+                                icon: "target",
+                                iconColor: AppColors.success,
+                                title: "Target 1 Hit",
+                                description: "When a signal reaches its first profit target"
+                            )
+                        }
+                        .onChange(of: signalT1Hit) { _, _ in
+                            Haptics.selection()
+                            syncSignalPreferences()
+                        }
+
+                        Toggle(isOn: $signalStopLoss) {
+                            NotificationRow(
+                                icon: "xmark.octagon.fill",
+                                iconColor: AppColors.error,
+                                title: "Stop Loss Hit",
+                                description: "When a signal hits its stop loss"
+                            )
+                        }
+                        .onChange(of: signalStopLoss) { _, _ in
+                            Haptics.selection()
+                            syncSignalPreferences()
+                        }
+
+                        Toggle(isOn: $signalRunnerClose) {
+                            NotificationRow(
+                                icon: "flag.checkered",
+                                iconColor: AppColors.warning,
+                                title: "Runner Closed",
+                                description: "When the trailing runner position closes"
+                            )
+                        }
+                        .onChange(of: signalRunnerClose) { _, _ in
+                            Haptics.selection()
+                            syncSignalPreferences()
+                        }
+
+                        Toggle(isOn: $signalExpiry) {
+                            NotificationRow(
+                                icon: "clock.badge.xmark",
+                                iconColor: AppColors.textSecondary,
+                                title: "Signal Expired",
+                                description: "When a signal expires without being triggered"
+                            )
+                        }
+                        .onChange(of: signalExpiry) { _, _ in
+                            Haptics.selection()
+                            syncSignalPreferences()
+                        }
+                    } header: {
+                        Text("Signal Alert Types")
+                    }
+                    .listRowBackground(AppColors.cardBackground(colorScheme))
+                }
 
                 // MARK: - Insights
                 Section {
@@ -230,6 +319,28 @@ struct NotificationsDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private func syncSignalPreferences() {
+        Task {
+            guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
+            let prefs: [String: Bool] = [
+                "signal_new": swingSignals && signalNew,
+                "signal_t1_hit": swingSignals && signalT1Hit,
+                "signal_stop_loss": swingSignals && signalStopLoss,
+                "signal_runner_close": swingSignals && signalRunnerClose,
+                "signal_expiry": swingSignals && signalExpiry,
+            ]
+            do {
+                try await SupabaseManager.shared.client
+                    .from("profiles")
+                    .update(["notification_preferences": prefs])
+                    .eq("id", value: userId.uuidString)
+                    .execute()
+            } catch {
+                logWarning("Failed to sync notification preferences: \(error)", category: .network)
+            }
+        }
     }
 
     private func cancelAllDCANotifications() {

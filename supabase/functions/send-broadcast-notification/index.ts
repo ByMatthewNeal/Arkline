@@ -10,6 +10,7 @@ interface NotificationRequest {
   broadcast_id: string
   title: string
   body: string
+  event_type?: string  // e.g. "signal_new", "signal_t1_hit", "signal_stop_loss", "signal_runner_close", "signal_expiry"
   target_audience?: {
     type: "all" | "premium" | "specific"
     user_ids?: string[]
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { broadcast_id, title, body, target_audience } =
+    const { broadcast_id, title, body, event_type, target_audience } =
       (await req.json()) as NotificationRequest
 
     if (!broadcast_id || !title) {
@@ -127,6 +128,37 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Filter by per-user notification preferences if event_type is provided
+    let filteredDevices = devices
+    if (event_type) {
+      const userIds = [...new Set(devices.map((d: { user_id: string }) => d.user_id))]
+      const { data: profiles } = await supabaseAdmin
+        .from("profiles")
+        .select("id, notification_preferences")
+        .in("id", userIds)
+
+      if (profiles) {
+        const blockedUsers = new Set<string>()
+        for (const profile of profiles) {
+          const prefs = profile.notification_preferences as Record<string, boolean> | null
+          // null prefs = all enabled (default). Only block if explicitly set to false.
+          if (prefs && prefs[event_type] === false) {
+            blockedUsers.add(profile.id)
+          }
+        }
+        if (blockedUsers.size > 0) {
+          filteredDevices = devices.filter((d: { user_id: string }) => !blockedUsers.has(d.user_id))
+        }
+      }
+    }
+
+    if (filteredDevices.length === 0) {
+      return new Response(
+        JSON.stringify({ sent: 0, reason: "All users opted out of this event type", event_type }),
+        { headers: corsHeaders }
+      )
+    }
+
     // TODO: Full APNs integration requires a .p8 auth key stored in Supabase secrets.
     // For now, log the intent and return the device count.
     // When APNs is configured, replace this block with actual push delivery:
@@ -142,7 +174,7 @@ Deno.serve(async (req) => {
     //   Body: { aps: { alert: { title, body }, sound: "default", badge: 1 },
     //           broadcast_id }
 
-    const tokens = devices.map((d: { device_token: string }) => d.device_token)
+    const tokens = filteredDevices.map((d: { device_token: string }) => d.device_token)
 
     console.log(
       `[send-broadcast-notification] Would send to ${tokens.length} devices for broadcast ${broadcast_id}`

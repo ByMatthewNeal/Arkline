@@ -334,6 +334,16 @@ async function notify(
       break
   }
 
+  // Map event to preference key
+  const eventTypeMap: Record<EventType, string> = {
+    stop_loss: "signal_stop_loss",
+    t1_hit: "signal_t1_hit",
+    runner_win: "signal_runner_close",
+    runner_loss: "signal_runner_close",
+    expired_win: "signal_expiry",
+    expired_loss: "signal_expiry",
+  }
+
   try {
     await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
       method: "POST",
@@ -345,6 +355,7 @@ async function notify(
         broadcast_id: signal.id,
         title,
         body,
+        event_type: eventTypeMap[event],
         target_audience: { type: "premium" },
       }),
     })

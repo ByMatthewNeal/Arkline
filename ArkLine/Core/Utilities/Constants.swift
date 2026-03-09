@@ -143,6 +143,13 @@ enum Constants {
         static let notifyEmailInsights = "notifyEmailInsights"
         static let notifyEmailDCAReminders = "notifyEmailDCAReminders"
         static let notifyEmailAccountUpdates = "notifyEmailAccountUpdates"
+        // Granular signal notification preferences
+        static let notifySignalNew = "arkline_notify_signal_new"
+        static let notifySignalT1Hit = "arkline_notify_signal_t1_hit"
+        static let notifySignalStopLoss = "arkline_notify_signal_stop_loss"
+        static let notifySignalRunnerClose = "arkline_notify_signal_runner_close"
+        static let notifySignalExpiry = "arkline_notify_signal_expiry"
+
         static let leverageWalletSize = "arkline_leverage_wallet_size"
         static let portfolioHidden = "arkline_portfolio_hidden"
     }

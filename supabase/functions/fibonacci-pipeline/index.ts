@@ -790,6 +790,7 @@ async function evaluateSignals(
             broadcast_id: inserted.id,
             title: `${emoji} ${ticker} ${direction} Signal`,
             body: `${isStrong ? "Strong " : ""}${direction} at ${entryStr} | R:R ${rrRatio.toFixed(1)} | T1: ${t1Str} | SL: ${slStr}`,
+            event_type: "signal_new",
             target_audience: { type: "premium" },
           }),
         }).catch(() => {})
@@ -1075,12 +1076,23 @@ function notifyResolution(signal: any, event: ResolutionEvent, price: number): v
       break
   }
 
+  // Map event to preference key
+  const eventTypeMap: Record<ResolutionEvent, string> = {
+    stop_loss: "signal_stop_loss",
+    t1_hit: "signal_t1_hit",
+    runner_win: "signal_runner_close",
+    runner_loss: "signal_runner_close",
+    expired_win: "signal_expiry",
+    expired_loss: "signal_expiry",
+  }
+
   fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
     body: JSON.stringify({
       broadcast_id: signal.id,
       title, body,
+      event_type: eventTypeMap[event],
       target_audience: { type: "premium" },
     }),
   }).catch(() => {})
