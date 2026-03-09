@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   const bucket = "briefing-audio"
-  const filePath = `${briefingKey}.mp3`
+  const voiceVersion = "v2" // bump to invalidate cache on voice change
+  const filePath = `${voiceVersion}/${briefingKey}.mp3`
 
   // Check for cached audio
   try {
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "tts-1",
-        voice: "nova",
+        voice: "onyx",
         input: spokenText,
         response_format: "mp3",
       }),

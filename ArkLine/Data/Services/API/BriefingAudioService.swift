@@ -200,10 +200,13 @@ final class BriefingAudioService {
 
     // MARK: - Cache
 
+    private static let voiceVersion = "v2" // bump to invalidate cache on voice change
+
     private func cacheFileURL(for briefingKey: String) -> URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         return caches
             .appendingPathComponent("BriefingAudio", isDirectory: true)
+            .appendingPathComponent(Self.voiceVersion, isDirectory: true)
             .appendingPathComponent("\(briefingKey).mp3")
     }
 
