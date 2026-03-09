@@ -13,6 +13,7 @@ struct PortfolioHeroCard: View {
     var hasLoadedPortfolios: Bool = true
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
 
     private var currency: String { appState.preferredCurrency }
 
@@ -105,25 +106,43 @@ struct PortfolioHeroCard: View {
     // MARK: - Portfolio Content
     private var portfolioContent: some View {
         Group {
-            // Portfolio Selector
-            Button(action: onPortfolioTap) {
-                HStack(spacing: 6) {
-                    Text(portfolioName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(textPrimary)
+            // Portfolio Selector + Privacy Toggle
+            HStack {
+                Button(action: onPortfolioTap) {
+                    HStack(spacing: 6) {
+                        Text(portfolioName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(textPrimary)
 
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(textPrimary.opacity(0.6))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.6))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
+                    )
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
-                )
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { isHidden.toggle() }
+                } label: {
+                    Image(systemName: isHidden ? "eye.slash" : "eye")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(textPrimary.opacity(0.4))
+                        .frame(width: 36, height: 36)
+                        .background(
+                            Circle()
+                                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
+                        )
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             TimePeriodSelector(selectedPeriod: $selectedTimePeriod)
 
@@ -133,7 +152,7 @@ struct PortfolioHeroCard: View {
                     .foregroundColor(textPrimary.opacity(0.5))
                     .tracking(1)
 
-                Text(totalValue.asCurrency(code: currency))
+                Text(isHidden ? "••••••" : totalValue.asCurrency(code: currency))
                     .font(.system(size: 42, weight: .bold))
                     .foregroundColor(textPrimary)
                     .contentTransition(.numericText())
@@ -142,11 +161,11 @@ struct PortfolioHeroCard: View {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 14, weight: .semibold))
 
-                    Text("\(isPositive ? "+" : "")\(change.asCurrency(code: currency))")
+                    Text(isHidden ? "••••" : "\(isPositive ? "+" : "")\(change.asCurrency(code: currency))")
                         .font(.system(size: 16, weight: .semibold))
                         .contentTransition(.numericText())
 
-                    Text("(\(isPositive ? "+" : "")\(changePercent, specifier: "%.2f")%)")
+                    Text(isHidden ? "" : "(\(isPositive ? "+" : "")\(changePercent, specifier: "%.2f")%)")
                         .font(.system(size: 14))
                         .opacity(0.8)
                         .contentTransition(.numericText())
@@ -160,7 +179,7 @@ struct PortfolioHeroCard: View {
                 )
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(portfolioName) portfolio, \(totalValue.asCurrency(code: currency)), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
+            .accessibilityLabel(isHidden ? "Portfolio hidden" : "\(portfolioName) portfolio, \(totalValue.asCurrency(code: currency)), \(isPositive ? "up" : "down") \(String(format: "%.2f", abs(changePercent))) percent")
 
             PortfolioSparkline(
                 dataPoints: chartData,

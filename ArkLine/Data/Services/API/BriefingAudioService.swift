@@ -23,6 +23,7 @@ final class BriefingAudioService {
 
     var playbackState: PlaybackState = .idle
     var playbackProgress: Double = 0
+    var lastError: String?
 
     // MARK: - Private
 
@@ -46,6 +47,7 @@ final class BriefingAudioService {
 
     func play(summary: MarketSummary) async {
         let briefingKey = summary.briefingKey
+        logDebug("Briefing audio: play requested for \(briefingKey)", category: .general)
 
         // If already playing this briefing, just resume
         if currentBriefingKey == briefingKey && playbackState == .paused {
@@ -59,15 +61,18 @@ final class BriefingAudioService {
         await MainActor.run {
             playbackState = .loading
             playbackProgress = 0
+            lastError = nil
         }
         currentBriefingKey = briefingKey
 
         do {
             let fileURL = try await resolveAudioFile(briefingKey: briefingKey, summaryText: summary.summary)
+            logDebug("Briefing audio: file resolved at \(fileURL.lastPathComponent)", category: .general)
             await startPlayback(fileURL: fileURL)
         } catch {
-            logError("Briefing audio failed: \(error.localizedDescription)", category: .network)
+            logError("Briefing audio failed: \(error)", category: .network)
             await MainActor.run {
+                lastError = error.localizedDescription
                 playbackState = .idle
             }
         }
@@ -119,6 +124,13 @@ final class BriefingAudioService {
             options: FunctionInvokeOptions(body: request),
             decode: { data, _ in data }
         )
+
+        // Check for error response from edge function (returns 200 with { error: "..." })
+        if let errorResponse = try? JSONDecoder().decode([String: String].self, from: data),
+           let errorMsg = errorResponse["error"] {
+            logError("Briefing TTS edge function error: \(errorMsg)", category: .network)
+            throw BriefingAudioError.serverError(errorMsg)
+        }
 
         let response = try JSONDecoder().decode(TTSResponse.self, from: data)
 
@@ -217,6 +229,7 @@ enum BriefingAudioError: Error, LocalizedError {
     case notConfigured
     case invalidURL
     case downloadFailed
+    case serverError(String)
 
     var errorDescription: String? {
         switch self {
@@ -226,6 +239,8 @@ enum BriefingAudioError: Error, LocalizedError {
             return "Invalid audio URL received"
         case .downloadFailed:
             return "Failed to download audio file"
+        case .serverError(let message):
+            return message
         }
     }
 }

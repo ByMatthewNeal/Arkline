@@ -71,6 +71,13 @@ struct HomeAISummaryWidget: View {
                 .frame(height: 3)
             }
 
+            // Audio error message
+            if let error = audioService.lastError {
+                Text(error)
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.error)
+            }
+
             // Greeting with market posture
             Text(enhancedGreeting)
                 .font(AppFonts.body14)
@@ -150,10 +157,10 @@ struct HomeAISummaryWidget: View {
     // MARK: - Header Row
 
     private var headerRow: some View {
-        Button {
-            withAnimation(.arkSpring) { isExpanded.toggle() }
-        } label: {
-            HStack {
+        HStack {
+            Button {
+                withAnimation(.arkSpring) { isExpanded.toggle() }
+            } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
                         .font(.system(size: size == .compact ? 12 : 14))
@@ -169,26 +176,31 @@ struct HomeAISummaryWidget: View {
                             .frame(width: 7, height: 7)
                     }
                 }
+            }
+            .buttonStyle(.plain)
 
-                Spacer()
+            Spacer()
 
-                if let summary {
-                    Text(relativeTime(from: summary.generatedAt))
-                        .font(AppFonts.caption12)
-                        .foregroundColor(textPrimary.opacity(0.4))
+            if let summary {
+                Text(relativeTime(from: summary.generatedAt))
+                    .font(AppFonts.caption12)
+                    .foregroundColor(textPrimary.opacity(0.4))
 
-                    // Audio play/pause button
-                    audioButton(for: summary)
-                }
+                // Audio play/pause button
+                audioButton(for: summary)
+            }
 
-                if summary != nil {
+            if summary != nil {
+                Button {
+                    withAnimation(.arkSpring) { isExpanded.toggle() }
+                } label: {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(textPrimary.opacity(0.3))
                 }
+                .buttonStyle(.plain)
             }
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Audio Button
@@ -547,6 +559,15 @@ struct HomeAISummaryWidget: View {
 
     private var shimmerPlaceholder: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Reassuring loading message
+            HStack(spacing: 6) {
+                ProgressView()
+                    .scaleEffect(0.7)
+                Text("Preparing your briefing...")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(textPrimary.opacity(0.4))
+            }
+
             // Posture pill shimmer
             RoundedRectangle(cornerRadius: 10)
                 .fill(shimmerFill)

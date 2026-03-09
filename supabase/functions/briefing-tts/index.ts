@@ -48,8 +48,9 @@ Deno.serve(async (req) => {
   const openaiKey = Deno.env.get("OPENAI_API_KEY")
   if (!openaiKey) {
     console.error("OPENAI_API_KEY not set")
-    return ok({ error: "TTS service unavailable" })
+    return ok({ error: "TTS service unavailable — no API key" })
   }
+  console.log(`OPENAI_API_KEY present: ${openaiKey.substring(0, 7)}...${openaiKey.substring(openaiKey.length - 4)}`)
 
   // Call OpenAI TTS
   try {
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
     if (!ttsResponse.ok) {
       const errorText = await ttsResponse.text()
       console.error(`OpenAI TTS error: ${ttsResponse.status} ${errorText}`)
-      return ok({ error: "Failed to generate audio" })
+      return ok({ error: `TTS failed (${ttsResponse.status}): ${errorText}` })
     }
 
     const audioBuffer = await ttsResponse.arrayBuffer()
