@@ -8,6 +8,7 @@ struct SwingSetupsDetailView: View {
     @State private var selectedAsset: String? = nil
     @State private var selectedConfidence: SignalConfidence? = nil
     @State private var showGuide = false
+    @State private var signalToShare: TradeSignal? = nil
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -140,6 +141,13 @@ struct SwingSetupsDetailView: View {
                                     SignalCard(signal: signal, colorScheme: colorScheme)
                                 }
                                 .buttonStyle(PlainButtonStyle())
+                                .contextMenu {
+                                    Button {
+                                        signalToShare = signal
+                                    } label: {
+                                        Label("Share Signal", systemImage: "square.and.arrow.up")
+                                    }
+                                }
                             }
                         }
                         .padding(.horizontal)
@@ -171,6 +179,9 @@ struct SwingSetupsDetailView: View {
         }
         .sheet(isPresented: $showGuide) {
             SignalGuideSheet()
+        }
+        .sheet(item: $signalToShare) { signal in
+            TradeSignalShareSheet(signal: signal)
         }
         .task {
             await viewModel.loadAllData()
@@ -804,8 +815,36 @@ struct SignalCard: View {
                         .foregroundColor(textPrimary)
                 }
 
-                // AI rationale
-                if let rationale = signal.shortRationale, !rationale.isEmpty {
+                // AI analysis section
+                if let analysis = signal.cardAnalysis {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppColors.accent)
+                            Text("WHY THIS SETUP")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(AppColors.textSecondary)
+                                .tracking(0.8)
+                        }
+
+                        Text(analysis.narrative)
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.7))
+                            .lineSpacing(2)
+                            .lineLimit(3)
+
+                        HStack(spacing: 6) {
+                            analysisContextPill(analysis.confluenceStrength)
+                            analysisContextPill(analysis.trendDirection)
+                        }
+                    }
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(AppColors.accent.opacity(colorScheme == .dark ? 0.06 : 0.04))
+                    )
+                } else if let rationale = signal.shortRationale, !rationale.isEmpty {
                     HStack(spacing: 6) {
                         Image(systemName: "brain.head.profile")
                             .font(.system(size: 10))
@@ -949,6 +988,13 @@ struct SignalCard: View {
                     .opacity(color != nil ? 0.12 : (colorScheme == .dark ? 0.08 : 0.05))
             )
             .cornerRadius(4)
+    }
+
+    private func analysisContextPill(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .medium))
+            .foregroundColor(AppColors.textSecondary)
+            .lineLimit(1)
     }
 
     private func miniMetric(label: String, value: String, color: Color) -> some View {

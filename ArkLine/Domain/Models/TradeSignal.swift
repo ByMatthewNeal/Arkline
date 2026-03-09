@@ -57,6 +57,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let expiresAt: Date?
     let briefingText: String?
     let shortRationale: String?
+    let cardAnalysis: CardAnalysis?
 
     enum CodingKeys: String, CodingKey {
         case id, asset, status, outcome
@@ -94,6 +95,25 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case expiresAt = "expires_at"
         case briefingText = "briefing_text"
         case shortRationale = "short_rationale"
+        case cardAnalysis = "card_analysis"
+    }
+}
+
+// MARK: - Card Analysis
+
+struct CardAnalysis: Codable, Equatable {
+    let narrative: String
+    let macroRegimeLabel: String
+    let fearGreedLabel: String
+    let trendDirection: String
+    let confluenceStrength: String
+
+    enum CodingKeys: String, CodingKey {
+        case narrative
+        case macroRegimeLabel = "macro_regime_label"
+        case fearGreedLabel = "fear_greed_label"
+        case trendDirection = "trend_direction"
+        case confluenceStrength = "confluence_strength"
     }
 }
 

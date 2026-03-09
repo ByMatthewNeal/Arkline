@@ -92,10 +92,16 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
+        max_tokens: 1000,
         system: `You are Arkline's pattern analysis engine. Generate a concise educational briefing describing the detected Fibonacci pattern conditions. This is a pattern observation tool, NOT trading advice. Format the output as a JSON object with these fields:
 - headline (max 60 chars, e.g. "BTC Fibonacci Confluence at Key Support — Long Setup Detected")
 - short_rationale (ONE sentence, max 20 words, explaining the key reason this setup stands out. Focus on the strongest confluence factor. E.g. "3-level golden pocket at daily support with bullish EMA crossover and rising volume." No disclaimers.)
+- card_analysis (object with 5 fields for the signal card display):
+  - narrative (2-3 sentences, ~50 words. Describe the Fibonacci pattern, what confluence levels are present, the trend structure, and what confirmation was observed. Write in plain English for someone learning technical analysis. Frame as observations.)
+  - macro_regime_label (short label describing the macro backdrop, e.g. "Risk-On — Liquidity expanding" or "Risk-Off — Dollar strengthening". Use the macro_regime data provided.)
+  - fear_greed_label (short label, e.g. "Greed (72) — Elevated optimism" or "Fear (28) — Cautious sentiment". Use the Fear & Greed value provided.)
+  - trend_direction (short label about EMA/trend alignment, e.g. "Bullish — 20/50 EMA aligned on 4H and Daily" or "Mixed — 4H bullish, Daily neutral")
+  - confluence_strength (short label about the Fibonacci zone, e.g. "3-level golden pocket at key daily support" or "2 overlapping Fib zones across 4H/1D")
 - summary (2-3 sentences describing the pattern setup and what conditions have aligned. Frame as observations: "conditions detected", "pattern suggests", "levels are aligning". Never say "buy", "sell", "time to enter", or give action directives.)
 - supporting_signals (array of 2-3 short bullet point strings highlighting the strongest confirming data points as observations)
 - disclaimer ("This is not financial advice. These are pattern observations for educational purposes. Always DYOR and consult a licensed advisor before making crypto-related decisions.")
@@ -148,14 +154,29 @@ Return ONLY the JSON object, no markdown fences or extra text.`,
       briefing.disclaimer ?? "",
     ].join("\n").trim()
 
-    // Update the signal with the briefing + short rationale
+    // Update the signal with the briefing + short rationale + card analysis
     const shortRationale = typeof briefing.short_rationale === "string"
       ? (briefing.short_rationale as string).slice(0, 120)
       : null
 
+    // Validate card_analysis has all required fields
+    const rawCardAnalysis = briefing.card_analysis as Record<string, string> | undefined
+    const cardAnalysis = rawCardAnalysis
+      && typeof rawCardAnalysis.narrative === "string"
+      && typeof rawCardAnalysis.macro_regime_label === "string"
+      && typeof rawCardAnalysis.fear_greed_label === "string"
+      && typeof rawCardAnalysis.trend_direction === "string"
+      && typeof rawCardAnalysis.confluence_strength === "string"
+      ? rawCardAnalysis
+      : null
+
     const { error: updateErr } = await supabase
       .from("trade_signals")
-      .update({ briefing_text: briefingText, short_rationale: shortRationale })
+      .update({
+        briefing_text: briefingText,
+        short_rationale: shortRationale,
+        card_analysis: cardAnalysis,
+      })
       .eq("id", signalId)
 
     if (updateErr) {

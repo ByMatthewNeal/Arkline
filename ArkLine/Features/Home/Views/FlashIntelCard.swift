@@ -81,7 +81,12 @@ struct FlashIntelCard: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
 
-                if let rationale = signal.shortRationale, !rationale.isEmpty {
+                if let analysis = signal.cardAnalysis {
+                    Text(analysis.narrative)
+                        .font(.system(size: 10))
+                        .foregroundColor(textPrimary.opacity(0.5))
+                        .lineLimit(1)
+                } else if let rationale = signal.shortRationale, !rationale.isEmpty {
                     Text(rationale)
                         .font(.system(size: 10))
                         .foregroundColor(textPrimary.opacity(0.5))

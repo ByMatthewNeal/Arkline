@@ -9,6 +9,7 @@ struct TradeSignalCardContent: View {
     let signal: TradeSignal
     var isLight: Bool = true
     var leverageInfo: ShareLeverageInfo? = nil
+    var includeAnalysis: Bool = true
 
     private var textPrimary: Color { isLight ? Color(hex: "1A1A2E") : .white }
     private var textSecondary: Color { isLight ? Color(hex: "64748B") : Color.white.opacity(0.6) }
@@ -85,6 +86,35 @@ struct TradeSignalCardContent: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(cardBg)
             )
+
+            // Analysis section
+            if includeAnalysis, let analysis = signal.cardAnalysis {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("WHY THIS SETUP")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(textMuted)
+                        .tracking(1.2)
+
+                    Text(analysis.narrative)
+                        .font(.system(size: 12))
+                        .foregroundColor(textSecondary)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        analysisContextRow(icon: "chart.bar.fill", text: analysis.macroRegimeLabel)
+                        analysisContextRow(icon: "gauge.medium", text: analysis.fearGreedLabel)
+                        analysisContextRow(icon: "arrow.up.right", text: analysis.trendDirection)
+                        analysisContextRow(icon: "target", text: analysis.confluenceStrength)
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isLight ? Color(hex: "F0F4FF") : Color.white.opacity(0.05))
+                )
+                .padding(.top, 12)
+            }
 
             // Outcome (only if signal is closed)
             if let pnl = signal.outcomePct {
@@ -200,6 +230,19 @@ struct TradeSignalCardContent: View {
             .frame(height: 1)
             .padding(.vertical, 8)
     }
+
+    private func analysisContextRow(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(isLight ? Color(hex: "64748B") : Color.white.opacity(0.5))
+                .frame(width: 14)
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundColor(textSecondary)
+                .lineLimit(1)
+        }
+    }
 }
 
 // MARK: - Share Leverage Info (no dollar amounts)
@@ -294,6 +337,7 @@ struct TradeSignalShareSheet: View {
     @State private var showBranding = true
     @State private var showTimestamp = true
     @State private var useLightTheme = true
+    @State private var includeAnalysis = true
     @State private var includeLeverage = false
     @State private var isExporting = false
     @State private var logoImage: UIImage?
@@ -354,6 +398,21 @@ struct TradeSignalShareSheet: View {
                             }
                             .tint(AppColors.accent)
                             .padding(14)
+
+                            if signal.cardAnalysis != nil {
+                                Divider()
+
+                                Toggle(isOn: $includeAnalysis) {
+                                    HStack {
+                                        Image(systemName: "sparkles")
+                                            .foregroundColor(AppColors.accent)
+                                        Text("Include Analysis")
+                                            .font(AppFonts.body14)
+                                    }
+                                }
+                                .tint(AppColors.accent)
+                                .padding(14)
+                            }
 
                             if leverageInfo != nil {
                                 Divider()
@@ -418,7 +477,8 @@ struct TradeSignalShareSheet: View {
             TradeSignalCardContent(
                 signal: signal,
                 isLight: useLightTheme,
-                leverageInfo: includeLeverage ? leverageInfo : nil
+                leverageInfo: includeLeverage ? leverageInfo : nil,
+                includeAnalysis: includeAnalysis
             )
         }
     }
@@ -431,6 +491,7 @@ struct TradeSignalShareSheet: View {
         var height: CGFloat = 320
         if signal.target2 != nil { height += 36 }
         if signal.outcomePct != nil { height += 56 }
+        if includeAnalysis, signal.cardAnalysis != nil { height += 160 }
         if includeLeverage, let info = leverageInfo {
             height += 80
             if info.entryStrategyLabel != nil { height += 20 }
