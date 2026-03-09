@@ -125,6 +125,7 @@ struct FlashIntelSection: View {
     let signals: [TradeSignal]
     let isPro: Bool
     var size: WidgetSize = .standard
+    var stats: SignalStats? = nil
     @State private var showMethodology = false
     @State private var showPaywall = false
     @Environment(\.colorScheme) var colorScheme
@@ -186,6 +187,11 @@ struct FlashIntelSection: View {
                         }
                     }
                 }
+
+                // Signal stats strip
+                if let stats, stats.totalSignals > 0 {
+                    signalStatsStrip(stats)
+                }
             } else {
                 Button { showPaywall = true } label: { lockedCard }
                     .buttonStyle(PlainButtonStyle())
@@ -197,6 +203,73 @@ struct FlashIntelSection: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView(feature: .swingSetups)
         }
+    }
+
+    private func signalStatsStrip(_ stats: SignalStats) -> some View {
+        NavigationLink {
+            SwingSetupsDetailView()
+        } label: {
+            HStack(spacing: 0) {
+                // Win rate
+                statItem(
+                    value: String(format: "%.0f%%", stats.hitRate),
+                    label: "Win Rate",
+                    color: stats.hitRate >= 55 ? AppColors.success : (stats.hitRate >= 45 ? AppColors.warning : AppColors.error)
+                )
+
+                Divider()
+                    .frame(height: 24)
+                    .opacity(0.2)
+
+                // Streak
+                statItem(
+                    value: stats.currentStreak >= 0 ? "+\(stats.currentStreak)" : "\(stats.currentStreak)",
+                    label: "Streak",
+                    color: stats.currentStreak >= 0 ? AppColors.success : AppColors.error
+                )
+
+                Divider()
+                    .frame(height: 24)
+                    .opacity(0.2)
+
+                // Profit factor
+                statItem(
+                    value: stats.profitFactor.isInfinite ? "---" : String(format: "%.1f", stats.profitFactor),
+                    label: "PF",
+                    color: stats.profitFactor >= 1.5 ? AppColors.success : (stats.profitFactor >= 1.0 ? AppColors.warning : AppColors.error)
+                )
+
+                Divider()
+                    .frame(height: 24)
+                    .opacity(0.2)
+
+                // Total trades
+                statItem(
+                    value: "\(stats.totalSignals)",
+                    label: "Trades",
+                    color: AppColors.textPrimary(colorScheme)
+                )
+            }
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func statItem(value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(color)
+                .monospacedDigit()
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var emptyStateCard: some View {

@@ -6,6 +6,7 @@ struct SwingSetupsDetailView: View {
     @State private var viewModel = SwingSetupsViewModel()
     @State private var selectedFilter: SignalFilter = .active
     @State private var selectedAsset: String? = nil
+    @State private var selectedConfidence: SignalConfidence? = nil
     @State private var showGuide = false
     @Environment(\.colorScheme) var colorScheme
 
@@ -29,8 +30,14 @@ struct SwingSetupsDetailView: View {
     }
 
     private var filteredSignals: [TradeSignal] {
-        guard let asset = selectedAsset else { return baseSignals }
-        return baseSignals.filter { $0.asset == asset }
+        var signals = baseSignals
+        if let asset = selectedAsset {
+            signals = signals.filter { $0.asset == asset }
+        }
+        if let confidence = selectedConfidence {
+            signals = signals.filter { $0.confidence == confidence }
+        }
+        return signals
     }
 
     private var availableAssets: [String] {
@@ -62,20 +69,36 @@ struct SwingSetupsDetailView: View {
                     }
                 }
 
-                // Asset filter chips (hidden on Performance tab)
-                if availableAssets.count > 1 && selectedFilter != .performance {
+                // Filter chips (hidden on Performance tab)
+                if selectedFilter != .performance {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            assetChip("All", isActive: selectedAsset == nil) {
-                                withAnimation(.easeInOut(duration: 0.2)) { selectedAsset = nil }
-                            }
-                            ForEach(availableAssets, id: \.self) { asset in
-                                assetChip(asset, isActive: selectedAsset == asset) {
+                            // Asset filters
+                            if availableAssets.count > 1 {
+                                assetChip("All", isActive: selectedAsset == nil && selectedConfidence == nil) {
                                     withAnimation(.easeInOut(duration: 0.2)) {
-                                        selectedAsset = selectedAsset == asset ? nil : asset
+                                        selectedAsset = nil
+                                        selectedConfidence = nil
                                     }
                                 }
+                                ForEach(availableAssets, id: \.self) { asset in
+                                    assetChip(asset, isActive: selectedAsset == asset) {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            selectedAsset = selectedAsset == asset ? nil : asset
+                                        }
+                                    }
+                                }
+
+                                // Separator
+                                Rectangle()
+                                    .fill(AppColors.textSecondary.opacity(0.2))
+                                    .frame(width: 1, height: 20)
                             }
+
+                            // Confidence filters
+                            confidenceChip(.high)
+                            confidenceChip(.medium)
+                            confidenceChip(.low)
                         }
                         .padding(.horizontal)
                     }
@@ -561,6 +584,34 @@ struct SwingSetupsDetailView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(isActive ? AppColors.accent : AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1))
+                .cornerRadius(14)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Confidence Chip
+
+    private func confidenceChip(_ confidence: SignalConfidence) -> some View {
+        let isActive = selectedConfidence == confidence
+        let chipColor: Color = {
+            switch confidence {
+            case .high: return AppColors.success
+            case .medium: return AppColors.warning
+            case .low: return AppColors.error
+            }
+        }()
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                selectedConfidence = selectedConfidence == confidence ? nil : confidence
+            }
+        } label: {
+            Text(confidence.displayName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isActive ? .white : chipColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isActive ? chipColor : chipColor.opacity(colorScheme == .dark ? 0.15 : 0.1))
                 .cornerRadius(14)
         }
         .buttonStyle(PlainButtonStyle())

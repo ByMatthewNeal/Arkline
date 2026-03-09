@@ -252,7 +252,8 @@ struct ReorderableWidgetStack: View {
             FlashIntelSection(
                 signals: viewModel.flashIntelSignals,
                 isPro: appState.isPro,
-                size: appState.widgetSize(.flashIntel)
+                size: appState.widgetSize(.flashIntel),
+                stats: viewModel.signalStats
             )
         }
     }

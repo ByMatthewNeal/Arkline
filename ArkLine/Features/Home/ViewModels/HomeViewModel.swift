@@ -128,6 +128,7 @@ class HomeViewModel {
 
     // Flash Intel (strong swing signals)
     var flashIntelSignals: [TradeSignal] = []
+    var signalStats: SignalStats?
     private let swingSetupService = SwingSetupService()
 
     // Market Summary
@@ -780,6 +781,16 @@ class HomeViewModel {
                 }
             } catch {
                 logWarning("Flash Intel fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
+        // Fetch signal stats for home widget
+        Task {
+            do {
+                let stats = try await self.swingSetupService.fetchSignalStats()
+                await MainActor.run { self.signalStats = stats }
+            } catch {
+                logWarning("Signal stats fetch failed: \(error.localizedDescription)", category: .network)
             }
         }
 
