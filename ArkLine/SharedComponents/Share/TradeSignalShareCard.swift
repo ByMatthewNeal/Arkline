@@ -37,13 +37,24 @@ struct TradeSignalCardContent: View {
 
                 Spacer()
 
-                Text(signal.signalType.displayName.uppercased())
-                    .font(.system(size: 12, weight: .heavy))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(signalColor)
-                    .cornerRadius(6)
+                HStack(spacing: 6) {
+                    Text(signal.signalType.displayName.uppercased())
+                        .font(.system(size: 12, weight: .heavy))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(signalColor)
+                        .cornerRadius(6)
+
+                    if let score = signal.compositeScore {
+                        Text("\(score)")
+                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                            .frame(width: 28, height: 22)
+                            .background(score >= 65 ? AppColors.success : (score >= 50 ? AppColors.warning : AppColors.error))
+                            .cornerRadius(6)
+                    }
+                }
             }
             .padding(.bottom, 16)
 
@@ -106,6 +117,9 @@ struct TradeSignalCardContent: View {
                         analysisContextRow(icon: "gauge.medium", text: analysis.fearGreedLabel)
                         analysisContextRow(icon: "arrow.up.right", text: analysis.trendDirection)
                         analysisContextRow(icon: "target", text: analysis.confluenceStrength)
+                        if signal.hasVolumeConfluence {
+                            analysisContextRow(icon: "chart.bar.xaxis", text: "High-volume node at entry zone")
+                        }
                     }
                 }
                 .padding(12)

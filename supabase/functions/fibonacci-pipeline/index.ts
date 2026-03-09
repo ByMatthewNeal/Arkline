@@ -151,7 +151,10 @@ Deno.serve(async (req) => {
       await storeZones(supabase, asset.ticker, zones, currentPrice)
       assetResults.zones = zones.length
 
-      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice)
+      // Compute volume profile from 4h candles
+      const volumeNodes = computeVolumeProfile(candles["4h"])
+
+      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes)
       assetResults.newSignals = newSignals
 
       await pruneOldCandles(supabase, asset.ticker)
@@ -557,6 +560,155 @@ function checkBMSB(dailyCandles: Candle[], currentPrice: number, isBuy: boolean)
   return false
 }
 
+// ─── Volume Profile ─────────────────────────────────────────────────────────
+
+interface VolumeNode {
+  priceLow: number
+  priceHigh: number
+  priceMid: number
+  volume: number
+  relativeVolume: number
+}
+
+interface VolumeConfluenceResult {
+  has_volume_confluence: boolean
+  volume_node_count: number
+  max_relative_volume: number
+}
+
+function computeVolumeProfile(candles: Candle[], numBins = 50): VolumeNode[] {
+  if (candles.length < 20) return []
+
+  const highs = candles.map(c => c.high)
+  const lows = candles.map(c => c.low)
+  const priceMax = Math.max(...highs)
+  const priceMin = Math.min(...lows)
+  const range = priceMax - priceMin
+  if (range <= 0) return []
+
+  const binSize = range / numBins
+  const bins = new Array(numBins).fill(0)
+
+  // Distribute volume across bins using typical price
+  for (const c of candles) {
+    const typical = (c.high + c.low + c.close) / 3
+    const binIdx = Math.min(Math.floor((typical - priceMin) / binSize), numBins - 1)
+    bins[binIdx] += c.volume
+  }
+
+  const avgVol = bins.reduce((a, b) => a + b, 0) / numBins
+  if (avgVol <= 0) return []
+
+  // Return high-volume nodes (>1.5x average)
+  const nodes: VolumeNode[] = []
+  for (let i = 0; i < numBins; i++) {
+    const relVol = bins[i] / avgVol
+    if (relVol >= 1.5) {
+      nodes.push({
+        priceLow: priceMin + i * binSize,
+        priceHigh: priceMin + (i + 1) * binSize,
+        priceMid: priceMin + (i + 0.5) * binSize,
+        volume: bins[i],
+        relativeVolume: Math.round(relVol * 100) / 100,
+      })
+    }
+  }
+
+  return nodes
+}
+
+function checkVolumeConfluence(zone: ConfluenceZone, volumeNodes: VolumeNode[]): VolumeConfluenceResult {
+  const result: VolumeConfluenceResult = { has_volume_confluence: false, volume_node_count: 0, max_relative_volume: 0 }
+
+  for (const node of volumeNodes) {
+    // Check overlap: node range intersects zone range, or node mid is within 1% of zone mid
+    const overlaps = node.priceHigh >= zone.low && node.priceLow <= zone.high
+    const nearby = Math.abs(node.priceMid - zone.mid) / zone.mid < 0.01
+    if (overlaps || nearby) {
+      result.has_volume_confluence = true
+      result.volume_node_count++
+      result.max_relative_volume = Math.max(result.max_relative_volume, node.relativeVolume)
+    }
+  }
+
+  result.max_relative_volume = Math.round(result.max_relative_volume * 100) / 100
+  return result
+}
+
+// ─── Composite Signal Scoring ───────────────────────────────────────────────
+
+function computeCompositeScore(params: {
+  zone: ConfluenceZone
+  candles4h: Candle[]
+  bounce: { confirmed: boolean; details: Record<string, boolean> }
+  volumeConfluence: VolumeConfluenceResult
+  isBuy: boolean
+  rrRatio: number
+  counterTrend: boolean
+  fearGreedIndex?: number
+  btcRiskScore?: number
+}): number {
+  let score = 0
+
+  // 1. Confluence Depth (0-30 pts)
+  const strength = params.zone.strength
+  if (strength >= 4) score += 30
+  else if (strength >= 3) score += 20
+  else score += 10
+  // Multi-timeframe bonus
+  if (params.zone.tf_count >= 2) score += 5
+  score = Math.min(score, 35) // Cap this bucket
+
+  // 2. EMA Alignment Strength (0-20 pts)
+  if (params.candles4h.length >= EMA_SLOW_PERIOD + EMA_SLOPE_LOOKBACK) {
+    const emaFast = calcEma(params.candles4h, EMA_FAST_PERIOD)
+    const emaSlow = calcEma(params.candles4h, EMA_SLOW_PERIOD)
+    const emaSlowPrev = calcEma(params.candles4h.slice(0, -EMA_SLOPE_LOOKBACK), EMA_SLOW_PERIOD)
+
+    if (emaFast !== null && emaSlow !== null && emaSlowPrev !== null) {
+      const price = params.candles4h[params.candles4h.length - 1].close
+      const spread = Math.abs(emaFast - emaSlow) / emaSlow * 100
+      const slopeStrength = Math.abs(emaSlow - emaSlowPrev) / emaSlowPrev * 100
+
+      // Directional alignment
+      const aligned = params.isBuy ? emaFast > emaSlow : emaFast < emaSlow
+      if (aligned) {
+        score += 10
+        if (spread > 1.0) score += 5
+        if (slopeStrength > 0.3) score += 5
+      } else {
+        // Pullback to EMA scenario — partial credit
+        if (Math.abs(price - emaSlow) / emaSlow < EMA_PULLBACK_TOLERANCE) score += 8
+      }
+    }
+  }
+
+  // 3. Volume Confirmation Quality (0-20 pts)
+  let volScore = 0
+  if (params.bounce.details.wick_rejection) volScore += 8
+  if (params.bounce.details.volume_spike) volScore += 8
+  if (params.bounce.details.consecutive_closes) volScore += 8
+  if (params.volumeConfluence.has_volume_confluence) volScore += 4
+  score += Math.min(volScore, 20)
+
+  // 4. Risk/Reward (0-15 pts)
+  if (params.rrRatio >= 3.0) score += 15
+  else if (params.rrRatio >= 2.0) score += 10
+  else score += 5
+
+  // 5. Macro/Context (0-15 pts)
+  let macroScore = 10 // Base
+  if (params.counterTrend) macroScore -= 10
+  // F&G bonus: extreme fear is bullish for longs, extreme greed for shorts
+  if (params.fearGreedIndex !== undefined) {
+    if (params.isBuy && params.fearGreedIndex < 25) macroScore += 3
+    else if (!params.isBuy && params.fearGreedIndex > 75) macroScore += 3
+  }
+  score += Math.max(0, Math.min(macroScore, 15))
+
+  return Math.min(Math.max(score, 0), 100)
+}
+
 // ─── Bounce Confirmation ─────────────────────────────────────────────────────
 
 function checkBounce(
@@ -646,6 +798,7 @@ async function evaluateSignals(
   zones: ConfluenceZone[],
   fibs: FibLevel[],
   currentPrice: number,
+  volumeNodes: VolumeNode[] = [],
 ): Promise<{ generated: number; skipped: number }> {
   const stats = { generated: 0, skipped: 0 }
   const candles4h = candles["4h"]
@@ -709,6 +862,20 @@ async function evaluateSignals(
     // Bull Market Support Band regime check (informational, not a filter)
     const counterTrend = checkBMSB(candles["1d"] ?? [], currentPrice, isBuy)
 
+    // Volume confluence check
+    const volConfluence = checkVolumeConfluence(zone, volumeNodes)
+
+    // Composite signal score
+    const compositeScore = computeCompositeScore({
+      zone,
+      candles4h,
+      bounce,
+      volumeConfluence: volConfluence,
+      isBuy,
+      rrRatio: rrRatio,
+      counterTrend,
+    })
+
     const expiresAt = new Date(Date.now() + SIGNAL_EXPIRY_HOURS * 3600000).toISOString()
 
     // Store the confluence zone first to get its ID
@@ -742,6 +909,8 @@ async function evaluateSignals(
       bounce_confirmed: true,
       confirmation_details: bounce.details,
       counter_trend: counterTrend,
+      composite_score: compositeScore,
+      volume_confluence: volConfluence,
       triggered_at: new Date().toISOString(),
       expires_at: expiresAt,
     }

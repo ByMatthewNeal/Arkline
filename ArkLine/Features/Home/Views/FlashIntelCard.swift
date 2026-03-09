@@ -66,6 +66,15 @@ struct FlashIntelCard: View {
 
                     confidenceBadge
 
+                    if let score = signal.compositeScore {
+                        Text("\(score)")
+                            .font(.system(size: 9, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                            .frame(width: 22, height: 16)
+                            .background(score >= 65 ? AppColors.success : (score >= 50 ? AppColors.warning : AppColors.error))
+                            .cornerRadius(3)
+                    }
+
                     if signal.isCounterTrend {
                         Text("CT")
                             .font(.system(size: 8, weight: .heavy))

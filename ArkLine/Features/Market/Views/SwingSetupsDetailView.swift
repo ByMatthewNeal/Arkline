@@ -7,6 +7,7 @@ struct SwingSetupsDetailView: View {
     @State private var selectedFilter: SignalFilter = .active
     @State private var selectedAsset: String? = nil
     @State private var selectedConfidence: SignalConfidence? = nil
+    @State private var sortByScore = false
     @State private var showGuide = false
     @State private var signalToShare: TradeSignal? = nil
     @Environment(\.colorScheme) var colorScheme
@@ -37,6 +38,9 @@ struct SwingSetupsDetailView: View {
         }
         if let confidence = selectedConfidence {
             signals = signals.filter { $0.confidence == confidence }
+        }
+        if sortByScore {
+            signals.sort { ($0.compositeScore ?? 0) > ($1.compositeScore ?? 0) }
         }
         return signals
     }
@@ -100,6 +104,30 @@ struct SwingSetupsDetailView: View {
                             confidenceChip(.high)
                             confidenceChip(.medium)
                             confidenceChip(.low)
+
+                            // Sort by score
+                            Rectangle()
+                                .fill(AppColors.textSecondary.opacity(0.2))
+                                .frame(width: 1, height: 20)
+
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    sortByScore.toggle()
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.up.arrow.down")
+                                        .font(.system(size: 10))
+                                    Text("Score")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(sortByScore ? .white : AppColors.accent)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(sortByScore ? AppColors.accent : AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1))
+                                .cornerRadius(14)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding(.horizontal)
                     }
@@ -787,6 +815,15 @@ struct SignalCard: View {
 
                     confidenceBadge
 
+                    if let score = signal.compositeScore {
+                        Text("\(score)")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                            .frame(width: 26, height: 18)
+                            .background(scoreColor(score))
+                            .cornerRadius(4)
+                    }
+
                     Spacer()
 
                     if let countdown = expiryCountdown {
@@ -837,6 +874,9 @@ struct SignalCard: View {
                         HStack(spacing: 6) {
                             analysisContextPill(analysis.confluenceStrength)
                             analysisContextPill(analysis.trendDirection)
+                            if signal.hasVolumeConfluence {
+                                analysisContextPill("Vol Shelf")
+                            }
                         }
                     }
                     .padding(10)
@@ -988,6 +1028,12 @@ struct SignalCard: View {
                     .opacity(color != nil ? 0.12 : (colorScheme == .dark ? 0.08 : 0.05))
             )
             .cornerRadius(4)
+    }
+
+    private func scoreColor(_ score: Int) -> Color {
+        if score >= 65 { return AppColors.success }
+        if score >= 50 { return AppColors.warning }
+        return AppColors.error
     }
 
     private func analysisContextPill(_ text: String) -> some View {

@@ -51,13 +51,26 @@ Deno.serve(async (req) => {
     .select("*")
     .eq("status", "triggered")
 
-  if (!signals || signals.length === 0) {
+  // Also fetch active (not yet triggered) signals for proximity alerts
+  const { data: activeSignals } = await supabase
+    .from("trade_signals")
+    .select("*")
+    .eq("status", "triggered")
+    .is("t1_hit_at", null)
+
+  const allSignals = signals ?? []
+  const proximitySignals = activeSignals ?? []
+
+  if (allSignals.length === 0 && proximitySignals.length === 0) {
     return json({ resolved: 0, message: "No open signals" })
   }
 
   // Determine which assets have open signals
-  const activeAssets = new Set(signals.map((s: any) => s.asset))
-  const symbolsToCheck = ASSETS.filter(sym => activeAssets.has(TICKER_MAP[sym]))
+  const allAssetsNeeded = new Set([
+    ...allSignals.map((s: any) => s.asset),
+    ...proximitySignals.map((s: any) => s.asset),
+  ])
+  const symbolsToCheck = ASSETS.filter(sym => allAssetsNeeded.has(TICKER_MAP[sym]))
 
   if (symbolsToCheck.length === 0) {
     return json({ resolved: 0, message: "No assets to check" })
@@ -88,9 +101,9 @@ Deno.serve(async (req) => {
   }
 
   const now = new Date()
-  const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0, notifications: 0 }
+  const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0, notifications: 0, proximityAlerts: 0 }
 
-  for (const signal of signals) {
+  for (const signal of allSignals) {
     const candle = candles[signal.asset]
     if (!candle) continue
 
@@ -274,6 +287,68 @@ Deno.serve(async (req) => {
           }).eq("id", signal.id)
         }
       }
+    }
+  }
+
+  // ─── Proximity Alerts ────────────────────────────────────────────────────
+  // Alert users when price is within 2% of a triggered signal's entry zone
+  // (where T1 hasn't been hit yet — user may not have set limit orders)
+  const PROXIMITY_PCT = 2.0
+  const PROXIMITY_COOLDOWN_MS = 4 * 3600000 // 4 hours between alerts
+
+  for (const signal of proximitySignals) {
+    const candle = candles[signal.asset]
+    if (!candle) continue
+
+    const entryMid = Number(signal.entry_price_mid)
+    const entryLow = Number(signal.entry_zone_low)
+    const entryHigh = Number(signal.entry_zone_high)
+    const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
+
+    // Check if price is approaching but hasn't fully entered the zone
+    const approachPrice = isBuy ? candle.low : candle.high
+    const zoneEdge = isBuy ? entryHigh : entryLow
+    const distancePct = Math.abs((approachPrice - zoneEdge) / zoneEdge) * 100
+
+    // Only alert if within proximity range and approaching from the right side
+    const isApproaching = isBuy
+      ? approachPrice > entryHigh && distancePct <= PROXIMITY_PCT
+      : approachPrice < entryLow && distancePct <= PROXIMITY_PCT
+
+    if (!isApproaching) continue
+
+    // Dedup: skip if we already alerted recently
+    if (signal.proximity_notified_at) {
+      const lastNotified = new Date(signal.proximity_notified_at).getTime()
+      if (now.getTime() - lastNotified < PROXIMITY_COOLDOWN_MS) continue
+    }
+
+    const direction = isBuy ? "Long" : "Short"
+    const priceStr = formatPrice(candle.close)
+    const entryStr = `${formatPrice(entryLow)} – ${formatPrice(entryHigh)}`
+    const scoreStr = signal.composite_score ? ` (Score: ${signal.composite_score})` : ""
+
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
+        body: JSON.stringify({
+          broadcast_id: signal.id,
+          title: `🔔 ${signal.asset} approaching ${direction} entry zone`,
+          body: `Price at ${priceStr} — ${distancePct.toFixed(1)}% from entry zone (${entryStr})${scoreStr}`,
+          event_type: "signal_proximity",
+          target_audience: { type: "premium" },
+        }),
+      })
+
+      await supabase.from("trade_signals").update({
+        proximity_notified_at: now.toISOString(),
+      }).eq("id", signal.id)
+
+      stats.proximityAlerts++
+      stats.notifications++
+    } catch (err) {
+      console.error(`Proximity alert failed for ${signal.id}: ${err}`)
     }
   }
 

@@ -36,6 +36,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifySignalExpiry)
     private var signalExpiry = true
 
+    @AppStorage(Constants.UserDefaults.notifySignalProximity)
+    private var signalProximity = true
+
     @AppStorage(Constants.UserDefaults.notifyInsights)
     private var insights = true
 
@@ -217,6 +220,19 @@ struct NotificationsDetailView: View {
                             Haptics.selection()
                             syncSignalPreferences()
                         }
+
+                        Toggle(isOn: $signalProximity) {
+                            NotificationRow(
+                                icon: "location.circle.fill",
+                                iconColor: AppColors.accent,
+                                title: "Entry Zone Approaching",
+                                description: "When price nears an active signal's entry zone"
+                            )
+                        }
+                        .onChange(of: signalProximity) { _, _ in
+                            Haptics.selection()
+                            syncSignalPreferences()
+                        }
                     } header: {
                         Text("Signal Alert Types")
                     }
@@ -330,6 +346,7 @@ struct NotificationsDetailView: View {
                 "signal_stop_loss": swingSignals && signalStopLoss,
                 "signal_runner_close": swingSignals && signalRunnerClose,
                 "signal_expiry": swingSignals && signalExpiry,
+                "signal_proximity": swingSignals && signalProximity,
             ]
             do {
                 try await SupabaseManager.shared.client

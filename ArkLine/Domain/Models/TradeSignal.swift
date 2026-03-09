@@ -55,6 +55,8 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let t1HitAt: Date?
     let closedAt: Date?
     let expiresAt: Date?
+    let compositeScore: Int?
+    let volumeConfluence: VolumeConfluence?
     let briefingText: String?
     let shortRationale: String?
     let cardAnalysis: CardAnalysis?
@@ -93,9 +95,25 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case t1HitAt = "t1_hit_at"
         case closedAt = "closed_at"
         case expiresAt = "expires_at"
+        case compositeScore = "composite_score"
+        case volumeConfluence = "volume_confluence"
         case briefingText = "briefing_text"
         case shortRationale = "short_rationale"
         case cardAnalysis = "card_analysis"
+    }
+}
+
+// MARK: - Volume Confluence
+
+struct VolumeConfluence: Codable, Equatable {
+    let hasVolumeConfluence: Bool
+    let volumeNodeCount: Int?
+    let maxRelativeVolume: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case hasVolumeConfluence = "has_volume_confluence"
+        case volumeNodeCount = "volume_node_count"
+        case maxRelativeVolume = "max_relative_volume"
     }
 }
 
@@ -306,6 +324,23 @@ extension TradeSignal {
 
     /// All assets with backtest data are eligible for Flash Intel.
     var isFlashIntelWorthy: Bool { true }
+}
+
+// MARK: - Score Helpers
+
+extension TradeSignal {
+    var scoreGrade: String? {
+        guard let score = compositeScore else { return nil }
+        if score >= 80 { return "A+" }
+        if score >= 65 { return "A" }
+        if score >= 50 { return "B" }
+        if score >= 35 { return "C" }
+        return "D"
+    }
+
+    var hasVolumeConfluence: Bool {
+        volumeConfluence?.hasVolumeConfluence == true
+    }
 }
 
 // MARK: - Computed Helpers

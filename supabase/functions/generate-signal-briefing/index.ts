@@ -80,6 +80,8 @@ Deno.serve(async (req) => {
 - Macro regime: ${signal.macro_regime ?? "N/A"}
 - Coinbase ranking: ${signal.coinbase_ranking ? `#${signal.coinbase_ranking}` : "N/A"}
 - Bounce confirmation: ${JSON.stringify(signal.confirmation_details ?? {})}
+- Composite score: ${signal.composite_score ?? "N/A"}/100
+- Volume confluence: ${signal.volume_confluence ? `${signal.volume_confluence.has_volume_confluence ? "Yes" : "No"} (${signal.volume_confluence.volume_node_count ?? 0} nodes, ${signal.volume_confluence.max_relative_volume ?? 0}x avg volume)` : "N/A"}
 `.trim()
 
   try {
