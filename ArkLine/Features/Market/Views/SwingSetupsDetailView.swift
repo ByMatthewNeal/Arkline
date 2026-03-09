@@ -14,6 +14,7 @@ struct SwingSetupsDetailView: View {
     enum SignalFilter: String, CaseIterable {
         case active = "Active"
         case history = "History"
+        case performance = "Performance"
     }
 
     private var baseSignals: [TradeSignal] {
@@ -22,6 +23,8 @@ struct SwingSetupsDetailView: View {
             return viewModel.activeSignals
         case .history:
             return viewModel.recentSignals.filter { !$0.status.isLive }
+        case .performance:
+            return []
         }
     }
 
@@ -59,8 +62,8 @@ struct SwingSetupsDetailView: View {
                     }
                 }
 
-                // Asset filter chips
-                if availableAssets.count > 1 {
+                // Asset filter chips (hidden on Performance tab)
+                if availableAssets.count > 1 && selectedFilter != .performance {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             assetChip("All", isActive: selectedAsset == nil) {
@@ -78,34 +81,51 @@ struct SwingSetupsDetailView: View {
                     }
                 }
 
-                // Signal list
-                if viewModel.isLoading {
-                    VStack(spacing: 12) {
-                        ForEach(0..<3, id: \.self) { _ in
-                            SkeletonCard()
-                        }
-                    }
-                    .padding(.horizontal)
-                } else if filteredSignals.isEmpty {
-                    emptyState
-                        .padding(.top, 40)
-                } else {
-                    LazyVStack(spacing: 12) {
-                        ForEach(filteredSignals) { signal in
-                            NavigationLink {
-                                SignalDetailView(signalId: signal.id)
-                            } label: {
-                                SignalCard(signal: signal, colorScheme: colorScheme)
+                if selectedFilter == .performance {
+                    // Performance dashboard
+                    if viewModel.isLoading {
+                        VStack(spacing: 12) {
+                            ForEach(0..<3, id: \.self) { _ in
+                                SkeletonCard()
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.horizontal)
+                    } else if let stats = viewModel.stats, stats.totalSignals > 0 {
+                        performanceDashboard(stats)
+                    } else {
+                        emptyState
+                            .padding(.top, 40)
                     }
-                    .padding(.horizontal)
-                }
+                } else {
+                    // Signal list
+                    if viewModel.isLoading {
+                        VStack(spacing: 12) {
+                            ForEach(0..<3, id: \.self) { _ in
+                                SkeletonCard()
+                            }
+                        }
+                        .padding(.horizontal)
+                    } else if filteredSignals.isEmpty {
+                        emptyState
+                            .padding(.top, 40)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            ForEach(filteredSignals) { signal in
+                                NavigationLink {
+                                    SignalDetailView(signalId: signal.id)
+                                } label: {
+                                    SignalCard(signal: signal, colorScheme: colorScheme)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
 
-                // Per-asset breakdown
-                if let stats = viewModel.stats, !stats.assetBreakdown.isEmpty, selectedFilter == .history {
-                    assetBreakdownSection(stats.assetBreakdown)
+                    // Per-asset breakdown
+                    if let stats = viewModel.stats, !stats.assetBreakdown.isEmpty, selectedFilter == .history {
+                        assetBreakdownSection(stats.assetBreakdown)
+                    }
                 }
 
                 Spacer(minLength: 100)
@@ -236,6 +256,299 @@ struct SwingSetupsDetailView: View {
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
         .padding(.horizontal)
+    }
+
+    // MARK: - Performance Dashboard
+
+    private func performanceDashboard(_ stats: SignalStats) -> some View {
+        VStack(spacing: 16) {
+            // Expanded stats card
+            statsCard(stats)
+
+            // Equity curve
+            equityCurveCard
+
+            // Direction breakdown
+            directionBreakdownCard
+
+            // Per-asset breakdown
+            if !stats.assetBreakdown.isEmpty {
+                assetBreakdownSection(stats.assetBreakdown)
+            }
+
+            // Key metrics grid
+            keyMetricsCard(stats)
+        }
+    }
+
+    // MARK: - Equity Curve
+
+    private var equityCurveCard: some View {
+        let closedSignals = viewModel.recentSignals
+            .filter { !$0.status.isLive && $0.outcomePct != nil && $0.closedAt != nil }
+            .sorted { ($0.closedAt ?? .distantPast) < ($1.closedAt ?? .distantPast) }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("CUMULATIVE P&L")
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(1)
+
+            if closedSignals.count >= 2 {
+                let points = cumulativePnL(closedSignals)
+                let maxVal = points.map(\.value).max() ?? 1
+                let minVal = points.map(\.value).min() ?? 0
+                let range = max(maxVal - minVal, 0.01)
+                let finalPnl = points.last?.value ?? 0
+
+                // Summary row
+                HStack {
+                    Text(String(format: "%+.1f%%", finalPnl))
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(finalPnl >= 0 ? AppColors.success : AppColors.error)
+                    Text("across \(closedSignals.count) trades")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                }
+
+                // Chart
+                GeometryReader { geo in
+                    let w = geo.size.width
+                    let h = geo.size.height
+                    let stepX = w / CGFloat(max(points.count - 1, 1))
+
+                    ZStack(alignment: .topLeading) {
+                        // Zero line
+                        let zeroY = h * CGFloat((maxVal - 0) / range)
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: zeroY))
+                            path.addLine(to: CGPoint(x: w, y: zeroY))
+                        }
+                        .stroke(textPrimary.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+
+                        // Line
+                        Path { path in
+                            for (i, point) in points.enumerated() {
+                                let x = CGFloat(i) * stepX
+                                let y = h * CGFloat((maxVal - point.value) / range)
+                                if i == 0 {
+                                    path.move(to: CGPoint(x: x, y: y))
+                                } else {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                }
+                            }
+                        }
+                        .stroke(
+                            finalPnl >= 0 ? AppColors.success : AppColors.error,
+                            style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                        )
+
+                        // Gradient fill
+                        Path { path in
+                            for (i, point) in points.enumerated() {
+                                let x = CGFloat(i) * stepX
+                                let y = h * CGFloat((maxVal - point.value) / range)
+                                if i == 0 {
+                                    path.move(to: CGPoint(x: x, y: y))
+                                } else {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                }
+                            }
+                            path.addLine(to: CGPoint(x: CGFloat(points.count - 1) * stepX, y: h))
+                            path.addLine(to: CGPoint(x: 0, y: h))
+                            path.closeSubpath()
+                        }
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    (finalPnl >= 0 ? AppColors.success : AppColors.error).opacity(0.2),
+                                    (finalPnl >= 0 ? AppColors.success : AppColors.error).opacity(0.02)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                }
+                .frame(height: 120)
+            } else {
+                Text("Need at least 2 closed trades to show equity curve")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .padding(.horizontal)
+    }
+
+    private struct PnLPoint: Identifiable {
+        let id: Int
+        let value: Double
+    }
+
+    private func cumulativePnL(_ signals: [TradeSignal]) -> [PnLPoint] {
+        var cumulative = 0.0
+        var points = [PnLPoint(id: 0, value: 0)]
+        for (i, signal) in signals.enumerated() {
+            cumulative += signal.outcomePct ?? 0
+            points.append(PnLPoint(id: i + 1, value: cumulative))
+        }
+        return points
+    }
+
+    // MARK: - Direction Breakdown
+
+    private var directionBreakdownCard: some View {
+        let closedSignals = viewModel.recentSignals.filter { !$0.status.isLive && $0.outcome != nil }
+        let longs = closedSignals.filter { $0.signalType.isBuy }
+        let shorts = closedSignals.filter { !$0.signalType.isBuy }
+
+        let longWins = longs.filter { $0.outcome == .win || $0.outcome == .partial }.count
+        let shortWins = shorts.filter { $0.outcome == .win || $0.outcome == .partial }.count
+        let longHitRate = longs.isEmpty ? 0 : Double(longWins) / Double(longs.count) * 100
+        let shortHitRate = shorts.isEmpty ? 0 : Double(shortWins) / Double(shorts.count) * 100
+        let longAvgPnl = longs.compactMap(\.outcomePct).isEmpty ? 0 : longs.compactMap(\.outcomePct).reduce(0, +) / Double(longs.compactMap(\.outcomePct).count)
+        let shortAvgPnl = shorts.compactMap(\.outcomePct).isEmpty ? 0 : shorts.compactMap(\.outcomePct).reduce(0, +) / Double(shorts.compactMap(\.outcomePct).count)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("BY DIRECTION")
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(1)
+
+            HStack(spacing: 16) {
+                directionColumn(label: "Long", count: longs.count, wins: longWins, hitRate: longHitRate, avgPnl: longAvgPnl, color: AppColors.success)
+                directionColumn(label: "Short", count: shorts.count, wins: shortWins, hitRate: shortHitRate, avgPnl: shortAvgPnl, color: AppColors.error)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .padding(.horizontal)
+    }
+
+    private func directionColumn(label: String, count: Int, wins: Int, hitRate: Double, avgPnl: Double, color: Color) -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Circle().fill(color).frame(width: 8, height: 8)
+                Text(label)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(textPrimary)
+            }
+
+            VStack(spacing: 4) {
+                Text("\(count)")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(textPrimary)
+                    .monospacedDigit()
+                Text("trades")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            HStack(spacing: 12) {
+                VStack(spacing: 1) {
+                    Text(String(format: "%.0f%%", hitRate))
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(hitRate >= 50 ? AppColors.success : AppColors.error)
+                        .monospacedDigit()
+                    Text("Win Rate")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                VStack(spacing: 1) {
+                    Text(String(format: "%+.1f%%", avgPnl))
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(avgPnl >= 0 ? AppColors.success : AppColors.error)
+                        .monospacedDigit()
+                    Text("Avg P&L")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Key Metrics
+
+    private func keyMetricsCard(_ stats: SignalStats) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("KEY METRICS")
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(1)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+            ], spacing: 12) {
+                metricTile(
+                    title: "Profit Factor",
+                    value: stats.profitFactor.isInfinite ? "---" : String(format: "%.2f", stats.profitFactor),
+                    color: stats.profitFactor >= 1.5 ? AppColors.success : (stats.profitFactor >= 1.0 ? AppColors.warning : AppColors.error)
+                )
+                metricTile(
+                    title: "Avg Duration",
+                    value: stats.avgDurationHours >= 24 ? "\(stats.avgDurationHours / 24)d \(stats.avgDurationHours % 24)h" : "\(stats.avgDurationHours)h",
+                    color: AppColors.accent
+                )
+                metricTile(
+                    title: "Avg Win",
+                    value: String(format: "+%.1f%%", stats.avgWinPct),
+                    color: AppColors.success
+                )
+                metricTile(
+                    title: "Avg Loss",
+                    value: String(format: "%.1f%%", stats.avgLossPct),
+                    color: AppColors.error
+                )
+                metricTile(
+                    title: "Best Streak",
+                    value: stats.currentStreak >= 0 ? "+\(stats.currentStreak)" : "\(stats.currentStreak)",
+                    color: stats.currentStreak >= 0 ? AppColors.success : AppColors.error
+                )
+                metricTile(
+                    title: "Total Trades",
+                    value: "\(stats.totalSignals)",
+                    color: textPrimary
+                )
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .padding(.horizontal)
+    }
+
+    private func metricTile(title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+                .monospacedDigit()
+            Text(title)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(color.opacity(colorScheme == .dark ? 0.08 : 0.05))
+        )
     }
 
     // MARK: - Asset Chip

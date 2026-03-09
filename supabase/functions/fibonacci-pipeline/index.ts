@@ -869,6 +869,7 @@ async function resolveOpenSignals(
           closed_at: now.toISOString(),
           duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
         }).eq("id", signal.id)
+        notifyResolution(signal, totalPnl > 0 ? "expired_win" : "expired_loss", exitPrice)
       } else {
         const pnl = isBuy
           ? ((exitPrice - entryMid) / entryMid) * 100
@@ -881,6 +882,7 @@ async function resolveOpenSignals(
           closed_at: now.toISOString(),
           duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
         }).eq("id", signal.id)
+        notifyResolution(signal, "expired_loss", exitPrice)
       }
 
       stats.expired++
@@ -900,6 +902,7 @@ async function resolveOpenSignals(
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
+          notifyResolution(signal, "stop_loss", sl)
           stats.losses++
           stats.resolved++
           continue
@@ -913,6 +916,7 @@ async function resolveOpenSignals(
             best_price: latestCandle.high,
             runner_stop: entryMid,  // Move to breakeven
           }).eq("id", signal.id)
+          notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
         }
       } else {
@@ -936,6 +940,7 @@ async function resolveOpenSignals(
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
+          notifyResolution(signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
           stats.runnerStops++
           stats.resolved++
         } else {
@@ -958,6 +963,7 @@ async function resolveOpenSignals(
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
+          notifyResolution(signal, "stop_loss", sl)
           stats.losses++
           stats.resolved++
           continue
@@ -971,6 +977,7 @@ async function resolveOpenSignals(
             best_price: latestCandle.low,
             runner_stop: entryMid,  // Move to breakeven
           }).eq("id", signal.id)
+          notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
         }
       } else {
@@ -993,6 +1000,7 @@ async function resolveOpenSignals(
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
+          notifyResolution(signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
           stats.runnerStops++
           stats.resolved++
         } else {
@@ -1019,4 +1027,61 @@ function jsonResponse(data: unknown, status = 200): Response {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// ─── Resolution Notification Helper ─────────────────────────────────────────
+
+type ResolutionEvent = "stop_loss" | "t1_hit" | "runner_win" | "runner_loss" | "expired_win" | "expired_loss"
+
+function notifyResolution(signal: any, event: ResolutionEvent, price: number): void {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+  if (!supabaseUrl || !cronSecret) return
+
+  const ticker = signal.asset
+  const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
+  const direction = isBuy ? "Long" : "Short"
+  const priceStr = price > 1000 ? `$${Math.round(price).toLocaleString()}` : price > 1 ? `$${price.toFixed(2)}` : `$${price.toFixed(4)}`
+
+  let emoji: string, title: string, body: string
+  const entryMid = Number(signal.entry_price_mid)
+  const pnl = isBuy ? ((price - entryMid) / entryMid) * 100 : ((entryMid - price) / entryMid) * 100
+  const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
+
+  switch (event) {
+    case "stop_loss":
+      emoji = "🛑"; title = `${emoji} ${ticker} ${direction} — Stop Loss Hit`
+      body = `Closed at ${priceStr}. PnL: ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}%`
+      break
+    case "t1_hit":
+      emoji = "🎯"; title = `${emoji} ${ticker} ${direction} — Target 1 Hit!`
+      body = `T1 at ${priceStr} reached. 50% locked, runner trailing with BE stop.`
+      break
+    case "runner_win":
+      emoji = "✅"; title = `${emoji} ${ticker} ${direction} — Runner Closed (Win)`
+      body = `Trailing stop at ${priceStr}. T1: +${t1Pnl.toFixed(2)}%`
+      break
+    case "runner_loss":
+      emoji = "📉"; title = `${emoji} ${ticker} ${direction} — Runner Closed`
+      body = `Trailing stop at ${priceStr}. T1: +${t1Pnl.toFixed(2)}%`
+      break
+    case "expired_win":
+      emoji = "⏰"; title = `${emoji} ${ticker} ${direction} — Expired (Profit)`
+      body = `Signal expired at ${priceStr}. T1: +${t1Pnl.toFixed(2)}%`
+      break
+    case "expired_loss":
+      emoji = "⏰"; title = `${emoji} ${ticker} ${direction} — Expired`
+      body = `Signal expired at ${priceStr}. No target reached.`
+      break
+  }
+
+  fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
+    body: JSON.stringify({
+      broadcast_id: signal.id,
+      title, body,
+      target_audience: { type: "premium" },
+    }),
+  }).catch(() => {})
 }

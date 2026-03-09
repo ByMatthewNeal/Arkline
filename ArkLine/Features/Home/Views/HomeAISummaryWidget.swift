@@ -188,6 +188,22 @@ struct HomeAISummaryWidget: View {
 
                 // Audio play/pause button
                 audioButton(for: summary)
+
+                // Speed button (visible during playback)
+                if audioService.playbackState == .playing || audioService.playbackState == .paused {
+                    Button {
+                        audioService.cycleSpeed()
+                    } label: {
+                        Text(audioService.playbackSpeed == 1.0 ? "1x" : String(format: "%.2gx", audioService.playbackSpeed))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(AppColors.accent)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(AppColors.accent.opacity(0.12))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             if summary != nil {

@@ -24,6 +24,22 @@ final class BriefingAudioService {
     var playbackState: PlaybackState = .idle
     var playbackProgress: Double = 0
     var lastError: String?
+    var playbackSpeed: Float = 1.0
+
+    static let speedOptions: [Float] = [1.0, 1.25, 1.5, 1.75, 2.0]
+
+    func cycleSpeed() {
+        guard let index = Self.speedOptions.firstIndex(of: playbackSpeed) else {
+            playbackSpeed = 1.0
+            player?.rate = 1.0
+            return
+        }
+        let next = (index + 1) % Self.speedOptions.count
+        playbackSpeed = Self.speedOptions[next]
+        if playbackState == .playing {
+            player?.rate = playbackSpeed
+        }
+    }
 
     // MARK: - Private
 
@@ -86,7 +102,7 @@ final class BriefingAudioService {
             player.pause()
             playbackState = .paused
         case .paused:
-            player.play()
+            player.rate = playbackSpeed
             playbackState = .playing
         default:
             break
@@ -194,7 +210,7 @@ final class BriefingAudioService {
             self?.currentBriefingKey = nil
         }
 
-        avPlayer.play()
+        avPlayer.rate = playbackSpeed
         playbackState = .playing
     }
 
