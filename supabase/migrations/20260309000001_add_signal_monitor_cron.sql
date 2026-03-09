@@ -1,0 +1,18 @@
+-- Add hourly signal-monitor cron job
+--
+-- Lightweight price checker that runs every hour at :30 (offset from the
+-- 4H pipeline at :05). Checks open signals against current prices for
+-- faster SL/T1/runner resolution and sends push notifications.
+--
+-- The function itself skips 4H candle-close hours (0,4,8,12,16,20 UTC)
+-- to avoid duplicate resolution with the full pipeline.
+--
+-- Run in Supabase Dashboard SQL Editor:
+--
+--   SELECT cron.schedule('signal-monitor-hourly', '30 * * * *', $$
+--     SELECT net.http_post(
+--       url := 'https://mprbbjgrshfbupheuscn.supabase.co/functions/v1/signal-monitor',
+--       headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
+--       body := '{}'::jsonb
+--     );
+--   $$);
