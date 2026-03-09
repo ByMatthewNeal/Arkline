@@ -277,7 +277,7 @@ struct SignalMethodologySheet: View {
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(textPrimary)
 
-                        Text("Fibonacci-based pattern detection optimized for the US session during peak volume hours. For educational purposes only.")
+                        Text("Fibonacci-based pattern detection running 24/7 across all 4H candle closes. For educational purposes only.")
                             .font(.system(size: 14))
                             .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)
@@ -342,7 +342,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 24)
 
-                            Text("Patterns are evaluated during **US session 4H candle closes** (12:00 and 16:00 UTC) \u{2014} when BTC sees the most volume and the cleanest price action. Patterns expire after 72 hours if conditions are not met.")
+                            Text("Patterns are evaluated at every **4H candle close** (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC) \u{2014} 6 scans per day covering all global sessions. Patterns expire after 72 hours if conditions are not met.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)
@@ -362,7 +362,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.success)
                                 .frame(width: 24)
 
-                            Text("This detection methodology has been backtested on over a year of BTC price data across multiple market regimes. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
+                            Text("This detection methodology has been backtested across 6 assets (BTC, ETH, SOL, SUI, LINK, ADA) over 12+ months of data covering multiple market regimes. 24/7 coverage outperformed US-session-only in both win rate and total P&L. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)
@@ -403,7 +403,7 @@ struct SignalMethodologySheet: View {
                         stepRow(
                             number: "5",
                             title: "Expiry — No Trade",
-                            detail: "If price never reaches the zone or confirmation fails within 24 hours, the signal expires. No entry, no risk. Patience is the edge."
+                            detail: "If price never reaches the zone or confirmation fails within 72 hours, the signal expires. No entry, no risk. Patience is the edge."
                         )
 
                         HStack(alignment: .top, spacing: 12) {

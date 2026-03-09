@@ -176,6 +176,7 @@
 		B2C3D4E5F6A70002BBCC2233 /* DailyMarketUpdateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60001AABB1122 /* DailyMarketUpdateCard.swift */; };
 		C3D4E5F6A7B80003CCDD3344 /* TradeSignalShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A70002BBCC2234 /* TradeSignalShareCard.swift */; };
 		B2C3D4E5F6A70004DDEE4455 /* DailyMarketUpdateViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60003CCDD3344 /* DailyMarketUpdateViewModel.swift */; };
+		D4E5F6A7B8C90005EEFF5566 /* NotificationInboxBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B80004DDEE4455 /* NotificationInboxBuilder.swift */; };
 		7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BFE18532B42396BDE06325 /* KeychainManager.swift */; };
 		8089EA5E1420BCF937B425AB /* RSIChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50533F2F531F5D45D8710237 /* RSIChartView.swift */; };
 		80B26C5D4987F718AA4D9AEB /* AppStoreRankingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */; };
@@ -809,6 +810,7 @@
 		CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
 		CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60003CCDD3344 /* DailyMarketUpdateViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyMarketUpdateViewModel.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B80004DDEE4455 /* NotificationInboxBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationInboxBuilder.swift; sourceTree = "<group>"; };
 		CF8C52768AD67E7DEDCACB74 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		CHANG3PA55C0D30001 /* ChangePasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasscodeView.swift; sourceTree = "<group>"; };
 		CR3AT3DCA5H33TV13W001 /* CreateDCASheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateDCASheetView.swift; sourceTree = "<group>"; };
@@ -1718,6 +1720,7 @@
 			children = (
 				CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */,
 				A1B2C3D4E5F60003CCDD3344 /* DailyMarketUpdateViewModel.swift */,
+				C3D4E5F6A7B80004DDEE4455 /* NotificationInboxBuilder.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -2350,6 +2353,7 @@
 				3E47C0261E91E876041DD462 /* EntryStrategy.swift in Sources */,
 				3E47C0261E91E876041DD463 /* EntryStrategySectionView.swift in Sources */,
 				B2C3D4E5F6A70004DDEE4455 /* DailyMarketUpdateViewModel.swift in Sources */,
+				D4E5F6A7B8C90005EEFF5566 /* NotificationInboxBuilder.swift in Sources */,
 				8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
 				E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */,

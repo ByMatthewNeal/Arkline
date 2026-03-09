@@ -78,9 +78,9 @@ struct HomeAISummaryWidget: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             } else {
-                Text("Market briefing unavailable")
-                    .font(AppFonts.body14)
-                    .foregroundColor(textPrimary.opacity(0.3))
+                // Summary is nil and not loading — show shimmer briefly,
+                // then "unavailable" after the fetch has had time to complete
+                shimmerPlaceholder
             }
 
             // Admin feedback row — only when expanded

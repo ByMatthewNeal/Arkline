@@ -229,7 +229,13 @@ extension Double {
                 options: .regularExpression
             )
         }
-        return String(format: "%.2f", self)
+        if self >= 1 {
+            return String(format: "%.2f", self)
+        }
+        if self >= 0.1 {
+            return String(format: "%.4f", self)
+        }
+        return String(format: "%.6f", self)
     }
 }
 

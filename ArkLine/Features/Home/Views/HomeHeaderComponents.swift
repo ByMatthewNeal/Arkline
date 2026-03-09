@@ -8,6 +8,7 @@ struct GlassHeader: View {
     let avatarUrl: URL?
     @ObservedObject var appState: AppState
     var hasNotification: Bool = false
+    var unreadCount: Int = 0
     var onCustomizeTap: (() -> Void)? = nil
     var onExportTap: (() -> Void)? = nil
     var onNotificationsTap: (() -> Void)? = nil
@@ -58,7 +59,7 @@ struct GlassHeader: View {
                     HeaderIconButton(icon: "slider.horizontal.3", action: onCustomizeTap)
                 }
 
-                HeaderIconButton(icon: "bell", hasNotification: hasNotification, action: {
+                HeaderIconButton(icon: "bell", hasNotification: hasNotification, unreadCount: unreadCount, action: {
                     onNotificationsTap?()
                 })
             }
@@ -70,6 +71,7 @@ struct GlassHeader: View {
 struct HeaderIconButton: View {
     let icon: String
     var hasNotification: Bool = false
+    var unreadCount: Int = 0
     let action: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
@@ -92,8 +94,17 @@ struct HeaderIconButton: View {
                     .foregroundColor(textPrimary.opacity(0.7))
                     .frame(width: 40, height: 40)
 
-                // Notification indicator
-                if hasNotification {
+                // Notification badge with count
+                if hasNotification && unreadCount > 0 {
+                    Text(unreadCount > 9 ? "9+" : "\(unreadCount)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(minWidth: 16)
+                        .frame(height: 16)
+                        .background(AppColors.accent)
+                        .clipShape(Capsule())
+                        .offset(x: -2, y: 2)
+                } else if hasNotification {
                     Circle()
                         .fill(AppColors.accent)
                         .frame(width: 8, height: 8)
@@ -102,7 +113,7 @@ struct HeaderIconButton: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(icon.contains("bell") ? (hasNotification ? "Notifications, unread" : "Notifications") : "Customize")
+        .accessibilityLabel(icon.contains("bell") ? (hasNotification ? "Notifications, \(unreadCount) unread" : "Notifications") : "Customize")
     }
 }
 

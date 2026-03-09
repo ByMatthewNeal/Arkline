@@ -93,20 +93,17 @@ struct EntryStrategySectionView: View {
     // MARK: - Strategy Pill
 
     private func strategyPill(_ strat: EntryStrategy) -> some View {
-        Button {
+        let pillColor = strat.color
+        return Button {
             withAnimation(.easeInOut(duration: 0.2)) { strategy = strat }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: strat.iconName)
-                    .font(.system(size: 10))
-                Text(strat.label)
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .foregroundColor(strategy == strat ? .white : AppColors.accent)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(strategy == strat ? AppColors.accent : AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1))
-            .cornerRadius(14)
+            Text(strat.label)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(strategy == strat ? .white : pillColor)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(strategy == strat ? pillColor : pillColor.opacity(colorScheme == .dark ? 0.15 : 0.1))
+                .cornerRadius(14)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -116,9 +113,9 @@ struct EntryStrategySectionView: View {
     private var strategyDetailCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: strategy.iconName)
-                    .font(.system(size: 12))
-                    .foregroundColor(AppColors.accent)
+                Circle()
+                    .fill(strategy.color)
+                    .frame(width: 8, height: 8)
                 Text(strategy.label)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(textPrimary)
@@ -257,9 +254,9 @@ struct EntryStrategySectionView: View {
                 .tracking(1)
 
             // Header row
-            HStack {
+            HStack(spacing: 0) {
                 Text("Strategy")
-                    .frame(width: 80, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text("Entry")
                     .frame(width: 70, alignment: .trailing)
                 Text("Stop %")
@@ -277,14 +274,10 @@ struct EntryStrategySectionView: View {
                     margin: baseCalc.marginAmount,
                     strategy: strat
                 )
-                HStack {
-                    HStack(spacing: 3) {
-                        Image(systemName: strat.iconName)
-                            .font(.system(size: 8))
-                        Text(strat.label)
-                    }
-                    .frame(width: 80, alignment: .leading)
-                    .foregroundColor(strat == strategy ? AppColors.accent : textPrimary)
+                HStack(spacing: 0) {
+                    Text(strat.label)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundColor(strat == strategy ? strat.color : strat.color.opacity(0.7))
 
                     Text("$\(calc.entryPrice.asSignalPrice)")
                         .frame(width: 70, alignment: .trailing)

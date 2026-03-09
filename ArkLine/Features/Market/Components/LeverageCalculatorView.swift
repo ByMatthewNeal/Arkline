@@ -7,12 +7,13 @@ struct LeverageCalculatorView: View {
     var startExpanded: Bool = true
     var onCalculationChange: ((LeverageCalculation?) -> Void)? = nil
 
-    @State private var leverage: Int = 1
+    @State private var leverage: Double = 1
     @State private var marginText: String = ""
     @State private var marginMode: MarginMode = .isolated
     @State private var entryStrategy: EntryStrategy = .optimal
     @State private var isExpanded: Bool = false
     @State private var showTooltip: Bool = false
+    @State private var showRLadder: Bool = false
     @State private var walletText: String = ""
     @State private var riskPercent: Double = 0
     @State private var riskSize: RiskSize = .oneR
@@ -37,9 +38,11 @@ struct LeverageCalculatorView: View {
         return Double(marginText.replacingOccurrences(of: ",", with: "")) ?? 0
     }
 
+    private var leverageInt: Int { max(1, Int(leverage.rounded())) }
+
     private var calculation: LeverageCalculation? {
-        guard leverage > 1, marginAmount > 0 else { return nil }
-        return LeverageCalculation(signal: signal, leverage: leverage, margin: marginAmount, strategy: entryStrategy)
+        guard leverageInt > 1, marginAmount > 0 else { return nil }
+        return LeverageCalculation(signal: signal, leverage: leverageInt, margin: marginAmount, strategy: entryStrategy)
     }
 
     private var hasEntryZone: Bool {
@@ -106,7 +109,7 @@ struct LeverageCalculatorView: View {
 
                     inputSection
 
-                    if hasEntryZone && leverage > 1 {
+                    if hasEntryZone && leverageInt > 1 {
                         EntryStrategySectionView(
                             signal: signal,
                             strategy: $entryStrategy,
@@ -163,33 +166,29 @@ struct LeverageCalculatorView: View {
         VStack(spacing: 12) {
             // Leverage
             VStack(alignment: .leading, spacing: 6) {
-                Text("Leverage")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(AppColors.textSecondary)
+                HStack {
+                    Text("Leverage")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    Text("\(leverageInt)x")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(leverageInt > maxSafe ? AppColors.error : AppColors.accent)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .animation(.snappy(duration: 0.15), value: leverageInt)
+                }
 
-                HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        TextField("1", value: $leverage, format: .number)
-                            .keyboardType(.numberPad)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(textPrimary)
-                            .frame(width: 50)
-                            .multilineTextAlignment(.center)
-                        Text("x")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(subtleBg)
-                    .cornerRadius(8)
+                Slider(value: $leverage, in: 1...150, step: 1) {
+                    EmptyView()
+                }
+                .tint(leverageInt > maxSafe ? AppColors.error : AppColors.accent)
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach([10, 25, 50, 75, 100], id: \.self) { val in
-                                quickButton("\(val)x", isActive: leverage == val) {
-                                    leverage = val
-                                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach([1, 5, 10, 25, 50, 75, 100, 125], id: \.self) { val in
+                            quickButton("\(val)x", isActive: leverageInt == val) {
+                                leverage = Double(val)
                             }
                         }
                     }
@@ -369,13 +368,26 @@ struct LeverageCalculatorView: View {
 
     @ViewBuilder
     private var resultsSection: some View {
-        if leverage == 1 {
-            HStack {
-                Image(systemName: "checkmark.circle")
-                    .foregroundColor(AppColors.success)
-                Text("Spot trade — no leverage risk")
-                    .font(AppFonts.body14)
-                    .foregroundColor(AppColors.textSecondary)
+        if leverageInt == 1 {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "checkmark.circle")
+                        .foregroundColor(AppColors.success)
+                    Text("Spot trade — no leverage risk")
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                if marginAmount > 0 {
+                    let entry = entryStrategy.effectiveEntryPrice(
+                        zoneLow: signal.entryZoneLow,
+                        zoneHigh: signal.entryZoneHigh,
+                        isLong: signal.signalType.isBuy
+                    )
+                    let qty = entry > 0 ? marginAmount / entry : 0
+                    Divider().opacity(0.3)
+                    resultRow("Position Size", value: formatDollar(marginAmount))
+                    resultRow("Quantity (\(signal.asset))", value: formatQuantity(qty))
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
@@ -410,6 +422,7 @@ struct LeverageCalculatorView: View {
                 .tracking(1)
 
             resultRow("Notional Position", value: formatDollar(calc.notionalPosition))
+            resultRow("Quantity (\(signal.asset))", value: formatQuantity(calc.assetQuantity))
             resultRow("Liquidation Price", value: "$\(calc.entryPrice > 1000 ? String(format: "%.0f", calc.liquidationPrice) : calc.liquidationPrice.asSignalPrice)")
             resultRow("Liquidation Distance", value: String(format: "%.2f%%", calc.liquidationPercent))
 
@@ -493,8 +506,79 @@ struct LeverageCalculatorView: View {
                           badge: calc.stopLossWasAdjusted ? "(adjusted)" : nil)
             }
 
+            // R-Target Ladder (collapsible)
+            if !calc.rTargetLadder.isEmpty {
+                Divider().padding(.vertical, 4)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { showRLadder.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("R-TARGET LADDER")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppColors.textSecondary)
+                            .tracking(1)
+                        Text("·")
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("\(formatQuantity(calc.assetQuantity)) \(signal.asset)")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(AppColors.accent)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(AppColors.textSecondary)
+                            .rotationEffect(.degrees(showRLadder ? 90 : 0))
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                if showRLadder {
+                    VStack(spacing: 6) {
+                        // Header row
+                        HStack(spacing: 0) {
+                            Text("R")
+                                .frame(width: 36, alignment: .leading)
+                            Text("Price")
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                            Text("P&L")
+                                .frame(width: 70, alignment: .trailing)
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+
+                        ForEach(calc.rTargetLadder) { target in
+                            HStack(spacing: 0) {
+                                Text(target.id)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(AppColors.accent)
+                                    .frame(width: 36, alignment: .leading)
+                                Text("$\(target.targetPrice.asSignalPrice)")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(textPrimary)
+                                    .monospacedDigit()
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                Text("+\(formatDollar(target.pnl))")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(AppColors.success)
+                                    .monospacedDigit()
+                                    .frame(width: 70, alignment: .trailing)
+                            }
+                        }
+
+                        // 1R reference
+                        HStack(spacing: 4) {
+                            Text("1R = $\(calc.stopDistanceDollar.asSignalPrice) move")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding(.top, 2)
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+
             // Extreme leverage warning
-            if leverage > 125 {
+            if leverageInt > 125 {
                 HStack(spacing: 6) {
                     Image(systemName: "bolt.trianglebadge.exclamationmark.fill")
                         .font(.system(size: 12))
@@ -520,7 +604,7 @@ struct LeverageCalculatorView: View {
                 Circle()
                     .fill(AppColors.error)
                     .frame(width: 8, height: 8)
-                Text("SIGNAL NOT VIABLE AT \(leverage)x")
+                Text("SIGNAL NOT VIABLE AT \(leverageInt)x")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(AppColors.error)
             }
@@ -539,7 +623,7 @@ struct LeverageCalculatorView: View {
             }
 
             Button {
-                withAnimation { leverage = calc.maxSafeLeverage }
+                withAnimation { leverage = Double(calc.maxSafeLeverage) }
             } label: {
                 Text("Adjust to \(calc.maxSafeLeverage)x")
                     .font(.system(size: 13, weight: .semibold))
@@ -558,7 +642,7 @@ struct LeverageCalculatorView: View {
 
     private var maxSafeBadge: some View {
         Button {
-            withAnimation { leverage = maxSafe }
+            withAnimation { leverage = Double(maxSafe) }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "chart.bar.fill")
@@ -608,6 +692,18 @@ struct LeverageCalculatorView: View {
                     .font(.system(size: 10))
                     .foregroundColor(AppColors.textSecondary)
             }
+        }
+    }
+
+    private func formatQuantity(_ qty: Double) -> String {
+        if qty >= 1000 {
+            return String(format: "%.1f", qty)
+        } else if qty >= 1 {
+            return String(format: "%.4f", qty)
+        } else if qty >= 0.001 {
+            return String(format: "%.6f", qty)
+        } else {
+            return String(format: "%.8f", qty)
         }
     }
 

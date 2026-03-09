@@ -53,6 +53,12 @@ final class MarketSummaryService {
         let coinbaseRank: Int?
         let btcSearchInterest: String?
         let topGainer: String?
+        // Technical Analysis (BTC)
+        let btcTrend: String?
+        let btcRsi: String?
+        let btcSmaPosition: String?
+        let btcBmsbPosition: String?
+        let btcBollingerPosition: String?
         // Events & News
         let economicEvents: [EventEntry]?
         let newsHeadlines: [String]?
@@ -123,23 +129,44 @@ final class MarketSummaryService {
     func fetchSummary(payload: MarketSummaryPayload, allowServerCacheClear: Bool = true) async throws -> MarketSummary {
         // Check client cache
         if let cached: MarketSummary = APICache.shared.get(Self.cacheKey) {
+            #if DEBUG
+            print("🟢 BRIEFING: returning cached summary")
+            #endif
             return cached
         }
 
         guard SupabaseManager.shared.isConfigured else {
+            #if DEBUG
+            print("🔴 BRIEFING: Supabase not configured!")
+            #endif
             throw MarketSummaryError.notConfigured
         }
+        #if DEBUG
+        print("🟡 BRIEFING: calling edge function market-summary...")
+        #endif
 
         let (summaryDate, slot) = currentESTSlot()
 
         do {
+            // Use the anon key explicitly — the SDK sends the user's (possibly expired)
+            // access token by default, which causes 401 if the session is stale.
+            let anonKey = Constants.API.supabaseAnonKey
             let data: Data = try await SupabaseManager.shared.functions.invoke(
                 "market-summary",
-                options: FunctionInvokeOptions(body: payload),
+                options: FunctionInvokeOptions(
+                    headers: ["Authorization": "Bearer \(anonKey)"],
+                    body: payload
+                ),
                 decode: { data, _ in data }
             )
 
             logDebug("Market summary response: \(data.count) bytes", category: .network)
+            #if DEBUG
+            print("🟡 BRIEFING: got \(data.count) bytes, decoding...")
+            if let raw = String(data: data, encoding: .utf8) {
+                print("🟡 BRIEFING raw (first 300): \(String(raw.prefix(300)))")
+            }
+            #endif
 
             let response = try JSONDecoder().decode(SummaryResponse.self, from: data)
 
@@ -178,14 +205,26 @@ final class MarketSummaryService {
             case .httpError(let code, let data):
                 let body = String(data: data, encoding: .utf8) ?? "nil"
                 logError("Market summary HTTP \(code): \(body)", category: .network)
+                #if DEBUG
+                print("🔴 BRIEFING HTTP \(code): \(body)")
+                #endif
             case .relayError:
                 logError("Market summary relay error", category: .network)
+                #if DEBUG
+                print("🔴 BRIEFING relay error")
+                #endif
             }
             throw MarketSummaryError.networkError(error)
         } catch let error as MarketSummaryError {
+            #if DEBUG
+            print("🔴 BRIEFING MarketSummaryError: \(error)")
+            #endif
             throw error
         } catch {
             logError("Market summary failed: \(error)", category: .network)
+            #if DEBUG
+            print("🔴 BRIEFING unknown error: \(error)")
+            #endif
             throw MarketSummaryError.networkError(error)
         }
     }
@@ -200,9 +239,13 @@ final class MarketSummaryService {
             let clearCache = true
         }
 
+        let anonKey = Constants.API.supabaseAnonKey
         let _: Data = try await SupabaseManager.shared.functions.invoke(
             "market-summary",
-            options: FunctionInvokeOptions(body: ClearCachePayload()),
+            options: FunctionInvokeOptions(
+                headers: ["Authorization": "Bearer \(anonKey)"],
+                body: ClearCachePayload()
+            ),
             decode: { data, _ in data }
         )
 

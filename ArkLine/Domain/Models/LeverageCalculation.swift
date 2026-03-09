@@ -70,6 +70,12 @@ struct LeverageCalculation {
         marginAmount * Double(leverageMultiplier)
     }
 
+    /// Quantity of the asset at the effective entry price
+    var assetQuantity: Double {
+        guard entryPrice > 0 else { return 0 }
+        return notionalPosition / entryPrice
+    }
+
     var stopLossPercent: Double {
         guard entryPrice > 0 else { return 0 }
         return abs(stopLossPrice - entryPrice) / entryPrice * 100
@@ -146,6 +152,44 @@ struct LeverageCalculation {
     var target2ReturnOnMargin: Double? {
         guard marginAmount > 0, let payout = target2DollarPayout else { return nil }
         return (payout / marginAmount) * 100
+    }
+
+    // MARK: - R-Multiple Target Ladder
+
+    struct RTarget: Identifiable {
+        let id: String
+        let rMultiple: Double
+        let dollarMove: Double    // $ per unit move from entry to target
+        let targetPrice: Double
+        let pnl: Double           // Dollar P&L at this level
+    }
+
+    /// Stop distance in dollar terms (per unit of asset)
+    var stopDistanceDollar: Double {
+        abs(entryPrice - stopLossPrice)
+    }
+
+    /// R-multiple target levels with price, P&L, and dollar move
+    var rTargetLadder: [RTarget] {
+        guard entryPrice > 0, stopDistanceDollar > 0, assetQuantity > 0 else { return [] }
+        let rMultiples = [1.0, 1.5, 2.0, 3.0, 5.0]
+        return rMultiples.map { r in
+            let dollarMove = stopDistanceDollar * r
+            let targetPrice: Double
+            if isLong {
+                targetPrice = entryPrice + dollarMove
+            } else {
+                targetPrice = entryPrice - dollarMove
+            }
+            let pnl = dollarMove * assetQuantity
+            return RTarget(
+                id: "\(r)R",
+                rMultiple: r,
+                dollarMove: dollarMove,
+                targetPrice: targetPrice,
+                pnl: pnl
+            )
+        }
     }
 
     // MARK: - Viability

@@ -196,6 +196,25 @@ Deno.serve(async (req) => {
     sections.push(`EVENTS: ${events}`)
   }
 
+  // --- BTC Technical Analysis ---
+  const taLines: string[] = []
+  if (payload.btcTrend) {
+    taLines.push(`Trend: ${payload.btcTrend}`)
+  }
+  if (payload.btcRsi) {
+    taLines.push(payload.btcRsi)
+  }
+  if (payload.btcSmaPosition) {
+    taLines.push(`SMA Position: ${payload.btcSmaPosition}`)
+  }
+  if (payload.btcBmsbPosition) {
+    taLines.push(`Bull Market Support Band: ${payload.btcBmsbPosition}`)
+  }
+  if (payload.btcBollingerPosition) {
+    taLines.push(`Bollinger Bands (Daily): ${payload.btcBollingerPosition}`)
+  }
+  if (taLines.length) sections.push(`BTC TECHNICAL ANALYSIS:\n${taLines.join("\n")}`)
+
   // --- Headlines ---
   if (Array.isArray(payload.newsHeadlines) && payload.newsHeadlines.length > 0) {
     sections.push(`HEADLINES: ${payload.newsHeadlines.join("; ")}`)
@@ -256,6 +275,9 @@ One sentence with the overall market stance and crypto positioning. If the MACRO
 ## The Rundown
 2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally.
 
+## Technical
+2-3 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Explain in plain language what the technicals suggest about momentum and structure — e.g. "BTC is holding above all major moving averages with RSI at 58, healthy momentum without being stretched" or "Price just lost the 50 SMA and RSI is trending down to 38 — momentum is fading." If no BTC TA data is available, skip this section entirely.
+
 ## Signals
 2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime (Apathy/FOMO/Panic/Complacency), BTC/ETH risk zones (good for DCA timing), season indicator (BTC vs Alt season), Coinbase app ranking (retail interest proxy), BTC search interest. Explain what each means in plain language. For example: "BTC is in a Low Risk zone — historically a solid DCA window" or "Coinbase sitting outside the top 200 tells you retail hasn't shown up yet."
 
@@ -263,9 +285,10 @@ Rules:
 - Write for someone checking their phone over coffee, not a Wall Street analyst
 - Explain what things mean, don't just state numbers
 - Connect dots — if Fear & Greed is at Extreme Fear but crypto is green, say that's unusual
+- Connect dots between TA and sentiment — if RSI is oversold and Fear & Greed is at Extreme Fear, that's a notable convergence
 - Never give investment advice or say "buy" / "sell"
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
-- Keep total length under 150 words
+- Keep total length under 200 words
 - Never start any section with "Today" or "The market"
 - If SWING SETUPS data is present, naturally reference any active or triggered setups in the Signals section. Use ONLY these terms: "Long Setup conditions detected" or "Short Setup conditions detected". Never use the words "buy", "sell", "buy signal", or "sell signal". Refer to entry zones as "pattern entry zone" or "setup zone". For setups that are "IN PLAY", note conditions are active. For setups that are "WATCHING", note the zone is being monitored. Frame setups as pattern observations, not action directives. Never say "time to buy/sell". End any setup mention with context, not a call to action. Keep it brief — one sentence max per setup.${feedbackBlock}`,
         messages: [

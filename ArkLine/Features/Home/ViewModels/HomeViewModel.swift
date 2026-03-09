@@ -380,6 +380,49 @@ class HomeViewModel {
     var marketSummary: MarketSummary? = nil
     var isLoadingSummary = true
 
+    // Notification Inbox
+    var recentSignalsForInbox: [TradeSignal] = []
+    var readNotificationIds: Set<String> = [] {
+        didSet { persistReadIds() }
+    }
+    private static let readIdsKey = "arkline_read_notification_ids"
+
+    var inboxNotifications: [AppNotification] {
+        NotificationInboxBuilder.build(
+            todayReminders: todayReminders,
+            recentSignals: recentSignalsForInbox,
+            marketSummary: marketSummary,
+            extremeMoveHistory: ExtremeMoveAlertManager.shared.getAlertHistory(),
+            readIds: readNotificationIds
+        )
+    }
+
+    var unreadNotificationCount: Int {
+        inboxNotifications.filter { !$0.isRead }.count
+    }
+
+    func markNotificationRead(_ id: String) {
+        readNotificationIds.insert(id)
+    }
+
+    func markAllNotificationsRead() {
+        for notification in inboxNotifications {
+            readNotificationIds.insert(notification.id)
+        }
+    }
+
+    private func persistReadIds() {
+        let currentIds = Set(inboxNotifications.map(\.id))
+        let pruned = readNotificationIds.intersection(currentIds)
+        UserDefaults.standard.set(Array(pruned), forKey: Self.readIdsKey)
+    }
+
+    private func loadReadIds() {
+        if let array = UserDefaults.standard.stringArray(forKey: Self.readIdsKey) {
+            readNotificationIds = Set(array)
+        }
+    }
+
     // Top Movers
     var topGainers: [CryptoAsset] = []
     var topLosers: [CryptoAsset] = []
@@ -442,6 +485,7 @@ class HomeViewModel {
         self.enableSideEffects = enableSideEffects
         // Initialize user data synchronously; data loading is triggered by HomeView.task
         self.sentimentViewModel = SentimentViewModel()
+        loadReadIds()
     }
 
     nonisolated deinit {
@@ -739,6 +783,16 @@ class HomeViewModel {
             }
         }
 
+        // Fetch recent signals for notification inbox (includes closed signals)
+        Task {
+            do {
+                let recent = try await self.swingSetupService.fetchRecentSignals(limit: 30)
+                await MainActor.run { self.recentSignalsForInbox = recent }
+            } catch {
+                logWarning("Inbox signal fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
         // Fetch Rainbow Chart data (needs BTC price) in background
         if btcPrice > 0 {
             Task {
@@ -753,6 +807,9 @@ class HomeViewModel {
         if forceRefresh {
             APICache.shared.remove("market_summary_session")
         }
+        // Set loading flag BEFORE launching task to avoid race where isLoading=false
+        // and isLoadingSummary=false simultaneously → "unavailable" flash
+        self.isLoadingSummary = true
         Task { await self.fetchMarketSummary() }
     }
 
@@ -1091,17 +1148,23 @@ class HomeViewModel {
 
     // MARK: - AI Market Summary
 
-    func fetchMarketSummary(checkRegimeShift: Bool = true) async {
+    func fetchMarketSummary(checkRegimeShift: Bool = true, retryCount: Int = 0) async {
         guard enableSideEffects else { return }
         isLoadingSummary = true
         defer { isLoadingSummary = false }
 
         let service = MarketSummaryService.shared
 
-        // Fetch index quotes, sentiment data, and financial news in parallel
+        // Fetch index quotes, sentiment data, financial news, and BTC TA in parallel
         async let indexQuotes = service.fetchIndexQuotes()
         async let sentimentRefresh: () = { [weak self] in
             await self?.sentimentViewModel?.refresh()
+        }()
+        async let btcTA: TechnicalAnalysis? = {
+            do {
+                let taService: TechnicalAnalysisServiceProtocol = ServiceContainer.shared.technicalAnalysisService
+                return try await taService.fetchTechnicalAnalysis(symbol: "BTC/USDT", exchange: "binance", interval: .daily)
+            } catch { return nil }
         }()
         async let financialNews: [NewsItem] = {
             do {
@@ -1115,6 +1178,8 @@ class HomeViewModel {
         let (sp500, nasdaq) = await indexQuotes
         _ = await sentimentRefresh
         let finNews = await financialNews
+        let btcTechnical = await btcTA
+        logDebug("Briefing data ready — SP500: \(sp500 != nil), BTC: \(btcPrice), TA: \(btcTechnical != nil), news: \(finNews.count)", category: .network)
 
         // Build net liquidity signal
         var netLiqSignal: String? = nil
@@ -1173,6 +1238,26 @@ class HomeViewModel {
             coinbaseRank: sentimentViewModel?.primaryAppRanking?.ranking,
             btcSearchInterest: btcSearchStr,
             topGainer: topGainerStr,
+            btcTrend: btcTechnical.map { "\($0.trend.direction.rawValue) (\($0.trend.strength.rawValue), \($0.trend.daysInTrend)d)" },
+            btcRsi: btcTechnical.map { "RSI(\($0.rsi.period)) = \(String(format: "%.1f", $0.rsi.value)) (\($0.rsi.zone.rawValue))" },
+            btcSmaPosition: btcTechnical.map {
+                let sma = $0.smaAnalysis
+                var parts: [String] = []
+                parts.append("21 SMA: \(sma.above21SMA ? "above" : "below") (\(sma.sma21.distanceLabel))")
+                parts.append("50 SMA: \(sma.above50SMA ? "above" : "below") (\(sma.sma50.distanceLabel))")
+                parts.append("200 SMA: \(sma.above200SMA ? "above" : "below") (\(sma.sma200.distanceLabel))")
+                if sma.goldenCross { parts.append("Golden Cross active") }
+                if sma.deathCross { parts.append("Death Cross active") }
+                return parts.joined(separator: ", ")
+            },
+            btcBmsbPosition: btcTechnical.map {
+                let bmsb = $0.bullMarketBands
+                return "\(bmsb.position.rawValue) — 20W SMA: $\(String(format: "%.0f", bmsb.sma20Week)) (\(String(format: "%+.1f%%", bmsb.percentFromSMA))), 21W EMA: $\(String(format: "%.0f", bmsb.ema21Week)) (\(String(format: "%+.1f%%", bmsb.percentFromEMA)))"
+            },
+            btcBollingerPosition: btcTechnical.map {
+                let bb = $0.bollingerBands.daily
+                return "\(bb.position.rawValue) — %B: \(String(format: "%.2f", bb.percentB)), bandwidth: \(String(format: "%.3f", bb.bandwidth))"
+            },
             economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map { event in
                 .init(title: event.title, time: event.timeFormatted)
             },
@@ -1219,7 +1304,16 @@ class HomeViewModel {
                 self.briefingQuadrant = textQuadrant
             }
         } catch {
-            logError("Market summary fetch failed: \(error.localizedDescription)", category: .network)
+            logError("Market summary fetch failed (attempt \(retryCount + 1)): \(error)", category: .network)
+            #if DEBUG
+            print("🔴 BRIEFING ERROR (attempt \(retryCount + 1)): \(error)")
+            #endif
+            // Retry once after a short delay if first attempt failed
+            if retryCount == 0 && marketSummary == nil {
+                logInfo("Retrying market summary fetch in 3s...", category: .network)
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await fetchMarketSummary(checkRegimeShift: false, retryCount: 1)
+            }
         }
     }
 }

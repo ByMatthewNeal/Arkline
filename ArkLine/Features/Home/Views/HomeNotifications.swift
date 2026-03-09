@@ -3,6 +3,8 @@ import SwiftUI
 // MARK: - Notifications Sheet
 struct NotificationsSheet: View {
     let notifications: [AppNotification]
+    var onNotificationTapped: ((AppNotification) -> Void)? = nil
+    var onMarkAllRead: (() -> Void)? = nil
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
@@ -19,6 +21,10 @@ struct NotificationsSheet: View {
         colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7")
     }
 
+    private var unreadCount: Int {
+        notifications.filter { !$0.isRead }.count
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -32,6 +38,15 @@ struct NotificationsSheet: View {
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if unreadCount > 0 {
+                        Button("Read All") {
+                            onMarkAllRead?()
+                        }
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -68,6 +83,9 @@ struct NotificationsSheet: View {
 
                         ForEach(unreadNotifications) { notification in
                             AppNotificationRow(notification: notification)
+                                .onTapGesture {
+                                    onNotificationTapped?(notification)
+                                }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -85,6 +103,9 @@ struct NotificationsSheet: View {
 
                         ForEach(readNotifications) { notification in
                             AppNotificationRow(notification: notification)
+                                .onTapGesture {
+                                    onNotificationTapped?(notification)
+                                }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -99,13 +120,23 @@ struct NotificationsSheet: View {
 
 // MARK: - App Notification Model
 struct AppNotification: Identifiable {
-    let id = UUID()
+    let id: String
+    let type: NotificationType
     let icon: String
     let iconColor: Color
     let title: String
     let subtitle: String
     let time: Date
-    let isRead: Bool
+    var isRead: Bool
+
+    enum NotificationType: String {
+        case dcaReminder
+        case signalGenerated
+        case signalOutcome
+        case signalT1Hit
+        case dailyBriefing
+        case extremeMacroMove
+    }
 
     var timeFormatted: String {
         let formatter = RelativeDateTimeFormatter()
@@ -157,7 +188,7 @@ struct AppNotificationRow: View {
                 Text(notification.subtitle)
                     .font(.system(size: 13))
                     .foregroundColor(textPrimary.opacity(0.6))
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             // Unread indicator

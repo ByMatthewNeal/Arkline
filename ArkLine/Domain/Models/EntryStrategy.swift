@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Entry Strategy
 
@@ -21,6 +22,16 @@ enum EntryStrategy: String, CaseIterable, Identifiable {
         }
     }
 
+    var shortLabel: String {
+        switch self {
+        case .aggressive: return "Aggro"
+        case .midpoint: return "Mid"
+        case .optimal: return "Optimal"
+        case .conservative: return "Conserv."
+        case .split: return "Split"
+        }
+    }
+
     var shortDescription: String {
         switch self {
         case .aggressive: return "Enter at zone edge, first touch"
@@ -28,6 +39,16 @@ enum EntryStrategy: String, CaseIterable, Identifiable {
         case .optimal: return "0.705 level — highest reversal probability"
         case .conservative: return "Deep zone entry, tightest stop"
         case .split: return "40% early + 60% deep, averaged"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .aggressive: return .orange
+        case .midpoint: return .blue
+        case .optimal: return .green
+        case .conservative: return .purple
+        case .split: return .cyan
         }
     }
 
