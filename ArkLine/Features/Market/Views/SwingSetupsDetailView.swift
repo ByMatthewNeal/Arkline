@@ -804,6 +804,20 @@ struct SignalCard: View {
                         .foregroundColor(textPrimary)
                 }
 
+                // AI rationale
+                if let rationale = signal.shortRationale, !rationale.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "brain.head.profile")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.accent.opacity(0.7))
+                        Text(rationale)
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.6))
+                            .lineLimit(2)
+                    }
+                    .padding(.vertical, 2)
+                }
+
                 // Targets + Stop
                 HStack(spacing: 16) {
                     if let t1 = signal.target1 {

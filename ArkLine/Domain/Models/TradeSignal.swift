@@ -56,6 +56,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let closedAt: Date?
     let expiresAt: Date?
     let briefingText: String?
+    let shortRationale: String?
 
     enum CodingKeys: String, CodingKey {
         case id, asset, status, outcome
@@ -92,6 +93,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case closedAt = "closed_at"
         case expiresAt = "expires_at"
         case briefingText = "briefing_text"
+        case shortRationale = "short_rationale"
     }
 }
 

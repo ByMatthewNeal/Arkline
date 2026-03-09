@@ -80,6 +80,13 @@ struct FlashIntelCard: View {
                 Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
+
+                if let rationale = signal.shortRationale, !rationale.isEmpty {
+                    Text(rationale)
+                        .font(.system(size: 10))
+                        .foregroundColor(textPrimary.opacity(0.5))
+                        .lineLimit(1)
+                }
             }
 
             Spacer()

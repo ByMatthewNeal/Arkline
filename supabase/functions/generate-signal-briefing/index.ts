@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
         max_tokens: 600,
         system: `You are Arkline's pattern analysis engine. Generate a concise educational briefing describing the detected Fibonacci pattern conditions. This is a pattern observation tool, NOT trading advice. Format the output as a JSON object with these fields:
 - headline (max 60 chars, e.g. "BTC Fibonacci Confluence at Key Support — Long Setup Detected")
+- short_rationale (ONE sentence, max 20 words, explaining the key reason this setup stands out. Focus on the strongest confluence factor. E.g. "3-level golden pocket at daily support with bullish EMA crossover and rising volume." No disclaimers.)
 - summary (2-3 sentences describing the pattern setup and what conditions have aligned. Frame as observations: "conditions detected", "pattern suggests", "levels are aligning". Never say "buy", "sell", "time to enter", or give action directives.)
 - supporting_signals (array of 2-3 short bullet point strings highlighting the strongest confirming data points as observations)
 - disclaimer ("This is not financial advice. These are pattern observations for educational purposes. Always DYOR and consult a licensed advisor before making crypto-related decisions.")
@@ -147,10 +148,14 @@ Return ONLY the JSON object, no markdown fences or extra text.`,
       briefing.disclaimer ?? "",
     ].join("\n").trim()
 
-    // Update the signal with the briefing
+    // Update the signal with the briefing + short rationale
+    const shortRationale = typeof briefing.short_rationale === "string"
+      ? (briefing.short_rationale as string).slice(0, 120)
+      : null
+
     const { error: updateErr } = await supabase
       .from("trade_signals")
-      .update({ briefing_text: briefingText })
+      .update({ briefing_text: briefingText, short_rationale: shortRationale })
       .eq("id", signalId)
 
     if (updateErr) {
