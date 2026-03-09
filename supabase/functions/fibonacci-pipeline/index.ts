@@ -122,6 +122,31 @@ Deno.serve(async (req) => {
 
   const allResults: Record<string, unknown> = {}
 
+  // Fetch macro context once for all assets
+  let fearGreedIndex: number | undefined
+  let btcRiskScore: number | undefined
+  try {
+    const fgResp = await fetch("https://api.alternative.me/fng/?limit=1")
+    if (fgResp.ok) {
+      const fgData = await fgResp.json()
+      fearGreedIndex = fgData?.data?.[0]?.value ? Number(fgData.data[0].value) : undefined
+    }
+  } catch (err) {
+    console.error(`Fear & Greed fetch failed: ${err}`)
+  }
+  try {
+    const { data: riskRow } = await supabase
+      .from("trade_signals")
+      .select("composite_score")
+      .eq("asset", "BTC")
+      .in("status", ["active", "triggered"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+    btcRiskScore = riskRow?.[0]?.composite_score ? Number(riskRow[0].composite_score) : undefined
+  } catch (err) {
+    console.error(`BTC risk score fetch failed: ${err}`)
+  }
+
   try {
     for (const asset of ASSETS) {
       const assetResults: Record<string, unknown> = {}
@@ -146,6 +171,12 @@ Deno.serve(async (req) => {
       await storeFibs(supabase, asset.ticker, fibs)
       assetResults.fibs = fibs.length
 
+      if (candles["4h"].length === 0) {
+        assetResults.skipped = "No 4h candles"
+        allResults[asset.ticker] = assetResults
+        continue
+      }
+
       const currentPrice = candles["4h"][candles["4h"].length - 1].close
       const zones = clusterLevels(fibs, currentPrice)
       await storeZones(supabase, asset.ticker, zones, currentPrice)
@@ -154,7 +185,7 @@ Deno.serve(async (req) => {
       // Compute volume profile from 4h candles
       const volumeNodes = computeVolumeProfile(candles["4h"])
 
-      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes)
+      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore)
       assetResults.newSignals = newSignals
 
       await pruneOldCandles(supabase, asset.ticker)
@@ -799,6 +830,8 @@ async function evaluateSignals(
   fibs: FibLevel[],
   currentPrice: number,
   volumeNodes: VolumeNode[] = [],
+  fearGreedIndex?: number,
+  btcRiskScore?: number,
 ): Promise<{ generated: number; skipped: number }> {
   const stats = { generated: 0, skipped: 0 }
   const candles4h = candles["4h"]
@@ -874,6 +907,8 @@ async function evaluateSignals(
       isBuy,
       rrRatio: rrRatio,
       counterTrend,
+      fearGreedIndex,
+      btcRiskScore,
     })
 
     const expiresAt = new Date(Date.now() + SIGNAL_EXPIRY_HOURS * 3600000).toISOString()

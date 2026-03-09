@@ -576,7 +576,7 @@ struct SwingSetupsDetailView: View {
                     color: AppColors.error
                 )
                 metricTile(
-                    title: "Best Streak",
+                    title: "Streak",
                     value: stats.currentStreak >= 0 ? "+\(stats.currentStreak)" : "\(stats.currentStreak)",
                     color: stats.currentStreak >= 0 ? AppColors.success : AppColors.error
                 )
@@ -682,7 +682,6 @@ struct SwingSetupsDetailView: View {
 
     private var nextPipelineCheck: some View {
         let now = Date()
-        let calendar = Calendar.current
         var utcCalendar = Calendar(identifier: .gregorian)
         utcCalendar.timeZone = TimeZone(identifier: "UTC")!
 

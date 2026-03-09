@@ -21,6 +21,8 @@ final class TradeSignalTests: XCTestCase {
         outcome: SignalOutcome? = nil,
         outcomePct: Double? = nil,
         durationHours: Int? = nil,
+        compositeScore: Int? = nil,
+        volumeConfluence: VolumeConfluence? = nil,
         generatedAt: Date = Date(),
         triggeredAt: Date? = Date(),
         t1HitAt: Date? = nil,
@@ -64,7 +66,11 @@ final class TradeSignalTests: XCTestCase {
             t1HitAt: t1HitAt,
             closedAt: closedAt,
             expiresAt: expiresAt,
-            briefingText: nil
+            compositeScore: compositeScore,
+            volumeConfluence: volumeConfluence,
+            briefingText: nil,
+            shortRationale: nil,
+            cardAnalysis: nil
         )
     }
 
@@ -424,7 +430,11 @@ final class TradeSignalTests: XCTestCase {
             "t1_hit_at": null,
             "closed_at": null,
             "expires_at": "2026-03-08T18:21:00Z",
-            "briefing_text": null
+            "composite_score": 72,
+            "volume_confluence": {"has_volume_confluence": true, "volume_node_count": 3, "max_relative_volume": 2.5},
+            "briefing_text": null,
+            "short_rationale": "Strong golden pocket confluence at daily support.",
+            "card_analysis": {"narrative": "Test narrative", "macro_regime_label": "Risk-Off", "fear_greed_label": "Fear (32)", "trend_direction": "Bearish", "confluence_strength": "3-level zone"}
         }
         """
 
@@ -451,6 +461,15 @@ final class TradeSignalTests: XCTestCase {
         XCTAssertNil(signal.t1HitAt)
         XCTAssertFalse(signal.isT1Hit)
         XCTAssertFalse(signal.isRunnerPhase)
+        // New fields
+        XCTAssertEqual(signal.compositeScore, 72)
+        XCTAssertEqual(signal.scoreGrade, "A")
+        XCTAssertTrue(signal.hasVolumeConfluence)
+        XCTAssertEqual(signal.volumeConfluence?.volumeNodeCount, 3)
+        XCTAssertEqual(signal.volumeConfluence?.maxRelativeVolume, 2.5)
+        XCTAssertEqual(signal.shortRationale, "Strong golden pocket confluence at daily support.")
+        XCTAssertEqual(signal.cardAnalysis?.narrative, "Test narrative")
+        XCTAssertEqual(signal.cardAnalysis?.confluenceStrength, "3-level zone")
     }
 
     func testTradeSignal_decodesAllOutcomes() throws {
@@ -501,6 +520,36 @@ final class TradeSignalTests: XCTestCase {
             let signal = try decoder.decode(TradeSignal.self, from: json.data(using: .utf8)!)
             XCTAssertEqual(signal.signalType, expected)
         }
+    }
+
+    // MARK: - Score & Volume Tests
+
+    func testScoreGrade_allTiers() {
+        XCTAssertEqual(makeSignal(compositeScore: 85).scoreGrade, "A+")
+        XCTAssertEqual(makeSignal(compositeScore: 80).scoreGrade, "A+")
+        XCTAssertEqual(makeSignal(compositeScore: 65).scoreGrade, "A")
+        XCTAssertEqual(makeSignal(compositeScore: 50).scoreGrade, "B")
+        XCTAssertEqual(makeSignal(compositeScore: 35).scoreGrade, "C")
+        XCTAssertEqual(makeSignal(compositeScore: 20).scoreGrade, "D")
+        XCTAssertEqual(makeSignal(compositeScore: 0).scoreGrade, "D")
+    }
+
+    func testScoreGrade_nilWhenNoScore() {
+        XCTAssertNil(makeSignal(compositeScore: nil).scoreGrade)
+    }
+
+    func testHasVolumeConfluence_true() {
+        let vol = VolumeConfluence(hasVolumeConfluence: true, volumeNodeCount: 2, maxRelativeVolume: 1.8)
+        XCTAssertTrue(makeSignal(volumeConfluence: vol).hasVolumeConfluence)
+    }
+
+    func testHasVolumeConfluence_false() {
+        let vol = VolumeConfluence(hasVolumeConfluence: false, volumeNodeCount: 0, maxRelativeVolume: 0.5)
+        XCTAssertFalse(makeSignal(volumeConfluence: vol).hasVolumeConfluence)
+    }
+
+    func testHasVolumeConfluence_nilWhenNoData() {
+        XCTAssertFalse(makeSignal(volumeConfluence: nil).hasVolumeConfluence)
     }
 
     // MARK: - Stress Tests

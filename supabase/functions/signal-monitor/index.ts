@@ -30,7 +30,8 @@ Deno.serve(async (req) => {
   }
 
   const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
-  if (cronSecret && req.headers.get("x-cron-secret") !== cronSecret) {
+  const secret = req.headers.get("x-cron-secret") ?? ""
+  if (!cronSecret || secret !== cronSecret) {
     return json({ error: "Unauthorized" }, 401)
   }
 
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
   const { data: activeSignals } = await supabase
     .from("trade_signals")
     .select("*")
-    .eq("status", "triggered")
+    .eq("status", "active")
     .is("t1_hit_at", null)
 
   const allSignals = signals ?? []

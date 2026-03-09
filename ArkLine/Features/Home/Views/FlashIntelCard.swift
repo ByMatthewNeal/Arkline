@@ -125,7 +125,7 @@ struct FlashIntelCard: View {
     }
 
     private var confidenceBadge: some View {
-        let color: Color = signal.confidence == .high ? AppColors.success : AppColors.warning
+        let color: Color = signal.confidence == .high ? AppColors.success : (signal.confidence == .medium ? AppColors.warning : AppColors.error)
         return Text(signal.confidence.displayName)
             .font(.system(size: 8, weight: .heavy))
             .foregroundColor(color)
