@@ -421,6 +421,32 @@ struct SignalMethodologySheet: View {
                             title: "Bull Market Support Band",
                             detail: "The 20-week SMA and 21-week EMA define the macro regime. Signals that go against this regime are tagged \"Counter-Trend\" and auto-scaled to 0.5R in Your Setup."
                         )
+
+                        conditionRow(
+                            icon: "chart.bar.xaxis",
+                            title: "Volume Profile Confluence",
+                            detail: "The pipeline computes a volume profile from recent 4H candles to identify high-volume nodes. When a node overlaps with the Fibonacci zone, it adds structural support/resistance — shown as the \"Vol Shelf\" badge."
+                        )
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Signal Scoring
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Signal Quality Score")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "gauge.open.with.lines.needle.33percent.and.arrowtriangle")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppColors.accent)
+                                .frame(width: 24)
+
+                            Text("Every signal receives a **0–100 quality score** combining five factors: Confluence Depth (how many Fib levels overlap + multi-timeframe bonus), EMA Alignment Strength (spread and slope), Volume Confirmation Quality (wick rejection, volume spike, consecutive closes, volume shelf), Risk/Reward Ratio, and Macro Context (Bull Market Support Band regime). The score appears as a colored badge on each signal card — green (65+), amber (50–64), red (<50). Use the Sort by Score chip to prioritize the strongest setups.")
+                                .font(.system(size: 14))
+                                .foregroundColor(textPrimary.opacity(0.8))
+                                .lineSpacing(3)
+                        }
                     }
                     .padding(.horizontal, 20)
 
@@ -436,7 +462,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 24)
 
-                            Text("Patterns are evaluated at every **4H candle close** (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC) \u{2014} 6 scans per day covering all global sessions. Patterns expire after 72 hours if conditions are not met.")
+                            Text("Patterns are evaluated at every **4H candle close** (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC) \u{2014} 6 full scans per day. Between scans, a **lightweight hourly monitor** checks open signals against live prices for faster stop loss, target, and trailing stop resolution. Patterns expire after 72 hours if conditions are not met.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)
@@ -473,29 +499,35 @@ struct SignalMethodologySheet: View {
                         stepRow(
                             number: "1",
                             title: "Signal Appears — \"Watching\"",
-                            detail: "The system detected price near a golden pocket zone. This is your alert to pay attention, not to enter yet."
+                            detail: "The system detected price near a golden pocket zone. Check the signal score and analysis to assess quality. This is your alert to pay attention, not to enter yet."
                         )
 
                         stepRow(
                             number: "2",
+                            title: "Proximity Alert",
+                            detail: "When price approaches within 2% of the entry zone, you'll receive a push notification (if enabled in Settings). This is your heads-up to prepare limit orders."
+                        )
+
+                        stepRow(
+                            number: "3",
                             title: "Set Limit Orders",
                             detail: "Place a limit order within the entry zone (low–high range). Use the Entry Strategy selector in Your Setup to pick optimal, midpoint, or split entry."
                         )
 
                         stepRow(
-                            number: "3",
+                            number: "4",
                             title: "Wait for Confirmation — \"In Play\"",
                             detail: "The signal moves to In Play when a bounce is confirmed (wick rejection, volume spike, or consecutive closes). Your limit order fills during this move."
                         )
 
                         stepRow(
-                            number: "4",
+                            number: "5",
                             title: "Manage the Trade",
                             detail: "Set your stop loss at the signal's stop level. When T1 hits, 50% closes automatically. The remaining 50% trails with a 1R stop for extended gains."
                         )
 
                         stepRow(
-                            number: "5",
+                            number: "6",
                             title: "Expiry — No Trade",
                             detail: "If price never reaches the zone or confirmation fails within 72 hours, the signal expires. No entry, no risk. Patience is the edge."
                         )

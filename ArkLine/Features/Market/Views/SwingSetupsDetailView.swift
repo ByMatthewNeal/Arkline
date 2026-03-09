@@ -1127,7 +1127,37 @@ struct SignalGuideSheet: View {
                         )
                     }
 
-                    // 3. Confidence Tiers
+                    // 3. Signal Score
+                    guideSection("Signal Score") {
+                        Text("Each signal receives a quality score from 0–100 based on multiple factors. Higher scores indicate stronger setups.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.bottom, 4)
+
+                        legendRow(
+                            visual: AnyView(scoreSample(78, color: AppColors.success)),
+                            title: "65+ (Green)",
+                            detail: "Strong setup — high confluence depth, good EMA alignment, volume confirmation, and favorable macro conditions"
+                        )
+                        legendRow(
+                            visual: AnyView(scoreSample(54, color: AppColors.warning)),
+                            title: "50–64 (Amber)",
+                            detail: "Moderate setup — meets criteria but some factors are weaker"
+                        )
+                        legendRow(
+                            visual: AnyView(scoreSample(32, color: AppColors.error)),
+                            title: "Below 50 (Red)",
+                            detail: "Weaker setup — fewer confluence levels or missing confirmations"
+                        )
+
+                        Text("Score breakdown: Confluence depth (35pts), EMA alignment (20pts), Volume confirmation (20pts), Risk/Reward (15pts), Macro context (15pts). Use the Sort by Score chip to rank signals.")
+                            .font(.system(size: 11))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                            .lineSpacing(2)
+                            .padding(.top, 4)
+                    }
+
+                    // 4. Confidence Tiers
                     guideSection("Confidence Tiers") {
                         Text("Based on backtested win rates per asset over 12+ months of data.")
                             .font(.system(size: 12))
@@ -1169,7 +1199,22 @@ struct SignalGuideSheet: View {
                                   detail: "Price never reached the entry zone within the time window. No trade, no risk.")
                     }
 
-                    // 5. Info Chips
+                    // 5. AI Analysis Section
+                    guideSection("Why This Setup") {
+                        Text("When available, signal cards show an AI-generated analysis section explaining why the setup was detected.")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.bottom, 4)
+
+                        metricRow(label: "Narrative",
+                                  detail: "A 2–3 sentence explanation of the Fibonacci confluence, trend structure, and what confirmation was observed.")
+                        metricRow(label: "Context Pills",
+                                  detail: "Short labels for confluence strength, trend direction, and volume shelf (when a high-volume node sits at the entry zone).")
+                        metricRow(label: "Share Card",
+                                  detail: "Long-press any signal card to share it as a branded image to Telegram, Instagram, Twitter, or any app. The share card includes the full analysis section.")
+                    }
+
+                    // 6. Info Chips
                     guideSection("Info Badges") {
                         legendRow(
                             visual: AnyView(chipSample("EMA Aligned", color: AppColors.accent)),
@@ -1187,13 +1232,18 @@ struct SignalGuideSheet: View {
                             detail: "Signal direction is the weaker side for this asset based on backtests (e.g. longing BTC when shorts historically perform better)"
                         )
                         legendRow(
+                            visual: AnyView(chipSample("Vol Shelf", color: nil)),
+                            title: "Vol Shelf",
+                            detail: "A high-volume node from the volume profile overlaps with the Fibonacci entry zone — adds structural support/resistance"
+                        )
+                        legendRow(
                             visual: AnyView(chipSample("T1 Hit", color: AppColors.success)),
                             title: "T1 Hit",
                             detail: "Target 1 was reached — 50% of the position was closed at a profit"
                         )
                     }
 
-                    // 6. History Card Borders
+                    // 7. History Card Borders
                     guideSection("History Card Borders") {
                         Text("Closed signals show a subtle colored border so you can scan results at a glance.")
                             .font(.system(size: 12))
@@ -1205,7 +1255,7 @@ struct SignalGuideSheet: View {
                         borderRow(color: AppColors.warning, label: "Amber border", detail: "Partial — T1 hit but runner stopped at breakeven")
                     }
 
-                    // 7. Key Metrics
+                    // 8. Key Metrics
                     guideSection("Key Numbers") {
                         metricRow(label: "R:R (Risk/Reward)",
                                   detail: "How much you stand to gain vs. how much you risk. A 2.5x R:R means the potential reward is 2.5 times the risk. Higher is better.")
@@ -1221,7 +1271,7 @@ struct SignalGuideSheet: View {
                                   detail: "Current consecutive wins (+) or losses (-). Useful for gauging momentum of the system.")
                     }
 
-                    // 8. Detail View Sections
+                    // 9. Detail View Sections
                     guideSection("Signal Detail View") {
                         metricRow(label: "Trade Structure Chart",
                                   detail: "Visual diagram of entry zone, targets, and stop loss with R:R arrows. Green shading = profit zone, red shading = risk zone.")
@@ -1350,6 +1400,15 @@ struct SignalGuideSheet: View {
     }
 
     // MARK: - Sample Badges
+
+    private func scoreSample(_ score: Int, color: Color) -> some View {
+        Text("\(score)")
+            .font(.system(size: 10, weight: .heavy, design: .rounded))
+            .foregroundColor(.white)
+            .frame(width: 26, height: 18)
+            .background(color)
+            .cornerRadius(4)
+    }
 
     private func badgeSample(_ text: String, color: Color) -> some View {
         Text(text)
