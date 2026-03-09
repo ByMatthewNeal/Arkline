@@ -18,6 +18,7 @@ struct HomeAISummaryWidget: View {
     @AppStorage(Constants.UserDefaults.lastReadBriefingKey) private var lastReadBriefingKey = ""
     @State private var isExpanded = true
     @State private var hasBeenExpandedThisSession = false
+    @State private var showUnavailable = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -77,10 +78,21 @@ struct HomeAISummaryWidget: View {
                     collapsedPreview(summary.summary)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+            } else if showUnavailable {
+                Text("Market briefing unavailable")
+                    .font(AppFonts.body14)
+                    .foregroundColor(textPrimary.opacity(0.3))
             } else {
                 // Summary is nil and not loading — show shimmer briefly,
                 // then "unavailable" after the fetch has had time to complete
                 shimmerPlaceholder
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                            if summary == nil && !isLoading {
+                                showUnavailable = true
+                            }
+                        }
+                    }
             }
 
             // Admin feedback row — only when expanded
@@ -98,6 +110,7 @@ struct HomeAISummaryWidget: View {
         .onChange(of: summary?.generatedAt) {
             // New briefing arrived — reset all feedback state + re-resolve expand
             if summary != nil {
+                showUnavailable = false
                 feedbackSentWithNote = false
                 feedbackSent = false
                 selectedRating = nil

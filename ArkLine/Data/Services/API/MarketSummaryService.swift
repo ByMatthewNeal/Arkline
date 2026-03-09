@@ -59,6 +59,23 @@ final class MarketSummaryService {
         let btcSmaPosition: String?
         let btcBmsbPosition: String?
         let btcBollingerPosition: String?
+        // Derivatives
+        let btcFundingRate: String?
+        let btcLiquidations: String?
+        let btcLongShortRatio: String?
+        let btcOpenInterest: String?
+        // Capital Flow
+        let btcDominance: String?
+        let capitalRotation: String?
+        let etfNetFlow: String?
+        // Risk Breakdown
+        let riskFactors: String?
+        // Macro Enrichment
+        let geiScore: String?
+        let supplyInProfit: String?
+        let rainbowBand: String?
+        // Fib Support/Resistance
+        let btcKeyLevels: String?
         // Events & News
         let economicEvents: [EventEntry]?
         let newsHeadlines: [String]?
@@ -148,15 +165,9 @@ final class MarketSummaryService {
         let (summaryDate, slot) = currentESTSlot()
 
         do {
-            // Use the anon key explicitly — the SDK sends the user's (possibly expired)
-            // access token by default, which causes 401 if the session is stale.
-            let anonKey = Constants.API.supabaseAnonKey
             let data: Data = try await SupabaseManager.shared.functions.invoke(
                 "market-summary",
-                options: FunctionInvokeOptions(
-                    headers: ["Authorization": "Bearer \(anonKey)"],
-                    body: payload
-                ),
+                options: FunctionInvokeOptions(body: payload),
                 decode: { data, _ in data }
             )
 
@@ -239,13 +250,10 @@ final class MarketSummaryService {
             let clearCache = true
         }
 
-        let anonKey = Constants.API.supabaseAnonKey
+        // clearCache requires admin JWT — use the SDK's default auth (user session)
         let _: Data = try await SupabaseManager.shared.functions.invoke(
             "market-summary",
-            options: FunctionInvokeOptions(
-                headers: ["Authorization": "Bearer \(anonKey)"],
-                body: ClearCachePayload()
-            ),
+            options: FunctionInvokeOptions(body: ClearCachePayload()),
             decode: { data, _ in data }
         )
 

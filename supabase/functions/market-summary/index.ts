@@ -154,6 +154,9 @@ Deno.serve(async (req) => {
   if (payload.cryptoPositioning) {
     macroLines.push(`Crypto Positioning: ${payload.cryptoPositioning}`)
   }
+  if (payload.geiScore) {
+    macroLines.push(`Global Economy Index: ${payload.geiScore}`)
+  }
   if (macroLines.length) sections.push(`MACRO:\n${macroLines.join("\n")}`)
 
   // --- Sentiment & Signals ---
@@ -185,6 +188,15 @@ Deno.serve(async (req) => {
   if (payload.topGainer) {
     signalLines.push(`Top Performer Today: ${payload.topGainer}`)
   }
+  if (payload.riskFactors) {
+    signalLines.push(`Risk Factor Breakdown: ${payload.riskFactors}`)
+  }
+  if (payload.supplyInProfit) {
+    signalLines.push(`BTC Supply in Profit: ${payload.supplyInProfit}`)
+  }
+  if (payload.rainbowBand) {
+    signalLines.push(`Rainbow Chart: ${payload.rainbowBand}`)
+  }
   if (signalLines.length) sections.push(`SIGNALS:\n${signalLines.join("\n")}`)
 
   // --- Events ---
@@ -213,7 +225,39 @@ Deno.serve(async (req) => {
   if (payload.btcBollingerPosition) {
     taLines.push(`Bollinger Bands (Daily): ${payload.btcBollingerPosition}`)
   }
+  if (payload.btcKeyLevels) {
+    taLines.push(`Key Levels (Fib): ${payload.btcKeyLevels}`)
+  }
   if (taLines.length) sections.push(`BTC TECHNICAL ANALYSIS:\n${taLines.join("\n")}`)
+
+  // --- Derivatives ---
+  const derivLines: string[] = []
+  if (payload.btcFundingRate) {
+    derivLines.push(`Funding Rate: ${payload.btcFundingRate}`)
+  }
+  if (payload.btcLiquidations) {
+    derivLines.push(`24h Liquidations: ${payload.btcLiquidations}`)
+  }
+  if (payload.btcLongShortRatio) {
+    derivLines.push(`Long/Short Ratio: ${payload.btcLongShortRatio}`)
+  }
+  if (payload.btcOpenInterest) {
+    derivLines.push(`Open Interest: ${payload.btcOpenInterest}`)
+  }
+  if (derivLines.length) sections.push(`DERIVATIVES:\n${derivLines.join("\n")}`)
+
+  // --- Capital Flow ---
+  const flowLines: string[] = []
+  if (payload.btcDominance) {
+    flowLines.push(`BTC Dominance: ${payload.btcDominance}`)
+  }
+  if (payload.capitalRotation) {
+    flowLines.push(`Capital Rotation: ${payload.capitalRotation}`)
+  }
+  if (payload.etfNetFlow) {
+    flowLines.push(`ETF Flow: ${payload.etfNetFlow}`)
+  }
+  if (flowLines.length) sections.push(`CAPITAL FLOW:\n${flowLines.join("\n")}`)
 
   // --- Headlines ---
   if (Array.isArray(payload.newsHeadlines) && payload.newsHeadlines.length > 0) {
@@ -264,7 +308,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 800,
+        max_tokens: 1200,
         system: `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual update — clear, conversational, no jargon.
 
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
@@ -276,7 +320,10 @@ One sentence with the overall market stance and crypto positioning. If the MACRO
 2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally.
 
 ## Technical
-2-3 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Explain in plain language what the technicals suggest about momentum and structure — e.g. "BTC is holding above all major moving averages with RSI at 58, healthy momentum without being stretched" or "Price just lost the 50 SMA and RSI is trending down to 38 — momentum is fading." If no BTC TA data is available, skip this section entirely.
+3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS and DERIVATIVES. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If key fib support/resistance levels are available, mention them. Explain in plain language what the technicals and derivatives suggest about momentum and positioning — e.g. "BTC is holding above all major moving averages with RSI at 58, and positive funding with rising OI confirms buyers are in control" or "Price just lost the 50 SMA while liquidations are skewing long — leveraged longs are getting flushed." If no BTC TA data is available, skip this section entirely.
+
+## Flow
+2-3 sentences on capital flow dynamics using CAPITAL FLOW data. Cover BTC dominance trend and what it signals (rising = risk-off rotation to BTC, falling = alt season brewing), ETF net flow direction and magnitude (institutional conviction), and capital rotation phase (where we are in the cycle). Connect these to tell the story — e.g. "BTC dominance is climbing while ETF inflows stay positive — institutions are accumulating BTC while altcoin capital thins out" or "Dominance is fading as capital rotates into alts, classic mid-cycle behavior with ETF flows still supportive." If no capital flow data is available, skip this section entirely.
 
 ## Signals
 2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime (Apathy/FOMO/Panic/Complacency), BTC/ETH risk zones (good for DCA timing), season indicator (BTC vs Alt season), Coinbase app ranking (retail interest proxy), BTC search interest. Explain what each means in plain language. For example: "BTC is in a Low Risk zone — historically a solid DCA window" or "Coinbase sitting outside the top 200 tells you retail hasn't shown up yet."
@@ -286,9 +333,10 @@ Rules:
 - Explain what things mean, don't just state numbers
 - Connect dots — if Fear & Greed is at Extreme Fear but crypto is green, say that's unusual
 - Connect dots between TA and sentiment — if RSI is oversold and Fear & Greed is at Extreme Fear, that's a notable convergence
+- Connect derivatives data with technicals — if funding is negative while price holds support, that's a bullish divergence worth noting
 - Never give investment advice or say "buy" / "sell"
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
-- Keep total length under 200 words
+- Keep total length under 280 words
 - Never start any section with "Today" or "The market"
 - If SWING SETUPS data is present, naturally reference any active or triggered setups in the Signals section. Use ONLY these terms: "Long Setup conditions detected" or "Short Setup conditions detected". Never use the words "buy", "sell", "buy signal", or "sell signal". Refer to entry zones as "pattern entry zone" or "setup zone". For setups that are "IN PLAY", note conditions are active. For setups that are "WATCHING", note the zone is being monitored. Frame setups as pattern observations, not action directives. Never say "time to buy/sell". End any setup mention with context, not a call to action. Keep it brief — one sentence max per setup.${feedbackBlock}`,
         messages: [

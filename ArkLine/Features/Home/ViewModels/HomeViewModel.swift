@@ -1206,6 +1206,87 @@ class HomeViewModel {
             btcSearchStr = "\(trends.currentIndex)/100 (\(trends.trend.rawValue))"
         }
 
+        // Build derivatives strings
+        var fundingRateStr: String? = nil
+        if let funding = sentimentViewModel?.fundingRate {
+            fundingRateStr = "\(funding.displayRate) (\(funding.sentiment)), annualized \(funding.annualizedDisplay)"
+        }
+
+        var liquidationsStr: String? = nil
+        if let liq = sentimentViewModel?.liquidations {
+            liquidationsStr = "\(liq.longsFormatted) longs / \(liq.shortsFormatted) shorts liquidated, \(liq.dominantSide.lowercased()) dominant"
+        }
+
+        // No long/short ratio data available on SentimentViewModel
+        let longShortStr: String? = nil
+
+        var openInterestStr: String? = nil
+        if let oi = sentimentViewModel?.btcOpenInterest {
+            openInterestStr = "\(oi.formattedOI) (\(String(format: "%+.1f%%", oi.openInterestChangePercent24h)))"
+        }
+
+        // Build capital flow strings
+        var btcDomStr: String? = nil
+        if let dom = sentimentViewModel?.btcDominance {
+            btcDomStr = "\(dom.displayValue) (\(dom.changeFormatted))"
+        }
+
+        var capitalRotationStr: String? = nil
+        if let rotation = sentimentViewModel?.capitalRotation {
+            capitalRotationStr = "\(rotation.phase.rawValue) (score \(Int(rotation.score))/100)"
+        }
+
+        var etfFlowStr: String? = nil
+        if let etf = sentimentViewModel?.etfNetFlow {
+            let direction = etf.isPositive ? "inflow" : "outflow"
+            etfFlowStr = "\(etf.dailyFormatted) daily net \(direction)"
+        }
+
+        // Build risk factors string
+        var riskFactorsStr: String? = nil
+        if let mfr = sentimentViewModel?.multiFactorRisk {
+            let available = mfr.factors.filter { $0.isAvailable }
+            let top = available.sorted { ($0.normalizedValue ?? 0) > ($1.normalizedValue ?? 0) }.prefix(3)
+            let parts = top.map { "\($0.type.rawValue): \(String(format: "%.2f", $0.normalizedValue ?? 0))" }
+            if !parts.isEmpty {
+                riskFactorsStr = parts.joined(separator: ", ")
+            }
+        }
+
+        // Build macro enrichment strings
+        var geiStr: String? = nil
+        if let gei = sentimentViewModel?.geiData {
+            let trendComponents = gei.components.filter { ["HG=F", "^TNX"].contains($0.seriesId) }
+            let trendNotes = trendComponents.map { "\($0.name) \($0.contribution > 0 ? "rising" : "declining")" }
+            let trendSuffix = trendNotes.isEmpty ? "" : ", \(trendNotes.joined(separator: "/"))"
+            geiStr = "GEI \(gei.formattedScore) (\(gei.signal.rawValue))\(trendSuffix)"
+        }
+
+        var supplyProfitStr: String? = nil
+        if let sp = supplyInProfitData {
+            supplyProfitStr = "\(sp.formattedValue) supply in profit (\(sp.signalDescription) zone)"
+        }
+
+        var rainbowStr: String? = nil
+        if let rainbow = rainbowChartData {
+            rainbowStr = "\(rainbow.currentBand.rawValue) band (normalized \(String(format: "%.2f", rainbow.normalizedPosition)))"
+        }
+
+        // Build BTC key levels from active signals
+        var btcKeyLevelsStr: String? = nil
+        let btcSignals = recentSignalsForInbox.filter {
+            $0.asset == "BTC" && ($0.status == .active || $0.status == .triggered)
+        }
+        if let sig = btcSignals.first {
+            var parts: [String] = []
+            parts.append("Entry zone: $\(sig.entryZoneLow.asSignalPrice)-$\(sig.entryZoneHigh.asSignalPrice)")
+            if let t1 = sig.target1 {
+                parts.append("T1: $\(t1.asSignalPrice)")
+            }
+            parts.append("Stop: $\(sig.stopLoss.asSignalPrice)")
+            btcKeyLevelsStr = parts.joined(separator: ", ")
+        }
+
         let payload = MarketSummaryService.MarketSummaryPayload(
             btcPrice: btcPrice > 0 ? btcPrice : nil,
             btcChange24h: btcPrice > 0 ? btcChange24h : nil,
@@ -1258,6 +1339,18 @@ class HomeViewModel {
                 let bb = $0.bollingerBands.daily
                 return "\(bb.position.rawValue) — %B: \(String(format: "%.2f", bb.percentB)), bandwidth: \(String(format: "%.3f", bb.bandwidth))"
             },
+            btcFundingRate: fundingRateStr,
+            btcLiquidations: liquidationsStr,
+            btcLongShortRatio: longShortStr,
+            btcOpenInterest: openInterestStr,
+            btcDominance: btcDomStr,
+            capitalRotation: capitalRotationStr,
+            etfNetFlow: etfFlowStr,
+            riskFactors: riskFactorsStr,
+            geiScore: geiStr,
+            supplyInProfit: supplyProfitStr,
+            rainbowBand: rainbowStr,
+            btcKeyLevels: btcKeyLevelsStr,
             economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map { event in
                 .init(title: event.title, time: event.timeFormatted)
             },
