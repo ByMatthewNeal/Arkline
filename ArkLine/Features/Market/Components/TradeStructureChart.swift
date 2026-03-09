@@ -50,6 +50,43 @@ struct TradeStructureChart: View {
         max(priceHigh - priceLow, 0.0001)
     }
 
+    /// Left-side badge levels: T2, T1, ENTRY, STOP with their raw prices and colors
+    private var leftBadgeLevels: [(price: Double, label: String, color: Color)] {
+        var result: [(Double, String, Color)] = []
+        if let t2 = signal.target2 { result.append((t2, "T2", AppColors.success)) }
+        if let t1 = signal.target1 { result.append((t1, "T1", AppColors.success)) }
+        result.append((signal.entryPriceMid, "ENTRY", AppColors.accent))
+        result.append((signal.stopLoss, "STOP", AppColors.error))
+        return result
+    }
+
+    /// Right-side price label levels
+    private var rightPriceLevels: [(price: Double, color: Color)] {
+        var result: [(Double, Color)] = []
+        if let t2 = signal.target2 { result.append((t2, AppColors.success)) }
+        if let t1 = signal.target1 { result.append((t1, AppColors.success)) }
+        result.append((signal.entryPriceMid, AppColors.accent))
+        result.append((signal.stopLoss, AppColors.error))
+        return result
+    }
+
+    /// Resolves overlapping Y positions by nudging neighbors apart
+    private static func resolveOverlaps(_ rawYs: [Double], minSpacing: Double) -> [Double] {
+        var adjusted = rawYs
+        let sortedIndices = adjusted.indices.sorted { adjusted[$0] < adjusted[$1] }
+        for i in 1..<sortedIndices.count {
+            let prev = sortedIndices[i - 1]
+            let curr = sortedIndices[i]
+            let gap = adjusted[curr] - adjusted[prev]
+            if gap < minSpacing {
+                let nudge = (minSpacing - gap) / 2
+                adjusted[prev] -= nudge
+                adjusted[curr] += nudge
+            }
+        }
+        return adjusted
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
@@ -72,24 +109,27 @@ struct TradeStructureChart: View {
                     // Entry zone band
                     entryZoneBand(width: width, height: height)
 
-                    // Target zones
+                    // Target zones (lines + shading only, no badge)
                     if let t1 = signal.target1 {
-                        targetBand(price: t1, label: "T1", width: width, height: height, isPrimary: true)
+                        targetBand(price: t1, width: width, height: height, isPrimary: true)
                     }
                     if let t2 = signal.target2 {
-                        targetBand(price: t2, label: "T2", width: width, height: height, isPrimary: false)
+                        targetBand(price: t2, width: width, height: height, isPrimary: false)
                     }
 
-                    // Stop loss line
+                    // Stop loss line (line + shading only, no badge)
                     stopLossLine(width: width, height: height)
 
-                    // Entry mid line
+                    // Entry mid line (line only, no badge)
                     entryMidLine(width: width, height: height)
 
                     // R:R ratio arrow
                     rrArrow(width: width, height: height)
 
-                    // Price labels on right side
+                    // Left-side badges (collision-resolved)
+                    leftBadgeOverlay(width: width, height: height)
+
+                    // Right-side price labels (collision-resolved)
                     priceLabelOverlay(width: width, height: height)
                 }
             }
@@ -151,29 +191,16 @@ struct TradeStructureChart: View {
     private func entryMidLine(width: Double, height: Double) -> some View {
         let y = yPosition(for: signal.entryPriceMid, height: height)
 
-        return ZStack {
-            // Dashed center line
-            Path { path in
-                path.move(to: CGPoint(x: 10, y: y))
-                path.addLine(to: CGPoint(x: width - 75, y: y))
-            }
-            .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-
-            // Label
-            Text("ENTRY")
-                .font(.system(size: 8, weight: .heavy))
-                .foregroundColor(AppColors.accent)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(AppColors.accent.opacity(colorScheme == .dark ? 0.2 : 0.12))
-                .cornerRadius(3)
-                .position(x: 30, y: y - 10)
+        return Path { path in
+            path.move(to: CGPoint(x: 10, y: y))
+            path.addLine(to: CGPoint(x: width - 75, y: y))
         }
+        .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
     }
 
     // MARK: - Target Band
 
-    private func targetBand(price: Double, label: String, width: Double, height: Double, isPrimary: Bool) -> some View {
+    private func targetBand(price: Double, width: Double, height: Double, isPrimary: Bool) -> some View {
         let y = yPosition(for: price, height: height)
         let color = AppColors.success
 
@@ -195,15 +222,6 @@ struct TradeStructureChart: View {
                     .frame(width: width - 75, height: shadeHeight)
                     .position(x: (width - 75) / 2, y: shadeTop + shadeHeight / 2)
             }
-
-            Text(label)
-                .font(.system(size: 8, weight: .heavy))
-                .foregroundColor(color)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(color.opacity(colorScheme == .dark ? 0.2 : 0.12))
-                .cornerRadius(3)
-                .position(x: 16, y: y - 10)
         }
     }
 
@@ -229,15 +247,6 @@ struct TradeStructureChart: View {
                 .fill(color.opacity(colorScheme == .dark ? 0.06 : 0.04))
                 .frame(width: width - 75, height: shadeHeight)
                 .position(x: (width - 75) / 2, y: shadeTop + shadeHeight / 2)
-
-            Text("STOP")
-                .font(.system(size: 8, weight: .heavy))
-                .foregroundColor(color)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .background(color.opacity(colorScheme == .dark ? 0.2 : 0.12))
-                .cornerRadius(3)
-                .position(x: 24, y: y - 10)
         }
     }
 
@@ -276,20 +285,34 @@ struct TradeStructureChart: View {
         }
     }
 
-    // MARK: - Price Labels
+    // MARK: - Left Badge Overlay (collision-resolved)
+
+    private func leftBadgeOverlay(width: Double, height: Double) -> some View {
+        let rawYs = leftBadgeLevels.map { yPosition(for: $0.price, height: height) - 10 }
+        let adjustedYs = Self.resolveOverlaps(rawYs, minSpacing: 16)
+
+        return ForEach(Array(leftBadgeLevels.enumerated()), id: \.offset) { idx, level in
+            let y = adjustedYs[idx]
+            let xPos: Double = level.label == "ENTRY" ? 30 : (level.label == "STOP" ? 24 : 16)
+            Text(level.label)
+                .font(.system(size: 8, weight: .heavy))
+                .foregroundColor(level.color)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(level.color.opacity(colorScheme == .dark ? 0.2 : 0.12))
+                .cornerRadius(3)
+                .position(x: xPos, y: y)
+        }
+    }
+
+    // MARK: - Price Labels (collision-resolved)
 
     private func priceLabelOverlay(width: Double, height: Double) -> some View {
-        let labelLevels: [(price: Double, color: Color)] = {
-            var result: [(Double, Color)] = []
-            if let t2 = signal.target2 { result.append((t2, AppColors.success)) }
-            if let t1 = signal.target1 { result.append((t1, AppColors.success)) }
-            result.append((signal.entryPriceMid, AppColors.accent))
-            result.append((signal.stopLoss, AppColors.error))
-            return result
-        }()
+        let rawYs = rightPriceLevels.map { yPosition(for: $0.price, height: height) }
+        let adjustedYs = Self.resolveOverlaps(rawYs, minSpacing: 14)
 
-        return ForEach(Array(labelLevels.enumerated()), id: \.offset) { _, level in
-            let y = yPosition(for: level.price, height: height)
+        return ForEach(Array(rightPriceLevels.enumerated()), id: \.offset) { idx, level in
+            let y = adjustedYs[idx]
             Text("$\(level.price.asSignalPrice)")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(level.color)
