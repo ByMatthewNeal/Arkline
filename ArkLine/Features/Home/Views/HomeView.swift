@@ -163,7 +163,7 @@ struct HomeView: View {
                 )
             }
             .sheet(isPresented: $showTelegramExportSheet) {
-                DailyMarketUpdateShareSheet()
+                DailyMarketUpdateShareSheet(briefingSummary: viewModel.marketSummary?.summary)
             }
             .task {
                 viewModel.startAutoRefresh()

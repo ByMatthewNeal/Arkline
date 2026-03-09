@@ -68,6 +68,17 @@ class DailyMarketUpdateViewModel {
         }
     }
 
+    enum CardSize: String, CaseIterable {
+        case short = "Short"
+        case medium = "Medium"
+        case long = "Long"
+    }
+
+    enum AssetFilter: String, CaseIterable {
+        case btcOnly = "BTC Only"
+        case btcEth = "BTC + ETH"
+    }
+
     // MARK: - Init
     init() {
         let container = ServiceContainer.shared

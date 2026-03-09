@@ -131,11 +131,18 @@ struct DailyMarketUpdateCardContent: View {
     let dxyValue: Double?
     let dxyDirection: DailyMarketUpdateViewModel.TrendArrow
     var isLight: Bool = true
+    var cardSize: DailyMarketUpdateViewModel.CardSize = .long
+    var assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
+    var briefingExcerpt: String? = nil
 
     private var textPrimary: Color { isLight ? LightCard.textPrimary : .white }
     private var textMuted: Color { isLight ? LightCard.textMuted : Color.white.opacity(0.4) }
     private var textSecondary: Color { isLight ? LightCard.textSecondary : Color.white.opacity(0.6) }
     private var dividerColor: Color { isLight ? LightCard.divider : Color.white.opacity(0.08) }
+
+    private var showETH: Bool {
+        assetFilter == .btcEth && cardSize != .short
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -145,19 +152,27 @@ struct DailyMarketUpdateCardContent: View {
                 .tracking(1.5)
                 .padding(.bottom, 14)
 
+            // BTC — always shown
             if let btc = btcData {
                 assetSection(data: btc)
             }
 
-            sectionDivider
-
-            if let eth = ethData {
+            // ETH — shown for medium/long when BTC+ETH selected
+            if showETH, let eth = ethData {
+                sectionDivider
                 assetSection(data: eth)
             }
 
             sectionDivider
 
+            // Market overview — always shown
             marketOverviewSection
+
+            // Briefing excerpt — medium and long only
+            if let excerpt = briefingExcerpt, !excerpt.isEmpty, cardSize != .short {
+                sectionDivider
+                briefingSection(excerpt)
+            }
 
             // Risk level guide
             riskLevelGuide
@@ -171,6 +186,22 @@ struct DailyMarketUpdateCardContent: View {
                 Spacer()
             }
             .padding(.top, 10)
+        }
+    }
+
+    // MARK: - Briefing Section
+    private func briefingSection(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("THE RUNDOWN")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(textMuted)
+                .tracking(1.2)
+
+            Text(text)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundColor(textSecondary)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -409,8 +440,65 @@ struct DailyMarketUpdateCardContent: View {
     }
 }
 
+// MARK: - Briefing Text Helpers
+
+/// Extract a specific section from the markdown briefing text
+private func extractBriefingSection(_ text: String, named sectionName: String) -> String? {
+    let lines = text.components(separatedBy: "\n")
+    var capturing = false
+    var result: [String] = []
+
+    for line in lines {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.lowercased().hasPrefix("## \(sectionName.lowercased())") {
+            capturing = true
+            continue
+        }
+        if capturing {
+            if trimmed.hasPrefix("## ") { break } // Next section
+            if !trimmed.isEmpty { result.append(trimmed) }
+        }
+    }
+
+    let body = result.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+    return body.isEmpty ? nil : body
+}
+
+/// Build briefing excerpt based on card size
+func buildBriefingExcerpt(from summary: String?, cardSize: DailyMarketUpdateViewModel.CardSize) -> String? {
+    guard let summary, cardSize != .short else { return nil }
+
+    let rundown = extractBriefingSection(summary, named: "The Rundown")
+
+    if cardSize == .medium {
+        // Medium: just The Rundown, truncated to ~280 chars
+        if let text = rundown {
+            if text.count > 280 {
+                let truncated = String(text.prefix(280))
+                // Try to end at a sentence boundary
+                if let lastPeriod = truncated.lastIndex(of: ".") {
+                    return String(truncated[...lastPeriod])
+                }
+                return truncated + "..."
+            }
+            return text
+        }
+        return nil
+    }
+
+    // Long: The Rundown + Technical
+    var sections: [String] = []
+    if let text = rundown { sections.append(text) }
+    if let tech = extractBriefingSection(summary, named: "Technical") {
+        sections.append(tech)
+    }
+    return sections.isEmpty ? nil : sections.joined(separator: "\n\n")
+}
+
 // MARK: - Share Sheet View
 struct DailyMarketUpdateShareSheet: View {
+    var briefingSummary: String? = nil
+
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
@@ -420,6 +508,29 @@ struct DailyMarketUpdateShareSheet: View {
     @State private var useLightTheme = true
     @State private var isExporting = false
     @State private var logoImage: UIImage?
+    @State private var cardSize: DailyMarketUpdateViewModel.CardSize = .medium
+    @State private var assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
+
+    private var briefingExcerpt: String? {
+        buildBriefingExcerpt(from: briefingSummary, cardSize: cardSize)
+    }
+
+    private var renderHeight: CGFloat {
+        switch cardSize {
+        case .short: return 480
+        case .medium:
+            let hasExcerpt = briefingExcerpt != nil
+            let hasETH = assetFilter == .btcEth
+            var height: CGFloat = hasETH ? 760 : 520
+            if hasExcerpt { height += 140 }
+            return height
+        case .long:
+            let hasExcerpt = briefingExcerpt != nil
+            var height: CGFloat = 760
+            if hasExcerpt { height += 260 }
+            return height
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -445,58 +556,13 @@ struct DailyMarketUpdateShareSheet: View {
                                 .shadow(color: .black.opacity(0.12), radius: 10, y: 5)
                         }
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Options")
-                                .font(AppFonts.body14Medium)
-                                .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                            VStack(spacing: 0) {
-                                Toggle(isOn: $showBranding) {
-                                    HStack {
-                                        Image(systemName: "star.circle")
-                                            .foregroundColor(AppColors.accent)
-                                        Text("Show ArkLine Branding")
-                                            .font(AppFonts.body14)
-                                    }
-                                }
-                                .tint(AppColors.accent)
-                                .padding(14)
-
-                                Divider()
-
-                                Toggle(isOn: $showTimestamp) {
-                                    HStack {
-                                        Image(systemName: "clock")
-                                            .foregroundColor(AppColors.accent)
-                                        Text("Show Timestamp")
-                                            .font(AppFonts.body14)
-                                    }
-                                }
-                                .tint(AppColors.accent)
-                                .padding(14)
-
-                                Divider()
-
-                                Toggle(isOn: $useLightTheme) {
-                                    HStack {
-                                        Image(systemName: "sun.max.fill")
-                                            .foregroundColor(AppColors.accent)
-                                        Text("Light Theme")
-                                            .font(AppFonts.body14)
-                                    }
-                                }
-                                .tint(AppColors.accent)
-                                .padding(14)
-                            }
-                            .background(AppColors.cardBackground(colorScheme))
-                            .cornerRadius(12)
-                        }
+                        optionsSection
                     }
                 }
                 .padding(16)
             }
             .background(AppColors.background(colorScheme))
-            .navigationTitle("Telegram Export")
+            .navigationTitle("Market Update Export")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -521,12 +587,105 @@ struct DailyMarketUpdateShareSheet: View {
                 }
             }
             .task {
-                // Pre-load logo as UIImage so ImageRenderer can access it
                 logoImage = UIImage(named: "ArkLineAppIcon")
                 await viewModel.loadData()
             }
         }
     }
+
+    // MARK: - Options
+    private var optionsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Options")
+                .font(AppFonts.body14Medium)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            VStack(spacing: 0) {
+                // Card size picker
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "rectangle.expand.vertical")
+                            .foregroundColor(AppColors.accent)
+                        Text("Card Size")
+                            .font(AppFonts.body14)
+                    }
+
+                    Picker("Card Size", selection: $cardSize) {
+                        ForEach(DailyMarketUpdateViewModel.CardSize.allCases, id: \.self) { size in
+                            Text(size.rawValue).tag(size)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+                .padding(14)
+
+                Divider()
+
+                // Asset filter picker (disabled for short — always BTC only)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "bitcoinsign.circle")
+                            .foregroundColor(AppColors.accent)
+                        Text("Assets")
+                            .font(AppFonts.body14)
+                    }
+
+                    Picker("Assets", selection: $assetFilter) {
+                        ForEach(DailyMarketUpdateViewModel.AssetFilter.allCases, id: \.self) { filter in
+                            Text(filter.rawValue).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(cardSize == .short)
+                    .opacity(cardSize == .short ? 0.4 : 1)
+                }
+                .padding(14)
+
+                Divider()
+
+                Toggle(isOn: $showBranding) {
+                    HStack {
+                        Image(systemName: "star.circle")
+                            .foregroundColor(AppColors.accent)
+                        Text("Show ArkLine Branding")
+                            .font(AppFonts.body14)
+                    }
+                }
+                .tint(AppColors.accent)
+                .padding(14)
+
+                Divider()
+
+                Toggle(isOn: $showTimestamp) {
+                    HStack {
+                        Image(systemName: "clock")
+                            .foregroundColor(AppColors.accent)
+                        Text("Show Timestamp")
+                            .font(AppFonts.body14)
+                    }
+                }
+                .tint(AppColors.accent)
+                .padding(14)
+
+                Divider()
+
+                Toggle(isOn: $useLightTheme) {
+                    HStack {
+                        Image(systemName: "sun.max.fill")
+                            .foregroundColor(AppColors.accent)
+                        Text("Light Theme")
+                            .font(AppFonts.body14)
+                    }
+                }
+                .tint(AppColors.accent)
+                .padding(14)
+            }
+            .background(AppColors.cardBackground(colorScheme))
+            .cornerRadius(12)
+        }
+    }
+
+    // MARK: - Card Building
 
     private var cardContent: DailyMarketUpdateCardContent {
         DailyMarketUpdateCardContent(
@@ -537,7 +696,10 @@ struct DailyMarketUpdateShareSheet: View {
             vixDirection: viewModel.vixDirection,
             dxyValue: viewModel.dxyValue,
             dxyDirection: viewModel.dxyDirection,
-            isLight: useLightTheme
+            isLight: useLightTheme,
+            cardSize: cardSize,
+            assetFilter: assetFilter,
+            briefingExcerpt: briefingExcerpt
         )
     }
 
@@ -562,7 +724,7 @@ struct DailyMarketUpdateShareSheet: View {
         guard let image = ShareCardRenderer.renderImage(
             content: cardView,
             width: 390,
-            height: 760
+            height: renderHeight
         ) else {
             logError("Daily market update card render failed", category: .ui)
             return
