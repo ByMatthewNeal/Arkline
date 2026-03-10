@@ -3,10 +3,10 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 /**
  * signal-monitor Edge Function
  *
- * Lightweight hourly monitor that checks current prices against open trade signals.
+ * Lightweight monitor that checks current prices against open trade signals.
  * Does NOT generate new signals — only resolves existing ones faster.
  *
- * Runs every hour at :30 (offset from the 4H pipeline at :05).
+ * Runs every 30 minutes at :05 and :35 (offset from the 4H pipeline at :00).
  * Skips the 4H candle-close hours (0, 4, 8, 12, 16, 20 UTC) since the
  * full pipeline already handles resolution at those times.
  *
