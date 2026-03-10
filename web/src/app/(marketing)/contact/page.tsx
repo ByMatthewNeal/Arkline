@@ -8,6 +8,9 @@ import { FadeIn } from '@/components/marketing/fade-in';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+const CONTACT_RATE_LIMIT_KEY = 'arkline_contact_last_submit';
+const CONTACT_RATE_LIMIT_MS = 60_000; // 60 seconds between submissions
+
 export default function ContactPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -34,8 +37,16 @@ export default function ContactPage() {
       return;
     }
 
+    const lastSubmit = Number(localStorage.getItem(CONTACT_RATE_LIMIT_KEY) || '0');
+    if (Date.now() - lastSubmit < CONTACT_RATE_LIMIT_MS) {
+      setErrorText('Please wait a moment before sending another message.');
+      setStatus('error');
+      return;
+    }
+
     setStatus('loading');
     setErrorText('');
+    localStorage.setItem(CONTACT_RATE_LIMIT_KEY, String(Date.now()));
 
     try {
       const supabase = createClient();

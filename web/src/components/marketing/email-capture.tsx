@@ -4,12 +4,15 @@ import { useState, type FormEvent } from 'react';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-type Status = 'idle' | 'loading' | 'success' | 'duplicate' | 'error';
+type Status = 'idle' | 'loading' | 'success' | 'duplicate' | 'error' | 'rate_limited';
 
 interface EmailCaptureProps {
   size?: 'lg' | 'inline';
   className?: string;
 }
+
+const RATE_LIMIT_KEY = 'arkline_email_last_submit';
+const RATE_LIMIT_MS = 30_000; // 30 seconds between submissions
 
 export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps) {
   const [email, setEmail] = useState('');
@@ -20,7 +23,14 @@ export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps)
     const trimmed = email.trim().toLowerCase();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
 
+    const lastSubmit = Number(localStorage.getItem(RATE_LIMIT_KEY) || '0');
+    if (Date.now() - lastSubmit < RATE_LIMIT_MS) {
+      setStatus('rate_limited');
+      return;
+    }
+
     setStatus('loading');
+    localStorage.setItem(RATE_LIMIT_KEY, String(Date.now()));
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -40,6 +50,17 @@ export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps)
     } catch {
       setStatus('error');
     }
+  }
+
+  // Rate limited
+  if (status === 'rate_limited') {
+    return (
+      <div className={`flex items-center gap-2 ${size === 'inline' ? 'h-8' : 'justify-center py-3'} ${className}`}>
+        <span className={`font-medium text-ark-text-secondary ${size === 'inline' ? 'text-xs' : 'text-sm'}`}>
+          Please wait a moment before trying again.
+        </span>
+      </div>
+    );
   }
 
   // Success / duplicate confirmation
