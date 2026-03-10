@@ -60,7 +60,7 @@ struct TradeSignalCardContent: View {
             .padding(.bottom, 8)
 
             // Disclaimer
-            Text("Not financial advice. Do your own research.")
+            Text("This is educational material, not financial advice. DYOR.")
                 .font(.system(size: 9, weight: .medium))
                 .foregroundColor(textMuted)
                 .padding(.bottom, 12)
@@ -599,7 +599,7 @@ struct TradeSignalShareSheet: View {
         lines.append("Risk / Reward: \(String(format: "%.1f", signal.riskRewardRatio))R")
         lines.append("")
 
-        lines.append("Not financial advice. Do your own research.")
+        lines.append("This is educational material, not financial advice. DYOR.")
         lines.append("")
         lines.append("Created with ArkLine")
         lines.append("Full analysis at arkline.io")
