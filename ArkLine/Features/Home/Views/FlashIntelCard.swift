@@ -197,15 +197,13 @@ struct FlashIntelSection: View {
                         .buttonStyle(PlainButtonStyle())
                     }
 
-                    if signals.count > maxSignals {
-                        NavigationLink {
-                            SwingSetupsDetailView()
-                        } label: {
-                            Text("View all \(signals.count) setups")
-                                .font(AppFonts.caption12Medium)
-                                .foregroundColor(AppColors.accent)
-                                .frame(maxWidth: .infinity)
-                        }
+                    NavigationLink {
+                        SwingSetupsDetailView()
+                    } label: {
+                        Text(signals.count > maxSignals ? "View all \(signals.count) setups" : "View all setups & history")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.accent)
+                            .frame(maxWidth: .infinity)
                     }
                 }
 

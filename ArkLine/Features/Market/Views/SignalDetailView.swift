@@ -75,6 +75,21 @@ struct SignalDetailView: View {
                     statusTimeline(signal)
                     disclaimerSection
 
+                    NavigationLink {
+                        SwingSetupsDetailView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "clock.arrow.circlepath")
+                            Text("View All Setups & History")
+                        }
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(AppColors.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(AppColors.accent.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+
                     Spacer(minLength: 100)
                 }
                 .padding()
