@@ -106,6 +106,19 @@ extension SupabaseDatabase {
         return results.first
     }
 
+    func emailExists(_ email: String) async throws -> Bool {
+        guard SupabaseManager.shared.isConfigured else { return false }
+        let client = SupabaseManager.shared.client
+        let results: [ProfileDTO] = try await client
+            .from(SupabaseTable.profiles.rawValue)
+            .select("id")
+            .eq("email", value: email.lowercased())
+            .limit(1)
+            .execute()
+            .value
+        return !results.isEmpty
+    }
+
     // Portfolio Operations
     func getPortfolios(userId: UUID) async throws -> [PortfolioDTO] {
         try await selectWithFilter(
