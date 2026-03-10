@@ -47,19 +47,19 @@ const SWING_PARAMS: Record<string, { lookback: number; minReversal: number }> = 
 const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
-const SIGNAL_PROXIMITY_PCT = 2.0
+const SIGNAL_PROXIMITY_PCT = 3.0
 const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
-const WICK_REJECTION_RATIO = 1.5
-const VOLUME_SPIKE_RATIO = 1.3
+const WICK_REJECTION_RATIO = 1.2
+const VOLUME_SPIKE_RATIO = 1.15
 
 // EMA periods for trend filter
 const EMA_FAST_PERIOD = 20
 const EMA_SLOW_PERIOD = 50
 const EMA_SLOPE_LOOKBACK = 6  // 6 x 4h = 24h for slope check
-const EMA_PULLBACK_TOLERANCE = 0.008
+const EMA_PULLBACK_TOLERANCE = 0.015
 
 // Delay between assets to stay safe on Binance rate limits
 const INTER_ASSET_DELAY_MS = 500
@@ -797,6 +797,9 @@ function computeTargetsAndStop(
   const sorted = [...allFibPrices].sort((a, b) => a - b)
   const zoneMid = zone.mid
 
+  // Minimum distance between T1 and T2 (1.5% of zone mid)
+  const minTargetGap = zoneMid * 0.015
+
   if (isBuy) {
     const levelsBelow = sorted.filter((p) => p < zone.low)
     const nextDown = levelsBelow.length > 0 ? levelsBelow[levelsBelow.length - 1] : null
@@ -804,7 +807,9 @@ function computeTargetsAndStop(
 
     const levelsAbove = sorted.filter((p) => p > zone.high)
     const target1 = levelsAbove.length > 0 ? levelsAbove[0] : zoneMid * 1.03
-    const target2 = levelsAbove.length > 1 ? levelsAbove[1] : target1 * 1.015
+    // T2 must be meaningfully above T1
+    const t2Candidate = levelsAbove.find((p) => p > target1 + minTargetGap)
+    const target2 = t2Candidate ?? target1 * 1.03
 
     return { target1, target2, stopLoss }
   } else {
@@ -812,9 +817,11 @@ function computeTargetsAndStop(
     const nextUp = levelsAbove.length > 0 ? levelsAbove[0] : null
     const stopLoss = nextUp ? nextUp * 1.003 : zoneMid * 1.015
 
-    const levelsBelow = sorted.filter((p) => p < zone.low)
-    const target1 = levelsBelow.length > 0 ? levelsBelow[levelsBelow.length - 1] : zoneMid * 0.97
-    const target2 = levelsBelow.length > 1 ? levelsBelow[levelsBelow.length - 2] : target1 * 0.985
+    const levelsBelow = sorted.filter((p) => p < zone.low).reverse()
+    const target1 = levelsBelow.length > 0 ? levelsBelow[0] : zoneMid * 0.97
+    // T2 must be meaningfully below T1
+    const t2Candidate = levelsBelow.find((p) => p < target1 - minTargetGap)
+    const target2 = t2Candidate ?? target1 * 0.97
 
     return { target1, target2, stopLoss }
   }
@@ -925,6 +932,14 @@ async function evaluateSignals(
 
     const confluenceZoneId = zoneRow?.[0]?.id ?? null
 
+    // Derive macro regime label from Fear & Greed + BTC risk
+    let macroRegime: string | null = null
+    if (fearGreedIndex !== undefined) {
+      if (fearGreedIndex >= 70) macroRegime = "Risk-On"
+      else if (fearGreedIndex <= 30) macroRegime = "Risk-Off"
+      else macroRegime = "Neutral"
+    }
+
     const signalRow = {
       asset: ticker,
       signal_type: signalType,
@@ -946,6 +961,9 @@ async function evaluateSignals(
       counter_trend: counterTrend,
       composite_score: compositeScore,
       volume_confluence: volConfluence,
+      fear_greed_index: fearGreedIndex ?? null,
+      btc_risk_score: btcRiskScore ?? null,
+      macro_regime: macroRegime,
       triggered_at: new Date().toISOString(),
       expires_at: expiresAt,
     }

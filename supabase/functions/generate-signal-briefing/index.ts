@@ -134,10 +134,12 @@ Return ONLY the JSON object, no markdown fences or extra text.`,
     const claudeData = await claudeResponse.json()
     const rawText: string = claudeData.content?.[0]?.text ?? ""
 
-    // Parse the JSON response
+    // Strip markdown fences if present, then parse JSON
+    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim()
+
     let briefing: Record<string, unknown>
     try {
-      briefing = JSON.parse(rawText)
+      briefing = JSON.parse(cleaned)
     } catch {
       // If Claude didn't return valid JSON, store raw text
       briefing = { headline: signal.signal_type.toUpperCase(), summary: rawText, disclaimer: "" }
