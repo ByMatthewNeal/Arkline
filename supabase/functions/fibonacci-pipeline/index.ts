@@ -870,6 +870,16 @@ async function evaluateSignals(
 
     const isBuy = zone.zone_type === "support"
 
+    // Price position check: skip if price has already moved past the entry zone
+    if (isBuy && currentPrice > zone.high) {
+      stats.skipped++
+      continue
+    }
+    if (!isBuy && currentPrice < zone.low) {
+      stats.skipped++
+      continue
+    }
+
     // EMA trend filter
     if (!checkTrendAlignment(candles4h, isBuy)) {
       stats.skipped++
