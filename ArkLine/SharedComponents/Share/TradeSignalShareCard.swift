@@ -47,12 +47,13 @@ struct TradeSignalCardContent: View {
                         .background(signalColor)
                         .cornerRadius(6)
 
-                    if let score = signal.compositeScore {
-                        Text("\(score)")
+                    if let grade = signal.scoreGrade {
+                        Text(grade)
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
-                            .frame(width: 28, height: 22)
-                            .background(score >= 65 ? AppColors.success : (score >= 50 ? AppColors.warning : AppColors.error))
+                            .padding(.horizontal, 6)
+                            .frame(height: 22)
+                            .background(grade.hasPrefix("A") ? AppColors.success : AppColors.accent)
                             .cornerRadius(6)
                     }
                 }
@@ -570,7 +571,8 @@ struct TradeSignalShareSheet: View {
         let direction = signal.signalType.isBuy ? "LONG" : "SHORT"
 
         var lines: [String] = []
-        lines.append("\(direction) on \(signal.asset)")
+        let gradeLabel = signal.scoreGrade.map { " (\($0) Setup)" } ?? ""
+        lines.append("\(direction) on \(signal.asset)\(gradeLabel)")
         lines.append("")
 
         if let price = currentPrice {

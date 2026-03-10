@@ -66,12 +66,13 @@ struct FlashIntelCard: View {
 
                     confidenceBadge
 
-                    if let score = signal.compositeScore {
-                        Text("\(score)")
+                    if let grade = signal.scoreGrade {
+                        Text(grade)
                             .font(.system(size: 9, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
-                            .frame(width: 22, height: 16)
-                            .background(score >= 65 ? AppColors.success : (score >= 50 ? AppColors.warning : AppColors.error))
+                            .padding(.horizontal, 4)
+                            .frame(height: 16)
+                            .background(grade.hasPrefix("A") ? AppColors.success : AppColors.accent)
                             .cornerRadius(3)
                     }
 

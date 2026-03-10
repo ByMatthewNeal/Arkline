@@ -331,11 +331,11 @@ extension TradeSignal {
 extension TradeSignal {
     var scoreGrade: String? {
         guard let score = compositeScore else { return nil }
-        if score >= 80 { return "A+" }
-        if score >= 65 { return "A" }
-        if score >= 50 { return "B" }
-        if score >= 35 { return "C" }
-        return "D"
+        if score >= 90 { return "A+" }
+        if score >= 80 { return "A" }
+        if score >= 70 { return "B+" }
+        if score >= 60 { return "B" }
+        return nil // Below B not shown
     }
 
     var hasVolumeConfluence: Bool {

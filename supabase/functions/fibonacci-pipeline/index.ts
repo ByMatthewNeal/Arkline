@@ -928,6 +928,12 @@ async function evaluateSignals(
       btcRiskScore,
     })
 
+    // Only publish B-grade or higher signals (score >= 60)
+    if (compositeScore < 60) {
+      stats.skipped++
+      continue
+    }
+
     const expiresAt = new Date(Date.now() + SIGNAL_EXPIRY_HOURS * 3600000).toISOString()
 
     // Store the confluence zone first to get its ID

@@ -814,12 +814,13 @@ struct SignalCard: View {
 
                     confidenceBadge
 
-                    if let score = signal.compositeScore {
-                        Text("\(score)")
+                    if let grade = signal.scoreGrade {
+                        Text(grade)
                             .font(.system(size: 10, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
-                            .frame(width: 26, height: 18)
-                            .background(scoreColor(score))
+                            .padding(.horizontal, 5)
+                            .frame(height: 18)
+                            .background(grade.hasPrefix("A") ? AppColors.success : AppColors.accent)
                             .cornerRadius(4)
                     }
 
