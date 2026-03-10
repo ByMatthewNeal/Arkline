@@ -57,7 +57,13 @@ struct TradeSignalCardContent: View {
                     }
                 }
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, 8)
+
+            // Disclaimer
+            Text("Not financial advice. Do your own research.")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(textMuted)
+                .padding(.bottom, 12)
 
             // Trade Parameters
             VStack(spacing: 0) {
@@ -371,6 +377,7 @@ struct TradeSignalShareSheet: View {
     @State private var includeAnalysis = true
     @State private var includeLeverage = false
     @State private var isExporting = false
+    @State private var copiedText = false
     @State private var logoImage: UIImage?
 
     var body: some View {
@@ -463,6 +470,39 @@ struct TradeSignalShareSheet: View {
                         .background(AppColors.cardBackground(colorScheme))
                         .cornerRadius(12)
                     }
+                    // Share buttons
+                    HStack(spacing: 12) {
+                        Button {
+                            Task { await exportAndShare() }
+                        } label: {
+                            HStack {
+                                Image(systemName: "photo")
+                                Text("Share as Image")
+                            }
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(AppColors.accent)
+                            .cornerRadius(12)
+                        }
+                        .disabled(isExporting)
+
+                        Button {
+                            copyAsText()
+                        } label: {
+                            HStack {
+                                Image(systemName: copiedText ? "checkmark" : "doc.on.doc")
+                                Text(copiedText ? "Copied!" : "Copy as Text")
+                            }
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.accent)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(AppColors.accent.opacity(0.12))
+                            .cornerRadius(12)
+                        }
+                    }
                 }
                 .padding(16)
             }
@@ -472,23 +512,6 @@ struct TradeSignalShareSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        Task { await exportAndShare() }
-                    } label: {
-                        if isExporting {
-                            ProgressView()
-                        } else {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                Text("Share")
-                            }
-                            .fontWeight(.semibold)
-                        }
-                    }
-                    .disabled(isExporting)
                 }
             }
             .task {
@@ -541,5 +564,52 @@ struct TradeSignalShareSheet: View {
         }
 
         ShareCardRenderer.presentShareSheet(image: image)
+    }
+
+    private func copyAsText() {
+        let direction = signal.signalType.isBuy ? "LONG" : "SHORT"
+
+        var lines: [String] = []
+        lines.append("\(direction) on \(signal.asset)")
+        lines.append("")
+
+        if let price = currentPrice {
+            lines.append("Current Price: $\(price.asSignalPrice)")
+        }
+
+        lines.append("Entry Zone:")
+        lines.append("$\(signal.entryZoneLow.asSignalPrice) – $\(signal.entryZoneHigh.asSignalPrice)")
+        lines.append("")
+
+        if signal.target1 != nil || signal.target2 != nil {
+            lines.append("Take Profit:")
+            if let t1 = signal.target1, let pct = signal.entryPctFromTarget1 {
+                lines.append("TP1: $\(t1.asSignalPrice) (\(String(format: "%+.1f%%", pct)))")
+            }
+            if let t2 = signal.target2, let pct = signal.entryPctFromTarget2 {
+                lines.append("TP2: $\(t2.asSignalPrice) (\(String(format: "%+.1f%%", pct)))")
+            }
+            lines.append("")
+        }
+
+        lines.append("Stop Loss:")
+        lines.append("$\(signal.stopLoss.asSignalPrice) (\(String(format: "%.1f%%", signal.stopLossPct)))")
+        lines.append("")
+
+        lines.append("Risk / Reward: \(String(format: "%.1f", signal.riskRewardRatio))R")
+        lines.append("")
+
+        lines.append("Not financial advice. Do your own research.")
+        lines.append("")
+        lines.append("Created with ArkLine")
+        lines.append("Full analysis at arkline.io")
+
+        UIPasteboard.general.string = lines.joined(separator: "\n")
+        Haptics.selection()
+        copiedText = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            copiedText = false
+        }
     }
 }
