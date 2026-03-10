@@ -11,6 +11,7 @@ struct SignalDetailView: View {
     @State private var showEducationalModal = false
     @State private var showShareSheet = false
     @State private var currentLeverageCalc: LeverageCalculation?
+    @State private var currentPrice: Double?
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
 
@@ -112,7 +113,8 @@ struct SignalDetailView: View {
             if let signal {
                 TradeSignalShareSheet(
                     signal: signal,
-                    leverageInfo: currentLeverageCalc.map { ShareLeverageInfo(from: $0) }
+                    leverageInfo: currentLeverageCalc.map { ShareLeverageInfo(from: $0) },
+                    currentPrice: currentPrice
                 )
             }
         }
@@ -140,11 +142,29 @@ struct SignalDetailView: View {
 
         do {
             signal = try await service.fetchSignal(id: signalId)
+            if let asset = signal?.asset {
+                await fetchCurrentPrice(asset: asset)
+            }
         } catch {
             logWarning("Failed to load signal: \(error)", category: .network)
             if signal == nil {
                 loadError = error.localizedDescription
             }
+        }
+    }
+
+    private func fetchCurrentPrice(asset: String) async {
+        do {
+            let symbol = "\(asset.uppercased())USDT"
+            let endpoint = BinanceEndpoint.tickerPrice(symbol: symbol)
+            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let priceString = json["price"] as? String,
+               let price = Double(priceString) {
+                currentPrice = price
+            }
+        } catch {
+            logDebug("Failed to fetch current price: \(error)", category: .network)
         }
     }
 
@@ -342,6 +362,20 @@ struct SignalDetailView: View {
             }
 
             VStack(spacing: 10) {
+                if let price = currentPrice {
+                    let entryMid = (signal.entryZoneLow + signal.entryZoneHigh) / 2
+                    let distPct = ((price - entryMid) / entryMid) * 100
+                    let isInZone = price >= signal.entryZoneLow && price <= signal.entryZoneHigh
+                    let badge = isInZone ? "IN ZONE" : String(format: "%+.1f%%", distPct)
+                    let badgeColor = isInZone ? AppColors.success : AppColors.textSecondary
+
+                    paramRow(label: "Current Price",
+                             value: "$\(formatSignalPrice(price))",
+                             badge: badge,
+                             badgeColor: badgeColor,
+                             valueColor: AppColors.accent)
+                }
+
                 paramRow(label: "Entry Zone",
                          value: "$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
 

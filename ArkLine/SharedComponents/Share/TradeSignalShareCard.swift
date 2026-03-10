@@ -10,6 +10,7 @@ struct TradeSignalCardContent: View {
     var isLight: Bool = true
     var leverageInfo: ShareLeverageInfo? = nil
     var includeAnalysis: Bool = true
+    var currentPrice: Double? = nil
 
     private var textPrimary: Color { isLight ? Color(hex: "1A1A2E") : .white }
     private var textSecondary: Color { isLight ? Color(hex: "64748B") : Color.white.opacity(0.6) }
@@ -60,6 +61,21 @@ struct TradeSignalCardContent: View {
 
             // Trade Parameters
             VStack(spacing: 0) {
+                if let price = currentPrice {
+                    let entryMid = (signal.entryZoneLow + signal.entryZoneHigh) / 2
+                    let distPct = ((price - entryMid) / entryMid) * 100
+                    let isInZone = price >= signal.entryZoneLow && price <= signal.entryZoneHigh
+                    let badge = isInZone ? "IN ZONE" : String(format: "%+.1f%%", distPct)
+                    let badgeColor: Color = isInZone ? AppColors.success : (isLight ? Color(hex: "64748B") : Color.white.opacity(0.6))
+
+                    paramRow(label: "Current Price",
+                             value: "$\(price.asSignalPrice)",
+                             badge: badge,
+                             badgeColor: badgeColor,
+                             valueColor: AppColors.accent)
+                    sectionDivider
+                }
+
                 paramRow(label: "Entry Zone",
                          value: "$\(signal.entryZoneLow.asSignalPrice) – $\(signal.entryZoneHigh.asSignalPrice)")
 
@@ -344,6 +360,7 @@ private struct SignalBrandedCard<Content: View>: View {
 struct TradeSignalShareSheet: View {
     let signal: TradeSignal
     var leverageInfo: ShareLeverageInfo? = nil
+    var currentPrice: Double? = nil
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
@@ -492,7 +509,8 @@ struct TradeSignalShareSheet: View {
                 signal: signal,
                 isLight: useLightTheme,
                 leverageInfo: includeLeverage ? leverageInfo : nil,
-                includeAnalysis: includeAnalysis
+                includeAnalysis: includeAnalysis,
+                currentPrice: currentPrice
             )
         }
     }
@@ -503,6 +521,7 @@ struct TradeSignalShareSheet: View {
         defer { isExporting = false }
 
         var height: CGFloat = 320
+        if currentPrice != nil { height += 36 }
         if signal.target2 != nil { height += 36 }
         if signal.outcomePct != nil { height += 56 }
         if includeAnalysis, signal.cardAnalysis != nil { height += 160 }
