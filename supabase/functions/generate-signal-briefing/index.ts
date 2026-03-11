@@ -81,7 +81,10 @@ Deno.serve(async (req) => {
 - Coinbase ranking: ${signal.coinbase_ranking ? `#${signal.coinbase_ranking}` : "N/A"}
 - Bounce confirmation: ${JSON.stringify(signal.confirmation_details ?? {})}
 - Composite score: ${signal.composite_score ?? "N/A"}/100
-- Volume confluence: ${signal.volume_confluence ? `${signal.volume_confluence.has_volume_confluence ? "Yes" : "No"} (${signal.volume_confluence.volume_node_count ?? 0} nodes, ${signal.volume_confluence.max_relative_volume ?? 0}x avg volume)` : "N/A"}
+- Volume confluence: ${signal.volume_confluence ? `${signal.volume_confluence.has_volume_confluence ? "Yes" : "No"} (${signal.volume_confluence.volume_node_count ?? 0} nodes, ${signal.volume_confluence.max_relative_volume ?? 0}x avg volume)` : "N/A"}${signal.chart_pattern ? `
+- Chart pattern: ${signal.chart_pattern.name} (${signal.chart_pattern.type}, ${signal.chart_pattern.bias}, ${signal.chart_pattern.timeframe})
+- Pattern confidence: ${signal.chart_pattern.confidence}%
+- Pattern description: ${signal.chart_pattern.description}${signal.chart_pattern.neckline ? `\n- Neckline: $${signal.chart_pattern.neckline}` : ""}${signal.chart_pattern.target ? `\n- Pattern target: $${signal.chart_pattern.target}` : ""}` : ""}
 `.trim()
 
   try {

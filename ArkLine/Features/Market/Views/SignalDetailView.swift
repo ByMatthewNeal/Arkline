@@ -58,6 +58,11 @@ struct SignalDetailView: View {
                     headerSection(signal)
                     statusBanner(signal)
                     TradeStructureChart(signal: signal)
+
+                    if let pattern = signal.chartPattern {
+                        chartPatternCard(pattern, signal: signal)
+                    }
+
                     tradeParametersCard(signal)
 
                     LeverageCalculatorView(signal: signal, startExpanded: true) { calc in
@@ -369,6 +374,99 @@ struct SignalDetailView: View {
                 color: AppColors.textSecondary
             )
         }
+    }
+
+    // MARK: - Chart Pattern
+
+    private func chartPatternCard(_ pattern: ChartPattern, signal: TradeSignal) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .foregroundColor(AppColors.accent)
+                Text("Chart Pattern")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                // Type badge: Reversal or Continuation
+                let typeColor = pattern.type.lowercased() == "reversal" ? AppColors.warning : AppColors.accent
+                Text(pattern.type.capitalized)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(typeColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(typeColor.opacity(0.12))
+                    .cornerRadius(6)
+            }
+
+            // Pattern name + confidence
+            HStack {
+                Text(pattern.name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Image(systemName: "target")
+                        .font(.system(size: 10))
+                    Text("\(pattern.confidence)%")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .foregroundColor(patternConfidenceColor(pattern.confidence))
+            }
+
+            // Description
+            Text(pattern.description)
+                .font(AppFonts.body14)
+                .foregroundColor(textPrimary.opacity(0.8))
+                .lineSpacing(3)
+
+            // Neckline + Target levels
+            if pattern.neckline != nil || pattern.target != nil {
+                Divider()
+
+                VStack(spacing: 8) {
+                    if let neckline = pattern.neckline {
+                        paramRow(label: "Neckline",
+                                 value: "$\(formatSignalPrice(neckline))",
+                                 valueColor: AppColors.accent)
+                    }
+                    if let target = pattern.target {
+                        paramRow(label: "Pattern Target",
+                                 value: "$\(formatSignalPrice(target))",
+                                 valueColor: AppColors.success)
+                    }
+                }
+            }
+
+            // Timeframe + bias footer
+            HStack(spacing: 8) {
+                chipBadge(pattern.timeframe.uppercased())
+
+                let biasColor = pattern.bias.lowercased() == "bullish" ? AppColors.success : AppColors.error
+                chipBadge(pattern.bias.capitalized, color: biasColor)
+            }
+        }
+        .padding()
+        .background(cardBackground)
+    }
+
+    private func patternConfidenceColor(_ confidence: Int) -> Color {
+        if confidence >= 70 { return AppColors.success }
+        if confidence >= 50 { return AppColors.warning }
+        return AppColors.error
+    }
+
+    private func chipBadge(_ text: String, color: Color? = nil) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold))
+            .foregroundColor(color ?? AppColors.textSecondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background((color ?? AppColors.textSecondary).opacity(0.12))
+            .cornerRadius(4)
     }
 
     // MARK: - 2. Trade Parameters

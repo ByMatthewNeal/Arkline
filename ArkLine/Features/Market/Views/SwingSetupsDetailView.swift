@@ -1034,6 +1034,10 @@ struct SignalCard: View {
                             if signal.hasVolumeConfluence {
                                 chipView(text: "Vol Shelf")
                             }
+                            if let pattern = signal.chartPattern {
+                                chipView(text: pattern.abbreviatedName,
+                                         color: pattern.bias.lowercased() == "bullish" ? AppColors.success : AppColors.error)
+                            }
                         }
                     } else {
                         // Outcome details for closed signals

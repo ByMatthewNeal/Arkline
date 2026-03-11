@@ -99,6 +99,17 @@ interface ConfluenceZone {
   levels: FibLevel[]
 }
 
+interface ChartPattern {
+  name: string           // e.g., "Bullish Double Bottom", "Bearish Head and Shoulders"
+  type: "reversal" | "continuation"
+  bias: "bullish" | "bearish"
+  timeframe: "4h" | "1d"
+  confidence: number     // 0-100
+  description: string    // 1-2 sentence description
+  neckline?: number      // Key breakout level if applicable
+  target?: number        // Measured move target
+}
+
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -185,7 +196,7 @@ Deno.serve(async (req) => {
       // Compute volume profile from 4h candles
       const volumeNodes = computeVolumeProfile(candles["4h"])
 
-      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore)
+      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swings)
       assetResults.newSignals = newSignals
 
       await pruneOldCandles(supabase, asset.ticker)
@@ -827,6 +838,512 @@ function computeTargetsAndStop(
   }
 }
 
+// ─── Chart Pattern Detection ────────────────────────────────────────────────
+
+const PATTERN_MIN_CONFIDENCE = 40
+
+function detectChartPattern(
+  candles: Record<string, Candle[]>,
+  swings: Record<string, SwingPoint[]>,
+): ChartPattern | null {
+  const allPatterns: ChartPattern[] = []
+
+  for (const tf of ["4h", "1d"] as const) {
+    const tfSwings = swings[tf] ?? []
+    const tfCandles = candles[tf] ?? []
+    if (tfSwings.length < 3) continue
+
+    // Separate and sort by time (most recent first)
+    const highs = tfSwings
+      .filter(s => s.type === "high")
+      .sort((a, b) => new Date(b.candle_time).getTime() - new Date(a.candle_time).getTime())
+    const lows = tfSwings
+      .filter(s => s.type === "low")
+      .sort((a, b) => new Date(b.candle_time).getTime() - new Date(a.candle_time).getTime())
+
+    // ── Reversal Patterns ──
+
+    // Double Top: 2 recent highs within 2% with a valley between
+    if (highs.length >= 2) {
+      const [h1, h2] = highs
+      const pctDiff = Math.abs(h1.price - h2.price) / Math.max(h1.price, h2.price) * 100
+      if (pctDiff <= 2.0) {
+        // Find a low between the two highs
+        const h1Time = new Date(h1.candle_time).getTime()
+        const h2Time = new Date(h2.candle_time).getTime()
+        const minTime = Math.min(h1Time, h2Time)
+        const maxTime = Math.max(h1Time, h2Time)
+        const valleyBetween = lows.find(l => {
+          const lt = new Date(l.candle_time).getTime()
+          return lt > minTime && lt < maxTime
+        })
+        if (valleyBetween) {
+          const neckline = valleyBetween.price
+          const peakAvg = (h1.price + h2.price) / 2
+          const measuredMove = peakAvg - neckline
+          let conf = 55
+          if (pctDiff <= 1.0) conf += 10
+          if (valleyBetween.reversal_pct >= 3) conf += 10
+          // Volume confirmation: check if volume decreasing on second peak
+          if (tfCandles.length > 10) {
+            const h1Idx = tfCandles.findIndex(c => c.open_time === h1.candle_time)
+            const h2Idx = tfCandles.findIndex(c => c.open_time === h2.candle_time)
+            if (h1Idx >= 0 && h2Idx >= 0) {
+              const h1Vol = tfCandles[h1Idx].volume
+              const h2Vol = tfCandles[h2Idx].volume
+              if (h2Vol < h1Vol * 0.85) conf += 10 // Lower volume on second peak = stronger
+            }
+          }
+          allPatterns.push({
+            name: "Bearish Double Top",
+            type: "reversal",
+            bias: "bearish",
+            timeframe: tf,
+            confidence: Math.min(conf, 95),
+            description: `Two swing highs within ${pctDiff.toFixed(1)}% of each other with a valley at ${neckline.toFixed(2)}. Breakdown below neckline targets ${(neckline - measuredMove).toFixed(2)}.`,
+            neckline,
+            target: neckline - measuredMove,
+          })
+        }
+      }
+    }
+
+    // Double Bottom: 2 recent lows within 2% with a peak between
+    if (lows.length >= 2) {
+      const [l1, l2] = lows
+      const pctDiff = Math.abs(l1.price - l2.price) / Math.min(l1.price, l2.price) * 100
+      if (pctDiff <= 2.0) {
+        const l1Time = new Date(l1.candle_time).getTime()
+        const l2Time = new Date(l2.candle_time).getTime()
+        const minTime = Math.min(l1Time, l2Time)
+        const maxTime = Math.max(l1Time, l2Time)
+        const peakBetween = highs.find(h => {
+          const ht = new Date(h.candle_time).getTime()
+          return ht > minTime && ht < maxTime
+        })
+        if (peakBetween) {
+          const neckline = peakBetween.price
+          const troughAvg = (l1.price + l2.price) / 2
+          const measuredMove = neckline - troughAvg
+          let conf = 55
+          if (pctDiff <= 1.0) conf += 10
+          if (peakBetween.reversal_pct >= 3) conf += 10
+          if (tfCandles.length > 10) {
+            const l1Idx = tfCandles.findIndex(c => c.open_time === l1.candle_time)
+            const l2Idx = tfCandles.findIndex(c => c.open_time === l2.candle_time)
+            if (l1Idx >= 0 && l2Idx >= 0) {
+              const l1Vol = tfCandles[l1Idx].volume
+              const l2Vol = tfCandles[l2Idx].volume
+              if (l2Vol < l1Vol * 0.85) conf += 10
+            }
+          }
+          allPatterns.push({
+            name: "Bullish Double Bottom",
+            type: "reversal",
+            bias: "bullish",
+            timeframe: tf,
+            confidence: Math.min(conf, 95),
+            description: `Two swing lows within ${pctDiff.toFixed(1)}% of each other with a peak at ${neckline.toFixed(2)}. Breakout above neckline targets ${(neckline + measuredMove).toFixed(2)}.`,
+            neckline,
+            target: neckline + measuredMove,
+          })
+        }
+      }
+    }
+
+    // Triple Top: 3 highs within 2%
+    if (highs.length >= 3) {
+      const [h1, h2, h3] = highs
+      const avgPrice = (h1.price + h2.price + h3.price) / 3
+      const maxDev = Math.max(
+        Math.abs(h1.price - avgPrice),
+        Math.abs(h2.price - avgPrice),
+        Math.abs(h3.price - avgPrice),
+      ) / avgPrice * 100
+      if (maxDev <= 2.0) {
+        const lowestValley = Math.min(
+          ...lows.filter(l => {
+            const lt = new Date(l.candle_time).getTime()
+            const oldest = Math.min(
+              new Date(h1.candle_time).getTime(),
+              new Date(h2.candle_time).getTime(),
+              new Date(h3.candle_time).getTime(),
+            )
+            const newest = Math.max(
+              new Date(h1.candle_time).getTime(),
+              new Date(h2.candle_time).getTime(),
+              new Date(h3.candle_time).getTime(),
+            )
+            return lt >= oldest && lt <= newest
+          }).map(l => l.price)
+        )
+        const neckline = isFinite(lowestValley) ? lowestValley : avgPrice * 0.97
+        const measuredMove = avgPrice - neckline
+        allPatterns.push({
+          name: "Bearish Triple Top",
+          type: "reversal",
+          bias: "bearish",
+          timeframe: tf,
+          confidence: Math.min(70 + (maxDev <= 1.0 ? 10 : 0), 95),
+          description: `Three swing highs clustered near ${avgPrice.toFixed(2)} forming strong resistance. Breakdown below ${neckline.toFixed(2)} targets ${(neckline - measuredMove).toFixed(2)}.`,
+          neckline,
+          target: neckline - measuredMove,
+        })
+      }
+    }
+
+    // Triple Bottom: 3 lows within 2%
+    if (lows.length >= 3) {
+      const [l1, l2, l3] = lows
+      const avgPrice = (l1.price + l2.price + l3.price) / 3
+      const maxDev = Math.max(
+        Math.abs(l1.price - avgPrice),
+        Math.abs(l2.price - avgPrice),
+        Math.abs(l3.price - avgPrice),
+      ) / avgPrice * 100
+      if (maxDev <= 2.0) {
+        const highestPeak = Math.max(
+          ...highs.filter(h => {
+            const ht = new Date(h.candle_time).getTime()
+            const oldest = Math.min(
+              new Date(l1.candle_time).getTime(),
+              new Date(l2.candle_time).getTime(),
+              new Date(l3.candle_time).getTime(),
+            )
+            const newest = Math.max(
+              new Date(l1.candle_time).getTime(),
+              new Date(l2.candle_time).getTime(),
+              new Date(l3.candle_time).getTime(),
+            )
+            return ht >= oldest && ht <= newest
+          }).map(h => h.price)
+        )
+        const neckline = isFinite(highestPeak) ? highestPeak : avgPrice * 1.03
+        const measuredMove = neckline - avgPrice
+        allPatterns.push({
+          name: "Bullish Triple Bottom",
+          type: "reversal",
+          bias: "bullish",
+          timeframe: tf,
+          confidence: Math.min(70 + (maxDev <= 1.0 ? 10 : 0), 95),
+          description: `Three swing lows clustered near ${avgPrice.toFixed(2)} forming strong support. Breakout above ${neckline.toFixed(2)} targets ${(neckline + measuredMove).toFixed(2)}.`,
+          neckline,
+          target: neckline + measuredMove,
+        })
+      }
+    }
+
+    // Head and Shoulders (bearish reversal): 3 highs, middle highest, outer 2 within 5%
+    if (highs.length >= 3) {
+      // Sort by time ascending for left-head-right order
+      const chronoHighs = [...highs].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime())
+      for (let i = 0; i <= chronoHighs.length - 3; i++) {
+        const left = chronoHighs[i]
+        const head = chronoHighs[i + 1]
+        const right = chronoHighs[i + 2]
+        if (head.price > left.price && head.price > right.price) {
+          const shoulderDiff = Math.abs(left.price - right.price) / Math.max(left.price, right.price) * 100
+          if (shoulderDiff <= 5.0) {
+            // Find lows between left-head and head-right for neckline
+            const leftTime = new Date(left.candle_time).getTime()
+            const headTime = new Date(head.candle_time).getTime()
+            const rightTime = new Date(right.candle_time).getTime()
+            const trough1 = lows.find(l => {
+              const lt = new Date(l.candle_time).getTime()
+              return lt > leftTime && lt < headTime
+            })
+            const trough2 = lows.find(l => {
+              const lt = new Date(l.candle_time).getTime()
+              return lt > headTime && lt < rightTime
+            })
+            if (trough1 && trough2) {
+              const neckline = (trough1.price + trough2.price) / 2
+              const measuredMove = head.price - neckline
+              let conf = 60
+              if (shoulderDiff <= 2.5) conf += 10
+              if (measuredMove / head.price * 100 >= 5) conf += 5
+              allPatterns.push({
+                name: "Bearish Head and Shoulders",
+                type: "reversal",
+                bias: "bearish",
+                timeframe: tf,
+                confidence: Math.min(conf, 95),
+                description: `Head at ${head.price.toFixed(2)} with shoulders at ${left.price.toFixed(2)} and ${right.price.toFixed(2)}. Neckline at ${neckline.toFixed(2)}, measured move targets ${(neckline - measuredMove).toFixed(2)}.`,
+                neckline,
+                target: neckline - measuredMove,
+              })
+            }
+            break // Only detect the most recent H&S
+          }
+        }
+      }
+    }
+
+    // Inverse Head and Shoulders (bullish reversal): 3 lows, middle lowest, outer 2 within 5%
+    if (lows.length >= 3) {
+      const chronoLows = [...lows].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime())
+      for (let i = 0; i <= chronoLows.length - 3; i++) {
+        const left = chronoLows[i]
+        const head = chronoLows[i + 1]
+        const right = chronoLows[i + 2]
+        if (head.price < left.price && head.price < right.price) {
+          const shoulderDiff = Math.abs(left.price - right.price) / Math.min(left.price, right.price) * 100
+          if (shoulderDiff <= 5.0) {
+            const leftTime = new Date(left.candle_time).getTime()
+            const headTime = new Date(head.candle_time).getTime()
+            const rightTime = new Date(right.candle_time).getTime()
+            const peak1 = highs.find(h => {
+              const ht = new Date(h.candle_time).getTime()
+              return ht > leftTime && ht < headTime
+            })
+            const peak2 = highs.find(h => {
+              const ht = new Date(h.candle_time).getTime()
+              return ht > headTime && ht < rightTime
+            })
+            if (peak1 && peak2) {
+              const neckline = (peak1.price + peak2.price) / 2
+              const measuredMove = neckline - head.price
+              let conf = 60
+              if (shoulderDiff <= 2.5) conf += 10
+              if (measuredMove / head.price * 100 >= 5) conf += 5
+              allPatterns.push({
+                name: "Bullish Inverse Head and Shoulders",
+                type: "reversal",
+                bias: "bullish",
+                timeframe: tf,
+                confidence: Math.min(conf, 95),
+                description: `Head at ${head.price.toFixed(2)} with shoulders at ${left.price.toFixed(2)} and ${right.price.toFixed(2)}. Neckline at ${neckline.toFixed(2)}, measured move targets ${(neckline + measuredMove).toFixed(2)}.`,
+                neckline,
+                target: neckline + measuredMove,
+              })
+            }
+            break
+          }
+        }
+      }
+    }
+
+    // Rising Wedge (bearish): higher highs AND higher lows, converging
+    if (highs.length >= 3 && lows.length >= 3) {
+      const chronoHighs = [...highs].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime()).slice(-4)
+      const chronoLows = [...lows].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime()).slice(-4)
+
+      if (chronoHighs.length >= 3 && chronoLows.length >= 3) {
+        const highsRising = chronoHighs.every((h, i) => i === 0 || h.price > chronoHighs[i - 1].price)
+        const lowsRising = chronoLows.every((l, i) => i === 0 || l.price > chronoLows[i - 1].price)
+
+        if (highsRising && lowsRising) {
+          // Check convergence: rate of rise for lows > rate of rise for highs
+          const highSlope = (chronoHighs[chronoHighs.length - 1].price - chronoHighs[0].price) / chronoHighs[0].price
+          const lowSlope = (chronoLows[chronoLows.length - 1].price - chronoLows[0].price) / chronoLows[0].price
+          if (lowSlope > highSlope && highSlope > 0) {
+            const convergenceRatio = lowSlope / Math.max(highSlope, 0.001)
+            let conf = 50
+            if (convergenceRatio >= 1.5) conf += 10
+            if (chronoHighs.length >= 4) conf += 5
+            if (chronoLows.length >= 4) conf += 5
+            allPatterns.push({
+              name: "Bearish Rising Wedge",
+              type: "reversal",
+              bias: "bearish",
+              timeframe: tf,
+              confidence: Math.min(conf, 95),
+              description: `Higher highs and higher lows converging, with support rising faster than resistance. Typically resolves with a breakdown below the lower trendline.`,
+            })
+          }
+        }
+      }
+    }
+
+    // Falling Wedge (bullish): lower lows AND lower highs, converging
+    if (highs.length >= 3 && lows.length >= 3) {
+      const chronoHighs = [...highs].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime()).slice(-4)
+      const chronoLows = [...lows].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime()).slice(-4)
+
+      if (chronoHighs.length >= 3 && chronoLows.length >= 3) {
+        const highsFalling = chronoHighs.every((h, i) => i === 0 || h.price < chronoHighs[i - 1].price)
+        const lowsFalling = chronoLows.every((l, i) => i === 0 || l.price < chronoLows[i - 1].price)
+
+        if (highsFalling && lowsFalling) {
+          const highSlope = (chronoHighs[0].price - chronoHighs[chronoHighs.length - 1].price) / chronoHighs[0].price
+          const lowSlope = (chronoLows[0].price - chronoLows[chronoLows.length - 1].price) / chronoLows[0].price
+          if (highSlope > lowSlope && lowSlope > 0) {
+            const convergenceRatio = highSlope / Math.max(lowSlope, 0.001)
+            let conf = 50
+            if (convergenceRatio >= 1.5) conf += 10
+            if (chronoHighs.length >= 4) conf += 5
+            if (chronoLows.length >= 4) conf += 5
+            allPatterns.push({
+              name: "Bullish Falling Wedge",
+              type: "reversal",
+              bias: "bullish",
+              timeframe: tf,
+              confidence: Math.min(conf, 95),
+              description: `Lower highs and lower lows converging, with resistance falling faster than support. Typically resolves with a breakout above the upper trendline.`,
+            })
+          }
+        }
+      }
+    }
+
+    // ── Continuation Patterns ──
+
+    // Bull/Bear Flag: strong impulse followed by narrow counter-trend consolidation
+    if (tfCandles.length >= 15) {
+      const recent = tfCandles.slice(-15)
+      // Check for impulse in first 5 candles
+      const impulseCandles = recent.slice(0, 5)
+      const impulseStart = impulseCandles[0].open
+      const impulseEnd = impulseCandles[impulseCandles.length - 1].close
+      const impulsePct = ((impulseEnd - impulseStart) / impulseStart) * 100
+
+      const consolidationCandles = recent.slice(5)
+      const consolHigh = Math.max(...consolidationCandles.map(c => c.high))
+      const consolLow = Math.min(...consolidationCandles.map(c => c.low))
+      const consolRange = ((consolHigh - consolLow) / consolLow) * 100
+
+      if (Math.abs(impulsePct) > 5) {
+        const isBullImpulse = impulsePct > 0
+        // Retracement: how much of the impulse did the consolidation give back?
+        const retracement = isBullImpulse
+          ? ((impulseEnd - consolLow) / (impulseEnd - impulseStart)) * 100
+          : ((consolHigh - impulseEnd) / (impulseStart - impulseEnd)) * 100
+
+        if (retracement >= 3 && retracement <= 50 && consolRange < Math.abs(impulsePct) * 0.6) {
+          let conf = 50
+          if (retracement >= 10 && retracement <= 38.2) conf += 15 // Ideal flag retracement
+          if (consolRange < Math.abs(impulsePct) * 0.4) conf += 10 // Tight consolidation
+          // Volume declining during consolidation
+          const impulseAvgVol = impulseCandles.reduce((s, c) => s + c.volume, 0) / impulseCandles.length
+          const consolAvgVol = consolidationCandles.reduce((s, c) => s + c.volume, 0) / consolidationCandles.length
+          if (consolAvgVol < impulseAvgVol * 0.7) conf += 10
+
+          const flagTarget = isBullImpulse
+            ? consolLow + (impulseEnd - impulseStart)
+            : consolHigh - (impulseStart - impulseEnd)
+
+          allPatterns.push({
+            name: isBullImpulse ? "Bullish Bull Flag" : "Bearish Bear Flag",
+            type: "continuation",
+            bias: isBullImpulse ? "bullish" : "bearish",
+            timeframe: tf,
+            confidence: Math.min(conf, 95),
+            description: `${Math.abs(impulsePct).toFixed(1)}% impulse move followed by ${consolRange.toFixed(1)}% consolidation range with ${retracement.toFixed(1)}% retracement. Flag target at ${flagTarget.toFixed(2)}.`,
+            target: flagTarget,
+          })
+        }
+      }
+    }
+
+    // Ascending Triangle: flat resistance + rising support
+    if (highs.length >= 2 && lows.length >= 3) {
+      const recentHighs = highs.slice(0, 3)
+      const recentLows = [...lows.slice(0, 4)].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime())
+
+      const highAvg = recentHighs.reduce((s, h) => s + h.price, 0) / recentHighs.length
+      const highMaxDev = Math.max(...recentHighs.map(h => Math.abs(h.price - highAvg) / highAvg * 100))
+
+      // Flat resistance: highs within 1.5% of each other
+      if (highMaxDev <= 1.5 && recentLows.length >= 3) {
+        // Rising support: each successive low is higher
+        const risingLows = recentLows.every((l, i) => i === 0 || l.price >= recentLows[i - 1].price * 0.995)
+        if (risingLows) {
+          const resistance = highAvg
+          const height = resistance - recentLows[0].price
+          let conf = 55
+          if (recentHighs.length >= 3) conf += 10
+          if (recentLows.length >= 4) conf += 5
+          if (highMaxDev <= 0.75) conf += 5
+          allPatterns.push({
+            name: "Bullish Ascending Triangle",
+            type: "continuation",
+            bias: "bullish",
+            timeframe: tf,
+            confidence: Math.min(conf, 95),
+            description: `Flat resistance near ${resistance.toFixed(2)} with rising support. Breakout above resistance targets ${(resistance + height).toFixed(2)}.`,
+            neckline: resistance,
+            target: resistance + height,
+          })
+        }
+      }
+    }
+
+    // Descending Triangle: flat support + declining resistance
+    if (lows.length >= 2 && highs.length >= 3) {
+      const recentLows = lows.slice(0, 3)
+      const recentHighs = [...highs.slice(0, 4)].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime())
+
+      const lowAvg = recentLows.reduce((s, l) => s + l.price, 0) / recentLows.length
+      const lowMaxDev = Math.max(...recentLows.map(l => Math.abs(l.price - lowAvg) / lowAvg * 100))
+
+      if (lowMaxDev <= 1.5 && recentHighs.length >= 3) {
+        const fallingHighs = recentHighs.every((h, i) => i === 0 || h.price <= recentHighs[i - 1].price * 1.005)
+        if (fallingHighs) {
+          const support = lowAvg
+          const height = recentHighs[0].price - support
+          let conf = 55
+          if (recentLows.length >= 3) conf += 10
+          if (recentHighs.length >= 4) conf += 5
+          if (lowMaxDev <= 0.75) conf += 5
+          allPatterns.push({
+            name: "Bearish Descending Triangle",
+            type: "continuation",
+            bias: "bearish",
+            timeframe: tf,
+            confidence: Math.min(conf, 95),
+            description: `Flat support near ${support.toFixed(2)} with declining resistance. Breakdown below support targets ${(support - height).toFixed(2)}.`,
+            neckline: support,
+            target: support - height,
+          })
+        }
+      }
+    }
+
+    // Symmetrical Triangle: converging highs (lower) and lows (higher)
+    if (highs.length >= 3 && lows.length >= 3) {
+      const chronoHighs = [...highs.slice(0, 4)].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime())
+      const chronoLows = [...lows.slice(0, 4)].sort((a, b) => new Date(a.candle_time).getTime() - new Date(b.candle_time).getTime())
+
+      if (chronoHighs.length >= 3 && chronoLows.length >= 3) {
+        const lowerHighs = chronoHighs.every((h, i) => i === 0 || h.price <= chronoHighs[i - 1].price * 1.005)
+        const higherLows = chronoLows.every((l, i) => i === 0 || l.price >= chronoLows[i - 1].price * 0.995)
+
+        if (lowerHighs && higherLows) {
+          const latestHigh = chronoHighs[chronoHighs.length - 1].price
+          const latestLow = chronoLows[chronoLows.length - 1].price
+          const height = chronoHighs[0].price - chronoLows[0].price
+
+          // Determine bias from prior trend using the oldest swing points
+          const priorTrendBullish = chronoLows[0].price < chronoHighs[0].price * 0.95
+          const bias = priorTrendBullish ? "bullish" : "bearish"
+
+          let conf = 50
+          if (chronoHighs.length >= 4) conf += 5
+          if (chronoLows.length >= 4) conf += 5
+          if (latestHigh - latestLow < height * 0.6) conf += 10 // Good convergence
+
+          allPatterns.push({
+            name: `${bias === "bullish" ? "Bullish" : "Bearish"} Symmetrical Triangle`,
+            type: "continuation",
+            bias,
+            timeframe: tf,
+            confidence: Math.min(conf, 95),
+            description: `Converging lower highs and higher lows forming a symmetrical triangle. Height of ${height.toFixed(2)} suggests a measured move of similar magnitude on breakout.`,
+            target: bias === "bullish" ? latestHigh + height : latestLow - height,
+          })
+        }
+      }
+    }
+  }
+
+  // Filter by minimum confidence and return the highest confidence pattern
+  const validPatterns = allPatterns.filter(p => p.confidence >= PATTERN_MIN_CONFIDENCE)
+  if (validPatterns.length === 0) return null
+
+  validPatterns.sort((a, b) => b.confidence - a.confidence)
+  return validPatterns[0]
+}
+
 // ─── Signal Evaluation ───────────────────────────────────────────────────────
 
 async function evaluateSignals(
@@ -839,6 +1356,7 @@ async function evaluateSignals(
   volumeNodes: VolumeNode[] = [],
   fearGreedIndex?: number,
   btcRiskScore?: number,
+  swings?: Record<string, SwingPoint[]>,
 ): Promise<{ generated: number; skipped: number }> {
   const stats = { generated: 0, skipped: 0 }
   const candles4h = candles["4h"]
@@ -846,6 +1364,9 @@ async function evaluateSignals(
   if (!candles4h || candles4h.length < EMA_SLOW_PERIOD + EMA_SLOPE_LOOKBACK) {
     return stats
   }
+
+  // Detect chart pattern for this asset (once per evaluation, shared across zones)
+  const chartPattern = swings ? detectChartPattern(candles, swings) : null
 
   const allFibPrices = fibs.map((f) => f.price)
 
@@ -980,6 +1501,7 @@ async function evaluateSignals(
       fear_greed_index: fearGreedIndex ?? null,
       btc_risk_score: btcRiskScore ?? null,
       macro_regime: macroRegime,
+      chart_pattern: chartPattern ?? null,
       triggered_at: new Date().toISOString(),
       expires_at: expiresAt,
     }

@@ -60,6 +60,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let briefingText: String?
     let shortRationale: String?
     let cardAnalysis: CardAnalysis?
+    let chartPattern: ChartPattern?
 
     enum CodingKeys: String, CodingKey {
         case id, asset, status, outcome
@@ -100,6 +101,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case briefingText = "briefing_text"
         case shortRationale = "short_rationale"
         case cardAnalysis = "card_analysis"
+        case chartPattern = "chart_pattern"
     }
 }
 
@@ -132,6 +134,35 @@ struct CardAnalysis: Codable, Equatable {
         case fearGreedLabel = "fear_greed_label"
         case trendDirection = "trend_direction"
         case confluenceStrength = "confluence_strength"
+    }
+}
+
+// MARK: - Chart Pattern
+
+struct ChartPattern: Codable, Equatable {
+    let name: String
+    let type: String        // "reversal" or "continuation"
+    let bias: String        // "bullish" or "bearish"
+    let timeframe: String
+    let confidence: Int
+    let description: String
+    let neckline: Double?
+    let target: Double?
+
+    /// Short name for badge display (strips "Bullish"/"Bearish" prefix)
+    var abbreviatedName: String {
+        let stripped = name
+            .replacingOccurrences(of: "Bullish ", with: "")
+            .replacingOccurrences(of: "Bearish ", with: "")
+        // Common abbreviations
+        switch stripped.lowercased() {
+        case "head and shoulders", "head & shoulders":
+            return "H&S"
+        case "inverse head and shoulders", "inverse head & shoulders":
+            return "Inv H&S"
+        default:
+            return stripped
+        }
     }
 }
 
