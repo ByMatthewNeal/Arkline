@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
     try {
       await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`, "x-cron-secret": cronSecret },
         body: JSON.stringify({
           broadcast_id: signal.id,
           title: `🔔 ${signal.asset} approaching ${direction} entry zone`,
@@ -428,6 +428,7 @@ async function notify(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`,
         "x-cron-secret": cronSecret,
       },
       body: JSON.stringify({

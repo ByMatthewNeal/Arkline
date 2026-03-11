@@ -144,10 +144,12 @@ struct ChartPattern: Codable, Equatable {
     let type: String        // "reversal" or "continuation"
     let bias: String        // "bullish" or "bearish"
     let timeframe: String
-    let confidence: Int
+    let confidence: Double
     let description: String
     let neckline: Double?
     let target: Double?
+
+    var confidenceInt: Int { Int(confidence) }
 
     /// Short name for badge display (strips "Bullish"/"Bearish" prefix)
     var abbreviatedName: String {

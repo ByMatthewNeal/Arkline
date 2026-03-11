@@ -411,10 +411,10 @@ struct SignalDetailView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "target")
                         .font(.system(size: 10))
-                    Text("\(pattern.confidence)%")
+                    Text("\(pattern.confidenceInt)%")
                         .font(.system(size: 13, weight: .bold))
                 }
-                .foregroundColor(patternConfidenceColor(pattern.confidence))
+                .foregroundColor(patternConfidenceColor(pattern.confidenceInt))
             }
 
             // Description

@@ -1540,10 +1540,12 @@ async function evaluateSignals(
             ? `$${targets.stopLoss.toFixed(2)}`
             : `$${targets.stopLoss.toFixed(4)}`
 
+        const anonKeyNotif = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
         fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${anonKeyNotif}`,
             "x-cron-secret": cronSecret,
           },
           body: JSON.stringify({
@@ -1556,18 +1558,20 @@ async function evaluateSignals(
         }).catch(() => {})
       } catch {}
 
-      // Generate briefing
+      // Generate briefing (await to ensure it completes before pipeline moves on)
       try {
         const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
         const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
-        fetch(`${supabaseUrl}/functions/v1/generate-signal-briefing`, {
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+        await fetch(`${supabaseUrl}/functions/v1/generate-signal-briefing`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${anonKey}`,
             "x-cron-secret": cronSecret,
           },
           body: JSON.stringify({ signal_id: inserted.id }),
-        }).catch(() => {})
+        })
       } catch {}
     }
   }
@@ -1855,9 +1859,10 @@ function notifyResolution(signal: any, event: ResolutionEvent, price: number): v
     expired_loss: "signal_expiry",
   }
 
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}`, "x-cron-secret": cronSecret },
     body: JSON.stringify({
       broadcast_id: signal.id,
       title, body,

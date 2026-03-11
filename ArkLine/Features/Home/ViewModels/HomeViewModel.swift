@@ -874,15 +874,16 @@ class HomeViewModel {
                 if self.selectedPortfolio == nil, let first = fetchedPortfolios.first {
                     self.selectedPortfolio = first
                 }
+                // Mark loaded immediately so UI shows portfolio card (not spinner)
+                self.hasLoadedPortfolios = true
             }
 
-            // Load real holdings data for the selected portfolio
+            // Load detailed holdings/prices in a detached task (doesn't block loadPortfolios)
             if let portfolio = selectedPortfolio {
-                await loadPortfolioData(for: portfolio)
+                Task { [weak self] in
+                    await self?.loadPortfolioData(for: portfolio)
+                }
             }
-
-            // Mark loaded AFTER portfolio data (value) has been fetched
-            await MainActor.run { self.hasLoadedPortfolios = true }
         } catch {
             logError("Failed to load portfolios: \(error)", category: .data)
             await MainActor.run { self.hasLoadedPortfolios = true }
