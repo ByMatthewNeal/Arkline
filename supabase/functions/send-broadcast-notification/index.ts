@@ -17,6 +17,117 @@ interface NotificationRequest {
   }
 }
 
+// ─── APNs JWT Token ─────────────────────────────────────────────────────────
+
+function base64UrlEncode(data: Uint8Array): string {
+  let binary = ""
+  for (const byte of data) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+}
+
+async function createApnsJwt(keyPem: string, keyId: string, teamId: string): Promise<string> {
+  // Strip PEM header/footer and decode
+  const pemBody = keyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s/g, "")
+
+  const keyData = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0))
+
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    keyData,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  )
+
+  const header = { alg: "ES256", kid: keyId }
+  const now = Math.floor(Date.now() / 1000)
+  const claims = { iss: teamId, iat: now }
+
+  const encoder = new TextEncoder()
+  const headerB64 = base64UrlEncode(encoder.encode(JSON.stringify(header)))
+  const claimsB64 = base64UrlEncode(encoder.encode(JSON.stringify(claims)))
+  const signingInput = `${headerB64}.${claimsB64}`
+
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    key,
+    encoder.encode(signingInput)
+  )
+
+  // Convert DER signature to raw r||s (64 bytes) for ES256
+  const sigBytes = new Uint8Array(signature)
+  let r: Uint8Array, s: Uint8Array
+
+  if (sigBytes.length === 64) {
+    // Already raw format
+    r = sigBytes.slice(0, 32)
+    s = sigBytes.slice(32)
+  } else {
+    // DER format: 0x30 <len> 0x02 <rlen> <r> 0x02 <slen> <s>
+    let offset = 2 // skip 0x30 <len>
+    offset += 1 // skip 0x02
+    const rLen = sigBytes[offset++]
+    const rRaw = sigBytes.slice(offset, offset + rLen)
+    offset += rLen
+    offset += 1 // skip 0x02
+    const sLen = sigBytes[offset++]
+    const sRaw = sigBytes.slice(offset, offset + sLen)
+
+    // Pad or trim to 32 bytes
+    r = new Uint8Array(32)
+    s = new Uint8Array(32)
+    r.set(rRaw.length > 32 ? rRaw.slice(rRaw.length - 32) : rRaw, 32 - Math.min(rRaw.length, 32))
+    s.set(sRaw.length > 32 ? sRaw.slice(sRaw.length - 32) : sRaw, 32 - Math.min(sRaw.length, 32))
+  }
+
+  const rawSig = new Uint8Array(64)
+  rawSig.set(r, 0)
+  rawSig.set(s, 32)
+
+  return `${signingInput}.${base64UrlEncode(rawSig)}`
+}
+
+// ─── APNs Send ──────────────────────────────────────────────────────────────
+
+async function sendApns(
+  token: string,
+  jwt: string,
+  bundleId: string,
+  payload: object,
+  useSandbox: boolean
+): Promise<{ token: string; success: boolean; status: number; reason?: string }> {
+  const host = useSandbox
+    ? "https://api.sandbox.push.apple.com"
+    : "https://api.push.apple.com"
+
+  try {
+    const resp = await fetch(`${host}/3/device/${token}`, {
+      method: "POST",
+      headers: {
+        "authorization": `bearer ${jwt}`,
+        "apns-topic": bundleId,
+        "apns-push-type": "alert",
+        "apns-priority": "10",
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (resp.status === 200) {
+      return { token, success: true, status: 200 }
+    }
+
+    const body = await resp.json().catch(() => ({}))
+    return { token, success: false, status: resp.status, reason: body.reason ?? "unknown" }
+  } catch (err) {
+    return { token, success: false, status: 0, reason: String(err) }
+  }
+}
+
+// ─── Main Handler ───────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -159,32 +270,78 @@ Deno.serve(async (req) => {
       )
     }
 
-    // TODO: Full APNs integration requires a .p8 auth key stored in Supabase secrets.
-    // For now, log the intent and return the device count.
-    // When APNs is configured, replace this block with actual push delivery:
-    //
-    // const apnsKey = Deno.env.get("APNS_AUTH_KEY")   // .p8 contents
-    // const apnsKeyId = Deno.env.get("APNS_KEY_ID")
-    // const apnsTeamId = Deno.env.get("APNS_TEAM_ID")
-    // const apnsBundleId = Deno.env.get("APNS_BUNDLE_ID")
-    //
-    // For each device token, send via HTTP/2 to api.push.apple.com:
-    //   POST /3/device/{token}
-    //   Headers: authorization (bearer JWT), apns-topic (bundle id), apns-push-type (alert)
-    //   Body: { aps: { alert: { title, body }, sound: "default", badge: 1 },
-    //           broadcast_id }
+    // ─── APNs Push ────────────────────────────────────────────────────────
+
+    const apnsKey = Deno.env.get("APNS_AUTH_KEY")
+    const apnsKeyId = Deno.env.get("APNS_KEY_ID")
+    const apnsTeamId = Deno.env.get("APNS_TEAM_ID")
+    const apnsBundleId = "com.arkline.app"
+    // Use sandbox for TestFlight/development, production for App Store
+    const useSandbox = Deno.env.get("APNS_USE_SANDBOX") !== "false"
+
+    if (!apnsKey || !apnsKeyId || !apnsTeamId) {
+      // APNs not configured — log and return
+      const tokens = filteredDevices.map((d: { device_token: string }) => d.device_token)
+      console.log(
+        `[send-broadcast-notification] APNs not configured. Would send to ${tokens.length} devices for broadcast ${broadcast_id}`
+      )
+      return new Response(
+        JSON.stringify({ sent: 0, reason: "APNs credentials not configured", devices_found: tokens.length }),
+        { headers: corsHeaders }
+      )
+    }
+
+    // Generate APNs JWT (valid for ~1 hour, but we generate fresh each invocation)
+    const jwt = await createApnsJwt(apnsKey, apnsKeyId, apnsTeamId)
+
+    const payload = {
+      aps: {
+        alert: { title, body: body || "" },
+        sound: "default",
+        badge: 1,
+        "mutable-content": 1,
+      },
+      broadcast_id,
+      event_type: event_type || "general",
+    }
 
     const tokens = filteredDevices.map((d: { device_token: string }) => d.device_token)
 
-    console.log(
-      `[send-broadcast-notification] Would send to ${tokens.length} devices for broadcast ${broadcast_id}`
+    // Send to all devices concurrently
+    const results = await Promise.all(
+      tokens.map((token) => sendApns(token, jwt, apnsBundleId, payload, useSandbox))
     )
+
+    const succeeded = results.filter((r) => r.success).length
+    const failed = results.filter((r) => !r.success)
+
+    // Remove invalid tokens (gone, unregistered)
+    const badTokenReasons = new Set(["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"])
+    const tokensToRemove = failed
+      .filter((r) => badTokenReasons.has(r.reason ?? ""))
+      .map((r) => r.token)
+
+    if (tokensToRemove.length > 0) {
+      await supabaseAdmin
+        .from("user_devices")
+        .delete()
+        .in("device_token", tokensToRemove)
+      console.log(`[send-broadcast-notification] Removed ${tokensToRemove.length} invalid tokens`)
+    }
+
+    if (failed.length > 0) {
+      console.log(
+        `[send-broadcast-notification] ${succeeded}/${tokens.length} sent, failures:`,
+        failed.map((f) => `${f.status}:${f.reason}`).join(", ")
+      )
+    }
 
     return new Response(
       JSON.stringify({
-        sent: tokens.length,
+        sent: succeeded,
+        failed: failed.length,
         broadcast_id,
-        status: "pending_apns_setup",
+        sandbox: useSandbox,
       }),
       { headers: corsHeaders }
     )
