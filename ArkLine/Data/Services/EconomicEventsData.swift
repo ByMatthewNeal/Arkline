@@ -93,7 +93,7 @@ enum EconomicEventsData {
 
     // MARK: - All Events Data
 
-    private static let allEvents: [EconomicEvent] = [
+    static let allEvents: [EconomicEvent] = [
         // ==================== JANUARY 2026 ====================
 
         // Jan 27, 2026 (Tuesday)

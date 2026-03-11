@@ -238,10 +238,21 @@ final class FMPService {
             let currency = item.currency ?? ""
             guard ["USD", "JPY", "EUR", "GBP"].contains(currency) else { return nil }
 
-            // Format actual/forecast/previous
-            let actual = item.actual != nil ? "\(item.actual!)" : nil
-            let estimate = item.estimate != nil ? "\(item.estimate!)" : nil
-            let previous = item.previous != nil ? "\(item.previous!)" : nil
+            // Format actual/forecast/previous (strip trailing zeros)
+            func fmt(_ val: Double) -> String {
+                if val == val.rounded() && abs(val) >= 1 {
+                    return String(format: "%.0f", val)
+                }
+                let s = String(format: "%.4f", val)
+                // Trim trailing zeros but keep at least one decimal
+                var trimmed = s
+                while trimmed.hasSuffix("0") { trimmed = String(trimmed.dropLast()) }
+                if trimmed.hasSuffix(".") { trimmed += "0" }
+                return trimmed
+            }
+            let actual = item.actual?.value.map { fmt($0) }
+            let estimate = item.estimate?.value.map { fmt($0) }
+            let previous = item.previous?.value.map { fmt($0) }
 
             let flag: String? = {
                 switch currency {
@@ -515,16 +526,40 @@ struct FMPCompanyProfile: Codable, Identifiable {
 }
 
 /// FMP Economic Calendar Event (raw API response)
+/// Uses flexible decoding since FMP can return numbers as strings or null
 struct FMPEconomicEvent: Codable {
     let date: String        // "2026-03-12 08:30:00"
     let country: String?
     let event: String       // "Initial Jobless Claims"
     let currency: String?   // "USD"
-    let previous: Double?
-    let estimate: Double?
-    let actual: Double?
-    let change: Double?
+    let previous: FlexibleDouble?
+    let estimate: FlexibleDouble?
+    let actual: FlexibleDouble?
+    let change: FlexibleDouble?
     let impact: String?     // "High", "Medium", "Low"
-    let changePercentage: Double?
+    let changePercentage: FlexibleDouble?
     let unit: String?
+}
+
+/// Decodes a value that could be a Double, String number, or null
+struct FlexibleDouble: Codable {
+    let value: Double?
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            value = nil
+        } else if let d = try? container.decode(Double.self) {
+            value = d
+        } else if let s = try? container.decode(String.self), let d = Double(s) {
+            value = d
+        } else {
+            value = nil
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(value)
+    }
 }
