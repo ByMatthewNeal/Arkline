@@ -114,13 +114,6 @@ struct PortfolioView: View {
                             scrollProxy.scrollTo("scrollTop", anchor: .top)
                         }
                     }
-                    .onChange(of: appState.selectedTab) { _, newTab in
-                        if newTab == .portfolio {
-                            withAnimation(.arkSpring) {
-                                scrollProxy.scrollTo("scrollTop", anchor: .top)
-                            }
-                        }
-                    }
                     } // ScrollViewReader
 
                     // Loading Overlay

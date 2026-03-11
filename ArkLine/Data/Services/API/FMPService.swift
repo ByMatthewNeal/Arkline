@@ -201,6 +201,76 @@ final class FMPService {
         }
     }
 
+    // MARK: - Economic Calendar
+
+    /// Fetch economic calendar events from FMP
+    /// Returns events for the given date range with actual/forecast/previous values
+    func fetchEconomicCalendar(from: Date, to: Date) async throws -> [EconomicEvent] {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+
+        let data = try await invokeProxy(
+            path: "/economic-calendar",
+            queryItems: [
+                URLQueryItem(name: "from", value: fmt.string(from: from)),
+                URLQueryItem(name: "to", value: fmt.string(from: to)),
+            ]
+        )
+
+        let decoded = try JSONDecoder().decode([FMPEconomicEvent].self, from: data)
+
+        return decoded.compactMap { item in
+            // Parse date string "2026-03-12 08:30:00"
+            let dateFmt = DateFormatter()
+            dateFmt.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            dateFmt.timeZone = TimeZone(identifier: "America/New_York")
+            guard let eventDate = dateFmt.date(from: item.date) else { return nil }
+
+            // Map impact
+            let impact: EventImpact
+            switch item.impact?.lowercased() ?? "" {
+            case "high": impact = .high
+            case "medium": impact = .medium
+            default: impact = .low
+            }
+
+            // Country filter: only US events (and major global like BOJ, ECB)
+            let currency = item.currency ?? ""
+            guard ["USD", "JPY", "EUR", "GBP"].contains(currency) else { return nil }
+
+            // Format actual/forecast/previous
+            let actual = item.actual != nil ? "\(item.actual!)" : nil
+            let estimate = item.estimate != nil ? "\(item.estimate!)" : nil
+            let previous = item.previous != nil ? "\(item.previous!)" : nil
+
+            let flag: String? = {
+                switch currency {
+                case "USD": return "🇺🇸"
+                case "JPY": return "🇯🇵"
+                case "EUR": return "🇪🇺"
+                case "GBP": return "🇬🇧"
+                default: return nil
+                }
+            }()
+
+            return EconomicEvent(
+                id: UUID(),
+                title: item.event,
+                country: item.country ?? currency,
+                date: eventDate,
+                time: eventDate,
+                impact: impact,
+                forecast: estimate,
+                previous: previous,
+                actual: actual,
+                currency: currency,
+                description: nil,
+                countryFlag: flag
+            )
+        }
+        .sorted { $0.date < $1.date }
+    }
+
     /// Map APIProxyError to FMPError
     private func mapProxyError(_ error: APIProxyError) -> FMPError {
         switch error {
@@ -442,4 +512,19 @@ struct FMPCompanyProfile: Codable, Identifiable {
         }
         return cap.asCurrencyWhole
     }
+}
+
+/// FMP Economic Calendar Event (raw API response)
+struct FMPEconomicEvent: Codable {
+    let date: String        // "2026-03-12 08:30:00"
+    let country: String?
+    let event: String       // "Initial Jobless Claims"
+    let currency: String?   // "USD"
+    let previous: Double?
+    let estimate: Double?
+    let actual: Double?
+    let change: Double?
+    let impact: String?     // "High", "Medium", "Low"
+    let changePercentage: Double?
+    let unit: String?
 }

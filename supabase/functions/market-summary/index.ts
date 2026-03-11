@@ -201,11 +201,18 @@ Deno.serve(async (req) => {
 
   // --- Events ---
   if (Array.isArray(payload.economicEvents) && payload.economicEvents.length > 0) {
-    const events = payload.economicEvents.map((e: any) => {
-      if (e.time) return `${e.title} (${e.time})`
-      return e.title
-    }).join("; ")
-    sections.push(`EVENTS: ${events}`)
+    const eventLines = payload.economicEvents.map((e: any) => {
+      let line = e.title
+      if (e.time) line += ` (${e.time})`
+      // Include actual vs forecast for released data
+      const parts: string[] = []
+      if (e.actual != null) parts.push(`Actual: ${e.actual}`)
+      if (e.forecast != null) parts.push(`Forecast: ${e.forecast}`)
+      if (e.previous != null) parts.push(`Previous: ${e.previous}`)
+      if (parts.length > 0) line += ` [${parts.join(", ")}]`
+      return line
+    })
+    sections.push(`EVENTS:\n${eventLines.join("\n")}`)
   }
 
   // --- BTC Technical Analysis ---
@@ -317,7 +324,7 @@ Write a structured briefing using exactly these section headers on their own lin
 One sentence with the overall market stance and crypto positioning. If the MACRO section includes a "Macro Regime" value, your posture MUST align with it — use "Risk-on" if RISK-ON, "Risk-off" if RISK-OFF, or "Neutral" if MIXED. If a "Crypto Positioning" line is present, weave its guidance into the posture (e.g. "full exposure", "selective exposure", "defensive", "cautious accumulation"). Always name the regime quadrant (e.g. "Risk-On Disinflation") rather than just saying "risk on". Example: "Risk-On Disinflation — full exposure. Growth is solid and liquidity is expanding, the best backdrop for crypto."
 
 ## The Rundown
-2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally.
+2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally. If EVENTS data includes Actual vs Forecast values, analyze the results: a beat (actual better than forecast) is bullish, a miss is bearish. For inflation data (CPI, PPI, PCE): lower-than-expected = dovish/bullish for risk; higher = hawkish/bearish. For jobs data (NFP, Jobless Claims): strong jobs = mixed (good economy but hawkish Fed); weak jobs = recession fear but dovish. Always explain the market impact in plain terms.
 
 ## Technical
 3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS and DERIVATIVES. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If key fib support/resistance levels are available, mention them. Explain in plain language what the technicals and derivatives suggest about momentum and positioning — e.g. "BTC is holding above all major moving averages with RSI at 58, and positive funding with rising OI confirms buyers are in control" or "Price just lost the 50 SMA while liquidations are skewing long — leveraged longs are getting flushed." If no BTC TA data is available, skip this section entirely.

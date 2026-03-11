@@ -47,9 +47,11 @@ struct CustomTabBar: View {
                     namespace: tabAnimation
                 ) {
                     if selectedTab == tab {
-                        // Already on this tab - trigger pop to root
+                        // Already on this tab - trigger pop to root + scroll to top
                         triggerNavigationReset(for: tab)
                     } else {
+                        // Switching tabs - scroll destination to top
+                        triggerNavigationReset(for: tab)
                         Haptics.light()
                         selectedTab = tab
                         Task { await AnalyticsService.shared.trackTabSwitch(tab.rawValue) }

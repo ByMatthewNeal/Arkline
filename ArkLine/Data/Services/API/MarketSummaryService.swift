@@ -84,6 +84,9 @@ final class MarketSummaryService {
     struct EventEntry: Encodable {
         let title: String
         let time: String?
+        let actual: String?
+        let forecast: String?
+        let previous: String?
     }
 
     private struct SummaryResponse: Decodable {

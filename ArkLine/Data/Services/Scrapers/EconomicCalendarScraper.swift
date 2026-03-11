@@ -1,26 +1,72 @@
 import Foundation
 
 // MARK: - Economic Calendar Scraper
-/// Provides economic calendar data using EconomicEventsData
+/// Provides economic calendar data from FMP API with static data fallback.
 final class EconomicCalendarScraper {
+
+    /// In-memory cache to avoid repeated API calls
+    private var cachedEvents: [EconomicEvent] = []
+    private var cacheTimestamp: Date?
+    private let cacheTTL: TimeInterval = 3600 // 1 hour
 
     // MARK: - Public Methods
 
-    /// Fetches upcoming economic events from hardcoded data
-    /// - Parameters:
-    ///   - days: Number of days ahead to fetch
-    ///   - impactFilter: Filter by impact levels
-    /// - Returns: Array of EconomicEvent
+    /// Fetches upcoming economic events from FMP API (falls back to static data)
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
-        // Use hardcoded data instead of scraping
-        return EconomicEventsData.getUpcomingEvents(days: days, impactFilter: impactFilter)
+        let events = await fetchFromFMPOrCache(days: days)
+
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        guard let endDate = calendar.date(byAdding: .day, value: days, to: Date()) else {
+            return []
+        }
+
+        return events.filter { event in
+            event.date >= startOfToday && event.date <= endDate && impactFilter.contains(event.impact)
+        }.sorted { $0.date < $1.date }
     }
 
-    /// Fetches today's events
+    /// Fetches today's events from FMP API (falls back to static data)
     func fetchTodaysEvents(impactFilter: [EventImpact] = [.high, .medium]) async throws -> [EconomicEvent] {
-        return EconomicEventsData.getTodaysEvents(impactFilter: impactFilter)
+        let events = await fetchFromFMPOrCache(days: 1)
+
+        return events.filter { event in
+            Calendar.current.isDateInToday(event.date) && impactFilter.contains(event.impact)
+        }.sorted { $0.date < $1.date }
     }
 
+    // MARK: - Private
+
+    private func fetchFromFMPOrCache(days: Int) async -> [EconomicEvent] {
+        // Return cache if fresh
+        if let ts = cacheTimestamp, Date().timeIntervalSince(ts) < cacheTTL, !cachedEvents.isEmpty {
+            return cachedEvents
+        }
+
+        // Try FMP API
+        do {
+            let from = Calendar.current.startOfDay(for: Date())
+            guard let to = Calendar.current.date(byAdding: .day, value: max(days, 7), to: from) else {
+                return fallbackToStatic()
+            }
+
+            let events = try await FMPService.shared.fetchEconomicCalendar(from: from, to: to)
+            if !events.isEmpty {
+                cachedEvents = events
+                cacheTimestamp = Date()
+                logInfo("EconomicCalendar: Loaded \(events.count) events from FMP", category: .network)
+                return events
+            }
+        } catch {
+            logWarning("EconomicCalendar: FMP fetch failed, using static data: \(error)", category: .network)
+        }
+
+        return fallbackToStatic()
+    }
+
+    private func fallbackToStatic() -> [EconomicEvent] {
+        EconomicEventsData.allEvents
+    }
 }
 
 // MARK: - Scraper Errors

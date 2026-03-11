@@ -1363,8 +1363,14 @@ class HomeViewModel {
             supplyInProfit: supplyProfitStr,
             rainbowBand: rainbowStr,
             btcKeyLevels: btcKeyLevelsStr,
-            economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(3).map { event in
-                .init(title: event.title, time: event.timeFormatted)
+            economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(5).map { event in
+                .init(
+                    title: event.title,
+                    time: event.timeFormatted,
+                    actual: event.actual,
+                    forecast: event.forecast,
+                    previous: event.previous
+                )
             },
             newsHeadlines: {
                 // Merge crypto + financial headlines, deduped

@@ -22,14 +22,15 @@ enum EconomicEventsData {
 
     /// Returns upcoming events (events whose scheduled time hasn't passed yet)
     static func getUpcomingEvents(days: Int = 7, impactFilter: [EventImpact] = [.high, .medium]) -> [EconomicEvent] {
-        let now = Date()
         let calendar = Calendar.current
-        guard let endDate = calendar.date(byAdding: .day, value: days, to: now) else {
+        // Start of today (events stay visible all day, even after their release time)
+        let startOfToday = calendar.startOfDay(for: Date())
+        guard let endDate = calendar.date(byAdding: .day, value: days, to: Date()) else {
             return []
         }
 
         return allEvents.filter { event in
-            event.date >= now && event.date <= endDate && impactFilter.contains(event.impact)
+            event.date >= startOfToday && event.date <= endDate && impactFilter.contains(event.impact)
         }.sorted { $0.date < $1.date }
     }
 
@@ -208,6 +209,22 @@ enum EconomicEventsData {
         makeEvent(title: "CPI (MoM)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
         makeEvent(title: "Core CPI (YoY)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
         makeEvent(title: "Core CPI (MoM)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
+
+        // Mar 12, 2026 (Thursday)
+        makeEvent(title: "PPI (MoM)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high),
+        makeEvent(title: "PPI (YoY)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high),
+        makeEvent(title: "Core PPI (MoM)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high),
+        makeEvent(title: "Initial Jobless Claims", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .medium),
+        makeEvent(title: "10-Year Note Auction", currency: "USD", dateString: "2026-03-12", timeString: "13:00", impact: .medium),
+
+        // Mar 13, 2026 (Friday)
+        makeEvent(title: "Michigan Consumer Sentiment", currency: "USD", dateString: "2026-03-13", timeString: "10:00", impact: .medium),
+        makeEvent(title: "Michigan Inflation Expectations", currency: "USD", dateString: "2026-03-13", timeString: "10:00", impact: .medium),
+
+        // Mar 17, 2026 (Monday)
+        makeEvent(title: "Retail Sales (MoM)", currency: "USD", dateString: "2026-03-17", timeString: "08:30", impact: .high),
+        makeEvent(title: "Core Retail Sales (MoM)", currency: "USD", dateString: "2026-03-17", timeString: "08:30", impact: .high),
+        makeEvent(title: "NY Empire State Manufacturing", currency: "USD", dateString: "2026-03-17", timeString: "08:30", impact: .medium),
 
         // Mar 18, 2026 (Wednesday) - FOMC DAY
         makeEvent(title: "Fed Interest Rate Decision", currency: "USD", dateString: "2026-03-18", timeString: "14:00", impact: .high),
