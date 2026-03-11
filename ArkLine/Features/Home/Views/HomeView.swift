@@ -83,7 +83,8 @@ struct HomeView: View {
                                 get: { viewModel.selectedTimePeriod },
                                 set: { viewModel.selectedTimePeriod = $0 }
                             ),
-                            hasLoadedPortfolios: viewModel.hasLoadedPortfolios
+                            hasLoadedPortfolios: viewModel.hasLoadedPortfolios,
+                            hasPortfolios: !viewModel.portfolios.isEmpty
                         )
                         .padding(.horizontal, 20)
 

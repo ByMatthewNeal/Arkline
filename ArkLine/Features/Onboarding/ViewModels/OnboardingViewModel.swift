@@ -447,12 +447,11 @@ class OnboardingViewModel {
                 do {
                     try await SupabaseDatabase.shared.upsert(into: .profiles, values: profileRequest)
 
-                    // Create default portfolio (ignore conflict if it already exists)
-                    let portfolio = Portfolio(userId: userId, name: "Main Portfolio")
-                    do {
+                    // Create default portfolio only if user doesn't have one yet
+                    let existingPortfolios = try await SupabaseDatabase.shared.getPortfolios(userId: userId)
+                    if existingPortfolios.isEmpty {
+                        let portfolio = Portfolio(userId: userId, name: "Main Portfolio")
                         try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
-                    } catch {
-                        // Portfolio already exists for returning users — expected
                     }
 
                     // Redeem the invite code

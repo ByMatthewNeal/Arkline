@@ -11,6 +11,7 @@ struct PortfolioHeroCard: View {
     let onSetupTap: () -> Void
     @Binding var selectedTimePeriod: TimePeriod
     var hasLoadedPortfolios: Bool = true
+    var hasPortfolios: Bool = false
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
@@ -21,8 +22,8 @@ struct PortfolioHeroCard: View {
     @State private var chartAnimationId = UUID()
 
     var isPositive: Bool { change >= 0 }
-    private var isEmpty: Bool { totalValue == 0 && hasLoadedPortfolios }
-    private var isLoadingPortfolio: Bool { totalValue == 0 && !hasLoadedPortfolios }
+    private var isEmpty: Bool { !hasPortfolios && hasLoadedPortfolios }
+    private var isLoadingPortfolio: Bool { !hasLoadedPortfolios }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
