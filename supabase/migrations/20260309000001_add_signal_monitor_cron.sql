@@ -1,11 +1,8 @@
 -- Signal-monitor cron job (every 30 minutes)
 --
 -- Lightweight price checker that runs twice per hour to catch SL/T1/runner
--- resolution faster than the 4H pipeline alone. Fetches 1H candle data
+-- resolution faster than the 4H pipeline alone. Aggregates last 4 1H candles
 -- from Binance and resolves triggered signals accordingly.
---
--- The function itself skips 4H candle-close hours (0,4,8,12,16,20 UTC)
--- to avoid duplicate resolution with the full pipeline.
 
 -- Remove old schedule if it existed
 DO $$

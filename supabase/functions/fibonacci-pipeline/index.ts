@@ -1065,7 +1065,16 @@ async function resolveOpenSignals(
   const candles4h = candles["4h"]
   if (!candles4h || candles4h.length === 0) return stats
 
-  const latestCandle = candles4h[candles4h.length - 1]
+  // Aggregate last 3 4H candles (max high / min low) to catch missed hits
+  const recentCandles = candles4h.slice(-3)
+  const latestCandle = {
+    high: Math.max(...recentCandles.map(c => c.high)),
+    low: Math.min(...recentCandles.map(c => c.low)),
+    close: recentCandles[recentCandles.length - 1].close,
+    open: recentCandles[recentCandles.length - 1].open,
+    volume: recentCandles[recentCandles.length - 1].volume,
+    time: recentCandles[recentCandles.length - 1].time,
+  }
   const now = new Date()
 
   // Get all triggered signals for this asset

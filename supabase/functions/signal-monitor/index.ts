@@ -7,11 +7,11 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  * Does NOT generate new signals — only resolves existing ones faster.
  *
  * Runs every 30 minutes at :05 and :35 (offset from the 4H pipeline at :00).
- * Skips the 4H candle-close hours (0, 4, 8, 12, 16, 20 UTC) since the
- * full pipeline already handles resolution at those times.
+ * Aggregates the last 4 1H candles (3 closed + current) to catch any
+ * SL/T1/runner hits that occurred between checks.
  *
  * For each triggered signal:
- *   - Checks stop loss / target 1 hits using 1H candle high/low
+ *   - Checks stop loss / target 1 hits using aggregated 1H candle high/low
  *   - Updates runner trailing stops
  *   - Resolves expired signals
  *   - Sends push notifications on resolution events
@@ -33,13 +33,6 @@ Deno.serve(async (req) => {
   const secret = req.headers.get("x-cron-secret") ?? ""
   if (!cronSecret || secret !== cronSecret) {
     return json({ error: "Unauthorized" }, 401)
-  }
-
-  // Skip hours where the full pipeline runs (4H candle closes)
-  const utcHour = new Date().getUTCHours()
-  const pipelineHours = [0, 4, 8, 12, 16, 20]
-  if (pipelineHours.includes(utcHour)) {
-    return json({ skipped: true, reason: "Full pipeline runs this hour" })
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
@@ -77,20 +70,30 @@ Deno.serve(async (req) => {
     return json({ resolved: 0, message: "No assets to check" })
   }
 
-  // Fetch 1H candles for relevant assets only
+  // Fetch last 4 1H candles (3 closed + current) and aggregate high/low
+  // so we never miss a SL/T1 hit that occurred in a recent closed candle
   const candles: Record<string, { high: number; low: number; close: number }> = {}
   for (const symbol of symbolsToCheck) {
     try {
       const resp = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=1`
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=4`
       )
       if (resp.ok) {
         const data = await resp.json()
         if (data.length > 0) {
+          // Aggregate: max high and min low across all recent candles
+          let aggHigh = -Infinity
+          let aggLow = Infinity
+          for (const k of data) {
+            aggHigh = Math.max(aggHigh, parseFloat(k[2]))
+            aggLow = Math.min(aggLow, parseFloat(k[3]))
+          }
+          // Close from the most recent candle
+          const latest = data[data.length - 1]
           candles[TICKER_MAP[symbol]] = {
-            high: parseFloat(data[0][2]),
-            low: parseFloat(data[0][3]),
-            close: parseFloat(data[0][4]),
+            high: aggHigh,
+            low: aggLow,
+            close: parseFloat(latest[4]),
           }
         }
       }
