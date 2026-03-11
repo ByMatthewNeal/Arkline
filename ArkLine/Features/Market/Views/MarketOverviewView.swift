@@ -67,6 +67,13 @@ struct MarketOverviewView: View {
                         scrollProxy.scrollTo("scrollTop", anchor: .top)
                     }
                 }
+                .onChange(of: appState.selectedTab) { _, newTab in
+                    if newTab == .market {
+                        withAnimation(.arkSpring) {
+                            scrollProxy.scrollTo("scrollTop", anchor: .top)
+                        }
+                    }
+                }
             } // ScrollViewReader
             }
             .navigationTitle("Market Overview")

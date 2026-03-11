@@ -181,6 +181,13 @@ struct BroadcastFeedView: View {
                     scrollProxy.scrollTo("scrollTop", anchor: .top)
                 }
             }
+            .onChange(of: appState.selectedTab) { _, newTab in
+                if newTab == .insights {
+                    withAnimation(.arkSpring) {
+                        scrollProxy.scrollTo("scrollTop", anchor: .top)
+                    }
+                }
+            }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BroadcastNotificationTapped"))) { notification in
                 if let id = notification.userInfo?["id"] as? String {
                     appState.selectedTab = .insights

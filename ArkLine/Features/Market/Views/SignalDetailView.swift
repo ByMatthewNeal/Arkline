@@ -12,6 +12,8 @@ struct SignalDetailView: View {
     @State private var showShareSheet = false
     @State private var currentLeverageCalc: LeverageCalculation?
     @State private var currentPrice: Double?
+    @State private var customEntryText: String = ""
+    @State private var showCustomEntry = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
 
@@ -64,6 +66,10 @@ struct SignalDetailView: View {
                     }
 
                     tradeParametersCard(signal)
+
+                    if signal.status.isLive {
+                        customEntryCard(signal)
+                    }
 
                     LeverageCalculatorView(signal: signal, startExpanded: true) { calc in
                         currentLeverageCalc = calc
@@ -525,6 +531,145 @@ struct SignalDetailView: View {
                 paramRow(label: "Risk / Reward",
                          value: String(format: "%.1fx", signal.riskRewardRatio),
                          valueColor: AppColors.accent)
+            }
+        }
+        .padding()
+        .background(cardBackground)
+    }
+
+    // MARK: - Custom Entry Card
+
+    private func customEntryCard(_ signal: TradeSignal) -> some View {
+        let customEntry = Double(customEntryText)
+        let isBuy = signal.signalType.isBuy
+
+        // Original risk distance as a percentage of entry mid
+        let originalRiskPct = abs(signal.stopLoss - signal.entryPriceMid) / signal.entryPriceMid
+
+        // Adjusted stop loss: same % distance from user's entry
+        let adjustedSL: Double? = {
+            guard let entry = customEntry, entry > 0 else { return nil }
+            return isBuy ? entry * (1 - originalRiskPct) : entry * (1 + originalRiskPct)
+        }()
+
+        // Adjusted R:R
+        let adjustedRR: Double? = {
+            guard let entry = customEntry, let sl = adjustedSL, let t1 = signal.target1 else { return nil }
+            let risk = abs(entry - sl)
+            guard risk > 0 else { return nil }
+            let reward = abs(t1 - entry)
+            return reward / risk
+        }()
+
+        return VStack(alignment: .leading, spacing: 12) {
+            // Header with toggle
+            Button {
+                withAnimation(.arkSpring) {
+                    showCustomEntry.toggle()
+                    if !showCustomEntry { customEntryText = "" }
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "pencil.line")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.accent)
+                    Text("Adjust My Entry")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary)
+                    Spacer()
+                    Image(systemName: showCustomEntry ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+
+            if showCustomEntry {
+                VStack(spacing: 12) {
+                    // Entry price input
+                    HStack {
+                        Text("$")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(AppColors.textSecondary)
+                        TextField("Your entry price", text: $customEntryText)
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(textPrimary)
+                            .keyboardType(.decimalPad)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(customEntry != nil ? AppColors.accent.opacity(0.4) : Color.clear, lineWidth: 1)
+                    )
+
+                    if let entry = customEntry, let sl = adjustedSL {
+                        VStack(spacing: 8) {
+                            // Entry vs original
+                            let entryDiff = ((entry - signal.entryPriceMid) / signal.entryPriceMid) * 100
+                            paramRow(
+                                label: "Your Entry",
+                                value: "$\(formatSignalPrice(entry))",
+                                badge: String(format: "%+.1f%% from signal", entryDiff),
+                                badgeColor: AppColors.textSecondary,
+                                valueColor: AppColors.accent
+                            )
+
+                            paramRow(
+                                label: "Adjusted Stop Loss",
+                                value: "$\(formatSignalPrice(sl))",
+                                badge: String(format: "%.1f%%", -originalRiskPct * 100),
+                                badgeColor: AppColors.error
+                            )
+
+                            if let t1 = signal.target1 {
+                                let t1Pct = ((t1 - entry) / entry) * 100
+                                paramRow(
+                                    label: "Target 1",
+                                    value: "$\(formatSignalPrice(t1))",
+                                    badge: String(format: "%+.1f%%", t1Pct),
+                                    badgeColor: AppColors.success
+                                )
+                            }
+
+                            if let t2 = signal.target2 {
+                                let t2Pct = ((t2 - entry) / entry) * 100
+                                paramRow(
+                                    label: "Target 2",
+                                    value: "$\(formatSignalPrice(t2))",
+                                    badge: String(format: "%+.1f%%", t2Pct),
+                                    badgeColor: AppColors.success
+                                )
+                            }
+
+                            Divider()
+
+                            if let rr = adjustedRR {
+                                paramRow(
+                                    label: "Adjusted R:R",
+                                    value: String(format: "%.1fx", rr),
+                                    valueColor: rr >= 2.0 ? AppColors.success : (rr >= 1.5 ? AppColors.warning : AppColors.error)
+                                )
+                            }
+                        }
+
+                        // Warning if SL is far from original
+                        let slDiffPct = ((sl - signal.stopLoss) / signal.stopLoss) * 100
+                        if abs(slDiffPct) > 2 {
+                            HStack(spacing: 6) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 10))
+                                Text("Stop loss adjusted \(String(format: "%+.1f%%", slDiffPct)) from signal's original to maintain the same risk %")
+                                    .font(.system(size: 11))
+                            }
+                            .foregroundColor(AppColors.warning)
+                            .padding(.top, 4)
+                        }
+                    }
+                }
             }
         }
         .padding()

@@ -54,11 +54,6 @@ struct SwingSetupsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Stats header
-                if let stats = viewModel.stats, stats.totalSignals > 0 {
-                    statsCard(stats)
-                }
-
                 // Filter picker
                 Picker("Filter", selection: $selectedFilter) {
                     ForEach(SignalFilter.allCases, id: \.self) { filter in
@@ -1229,25 +1224,30 @@ struct SignalGuideSheet: View {
 
                     // 3. Signal Score
                     guideSection("Signal Score") {
-                        Text("Each signal receives a quality score from 0–100 based on multiple factors. Higher scores indicate stronger setups.")
+                        Text("Each signal receives a quality score graded A+ through B. Only signals graded B or above are shown.")
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.textSecondary)
                             .padding(.bottom, 4)
 
                         legendRow(
-                            visual: AnyView(scoreSample(78, color: AppColors.success)),
-                            title: "65+ (Green)",
-                            detail: "Strong setup — high confluence depth, good EMA alignment, volume confirmation, and favorable macro conditions"
+                            visual: AnyView(scoreSample("A+", color: AppColors.success)),
+                            title: "A+ (90–100)",
+                            detail: "Elite setup — exceptional confluence depth, full EMA alignment, volume confirmation, and favorable macro conditions"
                         )
                         legendRow(
-                            visual: AnyView(scoreSample(54, color: AppColors.warning)),
-                            title: "50–64 (Amber)",
-                            detail: "Moderate setup — meets criteria but some factors are weaker"
+                            visual: AnyView(scoreSample("A", color: AppColors.success)),
+                            title: "A (80–89)",
+                            detail: "Strong setup — high confluence with most factors aligned"
                         )
                         legendRow(
-                            visual: AnyView(scoreSample(32, color: AppColors.error)),
-                            title: "Below 50 (Red)",
-                            detail: "Weaker setup — fewer confluence levels or missing confirmations"
+                            visual: AnyView(scoreSample("B+", color: AppColors.warning)),
+                            title: "B+ (70–79)",
+                            detail: "Good setup — solid confluence but some factors are weaker"
+                        )
+                        legendRow(
+                            visual: AnyView(scoreSample("B", color: AppColors.warning)),
+                            title: "B (60–69)",
+                            detail: "Moderate setup — meets criteria but use extra caution"
                         )
 
                         Text("Score breakdown: Confluence depth (35pts), EMA alignment (20pts), Volume confirmation (20pts), Risk/Reward (15pts), Macro context (15pts). Use the Sort by Score chip to rank signals.")
@@ -1499,8 +1499,8 @@ struct SignalGuideSheet: View {
 
     // MARK: - Sample Badges
 
-    private func scoreSample(_ score: Int, color: Color) -> some View {
-        Text("\(score)")
+    private func scoreSample(_ grade: String, color: Color) -> some View {
+        Text(grade)
             .font(.system(size: 10, weight: .heavy, design: .rounded))
             .foregroundColor(.white)
             .frame(width: 26, height: 18)
