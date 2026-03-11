@@ -338,8 +338,101 @@ struct SwingSetupsDetailView: View {
                 assetBreakdownSection(stats.assetBreakdown)
             }
 
+            // Best & Worst trades
+            bestWorstTradesCard
+
             // Key metrics grid
             keyMetricsCard(stats)
+        }
+    }
+
+    // MARK: - Best & Worst Trades
+
+    private var bestWorstTradesCard: some View {
+        let closedSignals = viewModel.recentSignals
+            .filter { !$0.status.isLive && $0.outcomePct != nil }
+
+        let best = closedSignals.max(by: { ($0.outcomePct ?? 0) < ($1.outcomePct ?? 0) })
+        let worst = closedSignals.min(by: { ($0.outcomePct ?? 0) < ($1.outcomePct ?? 0) })
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("NOTABLE TRADES")
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(1)
+
+            if let best = best {
+                notableTradeRow(signal: best, label: "Best", icon: "arrow.up.circle.fill", accentColor: AppColors.success)
+            }
+
+            if let worst = worst {
+                if best != nil {
+                    Divider().opacity(0.3)
+                }
+                notableTradeRow(signal: worst, label: "Worst", icon: "arrow.down.circle.fill", accentColor: AppColors.error)
+            }
+
+            if best == nil && worst == nil {
+                Text("No closed trades yet")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .padding(.horizontal)
+    }
+
+    private func notableTradeRow(signal: TradeSignal, label: String, icon: String, accentColor: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 22))
+                .foregroundColor(accentColor)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(label)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                    Text(signal.asset)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(textPrimary)
+                    Text(signal.signalType.isBuy ? "Long" : "Short")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(signal.signalType.isBuy ? AppColors.success : AppColors.error)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background((signal.signalType.isBuy ? AppColors.success : AppColors.error).opacity(colorScheme == .dark ? 0.15 : 0.1))
+                        .cornerRadius(4)
+                }
+
+                HStack(spacing: 8) {
+                    if let duration = signal.durationHours {
+                        Text(duration >= 24 ? "\(duration / 24)d \(duration % 24)h" : "\(duration)h")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    if let closedAt = signal.closedAt {
+                        Text(closedAt, style: .date)
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            if let pnl = signal.outcomePct {
+                Text(String(format: "%+.2f%%", pnl))
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(accentColor)
+                    .monospacedDigit()
+            }
         }
     }
 
@@ -938,6 +1031,9 @@ struct SignalCard: View {
                             if signal.isCounterTrend {
                                 chipView(text: "Counter-Trend", color: AppColors.warning)
                             }
+                            if signal.hasVolumeConfluence {
+                                chipView(text: "Vol Shelf")
+                            }
                         }
                     } else {
                         // Outcome details for closed signals
@@ -1183,8 +1279,6 @@ struct SignalGuideSheet: View {
 
                     // 4. Status Lifecycle
                     guideSection("Signal Lifecycle") {
-                        statusRow(label: "Watching", color: AppColors.warning,
-                                  detail: "Signal generated — price is approaching the zone but hasn't entered yet. The countdown shows time until expiry.")
                         statusRow(label: "In Play", color: AppColors.accent,
                                   detail: "Price confirmed inside the entry zone with a bounce signal. The trade is active.")
                         statusRow(label: "Watching T1", color: AppColors.accent,

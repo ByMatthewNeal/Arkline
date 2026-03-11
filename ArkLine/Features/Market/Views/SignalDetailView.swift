@@ -242,6 +242,15 @@ struct SignalDetailView: View {
                             .background(AppColors.warning.opacity(0.12))
                             .cornerRadius(4)
                     }
+                    if signal.hasVolumeConfluence {
+                        Text("Vol Shelf")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(AppColors.textSecondary.opacity(0.1))
+                            .cornerRadius(4)
+                    }
                 }
             }
         }
