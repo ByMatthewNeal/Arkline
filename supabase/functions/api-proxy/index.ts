@@ -11,7 +11,7 @@ const SERVICES: Record<string, ServiceConfig> = {
   fmp: {
     baseURL: "https://financialmodelingprep.com/stable",
     envVar: "FMP_API_KEY",
-    auth: { type: "header", name: "apikey" },
+    auth: { type: "query", name: "apikey" },
   },
   coingecko: {
     baseURL: "https://api.coingecko.com/api/v3",

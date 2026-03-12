@@ -637,43 +637,125 @@ struct IndexWidgetCard: View {
         return "Log regression trend channel"
     }
 
+    /// Brief one-line trend channel interpretation
+    private var channelSummary: String? {
+        guard let channel = viewModel.channelData else { return nil }
+        let zone = channel.currentZone
+        let rsiValue = viewModel.rsiSeries.last?.value
+        let rsiStr = rsiValue.map { String(format: "RSI %.0f", $0) } ?? ""
+        let growthStr = String(format: "%+.1f%%/yr", channel.annualizedGrowthRate * 100)
+
+        switch zone {
+        case .deepValue:
+            return "Well below trend (\(growthStr)). \(rsiStr) — historically strong accumulation zone."
+        case .value:
+            return "Below trend (\(growthStr)). \(rsiStr) — favorable risk/reward for long-term positioning."
+        case .fair:
+            return "At trend (\(growthStr)). \(rsiStr) — trading near fair value on the long-term growth path."
+        case .elevated:
+            return "Above trend (\(growthStr)). \(rsiStr) — gains may be limited, consider caution."
+        case .overextended:
+            return "Stretched above trend (\(growthStr)). \(rsiStr) — historically precedes pullbacks."
+        }
+    }
+
+    /// Divergence alert if recent
+    private var divergenceAlert: (type: DivergenceType, label: String)? {
+        guard let div = viewModel.divergences.last else { return nil }
+        let daysSince = Calendar.current.dateComponents([.day], from: div.endDate, to: Date()).day ?? 999
+        guard daysSince <= 14 else { return nil }
+        return (div.type, "\(div.type.rawValue) divergence detected")
+    }
+
     var body: some View {
         Button { showingDetail = true } label: {
-            HStack(spacing: 16) {
-                // Text-based ticker badge (professional finance style)
-                Text(abbreviation)
-                    .font(.system(size: 14, weight: .bold, design: .default))
-                    .foregroundStyle(AppColors.accent)
-                    .frame(width: 44, height: 44)
-                    .background(AppColors.accent.opacity(0.12))
-                    .cornerRadius(12)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 16) {
+                    Text(abbreviation)
+                        .font(.system(size: 14, weight: .bold, design: .default))
+                        .foregroundStyle(AppColors.accent)
+                        .frame(width: 44, height: 44)
+                        .background(AppColors.accent.opacity(0.12))
+                        .cornerRadius(12)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(index.displayName)
-                        .font(.headline)
-                        .foregroundStyle(AppColors.textPrimary(colorScheme))
-                    Text(subtitleText)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(index.displayName)
+                            .font(.headline)
+                            .foregroundStyle(AppColors.textPrimary(colorScheme))
+                        Text(subtitleText)
+                            .font(.caption)
+                            .foregroundStyle(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    if let signal = zoneSignal {
+                        Text(signal.label)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(signal.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(signal.color.opacity(0.15))
+                            .cornerRadius(8)
+                    }
+
+                    Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundStyle(AppColors.textSecondary)
                 }
+                .padding()
 
-                Spacer()
+                // Trend channel analysis brief
+                if let summary = channelSummary {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Divider()
+                            .background(AppColors.textSecondary.opacity(0.2))
 
-                if let signal = zoneSignal {
-                    Text(signal.label)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(signal.color)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(signal.color.opacity(0.15))
-                        .cornerRadius(8)
+                        if let channel = viewModel.channelData {
+                            HStack(spacing: 8) {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(channel.currentZone.color)
+                                        .frame(width: 6, height: 6)
+                                    Text(channel.currentZone.rawValue)
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(channel.currentZone.color)
+                                }
+
+                                if let rsi = viewModel.rsiSeries.last?.value {
+                                    Text("RSI \(String(format: "%.0f", rsi))")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(rsi > 70 ? AppColors.error : rsi < 30 ? AppColors.success : AppColors.accent)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background((rsi > 70 ? AppColors.error : rsi < 30 ? AppColors.success : AppColors.accent).opacity(0.12))
+                                        .cornerRadius(4)
+                                }
+
+                                if let div = divergenceAlert {
+                                    HStack(spacing: 3) {
+                                        Image(systemName: div.type.icon)
+                                            .font(.system(size: 9))
+                                        Text(div.label)
+                                            .font(.system(size: 10, weight: .medium))
+                                    }
+                                    .foregroundStyle(div.type.color)
+                                }
+
+                                Spacer()
+                            }
+                        }
+
+                        Text(summary)
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppColors.textSecondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
                 }
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(AppColors.textSecondary)
             }
-            .padding()
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)

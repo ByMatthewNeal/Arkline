@@ -131,8 +131,8 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .from(SupabaseTable.portfolioHistory.rawValue)
                 .select()
                 .eq("portfolio_id", value: portfolioId.uuidString)
-                .gte("recorded_at", value: dateFormatter.string(from: cutoffDate))
-                .order("recorded_at", ascending: true)
+                .gte("recorded_date", value: dateFormatter.string(from: cutoffDate))
+                .order("recorded_date", ascending: true)
                 .limit(1000)
                 .execute()
                 .value
@@ -164,7 +164,8 @@ final class APIPortfolioService: PortfolioServiceProtocol {
         do {
             let record = CreatePortfolioHistoryRequest(
                 portfolioId: portfolioId,
-                totalValue: totalValue
+                totalValue: totalValue,
+                recordedDate: ISO8601DateFormatter().string(from: Date())
             )
 
             try await supabase.database
@@ -499,7 +500,7 @@ private struct PortfolioHistoryRecord: Codable {
         case id
         case portfolioId = "portfolio_id"
         case totalValue = "total_value"
-        case recordedAt = "recorded_at"
+        case recordedAt = "recorded_date"
     }
 }
 
@@ -507,9 +508,11 @@ private struct PortfolioHistoryRecord: Codable {
 private struct CreatePortfolioHistoryRequest: Encodable {
     let portfolioId: UUID
     let totalValue: Double
+    let recordedDate: String
 
     enum CodingKeys: String, CodingKey {
         case portfolioId = "portfolio_id"
         case totalValue = "total_value"
+        case recordedDate = "recorded_date"
     }
 }

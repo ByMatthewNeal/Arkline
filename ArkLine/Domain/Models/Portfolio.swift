@@ -161,6 +161,43 @@ extension PortfolioHolding {
     var assetTypeEnum: Constants.AssetType? {
         Constants.AssetType(rawValue: assetType)
     }
+
+    /// Merges holdings with the same symbol into a single entry per asset.
+    /// Combines quantities, computes weighted average buy price, and sums target percentages.
+    static func mergeBySymbol(_ holdings: [PortfolioHolding]) -> [PortfolioHolding] {
+        let grouped = Dictionary(grouping: holdings) { $0.symbol.uppercased() }
+        return grouped.values.compactMap { group -> PortfolioHolding? in
+            guard let first = group.first else { return nil }
+            if group.count == 1 { return first }
+
+            let totalQuantity = group.reduce(0) { $0 + $1.quantity }
+            let totalCost = group.reduce(0) { $0 + ($1.quantity * ($1.averageBuyPrice ?? 0)) }
+            let weightedAvgPrice = totalQuantity > 0 ? totalCost / totalQuantity : nil
+
+            let totalTarget: Double? = {
+                let targets = group.compactMap(\.targetPercentage)
+                return targets.isEmpty ? nil : targets.reduce(0, +)
+            }()
+
+            var merged = PortfolioHolding(
+                id: first.id,
+                portfolioId: first.portfolioId,
+                assetType: first.assetType,
+                symbol: first.symbol,
+                name: first.name,
+                quantity: totalQuantity,
+                averageBuyPrice: weightedAvgPrice,
+                createdAt: first.createdAt,
+                updatedAt: group.map(\.updatedAt).max() ?? first.updatedAt,
+                targetPercentage: totalTarget
+            )
+            merged.currentPrice = first.currentPrice
+            merged.priceChange24h = first.priceChange24h
+            merged.priceChangePercentage24h = first.priceChangePercentage24h
+            merged.iconUrl = first.iconUrl
+            return merged
+        }
+    }
 }
 
 // MARK: - Portfolio Statistics
@@ -189,7 +226,8 @@ struct PortfolioSummary: Codable, Equatable {
 
 // MARK: - Portfolio Allocation
 struct PortfolioAllocation: Identifiable, Equatable {
-    var id: String { category }
+    let allocationId = UUID()
+    var id: UUID { allocationId }
     let category: String
     let value: Double
     let percentage: Double
@@ -200,6 +238,10 @@ struct PortfolioAllocation: Identifiable, Equatable {
     /// Drift from target: positive means overweight, negative means underweight
     var drift: Double {
         actualPercentage - (targetPercentage ?? actualPercentage)
+    }
+
+    static func == (lhs: PortfolioAllocation, rhs: PortfolioAllocation) -> Bool {
+        lhs.category == rhs.category && lhs.value == rhs.value && lhs.percentage == rhs.percentage
     }
 
     private static let holdingColors = [

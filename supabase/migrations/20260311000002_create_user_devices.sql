@@ -13,23 +13,38 @@ CREATE INDEX IF NOT EXISTS idx_user_devices_platform ON user_devices (platform);
 -- RLS: users can only manage their own device tokens
 ALTER TABLE user_devices ENABLE ROW LEVEL SECURITY;
 
+DO $$ BEGIN
 CREATE POLICY "Users can read own devices"
     ON user_devices FOR SELECT
     USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
+DO $$ BEGIN
 CREATE POLICY "Users can insert own devices"
     ON user_devices FOR INSERT
     WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
+DO $$ BEGIN
 CREATE POLICY "Users can update own devices"
     ON user_devices FOR UPDATE
     USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
+DO $$ BEGIN
 CREATE POLICY "Users can delete own devices"
     ON user_devices FOR DELETE
     USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Service role bypass for edge functions
+DO $$ BEGIN
 CREATE POLICY "Service role full access"
     ON user_devices FOR ALL
     USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

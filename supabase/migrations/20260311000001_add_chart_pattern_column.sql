@@ -13,6 +13,6 @@
 -- }
 
 ALTER TABLE trade_signals
-ADD COLUMN chart_pattern JSONB DEFAULT NULL;
+ADD COLUMN IF NOT EXISTS chart_pattern JSONB DEFAULT NULL;
 
 COMMENT ON COLUMN trade_signals.chart_pattern IS 'Detected chart pattern data (name, type, bias, timeframe, confidence, description, neckline, target)';

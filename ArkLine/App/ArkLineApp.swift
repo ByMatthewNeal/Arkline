@@ -64,10 +64,15 @@ struct ArkLineApp: App {
         // Set notification delegate
         UNUserNotificationCenter.current().delegate = appDelegate
 
-        // Request notification permission (no-op if already granted/denied)
+        // Request notification permission and register for remote notifications
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if let error = error {
                 logError("Notification permission error: \(error)", category: .data)
+            }
+            if granted {
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
             }
         }
 

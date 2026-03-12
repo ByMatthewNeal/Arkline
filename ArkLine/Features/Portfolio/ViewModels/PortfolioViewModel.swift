@@ -80,8 +80,13 @@ final class PortfolioViewModel {
         return (dayChange / previousValue) * 100
     }
 
+    /// Holdings merged by symbol — combines multiple purchases of the same asset into one row.
+    var mergedHoldings: [PortfolioHolding] {
+        PortfolioHolding.mergeBySymbol(holdings)
+    }
+
     var filteredHoldings: [PortfolioHolding] {
-        var result = holdings
+        var result = mergedHoldings
 
         if !holdingsSearchText.isEmpty {
             result = result.filter {
@@ -109,31 +114,32 @@ final class PortfolioViewModel {
 
     var detailAllocations: [PortfolioAllocation] {
         guard let category = selectedAllocationCategory else { return [] }
-        return PortfolioAllocation.calculateByHolding(from: holdings, forAssetType: category)
+        return PortfolioAllocation.calculateByHolding(from: mergedHoldings, forAssetType: category)
     }
 
     var topPerformers: [PortfolioHolding] {
-        holdings.filter { $0.profitLossPercentage > 0 }
+        mergedHoldings.filter { $0.profitLossPercentage > 0 }
             .sorted { $0.profitLossPercentage > $1.profitLossPercentage }.prefix(3).map { $0 }
     }
 
     var worstPerformers: [PortfolioHolding] {
-        holdings.filter { $0.profitLossPercentage < 0 }
+        mergedHoldings.filter { $0.profitLossPercentage < 0 }
             .sorted { $0.profitLossPercentage < $1.profitLossPercentage }.prefix(3).map { $0 }
     }
 
     var hasTargetAllocations: Bool {
-        holdings.contains { $0.targetPercentage != nil }
+        mergedHoldings.contains { $0.targetPercentage != nil }
     }
 
     /// Computes allocations using targets (for pie chart) when available, otherwise by market value.
     private func computeAllocations(from holdings: [PortfolioHolding]) -> [PortfolioAllocation] {
-        let hasTargets = holdings.contains { $0.targetPercentage != nil }
+        let merged = mergedHoldings
+        let hasTargets = merged.contains { $0.targetPercentage != nil }
         if hasTargets {
-            let total = holdings.reduce(0) { $0 + $1.currentValue }
-            return PortfolioAllocation.calculateWithTargets(from: holdings, totalValue: total)
+            let total = merged.reduce(0) { $0 + $1.currentValue }
+            return PortfolioAllocation.calculateWithTargets(from: merged, totalValue: total)
         } else {
-            return PortfolioAllocation.calculate(from: holdings)
+            return PortfolioAllocation.calculate(from: merged)
         }
     }
 

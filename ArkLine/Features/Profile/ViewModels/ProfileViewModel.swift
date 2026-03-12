@@ -194,7 +194,8 @@ final class ProfileViewModel {
             guard let primary = portfolios.first else { return }
             let holdings = try await portfolioService.fetchHoldings(portfolioId: primary.id)
             let holdingsWithPrices = try await portfolioService.refreshHoldingPrices(holdings: holdings)
-            let computed = PortfolioAllocation.calculate(from: holdingsWithPrices)
+            let merged = PortfolioHolding.mergeBySymbol(holdingsWithPrices)
+            let computed = PortfolioAllocation.calculate(from: merged)
             await MainActor.run {
                 self.allocations = computed
             }

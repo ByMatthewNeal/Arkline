@@ -86,7 +86,7 @@ final class APIProxy {
             return DirectConfig(
                 baseURL: Constants.Endpoints.fmpBase,
                 apiKey: Constants.API.fmpAPIKey,
-                keyInjection: .header(name: "apikey")
+                keyInjection: .queryParam(name: "apikey")
             )
         case .coinglass:
             return DirectConfig(

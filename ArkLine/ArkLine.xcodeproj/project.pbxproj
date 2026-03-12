@@ -206,6 +206,7 @@
 		8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */; };
 		91252ECC56160C486655563C /* CareerIndustryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */; };
 		933D2871520E6D18D9470079 /* FMPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A2248CF31FBE81B04E09E5 /* FMPService.swift */; };
+		529FEF4AA92A5F9CC79F070A /* EconomicEventsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C817D0AFD17825F5BB18A65C /* EconomicEventsService.swift */; };
 		939ECC74AD053E466A6A50F0 /* TradeStructureChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDF8513763650DF8C5853EA /* TradeStructureChart.swift */; };
 		944895C52A483A1C1759D6A4 /* RiskModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C78A85B7A5997E03B244FB /* RiskModels.swift */; };
 		95DCC179469B65E518BAA33F /* StringExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47EA02D02829F49C880E0D1 /* StringExtensionsTests.swift */; };
@@ -477,6 +478,7 @@
 		022988C8CBE9E57CBBD2897D /* AllocationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationEngine.swift; sourceTree = "<group>"; };
 		0301CE05698CD3FFB7876E41 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
 		03A2248CF31FBE81B04E09E5 /* FMPService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FMPService.swift; sourceTree = "<group>"; };
+		C817D0AFD17825F5BB18A65C /* EconomicEventsService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EconomicEventsService.swift; sourceTree = "<group>"; };
 		04628B553AF47C260C3AF994 /* AppReferencePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppReferencePickerView.swift; sourceTree = "<group>"; };
 		049CD12B81D2D7863DA67B24 /* ITCRiskWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskWidget.swift; sourceTree = "<group>"; };
 		0507804216AF4B99B609E321 /* ITCRiskServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITCRiskServiceProtocol.swift; sourceTree = "<group>"; };
@@ -1153,6 +1155,7 @@
 				022988C8CBE9E57CBBD2897D /* AllocationEngine.swift */,
 				E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */,
 				EDBFF8DC595A41D194A75C57 /* SwingSetupService.swift */,
+				C817D0AFD17825F5BB18A65C /* EconomicEventsService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -2414,6 +2417,7 @@
 				A3B4C5D6E7F8A9B0C1D2E3F4 /* SentimentRegimeAlertManager.swift in Sources */,
 				9917FA19D9A6EA6D8736BDAC /* ExtremeMoveAlertManager.swift in Sources */,
 				933D2871520E6D18D9470079 /* FMPService.swift in Sources */,
+				529FEF4AA92A5F9CC79F070A /* EconomicEventsService.swift in Sources */,
 				74342987C2189339E31FAA64 /* FaceIDPromptView.swift in Sources */,
 				1028E8CBB796AA676788323E /* FaceIDSetupView.swift in Sources */,
 				B8C4D0E6F2A3B9C5D1E7F3A4 /* NotificationSetupView.swift in Sources */,
@@ -2798,7 +2802,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2908,7 +2912,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_NS_ASSERTIONS = NO;

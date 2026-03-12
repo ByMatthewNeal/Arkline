@@ -394,7 +394,28 @@ struct TaapiBulkResponse: Codable {
 
 struct TaapiIndicatorResult: Codable {
     let id: String
-    let result: TaapiIndicatorValue
+    let result: TaapiIndicatorValue?
+    // Flatten fallback: if "result" key is missing, decode values directly
+    let value: Double?
+    let valueUpperBand: Double?
+    let valueMiddleBand: Double?
+    let valueLowerBand: Double?
+    let valueMACD: Double?
+    let valueMACDSignal: Double?
+    let valueMACDHist: Double?
+
+    /// Returns the result, falling back to a flattened value if the "result" wrapper is missing
+    var resolvedResult: TaapiIndicatorValue {
+        result ?? TaapiIndicatorValue(
+            value: value,
+            valueUpperBand: valueUpperBand,
+            valueMiddleBand: valueMiddleBand,
+            valueLowerBand: valueLowerBand,
+            valueMACD: valueMACD,
+            valueMACDSignal: valueMACDSignal,
+            valueMACDHist: valueMACDHist
+        )
+    }
 }
 
 struct TaapiIndicatorValue: Codable {

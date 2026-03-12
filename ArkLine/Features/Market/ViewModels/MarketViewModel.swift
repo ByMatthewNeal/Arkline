@@ -113,7 +113,10 @@ class MarketViewModel {
         self.fedWatchData = meetings?.first
         self.cachedTopCoins = coins
         self.topCoins = coins
-        self.lastRefreshed = Date()
+        // Only set cooldown if news loaded — allows retry on failure
+        if !news.isEmpty {
+            self.lastRefreshed = Date()
+        }
     }
 
     /// Safely fetches news without throwing errors
