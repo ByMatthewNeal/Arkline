@@ -15,8 +15,16 @@ struct UpcomingEventsSection: View {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
     }
 
+    /// Home screen: only show Today + Tomorrow
+    private var homeEvents: [EconomicEvent] {
+        let calendar = Calendar.current
+        return events.filter { event in
+            calendar.isDateInToday(event.date) || calendar.isDateInTomorrow(event.date)
+        }
+    }
+
     private var groupedEvents: [(key: String, events: [EconomicEvent])] {
-        let grouped = Dictionary(grouping: events) { $0.dateGroupKey }
+        let grouped = Dictionary(grouping: homeEvents) { $0.dateGroupKey }
         return grouped.sorted { first, second in
             guard let firstDate = first.value.first?.date,
                   let secondDate = second.value.first?.date else { return false }
@@ -48,26 +56,26 @@ struct UpcomingEventsSection: View {
     }
 
     var body: some View {
-        NavigationLink(destination: AllEventsView(events: events)) {
-            VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
-                HStack {
-                    Text("Upcoming Events")
-                        .font(size == .compact ? .subheadline : .title3)
-                        .foregroundColor(textPrimary)
+        VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
+            HStack {
+                Text("Upcoming Events")
+                    .font(size == .compact ? .subheadline : .title3)
+                    .foregroundColor(textPrimary)
 
-                    Spacer()
+                Spacer()
 
-                    if lastUpdated != nil && size != .compact {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(AppColors.success)
-                                .frame(width: 6, height: 6)
-                            Text(lastUpdatedText)
-                                .font(.system(size: 10))
-                                .foregroundColor(textPrimary.opacity(0.5))
-                        }
+                if lastUpdated != nil && size != .compact {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(AppColors.success)
+                            .frame(width: 6, height: 6)
+                        Text(lastUpdatedText)
+                            .font(.system(size: 10))
+                            .foregroundColor(textPrimary.opacity(0.5))
                     }
+                }
 
+                NavigationLink(destination: AllEventsView(events: events)) {
                     HStack(spacing: 4) {
                         Text("See all")
                             .font(.caption)
@@ -76,36 +84,36 @@ struct UpcomingEventsSection: View {
                     }
                     .foregroundColor(AppColors.accent)
                 }
+                .buttonStyle(PlainButtonStyle())
+            }
 
-                VStack(alignment: .leading, spacing: size == .compact ? 8 : 16) {
-                    if events.isEmpty {
-                        HStack {
-                            Spacer()
-                            Text("No upcoming events")
-                                .font(.caption)
-                                .foregroundColor(AppColors.textSecondary)
-                            Spacer()
-                        }
-                        .padding(.vertical, 20)
-                    } else {
-                        ForEach(groupedEvents.prefix(maxGroups), id: \.key) { group in
-                            EventDateGroup(
-                                dateKey: group.key,
-                                events: Array(group.events.prefix(maxEventsPerGroup)),
-                                isCompact: size == .compact
-                            )
-                        }
+            VStack(alignment: .leading, spacing: size == .compact ? 8 : 16) {
+                if events.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text("No upcoming events")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                    }
+                    .padding(.vertical, 20)
+                } else {
+                    ForEach(groupedEvents.prefix(maxGroups), id: \.key) { group in
+                        EventDateGroup(
+                            dateKey: group.key,
+                            events: Array(group.events.prefix(maxEventsPerGroup)),
+                            isCompact: size == .compact
+                        )
                     }
                 }
-                .padding(size == .compact ? 12 : 16)
-                .background(
-                    RoundedRectangle(cornerRadius: size == .compact ? 12 : 16)
-                        .fill(cardBackground)
-                )
-                .arkShadow(ArkSpacing.Shadow.card)
             }
+            .padding(size == .compact ? 12 : 16)
+            .background(
+                RoundedRectangle(cornerRadius: size == .compact ? 12 : 16)
+                    .fill(cardBackground)
+            )
+            .arkShadow(ArkSpacing.Shadow.card)
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -157,7 +165,11 @@ struct EventDateGroup: View {
 
             VStack(spacing: 0) {
                 ForEach(events) { event in
-                    UpcomingEventRow(event: event, isCompact: isCompact)
+                    NavigationLink(destination: EventInfoView(event: event)) {
+                        UpcomingEventRow(event: event, isCompact: isCompact)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
 
                     if event.id != events.last?.id {
                         Divider()
@@ -183,47 +195,119 @@ struct UpcomingEventRow: View {
         textPrimary.opacity(0.5)
     }
 
-    private var countryCode: String {
-        event.country.uppercased()
+    private var flag: String {
+        event.countryFlag ?? (event.currency == "USD" ? "🇺🇸" : event.currency == "JPY" ? "🇯🇵" : "🏳️")
+    }
+
+    private var timeString: String {
+        guard let time = event.time else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mma"
+        return formatter.string(from: time).lowercased()
+    }
+
+    private var hasData: Bool {
+        (event.actual?.isEmpty == false) ||
+        (event.forecast?.isEmpty == false) ||
+        (event.previous?.isEmpty == false)
+    }
+
+    private var beatMissValue: String? {
+        if let bm = event.beatMiss, !bm.isEmpty { return bm }
+        guard let a = event.actual, !a.isEmpty, let f = event.forecast, !f.isEmpty else { return nil }
+        let cleanA = a.replacingOccurrences(of: "%", with: "").replacingOccurrences(of: "K", with: "").replacingOccurrences(of: "M", with: "")
+        let cleanF = f.replacingOccurrences(of: "%", with: "").replacingOccurrences(of: "K", with: "").replacingOccurrences(of: "M", with: "")
+        guard let av = Double(cleanA), let fv = Double(cleanF) else { return nil }
+        if abs(av - fv) < 0.01 { return "inline" }
+        return av > fv ? "beat" : "miss"
+    }
+
+    private var beatMissColor: Color {
+        switch beatMissValue {
+        case "beat": return AppColors.success
+        case "miss": return AppColors.error
+        default: return AppColors.textSecondary
+        }
     }
 
     var body: some View {
         HStack(spacing: 0) {
+            // Impact bar
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(event.impact.color)
-                .frame(width: 3, height: isCompact ? 32 : 40)
-                .padding(.trailing, isCompact ? 8 : 10)
+                .frame(width: 3, height: isCompact ? 28 : 36)
+                .padding(.trailing, isCompact ? 6 : 8)
 
-            Text(countryCode)
-                .font(.system(size: isCompact ? 9 : 10, weight: .semibold))
-                .foregroundColor(textSecondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(textPrimary.opacity(0.08))
-                )
-                .padding(.trailing, 8)
-
-            Text(event.title)
-                .font(.system(size: isCompact ? 11 : 13, weight: .medium))
-                .foregroundColor(textPrimary)
-                .lineLimit(1)
-
-            Spacer()
-
-            if let forecast = event.forecast, !forecast.isEmpty {
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text("Forecast")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(textSecondary)
-                    Text(forecast)
-                        .font(.system(size: isCompact ? 12 : 13, weight: .semibold))
+            // Title + time + data
+            VStack(alignment: .leading, spacing: isCompact ? 1 : 2) {
+                HStack(spacing: 6) {
+                    Text(event.title)
+                        .font(.system(size: isCompact ? 11 : 13, weight: .medium))
                         .foregroundColor(textPrimary)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    if let bm = beatMissValue, !isCompact {
+                        Text(bm.uppercased())
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(beatMissColor))
+                    }
+
+                    if event.impact == .high {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(event.impact.color)
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    if !timeString.isEmpty {
+                        Text(timeString)
+                            .font(.system(size: isCompact ? 9 : 10, weight: .medium, design: .monospaced))
+                            .foregroundColor(textSecondary)
+                    }
+
+                    if !isCompact {
+                        if let prev = event.previous, !prev.isEmpty {
+                            dataBadge(label: "P", value: prev, highlight: false)
+                        }
+                        if let forecast = event.forecast, !forecast.isEmpty {
+                            dataBadge(label: "F", value: forecast, highlight: false)
+                        }
+                        if let actual = event.actual, !actual.isEmpty {
+                            dataBadge(label: "A", value: actual, highlight: true)
+                        }
+                    }
+
+                    Spacer()
                 }
             }
         }
-        .padding(.vertical, isCompact ? 4 : 8)
+        .padding(.vertical, isCompact ? 3 : 6)
+    }
+
+    @ViewBuilder
+    private func dataBadge(label: String, value: String, highlight: Bool) -> some View {
+        HStack(spacing: 2) {
+            Text(label)
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(textSecondary)
+            Text(value)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(highlight ? beatMissColor : textPrimary.opacity(0.8))
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(highlight
+                    ? beatMissColor.opacity(0.12)
+                    : textPrimary.opacity(0.05))
+        )
     }
 }
 
@@ -305,6 +389,7 @@ struct EventDataColumn: View {
 // MARK: - All Events View
 struct AllEventsView: View {
     let events: [EconomicEvent]
+    @State private var allEvents: [EconomicEvent] = []
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
 
@@ -321,8 +406,12 @@ struct AllEventsView: View {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
     }
 
+    private var displayEvents: [EconomicEvent] {
+        allEvents.isEmpty ? events : allEvents
+    }
+
     private var groupedEvents: [(key: String, events: [EconomicEvent])] {
-        let grouped = Dictionary(grouping: events) { $0.dateGroupKey }
+        let grouped = Dictionary(grouping: displayEvents) { $0.dateGroupKey }
         return grouped.sorted { first, second in
             guard let firstDate = first.value.first?.date,
                   let secondDate = second.value.first?.date else { return false }
@@ -370,10 +459,22 @@ struct AllEventsView: View {
                 .padding(.top, 16)
             }
         }
-        .navigationTitle("Upcoming Events")
+        .navigationTitle("Economic Calendar")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
+        .task {
+            // Load yesterday through 7 days out (includes past results)
+            let calendar = Calendar.current
+            let yesterday = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: Date())) ?? Date()
+            let weekOut = calendar.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+            let loaded = await EconomicEventsService.shared.fetchEvents(
+                from: yesterday, to: weekOut, impactFilter: [.high, .medium]
+            )
+            if !loaded.isEmpty {
+                allEvents = loaded
+            }
+        }
     }
 }
 
@@ -433,14 +534,36 @@ struct EventDetailRow: View {
 
             Spacer()
 
-            if let forecast = event.forecast {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Forecast")
-                        .font(.system(size: 9))
-                        .foregroundColor(textSecondary)
-                    Text(forecast)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(textPrimary)
+            HStack(spacing: 8) {
+                if let prev = event.previous, !prev.isEmpty {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Prev")
+                            .font(.system(size: 9))
+                            .foregroundColor(textSecondary)
+                        Text(prev)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(textPrimary.opacity(0.7))
+                    }
+                }
+                if let forecast = event.forecast, !forecast.isEmpty {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Fcst")
+                            .font(.system(size: 9))
+                            .foregroundColor(textSecondary)
+                        Text(forecast)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(textPrimary)
+                    }
+                }
+                if let actual = event.actual, !actual.isEmpty {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("Act")
+                            .font(.system(size: 9))
+                            .foregroundColor(textSecondary)
+                        Text(actual)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(AppColors.accent)
+                    }
                 }
             }
         }
@@ -453,8 +576,13 @@ struct EventDetailRow: View {
 // MARK: - Event Info View (Detail)
 struct EventInfoView: View {
     let event: EconomicEvent
+    @State private var enrichedEvent: EconomicEvent?
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+
+    private var displayEvent: EconomicEvent {
+        enrichedEvent ?? event
+    }
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -490,41 +618,30 @@ struct EventInfoView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // Header Card
                     VStack(alignment: .leading, spacing: 16) {
-                        HStack(spacing: 16) {
-                            Text(event.country.uppercased())
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(textPrimary)
-                                .frame(width: 44, height: 44)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(textPrimary.opacity(0.08))
-                                )
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(event.country)
-                                    .font(.headline)
-                                    .foregroundColor(textPrimary)
-
-                                HStack(spacing: 8) {
-                                    HStack(spacing: 6) {
-                                        RoundedRectangle(cornerRadius: 1.5)
-                                            .fill(event.impact.color)
-                                            .frame(width: 3, height: 14)
-                                        Text(event.impact.rawValue.capitalized)
-                                            .font(.caption)
-                                            .fontWeight(.medium)
-                                    }
-                                    .foregroundColor(event.impact.color)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(event.impact.color.opacity(0.12))
-                                    .cornerRadius(6)
-
-                                    Text("Impact")
-                                        .font(.caption)
-                                        .foregroundColor(AppColors.textSecondary)
-                                }
+                        HStack(spacing: 8) {
+                            HStack(spacing: 6) {
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(event.impact.color)
+                                    .frame(width: 3, height: 14)
+                                Text(event.impact.rawValue.capitalized + " Impact")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
                             }
+                            .foregroundColor(event.impact.color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(event.impact.color.opacity(0.12))
+                            .cornerRadius(6)
+
+                            Text(event.country.uppercased())
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(AppColors.textSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .fill(textPrimary.opacity(0.06))
+                                )
 
                             Spacer()
                         }
@@ -571,11 +688,11 @@ struct EventInfoView: View {
                             .foregroundColor(textPrimary)
 
                         HStack(spacing: 0) {
-                            EventDataColumn(label: "Previous", value: event.previous, highlight: false)
+                            EventDataColumn(label: "Previous", value: displayEvent.previous, highlight: false)
                             Divider().frame(height: 50)
-                            EventDataColumn(label: "Forecast", value: event.forecast, highlight: true)
+                            EventDataColumn(label: "Forecast", value: displayEvent.forecast, highlight: true)
                             Divider().frame(height: 50)
-                            EventDataColumn(label: "Actual", value: event.actual, highlight: false)
+                            EventDataColumn(label: "Actual", value: displayEvent.actual, highlight: displayEvent.actual != nil)
                         }
                     }
                     .padding(20)
@@ -583,6 +700,43 @@ struct EventInfoView: View {
                     .cornerRadius(ArkSpacing.Radius.card)
                     .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
+
+                    // Post-Release Analysis Card
+                    if let actual = displayEvent.actual, !actual.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "chart.line.text.clipboard")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(AppColors.accent)
+                                Text("Market Analysis")
+                                    .font(.headline)
+                                    .foregroundColor(textPrimary)
+                                Spacer()
+                                beatMissBadge
+                            }
+
+                            if let analysis = displayEvent.claudeAnalysis, !analysis.isEmpty {
+                                Text(markdownAttributed(analysis))
+                                    .font(.subheadline)
+                                    .foregroundColor(textPrimary.opacity(0.85))
+                                    .lineSpacing(5)
+                            } else {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text("Analysis generating...")
+                                        .font(.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                        }
+                        .padding(20)
+                        .background(cardBackground)
+                        .cornerRadius(ArkSpacing.Radius.card)
+                        .arkShadow(ArkSpacing.Shadow.card)
+                        .padding(.horizontal, 20)
+                    }
 
                     // Description Card
                     if let description = event.description, !description.isEmpty {
@@ -629,6 +783,46 @@ struct EventInfoView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .task {
+            // Load enriched event (with analysis) from Supabase
+            if let loaded = await EconomicEventsService.shared.fetchEventWithAnalysis(
+                title: event.title, date: event.date
+            ) {
+                enrichedEvent = loaded
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var beatMissBadge: some View {
+        let bm = displayEvent.beatMiss ?? computeBeatMiss()
+        if !bm.isEmpty {
+            Text(bm.capitalized)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule().fill(bm == "beat" ? AppColors.success : bm == "miss" ? AppColors.error : AppColors.textSecondary)
+                )
+        }
+    }
+
+    private func computeBeatMiss() -> String {
+        guard let actualStr = displayEvent.actual, let forecastStr = displayEvent.forecast else { return "" }
+        let cleanActual = actualStr.replacingOccurrences(of: "%", with: "").replacingOccurrences(of: "K", with: "").replacingOccurrences(of: "M", with: "")
+        let cleanForecast = forecastStr.replacingOccurrences(of: "%", with: "").replacingOccurrences(of: "K", with: "").replacingOccurrences(of: "M", with: "")
+        guard let a = Double(cleanActual), let f = Double(cleanForecast) else { return "" }
+        if abs(a - f) < 0.01 { return "inline" }
+        return a > f ? "beat" : "miss"
+    }
+
+    private func markdownAttributed(_ text: String) -> AttributedString {
+        // Try native markdown parsing (handles **bold**, *italic*, etc.)
+        if let attributed = try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            return attributed
+        }
+        return AttributedString(text)
     }
 
     private var whyItMatters: String {

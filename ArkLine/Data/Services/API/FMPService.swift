@@ -236,7 +236,7 @@ final class FMPService {
 
             // Country filter: only US events (and major global like BOJ, ECB)
             let currency = item.currency ?? ""
-            guard ["USD", "JPY", "EUR", "GBP"].contains(currency) else { return nil }
+            guard ["USD", "JPY"].contains(currency) else { return nil }
 
             // Format actual/forecast/previous (strip trailing zeros)
             func fmt(_ val: Double) -> String {

@@ -7,7 +7,7 @@ final class APINewsService: NewsServiceProtocol {
     // MARK: - Dependencies
     private let networkManager = NetworkManager.shared
     private let finnhubService = FinnhubEconomicCalendarService()
-    private let calendarScraper = InvestingComScraper() // Fallback
+    private let calendarScraper = EconomicCalendarScraper()
     private let fedWatchScraper = CMEFedWatchScraper()
 
     // MARK: - NewsServiceProtocol
@@ -31,8 +31,9 @@ final class APINewsService: NewsServiceProtocol {
     }
 
     func fetchTodaysEvents() async throws -> [EconomicEvent] {
-        // Use Finnhub API for today's events
-        return try await finnhubService.fetchTodaysEvents()
+        let start = Calendar.current.startOfDay(for: Date())
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
+        return await EconomicEventsService.shared.fetchEvents(from: start, to: end, impactFilter: [.high, .medium])
     }
 
     func fetchEconomicEvents(from startDate: Date, to endDate: Date) async throws -> [EconomicEvent] {
@@ -54,9 +55,10 @@ final class APINewsService: NewsServiceProtocol {
     }
 
     func fetchUpcomingEvents(days: Int, impactFilter: [EventImpact]) async throws -> [EconomicEvent] {
-        // Use Investing.com scraper with US market holidays as reliable backup
         logDebug("APINewsService.fetchUpcomingEvents called - days: \(days)", category: .network)
-        let events = try await calendarScraper.fetchUpcomingEvents(days: days, impactFilter: impactFilter)
+        let start = Calendar.current.startOfDay(for: Date())
+        let end = Calendar.current.date(byAdding: .day, value: days, to: start) ?? start
+        let events = await EconomicEventsService.shared.fetchEvents(from: start, to: end, impactFilter: impactFilter)
         logDebug("APINewsService: Got \(events.count) upcoming events", category: .network)
         return events
     }

@@ -15,6 +15,41 @@ struct EconomicEvent: Codable, Identifiable, Equatable {
     let currency: String?
     let description: String?
     let countryFlag: String?
+    let claudeAnalysis: String?
+    let beatMiss: String?
+
+    // Keep backward compatibility with existing init sites
+    init(
+        id: UUID = UUID(),
+        title: String,
+        country: String,
+        date: Date,
+        time: Date?,
+        impact: EventImpact,
+        forecast: String? = nil,
+        previous: String? = nil,
+        actual: String? = nil,
+        currency: String? = nil,
+        description: String? = nil,
+        countryFlag: String? = nil,
+        claudeAnalysis: String? = nil,
+        beatMiss: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.country = country
+        self.date = date
+        self.time = time
+        self.impact = impact
+        self.forecast = forecast
+        self.previous = previous
+        self.actual = actual
+        self.currency = currency
+        self.description = description
+        self.countryFlag = countryFlag
+        self.claudeAnalysis = claudeAnalysis
+        self.beatMiss = beatMiss
+    }
 
     var isHighImpact: Bool {
         impact == .high
@@ -68,6 +103,73 @@ enum EventImpact: String, Codable, CaseIterable {
         case .medium: return "circle.fill"
         case .high: return "exclamationmark.circle.fill"
         }
+    }
+}
+
+// MARK: - Supabase Economic Event DTO
+struct SupabaseEconomicEventDTO: Decodable {
+    let id: UUID
+    let title: String
+    let country: String?
+    let currency: String?
+    let eventDate: String        // "2026-03-11"
+    let eventTime: String?       // ISO timestamp
+    let impact: String
+    let forecast: String?
+    let previous: String?
+    let actual: String?
+    let claudeAnalysis: String?
+    let beatMiss: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, country, currency, impact, forecast, previous, actual
+        case eventDate = "event_date"
+        case eventTime = "event_time"
+        case claudeAnalysis = "claude_analysis"
+        case beatMiss = "beat_miss"
+    }
+
+    func toEconomicEvent() -> EconomicEvent? {
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd"
+        dateFmt.timeZone = TimeZone(identifier: "America/New_York")
+        guard let eventDateParsed = dateFmt.date(from: eventDate) else { return nil }
+
+        var eventTimeParsed: Date? = nil
+        if let eventTime {
+            let isoFmt = ISO8601DateFormatter()
+            isoFmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            eventTimeParsed = isoFmt.date(from: eventTime)
+                ?? ISO8601DateFormatter().date(from: eventTime)
+        }
+
+        let eventImpact = EventImpact(rawValue: impact.lowercased()) ?? .low
+
+        let flag: String? = {
+            switch currency {
+            case "USD": return "🇺🇸"
+            case "JPY": return "🇯🇵"
+            case "EUR": return "🇪🇺"
+            case "GBP": return "🇬🇧"
+            default: return nil
+            }
+        }()
+
+        return EconomicEvent(
+            id: id,
+            title: title,
+            country: country ?? currency ?? "US",
+            date: eventDateParsed,
+            time: eventTimeParsed,
+            impact: eventImpact,
+            forecast: forecast,
+            previous: previous,
+            actual: actual,
+            currency: currency,
+            countryFlag: flag,
+            claudeAnalysis: claudeAnalysis,
+            beatMiss: beatMiss
+        )
     }
 }
 

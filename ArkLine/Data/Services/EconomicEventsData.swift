@@ -205,21 +205,21 @@ enum EconomicEventsData {
         makeEvent(title: "Average Hourly Earnings (MoM)", currency: "USD", dateString: "2026-03-06", timeString: "08:30", impact: .high),
 
         // Mar 11, 2026 (Wednesday) - CPI DAY
-        makeEvent(title: "CPI (YoY)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
-        makeEvent(title: "CPI (MoM)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
-        makeEvent(title: "Core CPI (YoY)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
-        makeEvent(title: "Core CPI (MoM)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high),
+        makeEvent(title: "CPI (YoY)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high, forecast: "2.9%", previous: "3.0%"),
+        makeEvent(title: "CPI (MoM)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high, forecast: "0.3%", previous: "0.5%"),
+        makeEvent(title: "Core CPI (YoY)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high, forecast: "3.2%", previous: "3.3%"),
+        makeEvent(title: "Core CPI (MoM)", currency: "USD", dateString: "2026-03-11", timeString: "08:30", impact: .high, forecast: "0.3%", previous: "0.4%"),
 
         // Mar 12, 2026 (Thursday)
-        makeEvent(title: "PPI (MoM)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high),
-        makeEvent(title: "PPI (YoY)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high),
-        makeEvent(title: "Core PPI (MoM)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high),
-        makeEvent(title: "Initial Jobless Claims", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .medium),
+        makeEvent(title: "PPI (MoM)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high, forecast: "0.3%", previous: "0.4%"),
+        makeEvent(title: "PPI (YoY)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high, forecast: "3.3%", previous: "3.5%"),
+        makeEvent(title: "Core PPI (MoM)", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .high, forecast: "0.3%", previous: "0.3%"),
+        makeEvent(title: "Initial Jobless Claims", currency: "USD", dateString: "2026-03-12", timeString: "08:30", impact: .medium, forecast: "226K", previous: "221K"),
         makeEvent(title: "10-Year Note Auction", currency: "USD", dateString: "2026-03-12", timeString: "13:00", impact: .medium),
 
         // Mar 13, 2026 (Friday)
-        makeEvent(title: "Michigan Consumer Sentiment", currency: "USD", dateString: "2026-03-13", timeString: "10:00", impact: .medium),
-        makeEvent(title: "Michigan Inflation Expectations", currency: "USD", dateString: "2026-03-13", timeString: "10:00", impact: .medium),
+        makeEvent(title: "Michigan Consumer Sentiment", currency: "USD", dateString: "2026-03-13", timeString: "10:00", impact: .medium, forecast: "63.1", previous: "64.7"),
+        makeEvent(title: "Michigan Inflation Expectations", currency: "USD", dateString: "2026-03-13", timeString: "10:00", impact: .medium, forecast: "4.3%", previous: "4.3%"),
 
         // Mar 17, 2026 (Monday)
         makeEvent(title: "Retail Sales (MoM)", currency: "USD", dateString: "2026-03-17", timeString: "08:30", impact: .high),

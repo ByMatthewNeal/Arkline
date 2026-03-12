@@ -150,7 +150,7 @@ extension EventImpact {
     var color: Color {
         switch self {
         case .low: return Color(hex: "22C55E")
-        case .medium: return Color(hex: "EAB308")
+        case .medium: return Color(hex: "F97316")
         case .high: return Color(hex: "EF4444")
         }
     }
