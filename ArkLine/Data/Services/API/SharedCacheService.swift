@@ -14,6 +14,14 @@ actor SharedCacheService {
     private let localCache = APICache.shared
     private let supabase = SupabaseManager.shared
 
+    /// Keys that are refreshed server-side by cron. Devices should prefer L2 and avoid L3 API calls.
+    /// The server sync-crypto-prices function writes these every 5 minutes.
+    private let serverCachedKeys: Set<String> = [
+        "crypto_assets_1_100",
+        "global_market_data",
+        "trending_coins",
+    ]
+
     private init() {}
 
     // MARK: - Main Entry Point
@@ -31,18 +39,25 @@ actor SharedCacheService {
             return cached
         }
 
+        let isServerCached = serverCachedKeys.contains(key)
+
         // L2: Check Supabase shared cache (~50ms)
         var l2Fallback: T?
         if supabase.isConfigured {
             do {
                 let result = try await readFromL2(key: key, ttl: ttl, as: T.self)
                 if let value = result.value {
-                    if !result.isVeryStale {
+                    // Server-cached keys: accept data up to 10x TTL (50 min for 5-min TTL)
+                    // since the server refreshes every 5 min. Only reject truly ancient data.
+                    let acceptStale = isServerCached ? !result.isAncient : !result.isVeryStale
+
+                    if acceptStale {
                         localCache.set(key, value: value, ttl: ttl)
-                        logDebug("SharedCache L2 HIT\(result.isStale ? " (stale-while-revalidate)" : ""): \(key)", category: .network)
+                        logDebug("SharedCache L2 HIT\(result.isStale ? " (stale)" : ""): \(key)", category: .network)
 
                         // Stale-while-revalidate: return stale data, refresh in background
-                        if result.isStale {
+                        // For server-cached keys, never trigger L3 background refresh
+                        if result.isStale && !isServerCached {
                             Task { [fetch] in
                                 await self.backgroundRefresh(key: key, ttl: ttl, fetch: fetch)
                             }
@@ -61,6 +76,17 @@ actor SharedCacheService {
         }
 
         // L3: Fetch from external API
+        // Server-cached keys skip L3 entirely — the server cron handles refreshes.
+        if isServerCached {
+            if let fallback = l2Fallback {
+                localCache.set(key, value: fallback, ttl: ttl / 2)
+                logWarning("SharedCache SERVER-CACHED key \(key) has no fresh L2, returning stale fallback", category: .network)
+                return fallback
+            }
+            // No L2 data at all (first launch or table empty) — fall through to L3 as bootstrap
+            logInfo("SharedCache SERVER-CACHED key \(key) has no L2 data, bootstrapping via L3", category: .network)
+        }
+
         logDebug("SharedCache L3 FETCH: \(key)", category: .network)
         do {
             let value = try await fetch()
@@ -68,8 +94,8 @@ actor SharedCacheService {
             // Write back to L1
             localCache.set(key, value: value, ttl: ttl)
 
-            // Write back to L2 (fire-and-forget)
-            if supabase.isConfigured {
+            // Write back to L2 (fire-and-forget) — only for non-server-cached keys
+            if supabase.isConfigured && !isServerCached {
                 Task {
                     await self.writeToL2(key: key, value: value, ttl: ttl)
                 }
@@ -93,6 +119,8 @@ actor SharedCacheService {
         let value: T?
         let isStale: Bool
         let isVeryStale: Bool
+        /// Data is older than 10x TTL — even server-cached keys should reject this
+        let isAncient: Bool
     }
 
     private func readFromL2<T: Decodable>(key: String, ttl: TimeInterval, as type: T.Type) async throws -> L2Result<T> {
@@ -105,7 +133,7 @@ actor SharedCacheService {
             .value
 
         guard let row = rows.first else {
-            return L2Result(value: nil, isStale: false, isVeryStale: false)
+            return L2Result(value: nil, isStale: false, isVeryStale: false, isAncient: false)
         }
 
         // Check freshness using server timestamp
@@ -113,10 +141,11 @@ actor SharedCacheService {
         let effectiveTTL = TimeInterval(row.ttlSeconds)
         let isExpired = age > effectiveTTL
         let isVeryStale = age > effectiveTTL * 2
+        let isAncient = age > effectiveTTL * 10 // 50 min for 5-min TTL
 
         // Decode the JSON string back to the target type
         guard let jsonData = row.data.data(using: .utf8) else {
-            return L2Result(value: nil, isStale: false, isVeryStale: false)
+            return L2Result(value: nil, isStale: false, isVeryStale: false, isAncient: false)
         }
 
         let decoder = JSONDecoder()
@@ -140,7 +169,7 @@ actor SharedCacheService {
         }
         let decoded = try decoder.decode(type, from: jsonData)
 
-        return L2Result(value: decoded, isStale: isExpired, isVeryStale: isVeryStale)
+        return L2Result(value: decoded, isStale: isExpired, isVeryStale: isVeryStale, isAncient: isAncient)
     }
 
     private func writeToL2<T: Encodable>(key: String, value: T, ttl: TimeInterval) async {
