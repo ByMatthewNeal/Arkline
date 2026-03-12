@@ -481,7 +481,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.success)
                                 .frame(width: 24)
 
-                            Text("This detection methodology has been backtested across 6 assets (BTC, ETH, SOL, SUI, LINK, ADA) over 12+ months of data covering multiple market regimes. 24/7 coverage outperformed US-session-only in both win rate and total P&L. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
+                            Text("This detection methodology has been backtested across 9 assets (BTC, ETH, SOL, SUI, LINK, ADA, AVAX, RENDER, APT) over 12+ months of data covering multiple market regimes. 24/7 coverage outperformed US-session-only in both win rate and total P&L. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)

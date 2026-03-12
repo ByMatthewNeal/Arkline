@@ -30,6 +30,47 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json()
     signalId = body.signal_id
+
+    // Backfill mode: find signals missing briefings and generate them
+    if (!signalId && body.backfill) {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      )
+      const { data: missing } = await supabase
+        .from("trade_signals")
+        .select("id, asset")
+        .is("briefing_text", null)
+        .order("triggered_at", { ascending: false })
+        .limit(10)
+
+      if (!missing || missing.length === 0) {
+        return jsonResponse({ success: true, message: "No signals missing briefings" })
+      }
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+      const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+      const results: Array<{ id: string; asset: string; status: string }> = []
+
+      for (const sig of missing) {
+        try {
+          const resp = await fetch(`${supabaseUrl}/functions/v1/generate-signal-briefing`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-cron-secret": cronSecret,
+            },
+            body: JSON.stringify({ signal_id: sig.id }),
+          })
+          const result = await resp.json()
+          results.push({ id: sig.id, asset: sig.asset, status: result.success ? "ok" : "failed" })
+        } catch {
+          results.push({ id: sig.id, asset: sig.asset, status: "error" })
+        }
+      }
+
+      return jsonResponse({ success: true, backfilled: results })
+    }
   } catch {
     return jsonResponse({ error: "Invalid request body" }, 400)
   }

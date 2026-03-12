@@ -17,11 +17,12 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *   - Sends push notifications on resolution events
  */
 
-const ASSETS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "SUIUSDT", "LINKUSDT", "ADAUSDT"]
+const ASSETS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "SUIUSDT", "LINKUSDT", "ADAUSDT", "AVAXUSDT", "RENDERUSDT", "APTUSDT"]
 
 const TICKER_MAP: Record<string, string> = {
   BTCUSDT: "BTC", ETHUSDT: "ETH", SOLUSDT: "SOL",
   SUIUSDT: "SUI", LINKUSDT: "LINK", ADAUSDT: "ADA",
+  AVAXUSDT: "AVAX", RENDERUSDT: "RENDER", APTUSDT: "APT",
 }
 
 Deno.serve(async (req) => {

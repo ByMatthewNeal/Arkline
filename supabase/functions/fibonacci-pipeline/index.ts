@@ -31,6 +31,9 @@ const ASSETS: AssetConfig[] = [
   { symbol: "SUIUSDT",  ticker: "SUI" },
   { symbol: "LINKUSDT", ticker: "LINK" },
   { symbol: "ADAUSDT",  ticker: "ADA" },
+  { symbol: "AVAXUSDT", ticker: "AVAX" },
+  { symbol: "RENDERUSDT", ticker: "RENDER" },
+  { symbol: "APTUSDT",  ticker: "APT" },
 ]
 
 const TIMEFRAME_CONFIGS = [

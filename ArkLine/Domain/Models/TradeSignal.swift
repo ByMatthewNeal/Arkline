@@ -334,6 +334,9 @@ extension TradeSignal {
     static let assetProfiles: [String: AssetProfile] = [
         "LINK": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 68.9, shortWinRate: 70.4, profitFactor: 3.25),
         "SUI":  AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 67.5, shortWinRate: 68.1, profitFactor: 3.85),
+        "AVAX": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 64.9, shortWinRate: 66.0, profitFactor: 3.08),
+        "RENDER": AssetProfile(confidence: .high, directionBias: .longPreferred, longWinRate: 78.8, shortWinRate: 60.8, profitFactor: 3.07),
+        "APT":  AssetProfile(confidence: .medium, directionBias: .balanced, longWinRate: 67.6, shortWinRate: 65.5, profitFactor: 2.85),
         "ETH":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 60.0, profitFactor: 2.59),
         "ADA":  AssetProfile(confidence: .medium, directionBias: .shortPreferred, longWinRate: 55.2, shortWinRate: 69.0, profitFactor: 2.68),
         "SOL":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 52.9, profitFactor: 2.34),
