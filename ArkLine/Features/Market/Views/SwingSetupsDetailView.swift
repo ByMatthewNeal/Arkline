@@ -771,7 +771,7 @@ struct SwingSetupsDetailView: View {
     private var nextPipelineCheck: some View {
         let now = Date()
         var utcCalendar = Calendar(identifier: .gregorian)
-        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        utcCalendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
 
         // Pipeline runs every 4h at 0:05, 4:05, 8:05, 12:05, 16:05, 20:05 UTC
         let hour = utcCalendar.component(.hour, from: now)

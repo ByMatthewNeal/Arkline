@@ -219,7 +219,8 @@ private struct MarkdownInlineScanner {
                 result.append(attr)
             } else {
                 // Consume one character as plain text
-                var plain = AttributedString(String(remaining.first!))
+                guard let firstChar = remaining.first else { break }
+                let plain = AttributedString(String(firstChar))
                 result.append(plain)
                 remaining = remaining.dropFirst()
             }

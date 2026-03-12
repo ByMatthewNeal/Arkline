@@ -261,7 +261,7 @@ class HomeViewModel {
             // All values nearly equal — show a subtle slope based on direction
             // so the chart isn't misleadingly flat.
             guard values.count >= 2 else { return [0.5] }
-            let first = values.first!, last = values.last!
+            let first = values.first ?? 0, last = values.last ?? 0
             if last >= first {
                 return [CGFloat(0.4), CGFloat(0.6)]
             } else {

@@ -578,7 +578,7 @@ private struct RegimeUpdateInfoSection: View {
         // Convert the UTC 00:15 schedule to the user's local timezone
         let utcCalendar: Calendar = {
             var c = Calendar(identifier: .gregorian)
-            c.timeZone = TimeZone(identifier: "UTC")!
+            c.timeZone = TimeZone(identifier: "UTC") ?? .gmt
             return c
         }()
         var components = utcCalendar.dateComponents([.hour, .minute], from: Date())

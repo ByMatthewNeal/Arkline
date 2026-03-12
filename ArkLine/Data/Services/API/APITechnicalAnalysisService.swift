@@ -43,7 +43,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
         // Parse results into a dictionary for easy access
         var results: [String: TaapiIndicatorValue] = [:]
         for item in bulkResponse.data {
-            results[item.id] = item.result
+            results[item.id] = item.resolvedResult
         }
 
         // Get current price
@@ -272,7 +272,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             middleBand: response.valueMiddleBand,
             lowerBand: response.valueLowerBand,
             currentPrice: currentPrice,
-            bandwidth: (response.valueUpperBand - response.valueLowerBand) / response.valueMiddleBand,
+            bandwidth: response.valueMiddleBand != 0 ? (response.valueUpperBand - response.valueLowerBand) / response.valueMiddleBand : 0,
             position: determineBollingerPosition(
                 price: currentPrice,
                 upper: response.valueUpperBand,
@@ -338,7 +338,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             middleBand: middle,
             lowerBand: lower,
             currentPrice: currentPrice,
-            bandwidth: (upper - lower) / middle,
+            bandwidth: middle != 0 ? (upper - lower) / middle : 0,
             position: determineBollingerPosition(price: currentPrice, upper: upper, lower: lower)
         )
     }
@@ -370,7 +370,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             middleBand: middle,
             lowerBand: lower,
             currentPrice: currentPrice,
-            bandwidth: bandWidth / middle,
+            bandwidth: middle != 0 ? bandWidth / middle : 0,
             position: determineBollingerPosition(price: currentPrice, upper: upper, lower: lower)
         )
     }

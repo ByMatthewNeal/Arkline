@@ -7,7 +7,7 @@ import Foundation
 enum BriefingNotificationScheduler {
 
     /// US Eastern timezone (handles EST/EDT automatically)
-    private static let eastern = TimeZone(identifier: "America/New_York")!
+    private static let eastern = TimeZone(identifier: "America/New_York") ?? .current
 
     // MARK: - Slots
 

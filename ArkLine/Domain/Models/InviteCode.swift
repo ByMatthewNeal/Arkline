@@ -70,7 +70,7 @@ struct InviteCode: Codable, Identifiable, Equatable {
     /// Excludes ambiguous characters (0/O, 1/I).
     static func generateCode() -> String {
         let chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        let random = (0..<6).map { _ in chars.randomElement()! }
+        let random = (0..<6).map { _ in chars.randomElement() ?? Character("A") }
         return "ARK-\(String(random))"
     }
 }

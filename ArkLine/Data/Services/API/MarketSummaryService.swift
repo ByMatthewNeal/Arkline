@@ -318,7 +318,7 @@ final class MarketSummaryService {
         let isDST = date >= marchSecondSunday && date < novFirstSunday
         let offset = isDST ? 4 : 5
 
-        let utcHour = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC")!, from: date).hour ?? 0
+        let utcHour = Calendar(identifier: .gregorian).dateComponents(in: TimeZone(identifier: "UTC") ?? .gmt, from: date).hour ?? 0
         let estHour = (utcHour - offset + 24) % 24
 
         let slot = estHour >= 16 ? "evening" : "morning"
@@ -331,7 +331,7 @@ final class MarketSummaryService {
 
     private func nthSunday(year: Int, month: Int, n: Int) -> Date {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
         var components = DateComponents(year: year, month: month, day: 1, hour: 7)
         guard var date = calendar.date(from: components) else { return Date() }
         var count = 0
