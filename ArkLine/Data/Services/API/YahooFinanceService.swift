@@ -88,6 +88,55 @@ final class YahooFinanceService {
         return result
     }
 
+    // MARK: - US Futures
+
+    /// Futures symbols: S&P 500, Dow Jones, NASDAQ
+    private static let futuresSymbols: [(symbol: String, name: String, shortName: String)] = [
+        ("ES=F", "S&P 500 Futures", "S&P 500"),
+        ("YM=F", "Dow Futures", "Dow"),
+        ("NQ=F", "NASDAQ Futures", "NASDAQ"),
+    ]
+
+    /// Fetch current US index futures (ES, YM, NQ)
+    func fetchFutures() async throws -> [USFuturesQuote] {
+        try await withThrowingTaskGroup(of: USFuturesQuote?.self) { group in
+            for future in Self.futuresSymbols {
+                group.addTask {
+                    do {
+                        let data = try await self.fetchQuote(symbol: future.symbol)
+                        guard let result = data.chart.result?.first,
+                              let meta = result.meta else { return nil }
+
+                        let price = meta.regularMarketPrice
+                        let prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price
+
+                        return USFuturesQuote(
+                            symbol: future.symbol,
+                            name: future.name,
+                            shortName: future.shortName,
+                            price: price,
+                            previousClose: prevClose,
+                            change: price - prevClose,
+                            changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
+                        )
+                    } catch {
+                        logWarning("Failed to fetch futures \(future.symbol): \(error.localizedDescription)", category: .network)
+                        return nil
+                    }
+                }
+            }
+
+            var results: [USFuturesQuote] = []
+            for try await result in group {
+                if let result { results.append(result) }
+            }
+            // Return in original order
+            return Self.futuresSymbols.compactMap { future in
+                results.first { $0.symbol == future.symbol }
+            }
+        }
+    }
+
     // MARK: - VIX / DXY Methods
 
     /// Fetch latest VIX data
@@ -463,6 +512,20 @@ struct YahooError: Codable {
 }
 
 // MARK: - Safe Array Access
+// MARK: - US Futures Quote
+struct USFuturesQuote: Identifiable {
+    var id: String { symbol }
+    let symbol: String
+    let name: String
+    let shortName: String
+    let price: Double
+    let previousClose: Double
+    let change: Double
+    let changePercent: Double
+
+    var isPositive: Bool { change >= 0 }
+}
+
 private extension Array {
     subscript(safe index: Int) -> Element? {
         return indices.contains(index) ? self[index] : nil

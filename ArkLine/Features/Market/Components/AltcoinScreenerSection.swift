@@ -21,12 +21,14 @@ struct CoinScreenerData: Identifiable {
 // MARK: - Time Range
 
 enum ScreenerTimeRange: String, CaseIterable {
+    case oneDay = "24H"
     case sevenDays = "7D"
     case thirtyDays = "30D"
     case ninetyDays = "90D"
 
     var days: Int {
         switch self {
+        case .oneDay: 1
         case .sevenDays: 7
         case .thirtyDays: 30
         case .ninetyDays: 90

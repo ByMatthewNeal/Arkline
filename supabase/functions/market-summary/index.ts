@@ -266,6 +266,27 @@ Deno.serve(async (req) => {
   }
   if (flowLines.length) sections.push(`CAPITAL FLOW:\n${flowLines.join("\n")}`)
 
+  // --- US Futures ---
+  if (payload.usFutures) {
+    sections.push(`US FUTURES:\n${payload.usFutures}`)
+  }
+
+  // --- Central Bank Liquidity ---
+  const liqLines: string[] = []
+  if (payload.cbLiquidity) {
+    liqLines.push(`Central Bank Liquidity (BIS + FRED): ${payload.cbLiquidity}`)
+  }
+  if (payload.liquidityCyclePhase) {
+    liqLines.push(`Cycle Phase: ${payload.liquidityCyclePhase}`)
+  }
+  if (payload.liquidityMomentum) {
+    liqLines.push(`Momentum: ${payload.liquidityMomentum}`)
+  }
+  if (payload.yieldCurveRegime) {
+    liqLines.push(`Yield Curve: ${payload.yieldCurveRegime}`)
+  }
+  if (liqLines.length) sections.push(`GLOBAL LIQUIDITY:\n${liqLines.join("\n")}`)
+
   // --- Headlines ---
   if (Array.isArray(payload.newsHeadlines) && payload.newsHeadlines.length > 0) {
     sections.push(`HEADLINES: ${payload.newsHeadlines.join("; ")}`)
@@ -303,9 +324,17 @@ Deno.serve(async (req) => {
 
   const marketContext = sections.join("\n\n")
   const timeLabel = slot === "morning" ? "morning" : "evening"
+  const sessionContext = payload.marketSession ? `Current market session: ${payload.marketSession}.` : ""
   console.log(`Market context for Claude (${timeLabel}):\n${marketContext}`)
 
+  // Store full context alongside the briefing for historical analysis
+  const contextPayload = JSON.stringify(payload)
+
   try {
+    const morningInstructions = `This is the MORNING briefing (around market open). Frame it as a look-ahead: what happened overnight, what futures are signaling for today's open, key events to watch, and how to think about positioning going into the session.`
+    const eveningInstructions = `This is the EVENING briefing (after market close). Frame it as a review: how the day played out, what moved and why, what happened with economic data releases (beats/misses), and what to watch heading into tomorrow or the weekend.`
+    const slotInstructions = slot === "morning" ? morningInstructions : eveningInstructions
+
     const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -315,8 +344,12 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1200,
+        max_tokens: 1500,
         system: `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual update — clear, conversational, no jargon.
+
+${slotInstructions}
+
+${sessionContext}
 
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
 
@@ -324,16 +357,16 @@ Write a structured briefing using exactly these section headers on their own lin
 One sentence with the overall market stance and crypto positioning. If the MACRO section includes a "Macro Regime" value, your posture MUST align with it — use "Risk-on" if RISK-ON, "Risk-off" if RISK-OFF, or "Neutral" if MIXED. If a "Crypto Positioning" line is present, weave its guidance into the posture (e.g. "full exposure", "selective exposure", "defensive", "cautious accumulation"). Always name the regime quadrant (e.g. "Risk-On Disinflation") rather than just saying "risk on". Example: "Risk-On Disinflation — full exposure. Growth is solid and liquidity is expanding, the best backdrop for crypto."
 
 ## The Rundown
-2-3 sentences covering what's happening across markets. Mention whether stocks (S&P, Nasdaq) and crypto (BTC, ETH, SOL) are showing strength or weakness, and if gold or the dollar are doing anything notable. Don't just list numbers — tell the story. If there's a major headline or economic event driving things, weave it in naturally. If EVENTS data includes Actual vs Forecast values, analyze the results: a beat (actual better than forecast) is bullish, a miss is bearish. For inflation data (CPI, PPI, PCE): lower-than-expected = dovish/bullish for risk; higher = hawkish/bearish. For jobs data (NFP, Jobless Claims): strong jobs = mixed (good economy but hawkish Fed); weak jobs = recession fear but dovish. Always explain the market impact in plain terms.
+3-4 sentences covering what's happening across markets. Start with US futures or equity performance (S&P, Nasdaq) depending on the session. Cover crypto (BTC, ETH, SOL) strength or weakness, and note if gold or the dollar are doing anything significant. Don't just list numbers — tell the story of the day. If there's a major headline or economic event driving things, weave it in naturally. If EVENTS data includes Actual vs Forecast values, analyze the results: a beat (actual better than forecast) is bullish, a miss is bearish. For inflation data (CPI, PPI, PCE): lower-than-expected = dovish/bullish for risk; higher = hawkish/bearish. For jobs data (NFP, Jobless Claims): strong jobs = mixed (good economy but hawkish Fed); weak jobs = recession fear but dovish. Always explain the market impact in plain terms. If US FUTURES data is available, mention what futures are signaling (especially in the morning briefing).
+
+## Macro & Liquidity
+2-3 sentences covering the macro and liquidity landscape. If GLOBAL LIQUIDITY data is present, this is critical context: mention the composite central bank liquidity level and whether it's expanding or contracting (and the monthly/quarterly/annual rate of change if available). If a Liquidity Cycle Phase is present, explain where we are in the ~65-month liquidity cycle and what it means for positioning (e.g. "We're in Early Contraction — the liquidity cycle peaked mid-2025 and momentum is fading, historically a phase where defensiveness pays off"). If Yield Curve data is present, mention the regime (steepening = early cycle, flattening = late cycle, inverted = recession risk) and what it confirms or contradicts about the cycle position. Connect VIX and DXY to the broader picture. This section should help the user understand the forest, not just the trees.
 
 ## Technical
-3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS and DERIVATIVES. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If key fib support/resistance levels are available, mention them. Explain in plain language what the technicals and derivatives suggest about momentum and positioning — e.g. "BTC is holding above all major moving averages with RSI at 58, and positive funding with rising OI confirms buyers are in control" or "Price just lost the 50 SMA while liquidations are skewing long — leveraged longs are getting flushed." If no BTC TA data is available, skip this section entirely.
-
-## Flow
-2-3 sentences on capital flow dynamics using CAPITAL FLOW data. Cover BTC dominance trend and what it signals (rising = risk-off rotation to BTC, falling = alt season brewing), ETF net flow direction and magnitude (institutional conviction), and capital rotation phase (where we are in the cycle). Connect these to tell the story — e.g. "BTC dominance is climbing while ETF inflows stay positive — institutions are accumulating BTC while altcoin capital thins out" or "Dominance is fading as capital rotates into alts, classic mid-cycle behavior with ETF flows still supportive." If no capital flow data is available, skip this section entirely.
+3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS and DERIVATIVES. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If key fib support/resistance levels are available, mention them. Explain in plain language what the technicals and derivatives suggest about momentum and positioning. If no BTC TA data is available, skip this section entirely.
 
 ## Signals
-2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime (Apathy/FOMO/Panic/Complacency), BTC/ETH risk zones (good for DCA timing), season indicator (BTC vs Alt season), Coinbase app ranking (retail interest proxy), BTC search interest. Explain what each means in plain language. For example: "BTC is in a Low Risk zone — historically a solid DCA window" or "Coinbase sitting outside the top 200 tells you retail hasn't shown up yet."
+2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime, BTC/ETH risk zones, season indicator, Coinbase app ranking, BTC search interest, BTC dominance, ETF flows, capital rotation. If CAPITAL FLOW data is available, weave in the key takeaway (e.g. rising BTC dominance = risk-off rotation, strong ETF inflows = institutional conviction). Explain what each means in plain language.
 
 Rules:
 - Write for someone checking their phone over coffee, not a Wall Street analyst
@@ -341,11 +374,12 @@ Rules:
 - Connect dots — if Fear & Greed is at Extreme Fear but crypto is green, say that's unusual
 - Connect dots between TA and sentiment — if RSI is oversold and Fear & Greed is at Extreme Fear, that's a notable convergence
 - Connect derivatives data with technicals — if funding is negative while price holds support, that's a bullish divergence worth noting
+- If GLOBAL LIQUIDITY data shows expanding/contracting with specific percentage changes, use those numbers to paint the picture
 - Never give investment advice or say "buy" / "sell"
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
-- Keep total length under 280 words
+- Keep total length under 350 words
 - Never start any section with "Today" or "The market"
-- If SWING SETUPS data is present, naturally reference any active or triggered setups in the Signals section. Use ONLY these terms: "Long Setup conditions detected" or "Short Setup conditions detected". Never use the words "buy", "sell", "buy signal", or "sell signal". Refer to entry zones as "pattern entry zone" or "setup zone". For setups that are "IN PLAY", note conditions are active. For setups that are "WATCHING", note the zone is being monitored. Frame setups as pattern observations, not action directives. Never say "time to buy/sell". End any setup mention with context, not a call to action. Keep it brief — one sentence max per setup.${feedbackBlock}`,
+- If SWING SETUPS data is present, naturally reference any active or triggered setups in the Signals section. Use ONLY these terms: "Long Setup conditions detected" or "Short Setup conditions detected". Never use the words "buy", "sell", "buy signal", or "sell signal". Frame setups as pattern observations, not action directives. Keep it brief — one sentence max per setup.${feedbackBlock}`,
         messages: [
           {
             role: "user",
@@ -371,13 +405,14 @@ Rules:
 
     console.log(`Generated ${slot} summary (${summary.length} chars)`)
 
-    // Cache in DB
+    // Cache in DB with full context for historical analysis
     const { error: insertError } = await supabase
       .from("market_summaries")
       .upsert({
         summary_date: todayUTC,
         slot: slot,
         summary: summary,
+        context: contextPayload,
         generated_at: new Date().toISOString(),
       }, { onConflict: "summary_date,slot" })
 

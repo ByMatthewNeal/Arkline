@@ -196,9 +196,11 @@ Deno.serve(async (req) => {
           stats.t1Hits++
           await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1)
           stats.notifications++
+          continue // Skip runner eval this cycle — let it trail with fresh data next check
         }
       } else {
-        // Phase 2: Runner trailing stop
+        // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
+        // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
         bestPrice = Math.max(bestPrice, candle.high)
         runnerStop = Math.max(runnerStop, bestPrice - risk1r)
 
@@ -260,8 +262,11 @@ Deno.serve(async (req) => {
           stats.t1Hits++
           await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1)
           stats.notifications++
+          continue // Skip runner eval this cycle — let it trail with fresh data next check
         }
       } else {
+        // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
+        // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
         bestPrice = Math.min(bestPrice, candle.low)
         runnerStop = Math.min(runnerStop, bestPrice + risk1r)
 

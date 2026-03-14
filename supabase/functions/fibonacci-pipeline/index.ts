@@ -1695,6 +1695,7 @@ async function resolveOpenSignals(
           }).eq("id", signal.id)
           notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
+          continue // Skip runner eval this cycle
         }
       } else {
         // Phase 2: Runner — trail stop at 1R behind best price
@@ -1756,6 +1757,7 @@ async function resolveOpenSignals(
           }).eq("id", signal.id)
           notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
+          continue // Skip runner eval this cycle
         }
       } else {
         bestPrice = Math.min(bestPrice, latestCandle.low)

@@ -65,6 +65,10 @@ struct SignalDetailView: View {
                         chartPatternCard(pattern, signal: signal)
                     }
 
+                    if let briefing = signal.briefingText, !briefing.isEmpty {
+                        aiAnalysisCard(briefing)
+                    }
+
                     tradeParametersCard(signal)
 
                     if signal.status.isLive {
@@ -77,10 +81,6 @@ struct SignalDetailView: View {
 
                     if signal.isT1Hit || signal.isRunnerPhase {
                         runnerTrackingCard(signal)
-                    }
-
-                    if let briefing = signal.briefingText, !briefing.isEmpty {
-                        aiAnalysisCard(briefing)
                     }
 
                     statusTimeline(signal)
@@ -778,13 +778,9 @@ struct SignalDetailView: View {
 
     private func aiAnalysisCard(_ briefing: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "brain.head.profile")
-                    .foregroundColor(AppColors.accent)
-                Text("AI Analysis")
-                    .font(.headline)
-                    .foregroundColor(textPrimary)
-            }
+            Text("AI Analysis")
+                .font(.headline)
+                .foregroundColor(textPrimary)
 
             Text(briefing)
                 .font(AppFonts.body14)

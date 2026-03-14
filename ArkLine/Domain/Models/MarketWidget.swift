@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Market Widget Type
 /// Represents the different widgets that can be displayed on the Market Overview tab
 enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
+    case usFutures = "us_futures"
     case dailyNews = "daily_news"
     case fedWatch = "fed_watch"
     case allocation = "allocation"
@@ -11,11 +12,14 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     case sentiment = "sentiment"
     case altcoinScreener = "altcoin_screener"
     case swingSetups = "swing_setups"
+    case globalLiquidity = "global_liquidity"
+    case liquidityCycle = "liquidity_cycle"
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
+        case .usFutures: return "US Futures"
         case .dailyNews: return "Daily News"
         case .fedWatch: return "Fed Watch"
         case .allocation: return "Crypto Positioning"
@@ -24,11 +28,14 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sentiment: return "Market Sentiment"
         case .altcoinScreener: return "Altcoin Screener"
         case .swingSetups: return "Swing Setups"
+        case .globalLiquidity: return "Global Liquidity"
+        case .liquidityCycle: return "Liquidity Cycle"
         }
     }
 
     var description: String {
         switch self {
+        case .usFutures: return "S&P 500, Dow, and NASDAQ futures with session indicator"
         case .dailyNews: return "Latest crypto and market news"
         case .fedWatch: return "Fed interest rate probability from CME"
         case .allocation: return "Crypto positioning with macro context"
@@ -37,11 +44,14 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sentiment: return "Market sentiment indicators summary"
         case .altcoinScreener: return "Altcoin 30-day return screener"
         case .swingSetups: return "Multi-timeframe Fibonacci swing trade signals"
+        case .globalLiquidity: return "Central bank liquidity across 10+ economies"
+        case .liquidityCycle: return "65-month liquidity cycle with crypto positioning"
         }
     }
 
     var icon: String {
         switch self {
+        case .usFutures: return "chart.line.uptrend.xyaxis"
         case .dailyNews: return "newspaper"
         case .fedWatch: return "building.columns"
         case .allocation: return "chart.pie"
@@ -50,12 +60,14 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .sentiment: return "gauge.with.dots.needle.33percent"
         case .altcoinScreener: return "list.bullet.rectangle"
         case .swingSetups: return "scope"
+        case .globalLiquidity: return "banknote"
+        case .liquidityCycle: return "clock.arrow.2.circlepath"
         }
     }
 
     /// Default order for Market widgets (matches original hardcoded layout)
     static var defaultOrder: [MarketWidgetType] {
-        [.dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .swingSetups, .altcoinScreener]
+        [.usFutures, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .swingSetups, .altcoinScreener]
     }
 
     /// All widgets enabled by default

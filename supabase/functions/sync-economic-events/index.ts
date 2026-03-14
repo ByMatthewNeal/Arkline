@@ -33,15 +33,15 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, supabaseKey)
 
-  // Date range: yesterday, today, tomorrow
+  // Date range: yesterday through 7 days ahead (covers weekends + next week)
   const now = new Date()
   const yesterday = new Date(now)
   yesterday.setDate(yesterday.getDate() - 1)
-  const tomorrow = new Date(now)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  const weekAhead = new Date(now)
+  weekAhead.setDate(weekAhead.getDate() + 7)
 
   const fromDate = formatDate(yesterday)
-  const toDate = formatDate(tomorrow)
+  const toDate = formatDate(weekAhead)
 
   // Fetch FMP economic calendar
   let fmpEvents: FmpEvent[]

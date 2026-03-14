@@ -47,6 +47,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case favorites = "favorites"
     case aiMarketSummary = "ai_market_summary"
     case flashIntel = "flash_intel"
+    case usFutures = "us_futures"
 
     var id: String { rawValue }
 
@@ -68,6 +69,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .favorites: return "Favorites"
         case .aiMarketSummary: return "Daily Briefing"
         case .flashIntel: return "Swing Setups"
+        case .usFutures: return "US Futures"
         }
     }
 
@@ -89,6 +91,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .favorites: return "Your starred coins at a glance"
         case .aiMarketSummary: return "AI-generated daily market summary"
         case .flashIntel: return "Fibonacci pattern detection across timeframes"
+        case .usFutures: return "S&P 500, Dow, and NASDAQ futures with session indicator"
         }
     }
 
@@ -110,6 +113,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .favorites: return "star.fill"
         case .aiMarketSummary: return "sparkles"
         case .flashIntel: return "scope"
+        case .usFutures: return "chart.line.uptrend.xyaxis"
         }
     }
 
@@ -121,7 +125,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary:
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel:
             return true
@@ -130,7 +134,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.upcomingEvents, .usFutures, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default

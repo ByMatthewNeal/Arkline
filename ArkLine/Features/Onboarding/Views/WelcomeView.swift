@@ -137,17 +137,10 @@ struct WelcomeSlideView: View {
                         .frame(width: 120, height: 120)
 
                     if let assetImage = slide.assetImage {
-                        LinearGradient(
-                            colors: [slide.accentColor, slide.accentColor.opacity(0.7)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .mask(
-                            Image(assetImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                        )
-                        .frame(width: 80, height: 80)
+                        Image(assetImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
                     } else {
                         Image(systemName: slide.icon)
                             .font(.system(size: 48, weight: .medium))

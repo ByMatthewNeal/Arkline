@@ -83,4 +83,8 @@ final class MockGlobalLiquidityService: GlobalLiquidityServiceProtocol {
             history: history.sorted { $0.date < $1.date }
         )
     }
+
+    func fetchGlobalLiquidityIndex() async throws -> GlobalLiquidityIndex {
+        throw LiquidityError.noData
+    }
 }

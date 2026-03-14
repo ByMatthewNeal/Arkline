@@ -9,25 +9,25 @@ final class APINewsService: NewsServiceProtocol {
     private let finnhubService = FinnhubEconomicCalendarService()
     private let calendarScraper = EconomicCalendarScraper()
     private let fedWatchScraper = CMEFedWatchScraper()
+    /// Creates a fresh instance per call — GoogleNewsRSSService holds mutable XML parser
+    /// state and is not safe to reuse across concurrent calls.
+    private func makeRSSService() -> GoogleNewsRSSService { GoogleNewsRSSService() }
 
     // MARK: - NewsServiceProtocol
 
     func fetchNews(category: String?, page: Int, perPage: Int) async throws -> [NewsItem] {
         // Use Google News RSS for crypto news
-        let rssService = GoogleNewsRSSService()
-        return try await rssService.fetchCryptoNews(limit: perPage)
+        return try await makeRSSService().fetchCryptoNews(limit: perPage)
     }
 
     func fetchNewsForCurrencies(_ currencies: [String], page: Int) async throws -> [NewsItem] {
         // Build query from currencies
         let query = currencies.joined(separator: " OR ")
-        let rssService = GoogleNewsRSSService()
-        return try await rssService.fetchNews(query: query, limit: 20)
+        return try await makeRSSService().fetchNews(query: query, limit: 20)
     }
 
     func searchNews(query: String) async throws -> [NewsItem] {
-        let rssService = GoogleNewsRSSService()
-        return try await rssService.fetchNews(query: query, limit: 20)
+        return try await makeRSSService().fetchNews(query: query, limit: 20)
     }
 
     func fetchTodaysEvents() async throws -> [EconomicEvent] {
@@ -75,20 +75,17 @@ final class APINewsService: NewsServiceProtocol {
     // MARK: - Google News RSS
 
     func fetchGoogleNews(query: String, limit: Int) async throws -> [NewsItem] {
-        let rssService = GoogleNewsRSSService()
-        return try await rssService.fetchNews(query: query, limit: limit)
+        return try await makeRSSService().fetchNews(query: query, limit: limit)
     }
 
     /// Fetch crypto news from Google News RSS
     func fetchCryptoNews(limit: Int = 20) async throws -> [NewsItem] {
-        let rssService = GoogleNewsRSSService()
-        return try await rssService.fetchCryptoNews(limit: limit)
+        return try await makeRSSService().fetchCryptoNews(limit: limit)
     }
 
     /// Fetch geopolitical/world news from Google News RSS
     func fetchGeopoliticalNews(limit: Int = 20) async throws -> [NewsItem] {
-        let rssService = GoogleNewsRSSService()
-        return try await rssService.fetchGeopoliticalNews(limit: limit)
+        return try await makeRSSService().fetchGeopoliticalNews(limit: limit)
     }
 
     // MARK: - Combined News Feed
@@ -104,11 +101,9 @@ final class APINewsService: NewsServiceProtocol {
 
         // Fetch Google News based on user preferences
         if includeGoogleNews {
-            let rssService = GoogleNewsRSSService()
-
             // If user has selected specific topics, use those
             if let topics = topics, !topics.isEmpty {
-                let personalizedNews = try await rssService.fetchPersonalizedNews(
+                let personalizedNews = try await makeRSSService().fetchPersonalizedNews(
                     topics: topics,
                     customKeywords: customKeywords ?? [],
                     limit: limit

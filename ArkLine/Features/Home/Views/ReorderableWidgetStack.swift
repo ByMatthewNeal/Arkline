@@ -129,6 +129,8 @@ struct ReorderableWidgetStack: View {
             return false
         case .flashIntel:
             return true
+        case .usFutures:
+            return true
         }
     }
 
@@ -221,6 +223,7 @@ struct ReorderableWidgetStack: View {
                 dxyData: viewModel.dxyData,
                 liquidityData: viewModel.globalLiquidityChanges,
                 netLiquidityData: viewModel.netLiquidityData,
+                globalLiquidityIndex: viewModel.globalLiquidityIndex,
                 vixHistory: viewModel.vixHistory,
                 dxyHistory: viewModel.dxyHistory,
                 macroZScores: viewModel.macroZScores,
@@ -255,6 +258,9 @@ struct ReorderableWidgetStack: View {
                 size: appState.widgetSize(.flashIntel),
                 stats: viewModel.signalStats
             )
+
+        case .usFutures:
+            USFuturesSection()
         }
     }
 }

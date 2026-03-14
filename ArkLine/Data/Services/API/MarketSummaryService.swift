@@ -76,6 +76,15 @@ final class MarketSummaryService {
         let rainbowBand: String?
         // Fib Support/Resistance
         let btcKeyLevels: String?
+        // Central Bank Liquidity & Cycle
+        let cbLiquidity: String?
+        let liquidityCyclePhase: String?
+        let liquidityMomentum: String?
+        let yieldCurveRegime: String?
+        // US Futures
+        let usFutures: String?
+        // Market session
+        let marketSession: String?
         // Events & News
         let economicEvents: [EventEntry]?
         let newsHeadlines: [String]?

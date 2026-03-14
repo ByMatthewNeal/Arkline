@@ -4,7 +4,7 @@ import SwiftUI
 struct SentimentRegimeDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @Bindable var viewModel: SentimentViewModel
-    @StateObject private var alertManager = SentimentRegimeAlertManager.shared
+    @ObservedObject private var alertManager = SentimentRegimeAlertManager.shared
 
     var body: some View {
         ScrollView {

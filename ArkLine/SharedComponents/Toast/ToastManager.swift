@@ -66,6 +66,10 @@ final class ToastManager {
     func show(_ toast: ToastMessage) {
         // Deduplicate rapid-fire identical toasts
         let now = Date()
+
+        // Clean up entries older than 60 seconds to prevent unbounded growth
+        recentTitles = recentTitles.filter { now.timeIntervalSince($0.value) < 60 }
+
         if let lastShown = recentTitles[toast.title],
            now.timeIntervalSince(lastShown) < Self.dedupWindow {
             return

@@ -36,7 +36,7 @@ final class APICache {
 
     /// Get cached value if not expired
     func get<T>(_ key: String) -> T? {
-        queue.sync {
+        return queue.sync {
             guard let entry = cache[key] as? CacheEntry<T> else { return nil }
             if entry.isExpired {
                 return nil

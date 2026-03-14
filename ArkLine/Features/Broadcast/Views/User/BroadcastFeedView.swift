@@ -27,7 +27,7 @@ struct BroadcastFeedView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @StateObject private var viewModel = BroadcastViewModel()
-    @StateObject private var notificationService = BroadcastNotificationService.shared
+    @ObservedObject private var notificationService = BroadcastNotificationService.shared
 
     @State private var selectedBroadcast: Broadcast?
     @State private var showNotificationPrompt = false

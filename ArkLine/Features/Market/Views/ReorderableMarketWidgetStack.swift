@@ -89,6 +89,9 @@ struct ReorderableMarketWidgetStack: View {
     @ViewBuilder
     private func widgetView(for type: MarketWidgetType) -> some View {
         switch type {
+        case .usFutures:
+            USFuturesSection()
+
         case .dailyNews:
             DailyNewsSection(news: viewModel.newsItems)
 
@@ -120,6 +123,12 @@ struct ReorderableMarketWidgetStack: View {
 
         case .swingSetups:
             SwingSetupsSummarySection(isPro: appState.isPro)
+
+        case .globalLiquidity:
+            GlobalLiquiditySection()
+
+        case .liquidityCycle:
+            LiquidityCycleSection()
         }
     }
 }

@@ -6,6 +6,7 @@ struct MacroDashboardDetailView: View {
     let dxyData: DXYData?
     let liquidityData: GlobalLiquidityChanges?
     var netLiquidityData: NetLiquidityChanges? = nil
+    var globalLiquidityIndex: GlobalLiquidityIndex? = nil
     let regime: MarketRegime
     var quadrant: MacroRegimeQuadrant? = nil
     let vixCorrelation: CorrelationStrength
@@ -15,8 +16,8 @@ struct MacroDashboardDetailView: View {
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
-    @StateObject private var regimeManager = RegimeChangeManager.shared
-    @StateObject private var alertManager = ExtremeMoveAlertManager.shared
+    @ObservedObject private var regimeManager = RegimeChangeManager.shared
+    @ObservedObject private var alertManager = ExtremeMoveAlertManager.shared
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -210,6 +211,21 @@ struct MacroDashboardDetailView: View {
                                 .padding(.horizontal, 14)
                                 .padding(.bottom, 14)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+
+                            // CB Liquidity (Global Composite)
+                            if let gli = globalLiquidityIndex {
+                                Divider().background(textPrimary.opacity(0.08))
+
+                                SimpleIndicatorRow(
+                                    icon: "globe.americas.fill",
+                                    title: "CB Liquidity",
+                                    value: String(format: "$%.1fT", gli.compositeLiquidityT),
+                                    change: gli.changes.monthly,
+                                    status: cbLiqStatus,
+                                    statusColor: cbLiqStatusColor,
+                                    isExpanded: false
+                                )
                             }
                         }
                         .background(
@@ -480,6 +496,20 @@ struct MacroDashboardDetailView: View {
         guard let nl = netLiquidityData else { return .secondary }
         if nl.weeklyChange > 0.5 { return AppColors.success }
         if nl.weeklyChange < -0.5 { return AppColors.error }
+        return AppColors.warning
+    }
+
+    private var cbLiqStatus: String {
+        guard let gli = globalLiquidityIndex else { return "No data" }
+        if gli.signal == "expanding" { return "Expanding" }
+        if gli.signal == "contracting" { return "Contracting" }
+        return "Neutral"
+    }
+
+    private var cbLiqStatusColor: Color {
+        guard let gli = globalLiquidityIndex else { return .secondary }
+        if gli.signal == "expanding" { return AppColors.success }
+        if gli.signal == "contracting" { return AppColors.error }
         return AppColors.warning
     }
 

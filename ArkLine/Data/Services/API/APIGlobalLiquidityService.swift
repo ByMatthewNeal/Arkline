@@ -132,6 +132,19 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
         return latest.value
     }
 
+    // MARK: - Global Liquidity Index (BIS + FRED Composite)
+
+    func fetchGlobalLiquidityIndex() async throws -> GlobalLiquidityIndex {
+        return try await SharedCacheService.shared.getOrFetch(
+            "global_liquidity_index",
+            ttl: 86400 // 24hr TTL (synced daily by edge function)
+        ) {
+            // L3 fallback: should rarely be needed since the edge function populates this.
+            // If cache is empty, throw — the edge function hasn't run yet.
+            throw LiquidityError.noData
+        }
+    }
+
     // MARK: - US Net Liquidity
 
     func fetchNetLiquidityChanges() async throws -> NetLiquidityChanges {

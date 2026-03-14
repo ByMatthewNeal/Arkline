@@ -20,6 +20,7 @@ actor SharedCacheService {
         "crypto_assets_1_100",
         "global_market_data",
         "trending_coins",
+        "global_liquidity_index",
     ]
 
     private init() {}

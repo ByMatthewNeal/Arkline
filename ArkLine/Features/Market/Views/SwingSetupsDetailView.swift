@@ -10,6 +10,8 @@ struct SwingSetupsDetailView: View {
     @State private var sortByScore = false
     @State private var showGuide = false
     @State private var signalToShare: TradeSignal? = nil
+    @State private var performancePeriod: PerformancePeriod = .all
+    @State private var showExportSheet = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -18,6 +20,23 @@ struct SwingSetupsDetailView: View {
         case active = "Active"
         case history = "History"
         case performance = "Performance"
+    }
+
+    enum PerformancePeriod: String, CaseIterable {
+        case day = "Day"
+        case week = "Week"
+        case month = "Month"
+        case all = "All"
+
+        var cutoffDate: Date? {
+            let calendar = Calendar.current
+            switch self {
+            case .day: return calendar.date(byAdding: .day, value: -1, to: Date())
+            case .week: return calendar.date(byAdding: .day, value: -7, to: Date())
+            case .month: return calendar.date(byAdding: .month, value: -1, to: Date())
+            case .all: return nil
+            }
+        }
     }
 
     private var baseSignals: [TradeSignal] {
@@ -43,6 +62,73 @@ struct SwingSetupsDetailView: View {
             signals.sort { ($0.compositeScore ?? 0) > ($1.compositeScore ?? 0) }
         }
         return signals
+    }
+
+    /// Closed signals filtered by the selected performance period
+    private var periodFilteredSignals: [TradeSignal] {
+        let closed = viewModel.recentSignals.filter { !$0.status.isLive && $0.outcomePct != nil }
+        guard let cutoff = performancePeriod.cutoffDate else { return closed }
+        return closed.filter { ($0.closedAt ?? .distantPast) >= cutoff }
+    }
+
+    /// Compute stats for the selected period from the filtered signals
+    private var periodStats: SignalStats? {
+        guard performancePeriod != .all else { return viewModel.stats }
+        let signals = periodFilteredSignals
+        guard !signals.isEmpty else { return nil }
+
+        let wins = signals.filter { $0.outcome == .win }.count
+        let losses = signals.filter { $0.outcome == .loss }.count
+        let partials = signals.filter { $0.outcome == .partial }.count
+        let total = wins + losses + partials
+        let hitRate = total > 0 ? Double(wins + partials) / Double(total) * 100 : 0
+
+        let winPcts = signals.filter { $0.outcome == .win || $0.outcome == .partial }.compactMap(\.outcomePct)
+        let lossPcts = signals.filter { $0.outcome == .loss }.compactMap(\.outcomePct)
+        let avgWinPct = winPcts.isEmpty ? 0 : winPcts.reduce(0, +) / Double(winPcts.count)
+        let avgLossPct = lossPcts.isEmpty ? 0 : lossPcts.reduce(0, +) / Double(lossPcts.count)
+        let totalWinPct = winPcts.reduce(0, +)
+        let totalLossPct = abs(lossPcts.reduce(0, +))
+        let profitFactor = totalLossPct > 0 ? totalWinPct / totalLossPct : totalWinPct > 0 ? .infinity : 0
+
+        let durations = signals.compactMap(\.durationHours)
+        let avgDuration = durations.isEmpty ? 0 : durations.reduce(0, +) / durations.count
+
+        var streak = 0
+        let sorted = signals.sorted { ($0.closedAt ?? .distantPast) > ($1.closedAt ?? .distantPast) }
+        for signal in sorted {
+            guard let outcome = signal.outcome else { continue }
+            let isWin = outcome == .win || outcome == .partial
+            let isLoss = outcome == .loss
+            if streak == 0 {
+                streak = isWin ? 1 : -1
+            } else if streak > 0 && isWin {
+                streak += 1
+            } else if streak < 0 && isLoss {
+                streak -= 1
+            } else {
+                break
+            }
+        }
+
+        let assetGroups = Dictionary(grouping: signals) { $0.asset }
+        let assetBreakdown: [AssetStats] = assetGroups.map { asset, sigs in
+            let w = sigs.filter { $0.outcome == .win }.count
+            let l = sigs.filter { $0.outcome == .loss }.count
+            let p = sigs.filter { $0.outcome == .partial }.count
+            let t = w + l + p
+            let hr = t > 0 ? Double(w + p) / Double(t) * 100 : 0
+            let returns = sigs.compactMap(\.outcomePct)
+            let avgRet = returns.isEmpty ? 0 : returns.reduce(0, +) / Double(returns.count)
+            return AssetStats(asset: asset, total: t, wins: w, losses: l, partials: p, hitRate: hr, avgReturnPct: avgRet)
+        }.sorted { $0.total > $1.total }
+
+        return SignalStats(
+            totalSignals: total, wins: wins, losses: losses, partials: partials,
+            hitRate: hitRate, avgWinPct: avgWinPct, avgLossPct: avgLossPct,
+            profitFactor: profitFactor, avgDurationHours: avgDuration,
+            assetBreakdown: assetBreakdown, currentStreak: streak
+        )
     }
 
     private var availableAssets: [String] {
@@ -129,6 +215,28 @@ struct SwingSetupsDetailView: View {
                 }
 
                 if selectedFilter == .performance {
+                    // Period picker + Export
+                    HStack {
+                        Picker("Period", selection: $performancePeriod) {
+                            ForEach(PerformancePeriod.allCases, id: \.self) { period in
+                                Text(period.rawValue).tag(period)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        Button {
+                            showExportSheet = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(AppColors.accent)
+                                .padding(8)
+                                .background(AppColors.accent.opacity(colorScheme == .dark ? 0.12 : 0.08))
+                                .cornerRadius(8)
+                        }
+                    }
+                    .padding(.horizontal)
+
                     // Performance dashboard
                     if viewModel.isLoading {
                         VStack(spacing: 12) {
@@ -137,11 +245,18 @@ struct SwingSetupsDetailView: View {
                             }
                         }
                         .padding(.horizontal)
-                    } else if let stats = viewModel.stats, stats.totalSignals > 0 {
+                    } else if let stats = periodStats, stats.totalSignals > 0 {
                         performanceDashboard(stats)
                     } else {
-                        emptyState
-                            .padding(.top, 40)
+                        VStack(spacing: 12) {
+                            Image(systemName: "chart.bar.xaxis")
+                                .font(.system(size: 40))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                            Text("No trades in this period")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(textPrimary)
+                        }
+                        .padding(.top, 40)
                     }
                 } else {
                     // Signal list
@@ -205,6 +320,15 @@ struct SwingSetupsDetailView: View {
         }
         .sheet(item: $signalToShare) { signal in
             TradeSignalShareSheet(signal: signal)
+        }
+        .sheet(isPresented: $showExportSheet) {
+            if let stats = periodStats {
+                PerformanceExportSheet(
+                    stats: stats,
+                    signals: periodFilteredSignals,
+                    periodLabel: performancePeriod == .all ? "All Time" : "Last \(performancePeriod.rawValue)"
+                )
+            }
         }
         .task {
             await viewModel.loadAllData()
@@ -344,8 +468,7 @@ struct SwingSetupsDetailView: View {
     // MARK: - Best & Worst Trades
 
     private var bestWorstTradesCard: some View {
-        let closedSignals = viewModel.recentSignals
-            .filter { !$0.status.isLive && $0.outcomePct != nil }
+        let closedSignals = periodFilteredSignals
 
         let best = closedSignals.max(by: { ($0.outcomePct ?? 0) < ($1.outcomePct ?? 0) })
         let worst = closedSignals.min(by: { ($0.outcomePct ?? 0) < ($1.outcomePct ?? 0) })
@@ -434,8 +557,8 @@ struct SwingSetupsDetailView: View {
     // MARK: - Equity Curve
 
     private var equityCurveCard: some View {
-        let closedSignals = viewModel.recentSignals
-            .filter { !$0.status.isLive && $0.outcomePct != nil && $0.closedAt != nil }
+        let closedSignals = periodFilteredSignals
+            .filter { $0.closedAt != nil }
             .sorted { ($0.closedAt ?? .distantPast) < ($1.closedAt ?? .distantPast) }
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -556,7 +679,7 @@ struct SwingSetupsDetailView: View {
     // MARK: - Direction Breakdown
 
     private var directionBreakdownCard: some View {
-        let closedSignals = viewModel.recentSignals.filter { !$0.status.isLive && $0.outcome != nil }
+        let closedSignals = periodFilteredSignals.filter { $0.outcome != nil }
         let longs = closedSignals.filter { $0.signalType.isBuy }
         let shorts = closedSignals.filter { !$0.signalType.isBuy }
 
@@ -800,6 +923,7 @@ struct SwingSetupsDetailView: View {
         .cornerRadius(10)
         .padding(.top, 4)
     }
+
 }
 
 // MARK: - Win Rate Gauge

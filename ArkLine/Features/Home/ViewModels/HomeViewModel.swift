@@ -69,6 +69,9 @@ class HomeViewModel {
     // Net Liquidity (Fed balance sheet - TGA - RRP)
     var netLiquidityData: NetLiquidityChanges?
 
+    // Global Liquidity Index (BIS + FRED composite, server-synced)
+    var globalLiquidityIndex: GlobalLiquidityIndex?
+
     // Macro Z-Scores (statistical analysis)
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
 
@@ -601,10 +604,11 @@ class HomeViewModel {
             async let dxyHistFetch = self.fetchDXYHistorySafe()
             async let liquidityFetch = self.fetchGlobalLiquiditySafe()
             async let netLiqFetch = self.fetchNetLiquiditySafe()
+            async let globalLiqFetch = self.fetchGlobalLiquidityIndexSafe()
             async let supplyProfitFetch = self.fetchSupplyInProfitSafe()
             async let fedWatchFetch = self.fetchFedWatchMeetingsSafe()
 
-            let (vix, dxy, vixHist, dxyHist, liquidity, netLiq, supplyProfit, fedMeetings) = await (vixFetch, dxyFetch, vixHistFetch, dxyHistFetch, liquidityFetch, netLiqFetch, supplyProfitFetch, fedWatchFetch)
+            let (vix, dxy, vixHist, dxyHist, liquidity, netLiq, globalLiq, supplyProfit, fedMeetings) = await (vixFetch, dxyFetch, vixHistFetch, dxyHistFetch, liquidityFetch, netLiqFetch, globalLiqFetch, supplyProfitFetch, fedWatchFetch)
 
             self.vixData = vix
             self.dxyData = dxy
@@ -612,6 +616,7 @@ class HomeViewModel {
             self.dxyHistory = dxyHist
             self.globalLiquidityChanges = liquidity
             self.netLiquidityData = netLiq
+            self.globalLiquidityIndex = globalLiq
             self.supplyInProfitData = supplyProfit
             self.fedWatchMeetings = fedMeetings ?? []
 
@@ -1050,6 +1055,15 @@ class HomeViewModel {
         }
     }
 
+    private func fetchGlobalLiquidityIndexSafe() async -> GlobalLiquidityIndex? {
+        do {
+            return try await globalLiquidityService.fetchGlobalLiquidityIndex()
+        } catch {
+            logDebug("Global liquidity index not available: \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+
     private func fetchSupplyInProfitSafe() async -> SupplyProfitData? {
         do {
             return try await santimentService.fetchLatestSupplyInProfit()
@@ -1167,7 +1181,7 @@ class HomeViewModel {
 
         let service = MarketSummaryService.shared
 
-        // Fetch index quotes, sentiment data, financial news, and BTC TA in parallel
+        // Fetch index quotes, sentiment data, financial news, BTC TA, and futures in parallel
         async let indexQuotes = service.fetchIndexQuotes()
         async let sentimentRefresh: () = { [weak self] in
             await self?.sentimentViewModel?.refresh()
@@ -1186,12 +1200,18 @@ class HomeViewModel {
                 )
             } catch { return [] }
         }()
+        async let futuresData: [USFuturesQuote] = {
+            do {
+                return try await YahooFinanceService.shared.fetchFutures()
+            } catch { return [] }
+        }()
 
         let (sp500, nasdaq) = await indexQuotes
         _ = await sentimentRefresh
         let finNews = await financialNews
         let btcTechnical = await btcTA
-        logDebug("Briefing data ready — SP500: \(sp500 != nil), BTC: \(btcPrice), TA: \(btcTechnical != nil), news: \(finNews.count)", category: .network)
+        let futures = await futuresData
+        logDebug("Briefing data ready — SP500: \(sp500 != nil), BTC: \(btcPrice), TA: \(btcTechnical != nil), news: \(finNews.count), futures: \(futures.count)", category: .network)
 
         // Build net liquidity signal
         var netLiqSignal: String? = nil
@@ -1299,6 +1319,55 @@ class HomeViewModel {
             btcKeyLevelsStr = parts.joined(separator: ", ")
         }
 
+        // Build Central Bank Liquidity string
+        var cbLiquidityStr: String? = nil
+        if let gli = globalLiquidityIndex {
+            var parts: [String] = []
+            parts.append("Composite: \(gli.formattedComposite) (\(gli.signal))")
+            parts.append("US Net Liq: \(gli.formattedUSNetLiquidity) (Fed \(String(format: "$%.2fT", gli.fedAssetsT)) - TGA \(String(format: "$%.2fT", gli.tgaT)) - RRP \(String(format: "$%.3fT", gli.rrpT)))")
+            if let monthly = gli.changes.monthly {
+                parts.append(String(format: "1M: %+.2f%%", monthly))
+            }
+            if let quarterly = gli.changes.quarterly {
+                parts.append(String(format: "3M: %+.2f%%", quarterly))
+            }
+            if let annual = gli.changes.annual {
+                parts.append(String(format: "1Y: %+.2f%%", annual))
+            }
+            cbLiquidityStr = parts.joined(separator: ", ")
+        }
+
+        // Build Liquidity Cycle strings
+        var liquidityCyclePhaseStr: String? = nil
+        var liquidityMomentumStr: String? = nil
+        var yieldCurveRegimeStr: String? = nil
+        if let cycle = globalLiquidityIndex?.liquidityCycle {
+            liquidityCyclePhaseStr = "\(cycle.phase.displayName) (\(cycle.phase.cryptoLabel)) — \(cycle.cryptoGuidance). Equity: \(cycle.phase.equityLabel) — \(cycle.equityGuidance ?? cycle.phase.defaultEquityGuidance)"
+            var momParts: [String] = ["Index: \(cycle.momentumIndex)/100"]
+            if let m3 = cycle.momentum3m { momParts.append(String(format: "3M RoC: %+.2f%%", m3)) }
+            if let m6 = cycle.momentum6m { momParts.append(String(format: "6M RoC: %+.2f%%", m6)) }
+            momParts.append(String(format: "Acceleration: %+.3f", cycle.acceleration))
+            momParts.append(String(format: "65-month wave: %.0f/100", cycle.theoreticalWave))
+            liquidityMomentumStr = momParts.joined(separator: ", ")
+            if cycle.yieldCurve.parsedRegime != .unknown {
+                var ycParts = ["\(cycle.yieldCurve.parsedRegime.displayName) — \(cycle.yieldCurve.parsedRegime.interpretation)"]
+                if let spread = cycle.yieldCurve.t10y2y {
+                    ycParts.append(String(format: "10Y-2Y spread: %.2f%%", spread))
+                }
+                yieldCurveRegimeStr = ycParts.joined(separator: ", ")
+            }
+        }
+
+        // Build US Futures string
+        var usFuturesStr: String? = nil
+        if !futures.isEmpty {
+            let session = USMarketSession.current
+            let lines = futures.map { q in
+                "\(q.shortName): \(String(format: "%.2f", q.price)) (\(String(format: "%+.2f%%", q.changePercent)))"
+            }
+            usFuturesStr = "[\(session.rawValue)] \(lines.joined(separator: ", "))"
+        }
+
         let payload = MarketSummaryService.MarketSummaryPayload(
             btcPrice: btcPrice > 0 ? btcPrice : nil,
             btcChange24h: btcPrice > 0 ? btcChange24h : nil,
@@ -1363,6 +1432,12 @@ class HomeViewModel {
             supplyInProfit: supplyProfitStr,
             rainbowBand: rainbowStr,
             btcKeyLevels: btcKeyLevelsStr,
+            cbLiquidity: cbLiquidityStr,
+            liquidityCyclePhase: liquidityCyclePhaseStr,
+            liquidityMomentum: liquidityMomentumStr,
+            yieldCurveRegime: yieldCurveRegimeStr,
+            usFutures: usFuturesStr,
+            marketSession: USMarketSession.current.rawValue,
             economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(5).map { event in
                 .init(
                     title: event.title,

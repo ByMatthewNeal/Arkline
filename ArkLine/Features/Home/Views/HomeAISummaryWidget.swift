@@ -110,11 +110,10 @@ struct HomeAISummaryWidget: View {
                 // Summary is nil and not loading — show shimmer briefly,
                 // then "unavailable" after the fetch has had time to complete
                 shimmerPlaceholder
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                            if summary == nil && !isLoading {
-                                showUnavailable = true
-                            }
+                    .task {
+                        try? await Task.sleep(nanoseconds: 5_000_000_000)
+                        if summary == nil && !isLoading {
+                            showUnavailable = true
                         }
                     }
             }

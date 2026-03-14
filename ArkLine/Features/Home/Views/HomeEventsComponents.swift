@@ -1,5 +1,36 @@
 import SwiftUI
 
+// MARK: - Cached DateFormatters
+
+private enum EventDateFormatters {
+    static let relativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter
+    }()
+
+    /// "h:mma" — e.g. "2:30pm"
+    static let shortTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mma"
+        return formatter
+    }()
+
+    /// "h:mm a" — e.g. "2:30 PM"
+    static let shortTimeSpaced: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
+
+    /// "EEEE, MMMM d, yyyy" — e.g. "Thursday, March 13, 2026"
+    static let fullDate: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d, yyyy"
+        return formatter
+    }()
+}
+
 // MARK: - Upcoming Events Section
 struct UpcomingEventsSection: View {
     let events: [EconomicEvent]
@@ -15,11 +46,16 @@ struct UpcomingEventsSection: View {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
     }
 
-    /// Home screen: only show Today + Tomorrow
+    /// Home screen: show today + tomorrow on weekdays, or next 5 days on weekends
     private var homeEvents: [EconomicEvent] {
         let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: Date())
+        let isWeekend = weekday == 1 || weekday == 7
+        let lookAheadDays = isWeekend ? 5 : 2
+        let cutoff = calendar.date(byAdding: .day, value: lookAheadDays, to: calendar.startOfDay(for: Date())) ?? Date()
+        let today = calendar.startOfDay(for: Date())
         return events.filter { event in
-            calendar.isDateInToday(event.date) || calendar.isDateInTomorrow(event.date)
+            event.date >= today && event.date < cutoff
         }
     }
 
@@ -34,9 +70,7 @@ struct UpcomingEventsSection: View {
 
     private var lastUpdatedText: String {
         guard let lastUpdated = lastUpdated else { return "" }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return "Updated \(formatter.localizedString(for: lastUpdated, relativeTo: Date()))"
+        return "Updated \(EventDateFormatters.relativeFormatter.localizedString(for: lastUpdated, relativeTo: Date()))"
     }
 
     private var maxGroups: Int {
@@ -201,9 +235,7 @@ struct UpcomingEventRow: View {
 
     private var timeString: String {
         guard let time = event.time else { return "" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mma"
-        return formatter.string(from: time).lowercased()
+        return EventDateFormatters.shortTime.string(from: time).lowercased()
     }
 
     private var hasData: Bool {
@@ -493,9 +525,7 @@ struct EventDetailRow: View {
 
     private var timeString: String {
         guard let time = event.time else { return "" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mma"
-        return formatter.string(from: time).lowercased()
+        return EventDateFormatters.shortTime.string(from: time).lowercased()
     }
 
     private var countryCode: String {
@@ -599,15 +629,11 @@ struct EventInfoView: View {
 
     private var timeString: String {
         guard let time = event.time else { return "TBD" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: time)
+        return EventDateFormatters.shortTimeSpaced.string(from: time)
     }
 
     private var dateString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d, yyyy"
-        return formatter.string(from: event.date)
+        return EventDateFormatters.fullDate.string(from: event.date)
     }
 
     var body: some View {

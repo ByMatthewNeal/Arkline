@@ -13,4 +13,7 @@ protocol GlobalLiquidityServiceProtocol {
 
     /// Fetch US Net Liquidity (Fed balance sheet − TGA − RRP) with changes
     func fetchNetLiquidityChanges() async throws -> NetLiquidityChanges
+
+    /// Fetch composite Global Liquidity Index (BIS + FRED) from server cache
+    func fetchGlobalLiquidityIndex() async throws -> GlobalLiquidityIndex
 }

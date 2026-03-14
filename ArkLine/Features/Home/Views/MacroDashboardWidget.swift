@@ -7,6 +7,7 @@ struct MacroDashboardWidget: View {
     let dxyData: DXYData?
     let liquidityData: GlobalLiquidityChanges?
     var netLiquidityData: NetLiquidityChanges? = nil
+    var globalLiquidityIndex: GlobalLiquidityIndex? = nil
     var vixHistory: [VIXData] = []
     var dxyHistory: [DXYData] = []
     var macroZScores: [MacroIndicatorType: MacroZScoreData] = [:]
@@ -16,8 +17,8 @@ struct MacroDashboardWidget: View {
 
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
-    @StateObject private var regimeManager = RegimeChangeManager.shared
-    @StateObject private var alertManager = ExtremeMoveAlertManager.shared
+    @ObservedObject private var regimeManager = RegimeChangeManager.shared
+    @ObservedObject private var alertManager = ExtremeMoveAlertManager.shared
     @State private var showingDetail = false
     @State private var showPaywall = false
     @State private var isPulsing = false
@@ -121,8 +122,33 @@ struct MacroDashboardWidget: View {
         return (AppColors.error, "Bearish")
     }
 
-    // MARK: - Net Liquidity Signals
+    // MARK: - Liquidity Signals (uses Global CB Liquidity when available, falls back to Net Liq)
+    private var liqLabel: String {
+        globalLiquidityIndex != nil ? "CB Liq" : "Net Liq"
+    }
+
+    private var liqValue: String {
+        if let gli = globalLiquidityIndex {
+            return String(format: "%.1fT", gli.compositeLiquidityT)
+        }
+        return netLiquidityData.map { formatLiquidity($0.current) } ?? "--"
+    }
+
+    private var liqChange: Double? {
+        if let gli = globalLiquidityIndex {
+            return gli.changes.monthly
+        }
+        return netLiquidityData?.weeklyChange
+    }
+
     private var netLiqSignal: (color: Color, label: String) {
+        if let gli = globalLiquidityIndex {
+            switch gli.signal {
+            case "expanding": return (AppColors.success, "Bullish")
+            case "contracting": return (AppColors.error, "Bearish")
+            default: return (AppColors.warning, "Neutral")
+            }
+        }
         guard let nl = netLiquidityData else { return (.secondary, "--") }
         if nl.weeklyChange > 0.5 { return (AppColors.success, "Bullish") }
         if nl.weeklyChange < -0.5 { return (AppColors.error, "Bearish") }
@@ -134,6 +160,13 @@ struct MacroDashboardWidget: View {
     }
 
     private var netLiqCorrelation: CorrelationStrength {
+        if let gli = globalLiquidityIndex {
+            let absChange = abs(gli.monthlyChange)
+            if absChange > 2.0 { return .veryStrong }
+            if absChange > 1.0 { return .strong }
+            if absChange > 0.5 { return .moderate }
+            return .weak
+        }
         guard let nl = netLiquidityData else { return .weak }
         let absChange = abs(nl.weeklyChange)
         if absChange > 2.0 { return .veryStrong }
@@ -246,9 +279,9 @@ struct MacroDashboardWidget: View {
                         .padding(.vertical, 4)
 
                     MacroIndicatorColumn(
-                        label: "Net Liq",
-                        value: netLiquidityData.map { formatLiquidity($0.current) } ?? "--",
-                        change: netLiquidityData?.weeklyChange,
+                        label: liqLabel,
+                        value: liqValue,
+                        change: liqChange,
                         signal: netLiqSignal,
                         cryptoSignal: netLiqCryptoSignal,
                         correlation: netLiqCorrelation,
@@ -343,6 +376,7 @@ struct MacroDashboardWidget: View {
                     dxyData: dxyData,
                     liquidityData: liquidityData,
                     netLiquidityData: netLiquidityData,
+                    globalLiquidityIndex: globalLiquidityIndex,
                     regime: regime,
                     quadrant: quadrant,
                     vixCorrelation: vixCorrelation,

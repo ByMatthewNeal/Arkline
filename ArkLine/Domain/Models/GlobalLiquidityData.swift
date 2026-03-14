@@ -190,6 +190,304 @@ enum LiquidityTimeframe: String, CaseIterable {
     }
 }
 
+// MARK: - Global Liquidity Index (BIS + FRED Composite)
+/// Server-side composite index combining 10+ central bank balance sheets (BIS)
+/// with US Net Liquidity (FRED). Updated daily by sync-global-liquidity edge function.
+
+struct GlobalLiquidityIndex: Codable {
+    let period: String                       // e.g. "2025-12"
+    let compositeLiquidityT: Double          // Total in trillions USD
+    let usNetLiquidityT: Double              // US net liquidity in trillions
+    let fedAssetsT: Double                   // Fed balance sheet in trillions
+    let tgaT: Double                         // Treasury General Account in trillions
+    let rrpT: Double                         // Reverse Repo in trillions
+    let bisTotalB: Double                    // BIS non-US total in billions
+    let signal: String                       // "expanding", "contracting", "neutral"
+    let changes: LiquidityChanges
+    let liquidityCycle: LiquidityCycle?      // Cycle phase, momentum, yield curve
+    let history: [LiquidityPeriod]
+    let countryLatest: [String: CountryData]
+
+    enum CodingKeys: String, CodingKey {
+        case period
+        case compositeLiquidityT = "composite_liquidity_t"
+        case usNetLiquidityT = "us_net_liquidity_t"
+        case fedAssetsT = "fed_assets_t"
+        case tgaT = "tga_t"
+        case rrpT = "rrp_t"
+        case bisTotalB = "bis_total_b"
+        case signal, changes, history
+        case liquidityCycle = "liquidity_cycle"
+        case countryLatest = "country_latest"
+    }
+
+    struct LiquidityChanges: Codable {
+        let monthly: Double?
+        let quarterly: Double?
+        let semiannual: Double?
+        let annual: Double?
+    }
+
+    struct LiquidityPeriod: Codable {
+        let period: String
+        let usNetLiquidityT: Double
+        let bisTotalT: Double
+        let compositeT: Double
+        let breakdown: [String: Double]
+
+        enum CodingKeys: String, CodingKey {
+            case period
+            case usNetLiquidityT = "us_net_liquidity_t"
+            case bisTotalT = "bis_total_t"
+            case compositeT = "composite_t"
+            case breakdown
+        }
+    }
+
+    struct CountryData: Codable {
+        let name: String
+        let valueB: Double
+
+        enum CodingKeys: String, CodingKey {
+            case name
+            case valueB = "value_b"
+        }
+    }
+
+    // MARK: - Computed Helpers
+
+    var formattedComposite: String {
+        String(format: "$%.1fT", compositeLiquidityT)
+    }
+
+    var formattedUSNetLiquidity: String {
+        String(format: "$%.2fT", usNetLiquidityT)
+    }
+
+    var overallSignal: MarketSignal {
+        switch signal {
+        case "expanding": return .bullish
+        case "contracting": return .bearish
+        default: return .neutral
+        }
+    }
+
+    /// Monthly change percentage
+    var monthlyChange: Double {
+        changes.monthly ?? 0
+    }
+
+    /// Annual change percentage
+    var annualChange: Double {
+        changes.annual ?? 0
+    }
+
+    /// Top central banks sorted by size
+    var topCentralBanks: [(code: String, name: String, valueB: Double)] {
+        countryLatest
+            .map { (code: $0.key, name: $0.value.name, valueB: $0.value.valueB) }
+            .sorted { $0.valueB > $1.valueB }
+    }
+}
+
+// MARK: - Liquidity Cycle Data
+/// Computed by sync-global-liquidity edge function: momentum, phase, yield curve, 65-month wave
+
+struct LiquidityCycle: Codable {
+    let momentumIndex: Int              // 0-100 percentile rank of 3M rate of change
+    let momentum3m: Double?             // 3-month rate of change %
+    let momentum6m: Double?             // 6-month rate of change %
+    let acceleration: Double            // Change in 3M momentum (second derivative)
+    let theoreticalWave: Double         // 0-100, 65-month sine wave position
+    let cyclePhase: String              // "early_expansion", "late_expansion", "early_contraction", "late_contraction"
+    let cycleAngleDegrees: Double       // 0-360 degrees on the clock
+    let monthsSinceTrough: Int
+    let cryptoGuidance: String
+    let equityGuidance: String?
+    let traditionalFavored: String
+    let yieldCurve: YieldCurveData
+
+    enum CodingKeys: String, CodingKey {
+        case momentumIndex = "momentum_index"
+        case momentum3m = "momentum_3m"
+        case momentum6m = "momentum_6m"
+        case acceleration
+        case theoreticalWave = "theoretical_wave"
+        case cyclePhase = "cycle_phase"
+        case cycleAngleDegrees = "cycle_angle_degrees"
+        case monthsSinceTrough = "months_since_trough"
+        case cryptoGuidance = "crypto_guidance"
+        case equityGuidance = "equity_guidance"
+        case traditionalFavored = "traditional_favored"
+        case yieldCurve = "yield_curve"
+    }
+
+    /// Parsed cycle phase
+    var phase: LiquidityCyclePhase {
+        LiquidityCyclePhase(rawValue: cyclePhase) ?? .earlyExpansion
+    }
+}
+
+// MARK: - Cycle Phase
+
+enum LiquidityCyclePhase: String, CaseIterable {
+    case earlyExpansion = "early_expansion"
+    case lateExpansion = "late_expansion"
+    case earlyContraction = "early_contraction"
+    case lateContraction = "late_contraction"
+
+    var displayName: String {
+        switch self {
+        case .earlyExpansion: return "Early Expansion"
+        case .lateExpansion: return "Late Expansion"
+        case .earlyContraction: return "Early Contraction"
+        case .lateContraction: return "Late Contraction"
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .earlyExpansion: return "Recovery"
+        case .lateExpansion: return "Peak"
+        case .earlyContraction: return "Slowdown"
+        case .lateContraction: return "Trough"
+        }
+    }
+
+    var cryptoLabel: String {
+        switch self {
+        case .earlyExpansion: return "BTC Accumulation"
+        case .lateExpansion: return "Alt Season"
+        case .earlyContraction: return "Rotate to Stables"
+        case .lateContraction: return "DCA Opportunity"
+        }
+    }
+
+    var equityLabel: String {
+        switch self {
+        case .earlyExpansion: return "Cyclical Growth"
+        case .lateExpansion: return "Rotate to Value"
+        case .earlyContraction: return "Defensive Sectors"
+        case .lateContraction: return "Quality & Dividends"
+        }
+    }
+
+    var defaultEquityGuidance: String {
+        switch self {
+        case .earlyExpansion:
+            return "Favor cyclical growth — tech, discretionary, financials. Earnings growth accelerating as liquidity expands."
+        case .lateExpansion:
+            return "Rotate from growth to value — energy, materials, industrials. Valuations stretched on growth names."
+        case .earlyContraction:
+            return "Defensive sectors — utilities, healthcare, consumer staples. Trim broad equity exposure, raise cash."
+        case .lateContraction:
+            return "Quality dividends and long-duration bonds. Equity valuations resetting — begin building watchlists."
+        }
+    }
+
+    var traditionalLabel: String {
+        switch self {
+        case .earlyExpansion: return "Bonds → Equities"
+        case .lateExpansion: return "Equities → Commodities"
+        case .earlyContraction: return "Cash & Defensive"
+        case .lateContraction: return "Long Bonds"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .earlyExpansion: return AppColors.success
+        case .lateExpansion: return AppColors.warning
+        case .earlyContraction: return AppColors.error
+        case .lateContraction: return Color(hex: "3B82F6")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .earlyExpansion: return "arrow.up.right"
+        case .lateExpansion: return "arrow.up"
+        case .earlyContraction: return "arrow.down.right"
+        case .lateContraction: return "arrow.down"
+        }
+    }
+
+    /// Clock position in degrees (0 = bottom/trough, 90 = left/equities, 180 = top/peak, 270 = right/cash)
+    var clockStartAngle: Double {
+        switch self {
+        case .earlyExpansion: return 0
+        case .lateExpansion: return 90
+        case .earlyContraction: return 180
+        case .lateContraction: return 270
+        }
+    }
+}
+
+// MARK: - Yield Curve Data
+
+struct YieldCurveData: Codable {
+    let t10y2y: Double?
+    let t10y2y1mAgo: Double?
+    let t10y3m: Double?
+    let regime: String
+
+    enum CodingKeys: String, CodingKey {
+        case t10y2y
+        case t10y2y1mAgo = "t10y2y_1m_ago"
+        case t10y3m
+        case regime
+    }
+
+    var parsedRegime: YieldCurveRegime {
+        YieldCurveRegime(rawValue: regime) ?? .unknown
+    }
+}
+
+enum YieldCurveRegime: String, CaseIterable {
+    case steepening
+    case flattening
+    case inverted
+    case uninverting
+    case deeplyInverted = "deeply_inverted"
+    case stable
+    case unknown
+
+    var displayName: String {
+        switch self {
+        case .steepening: return "Steepening"
+        case .flattening: return "Flattening"
+        case .inverted: return "Inverted"
+        case .uninverting: return "Un-inverting"
+        case .deeplyInverted: return "Deeply Inverted"
+        case .stable: return "Stable"
+        case .unknown: return "—"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .steepening: return AppColors.success       // Early cycle, bullish
+        case .stable: return AppColors.warning
+        case .flattening: return AppColors.warning        // Late cycle
+        case .uninverting: return AppColors.error          // Often precedes recession
+        case .inverted, .deeplyInverted: return AppColors.error
+        case .unknown: return AppColors.textSecondary
+        }
+    }
+
+    var interpretation: String {
+        switch self {
+        case .steepening: return "Early cycle signal — historically bullish for risk assets"
+        case .flattening: return "Late cycle signal — Fed tightening, caution warranted"
+        case .inverted: return "Recession warning — historically bearish, precedes downturns by 6-18 months"
+        case .uninverting: return "Curve normalizing — often the final stage before recession begins"
+        case .deeplyInverted: return "Strong recession signal — defensive positioning recommended"
+        case .stable: return "Neutral yield curve conditions"
+        case .unknown: return "Yield curve data unavailable"
+        }
+    }
+}
+
 // MARK: - Fed Data Series
 /// FRED API series IDs for liquidity and FX data
 enum FREDSeries: String {

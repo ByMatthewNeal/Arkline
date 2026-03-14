@@ -534,30 +534,54 @@ private struct AssetReferenceDestination: View {
     }
 }
 
+// MARK: - Cached DateFormatters
+
+private enum BroadcastDateFormatters {
+    /// "h:mm a" — e.g. "2:30 PM"
+    static let time: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
+
+    /// "EEEE" — e.g. "Thursday"
+    static let weekday: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+
+    /// "MMM d" — e.g. "Mar 13"
+    static let monthDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter
+    }()
+
+    /// "MMM d, yyyy" — e.g. "Mar 13, 2026"
+    static let monthDayYear: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter
+    }()
+}
+
 // MARK: - Date Formatting Helper
 
 /// Formats a broadcast date with friendly relative labels.
 func formattedBroadcastDate(_ date: Date) -> String {
     let calendar = Calendar.current
-    let timeFormatter = DateFormatter()
-    timeFormatter.dateFormat = "h:mm a"
-    let time = timeFormatter.string(from: date)
+    let time = BroadcastDateFormatters.time.string(from: date)
 
     if calendar.isDateInToday(date) {
         return "Today at \(time)"
     } else if calendar.isDateInYesterday(date) {
         return "Yesterday at \(time)"
     } else if let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()), date >= weekAgo {
-        let dayFormatter = DateFormatter()
-        dayFormatter.dateFormat = "EEEE"
-        return "\(dayFormatter.string(from: date)) at \(time)"
+        return "\(BroadcastDateFormatters.weekday.string(from: date)) at \(time)"
     } else if calendar.component(.year, from: date) == calendar.component(.year, from: Date()) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d"
-        return "\(dateFormatter.string(from: date)) at \(time)"
+        return "\(BroadcastDateFormatters.monthDay.string(from: date)) at \(time)"
     } else {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d, yyyy"
-        return "\(dateFormatter.string(from: date)) at \(time)"
+        return "\(BroadcastDateFormatters.monthDayYear.string(from: date)) at \(time)"
     }
 }
