@@ -221,7 +221,7 @@ struct RiskLevelChartView: View {
             }
             .sheet(isPresented: $showShareCard) {
                 if let risk = currentRiskLevel {
-                    ShareCardSheet(title: "Share \(selectedCoin.rawValue) Risk", cardHeight: 400) { _, _ in
+                    ShareCardSheet(title: "Share \(selectedCoin.rawValue) Risk", cardHeight: 490) { _, _ in
                         RiskShareCardContent(
                             coinSymbol: selectedCoin.rawValue,
                             riskLevel: risk,
@@ -296,9 +296,12 @@ struct RiskLevelChartView: View {
             }
         } label: {
             HStack(spacing: ArkSpacing.sm) {
-                Image(systemName: selectedCoin.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(AppColors.accent)
+                Text(selectedCoin.ticker)
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+                    .frame(width: 32, height: 32)
+                    .background(AppColors.accent)
+                    .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
@@ -378,7 +381,7 @@ struct RiskLevelChartView: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 280)
                 .glassCard(cornerRadius: ArkSpacing.Radius.lg)
-            } else if isLoadingHistory {
+            } else if isLoadingHistory && enhancedRiskHistory.isEmpty {
                 VStack(spacing: ArkSpacing.md) {
                     ProgressView()
                         .scaleEffect(1.2)
@@ -460,7 +463,7 @@ struct RiskLevelChartView: View {
                             .animation(.easeOut(duration: 0.15), value: selectedDate)
                         }
 
-                        // Chart
+                        // Chart — use .id to prevent cross-range animation glitch
                         RiskLevelChart(
                             history: filteredHistory,
                             timeRange: selectedTimeRange,
@@ -468,6 +471,7 @@ struct RiskLevelChartView: View {
                             enhancedHistory: filteredEnhancedHistory,
                             selectedDate: $selectedDate
                         )
+                        .id(selectedTimeRange)
                         .frame(height: 280)
                         .padding(.horizontal, 4)
 
@@ -653,9 +657,10 @@ struct RiskLevelChartView: View {
                         Spacer()
                         VStack(spacing: ArkSpacing.sm) {
                             ProgressView()
-                            Text("Loading factor data...")
+                            Text("Running multi-factor analysis...")
                                 .font(.footnote)
                                 .foregroundColor(textSecondary.opacity(0.85))
+                            TimeElapsedView()
                         }
                         Spacer()
                     }
@@ -788,6 +793,21 @@ struct RiskLevelChartView: View {
         }
         .padding(.horizontal, ArkSpacing.md)
         .padding(.vertical, ArkSpacing.sm)
+    }
+}
+
+// MARK: - Time Elapsed View
+
+/// Small elapsed-time counter shown during multi-factor analysis loading
+private struct TimeElapsedView: View {
+    @State private var elapsed: Int = 0
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        Text(elapsed < 2 ? "" : "\(elapsed)s elapsed")
+            .font(.system(size: 11, design: .monospaced))
+            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+            .onReceive(timer) { _ in elapsed += 1 }
     }
 }
 

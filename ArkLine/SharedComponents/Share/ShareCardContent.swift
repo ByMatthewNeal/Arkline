@@ -1,4 +1,6 @@
 import SwiftUI
+import CoreImage
+import CoreImage.CIFilterBuiltins
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -209,7 +211,46 @@ struct RiskShareCardContent: View {
                     }
                 }
             }
+
+            // CTA + QR Code
+            Divider().opacity(0.15)
+
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Get real-time risk levels")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                    Text("arkline.io")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(hex: "3369FF"))
+                }
+
+                Spacer()
+
+                // QR code for arkline.io
+                if let qrImage = Self.generateQRCode(from: "https://arkline.io") {
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 52, height: 52)
+                        .cornerRadius(4)
+                }
+            }
         }
+    }
+
+    /// Generate a QR code UIImage from a string
+    private static func generateQRCode(from string: String) -> UIImage? {
+        guard let data = string.data(using: .ascii),
+              let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+        filter.setValue(data, forKey: "inputMessage")
+        filter.setValue("M", forKey: "inputCorrectionLevel")
+        guard let ciImage = filter.outputImage else { return nil }
+        let scale = 256.0 / ciImage.extent.width
+        let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return UIImage(cgImage: cgImage)
     }
 }
 

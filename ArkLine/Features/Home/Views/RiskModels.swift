@@ -133,6 +133,9 @@ enum RiskCoin: String, CaseIterable {
         case .render: return "r.circle.fill"
         }
     }
+
+    /// Short ticker symbol for display (e.g. "BTC", "ETH")
+    var ticker: String { rawValue }
 }
 
 // Legacy alias

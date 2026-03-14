@@ -120,7 +120,6 @@ struct LiquidityCycleSection: View {
 
                     // Crypto guidance
                     positioningBlock(
-                        icon: "bitcoinsign.circle.fill",
                         title: "CRYPTO POSITIONING",
                         label: cycle.phase.cryptoLabel,
                         detail: cycle.cryptoGuidance,
@@ -132,7 +131,6 @@ struct LiquidityCycleSection: View {
 
                     // Equity guidance
                     positioningBlock(
-                        icon: "chart.line.uptrend.xyaxis",
                         title: "EQUITY POSITIONING",
                         label: cycle.phase.equityLabel,
                         detail: cycle.equityGuidance ?? cycle.phase.defaultEquityGuidance,
@@ -189,18 +187,12 @@ struct LiquidityCycleSection: View {
         .cornerRadius(6)
     }
 
-    private func positioningBlock(icon: String, title: String, label: String, detail: String, color: Color) -> some View {
+    private func positioningBlock(title: String, label: String, detail: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(color)
-                    .frame(width: 16, alignment: .center)
-                Text(title)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(textPrimary.opacity(0.4))
-                    .tracking(1)
-            }
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(textPrimary.opacity(0.4))
+                .tracking(1)
 
             Text(label)
                 .font(.system(size: 15, weight: .semibold))

@@ -497,20 +497,21 @@ struct LearnMoreRow: View {
     let text: String
 
     var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
 
-            Text(label)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(color)
+                Text(label)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(color)
+            }
 
             Text(text)
                 .font(.system(size: 11))
                 .foregroundColor(.secondary)
-
-            Spacer()
+                .padding(.leading, 14)
         }
     }
 }
@@ -524,6 +525,7 @@ struct SimpleIndicatorRow: View {
     let status: String
     let statusColor: Color
     var isExpanded: Bool = false
+    var showChevron: Bool = true
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -570,11 +572,13 @@ struct SimpleIndicatorRow: View {
                 .cornerRadius(8)
 
             // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(textPrimary.opacity(0.3))
-                .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                .animation(.easeInOut(duration: 0.2), value: isExpanded)
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textPrimary.opacity(0.3))
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .animation(.easeInOut(duration: 0.2), value: isExpanded)
+            }
         }
         .padding(14)
     }

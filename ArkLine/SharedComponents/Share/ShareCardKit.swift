@@ -11,17 +11,21 @@ struct BrandedShareCard<Content: View>: View {
     let showTimestamp: Bool
     @ViewBuilder let content: Content
 
+    private var logoImage: UIImage? { UIImage(named: "ArkLineAppIcon") }
+
     var body: some View {
         VStack(spacing: 0) {
             // Branded header
             if showBranding {
                 HStack {
                     HStack(spacing: 8) {
-                        Image("AppIcon")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 28, height: 28)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        if let logo = logoImage {
+                            Image(uiImage: logo)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 28, height: 28)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
 
                         Text("ArkLine")
                             .font(.system(size: 16, weight: .bold))

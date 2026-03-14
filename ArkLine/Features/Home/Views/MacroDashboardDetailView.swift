@@ -224,7 +224,8 @@ struct MacroDashboardDetailView: View {
                                     change: gli.changes.monthly,
                                     status: cbLiqStatus,
                                     statusColor: cbLiqStatusColor,
-                                    isExpanded: false
+                                    isExpanded: false,
+                                    showChevron: false
                                 )
                             }
                         }
