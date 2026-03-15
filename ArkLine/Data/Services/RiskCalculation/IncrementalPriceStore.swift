@@ -75,6 +75,14 @@ actor IncrementalPriceStore {
 
     // MARK: - Public API
 
+    /// Resets fetch cooldowns so the next call to `fullPriceHistory` retries immediately.
+    /// Call on app foreground to recover from transient network failures.
+    func resetCooldowns() {
+        fetchAttempted.removeAll()
+        baselineFetchFailed.removeAll()
+        mergedCache.removeAll()
+    }
+
     /// Returns the full price history for a coin: embedded baseline (or Binance baseline) + incremental days.
     /// Fetches missing days from Binance if needed (respects cooldown).
     func fullPriceHistory(for coin: String) async -> [(date: Date, price: Double)] {

@@ -252,16 +252,47 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
             throw RiskCalculationError.unsupportedAsset(coin)
         }
 
-        // Fetch price history, live price, and factor data in parallel
-        async let historyTask = fetchPriceHistory(config: config)
-        async let livePriceTask = fetchCurrentPrice(coin: coin)
+        // Fetch each dependency independently so one failure doesn't kill the others.
+        // Price history and live price are critical; factor data degrades gracefully.
+        async let historyResult: [(date: Date, price: Double)]? = {
+            do { return try await fetchPriceHistory(config: config) }
+            catch {
+                logError("Multi-factor: price history failed for \(coin): \(error.localizedDescription)", category: .network)
+                return nil
+            }
+        }()
+
+        async let livePriceResult: Double? = {
+            do { return try await fetchCurrentPrice(coin: coin) }
+            catch {
+                logError("Multi-factor: live price failed for \(coin): \(error.localizedDescription)", category: .network)
+                return nil
+            }
+        }()
+
         async let factorTask = factorFetcher.fetchFactors(for: coin)
 
-        let (priceHistory, livePrice, factorData) = try await (historyTask, livePriceTask, factorTask)
+        let (priceHistory, livePrice, factorData) = await (historyResult, livePriceResult, factorTask)
 
-        // Calculate multi-factor risk using live price and today's date
+        // Price history is required for regression (the base factor)
+        guard let priceHistory, !priceHistory.isEmpty else {
+            throw RiskCalculationError.insufficientData(coin)
+        }
+
+        // Live price is required — try using last price from history as fallback
+        let price: Double
+        if let livePrice {
+            price = livePrice
+        } else if let lastHistorical = priceHistory.last?.price {
+            logWarning("Multi-factor: using last historical price for \(coin) as fallback", category: .network)
+            price = lastHistorical
+        } else {
+            throw RiskCalculationError.noDataAvailable(coin)
+        }
+
+        // Calculate multi-factor risk — factor data may have nil fields, calculator handles gracefully
         guard let multiFactorRisk = riskCalculator.calculateMultiFactorRisk(
-            price: livePrice,
+            price: price,
             date: Date(),
             config: config,
             factorData: factorData,

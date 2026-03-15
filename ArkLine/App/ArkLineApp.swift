@@ -38,6 +38,7 @@ struct ArkLineApp: App {
                 Task { await AnalyticsService.shared.flush() }
             } else if newPhase == .active {
                 Task { await appState.refreshUserProfile() }
+                Task { await IncrementalPriceStore.shared.resetCooldowns() }
                 BroadcastNotificationService.shared.clearBadge()
             }
         }
