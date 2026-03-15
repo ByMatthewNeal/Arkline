@@ -41,7 +41,7 @@ enum Constants {
 
     // MARK: - API Endpoints
     enum Endpoints {
-        static let coinGeckoBase = "https://api.coingecko.com/api/v3"
+        static let coinGeckoBase = "https://pro-api.coingecko.com/api/v3"
         static let metalsAPIBase = "https://metals-api.com/api"
         static let taapiBase = "https://api.taapi.io"
         static let arklineBackendBase = "https://web.arkline.io/api/v1"

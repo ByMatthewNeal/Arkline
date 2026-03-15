@@ -291,7 +291,7 @@ final class APIProxy {
             }
         case .dynamicCoinGeckoHeader:
             if let key = config.apiKey {
-                let headerName = key.hasPrefix("CG-") ? "x-cg-demo-api-key" : "x-cg-pro-api-key"
+                let headerName = "x-cg-pro-api-key"
                 request.setValue(key, forHTTPHeaderField: headerName)
             }
         case .queryParam:

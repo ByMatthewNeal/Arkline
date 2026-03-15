@@ -14,7 +14,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
  * Runs every 5 minutes via cron.
  */
 
-const COINGECKO_BASE = "https://api.coingecko.com/api/v3"
+const COINGECKO_PRO_BASE = "https://pro-api.coingecko.com/api/v3"
+const COINGECKO_FREE_BASE = "https://api.coingecko.com/api/v3"
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
@@ -33,17 +34,16 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, supabaseKey)
 
+  // Paid plans use pro-api.coingecko.com + x-cg-pro-api-key header
+  const isPro = !!cgKey
+  const COINGECKO_BASE = isPro ? COINGECKO_PRO_BASE : COINGECKO_FREE_BASE
+
   const headers: Record<string, string> = {
     "Accept": "application/json",
   }
 
-  // CoinGecko Demo API key goes in header for free tier
   if (cgKey) {
-    if (cgKey.startsWith("CG-")) {
-      headers["x-cg-demo-api-key"] = cgKey
-    } else {
-      headers["x-cg-pro-api-key"] = cgKey
-    }
+    headers["x-cg-pro-api-key"] = cgKey
   }
 
   const stats = { markets: false, global: false, trending: false, errors: [] as string[] }
