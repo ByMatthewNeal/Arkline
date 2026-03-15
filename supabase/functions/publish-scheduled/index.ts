@@ -34,10 +34,10 @@ Deno.serve(async (req) => {
       .from("broadcasts")
       .select("id, title, target_audience")
       .eq("status", "scheduled")
-      .lte("scheduled_at", now)
+      .lte("published_at", now)
 
     if (fetchError) {
-      throw fetchError
+      throw new Error(`broadcasts query failed: ${fetchError.message}`)
     }
 
     if (!scheduled || scheduled.length === 0) {
@@ -84,8 +84,9 @@ Deno.serve(async (req) => {
       { headers: corsHeaders }
     )
   } catch (err) {
-    console.error("publish-scheduled error:", err)
-    return new Response(JSON.stringify({ error: String(err) }), {
+    const msg = err instanceof Error ? err.message : JSON.stringify(err)
+    console.error("publish-scheduled error:", msg)
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: corsHeaders,
     })
