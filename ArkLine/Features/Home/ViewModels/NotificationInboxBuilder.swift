@@ -86,7 +86,12 @@ struct NotificationInboxBuilder {
         // 4. Daily briefing
         if let summary = marketSummary, summary.generatedAt > cutoff {
             let id = "briefing_\(summary.briefingKey)"
-            let preview = String(summary.summary.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines)
+            // Strip markdown headers (## Posture, etc.) from the preview
+            let cleanedSummary = summary.summary
+                .components(separatedBy: .newlines)
+                .drop { $0.trimmingCharacters(in: .whitespaces).hasPrefix("#") || $0.trimmingCharacters(in: .whitespaces).isEmpty }
+                .joined(separator: " ")
+            let preview = String(cleanedSummary.prefix(80)).trimmingCharacters(in: .whitespacesAndNewlines)
             notifications.append(AppNotification(
                 id: id,
                 type: .dailyBriefing,

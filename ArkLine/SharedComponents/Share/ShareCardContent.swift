@@ -173,13 +173,9 @@ struct RiskShareCardContent: View {
                     .cornerRadius(6)
             }
 
-            // Risk chart
-            RiskLevelChart(
-                history: history,
-                timeRange: timeRange,
-                colorScheme: .dark
-            )
-            .frame(height: 160)
+            // Lightweight sparkline (Swift Charts freezes ImageRenderer)
+            RiskSparkline(history: history)
+                .frame(height: 160)
 
             // Price + additional info
             HStack {
@@ -270,6 +266,86 @@ private struct ShareStatColumn: View {
                 .foregroundColor(.white)
                 .lineLimit(1)
         }
+    }
+}
+
+// MARK: - Risk Sparkline (ImageRenderer-safe, no Swift Charts)
+
+/// Lightweight Path-based chart that renders safely inside ImageRenderer.
+private struct RiskSparkline: View {
+    let history: [ITCRiskLevel]
+
+    var body: some View {
+        let values = history.map(\.riskLevel)
+        guard values.count >= 2 else {
+            return AnyView(Color.clear)
+        }
+        let minV = 0.0
+        let maxV = 1.0
+        let range = maxV - minV
+        let lineColor = RiskColors.color(for: values.last ?? 0.5)
+
+        return AnyView(
+            ZStack(alignment: .leading) {
+                // Threshold lines
+                ForEach([0.2, 0.4, 0.55, 0.7, 0.9], id: \.self) { threshold in
+                    let y = 1.0 - (threshold - minV) / range
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 1)
+                        .offset(y: 0) // positioned via GeometryReader below
+                        .opacity(0) // placeholder — real lines drawn in Canvas
+                }
+
+                GeometryReader { geo in
+                    let w = geo.size.width
+                    let h = geo.size.height
+
+                    // Threshold lines
+                    ForEach([0.2, 0.4, 0.55, 0.7, 0.9], id: \.self) { threshold in
+                        let y = h * (1.0 - (threshold - minV) / range)
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: w, y: y))
+                        }
+                        .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                    }
+
+                    // Risk line
+                    Path { path in
+                        let step = w / CGFloat(values.count - 1)
+                        for (i, val) in values.enumerated() {
+                            let x = CGFloat(i) * step
+                            let y = h * (1.0 - (val - minV) / range)
+                            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                            else { path.addLine(to: CGPoint(x: x, y: y)) }
+                        }
+                    }
+                    .stroke(lineColor, lineWidth: 1.5)
+
+                    // Gradient fill under line
+                    Path { path in
+                        let step = w / CGFloat(values.count - 1)
+                        for (i, val) in values.enumerated() {
+                            let x = CGFloat(i) * step
+                            let y = h * (1.0 - (val - minV) / range)
+                            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                            else { path.addLine(to: CGPoint(x: x, y: y)) }
+                        }
+                        path.addLine(to: CGPoint(x: w, y: h))
+                        path.addLine(to: CGPoint(x: 0, y: h))
+                        path.closeSubpath()
+                    }
+                    .fill(
+                        LinearGradient(
+                            colors: [lineColor.opacity(0.3), lineColor.opacity(0.0)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+            }
+        )
     }
 }
 

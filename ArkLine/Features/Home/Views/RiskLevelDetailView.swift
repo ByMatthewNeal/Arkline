@@ -297,7 +297,7 @@ struct RiskLevelChartView: View {
         } label: {
             HStack(spacing: ArkSpacing.sm) {
                 Text(selectedCoin.ticker)
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: selectedCoin.ticker.count > 4 ? 8 : 12, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
                     .frame(width: 32, height: 32)
                     .background(AppColors.accent)

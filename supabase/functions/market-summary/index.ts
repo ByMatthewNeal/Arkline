@@ -422,8 +422,8 @@ Rules:
 
     // --- Push notification + TTS pre-generation (fire-and-forget) ---
     const briefingKey = `${todayUTC}_${slot}`
-    const postureMatch = summary.match(/## Posture\n([^\n]+)/)
-    const posture = postureMatch?.[1]?.trim() ?? ""
+    const postureMatch = summary.match(/##\s*Posture\s*\n+([^\n#]+)/)
+    const posture = (postureMatch?.[1]?.trim() ?? "").replace(/^#+\s*/, "")
     const slotLabel = slot === "morning" ? "Morning Intel" : "Close & Context"
     const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
 

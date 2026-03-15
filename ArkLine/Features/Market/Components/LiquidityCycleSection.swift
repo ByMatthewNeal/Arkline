@@ -203,6 +203,7 @@ struct LiquidityCycleSection: View {
                 .foregroundColor(textPrimary.opacity(0.6))
                 .lineSpacing(2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func momentumColor(_ index: Int) -> Color {

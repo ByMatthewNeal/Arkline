@@ -521,6 +521,7 @@ struct CompactRiskCard: View {
     var weeklyAvgRisk: Double? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
+    @State private var hasTimedOut = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -588,11 +589,20 @@ struct CompactRiskCard: View {
                                 .foregroundColor(RiskColors.color(for: weeklyAvg))
                         }
                     }
-                } else {
-                    // Loading state
+                } else if hasTimedOut {
+                    // Failed / timed out state
                     Text("--")
                         .font(.system(size: 24, weight: .bold, design: .default))
                         .foregroundColor(textPrimary.opacity(0.3))
+
+                    Text("Tap to retry")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                } else {
+                    // Loading state
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .frame(height: 24)
 
                     Text("Loading...")
                         .font(.system(size: 10))
@@ -613,6 +623,14 @@ struct CompactRiskCard: View {
         .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             RiskLevelChartView(initialCoin: RiskCoin(rawValue: coinSymbol) ?? .btc)
+        }
+        .task(id: riskLevel == nil) {
+            guard riskLevel == nil else {
+                hasTimedOut = false
+                return
+            }
+            try? await Task.sleep(for: .seconds(8))
+            if riskLevel == nil { hasTimedOut = true }
         }
     }
 }
