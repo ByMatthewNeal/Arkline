@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 interface ServiceConfig {
   baseURL: string
   envVar: string
-  auth: { type: "header"; name: string } | { type: "query"; name: string } | { type: "dynamic-header" }
+  auth: { type: "header"; name: string } | { type: "query"; name: string } | { type: "dynamic-header" } | { type: "none" }
 }
 
 const SERVICES: Record<string, ServiceConfig> = {
@@ -14,7 +14,7 @@ const SERVICES: Record<string, ServiceConfig> = {
     auth: { type: "query", name: "apikey" },
   },
   coingecko: {
-    baseURL: "https://api.coingecko.com/api/v3",
+    baseURL: "https://pro-api.coingecko.com/api/v3",
     envVar: "COINGECKO_API_KEY",
     auth: { type: "dynamic-header" }, // header name depends on key prefix
   },
@@ -42,6 +42,11 @@ const SERVICES: Record<string, ServiceConfig> = {
     baseURL: "https://finnhub.io/api/v1",
     envVar: "FINNHUB_API_KEY",
     auth: { type: "header", name: "X-Finnhub-Token" },
+  },
+  "binance-futures": {
+    baseURL: "https://fapi.binance.com",
+    envVar: "",
+    auth: { type: "none" },
   },
 }
 
@@ -152,9 +157,8 @@ Deno.serve(async (req) => {
       url.searchParams.append(config.auth.name, apiKey)
     }
   } else if (config.auth.type === "dynamic-header") {
-    // CoinGecko: header name depends on key prefix
-    const headerName = apiKey.startsWith("CG-") ? "x-cg-demo-api-key" : "x-cg-pro-api-key"
-    headers[headerName] = apiKey
+    // CoinGecko: always use pro header for paid plans
+    headers["x-cg-pro-api-key"] = apiKey
   }
 
   // Build fetch options

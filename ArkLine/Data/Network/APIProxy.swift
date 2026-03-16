@@ -21,6 +21,7 @@ final class APIProxy {
         case fred
         case coinglass
         case finnhub
+        case binanceFutures = "binance-futures"
     }
 
     // MARK: - Request Types
@@ -99,6 +100,12 @@ final class APIProxy {
                 baseURL: Constants.Endpoints.finnhubBase,
                 apiKey: Constants.API.finnhubAPIKey,
                 keyInjection: .header(name: "X-Finnhub-Token")
+            )
+        case .binanceFutures:
+            return DirectConfig(
+                baseURL: "https://fapi.binance.com",
+                apiKey: nil,
+                keyInjection: .header(name: "")
             )
         }
     }

@@ -1,18 +1,26 @@
 import Foundation
 
 // MARK: - Binance Funding Rate Service
-/// Fetches funding rates from Binance Futures API (free, no API key required)
+/// Fetches funding rates from Binance Futures API via server-side proxy.
+/// Binance Futures (fapi.binance.com) is geo-blocked in the US, so requests
+/// are routed through the api-proxy edge function which runs outside the US.
 final class APIBinanceFundingService {
-    private let baseURL = "https://fapi.binance.com"
+    private let proxy = APIProxy.shared
 
     // MARK: - Public Methods
 
     /// Fetch current funding rate for a symbol
     func fetchFundingRate(symbol: String) async throws -> BinanceFundingRate {
-        let endpoint = "/fapi/v1/fundingRate"
+        let path = "/fapi/v1/fundingRate"
         let params = ["symbol": "\(symbol.uppercased())USDT", "limit": "1"]
 
-        let rates: [BinanceFundingRateResponse] = try await request(endpoint: endpoint, params: params)
+        let data = try await proxy.request(
+            service: .binanceFutures,
+            path: path,
+            queryItems: params
+        )
+
+        let rates = try JSONDecoder().decode([BinanceFundingRateResponse].self, from: data)
 
         guard let latest = rates.first else {
             throw AppError.dataNotFound
@@ -47,10 +55,16 @@ final class APIBinanceFundingService {
 
     /// Fetch premium index (includes predicted funding rate)
     func fetchPremiumIndex(symbol: String) async throws -> BinancePremiumIndex {
-        let endpoint = "/fapi/v1/premiumIndex"
+        let path = "/fapi/v1/premiumIndex"
         let params = ["symbol": "\(symbol.uppercased())USDT"]
 
-        let response: BinancePremiumIndexResponse = try await request(endpoint: endpoint, params: params)
+        let data = try await proxy.request(
+            service: .binanceFutures,
+            path: path,
+            queryItems: params
+        )
+
+        let response = try JSONDecoder().decode(BinancePremiumIndexResponse.self, from: data)
 
         let fundingRate = Double(response.lastFundingRate) ?? 0
         logDebug("Binance \(symbol) funding rate: \(response.lastFundingRate) -> \(fundingRate)", category: .network)
@@ -63,37 +77,6 @@ final class APIBinanceFundingService {
             nextFundingTime: Date(timeIntervalSince1970: TimeInterval(response.nextFundingTime) / 1000),
             interestRate: Double(response.interestRate) ?? 0
         )
-    }
-
-    // MARK: - Private Networking
-
-    private func request<T: Codable>(endpoint: String, params: [String: String]) async throws -> T {
-        var components = URLComponents(string: baseURL + endpoint)
-        components?.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
-
-        guard let url = components?.url else {
-            throw AppError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 10
-
-        let (data, response) = try await PinnedURLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AppError.invalidResponse
-        }
-
-        guard httpResponse.statusCode == 200 else {
-            if let responseStr = String(data: data, encoding: .utf8) {
-                logError("Binance API Error (\(httpResponse.statusCode)): \(responseStr)", category: .network)
-            }
-            throw AppError.serverError(statusCode: httpResponse.statusCode)
-        }
-
-        return try JSONDecoder().decode(T.self, from: data)
     }
 }
 
