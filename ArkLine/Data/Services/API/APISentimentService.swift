@@ -116,29 +116,29 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchFundingRate() async throws -> FundingRate {
-        // Use Binance Futures API for funding rate (free, no API key needed)
-        let binanceService = APIBinanceFundingService()
+        // Use CoinGlass API for funding rates (not geo-blocked, unlike Binance Futures)
+        let coinglassService = APICoinglassService()
 
-        // Fetch BTC and ETH funding rates
-        async let btcRate = binanceService.fetchPremiumIndex(symbol: "BTC")
-        async let ethRate = binanceService.fetchPremiumIndex(symbol: "ETH")
+        // Fetch BTC and ETH funding rates via CoinGlass
+        async let btcRate = coinglassService.fetchFundingRate(symbol: "BTC")
+        async let ethRate = coinglassService.fetchFundingRate(symbol: "ETH")
 
         let (btc, eth) = try await (btcRate, ethRate)
 
         // Average rate across BTC and ETH
-        let avgRate = (btc.lastFundingRate + eth.lastFundingRate) / 2
+        let avgRate = (btc.fundingRate + eth.fundingRate) / 2
 
         return FundingRate(
             averageRate: avgRate,
             exchanges: [
                 ExchangeFundingRate(
                     exchange: "BTC",
-                    rate: btc.lastFundingRate,
+                    rate: btc.fundingRate,
                     nextFundingTime: btc.nextFundingTime
                 ),
                 ExchangeFundingRate(
                     exchange: "ETH",
-                    rate: eth.lastFundingRate,
+                    rate: eth.fundingRate,
                     nextFundingTime: eth.nextFundingTime
                 )
             ],
