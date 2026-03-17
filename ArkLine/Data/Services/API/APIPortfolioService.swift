@@ -141,7 +141,7 @@ final class APIPortfolioService: PortfolioServiceProtocol {
 
             // Convert to PortfolioHistoryPoint for UI
             return records.map { record in
-                PortfolioHistoryPoint(date: record.recordedAt, value: record.totalValue)
+                PortfolioHistoryPoint(date: record.date, value: record.totalValue)
             }
         } catch {
             logError(error, context: "Fetch portfolio history", category: .data)
@@ -162,15 +162,19 @@ final class APIPortfolioService: PortfolioServiceProtocol {
         }
 
         do {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
+
             let record = CreatePortfolioHistoryRequest(
                 portfolioId: portfolioId,
                 totalValue: totalValue,
-                recordedDate: ISO8601DateFormatter().string(from: Date())
+                recordedDate: dateFormatter.string(from: Date())
             )
 
             try await supabase.database
                 .from(SupabaseTable.portfolioHistory.rawValue)
-                .insert(record)
+                .upsert(record, onConflict: "portfolio_id,recorded_date")
                 .execute()
 
             logInfo("Recorded portfolio snapshot", category: .data)
@@ -494,13 +498,30 @@ private struct PortfolioHistoryRecord: Codable {
     let id: UUID
     let portfolioId: UUID
     let totalValue: Double
-    let recordedAt: Date
+    let recordedDate: String
 
     enum CodingKeys: String, CodingKey {
         case id
         case portfolioId = "portfolio_id"
         case totalValue = "total_value"
-        case recordedAt = "recorded_date"
+        case recordedDate = "recorded_date"
+    }
+
+    /// Parse date string — handles both "2026-03-11" and ISO8601 formats
+    var date: Date {
+        // Try plain date first (PostgreSQL date type)
+        let dateOnly = DateFormatter()
+        dateOnly.dateFormat = "yyyy-MM-dd"
+        dateOnly.timeZone = TimeZone(identifier: "UTC")
+        if let d = dateOnly.date(from: recordedDate) { return d }
+
+        // Fall back to ISO8601
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = iso.date(from: recordedDate) { return d }
+
+        iso.formatOptions = [.withInternetDateTime]
+        return iso.date(from: recordedDate) ?? Date()
     }
 }
 
