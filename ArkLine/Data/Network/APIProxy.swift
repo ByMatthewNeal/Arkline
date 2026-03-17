@@ -115,6 +115,7 @@ final class APIProxy {
     /// Request data from an external API. Tries the Edge Function proxy first,
     /// falls back to a direct HTTP request with local API keys on failure.
     /// Whether there's an active Supabase auth session (JWT available for proxy)
+    @MainActor
     private var hasActiveSession: Bool {
         SupabaseManager.shared.isConfigured && SupabaseAuthManager.shared.accessToken != nil
     }
@@ -126,7 +127,7 @@ final class APIProxy {
         queryItems: [String: String]? = nil
     ) async throws -> Data {
         // Try proxy only if there's a valid auth session
-        if hasActiveSession {
+        if await hasActiveSession {
             do {
                 return try await proxyGetRequest(service: service, path: path, method: method, queryItems: queryItems)
             } catch {
@@ -146,7 +147,7 @@ final class APIProxy {
         body: Body
     ) async throws -> Data {
         // Try proxy only if there's a valid auth session
-        if hasActiveSession {
+        if await hasActiveSession {
             do {
                 return try await proxyPostRequest(service: service, path: path, queryItems: queryItems, body: body)
             } catch {

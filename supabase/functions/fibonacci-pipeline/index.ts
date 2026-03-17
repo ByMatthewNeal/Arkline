@@ -7,7 +7,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *
  * Runs every 4 hours at 0:05, 4:05, 8:05, 12:05, 16:05, 20:05 UTC
  * (all six 4H candle closes):
- *   1. Fetches 4h + 1D OHLC candles from Binance for each asset
+ *   1. Fetches 4h + 1D OHLC candles from Coinbase for each asset
  *   2. Detects swing highs/lows
  *   3. Computes 0.618/0.786 Fibonacci retracement levels
  *   4. Finds confluence zones across timeframes
@@ -20,25 +20,26 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 // ─── Multi-Asset Configuration ──────────────────────────────────────────────
 
 interface AssetConfig {
-  symbol: string   // Binance pair e.g. "BTCUSDT"
+  cbPair: string   // Coinbase product ID e.g. "BTC-USD"
   ticker: string   // Display ticker e.g. "BTC"
 }
 
 const ASSETS: AssetConfig[] = [
-  { symbol: "BTCUSDT",  ticker: "BTC" },
-  { symbol: "ETHUSDT",  ticker: "ETH" },
-  { symbol: "SOLUSDT",  ticker: "SOL" },
-  { symbol: "SUIUSDT",  ticker: "SUI" },
-  { symbol: "LINKUSDT", ticker: "LINK" },
-  { symbol: "ADAUSDT",  ticker: "ADA" },
-  { symbol: "AVAXUSDT", ticker: "AVAX" },
-  { symbol: "RENDERUSDT", ticker: "RENDER" },
-  { symbol: "APTUSDT",  ticker: "APT" },
+  { cbPair: "BTC-USD",    ticker: "BTC" },
+  { cbPair: "ETH-USD",    ticker: "ETH" },
+  { cbPair: "SOL-USD",    ticker: "SOL" },
+  { cbPair: "SUI-USD",    ticker: "SUI" },
+  { cbPair: "LINK-USD",   ticker: "LINK" },
+  { cbPair: "ADA-USD",    ticker: "ADA" },
+  { cbPair: "AVAX-USD",   ticker: "AVAX" },
+  { cbPair: "RENDER-USD", ticker: "RENDER" },
+  { cbPair: "APT-USD",    ticker: "APT" },
 ]
 
+// Coinbase granularities: ONE_HOUR, TWO_HOUR, FOUR_HOUR, SIX_HOUR, ONE_DAY
 const TIMEFRAME_CONFIGS = [
-  { timeframe: "4h", interval: "4h", limit: 250 },  // ~42 days, enough for EMA 50 + swing detection
-  { timeframe: "1d", interval: "1d", limit: 200 },   // ~200 days (need 147+ for 21W EMA)
+  { timeframe: "4h", granularity: "FOUR_HOUR", limit: 250 },  // ~42 days, enough for EMA 50 + swing detection
+  { timeframe: "1d", granularity: "ONE_DAY", limit: 200 },     // ~200 days (need 147+ for 21W EMA)
 ] as const
 
 const SWING_PARAMS: Record<string, { lookback: number; minReversal: number }> = {
@@ -50,7 +51,7 @@ const SWING_PARAMS: Record<string, { lookback: number; minReversal: number }> = 
 const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
-const SIGNAL_PROXIMITY_PCT = 3.0
+const SIGNAL_PROXIMITY_PCT = 12.0
 const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
@@ -65,7 +66,7 @@ const EMA_SLOPE_LOOKBACK = 6  // 6 x 4h = 24h for slope check
 const EMA_PULLBACK_TOLERANCE = 0.015
 
 // Delay between assets to stay safe on Binance rate limits
-const INTER_ASSET_DELAY_MS = 500
+const INTER_ASSET_DELAY_MS = 100
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -162,52 +163,56 @@ Deno.serve(async (req) => {
   }
 
   try {
-    for (const asset of ASSETS) {
-      const assetResults: Record<string, unknown> = {}
+    // Process assets in parallel batches of 3 to stay within compute limits
+    for (let batchStart = 0; batchStart < ASSETS.length; batchStart += 3) {
+      const batch = ASSETS.slice(batchStart, batchStart + 3)
+      const batchResults = await Promise.all(batch.map(async (asset) => {
+        const assetResults: Record<string, unknown> = {}
 
-      // Fetch latest candles
-      const candles = await fetchCandles(asset.symbol)
-      assetResults.candles = { "4h": candles["4h"].length, "1d": candles["1d"].length }
+        // Fetch latest candles
+        const candles = await fetchCandles(asset.cbPair)
+        assetResults.candles = { "4h": candles["4h"].length, "1d": candles["1d"].length }
 
-      // Store candles in DB
-      await storeCandles(supabase, asset.ticker, candles)
+        // Store candles in DB
+        await storeCandles(supabase, asset.ticker, candles)
 
-      // Resolve open signals against latest candle
-      const resolveResult = await resolveOpenSignals(supabase, asset.ticker, candles)
-      assetResults.resolved = resolveResult
+        // Resolve open signals against latest candle
+        const resolveResult = await resolveOpenSignals(supabase, asset.ticker, candles)
+        assetResults.resolved = resolveResult
 
-      // Full pipeline: detect swings, compute fibs, find zones, generate signals
-      const swings = detectAllSwings(candles)
-      await storeSwings(supabase, asset.ticker, swings)
-      assetResults.swings = { "4h": swings["4h"].length, "1d": swings["1d"].length }
+        // Full pipeline: detect swings, compute fibs, find zones, generate signals
+        const swings = detectAllSwings(candles)
+        await storeSwings(supabase, asset.ticker, swings)
+        assetResults.swings = { "4h": swings["4h"].length, "1d": swings["1d"].length }
 
-      const fibs = computeAllFibs(swings)
-      await storeFibs(supabase, asset.ticker, fibs)
-      assetResults.fibs = fibs.length
+        const fibs = computeAllFibs(swings)
+        await storeFibs(supabase, asset.ticker, fibs)
+        assetResults.fibs = fibs.length
 
-      if (candles["4h"].length === 0) {
-        assetResults.skipped = "No 4h candles"
-        allResults[asset.ticker] = assetResults
-        continue
+        if (candles["4h"].length === 0) {
+          assetResults.skipped = "No 4h candles"
+          return { ticker: asset.ticker, results: assetResults }
+        }
+
+        const currentPrice = candles["4h"][candles["4h"].length - 1].close
+        const zones = clusterLevels(fibs, currentPrice)
+        await storeZones(supabase, asset.ticker, zones, currentPrice)
+        assetResults.zones = zones.length
+
+        // Compute volume profile from 4h candles
+        const volumeNodes = computeVolumeProfile(candles["4h"])
+
+        const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swings)
+        assetResults.newSignals = newSignals
+
+        await pruneOldCandles(supabase, asset.ticker)
+
+        return { ticker: asset.ticker, results: assetResults }
+      }))
+
+      for (const { ticker, results } of batchResults) {
+        allResults[ticker] = results
       }
-
-      const currentPrice = candles["4h"][candles["4h"].length - 1].close
-      const zones = clusterLevels(fibs, currentPrice)
-      await storeZones(supabase, asset.ticker, zones, currentPrice)
-      assetResults.zones = zones.length
-
-      // Compute volume profile from 4h candles
-      const volumeNodes = computeVolumeProfile(candles["4h"])
-
-      const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swings)
-      assetResults.newSignals = newSignals
-
-      await pruneOldCandles(supabase, asset.ticker)
-
-      allResults[asset.ticker] = assetResults
-
-      // Small delay between assets
-      await sleep(INTER_ASSET_DELAY_MS)
     }
 
     return jsonResponse({ success: true, assets: allResults })
@@ -218,29 +223,31 @@ Deno.serve(async (req) => {
 
 // ─── Fetch Candles from Binance ──────────────────────────────────────────────
 
-async function fetchCandles(symbol: string): Promise<Record<string, Candle[]>> {
+async function fetchCandles(cbPair: string): Promise<Record<string, Candle[]>> {
   const result: Record<string, Candle[]> = {}
 
   for (const config of TIMEFRAME_CONFIGS) {
-    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${config.interval}&limit=${config.limit}`
+    const url = `https://api.coinbase.com/api/v3/brokerage/market/products/${cbPair}/candles?granularity=${config.granularity}&limit=${config.limit}`
     const res = await fetch(url, { headers: { Accept: "application/json" } })
 
     if (!res.ok) {
+      console.error(`Coinbase candles failed for ${cbPair} ${config.timeframe}: ${res.status}`)
       result[config.timeframe] = []
       continue
     }
 
-    const rawData: (string | number)[][] = await res.json()
-    result[config.timeframe] = rawData.map((k) => ({
-      open_time: new Date(Number(k[0])).toISOString(),
-      open: parseFloat(String(k[1])),
-      high: parseFloat(String(k[2])),
-      low: parseFloat(String(k[3])),
-      close: parseFloat(String(k[4])),
-      volume: parseFloat(String(k[5])),
+    const data: { candles: { start: string; low: string; high: string; open: string; close: string; volume: string }[] } = await res.json()
+    // Coinbase returns newest-first, reverse to oldest-first for indicator calculations
+    result[config.timeframe] = data.candles.reverse().map((k) => ({
+      open_time: new Date(Number(k.start) * 1000).toISOString(),
+      open: parseFloat(k.open),
+      high: parseFloat(k.high),
+      low: parseFloat(k.low),
+      close: parseFloat(k.close),
+      volume: parseFloat(k.volume),
     }))
 
-    await sleep(300)
+    await sleep(100)
   }
 
   return result
@@ -1394,18 +1401,24 @@ async function evaluateSignals(
 
     const isBuy = zone.zone_type === "support"
 
-    // Price position check: skip if price has already moved past the entry zone
-    if (isBuy && currentPrice > zone.high) {
+    // Price position check: skip if price broke through the zone decisively
+    // For buy: skip if price dropped far below support (broken support)
+    // For sell: skip if price rose far above resistance (broken resistance)
+    const zonePastPct = 5.0
+    if (isBuy && currentPrice < zone.low * (1 - zonePastPct / 100)) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): price broke below support`)
       stats.skipped++
       continue
     }
-    if (!isBuy && currentPrice < zone.low) {
+    if (!isBuy && currentPrice > zone.high * (1 + zonePastPct / 100)) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): price broke above resistance`)
       stats.skipped++
       continue
     }
 
     // EMA trend filter
     if (!checkTrendAlignment(candles4h, isBuy)) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): EMA misalign`)
       stats.skipped++
       continue
     }
@@ -1413,6 +1426,7 @@ async function evaluateSignals(
     // Bounce confirmation
     const bounce = checkBounce(candles4h.slice(-25), zone.low, zone.high, isBuy)
     if (!bounce.confirmed) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce`)
       stats.skipped++
       continue
     }
@@ -1426,7 +1440,10 @@ async function evaluateSignals(
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
 
-    if (rrRatio < MIN_RR_RATIO) continue
+    if (rrRatio < MIN_RR_RATIO) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): R:R ${rrRatio.toFixed(2)} < ${MIN_RR_RATIO}`)
+      continue
+    }
 
     const isStrong = rrRatio >= STRONG_MIN_RR_RATIO && zone.strength >= STRONG_MIN_CONFLUENCE
     const signalType = isBuy
@@ -1454,6 +1471,7 @@ async function evaluateSignals(
 
     // Only publish B-grade or higher signals (score >= 60)
     if (compositeScore < 60) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < 60`)
       stats.skipped++
       continue
     }
@@ -1515,6 +1533,9 @@ async function evaluateSignals(
       .select("id")
       .single()
 
+    if (error) {
+      console.error(`[${ticker}] Zone ${zone.mid.toFixed(2)}: DB insert error: ${error.message}`)
+    }
     if (!error && inserted) {
       stats.generated++
 

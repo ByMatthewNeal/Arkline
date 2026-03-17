@@ -598,6 +598,14 @@ struct TradeSignalShareSheet: View {
         lines.append("$\(signal.stopLoss.asSignalPrice) (\(String(format: "%.1f%%", signal.stopLossPct)))")
         lines.append("")
 
+        if let rationale = signal.briefingText ?? signal.shortRationale, !rationale.isEmpty {
+            lines.append(rationale)
+            lines.append("")
+        }
+
+        lines.append("Manage risk appropriately.")
+        lines.append("")
+
         lines.append("Risk / Reward: \(String(format: "%.1f", signal.riskRewardRatio))R")
         lines.append("")
 

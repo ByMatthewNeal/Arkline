@@ -654,6 +654,18 @@ struct SignalDetailView: View {
                                     valueColor: rr >= 2.0 ? AppColors.success : (rr >= 1.5 ? AppColors.warning : AppColors.error)
                                 )
                             }
+
+                            if let calc = currentLeverageCalc, calc.marginAmount > 0 {
+                                let notional = calc.marginAmount * Double(calc.leverageMultiplier)
+                                let qty = entry > 0 ? notional / entry : 0
+                                if qty > 0 {
+                                    paramRow(
+                                        label: "Quantity (\(signal.asset))",
+                                        value: formatSignalQuantity(qty),
+                                        valueColor: AppColors.accent
+                                    )
+                                }
+                            }
                         }
 
                         // Warning if SL is far from original
@@ -965,6 +977,18 @@ struct SignalDetailView: View {
 
     private func formatSignalPrice(_ price: Double) -> String {
         price.asSignalPrice
+    }
+
+    private func formatSignalQuantity(_ qty: Double) -> String {
+        if qty >= 1000 {
+            return String(format: "%.1f", qty)
+        } else if qty >= 1 {
+            return String(format: "%.4f", qty)
+        } else if qty >= 0.001 {
+            return String(format: "%.6f", qty)
+        } else {
+            return String(format: "%.8f", qty)
+        }
     }
 
 }

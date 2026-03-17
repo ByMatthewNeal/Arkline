@@ -17,12 +17,12 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *   - Sends push notifications on resolution events
  */
 
-const ASSETS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "SUIUSDT", "LINKUSDT", "ADAUSDT", "AVAXUSDT", "RENDERUSDT", "APTUSDT"]
+const ASSETS = ["BTC-USD", "ETH-USD", "SOL-USD", "SUI-USD", "LINK-USD", "ADA-USD", "AVAX-USD", "RENDER-USD", "APT-USD"]
 
 const TICKER_MAP: Record<string, string> = {
-  BTCUSDT: "BTC", ETHUSDT: "ETH", SOLUSDT: "SOL",
-  SUIUSDT: "SUI", LINKUSDT: "LINK", ADAUSDT: "ADA",
-  AVAXUSDT: "AVAX", RENDERUSDT: "RENDER", APTUSDT: "APT",
+  "BTC-USD": "BTC", "ETH-USD": "ETH", "SOL-USD": "SOL",
+  "SUI-USD": "SUI", "LINK-USD": "LINK", "ADA-USD": "ADA",
+  "AVAX-USD": "AVAX", "RENDER-USD": "RENDER", "APT-USD": "APT",
 }
 
 Deno.serve(async (req) => {
@@ -77,24 +77,24 @@ Deno.serve(async (req) => {
   for (const symbol of symbolsToCheck) {
     try {
       const resp = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=4`
+        `https://api.coinbase.com/api/v3/brokerage/market/products/${symbol}/candles?granularity=ONE_HOUR&limit=4`
       )
       if (resp.ok) {
-        const data = await resp.json()
-        if (data.length > 0) {
+        const json = await resp.json()
+        const klines = json.candles ?? []
+        if (klines.length > 0) {
           // Aggregate: max high and min low across all recent candles
           let aggHigh = -Infinity
           let aggLow = Infinity
-          for (const k of data) {
-            aggHigh = Math.max(aggHigh, parseFloat(k[2]))
-            aggLow = Math.min(aggLow, parseFloat(k[3]))
+          for (const k of klines) {
+            aggHigh = Math.max(aggHigh, parseFloat(k.high))
+            aggLow = Math.min(aggLow, parseFloat(k.low))
           }
-          // Close from the most recent candle
-          const latest = data[data.length - 1]
+          // Close from the most recent candle (Coinbase returns newest-first)
           candles[TICKER_MAP[symbol]] = {
             high: aggHigh,
             low: aggLow,
-            close: parseFloat(latest[4]),
+            close: parseFloat(klines[0].close),
           }
         }
       }
