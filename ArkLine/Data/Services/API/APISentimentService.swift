@@ -119,13 +119,13 @@ final class APISentimentService: SentimentServiceProtocol {
         // Cascading fallback: try multiple exchanges until one succeeds
         // Each exchange may be geo-blocked in different regions
         let providers: [FundingRateProvider] = [.bybit, .binance, .okx]
+        var lastError: Error = AppError.dataNotFound
 
         for provider in providers {
             do {
-                async let btcRate = fetchFundingRateFrom(provider: provider, base: "BTC")
-                async let ethRate = fetchFundingRateFrom(provider: provider, base: "ETH")
-
-                let (btc, eth) = try await (btcRate, ethRate)
+                // Fetch sequentially per provider to avoid async let scoping issues
+                let btc = try await fetchFundingRateFrom(provider: provider, base: "BTC")
+                let eth = try await fetchFundingRateFrom(provider: provider, base: "ETH")
                 let avgRate = (btc.rate + eth.rate) / 2
 
                 logDebug("Funding rate loaded via \(provider.name)", category: .network)
@@ -139,12 +139,13 @@ final class APISentimentService: SentimentServiceProtocol {
                     timestamp: Date()
                 )
             } catch {
-                logWarning("Funding rate via \(provider.name) failed: \(error.localizedDescription), trying next", category: .network)
-                continue
+                logWarning("Funding rate via \(provider.name) failed: \(error), trying next provider", category: .network)
+                lastError = error
             }
         }
 
-        throw AppError.custom(message: "All funding rate providers failed")
+        logError("All funding rate providers failed", category: .network)
+        throw lastError
     }
 
     // MARK: - Funding Rate Providers
