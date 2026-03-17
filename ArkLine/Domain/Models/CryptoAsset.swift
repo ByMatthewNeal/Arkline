@@ -308,6 +308,38 @@ struct CoinGeckoTrendingResponse: Codable {
     }
 }
 
+// MARK: - CoinGecko Derivatives Exchange Response
+struct CoinGeckoDerivativesExchange: Codable {
+    let name: String?
+    let openInterestBtc: Double?
+    let tickers: [CoinGeckoDerivativesTicker]?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case openInterestBtc = "open_interest_btc"
+        case tickers
+    }
+}
+
+struct CoinGeckoDerivativesTicker: Codable {
+    let symbol: String?
+    let base: String?
+    let target: String?
+    let contractType: String?
+    let last: Double?
+    let fundingRate: Double?
+    let openInterestUsd: Double?
+    let h24Volume: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case symbol, base, target, last
+        case contractType = "contract_type"
+        case fundingRate = "funding_rate"
+        case openInterestUsd = "open_interest_usd"
+        case h24Volume = "h24_volume"
+    }
+}
+
 // MARK: - CoinGecko Market Coin (for Altcoin Season calculation)
 /// Model for coins/markets endpoint with price change percentages
 struct CoinGeckoMarketCoin: Codable, Identifiable {

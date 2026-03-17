@@ -87,6 +87,7 @@ enum CoinGeckoEndpoint: APIEndpoint {
     case globalData
     case trendingCoins
     case fearGreedIndex
+    case derivativesExchange(id: String, includeTickers: String)
 
     var baseURL: String { Constants.Endpoints.coinGeckoBase }
 
@@ -110,6 +111,8 @@ enum CoinGeckoEndpoint: APIEndpoint {
             return "/search/trending"
         case .fearGreedIndex:
             return "/global"
+        case .derivativesExchange(let id, _):
+            return "/derivatives/exchanges/\(id)"
         }
     }
 
@@ -170,6 +173,8 @@ enum CoinGeckoEndpoint: APIEndpoint {
             return ["query": query]
         case .globalData, .trendingCoins, .fearGreedIndex:
             return nil
+        case .derivativesExchange(_, let includeTickers):
+            return ["include_tickers": includeTickers]
         }
     }
 
