@@ -116,48 +116,79 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchFundingRate() async throws -> FundingRate {
-        // Use Bybit API for funding rates — free, no API key, not geo-blocked
-        async let btcRate = fetchBybitFundingRate(symbol: "BTCUSDT")
-        async let ethRate = fetchBybitFundingRate(symbol: "ETHUSDT")
+        // Cascading fallback: try multiple exchanges until one succeeds
+        // Each exchange may be geo-blocked in different regions
+        let providers: [FundingRateProvider] = [.bybit, .binance, .okx]
 
-        let (btc, eth) = try await (btcRate, ethRate)
+        for provider in providers {
+            do {
+                async let btcRate = fetchFundingRateFrom(provider: provider, base: "BTC")
+                async let ethRate = fetchFundingRateFrom(provider: provider, base: "ETH")
 
-        let avgRate = (btc.rate + eth.rate) / 2
+                let (btc, eth) = try await (btcRate, ethRate)
+                let avgRate = (btc.rate + eth.rate) / 2
 
-        return FundingRate(
-            averageRate: avgRate,
-            exchanges: [
-                ExchangeFundingRate(
-                    exchange: "BTC",
-                    rate: btc.rate,
-                    nextFundingTime: btc.nextFundingTime
-                ),
-                ExchangeFundingRate(
-                    exchange: "ETH",
-                    rate: eth.rate,
-                    nextFundingTime: eth.nextFundingTime
+                logDebug("Funding rate loaded via \(provider.name)", category: .network)
+
+                return FundingRate(
+                    averageRate: avgRate,
+                    exchanges: [
+                        ExchangeFundingRate(exchange: "BTC", rate: btc.rate, nextFundingTime: btc.nextFundingTime),
+                        ExchangeFundingRate(exchange: "ETH", rate: eth.rate, nextFundingTime: eth.nextFundingTime)
+                    ],
+                    timestamp: Date()
                 )
-            ],
-            timestamp: Date()
-        )
-    }
-
-    /// Fetch current funding rate from Bybit v5 API (free, no key, no geo-block)
-    private func fetchBybitFundingRate(symbol: String) async throws -> (rate: Double, nextFundingTime: Date?) {
-        guard let url = URL(string: "https://api.bybit.com/v5/market/tickers?category=linear&symbol=\(symbol)") else {
-            throw AppError.custom(message: "Invalid Bybit URL")
+            } catch {
+                logWarning("Funding rate via \(provider.name) failed: \(error.localizedDescription), trying next", category: .network)
+                continue
+            }
         }
 
+        throw AppError.custom(message: "All funding rate providers failed")
+    }
+
+    // MARK: - Funding Rate Providers
+
+    private enum FundingRateProvider {
+        case bybit, binance, okx
+
+        var name: String {
+            switch self {
+            case .bybit: return "Bybit"
+            case .binance: return "Binance"
+            case .okx: return "OKX"
+            }
+        }
+    }
+
+    private struct FundingRateResult {
+        let rate: Double
+        let nextFundingTime: Date?
+    }
+
+    private func fetchFundingRateFrom(provider: FundingRateProvider, base: String) async throws -> FundingRateResult {
+        switch provider {
+        case .bybit:
+            return try await fetchBybitFundingRate(symbol: "\(base)USDT")
+        case .binance:
+            return try await fetchBinanceFundingRate(symbol: "\(base)USDT")
+        case .okx:
+            return try await fetchOKXFundingRate(symbol: "\(base)-USDT-SWAP")
+        }
+    }
+
+    // MARK: - Bybit (works in US + most regions)
+
+    private func fetchBybitFundingRate(symbol: String) async throws -> FundingRateResult {
+        let url = URL(string: "https://api.bybit.com/v5/market/tickers?category=linear&symbol=\(symbol)")!
         let (data, response) = try await URLSession.shared.data(from: url)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw AppError.custom(message: "Bybit API error")
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw AppError.custom(message: "Bybit HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
         }
 
         let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        let result = json?["result"] as? [String: Any]
-        let list = result?["list"] as? [[String: Any]]
+        let list = (json?["result"] as? [String: Any])?["list"] as? [[String: Any]]
 
         guard let ticker = list?.first,
               let rateStr = ticker["fundingRate"] as? String,
@@ -165,13 +196,66 @@ final class APISentimentService: SentimentServiceProtocol {
             throw AppError.dataNotFound
         }
 
-        var nextFundingTime: Date?
-        if let nextTimeStr = ticker["nextFundingTime"] as? String,
-           let nextTimeMs = Double(nextTimeStr) {
-            nextFundingTime = Date(timeIntervalSince1970: nextTimeMs / 1000)
+        var nextTime: Date?
+        if let ts = ticker["nextFundingTime"] as? String, let ms = Double(ts) {
+            nextTime = Date(timeIntervalSince1970: ms / 1000)
         }
 
-        return (rate: rate, nextFundingTime: nextFundingTime)
+        return FundingRateResult(rate: rate, nextFundingTime: nextTime)
+    }
+
+    // MARK: - Binance Futures (works outside US)
+
+    private func fetchBinanceFundingRate(symbol: String) async throws -> FundingRateResult {
+        let url = URL(string: "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=\(symbol)")!
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw AppError.custom(message: "Binance HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+
+        guard let rateStr = json?["lastFundingRate"] as? String,
+              let rate = Double(rateStr) else {
+            throw AppError.dataNotFound
+        }
+
+        var nextTime: Date?
+        if let ts = json?["nextFundingTime"] as? Int64 {
+            nextTime = Date(timeIntervalSince1970: TimeInterval(ts) / 1000)
+        } else if let ts = json?["nextFundingTime"] as? Double {
+            nextTime = Date(timeIntervalSince1970: ts / 1000)
+        }
+
+        return FundingRateResult(rate: rate, nextFundingTime: nextTime)
+    }
+
+    // MARK: - OKX (works in most regions)
+
+    private func fetchOKXFundingRate(symbol: String) async throws -> FundingRateResult {
+        let url = URL(string: "https://www.okx.com/api/v5/public/funding-rate?instId=\(symbol)")!
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw AppError.custom(message: "OKX HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let list = json?["data"] as? [[String: Any]]
+
+        guard let item = list?.first,
+              let rateStr = item["fundingRate"] as? String,
+              let rate = Double(rateStr) else {
+            throw AppError.dataNotFound
+        }
+
+        var nextTime: Date?
+        if let ts = item["nextFundingTime"] as? String, let ms = Double(ts) {
+            nextTime = Date(timeIntervalSince1970: ms / 1000)
+        }
+
+        return FundingRateResult(rate: rate, nextFundingTime: nextTime)
     }
 
     func fetchLiquidations() async throws -> LiquidationData {
