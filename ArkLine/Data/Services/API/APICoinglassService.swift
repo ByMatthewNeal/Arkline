@@ -123,26 +123,38 @@ final class APICoinglassService: CoinglassServiceProtocol {
     // MARK: - Funding Rates
 
     func fetchFundingRate(symbol: String) async throws -> CoinglassFundingRateData {
-        // Try the coin-list endpoint which is available on free tier
-        let endpoint = "/futures/funding-rate/coin-list"
-        let params: [String: String] = [:]
+        let endpoint = "/futures/funding-rate/exchange-list"
+        let params = ["symbol": symbol.uppercased()]
 
-        let response: CoinglassAPIResponse<[CoinglassFundingCoinResponse]> = try await request(endpoint: endpoint, params: params)
+        let response: CoinglassAPIResponse<[CoinglassFundingExchangeResponse]> = try await request(endpoint: endpoint, params: params)
 
-        // Find the requested symbol in the list
-        guard let coinData = response.data.first(where: { $0.symbol.uppercased() == symbol.uppercased() }) else {
+        guard !response.data.isEmpty else {
             throw AppError.dataNotFound
         }
 
+        // Average funding rate across all exchanges
+        let avgRate = response.data.map(\.rate).reduce(0, +) / Double(response.data.count)
+
+        // Map exchange-level rates
+        let exchangeRates = response.data.map { item in
+            CoinglassExchangeFundingRate(
+                exchange: item.exchangeName,
+                fundingRate: item.rate,
+                nextFundingTime: item.nextFundingTime.map { Date(timeIntervalSince1970: TimeInterval($0) / 1000) }
+            )
+        }
+
+        let nextFunding = exchangeRates.compactMap(\.nextFundingTime).min()
+
         return CoinglassFundingRateData(
             id: UUID(),
-            symbol: coinData.symbol,
-            fundingRate: coinData.rate,
+            symbol: symbol.uppercased(),
+            fundingRate: avgRate,
             predictedRate: nil,
-            nextFundingTime: nil,
-            annualizedRate: coinData.rate * 3 * 365 * 100,
+            nextFundingTime: nextFunding,
+            annualizedRate: avgRate * 3 * 365 * 100,
             timestamp: Date(),
-            exchangeRates: nil
+            exchangeRates: exchangeRates
         )
     }
 

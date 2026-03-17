@@ -394,6 +394,19 @@ struct CoinglassFundingCoinResponse: Codable {
     }
 }
 
+// MARK: - Funding Rate Exchange List Response
+struct CoinglassFundingExchangeResponse: Codable {
+    let exchangeName: String
+    let rate: Double
+    let nextFundingTime: Int64?
+
+    enum CodingKeys: String, CodingKey {
+        case exchangeName
+        case rate
+        case nextFundingTime
+    }
+}
+
 struct CoinglassOICoinResponse: Codable {
     let symbol: String
     let openInterest: Double

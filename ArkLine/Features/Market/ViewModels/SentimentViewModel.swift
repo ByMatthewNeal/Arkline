@@ -726,8 +726,11 @@ class SentimentViewModel {
     }
 
     func retryFundingRate() async {
-        if let result = try? await sentimentService.fetchFundingRate() {
-            await MainActor.run { self.fundingRate = result }
+        do {
+            let result = try await sentimentService.fetchFundingRate()
+            self.fundingRate = result
+        } catch {
+            logError("Funding rate retry failed: \(error)", category: .network)
         }
     }
 
@@ -778,7 +781,12 @@ class SentimentViewModel {
     }
 
     private func fetchFundingSafe() async -> FundingRate? {
-        try? await sentimentService.fetchFundingRate()
+        do {
+            return try await sentimentService.fetchFundingRate()
+        } catch {
+            logError("Funding rate fetch failed: \(error)", category: .network)
+            return nil
+        }
     }
 
     private func fetchLiquidationsSafe() async -> LiquidationData? {
