@@ -116,34 +116,62 @@ final class APISentimentService: SentimentServiceProtocol {
     }
 
     func fetchFundingRate() async throws -> FundingRate {
-        // Use CoinGlass API for funding rates (not geo-blocked, unlike Binance Futures)
-        let coinglassService = APICoinglassService()
-
-        // Fetch BTC and ETH funding rates via CoinGlass
-        async let btcRate = coinglassService.fetchFundingRate(symbol: "BTC")
-        async let ethRate = coinglassService.fetchFundingRate(symbol: "ETH")
+        // Use Bybit API for funding rates — free, no API key, not geo-blocked
+        async let btcRate = fetchBybitFundingRate(symbol: "BTCUSDT")
+        async let ethRate = fetchBybitFundingRate(symbol: "ETHUSDT")
 
         let (btc, eth) = try await (btcRate, ethRate)
 
-        // Average rate across BTC and ETH
-        let avgRate = (btc.fundingRate + eth.fundingRate) / 2
+        let avgRate = (btc.rate + eth.rate) / 2
 
         return FundingRate(
             averageRate: avgRate,
             exchanges: [
                 ExchangeFundingRate(
                     exchange: "BTC",
-                    rate: btc.fundingRate,
+                    rate: btc.rate,
                     nextFundingTime: btc.nextFundingTime
                 ),
                 ExchangeFundingRate(
                     exchange: "ETH",
-                    rate: eth.fundingRate,
+                    rate: eth.rate,
                     nextFundingTime: eth.nextFundingTime
                 )
             ],
             timestamp: Date()
         )
+    }
+
+    /// Fetch current funding rate from Bybit v5 API (free, no key, no geo-block)
+    private func fetchBybitFundingRate(symbol: String) async throws -> (rate: Double, nextFundingTime: Date?) {
+        guard let url = URL(string: "https://api.bybit.com/v5/market/tickers?category=linear&symbol=\(symbol)") else {
+            throw AppError.custom(message: "Invalid Bybit URL")
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw AppError.custom(message: "Bybit API error")
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let result = json?["result"] as? [String: Any]
+        let list = result?["list"] as? [[String: Any]]
+
+        guard let ticker = list?.first,
+              let rateStr = ticker["fundingRate"] as? String,
+              let rate = Double(rateStr) else {
+            throw AppError.dataNotFound
+        }
+
+        var nextFundingTime: Date?
+        if let nextTimeStr = ticker["nextFundingTime"] as? String,
+           let nextTimeMs = Double(nextTimeStr) {
+            nextFundingTime = Date(timeIntervalSince1970: nextTimeMs / 1000)
+        }
+
+        return (rate: rate, nextFundingTime: nextFundingTime)
     }
 
     func fetchLiquidations() async throws -> LiquidationData {
