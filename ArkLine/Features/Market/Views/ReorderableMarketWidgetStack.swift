@@ -129,6 +129,12 @@ struct ReorderableMarketWidgetStack: View {
 
         case .liquidityCycle:
             LiquidityCycleSection()
+
+        case .qpsGrid:
+            QPSGridSection(
+                signals: viewModel.qpsSignals,
+                isPro: appState.isPro
+            )
         }
     }
 }

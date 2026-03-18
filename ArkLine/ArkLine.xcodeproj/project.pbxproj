@@ -463,6 +463,12 @@
 		S3TT1NG5APP3AR000002 /* SettingsAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5APP3AR000001 /* SettingsAppearance.swift */; };
 		S3TT1NG5SUBV13W500002 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */; };
 		STRKT00BUILDFIL000000001 /* ArkLineProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = STRKT00FILEREF000000001 /* ArkLineProducts.storekit */; };
+		A1B2C3D4E5F6QPS00001B1 /* DailyPositioningSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */; };
+		A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */; };
+		A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */; };
+		A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */; };
+		A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */; };
+		A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -932,6 +938,12 @@
 		S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSubviews.swift; sourceTree = "<group>"; };
 		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
 		STRKT00FILEREF000000001 /* ArkLineProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = ArkLineProducts.storekit; path = Resources/ArkLineProducts.storekit; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPositioningSignal.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSSignalChangesCard.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSGridSection.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1164,6 +1176,7 @@
 				E5F6A7B8C9DA415263748E9F /* APIGEIService.swift */,
 				EDBFF8DC595A41D194A75C57 /* SwingSetupService.swift */,
 				C817D0AFD17825F5BB18A65C /* EconomicEventsService.swift */,
+				A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1286,6 +1299,7 @@
 				36F9A053EE94F27B45371F78 /* CommunityPost.swift */,
 				E024112075ACF55F63004893 /* CryptoAsset.swift */,
 				ABCC24BCEBE385AEFCCAD355 /* DCACalculation.swift */,
+				A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */,
 				608A536AA089EA6F8D512468 /* DCAReminder.swift */,
 				5B6A3AE118E45271FE32F447 /* DXYData.swift */,
 				AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */,
@@ -1379,6 +1393,7 @@
 				FAC1D3B80CF44A12A98289F4 /* SwingSetupsDetailView.swift */,
 				3CBEEAD0D92C4861AA607589 /* SignalDetailView.swift */,
 				A1F2E3D4C5B6A7089192A3B4 /* PerformanceExportSheet.swift */,
+				A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1622,6 +1637,7 @@
 				4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */,
 				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
 				C831006104AE4F24A0E28C46 /* FlashIntelCard.swift */,
+				A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */,
 				6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */,
 				72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */,
 				3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */,
@@ -1695,6 +1711,7 @@
 				4BB9EAB1CFB9AC165E66CAC7 /* TrendChannelViewModel.swift */,
 				381C1471265D409B73F28DD4 /* AllocationViewModel.swift */,
 				300F3C3ADC6447F0A253B473 /* SwingSetupsViewModel.swift */,
+				A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -1793,6 +1810,7 @@
 				1A39F3D9AEC72509A835EA2A /* MarketSentimentSection.swift */,
 				BB1122334455667788990011 /* PreciousMetalsSection.swift */,
 				CC0A1B2C3D4E5F6071829303 /* TopCoinsSection.swift */,
+				A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */,
 				C1C9947884BDE4102F110274 /* NewsCard.swift */,
 				9997D8052D5270DC5237E5E6 /* SentimentCard.swift */,
 				5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */,
@@ -2309,6 +2327,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */,
+				A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */,
+				A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */,
+				A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */,
+				A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */,
+				A1B2C3D4E5F6QPS00001B1 /* DailyPositioningSignal.swift in Sources */,
 				BC7C10F296BA468DA9ECDF23 /* FlashIntelCard.swift in Sources */,
 				46BDDF1236414B65BCD0F14E /* SignalDetailView.swift in Sources */,
 				2DD3C7F778C04855893B380F /* SwingSetupsDetailView.swift in Sources */,

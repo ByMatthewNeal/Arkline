@@ -112,6 +112,7 @@ enum SupabaseTable: String {
     case fibConfluenceZones = "fib_confluence_zones"
     case ohlcCandles = "ohlc_candles"
     case economicEvents = "economic_events"
+    case positioningSignals = "positioning_signals"
 }
 
 // MARK: - Storage Buckets

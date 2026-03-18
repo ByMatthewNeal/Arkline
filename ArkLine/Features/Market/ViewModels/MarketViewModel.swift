@@ -69,6 +69,10 @@ class MarketViewModel {
     var fedWatchData: FedWatchData?
     var fedWatchMeetings: [FedWatchData] = []
 
+    // QPS (Daily Positioning Signals)
+    var qpsSignals: [DailyPositioningSignal] = []
+    private let qpsService = PositioningSignalService()
+
     // MARK: - Computed Properties
     var filteredAssets: [CryptoAsset] {
         var assets = cryptoAssets
@@ -101,18 +105,20 @@ class MarketViewModel {
         errorMessage = nil
         defer { isLoading = false }
 
-        // Fetch news, Fed Watch, and top coins in parallel
+        // Fetch news, Fed Watch, top coins, and QPS in parallel
         async let newsTask = fetchNewsSafe()
         async let meetingsTask = fetchFedWatchMeetingsSafe()
         async let topCoinsTask = fetchTopCoinsSafe()
+        async let qpsTask = fetchQPSSignalsSafe(forceRefresh: forceRefresh)
 
-        let (news, meetings, coins) = await (newsTask, meetingsTask, topCoinsTask)
+        let (news, meetings, coins, qps) = await (newsTask, meetingsTask, topCoinsTask, qpsTask)
 
         self.newsItems = news
         self.fedWatchMeetings = meetings ?? []
         self.fedWatchData = meetings?.first
         self.cachedTopCoins = coins
         self.topCoins = coins
+        self.qpsSignals = qps
         // Only set cooldown if news loaded — allows retry on failure
         if !news.isEmpty {
             self.lastRefreshed = Date()
@@ -170,6 +176,15 @@ class MarketViewModel {
         } catch {
             logError("Fed Watch fetch failed: \(error)")
             return nil
+        }
+    }
+
+    private func fetchQPSSignalsSafe(forceRefresh: Bool = false) async -> [DailyPositioningSignal] {
+        do {
+            return try await qpsService.fetchLatestSignals(forceRefresh: forceRefresh)
+        } catch {
+            logWarning("QPS signals fetch failed: \(error.localizedDescription)", category: .network)
+            return []
         }
     }
 

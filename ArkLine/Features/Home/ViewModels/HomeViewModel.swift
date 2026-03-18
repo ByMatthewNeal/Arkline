@@ -134,6 +134,10 @@ class HomeViewModel {
     var signalStats: SignalStats?
     private let swingSetupService = SwingSetupService()
 
+    // QPS (Daily Positioning Signals)
+    var qpsSignals: [DailyPositioningSignal] = []
+    private let qpsService = PositioningSignalService()
+
     // Market Summary
     var btcPrice: Double = 0
     var ethPrice: Double = 0
@@ -806,6 +810,25 @@ class HomeViewModel {
                 await MainActor.run { self.recentSignalsForInbox = recent }
             } catch {
                 logWarning("Inbox signal fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
+        // Fetch QPS (daily positioning signals)
+        Task {
+            do {
+                let signals = try await self.qpsService.fetchLatestSignals(forceRefresh: forceRefresh)
+                await MainActor.run {
+                    // Notify for signal changes
+                    let changed = signals.filter { $0.hasChanged }
+                    if !changed.isEmpty && !self.qpsSignals.isEmpty {
+                        for signal in changed {
+                            Task { await BroadcastNotificationService.shared.sendQPSChangeNotification(for: signal) }
+                        }
+                    }
+                    self.qpsSignals = signals
+                }
+            } catch {
+                logWarning("QPS signals fetch failed: \(error.localizedDescription)", category: .network)
             }
         }
 

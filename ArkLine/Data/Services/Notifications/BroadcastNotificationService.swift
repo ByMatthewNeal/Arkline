@@ -266,6 +266,43 @@ class BroadcastNotificationService: ObservableObject {
         }
     }
 
+    // MARK: - QPS Change Notifications
+
+    /// Whether QPS change notifications are enabled
+    var qpsChangeNotificationsEnabled: Bool {
+        UserDefaults.standard.object(forKey: Constants.UserDefaults.notifyQPSChanges) as? Bool ?? true
+    }
+
+    /// Send a local notification for a daily positioning signal change
+    func sendQPSChangeNotification(for signal: DailyPositioningSignal) async {
+        guard qpsChangeNotificationsEnabled else { return }
+        guard isNotificationsEnabled else { return }
+        guard let change = signal.changeDescription else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "\(signal.asset) Signal Changed"
+        content.body = "\(signal.asset): \(change)"
+        content.sound = .default
+        content.categoryIdentifier = "QPS_CHANGE"
+        content.userInfo = [
+            "type": "qps_change",
+            "asset": signal.asset
+        ]
+
+        let request = UNNotificationRequest(
+            identifier: "qps_\(signal.asset)_\(signal.signalDate.timeIntervalSince1970)",
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        )
+
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            logInfo("QPS change notification sent for \(signal.asset): \(change)", category: .data)
+        } catch {
+            logError("Failed to send QPS notification: \(error)", category: .data)
+        }
+    }
+
     private func formatNotifPrice(_ price: Double) -> String {
         if price >= 1000 {
             return String(format: "%.0f", price)
@@ -333,7 +370,14 @@ class BroadcastNotificationService: ObservableObject {
             options: [.customDismissAction]
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory])
+        let qpsCategory = UNNotificationCategory(
+            identifier: "QPS_CHANGE",
+            actions: [],
+            intentIdentifiers: [],
+            options: []
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory, qpsCategory])
     }
 }
 

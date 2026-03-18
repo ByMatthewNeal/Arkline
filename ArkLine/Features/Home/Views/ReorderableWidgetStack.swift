@@ -131,6 +131,8 @@ struct ReorderableWidgetStack: View {
             return true
         case .usFutures:
             return true
+        case .qpsSignals:
+            return true
         }
     }
 
@@ -262,6 +264,13 @@ struct ReorderableWidgetStack: View {
 
         case .usFutures:
             USFuturesSection()
+
+        case .qpsSignals:
+            QPSSignalChangesCard(
+                signals: viewModel.qpsSignals,
+                isPro: appState.isPro,
+                size: appState.widgetSize(.qpsSignals)
+            )
         }
     }
 }

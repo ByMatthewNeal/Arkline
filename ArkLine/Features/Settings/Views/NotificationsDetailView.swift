@@ -21,6 +21,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifySwingSignals)
     private var swingSignals = true
 
+    @AppStorage(Constants.UserDefaults.notifyQPSChanges)
+    private var qpsChanges = true
+
     @AppStorage(Constants.UserDefaults.notifySignalNew)
     private var signalNew = true
 
@@ -147,6 +150,18 @@ struct NotificationsDetailView: View {
                     .onChange(of: swingSignals) { _, newValue in
                         Haptics.selection()
                         syncSignalPreferences()
+                    }
+
+                    Toggle(isOn: $qpsChanges) {
+                        NotificationRow(
+                            icon: "arrow.triangle.swap",
+                            iconColor: AppColors.accent,
+                            title: "Positioning Changes",
+                            description: "When daily signal changes (e.g. Bearish → Neutral)"
+                        )
+                    }
+                    .onChange(of: qpsChanges) { _, _ in
+                        Haptics.selection()
                     }
                 } header: {
                     Text("Market Alerts")

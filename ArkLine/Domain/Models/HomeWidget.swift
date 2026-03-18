@@ -48,6 +48,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case aiMarketSummary = "ai_market_summary"
     case flashIntel = "flash_intel"
     case usFutures = "us_futures"
+    case qpsSignals = "qps_signals"
 
     var id: String { rawValue }
 
@@ -70,6 +71,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .aiMarketSummary: return "Daily Briefing"
         case .flashIntel: return "Swing Setups"
         case .usFutures: return "US Futures"
+        case .qpsSignals: return "Signal Changes"
         }
     }
 
@@ -92,6 +94,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .aiMarketSummary: return "AI-generated daily market summary"
         case .flashIntel: return "Fibonacci pattern detection across timeframes"
         case .usFutures: return "S&P 500, Dow, and NASDAQ futures with session indicator"
+        case .qpsSignals: return "Daily positioning signal changes across 8 assets"
         }
     }
 
@@ -114,6 +117,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .aiMarketSummary: return "sparkles"
         case .flashIntel: return "scope"
         case .usFutures: return "chart.line.uptrend.xyaxis"
+        case .qpsSignals: return "arrow.triangle.swap"
         }
     }
 
@@ -127,14 +131,14 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures:
             return false
-        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel:
+        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals:
             return true
         }
     }
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.upcomingEvents, .usFutures, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default

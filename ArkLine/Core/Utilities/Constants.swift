@@ -151,6 +151,7 @@ enum Constants {
         static let notifySignalExpiry = "arkline_notify_signal_expiry"
         static let notifySignalProximity = "arkline_notify_signal_proximity"
 
+        static let notifyQPSChanges = "arkline_qps_changes_notifications_enabled"
         static let leverageWalletSize = "arkline_leverage_wallet_size"
         static let portfolioHidden = "arkline_portfolio_hidden"
     }
