@@ -469,6 +469,7 @@
 		A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */; };
 		A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */; };
 		A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */; };
+		08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D6E945C9404E29820C25CE /* QPSFullGridView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -944,6 +945,7 @@
 		A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSSignalChangesCard.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSGridSection.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
+		14D6E945C9404E29820C25CE /* QPSFullGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSFullGridView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1394,6 +1396,7 @@
 				3CBEEAD0D92C4861AA607589 /* SignalDetailView.swift */,
 				A1F2E3D4C5B6A7089192A3B4 /* PerformanceExportSheet.swift */,
 				A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */,
+				14D6E945C9404E29820C25CE /* QPSFullGridView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2328,6 +2331,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */,
+				08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */,
 				A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */,
 				A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */,
 				A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */,
