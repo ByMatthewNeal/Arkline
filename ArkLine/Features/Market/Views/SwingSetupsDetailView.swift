@@ -340,7 +340,7 @@ struct SwingSetupsDetailView: View {
         .task {
             await viewModel.loadAllData()
             // Load today's high-impact events for volatility warning
-            let eventsService = EconomicEventsService()
+            let eventsService = EconomicEventsService.shared
             let today = Date()
             let events = await eventsService.fetchEvents(from: today, to: today, impactFilter: [.high])
             highImpactEvents = events
