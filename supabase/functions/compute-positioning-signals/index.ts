@@ -37,7 +37,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "UNI",    displayName: "Uniswap",       source: "coinbase", symbol: "UNI-USD",    category: "crypto" },
   { ticker: "ONDO",   displayName: "Ondo",          source: "coinbase", symbol: "ONDO-USD",   category: "crypto" },
   { ticker: "RENDER", displayName: "Render",        source: "coinbase", symbol: "RENDER-USD", category: "crypto" },
-  { ticker: "HYPE",   displayName: "Hyperliquid",   source: "coinbase", symbol: "HYPE-USD",   category: "crypto" },
+  { ticker: "HYPE",   displayName: "Hyperliquid",   source: "fmp",      symbol: "HYPEUSD",    category: "crypto" },
   { ticker: "TAO",    displayName: "Bittensor",     source: "coinbase", symbol: "TAO-USD",    category: "crypto" },
   { ticker: "ZEC",    displayName: "Zcash",         source: "coinbase", symbol: "ZEC-USD",    category: "crypto" },
 
@@ -222,15 +222,23 @@ function computeRSI(closes: number[], period = 14): number | null {
 
 // ─── Trend Score Computation ────────────────────────────────────────────────
 //
-// Scoring weights (v2 — recalibrated 2026-03-18):
-//   Base:            50
-//   SMA crossover:   ±14  (was ±20 — reduced to avoid binary collapse)
-//   SMA position:    +5 each (above 21/50/200 SMA)
-//   BMSB:            +6 above / +2 in band / -4 below (asymmetric — less penalty)
-//   RSI adjustment:  +6 oversold / +3 approaching oversold / -4 overbought
+// Scoring weights (v3 — SMA position framework 2026-03-18):
+//
+// PRIMARY: Daily close relative to key SMAs (user's framework)
+//   Above 200 SMA:   +18  (strongest bullish signal — long-term trend intact)
+//   Above 50 SMA:    +8   (intermediate support holding)
+//   Above 21 SMA:    +8   (short-term trend positive)
+//   Below 21 SMA:    -10  (short-term trend broken — bearish)
+//
+// SECONDARY: SMA crossover direction
+//   21 SMA > 50 SMA: +6   (trend confirmation)
+//   21 SMA < 50 SMA: -6   (trend deterioration)
+//
+// TERTIARY: RSI & BMSB fine-tuning
+//   RSI ≤30: +5, RSI ≤40: +3, RSI ≥75: -3
+//   BMSB above: +4, in band: +1, below: -2
 //
 // Signal thresholds: ≥70 bullish, ≥45 neutral, <45 bearish
-//   (was 75/55 — widened to create more spread and avoid "everything bearish")
 
 function computeTrendScore(candles: Candle[]): {
   trendScore: number
@@ -260,45 +268,57 @@ function computeTrendScore(candles: Candle[]): {
   const bmsbSma = sma140.length > 0 ? sma140[sma140.length - 1] : NaN
   const bmsbEma = ema147.length > 0 ? ema147[ema147.length - 1] : NaN
 
-  // Base: 50
+  const aboveSma21 = !isNaN(latestSma21) && price > latestSma21
+  const aboveSma50 = !isNaN(latestSma50) && price > latestSma50
+
+  // ── Base: 50 ──
   let score = 50
 
-  // Trend direction from SMA crossover pattern (±14)
+  // ── PRIMARY: SMA position (key framework) ──
+  // Above 200 SMA = strongest bullish signal
+  if (above200SMA) score += 18
+
+  // Above 50 SMA = intermediate support holding
+  if (aboveSma50) score += 8
+
+  // Above 21 SMA = short-term trend positive
+  if (aboveSma21) {
+    score += 8
+  } else if (!isNaN(latestSma21)) {
+    // Below 21 SMA = short-term trend broken
+    score -= 10
+  }
+
+  // ── SECONDARY: SMA crossover direction ──
   if (!isNaN(latestSma21) && !isNaN(latestSma50)) {
     if (latestSma21 > latestSma50) {
-      score += 14
+      score += 6   // Trend confirmation
     } else {
-      score -= 14
+      score -= 6   // Trend deterioration
     }
   }
 
-  // SMA position bonuses (+5 each)
-  if (!isNaN(latestSma21) && price > latestSma21) score += 5
-  if (!isNaN(latestSma50) && price > latestSma50) score += 5
-  if (above200SMA) score += 5
+  // ── TERTIARY: RSI mean-reversion ──
+  if (rsi !== null) {
+    if (rsi <= 30) {
+      score += 5        // Deeply oversold — contrarian boost
+    } else if (rsi <= 40) {
+      score += 3        // Approaching oversold — mild boost
+    } else if (rsi >= 75) {
+      score -= 3        // Overbought — exhaustion drag
+    }
+  }
 
-  // BMSB position — asymmetric: reward holding above, lighter penalty below
+  // ── TERTIARY: BMSB position ──
   if (!isNaN(bmsbSma) && !isNaN(bmsbEma)) {
     const bmsbTop = Math.max(bmsbSma, bmsbEma)
     const bmsbBot = Math.min(bmsbSma, bmsbEma)
     if (price > bmsbTop) {
-      score += 6
+      score += 4
     } else if (price >= bmsbBot) {
-      score += 2
+      score += 1
     } else {
-      score -= 4
-    }
-  }
-
-  // RSI adjustment — oversold conditions suggest mean reversion potential,
-  // overbought conditions suggest exhaustion risk
-  if (rsi !== null) {
-    if (rsi <= 30) {
-      score += 6        // Deeply oversold — contrarian boost
-    } else if (rsi <= 40) {
-      score += 3        // Approaching oversold — mild boost
-    } else if (rsi >= 75) {
-      score -= 4        // Overbought — exhaustion drag
+      score -= 2
     }
   }
 
