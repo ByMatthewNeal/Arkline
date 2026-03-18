@@ -52,7 +52,7 @@ const SWING_PARAMS: Record<string, { lookback: number; minReversal: number }> = 
 const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
-const SIGNAL_PROXIMITY_PCT = 12.0
+const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
 const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
@@ -774,22 +774,39 @@ function checkBounce(
 
   if (candles.length < 3) return { confirmed: false, details }
 
+  // First verify a recent candle actually touched/penetrated the zone (last 6 candles)
+  const recentCandles = candles.slice(-6)
+  const zoneMargin = (zoneHigh - zoneLow) * 0.5  // allow half-zone-width margin
+  let zoneTouched = false
+  if (isBuy) {
+    zoneTouched = recentCandles.some(c => c.low <= zoneHigh + zoneMargin)
+  } else {
+    zoneTouched = recentCandles.some(c => c.high >= zoneLow - zoneMargin)
+  }
+  if (!zoneTouched) return { confirmed: false, details }
+
   const latest = candles[candles.length - 1]
   const prev = candles[candles.length - 2]
 
   if (isBuy) {
+    // Wick rejection: candle dipped into/near zone and closed above
     const body = Math.abs(latest.close - latest.open)
     const lowerWick = Math.min(latest.open, latest.close) - latest.low
-    if (lowerWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001) && latest.close > zoneLow) {
+    if (lowerWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001)
+        && latest.low <= zoneHigh + zoneMargin
+        && latest.close > zoneLow) {
       details.wick_rejection = true
     }
     if (latest.close > zoneHigh && prev.close > zoneHigh && prev.low <= zoneHigh) {
       details.consecutive_closes = true
     }
   } else {
+    // Wick rejection: candle wicked into/near zone and closed below
     const body = Math.abs(latest.close - latest.open)
     const upperWick = latest.high - Math.max(latest.open, latest.close)
-    if (upperWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001) && latest.close < zoneHigh) {
+    if (upperWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001)
+        && latest.high >= zoneLow - zoneMargin
+        && latest.close < zoneHigh) {
       details.wick_rejection = true
     }
     if (latest.close < zoneLow && prev.close < zoneLow && prev.high >= zoneLow) {
@@ -797,7 +814,7 @@ function checkBounce(
     }
   }
 
-  // Volume spike
+  // Volume spike — only counts if zone was touched (already verified above)
   const volCandles = candles.slice(-21, -1)
   if (volCandles.length >= 10 && latest.volume > 0) {
     const avgVol = volCandles.reduce((sum, c) => sum + c.volume, 0) / volCandles.length
