@@ -12,6 +12,7 @@ struct SwingSetupsDetailView: View {
     @State private var signalToShare: TradeSignal? = nil
     @State private var performancePeriod: PerformancePeriod = .all
     @State private var showExportSheet = false
+    @State private var highImpactEvents: [EconomicEvent] = []
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -271,6 +272,12 @@ struct SwingSetupsDetailView: View {
                         emptyState
                             .padding(.top, 40)
                     } else {
+                        // High-impact event warning
+                        if selectedFilter == .active && !highImpactEvents.isEmpty {
+                            highImpactWarningBanner
+                                .padding(.horizontal)
+                        }
+
                         LazyVStack(spacing: 12) {
                             ForEach(filteredSignals) { signal in
                                 NavigationLink {
@@ -332,6 +339,11 @@ struct SwingSetupsDetailView: View {
         }
         .task {
             await viewModel.loadAllData()
+            // Load today's high-impact events for volatility warning
+            let eventsService = EconomicEventsService()
+            let today = Date()
+            let events = await eventsService.fetchEvents(from: today, to: today, impactFilter: [.high])
+            highImpactEvents = events
         }
         .refreshable {
             await viewModel.loadAllData()
@@ -868,6 +880,35 @@ struct SwingSetupsDetailView: View {
     }
 
     // MARK: - Empty State
+
+    private var highImpactWarningBanner: some View {
+        let eventNames = highImpactEvents.prefix(2).map { $0.title }.joined(separator: ", ")
+        return HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.warning)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("High-Volatility Day")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(AppColors.warning)
+
+                Text("\(eventNames) today. Expect sharp moves — manage risk carefully.")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+        }
+        .padding(10)
+        .background(AppColors.warning.opacity(0.1))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(AppColors.warning.opacity(0.3), lineWidth: 1)
+        )
+    }
 
     private var emptyState: some View {
         VStack(spacing: 12) {

@@ -148,6 +148,7 @@ struct FlashIntelSection: View {
     let isPro: Bool
     var size: WidgetSize = .standard
     var stats: SignalStats? = nil
+    var highImpactEvents: [EconomicEvent] = []
     @State private var showMethodology = false
     @State private var showPaywall = false
     @Environment(\.colorScheme) var colorScheme
@@ -178,6 +179,11 @@ struct FlashIntelSection: View {
                 }
 
                 Spacer()
+            }
+
+            // High-impact event warning
+            if isPro && !highImpactEvents.isEmpty {
+                highImpactWarningBanner
             }
 
             if isPro {
@@ -346,6 +352,35 @@ struct FlashIntelSection: View {
                 .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
         )
     }
+
+    private var highImpactWarningBanner: some View {
+        let eventNames = highImpactEvents.prefix(2).map { $0.title }.joined(separator: ", ")
+        return HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.warning)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("High-Volatility Day")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(AppColors.warning)
+
+                Text("\(eventNames) today. Expect sharp moves — manage risk carefully.")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+            }
+
+            Spacer()
+        }
+        .padding(10)
+        .background(AppColors.warning.opacity(0.1))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(AppColors.warning.opacity(0.3), lineWidth: 1)
+        )
+    }
 }
 
 // MARK: - Signal Methodology Sheet
@@ -461,7 +496,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 24)
 
-                            Text("Patterns are evaluated at every **4H candle close** (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC) \u{2014} 6 full scans per day. Between scans, a **lightweight hourly monitor** checks open signals against live prices for faster stop loss, target, and trailing stop resolution. Signals that don't hit a target or stop within 72 hours expire and close at the current price.")
+                            Text("Patterns are evaluated **every 30 minutes** using 1H and 4H candle data for fast bounce detection. A **lightweight monitor** checks open signals against live prices for stop loss, target, and trailing stop resolution. Signals that don't hit a target or stop within 72 hours expire and close at the current price.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)

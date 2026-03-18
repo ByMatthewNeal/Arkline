@@ -149,9 +149,9 @@ struct MeetingDateChip: View {
         Button(action: action) {
             VStack(spacing: 2) {
                 if isNext {
-                    Text("NEXT")
+                    Text(Calendar.current.isDateInToday(date) ? "TODAY" : "NEXT")
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(isSelected ? .white : AppColors.accent)
+                        .foregroundColor(isSelected ? .white : (Calendar.current.isDateInToday(date) ? AppColors.warning : AppColors.accent))
                 }
 
                 Text(monthString)
@@ -224,9 +224,9 @@ struct FedWatchCard: View {
             // Meeting Info Row
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Next FOMC Meeting")
+                    Text(Calendar.current.isDateInToday(data.meetingDate) ? "FOMC Meeting Today" : "Next FOMC Meeting")
                         .font(.caption)
-                        .foregroundColor(AppColors.textSecondary)
+                        .foregroundColor(Calendar.current.isDateInToday(data.meetingDate) ? AppColors.warning : AppColors.textSecondary)
 
                     Text(data.meetingDate.formatted(date: .abbreviated, time: .omitted))
                         .font(.subheadline)

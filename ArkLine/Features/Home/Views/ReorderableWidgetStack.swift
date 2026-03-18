@@ -256,7 +256,8 @@ struct ReorderableWidgetStack: View {
                 signals: viewModel.flashIntelSignals,
                 isPro: appState.isPro,
                 size: appState.widgetSize(.flashIntel),
-                stats: viewModel.signalStats
+                stats: viewModel.signalStats,
+                highImpactEvents: viewModel.todaysEvents.filter { $0.isHighImpact }
             )
 
         case .usFutures:

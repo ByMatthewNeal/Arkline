@@ -62,8 +62,8 @@ final class CMEFedWatchScraper {
                 day: dateInfo.day
             )) else { continue }
 
-            // Only include future meetings
-            guard meetingDate > today else { continue }
+            // Include today's meeting (keep visible all day) and future meetings
+            guard Calendar.current.isDateInToday(meetingDate) || meetingDate > today else { continue }
 
             // Generate probabilities that gradually shift toward cuts as year progresses
             let probabilities = generateProbabilitiesForMeeting(index: index, totalMeetings: fomcDates.count)
