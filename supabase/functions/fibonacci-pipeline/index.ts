@@ -5,9 +5,9 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *
  * Multi-Asset Golden Pocket Strategy — 4H Entry / 1D Bias
  *
- * Runs every 4 hours at 0:05, 4:05, 8:05, 12:05, 16:05, 20:05 UTC
- * (all six 4H candle closes):
- *   1. Fetches 4h + 1D OHLC candles from Coinbase for each asset
+ * Runs every 30 minutes to catch bounces quickly.
+ * Uses 1H candles for early bounce detection, 4H for trend/structure:
+ *   1. Fetches 1h + 4h + 1D OHLC candles from Coinbase for each asset
  *   2. Detects swing highs/lows
  *   3. Computes 0.618/0.786 Fibonacci retracement levels
  *   4. Finds confluence zones across timeframes
@@ -38,6 +38,7 @@ const ASSETS: AssetConfig[] = [
 
 // Coinbase granularities: ONE_HOUR, TWO_HOUR, FOUR_HOUR, SIX_HOUR, ONE_DAY
 const TIMEFRAME_CONFIGS = [
+  { timeframe: "1h", granularity: "ONE_HOUR", limit: 100 },    // ~4 days, for faster bounce detection
   { timeframe: "4h", granularity: "FOUR_HOUR", limit: 250 },  // ~42 days, enough for EMA 50 + swing detection
   { timeframe: "1d", granularity: "ONE_DAY", limit: 200 },     // ~200 days (need 147+ for 21W EMA)
 ] as const
@@ -171,7 +172,7 @@ Deno.serve(async (req) => {
 
         // Fetch latest candles
         const candles = await fetchCandles(asset.cbPair)
-        assetResults.candles = { "4h": candles["4h"].length, "1d": candles["1d"].length }
+        assetResults.candles = { "1h": candles["1h"]?.length ?? 0, "4h": candles["4h"].length, "1d": candles["1d"].length }
 
         // Store candles in DB
         await storeCandles(supabase, asset.ticker, candles)
@@ -279,7 +280,7 @@ async function storeCandles(supabase: SupabaseClient, ticker: string, candles: R
 
 async function pruneOldCandles(supabase: SupabaseClient, ticker: string) {
   const now = new Date()
-  const retentionDays: Record<string, number> = { "4h": 60, "1d": 180 }
+  const retentionDays: Record<string, number> = { "1h": 7, "4h": 60, "1d": 180 }
 
   for (const [tf, days] of Object.entries(retentionDays)) {
     const cutoff = new Date(now.getTime() - days * 86400000).toISOString()
@@ -1384,14 +1385,14 @@ async function evaluateSignals(
     const distancePct = Math.abs((currentPrice - zone.mid) / currentPrice) * 100
     if (distancePct > SIGNAL_PROXIMITY_PCT) continue
 
-    // Check for existing active/triggered signal near this zone
+    // Check for existing active/triggered signal near this zone (match on zone, not entry price)
     const { data: existing } = await supabase
       .from("trade_signals")
       .select("id")
       .eq("asset", ticker)
       .in("status", ["active", "triggered"])
-      .gte("entry_price_mid", zone.mid * 0.995)
-      .lte("entry_price_mid", zone.mid * 1.005)
+      .gte("entry_zone_low", zone.low * 0.995)
+      .lte("entry_zone_high", zone.high * 1.005)
       .limit(1)
 
     if (existing && existing.length > 0) {
@@ -1423,10 +1424,15 @@ async function evaluateSignals(
       continue
     }
 
-    // Bounce confirmation
-    const bounce = checkBounce(candles4h.slice(-25), zone.low, zone.high, isBuy)
+    // Bounce confirmation — check 1H first (faster), fall back to 4H
+    const candles1h = candles["1h"] ?? []
+    const bounce1h = candles1h.length >= 3
+      ? checkBounce(candles1h.slice(-25), zone.low, zone.high, isBuy)
+      : { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false } }
+    const bounce4h = checkBounce(candles4h.slice(-25), zone.low, zone.high, isBuy)
+    const bounce = bounce1h.confirmed ? bounce1h : bounce4h
     if (!bounce.confirmed) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce`)
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce (checked 1H+4H)`)
       stats.skipped++
       continue
     }
@@ -1435,7 +1441,8 @@ async function evaluateSignals(
     const targets = computeTargetsAndStop(zone, allFibPrices, isBuy)
     if (!targets) continue
 
-    const entryMid = zone.mid
+    // Use current price as entry — more realistic than zone.mid since bounce already happened
+    const entryMid = currentPrice
     const riskDist = Math.abs(entryMid - targets.stopLoss)
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
@@ -1501,7 +1508,7 @@ async function evaluateSignals(
     const signalRow = {
       asset: ticker,
       signal_type: signalType,
-      status: "triggered",  // Enter immediately on the 4h candle
+      status: "triggered",  // Enter at current price after bounce confirmation
       entry_zone_low: zone.low,
       entry_zone_high: zone.high,
       entry_price_mid: entryMid,
