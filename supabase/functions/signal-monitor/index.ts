@@ -128,6 +128,9 @@ Deno.serve(async (req) => {
   const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0, notifications: 0, proximityAlerts: 0 }
 
   for (const signal of allSignals) {
+    // Skip if already resolved by pipeline (race condition guard)
+    if (signal.closed_at) continue
+
     const triggerMs = new Date(signal.triggered_at).getTime()
     const candle = aggregateAfter(signal.asset, triggerMs)
     if (!candle) continue

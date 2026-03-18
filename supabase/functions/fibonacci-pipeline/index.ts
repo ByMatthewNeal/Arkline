@@ -1639,17 +1639,28 @@ async function resolveOpenSignals(
   const candles4h = candles["4h"]
   if (!candles4h || candles4h.length === 0) return stats
 
-  // Aggregate last 3 4H candles (max high / min low) to catch missed hits
-  const recentCandles = candles4h.slice(-3)
-  const latestCandle = {
-    high: Math.max(...recentCandles.map(c => c.high)),
-    low: Math.min(...recentCandles.map(c => c.low)),
-    close: recentCandles[recentCandles.length - 1].close,
-    open: recentCandles[recentCandles.length - 1].open,
-    volume: recentCandles[recentCandles.length - 1].volume,
-    time: recentCandles[recentCandles.length - 1].time,
-  }
+  // Candles are oldest-first; keep last 6 for per-signal timestamp filtering
+  const recent4h = candles4h.slice(-6)
+  const latestClose = recent4h[recent4h.length - 1].close
   const now = new Date()
+
+  // Aggregate candles only after a signal's trigger time (prevents false T1/SL hits)
+  function aggregateAfter(afterIso: string): { high: number; low: number; close: number } | null {
+    const afterMs = new Date(afterIso).getTime()
+    const valid = recent4h.filter(c => new Date(c.open_time).getTime() >= afterMs)
+    if (valid.length === 0) {
+      // Signal just created — use only the latest candle
+      const latest = recent4h[recent4h.length - 1]
+      return { high: latest.high, low: latest.low, close: latest.close }
+    }
+    let aggHigh = -Infinity
+    let aggLow = Infinity
+    for (const c of valid) {
+      aggHigh = Math.max(aggHigh, c.high)
+      aggLow = Math.min(aggLow, c.low)
+    }
+    return { high: aggHigh, low: aggLow, close: valid[valid.length - 1].close }
+  }
 
   // Get all triggered signals for this asset
   const { data: signals } = await supabase
@@ -1661,6 +1672,9 @@ async function resolveOpenSignals(
   if (!signals || signals.length === 0) return stats
 
   for (const signal of signals) {
+    // Skip if already resolved by signal-monitor (race condition guard)
+    if (signal.closed_at) continue
+
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
     const entryMid = Number(signal.entry_price_mid)
     const t1 = signal.target_1 ? Number(signal.target_1) : null
@@ -1670,9 +1684,15 @@ async function resolveOpenSignals(
     let bestPrice = signal.best_price ? Number(signal.best_price) : entryMid
     let runnerStop = signal.runner_stop ? Number(signal.runner_stop) : sl
 
+    // Per-signal candle aggregation — only candles after this signal was created
+    const candle = aggregateAfter(signal.triggered_at)
+    if (!candle) continue
+    // Latest candle only for runner trailing (avoids stale highs/lows)
+    const latestOnly = recent4h[recent4h.length - 1]
+
     // --- Expiry check ---
     if (signal.expires_at && new Date(signal.expires_at) <= now) {
-      const exitPrice = latestCandle.close
+      const exitPrice = latestClose
 
       if (t1AlreadyHit) {
         // Runner was still open — close at current price
@@ -1715,7 +1735,7 @@ async function resolveOpenSignals(
     if (isBuy) {
       if (!t1AlreadyHit) {
         // Phase 1: Full position — check SL then T1
-        if (latestCandle.low <= sl) {
+        if (candle.low <= sl) {
           const pnl = ((sl - entryMid) / entryMid) * 100
           await supabase.from("trade_signals").update({
             status: "invalidated",
@@ -1730,12 +1750,12 @@ async function resolveOpenSignals(
           continue
         }
 
-        if (t1 && latestCandle.high >= t1) {
+        if (t1 && candle.high >= t1) {
           const t1Pnl = ((t1 - entryMid) / entryMid) * 100
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: Math.round(t1Pnl * 100) / 100,
-            best_price: latestCandle.high,
+            best_price: candle.high,
             runner_stop: entryMid,  // Move to breakeven
           }).eq("id", signal.id)
           notifyResolution(signal, "t1_hit", t1)
@@ -1743,11 +1763,11 @@ async function resolveOpenSignals(
           continue // Skip runner eval this cycle
         }
       } else {
-        // Phase 2: Runner — trail stop at 1R behind best price
-        bestPrice = Math.max(bestPrice, latestCandle.high)
+        // Phase 2: Runner — use latest candle only (not aggregated) to avoid stale data
+        bestPrice = Math.max(bestPrice, latestOnly.high)
         runnerStop = Math.max(runnerStop, bestPrice - risk1r)
 
-        if (latestCandle.low <= runnerStop) {
+        if (latestOnly.low <= runnerStop) {
           const runnerPnl = ((runnerStop - entryMid) / entryMid) * 100
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
@@ -1777,7 +1797,7 @@ async function resolveOpenSignals(
     } else {
       // --- SHORT ---
       if (!t1AlreadyHit) {
-        if (latestCandle.high >= sl) {
+        if (candle.high >= sl) {
           const pnl = ((entryMid - sl) / entryMid) * 100
           await supabase.from("trade_signals").update({
             status: "invalidated",
@@ -1792,12 +1812,12 @@ async function resolveOpenSignals(
           continue
         }
 
-        if (t1 && latestCandle.low <= t1) {
+        if (t1 && candle.low <= t1) {
           const t1Pnl = ((entryMid - t1) / entryMid) * 100
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: Math.round(t1Pnl * 100) / 100,
-            best_price: latestCandle.low,
+            best_price: candle.low,
             runner_stop: entryMid,  // Move to breakeven
           }).eq("id", signal.id)
           notifyResolution(signal, "t1_hit", t1)
@@ -1805,10 +1825,11 @@ async function resolveOpenSignals(
           continue // Skip runner eval this cycle
         }
       } else {
-        bestPrice = Math.min(bestPrice, latestCandle.low)
+        // Phase 2: Runner — use latest candle only (not aggregated) to avoid stale data
+        bestPrice = Math.min(bestPrice, latestOnly.low)
         runnerStop = Math.min(runnerStop, bestPrice + risk1r)
 
-        if (latestCandle.high >= runnerStop) {
+        if (latestOnly.high >= runnerStop) {
           const runnerPnl = ((entryMid - runnerStop) / entryMid) * 100
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2

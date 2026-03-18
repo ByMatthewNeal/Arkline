@@ -14,6 +14,7 @@ struct SignalDetailView: View {
     @State private var currentPrice: Double?
     @State private var customEntryText: String = ""
     @State private var showCustomEntry = false
+    @State private var refreshTimer: Timer?
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
 
@@ -151,6 +152,7 @@ struct SignalDetailView: View {
         }
         .task {
             await loadData()
+            startRefreshTimerIfNeeded()
         }
         .onAppear {
             let key = "arkline_signal_detail_education_shown"
@@ -158,6 +160,10 @@ struct SignalDetailView: View {
                 showEducationalModal = true
                 UserDefaults.standard.set(true, forKey: key)
             }
+        }
+        .onDisappear {
+            refreshTimer?.invalidate()
+            refreshTimer = nil
         }
     }
 
@@ -179,14 +185,38 @@ struct SignalDetailView: View {
         }
     }
 
+    /// Polls signal + price every 30s while the signal is live
+    private func startRefreshTimerIfNeeded() {
+        guard signal?.status.isLive == true else { return }
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
+            Task { @MainActor in
+                do {
+                    let updated = try await service.fetchSignal(id: signalId)
+                    signal = updated
+                    await fetchCurrentPrice(asset: updated.asset)
+                    // Stop polling once resolved
+                    if !updated.status.isLive {
+                        refreshTimer?.invalidate()
+                        refreshTimer = nil
+                    }
+                } catch {
+                    logDebug("Signal refresh failed: \(error)", category: .network)
+                }
+            }
+        }
+    }
+
     private func fetchCurrentPrice(asset: String) async {
         do {
-            let symbol = "\(asset.uppercased())USDT"
-            let endpoint = BinanceEndpoint.tickerPrice(symbol: symbol)
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
+            let pair = "\(asset.uppercased())-USD"
+            let url = URL(string: "https://api.coinbase.com/api/v3/brokerage/market/products/\(pair)/candles?granularity=ONE_HOUR&limit=1")!
+            let (data, _) = try await URLSession.shared.data(from: url)
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let priceString = json["price"] as? String,
-               let price = Double(priceString) {
+               let candles = json["candles"] as? [[String: Any]],
+               let latest = candles.first,
+               let closeStr = latest["close"] as? String,
+               let price = Double(closeStr) {
                 currentPrice = price
             }
         } catch {
@@ -626,7 +656,8 @@ struct SignalDetailView: View {
                             )
 
                             if let t1 = signal.target1 {
-                                let t1Pct = ((t1 - entry) / entry) * 100
+                                let rawPct = ((t1 - entry) / entry) * 100
+                                let t1Pct = isBuy ? rawPct : -rawPct
                                 paramRow(
                                     label: "Target 1",
                                     value: "$\(formatSignalPrice(t1))",
@@ -636,7 +667,8 @@ struct SignalDetailView: View {
                             }
 
                             if let t2 = signal.target2 {
-                                let t2Pct = ((t2 - entry) / entry) * 100
+                                let rawPct = ((t2 - entry) / entry) * 100
+                                let t2Pct = isBuy ? rawPct : -rawPct
                                 paramRow(
                                     label: "Target 2",
                                     value: "$\(formatSignalPrice(t2))",

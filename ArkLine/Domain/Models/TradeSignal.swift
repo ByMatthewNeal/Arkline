@@ -382,18 +382,24 @@ extension TradeSignal {
 // MARK: - Computed Helpers
 
 extension TradeSignal {
+    /// Distance to T1 as a positive percentage (profit direction for both longs and shorts)
     var entryPctFromTarget1: Double? {
         guard let t1 = target1 else { return nil }
-        return ((t1 - entryPriceMid) / entryPriceMid) * 100
+        let raw = ((t1 - entryPriceMid) / entryPriceMid) * 100
+        return signalType.isBuy ? raw : -raw
     }
 
+    /// Distance to T2 as a positive percentage (profit direction for both longs and shorts)
     var entryPctFromTarget2: Double? {
         guard let t2 = target2 else { return nil }
-        return ((t2 - entryPriceMid) / entryPriceMid) * 100
+        let raw = ((t2 - entryPriceMid) / entryPriceMid) * 100
+        return signalType.isBuy ? raw : -raw
     }
 
+    /// Distance to stop loss as a negative percentage (loss direction for both longs and shorts)
     var stopLossPct: Double {
-        ((stopLoss - entryPriceMid) / entryPriceMid) * 100
+        let raw = ((stopLoss - entryPriceMid) / entryPriceMid) * 100
+        return signalType.isBuy ? raw : -raw
     }
 
     var timeAgo: String {
