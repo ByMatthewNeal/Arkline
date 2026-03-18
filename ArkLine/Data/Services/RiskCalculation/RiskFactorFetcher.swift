@@ -105,7 +105,7 @@ actor RiskFactorFetcher {
         let fearGreed = await fearGreedResult
         let oil = await oilResult
 
-        // 4. Fetch Bull Market Support Bands (from Binance weekly data)
+        // 4. Fetch Bull Market Support Bands (from Coinbase daily data)
         let bullMarketBands = await fetchBullMarketBands(coin: coin, currentPrice: price)
 
         let factorData = RiskFactorData(
@@ -175,8 +175,8 @@ actor RiskFactorFetcher {
     private func fetchTaapiDataSequentially(coin: String) async -> (rsi: Double?, sma: Double?, price: Double?) {
         logDebug("Fetching Taapi.io data sequentially (16s delay between calls)...", category: .network)
 
-        // Fetch price from Binance in parallel (no rate limit) while we wait for Taapi
-        async let priceTask = fetchPriceFromBinance(coin: coin)
+        // Fetch price from Coinbase in parallel (no rate limit) while we wait for Taapi
+        async let priceTask = fetchPriceFromCoinbase(coin: coin)
 
         // First Taapi call: RSI
         await waitForTaapiRateLimit()
@@ -223,9 +223,9 @@ actor RiskFactorFetcher {
             logDebug("RSI for \(coin) (Taapi): \(rsi)", category: .network)
             return rsi
         } catch {
-            logWarning("RSI fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Binance fallback...", category: .network)
-            // Fall back to calculating from Binance klines
-            return await fetchRSIFromBinance(coin: coin)
+            logWarning("RSI fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Coinbase fallback...", category: .network)
+            // Fall back to calculating from Coinbase klines
+            return await fetchRSIFromCoinbase(coin: coin)
         }
     }
 
@@ -245,29 +245,21 @@ actor RiskFactorFetcher {
             }
             return sma200
         } catch {
-            logWarning("SMA200 fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Binance fallback...", category: .network)
-            // Fall back to calculating from Binance klines
-            return await fetchSMA200FromBinance(coin: coin)
+            logWarning("SMA200 fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Coinbase fallback...", category: .network)
+            // Fall back to calculating from Coinbase klines
+            return await fetchSMA200FromCoinbase(coin: coin)
         }
     }
 
-    // MARK: - Binance Fallback Methods
+    // MARK: - Coinbase Fallback Methods
 
-    /// Calculate RSI from Binance kline data (14-period)
-    private func fetchRSIFromBinance(coin: String) async -> Double? {
+    /// Calculate RSI from Coinbase kline data (14-period)
+    private func fetchRSIFromCoinbase(coin: String) async -> Double? {
         do {
-            let binanceSymbol = "\(coin.uppercased())USDT"
-            // Need 15 candles to calculate 14-period RSI (first candle is just for price change reference)
-            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1d", limit: 15)
-
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
-                return nil
-            }
-
-            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
-            guard klines.count >= 15 else {
-                logWarning("Not enough klines for RSI calculation for \(coin)", category: .network)
+            let pair = "\(coin.uppercased())-USD"
+            let candles = try await CoinbaseCandle.fetch(pair: pair, granularity: "ONE_DAY", limit: 15)
+            guard candles.count >= 15 else {
+                logWarning("Not enough candles for RSI calculation for \(coin) (got \(candles.count))", category: .network)
                 return nil
             }
 
@@ -275,8 +267,8 @@ actor RiskFactorFetcher {
             var gains: [Double] = []
             var losses: [Double] = []
 
-            for i in 1..<klines.count {
-                let change = klines[i].close - klines[i-1].close
+            for i in 1..<candles.count {
+                let change = candles[i].close - candles[i-1].close
                 if change > 0 {
                     gains.append(change)
                     losses.append(0)
@@ -291,47 +283,40 @@ actor RiskFactorFetcher {
             let avgLoss = losses.reduce(0, +) / 14.0
 
             guard avgLoss > 0 else {
-                // No losses means RSI is 100
-                logDebug("RSI for \(coin) (Binance): 100.0", category: .network)
+                logDebug("RSI for \(coin) (Coinbase): 100.0", category: .network)
                 return 100.0
             }
 
             let rs = avgGain / avgLoss
             let rsi = 100.0 - (100.0 / (1.0 + rs))
 
-            logDebug("RSI for \(coin) (Binance fallback): \(rsi)", category: .network)
+            logDebug("RSI for \(coin) (Coinbase fallback): \(rsi)", category: .network)
             return rsi
         } catch {
-            logWarning("RSI Binance fallback failed for \(coin): \(error.localizedDescription)", category: .network)
+            logWarning("RSI Coinbase fallback failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
 
-    /// Calculate 200-day SMA from Binance kline data
-    private func fetchSMA200FromBinance(coin: String) async -> Double? {
+    /// Calculate 200-day SMA from Coinbase kline data
+    private func fetchSMA200FromCoinbase(coin: String) async -> Double? {
         do {
-            let binanceSymbol = "\(coin.uppercased())USDT"
-            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1d", limit: 200)
-
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+            let pair = "\(coin.uppercased())-USD"
+            let candles = try await CoinbaseCandle.fetch(pair: pair, granularity: "ONE_DAY", limit: 300)
+            guard candles.count >= 200 else {
+                logWarning("Not enough candles for SMA200 calculation for \(coin) (got \(candles.count))", category: .network)
                 return nil
             }
 
-            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
-            guard klines.count >= 200 else {
-                logWarning("Not enough klines for SMA200 calculation for \(coin) (got \(klines.count))", category: .network)
-                return nil
-            }
-
-            // Calculate 200-day SMA from closing prices
-            let closingPrices = klines.map { $0.close }
+            // Use last 200 candles
+            let last200 = Array(candles.suffix(200))
+            let closingPrices = last200.map { $0.close }
             let sma200 = closingPrices.reduce(0, +) / Double(closingPrices.count)
 
-            logDebug("SMA200 for \(coin) (Binance fallback): \(sma200)", category: .network)
+            logDebug("SMA200 for \(coin) (Coinbase fallback): \(sma200)", category: .network)
             return sma200
         } catch {
-            logWarning("SMA200 Binance fallback failed for \(coin): \(error.localizedDescription)", category: .network)
+            logWarning("SMA200 Coinbase fallback failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -351,22 +336,16 @@ actor RiskFactorFetcher {
         }
     }
 
-    /// Fetch current price directly from Binance (no rate limit)
-    private func fetchPriceFromBinance(coin: String) async -> Double? {
+    /// Fetch current price from Coinbase (no rate limit)
+    private func fetchPriceFromCoinbase(coin: String) async -> Double? {
         do {
-            let binanceSymbol = "\(coin.uppercased())USDT"
-            let endpoint = BinanceEndpoint.tickerPrice(symbol: binanceSymbol)
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let priceString = json["price"] as? String,
-               let price = Double(priceString) {
-                logDebug("Price for \(coin) (Binance): \(price)", category: .network)
-                return price
-            }
-            return nil
+            let pair = "\(coin.uppercased())-USD"
+            let candles = try await CoinbaseCandle.fetch(pair: pair, granularity: "ONE_HOUR", limit: 1)
+            guard let latest = candles.last else { return nil }
+            logDebug("Price for \(coin) (Coinbase): \(latest.close)", category: .network)
+            return latest.close
         } catch {
-            logWarning("Binance price fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            logWarning("Coinbase price fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
@@ -375,20 +354,35 @@ actor RiskFactorFetcher {
         guard let price = currentPrice else { return nil }
 
         do {
-            // Fetch weekly candles from Binance to calculate 20W SMA and 21W EMA
-            let binanceSymbol = "\(coin.uppercased())USDT"
-            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1w", limit: 25)
+            // Coinbase has no weekly granularity, so fetch ~160 daily candles and aggregate to weekly
+            let pair = "\(coin.uppercased())-USD"
+            let candles = try await CoinbaseCandle.fetch(pair: pair, granularity: "ONE_DAY", limit: 160)
+            guard candles.count >= 147 else { return nil } // Need 21 weeks of daily data
 
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
-                return nil
+            // Group daily candles into ISO weeks, take last close of each week
+            let calendar = Calendar(identifier: .iso8601)
+            var weeklyCloses: [(yearWeek: Int, close: Double)] = []
+            var currentYearWeek = 0
+
+            for candle in candles {
+                let date = Date(timeIntervalSince1970: Double(candle.start))
+                let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+                let yw = (components.yearForWeekOfYear ?? 0) * 100 + (components.weekOfYear ?? 0)
+
+                if yw != currentYearWeek {
+                    weeklyCloses.append((yearWeek: yw, close: candle.close))
+                    currentYearWeek = yw
+                } else {
+                    // Update the close for this week (last daily close wins)
+                    weeklyCloses[weeklyCloses.count - 1] = (yearWeek: yw, close: candle.close)
+                }
             }
 
-            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
-            guard klines.count >= 21 else { return nil }
+            // Drop the current (incomplete) week
+            if weeklyCloses.count > 1 { weeklyCloses.removeLast() }
+            guard weeklyCloses.count >= 21 else { return nil }
 
-            // Get closing prices (excluding current incomplete candle)
-            let closingPrices = klines.dropLast().map { $0.close }
+            let closingPrices = weeklyCloses.map { $0.close }
 
             // Calculate 20-week SMA
             let last20 = Array(closingPrices.suffix(20))

@@ -4,7 +4,7 @@ import Foundation
 /// Fetches and persists daily close prices to fill the gap
 /// between the frozen embedded data (HistoricalPriceData.swift) and today.
 /// For coins without embedded data (BNB, SUI, UNI, ONDO, RENDER),
-/// fetches full history from Binance on first use and caches to disk.
+/// fetches full history from Coinbase on first use and caches to disk.
 /// Thread-safe via actor isolation. Disk-persisted via JSON in ~/Library/Caches/PriceHistory/.
 actor IncrementalPriceStore {
 
@@ -31,7 +31,7 @@ actor IncrementalPriceStore {
     /// Raw incremental data loaded from disk, keyed by coin symbol.
     private nonisolated(unsafe) var incrementalData: [String: CoinPriceFile] = [:]
 
-    /// Full history fetched from Binance (for coins without embedded data).
+    /// Full history fetched from Coinbase (for coins without embedded data).
     private nonisolated(unsafe) var baselineData: [String: CoinPriceFile] = [:]
 
     /// Track fetch attempts to enforce cooldown.
@@ -83,8 +83,8 @@ actor IncrementalPriceStore {
         mergedCache.removeAll()
     }
 
-    /// Returns the full price history for a coin: embedded baseline (or Binance baseline) + incremental days.
-    /// Fetches missing days from Binance if needed (respects cooldown).
+    /// Returns the full price history for a coin: embedded baseline (or Coinbase baseline) + incremental days.
+    /// Fetches missing days from Coinbase if needed (respects cooldown).
     func fullPriceHistory(for coin: String) async -> [(date: Date, price: Double)] {
         let symbol = coin.uppercased()
 
@@ -93,7 +93,7 @@ actor IncrementalPriceStore {
             return cached
         }
 
-        // For coins without embedded data, fetch full history from Binance if needed
+        // For coins without embedded data, fetch full history from Coinbase if needed
         if !hasEmbeddedData(coin: symbol) && baselineData[symbol] == nil {
             await fetchFullBaselineHistory(coin: symbol)
         }
@@ -117,7 +117,7 @@ actor IncrementalPriceStore {
 
     // MARK: - Full Baseline History Fetch
 
-    /// Fetches the complete price history for coins without embedded data using Binance daily klines.
+    /// Fetches the complete price history for coins without embedded data using Coinbase daily candles.
     private func fetchFullBaselineHistory(coin: String) async {
         // Already have baseline data
         if baselineData[coin] != nil { return }
@@ -128,56 +128,52 @@ actor IncrementalPriceStore {
             return
         }
 
-        guard let config = AssetRiskConfig.forCoin(coin),
-              let binanceSymbol = config.binanceSymbol else { return }
+        guard let config = AssetRiskConfig.forCoin(coin) else { return }
 
         baselineFetchFailed[coin] = Date()
-        await fetchFullHistoryFromBinance(coin: coin, binanceSymbol: binanceSymbol, originDate: config.originDate)
+        await fetchFullHistoryFromCoinbase(coin: coin, pair: config.coinbasePair, originDate: config.originDate)
     }
 
-    /// Fetch full history from Binance using paginated daily klines (1000 per request, no rate limits).
-    private func fetchFullHistoryFromBinance(coin: String, binanceSymbol: String, originDate: Date) async {
-        logDebug("IncrementalPriceStore: Fetching full history from Binance for \(coin) (\(binanceSymbol))", category: .network)
+    /// Fetch full history from Coinbase using paginated daily candles (~350 per request).
+    private func fetchFullHistoryFromCoinbase(coin: String, pair: String, originDate: Date) async {
+        logDebug("IncrementalPriceStore: Fetching full history from Coinbase for \(coin) (\(pair))", category: .network)
 
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: Date())
         var allPoints: [PersistedPricePoint] = []
-        var currentStartTime = Int64(originDate.timeIntervalSince1970 * 1000)
-        let todayMs = Int64(todayStart.timeIntervalSince1970 * 1000)
+        // Coinbase uses seconds, not milliseconds
+        var currentStart = Int64(originDate.timeIntervalSince1970)
+        let todaySec = Int64(todayStart.timeIntervalSince1970)
 
         do {
-            // Paginate through history (Binance returns max 1000 klines per request)
-            while currentStartTime < todayMs {
-                let endpoint = BinanceEndpoint.klinesWithTime(
-                    symbol: binanceSymbol,
-                    interval: "1d",
-                    startTime: currentStartTime,
-                    limit: 1000
+            // Paginate through history (Coinbase returns ~350 candles per request)
+            while currentStart < todaySec {
+                // End = start + 300 days (leave margin under Coinbase's limit)
+                let pageEnd = min(currentStart + (300 * 86400), todaySec)
+
+                let candles = try await CoinbaseCandle.fetch(
+                    pair: pair,
+                    granularity: "ONE_DAY",
+                    start: currentStart,
+                    end: pageEnd
                 )
 
-                let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-                guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
-                    break
-                }
+                if candles.isEmpty { break }
 
-                if jsonArray.isEmpty { break }
-
-                for element in jsonArray {
-                    guard let kline = BinanceKline(from: element) else { continue }
-                    let openDate = Date(timeIntervalSince1970: Double(kline.openTime) / 1000.0)
-                    let candleDay = calendar.startOfDay(for: openDate)
+                for candle in candles {
+                    let candleDate = Date(timeIntervalSince1970: Double(candle.start))
+                    let candleDay = calendar.startOfDay(for: candleDate)
 
                     // Skip today's incomplete candle
                     guard candleDay < todayStart else { continue }
 
                     let dateStr = dateFormatter.string(from: candleDay)
-                    allPoints.append(PersistedPricePoint(date: dateStr, close: kline.close))
+                    allPoints.append(PersistedPricePoint(date: dateStr, close: candle.close))
                 }
 
-                // Move start time past the last candle (next day)
-                if let lastElement = jsonArray.last,
-                   let lastKline = BinanceKline(from: lastElement) {
-                    currentStartTime = lastKline.closeTime + 1
+                // Move start past the last candle
+                if let lastCandle = candles.last {
+                    currentStart = lastCandle.start + 86400 // Next day
                 } else {
                     break
                 }
@@ -189,7 +185,7 @@ actor IncrementalPriceStore {
             allPoints.sort { $0.date < $1.date }
 
             guard !allPoints.isEmpty else {
-                logDebug("IncrementalPriceStore: No Binance data for \(coin)", category: .network)
+                logDebug("IncrementalPriceStore: No Coinbase data for \(coin)", category: .network)
                 return
             }
 
@@ -199,10 +195,10 @@ actor IncrementalPriceStore {
             mergedCache.removeValue(forKey: coin)
             baselineFetchFailed.removeValue(forKey: coin)
 
-            logDebug("IncrementalPriceStore: Loaded \(allPoints.count) historical points for \(coin) from Binance", category: .network)
+            logDebug("IncrementalPriceStore: Loaded \(allPoints.count) historical points for \(coin) from Coinbase", category: .network)
 
         } catch {
-            logDebug("IncrementalPriceStore: Binance full history fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            logDebug("IncrementalPriceStore: Coinbase full history fetch failed for \(coin): \(error.localizedDescription)", category: .network)
         }
     }
 
@@ -282,7 +278,7 @@ actor IncrementalPriceStore {
            let endDate = dateFormatter.date(from: range.end) {
             return endDate
         }
-        // Fall back to Binance baseline
+        // Fall back to Coinbase baseline
         if let baseline = baselineData[coin],
            let last = baseline.prices.last,
            let date = dateFormatter.date(from: last.date) {
@@ -329,7 +325,7 @@ actor IncrementalPriceStore {
             let yesterday = calendar.date(byAdding: .day, value: -1, to: Date()) ?? Date()
             return endDate >= calendar.startOfDay(for: yesterday)
         }
-        // Check Binance baseline
+        // Check Coinbase baseline
         if let baseline = baselineData[coin] {
             let calendar = Calendar.current
             return calendar.isDateInToday(baseline.lastUpdated)
@@ -352,37 +348,31 @@ actor IncrementalPriceStore {
 
         fetchAttempted[coin] = Date()
 
-        // Get Binance symbol from config
-        guard let config = AssetRiskConfig.forCoin(coin),
-              let binanceSymbol = config.binanceSymbol else { return }
+        // Get Coinbase pair from config
+        guard let config = AssetRiskConfig.forCoin(coin) else { return }
 
         logDebug("IncrementalPriceStore: Fetching \(count) missing days for \(coin) from \(dateFormatter.string(from: startDate))", category: .network)
 
         do {
-            let startMs = Int64(startDate.timeIntervalSince1970 * 1000)
-            let endpoint = BinanceEndpoint.klinesWithTime(
-                symbol: binanceSymbol,
-                interval: "1d",
-                startTime: startMs,
-                limit: min(count + 1, 1000)
-            )
+            let startSec = Int64(startDate.timeIntervalSince1970)
+            let endSec = Int64(Date().timeIntervalSince1970)
 
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
-                logDebug("IncrementalPriceStore: Invalid JSON for \(coin)", category: .network)
-                return
-            }
+            let candles = try await CoinbaseCandle.fetch(
+                pair: config.coinbasePair,
+                granularity: "ONE_DAY",
+                start: startSec,
+                end: endSec,
+                limit: min(count + 1, 350)
+            )
 
             let calendar = Calendar.current
             let todayStart = calendar.startOfDay(for: Date())
             let baseEnd = baselineEndDate(for: coin)
 
             var newPoints: [PersistedPricePoint] = []
-            for element in jsonArray {
-                guard let kline = BinanceKline(from: element) else { continue }
-
-                let openDate = Date(timeIntervalSince1970: Double(kline.openTime) / 1000.0)
-                let candleDay = calendar.startOfDay(for: openDate)
+            for candle in candles {
+                let candleDate = Date(timeIntervalSince1970: Double(candle.start))
+                let candleDay = calendar.startOfDay(for: candleDate)
 
                 // Skip today's incomplete candle
                 guard candleDay < todayStart else { continue }
@@ -398,7 +388,7 @@ actor IncrementalPriceStore {
                     continue
                 }
 
-                newPoints.append(PersistedPricePoint(date: dateStr, close: kline.close))
+                newPoints.append(PersistedPricePoint(date: dateStr, close: candle.close))
             }
 
             guard !newPoints.isEmpty else {
@@ -437,7 +427,7 @@ actor IncrementalPriceStore {
         // Start with embedded data (BTC/ETH/SOL)
         var result = HistoricalPriceData.pricesAsTuples(for: coin)
 
-        // Add Binance baseline data (for coins without embedded data)
+        // Add Coinbase baseline data (for coins without embedded data)
         if result.isEmpty, let baseline = baselineData[coin] {
             for point in baseline.prices {
                 if let date = dateFormatter.date(from: point.date) {

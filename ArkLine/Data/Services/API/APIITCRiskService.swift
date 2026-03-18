@@ -199,23 +199,19 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         return lastCalculation < lastRefreshTime
     }
 
-    /// Fetch current price: tries Binance first, falls back to CoinGecko
+    /// Fetch current price: tries Coinbase first, falls back to CoinGecko
     private func fetchCurrentPrice(coin: String) async throws -> Double {
         let config = AssetRiskConfig.forCoin(coin)
 
-        // Try Binance first (fast, no rate limit)
-        if let binanceSymbol = config?.binanceSymbol {
+        // Try Coinbase first (fast, no rate limit, no geo-blocking)
+        if let config {
             do {
-                let endpoint = BinanceEndpoint.tickerPrice(symbol: binanceSymbol)
-                let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let priceString = json["price"] as? String,
-                   let price = Double(priceString) {
-                    return price
+                let candles = try await CoinbaseCandle.fetch(pair: config.coinbasePair, granularity: "ONE_HOUR", limit: 1)
+                if let latest = candles.last {
+                    return latest.close
                 }
             } catch {
-                logDebug("Binance price fetch failed for \(coin), falling back to CoinGecko", category: .network)
+                logDebug("Coinbase price fetch failed for \(coin), falling back to CoinGecko", category: .network)
             }
         }
 

@@ -550,3 +550,60 @@ struct BinanceKline {
         self.closeTime = closeTime
     }
 }
+
+// MARK: - Coinbase Candle Data
+/// Parsed from Coinbase Advanced Trade API candle response.
+/// Response format: {"candles": [{"start": "1234567890", "low": "100.0", "high": "110.0", "open": "105.0", "close": "108.0", "volume": "50.0"}]}
+/// Coinbase returns candles newest-first.
+struct CoinbaseCandle {
+    let start: Int64   // Unix timestamp (seconds)
+    let open: Double
+    let high: Double
+    let low: Double
+    let close: Double
+    let volume: Double
+
+    init?(from dict: [String: Any]) {
+        guard let startStr = dict["start"] as? String, let start = Int64(startStr),
+              let openStr = dict["open"] as? String, let open = Double(openStr),
+              let highStr = dict["high"] as? String, let high = Double(highStr),
+              let lowStr = dict["low"] as? String, let low = Double(lowStr),
+              let closeStr = dict["close"] as? String, let close = Double(closeStr),
+              let volStr = dict["volume"] as? String, let volume = Double(volStr)
+        else { return nil }
+
+        self.start = start
+        self.open = open
+        self.high = high
+        self.low = low
+        self.close = close
+        self.volume = volume
+    }
+
+    /// Fetch candles from Coinbase Advanced Trade API.
+    /// - Parameters:
+    ///   - pair: Trading pair (e.g., "BTC-USD")
+    ///   - granularity: ONE_MINUTE, FIVE_MINUTE, FIFTEEN_MINUTE, THIRTY_MINUTE, ONE_HOUR, TWO_HOUR, SIX_HOUR, ONE_DAY
+    ///   - start: Start time as Unix timestamp (seconds). Optional.
+    ///   - end: End time as Unix timestamp (seconds). Optional.
+    ///   - limit: Max candles (Coinbase returns up to ~350 per request). Use nil for default.
+    /// - Returns: Array of candles sorted oldest-first.
+    static func fetch(pair: String, granularity: String, start: Int64? = nil, end: Int64? = nil, limit: Int? = nil) async throws -> [CoinbaseCandle] {
+        var urlString = "https://api.coinbase.com/api/v3/brokerage/market/products/\(pair)/candles?granularity=\(granularity)"
+        if let start { urlString += "&start=\(start)" }
+        if let end { urlString += "&end=\(end)" }
+        if let limit { urlString += "&limit=\(limit)" }
+
+        guard let url = URL(string: urlString) else { throw AppError.invalidData }
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let candlesArray = json["candles"] as? [[String: Any]] else {
+            throw AppError.invalidData
+        }
+
+        // Parse and reverse (Coinbase returns newest-first, we want oldest-first)
+        let candles = candlesArray.compactMap { CoinbaseCandle(from: $0) }
+        return candles.reversed()
+    }
+}

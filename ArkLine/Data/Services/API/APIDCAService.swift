@@ -809,16 +809,13 @@ final class APIDCAService: DCAServiceProtocol {
 
     // MARK: - Private Price Helper
 
-    /// Fetches current price for a symbol from Binance
+    /// Fetches current price for a symbol from Coinbase
     private func fetchCurrentPrice(for symbol: String) async -> Double {
-        let pair = "\(symbol.uppercased())USDT"
+        let pair = "\(symbol.uppercased())-USD"
         do {
-            let endpoint = BinanceEndpoint.tickerPrice(symbol: pair)
-            let data = try await NetworkManager.shared.requestData(endpoint: endpoint)
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let priceStr = json["price"] as? String,
-               let price = Double(priceStr) {
-                return price
+            let candles = try await CoinbaseCandle.fetch(pair: pair, granularity: "ONE_HOUR", limit: 1)
+            if let latest = candles.last {
+                return latest.close
             }
         } catch {
             logError("DCA price fetch failed for \(symbol): \(error.localizedDescription)", category: .network)

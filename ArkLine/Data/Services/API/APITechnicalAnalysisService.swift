@@ -155,26 +155,26 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
     /// Fetches weekly candle data and calculates the 20-week SMA and 21-week EMA
     private func fetchBullMarketSupportBands(symbol: String, exchange: String, currentPrice: Double) async -> BullMarketSupportBands {
         do {
-            // Convert symbol format: "BTC/USDT" -> "BTCUSDT" for Binance
-            let binanceSymbol = symbol.replacingOccurrences(of: "/", with: "")
+            // Convert symbol format: "BTC/USDT" -> "BTC-USD" for Coinbase
+            let asset = symbol.split(separator: "/").first ?? Substring(symbol)
+            let cbPair = "\(asset)-USD"
 
             // Fetch 25 weekly candles (need 21 for EMA calculation)
-            let endpoint = BinanceEndpoint.klines(symbol: binanceSymbol, interval: "1w", limit: 25)
-
-            // Binance returns array of arrays
-            let data = try await networkManager.requestData(endpoint: endpoint)
-            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+            let url = URL(string: "https://api.coinbase.com/api/v3/brokerage/market/products/\(cbPair)/candles?granularity=ONE_WEEK&limit=25")!
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let candles = json["candles"] as? [[String: Any]] else {
                 throw AppError.invalidData
             }
 
-            // Parse klines
-            let klines = jsonArray.compactMap { BinanceKline(from: $0) }
-            guard klines.count >= 21 else {
+            // Coinbase returns newest-first; parse closing prices
+            let closes = candles.compactMap { ($0["close"] as? String).flatMap(Double.init) }
+            guard closes.count >= 21 else {
                 throw AppError.invalidData
             }
 
-            // Get closing prices (excluding the current incomplete candle)
-            let closingPrices = klines.dropLast().map { $0.close }
+            // Reverse to oldest-first, exclude current incomplete candle
+            let closingPrices = Array(closes.reversed().dropLast())
 
             // Calculate 20-week SMA (average of last 20 closes)
             let sma20Week = calculateSMA(prices: Array(closingPrices.suffix(20)))

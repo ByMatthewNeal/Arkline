@@ -35,6 +35,9 @@ struct AssetRiskConfig {
     /// Binance trading pair symbol (nil if not listed on Binance)
     let binanceSymbol: String?
 
+    /// Coinbase trading pair (e.g., "BTC-USD")
+    var coinbasePair: String { "\(assetId)-USD" }
+
     // MARK: - Supported Assets
 
     /// Bitcoin - longest history, most reliable
