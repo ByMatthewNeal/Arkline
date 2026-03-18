@@ -107,6 +107,38 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         case createdAt = "created_at"
     }
 
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        asset = try container.decode(String.self, forKey: .asset)
+        signal = try container.decode(String.self, forKey: .signal)
+        prevSignal = try container.decodeIfPresent(String.self, forKey: .prevSignal)
+        trendScore = try container.decode(Double.self, forKey: .trendScore)
+        rsi = try container.decodeIfPresent(Double.self, forKey: .rsi)
+        price = try container.decode(Double.self, forKey: .price)
+        above200Sma = try container.decode(Bool.self, forKey: .above200Sma)
+        riskLevel = try container.decodeIfPresent(Double.self, forKey: .riskLevel)
+        category = try container.decodeIfPresent(String.self, forKey: .category)
+
+        // created_at is TIMESTAMPTZ — decode normally
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+
+        // signal_date is a DATE column ("2026-03-18") — needs manual parsing
+        if let date = try? container.decode(Date.self, forKey: .signalDate) {
+            signalDate = date
+        } else {
+            let dateStr = try container.decode(String.self, forKey: .signalDate)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            guard let parsed = formatter.date(from: dateStr) else {
+                throw DecodingError.dataCorruptedError(forKey: .signalDate, in: container,
+                    debugDescription: "Cannot parse signal_date: \(dateStr)")
+            }
+            signalDate = parsed
+        }
+    }
+
     // MARK: - Static Lookups
 
     private static let assetDisplayNames: [String: String] = [
