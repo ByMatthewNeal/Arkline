@@ -12,6 +12,37 @@ final class APIProxy {
 
     private init() {}
 
+    // MARK: - Circuit Breaker
+    /// Stops hammering the proxy after consecutive 401s.
+    /// Resets automatically after cooldown or on successful proxy call.
+    private var consecutiveFailures = 0
+    private var circuitOpenedAt: Date?
+    private let failureThreshold = 3
+    private let circuitCooldown: TimeInterval = 300 // 5 minutes
+
+    private var isCircuitOpen: Bool {
+        guard consecutiveFailures >= failureThreshold else { return false }
+        if let opened = circuitOpenedAt,
+           Date().timeIntervalSince(opened) > circuitCooldown {
+            // Cooldown expired, allow one retry
+            return false
+        }
+        return true
+    }
+
+    private func recordProxySuccess() {
+        consecutiveFailures = 0
+        circuitOpenedAt = nil
+    }
+
+    private func recordProxyFailure() {
+        consecutiveFailures += 1
+        if consecutiveFailures >= failureThreshold && circuitOpenedAt == nil {
+            circuitOpenedAt = Date()
+            logDebug("API proxy circuit breaker opened after \(consecutiveFailures) failures, skipping proxy for \(Int(circuitCooldown))s", category: .network)
+        }
+    }
+
     // MARK: - Service Identifiers
     enum Service: String {
         case fmp
@@ -126,12 +157,15 @@ final class APIProxy {
         method: String = "GET",
         queryItems: [String: String]? = nil
     ) async throws -> Data {
-        // Try proxy only if there's a valid auth session
-        if await hasActiveSession {
+        // Try proxy only if there's a valid auth session and circuit breaker is closed
+        if await hasActiveSession, !isCircuitOpen {
             do {
-                return try await proxyGetRequest(service: service, path: path, method: method, queryItems: queryItems)
+                let data = try await proxyGetRequest(service: service, path: path, method: method, queryItems: queryItems)
+                recordProxySuccess()
+                return data
             } catch {
-                logWarning("Proxy failed for \(service.rawValue)\(path): \(error.localizedDescription), trying direct", category: .network)
+                recordProxyFailure()
+                logDebug("Proxy failed for \(service.rawValue)\(path), using direct", category: .network)
             }
         }
 
@@ -146,12 +180,15 @@ final class APIProxy {
         queryItems: [String: String]? = nil,
         body: Body
     ) async throws -> Data {
-        // Try proxy only if there's a valid auth session
-        if await hasActiveSession {
+        // Try proxy only if there's a valid auth session and circuit breaker is closed
+        if await hasActiveSession, !isCircuitOpen {
             do {
-                return try await proxyPostRequest(service: service, path: path, queryItems: queryItems, body: body)
+                let data = try await proxyPostRequest(service: service, path: path, queryItems: queryItems, body: body)
+                recordProxySuccess()
+                return data
             } catch {
-                logWarning("Proxy POST failed for \(service.rawValue)\(path): \(error.localizedDescription), trying direct", category: .network)
+                recordProxyFailure()
+                logDebug("Proxy POST failed for \(service.rawValue)\(path), using direct", category: .network)
             }
         }
 
