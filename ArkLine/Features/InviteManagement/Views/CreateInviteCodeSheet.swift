@@ -30,6 +30,9 @@ struct CreateInviteCodeSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTrialDuration: TrialDuration = .none
+    @State private var isBetaTester = false
+    @State private var shareItems: [Any] = []
+    @State private var showShareSheet = false
 
     var body: some View {
         NavigationStack {
@@ -46,8 +49,12 @@ struct CreateInviteCodeSheet: View {
                         title: viewModel.lastCreatedCode != nil ? "Generate Another" : "Generate Code",
                         action: {
                             viewModel.trialDays = selectedTrialDuration == .none ? nil : selectedTrialDuration.rawValue
+                            if isBetaTester && viewModel.note.isEmpty {
+                                viewModel.note = "Beta Tester"
+                            }
                             Task { await viewModel.createCode(createdBy: userId) }
                             selectedTrialDuration = .none
+                            isBetaTester = false
                         },
                         isLoading: viewModel.isCreating
                     )
@@ -133,6 +140,23 @@ struct CreateInviteCodeSheet: View {
                 }
                 .pickerStyle(.segmented)
             }
+
+            // Beta tester toggle
+            Toggle(isOn: $isBetaTester) {
+                HStack(spacing: ArkSpacing.xs) {
+                    Image(systemName: "hammer.fill")
+                        .foregroundColor(AppColors.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Beta Tester")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                        Text("Include TestFlight link when sharing")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+            }
+            .tint(AppColors.accent)
         }
     }
 
@@ -162,6 +186,9 @@ struct CreateInviteCodeSheet: View {
                 if code.isFreeTrial, let days = code.trialDays {
                     badgeView(icon: "clock.fill", text: "\(days)-day trial")
                 }
+                if code.note == "Beta Tester" {
+                    badgeView(icon: "hammer.fill", text: "Beta Tester")
+                }
             }
 
             // Action buttons
@@ -177,13 +204,16 @@ struct CreateInviteCodeSheet: View {
                 }
 
                 Button {
-                    shareCode(code)
+                    prepareShareItems(code)
                 } label: {
                     Label("Share", systemImage: "square.and.arrow.up")
                         .font(AppFonts.body14Medium)
                         .foregroundColor(AppColors.accent)
                 }
             }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ActivityViewController(activityItems: shareItems)
         }
     }
 
@@ -202,21 +232,39 @@ struct CreateInviteCodeSheet: View {
         .clipShape(Capsule())
     }
 
-    private func shareCode(_ code: InviteCode) {
-        #if canImport(UIKit)
-        let deepLink = "arkline://invite?code=\(code.code)"
-        let text = "You've been invited to ArkLine!\n\nYour invite code: \(code.code)\n\nOpen this link to get started: \(deepLink)"
+    private func prepareShareItems(_ code: InviteCode) {
+        let isTester = code.note == "Beta Tester"
+        var text: String
 
-        var items: [Any] = [text]
+        if isTester {
+            text = "You've been invited to beta test ArkLine!\n\n"
+            text += "1. Install TestFlight: https://apps.apple.com/app/testflight/id899247664\n"
+            text += "2. Join the beta: https://testflight.apple.com/join/sm8Urwcc\n"
+            text += "3. Open ArkLine and enter your invite code:\n\n"
+            text += "\(code.code)"
+        } else {
+            let deepLink = "arkline://invite?code=\(code.code)"
+            text = "You've been invited to ArkLine!\n\nYour invite code: \(code.code)\n\nOpen this link to get started: \(deepLink)"
+        }
+
+        shareItems = [text]
         if let qrImage = QRCodeGenerator.generate(for: code.code) {
-            items.append(qrImage)
+            shareItems.append(qrImage)
         }
-
-        let activityVC = UIActivityViewController(activityItems: items, applicationActivities: nil)
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let root = windowScene.windows.first?.rootViewController {
-            root.present(activityVC, animated: true)
-        }
-        #endif
+        showShareSheet = true
     }
 }
+
+// MARK: - Activity View Controller (UIKit wrapper)
+
+#if canImport(UIKit)
+private struct ActivityViewController: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+#endif
