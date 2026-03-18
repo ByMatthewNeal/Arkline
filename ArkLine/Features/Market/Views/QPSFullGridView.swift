@@ -42,7 +42,7 @@ struct QPSFullGridView: View {
             .padding(.leading, 24)
 
             // Signal rows
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 ForEach(Array(signals.enumerated()), id: \.element.id) { index, signal in
                     NavigationLink {
                         QPSDetailView(asset: signal.asset)
@@ -95,12 +95,6 @@ struct QPSFullGridView: View {
                 .background(signal.positioningSignal.color)
                 .cornerRadius(4)
                 .frame(width: 70)
-
-            Text(String(format: "%.0f", signal.trendScore))
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundColor(AppColors.textSecondary)
-                .monospacedDigit()
-                .frame(width: 30, alignment: .trailing)
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 10, weight: .semibold))

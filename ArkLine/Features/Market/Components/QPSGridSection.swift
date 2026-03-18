@@ -104,28 +104,30 @@ struct QPSGridSection: View {
 
     private var signalDistribution: some View {
         VStack(spacing: 8) {
-            // Bar
-            GeometryReader { geo in
-                let total = max(signals.count, 1)
-                HStack(spacing: 2) {
-                    if bullishCount > 0 {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(PositioningSignal.bullish.color)
-                            .frame(width: CGFloat(bullishCount) / CGFloat(total) * geo.size.width - 2)
-                    }
-                    if neutralCount > 0 {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(PositioningSignal.neutral.color)
-                            .frame(width: CGFloat(neutralCount) / CGFloat(total) * geo.size.width - 2)
-                    }
-                    if bearishCount > 0 {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(PositioningSignal.bearish.color)
-                            .frame(width: CGFloat(bearishCount) / CGFloat(total) * geo.size.width - 2)
-                    }
+            // Bar — uses flexible frames instead of GeometryReader
+            HStack(spacing: 2) {
+                if bullishCount > 0 {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(PositioningSignal.bullish.color)
+                        .frame(height: 8)
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(Double(bullishCount))
+                }
+                if neutralCount > 0 {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(PositioningSignal.neutral.color)
+                        .frame(height: 8)
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(Double(neutralCount))
+                }
+                if bearishCount > 0 {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(PositioningSignal.bearish.color)
+                        .frame(height: 8)
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(Double(bearishCount))
                 }
             }
-            .frame(height: 8)
 
             // Labels
             HStack {

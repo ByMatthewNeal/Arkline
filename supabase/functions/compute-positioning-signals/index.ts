@@ -221,6 +221,16 @@ function computeRSI(closes: number[], period = 14): number | null {
 }
 
 // ─── Trend Score Computation ────────────────────────────────────────────────
+//
+// Scoring weights (v2 — recalibrated 2026-03-18):
+//   Base:            50
+//   SMA crossover:   ±14  (was ±20 — reduced to avoid binary collapse)
+//   SMA position:    +5 each (above 21/50/200 SMA)
+//   BMSB:            +6 above / +2 in band / -4 below (asymmetric — less penalty)
+//   RSI adjustment:  +6 oversold / +3 approaching oversold / -4 overbought
+//
+// Signal thresholds: ≥70 bullish, ≥45 neutral, <45 bearish
+//   (was 75/55 — widened to create more spread and avoid "everything bearish")
 
 function computeTrendScore(candles: Candle[]): {
   trendScore: number
@@ -244,7 +254,6 @@ function computeTrendScore(candles: Candle[]): {
   const above200SMA = !isNaN(latestSma200) && price > latestSma200
 
   // Bull Market Support Band: 20W SMA (~140D) and 21W EMA (~147D)
-  // Only for assets with enough history
   const hasBMSB = closes.length >= 148
   const sma140 = hasBMSB ? computeSMA(closes, 140) : []
   const ema147 = hasBMSB ? computeEMA(closes, 147) : []
@@ -254,30 +263,42 @@ function computeTrendScore(candles: Candle[]): {
   // Base: 50
   let score = 50
 
-  // Trend direction from SMA crossover pattern (+/-20)
+  // Trend direction from SMA crossover pattern (±14)
   if (!isNaN(latestSma21) && !isNaN(latestSma50)) {
     if (latestSma21 > latestSma50) {
-      score += 20
+      score += 14
     } else {
-      score -= 20
+      score -= 14
     }
   }
 
-  // SMA position bonuses
-  if (!isNaN(latestSma21) && price > latestSma21) score += 4
-  if (!isNaN(latestSma50) && price > latestSma50) score += 4
-  if (above200SMA) score += 4
+  // SMA position bonuses (+5 each)
+  if (!isNaN(latestSma21) && price > latestSma21) score += 5
+  if (!isNaN(latestSma50) && price > latestSma50) score += 5
+  if (above200SMA) score += 5
 
-  // BMSB position (skip if insufficient data)
+  // BMSB position — asymmetric: reward holding above, lighter penalty below
   if (!isNaN(bmsbSma) && !isNaN(bmsbEma)) {
     const bmsbTop = Math.max(bmsbSma, bmsbEma)
     const bmsbBot = Math.min(bmsbSma, bmsbEma)
     if (price > bmsbTop) {
-      score += 8
+      score += 6
     } else if (price >= bmsbBot) {
       score += 2
     } else {
-      score -= 8
+      score -= 4
+    }
+  }
+
+  // RSI adjustment — oversold conditions suggest mean reversion potential,
+  // overbought conditions suggest exhaustion risk
+  if (rsi !== null) {
+    if (rsi <= 30) {
+      score += 6        // Deeply oversold — contrarian boost
+    } else if (rsi <= 40) {
+      score += 3        // Approaching oversold — mild boost
+    } else if (rsi >= 75) {
+      score -= 4        // Overbought — exhaustion drag
     }
   }
 
@@ -294,12 +315,12 @@ function deriveSignal(
   above200SMA: boolean,
   has200SMA: boolean
 ): "bullish" | "neutral" | "bearish" {
-  if (trendScore >= 75) {
+  if (trendScore >= 70) {
     // Below 200 SMA caps bullish → neutral (only if we have 200 SMA data)
     if (has200SMA && !above200SMA) return "neutral"
     return "bullish"
   }
-  if (trendScore >= 55) {
+  if (trendScore >= 45) {
     return "neutral"
   }
   return "bearish"
