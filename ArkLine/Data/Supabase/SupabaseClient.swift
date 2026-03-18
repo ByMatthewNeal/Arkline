@@ -27,7 +27,10 @@ final class SupabaseManager {
         } else if let url = URL(string: urlString) {
             client = SupabaseClient(
                 supabaseURL: url,
-                supabaseKey: key
+                supabaseKey: key,
+                options: SupabaseClientOptions(
+                    auth: .init(emitLocalSessionAsInitialSession: true)
+                )
             )
             isConfigured = true
             logInfo("Supabase configured successfully", category: .network)
@@ -63,8 +66,8 @@ final class SupabaseManager {
     }
 
     // MARK: - Realtime Reference
-    var realtime: RealtimeClient {
-        client.realtime
+    var realtimeV2: RealtimeClientV2 {
+        client.realtimeV2
     }
 }
 

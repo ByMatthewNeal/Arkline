@@ -77,7 +77,7 @@ final class RiskCalculator {
             prices: priceHistory, originDate: config.originDate
         ) else { return nil }
 
-        cacheLock.withLock { regressionCache[config.assetId] = regression }
+        cacheLock.withLock { regressionCache[config.assetId] = regression; return }
 
         guard let risk = calculateRisk(
             price: price, date: date, config: config, regression: regression
@@ -103,7 +103,7 @@ final class RiskCalculator {
         }
 
         // Cache the regression for future single-point calculations
-        cacheLock.withLock { regressionCache[config.assetId] = regression }
+        cacheLock.withLock { regressionCache[config.assetId] = regression; return }
 
         // Calculate risk for each price point
         return prices.compactMap { point -> RiskHistoryPoint? in
@@ -342,12 +342,12 @@ final class RiskCalculator {
 
     /// Clear the regression cache
     func clearCache() {
-        cacheLock.withLock { regressionCache.removeAll() }
+        cacheLock.withLock { regressionCache.removeAll(); return }
     }
 
     /// Clear cache for a specific asset
     func clearCache(for assetId: String) {
-        cacheLock.withLock { regressionCache.removeValue(forKey: assetId) }
+        cacheLock.withLock { regressionCache.removeValue(forKey: assetId); return }
     }
 
     // MARK: - Private Init

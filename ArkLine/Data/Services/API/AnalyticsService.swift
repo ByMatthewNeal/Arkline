@@ -43,7 +43,7 @@ actor AnalyticsService {
 
     // MARK: - Init
     private init() {
-        startPeriodicFlush()
+        Task { await self.startPeriodicFlush() }
     }
 
     // MARK: - Device Info
