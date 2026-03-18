@@ -71,46 +71,68 @@ Deno.serve(async (req) => {
     return json({ resolved: 0, message: "No assets to check" })
   }
 
-  // Fetch last 4 1H candles (3 closed + current) and aggregate high/low
-  // so we never miss a SL/T1 hit that occurred in a recent closed candle
-  const candles: Record<string, { high: number; low: number; close: number }> = {}
+  // Fetch last 6 1H candles with timestamps so we can filter per-signal
+  // Only candles AFTER a signal's triggered_at should count for resolution
+  const rawCandles: Record<string, { start: number; high: number; low: number; close: number }[]> = {}
   for (const symbol of symbolsToCheck) {
     try {
       const resp = await fetch(
-        `https://api.coinbase.com/api/v3/brokerage/market/products/${symbol}/candles?granularity=ONE_HOUR&limit=4`
+        `https://api.coinbase.com/api/v3/brokerage/market/products/${symbol}/candles?granularity=ONE_HOUR&limit=6`
       )
       if (resp.ok) {
         const json = await resp.json()
         const klines = json.candles ?? []
-        if (klines.length > 0) {
-          // Aggregate: max high and min low across all recent candles
-          let aggHigh = -Infinity
-          let aggLow = Infinity
-          for (const k of klines) {
-            aggHigh = Math.max(aggHigh, parseFloat(k.high))
-            aggLow = Math.min(aggLow, parseFloat(k.low))
-          }
-          // Close from the most recent candle (Coinbase returns newest-first)
-          candles[TICKER_MAP[symbol]] = {
-            high: aggHigh,
-            low: aggLow,
-            close: parseFloat(klines[0].close),
-          }
-        }
+        // Coinbase returns newest-first
+        rawCandles[TICKER_MAP[symbol]] = klines.map((k: any) => ({
+          start: Number(k.start) * 1000,  // unix ms
+          high: parseFloat(k.high),
+          low: parseFloat(k.low),
+          close: parseFloat(k.close),
+        }))
       }
     } catch (err) {
       console.error(`Failed to fetch ${symbol}: ${err}`)
     }
-    // Small delay between requests
     await new Promise(r => setTimeout(r, 100))
+  }
+
+  // Helper: aggregate candles only after a given timestamp
+  function aggregateAfter(ticker: string, afterMs: number): { high: number; low: number; close: number } | null {
+    const all = rawCandles[ticker]
+    if (!all || all.length === 0) return null
+    // Filter to candles that started at or after the signal trigger time
+    const valid = all.filter(c => c.start >= afterMs)
+    if (valid.length === 0) {
+      // If no candles started after trigger, use only the most recent candle
+      // (the signal was just created, use current price data)
+      const latest = all[0]
+      return { high: latest.high, low: latest.low, close: latest.close }
+    }
+    let aggHigh = -Infinity
+    let aggLow = Infinity
+    for (const c of valid) {
+      aggHigh = Math.max(aggHigh, c.high)
+      aggLow = Math.min(aggLow, c.low)
+    }
+    return { high: aggHigh, low: aggLow, close: valid[0].close }
+  }
+
+  // Simple latest-price lookup for proximity alerts
+  function latestPrice(ticker: string): { high: number; low: number; close: number } | null {
+    const all = rawCandles[ticker]
+    if (!all || all.length === 0) return null
+    return { high: all[0].high, low: all[0].low, close: all[0].close }
   }
 
   const now = new Date()
   const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0, notifications: 0, proximityAlerts: 0 }
 
   for (const signal of allSignals) {
-    const candle = candles[signal.asset]
+    const triggerMs = new Date(signal.triggered_at).getTime()
+    const candle = aggregateAfter(signal.asset, triggerMs)
     if (!candle) continue
+    // Latest-only candle for runner trailing (avoids stale highs/lows)
+    const latest = latestPrice(signal.asset)!
 
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
     const entryMid = Number(signal.entry_price_mid)
@@ -123,7 +145,7 @@ Deno.serve(async (req) => {
 
     // --- Expiry check ---
     if (signal.expires_at && new Date(signal.expires_at) <= now) {
-      const exitPrice = candle.close
+      const exitPrice = latest.close
 
       if (t1AlreadyHit) {
         const runnerPnl = isBuy
@@ -201,10 +223,10 @@ Deno.serve(async (req) => {
       } else {
         // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
         // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
-        bestPrice = Math.max(bestPrice, candle.high)
+        bestPrice = Math.max(bestPrice, latest.high)
         runnerStop = Math.max(runnerStop, bestPrice - risk1r)
 
-        if (candle.low <= runnerStop) {
+        if (latest.low <= runnerStop) {
           const runnerPnl = ((runnerStop - entryMid) / entryMid) * 100
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
@@ -267,10 +289,10 @@ Deno.serve(async (req) => {
       } else {
         // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
         // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
-        bestPrice = Math.min(bestPrice, candle.low)
+        bestPrice = Math.min(bestPrice, latest.low)
         runnerStop = Math.min(runnerStop, bestPrice + risk1r)
 
-        if (candle.high >= runnerStop) {
+        if (latest.high >= runnerStop) {
           const runnerPnl = ((entryMid - runnerStop) / entryMid) * 100
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
@@ -307,8 +329,8 @@ Deno.serve(async (req) => {
   const PROXIMITY_COOLDOWN_MS = 4 * 3600000 // 4 hours between alerts
 
   for (const signal of proximitySignals) {
-    const candle = candles[signal.asset]
-    if (!candle) continue
+    const price = latestPrice(signal.asset)
+    if (!price) continue
 
     const entryMid = Number(signal.entry_price_mid)
     const entryLow = Number(signal.entry_zone_low)
@@ -316,7 +338,7 @@ Deno.serve(async (req) => {
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
 
     // Check if price is approaching but hasn't fully entered the zone
-    const approachPrice = isBuy ? candle.low : candle.high
+    const approachPrice = isBuy ? price.low : price.high
     const zoneEdge = isBuy ? entryHigh : entryLow
     const distancePct = Math.abs((approachPrice - zoneEdge) / zoneEdge) * 100
 
@@ -334,7 +356,7 @@ Deno.serve(async (req) => {
     }
 
     const direction = isBuy ? "Long" : "Short"
-    const priceStr = formatPrice(candle.close)
+    const priceStr = formatPrice(price.close)
     const entryStr = `${formatPrice(entryLow)} – ${formatPrice(entryHigh)}`
     const scoreStr = signal.composite_score ? ` (Score: ${signal.composite_score})` : ""
 
