@@ -22,6 +22,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 interface AssetConfig {
   cbPair: string   // Coinbase product ID e.g. "BTC-USD"
   ticker: string   // Display ticker e.g. "BTC"
+  tiers?: string[] // Which tiers to run: ["4h", "1h"] or subset. Default: both.
 }
 
 const ASSETS: AssetConfig[] = [
@@ -34,6 +35,7 @@ const ASSETS: AssetConfig[] = [
   { cbPair: "AVAX-USD",   ticker: "AVAX" },
   { cbPair: "RENDER-USD", ticker: "RENDER" },
   { cbPair: "APT-USD",    ticker: "APT" },
+  { cbPair: "HYPE-USD",   ticker: "HYPE", tiers: ["1h"] },  // Scalp only — limited 1D history on Coinbase
 ]
 
 // Coinbase granularities: ONE_HOUR, TWO_HOUR, FOUR_HOUR, SIX_HOUR, ONE_DAY
@@ -223,30 +225,35 @@ Deno.serve(async (req) => {
 
         // Compute volume profile from 4h candles (shared across tiers)
         const volumeNodes = computeVolumeProfile(candles["4h"])
+        const enabledTiers = asset.tiers ?? ["4h", "1h"]  // Default: both tiers
 
         // ── Tier 1: Swing (4H/1D) ──────────────────────────────────────
-        const swingsSwing = detectAllSwings(candles, TIER_SWING.swingTimeframes)
-        await storeSwings(supabase, asset.ticker, swingsSwing)
-        assetResults.swings = { "4h": swingsSwing["4h"]?.length ?? 0, "1d": swingsSwing["1d"]?.length ?? 0 }
+        if (enabledTiers.includes("4h")) {
+          const swingsSwing = detectAllSwings(candles, TIER_SWING.swingTimeframes)
+          await storeSwings(supabase, asset.ticker, swingsSwing)
+          assetResults.swings = { "4h": swingsSwing["4h"]?.length ?? 0, "1d": swingsSwing["1d"]?.length ?? 0 }
 
-        const fibsSwing = computeAllFibs(swingsSwing)
-        await storeFibs(supabase, asset.ticker, fibsSwing)
-        assetResults.fibs = fibsSwing.length
+          const fibsSwing = computeAllFibs(swingsSwing)
+          await storeFibs(supabase, asset.ticker, fibsSwing)
+          assetResults.fibs = fibsSwing.length
 
-        const zonesSwing = clusterLevels(fibsSwing, currentPrice, TIER_SWING.confluenceTolerancePct)
-        await storeZones(supabase, asset.ticker, zonesSwing, currentPrice)
-        assetResults.zones = zonesSwing.length
+          const zonesSwing = clusterLevels(fibsSwing, currentPrice, TIER_SWING.confluenceTolerancePct)
+          await storeZones(supabase, asset.ticker, zonesSwing, currentPrice)
+          assetResults.zones = zonesSwing.length
 
-        const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING)
-        assetResults.newSignals = swingSignals
+          const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING)
+          assetResults.newSignals = swingSignals
+        }
 
         // ── Tier 2: Scalp (1H/4H) ──────────────────────────────────────
-        const swingsScalp = detectAllSwings(candles, TIER_SCALP.swingTimeframes)
-        const fibsScalp = computeAllFibs(swingsScalp)
-        const zonesScalp = clusterLevels(fibsScalp, currentPrice, TIER_SCALP.confluenceTolerancePct)
+        if (enabledTiers.includes("1h")) {
+          const swingsScalp = detectAllSwings(candles, TIER_SCALP.swingTimeframes)
+          const fibsScalp = computeAllFibs(swingsScalp)
+          const zonesScalp = clusterLevels(fibsScalp, currentPrice, TIER_SCALP.confluenceTolerancePct)
 
-        const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP)
-        assetResults.scalpSignals = scalpSignals
+          const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP)
+          assetResults.scalpSignals = scalpSignals
+        }
 
         await pruneOldCandles(supabase, asset.ticker)
 

@@ -342,6 +342,7 @@ extension TradeSignal {
         "ADA":  AssetProfile(confidence: .medium, directionBias: .shortPreferred, longWinRate: 55.2, shortWinRate: 69.0, profitFactor: 2.68),
         "SOL":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 52.9, profitFactor: 2.34),
         "BTC":  AssetProfile(confidence: .low, directionBias: .shortPreferred, longWinRate: 48.5, shortWinRate: 63.0, profitFactor: 1.95),
+        "HYPE": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 66.7, shortWinRate: 68.8, profitFactor: 2.88),
     ]
 
     var assetProfile: AssetProfile {
