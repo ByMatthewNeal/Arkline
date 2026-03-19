@@ -44,6 +44,7 @@ const TIMEFRAME_CONFIGS = [
 ] as const
 
 const SWING_PARAMS: Record<string, { lookback: number; minReversal: number }> = {
+  "1h": { lookback: 10, minReversal: 2.5 },
   "4h": { lookback: 8, minReversal: 5.0 },
   "1d": { lookback: 5, minReversal: 8.0 },
 }
@@ -57,6 +58,38 @@ const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
+
+// ─── Tier Configuration ─────────────────────────────────────────────────────
+
+interface TierConfig {
+  tierName: string               // "4h" (swing) or "1h" (scalp)
+  swingTimeframes: string[]      // which TFs to detect swings on
+  trendTimeframe: string         // which TF for EMA trend check
+  bounceTimeframes: string[]     // ordered preference for bounce check
+  signalProximityPct: number
+  confluenceTolerancePct: number
+  expiryHours: number
+}
+
+const TIER_SWING: TierConfig = {
+  tierName: "4h",
+  swingTimeframes: ["4h", "1d"],
+  trendTimeframe: "4h",
+  bounceTimeframes: ["1h", "4h"],
+  signalProximityPct: 3.0,
+  confluenceTolerancePct: 1.5,
+  expiryHours: 72,
+}
+
+const TIER_SCALP: TierConfig = {
+  tierName: "1h",
+  swingTimeframes: ["1h", "4h"],
+  trendTimeframe: "4h",
+  bounceTimeframes: ["1h"],
+  signalProximityPct: 2.0,
+  confluenceTolerancePct: 1.0,
+  expiryHours: 48,
+}
 const WICK_REJECTION_RATIO = 1.2
 const VOLUME_SPIKE_RATIO = 1.15
 
@@ -181,30 +214,39 @@ Deno.serve(async (req) => {
         const resolveResult = await resolveOpenSignals(supabase, asset.ticker, candles)
         assetResults.resolved = resolveResult
 
-        // Full pipeline: detect swings, compute fibs, find zones, generate signals
-        const swings = detectAllSwings(candles)
-        await storeSwings(supabase, asset.ticker, swings)
-        assetResults.swings = { "4h": swings["4h"].length, "1d": swings["1d"].length }
-
-        const fibs = computeAllFibs(swings)
-        await storeFibs(supabase, asset.ticker, fibs)
-        assetResults.fibs = fibs.length
-
         if (candles["4h"].length === 0) {
           assetResults.skipped = "No 4h candles"
           return { ticker: asset.ticker, results: assetResults }
         }
 
         const currentPrice = candles["4h"][candles["4h"].length - 1].close
-        const zones = clusterLevels(fibs, currentPrice)
-        await storeZones(supabase, asset.ticker, zones, currentPrice)
-        assetResults.zones = zones.length
 
-        // Compute volume profile from 4h candles
+        // Compute volume profile from 4h candles (shared across tiers)
         const volumeNodes = computeVolumeProfile(candles["4h"])
 
-        const newSignals = await evaluateSignals(supabase, asset.ticker, candles, zones, fibs, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swings)
-        assetResults.newSignals = newSignals
+        // ── Tier 1: Swing (4H/1D) ──────────────────────────────────────
+        const swingsSwing = detectAllSwings(candles, TIER_SWING.swingTimeframes)
+        await storeSwings(supabase, asset.ticker, swingsSwing)
+        assetResults.swings = { "4h": swingsSwing["4h"]?.length ?? 0, "1d": swingsSwing["1d"]?.length ?? 0 }
+
+        const fibsSwing = computeAllFibs(swingsSwing)
+        await storeFibs(supabase, asset.ticker, fibsSwing)
+        assetResults.fibs = fibsSwing.length
+
+        const zonesSwing = clusterLevels(fibsSwing, currentPrice, TIER_SWING.confluenceTolerancePct)
+        await storeZones(supabase, asset.ticker, zonesSwing, currentPrice)
+        assetResults.zones = zonesSwing.length
+
+        const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING)
+        assetResults.newSignals = swingSignals
+
+        // ── Tier 2: Scalp (1H/4H) ──────────────────────────────────────
+        const swingsScalp = detectAllSwings(candles, TIER_SCALP.swingTimeframes)
+        const fibsScalp = computeAllFibs(swingsScalp)
+        const zonesScalp = clusterLevels(fibsScalp, currentPrice, TIER_SCALP.confluenceTolerancePct)
+
+        const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP)
+        assetResults.scalpSignals = scalpSignals
 
         await pruneOldCandles(supabase, asset.ticker)
 
@@ -295,12 +337,14 @@ async function pruneOldCandles(supabase: SupabaseClient, ticker: string) {
 
 // ─── Swing Detection ─────────────────────────────────────────────────────────
 
-function detectAllSwings(candles: Record<string, Candle[]>): Record<string, SwingPoint[]> {
+function detectAllSwings(candles: Record<string, Candle[]>, timeframes?: string[]): Record<string, SwingPoint[]> {
   const result: Record<string, SwingPoint[]> = {}
+  const tfs = timeframes ?? Object.keys(candles)
 
-  for (const [tf, tfCandles] of Object.entries(candles)) {
+  for (const tf of tfs) {
+    const tfCandles = candles[tf]
     const params = SWING_PARAMS[tf]
-    if (!params || tfCandles.length < params.lookback * 2 + 1) {
+    if (!params || !tfCandles || tfCandles.length < params.lookback * 2 + 1) {
       result[tf] = []
       continue
     }
@@ -443,7 +487,8 @@ async function storeFibs(supabase: SupabaseClient, ticker: string, _fibs: FibLev
 
 // ─── Confluence Clustering ───────────────────────────────────────────────────
 
-function clusterLevels(fibs: FibLevel[], currentPrice: number): ConfluenceZone[] {
+function clusterLevels(fibs: FibLevel[], currentPrice: number, tolerancePct?: number): ConfluenceZone[] {
+  const tolerance = tolerancePct ?? CONFLUENCE_TOLERANCE_PCT
   if (fibs.length === 0) return []
 
   // Filter to levels within 15% of current price
@@ -463,7 +508,7 @@ function clusterLevels(fibs: FibLevel[], currentPrice: number): ConfluenceZone[]
     const clusterMid = (clusterLow + clusterHigh) / 2
     const distancePct = Math.abs((level.price - clusterMid) / clusterMid) * 100
 
-    if (distancePct <= CONFLUENCE_TOLERANCE_PCT) {
+    if (distancePct <= tolerance) {
       currentCluster.push(level)
       clusterHigh = Math.max(clusterHigh, level.price)
       clusterLow = Math.min(clusterLow, level.price)
@@ -1385,11 +1430,12 @@ async function evaluateSignals(
   fearGreedIndex?: number,
   btcRiskScore?: number,
   swings?: Record<string, SwingPoint[]>,
+  tier: TierConfig = TIER_SWING,
 ): Promise<{ generated: number; skipped: number }> {
   const stats = { generated: 0, skipped: 0 }
-  const candles4h = candles["4h"]
+  const trendCandles = candles[tier.trendTimeframe]
 
-  if (!candles4h || candles4h.length < EMA_SLOW_PERIOD + EMA_SLOPE_LOOKBACK) {
+  if (!trendCandles || trendCandles.length < EMA_SLOW_PERIOD + EMA_SLOPE_LOOKBACK) {
     return stats
   }
 
@@ -1400,13 +1446,14 @@ async function evaluateSignals(
 
   for (const zone of zones) {
     const distancePct = Math.abs((currentPrice - zone.mid) / currentPrice) * 100
-    if (distancePct > SIGNAL_PROXIMITY_PCT) continue
+    if (distancePct > tier.signalProximityPct) continue
 
-    // Check for existing active/triggered signal near this zone (match on zone, not entry price)
+    // Check for existing active/triggered signal near this zone for this tier
     const { data: existing } = await supabase
       .from("trade_signals")
       .select("id")
       .eq("asset", ticker)
+      .eq("timeframe", tier.tierName)
       .in("status", ["active", "triggered"])
       .gte("entry_zone_low", zone.low * 0.995)
       .lte("entry_zone_high", zone.high * 1.005)
@@ -1415,6 +1462,23 @@ async function evaluateSignals(
     if (existing && existing.length > 0) {
       stats.skipped++
       continue
+    }
+
+    // Cross-tier dedup: if a swing (4h) signal already covers this zone, skip the scalp (1h) signal
+    if (tier.tierName === "1h") {
+      const { data: higherTf } = await supabase
+        .from("trade_signals")
+        .select("id")
+        .eq("asset", ticker)
+        .eq("timeframe", "4h")
+        .in("status", ["active", "triggered"])
+        .gte("entry_zone_low", zone.low * 0.985)
+        .lte("entry_zone_high", zone.high * 1.015)
+        .limit(1)
+      if (higherTf && higherTf.length > 0) {
+        stats.skipped++
+        continue
+      }
     }
 
     const isBuy = zone.zone_type === "support"
@@ -1434,22 +1498,27 @@ async function evaluateSignals(
       continue
     }
 
-    // EMA trend filter
-    if (!checkTrendAlignment(candles4h, isBuy)) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): EMA misalign`)
+    // EMA trend filter (always on trend timeframe)
+    if (!checkTrendAlignment(trendCandles, isBuy)) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): EMA misalign [${tier.tierName}]`)
       stats.skipped++
       continue
     }
 
-    // Bounce confirmation — check 1H first (faster), fall back to 4H
-    const candles1h = candles["1h"] ?? []
-    const bounce1h = candles1h.length >= 3
-      ? checkBounce(candles1h.slice(-25), zone.low, zone.high, isBuy)
-      : { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false } }
-    const bounce4h = checkBounce(candles4h.slice(-25), zone.low, zone.high, isBuy)
-    const bounce = bounce1h.confirmed ? bounce1h : bounce4h
+    // Bounce confirmation — check preferred timeframes in order
+    let bounce = { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false } }
+    for (const btf of tier.bounceTimeframes) {
+      const btfCandles = candles[btf] ?? []
+      if (btfCandles.length >= 3) {
+        const check = checkBounce(btfCandles.slice(-25), zone.low, zone.high, isBuy)
+        if (check.confirmed) {
+          bounce = check
+          break
+        }
+      }
+    }
     if (!bounce.confirmed) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce (checked 1H+4H)`)
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce [${tier.tierName}]`)
       stats.skipped++
       continue
     }
@@ -1500,7 +1569,7 @@ async function evaluateSignals(
       continue
     }
 
-    const expiresAt = new Date(Date.now() + SIGNAL_EXPIRY_HOURS * 3600000).toISOString()
+    const expiresAt = new Date(Date.now() + tier.expiryHours * 3600000).toISOString()
 
     // Store the confluence zone first to get its ID
     const { data: zoneRow } = await supabase
@@ -1526,6 +1595,7 @@ async function evaluateSignals(
       asset: ticker,
       signal_type: signalType,
       status: "triggered",  // Enter at current price after bounce confirmation
+      timeframe: tier.tierName,
       entry_zone_low: zone.low,
       entry_zone_high: zone.high,
       entry_price_mid: entryMid,
@@ -1598,7 +1668,7 @@ async function evaluateSignals(
           },
           body: JSON.stringify({
             broadcast_id: inserted.id,
-            title: `${emoji} ${ticker} ${direction} Signal`,
+            title: `${emoji} ${tier.tierName === "1h" ? "Scalp" : "Swing"}: ${ticker} ${direction} Signal`,
             body: `${isStrong ? "Strong " : ""}${direction} at ${entryStr} | R:R ${rrRatio.toFixed(1)} | T1: ${t1Str} | SL: ${slStr}`,
             event_type: "signal_new",
             target_audience: { type: "premium" },

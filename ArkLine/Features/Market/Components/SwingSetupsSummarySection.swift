@@ -163,6 +163,14 @@ struct SignalSummaryRow: View {
                         .padding(.vertical, 2)
                         .background(signalColor)
                         .cornerRadius(4)
+
+                    Text(signal.timeframeBadge.uppercased())
+                        .font(.system(size: 8, weight: .heavy))
+                        .foregroundColor(signal.isScalp ? AppColors.accent : AppColors.textSecondary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background((signal.isScalp ? AppColors.accent : AppColors.textSecondary).opacity(0.15))
+                        .cornerRadius(3)
                 }
 
                 Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")

@@ -7,6 +7,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let asset: String
     let signalType: SignalType
     let status: SignalStatus
+    let timeframe: String?  // "1h" (scalp) or "4h" (swing)
 
     // Entry
     let entryZoneLow: Double
@@ -63,7 +64,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let chartPattern: ChartPattern?
 
     enum CodingKeys: String, CodingKey {
-        case id, asset, status, outcome
+        case id, asset, status, outcome, timeframe
         case signalType = "signal_type"
         case entryZoneLow = "entry_zone_low"
         case entryZoneHigh = "entry_zone_high"
@@ -360,6 +361,16 @@ extension TradeSignal {
 
     /// All assets with backtest data are eligible for Flash Intel.
     var isFlashIntelWorthy: Bool { true }
+}
+
+// MARK: - Timeframe Helpers
+
+extension TradeSignal {
+    var isScalp: Bool { timeframe == "1h" }
+
+    var timeframeBadge: String {
+        timeframe == "1h" ? "Scalp" : "Swing"
+    }
 }
 
 // MARK: - Score Helpers

@@ -7,6 +7,7 @@ struct SwingSetupsDetailView: View {
     @State private var selectedFilter: SignalFilter = .active
     @State private var selectedAsset: String? = nil
     @State private var selectedConfidence: SignalConfidence? = nil
+    @State private var selectedTimeframe: TimeframeFilter = .all
     @State private var sortByScore = false
     @State private var showGuide = false
     @State private var signalToShare: TradeSignal? = nil
@@ -21,6 +22,12 @@ struct SwingSetupsDetailView: View {
         case active = "Active"
         case history = "History"
         case performance = "Performance"
+    }
+
+    enum TimeframeFilter: String, CaseIterable {
+        case all = "All"
+        case swing = "Swing"
+        case scalp = "Scalp"
     }
 
     enum PerformancePeriod: String, CaseIterable {
@@ -58,6 +65,11 @@ struct SwingSetupsDetailView: View {
         }
         if let confidence = selectedConfidence {
             signals = signals.filter { $0.confidence == confidence }
+        }
+        switch selectedTimeframe {
+        case .swing: signals = signals.filter { !$0.isScalp }
+        case .scalp: signals = signals.filter { $0.isScalp }
+        case .all: break
         }
         if sortByScore {
             signals.sort { ($0.compositeScore ?? 0) > ($1.compositeScore ?? 0) }
@@ -186,6 +198,30 @@ struct SwingSetupsDetailView: View {
                             confidenceChip(.high)
                             confidenceChip(.medium)
                             confidenceChip(.low)
+
+                            // Timeframe filter
+                            Rectangle()
+                                .fill(AppColors.textSecondary.opacity(0.2))
+                                .frame(width: 1, height: 20)
+
+                            ForEach(TimeframeFilter.allCases, id: \.self) { tf in
+                                if tf != .all {
+                                    Button {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            selectedTimeframe = selectedTimeframe == tf ? .all : tf
+                                        }
+                                    } label: {
+                                        Text(tf.rawValue)
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(selectedTimeframe == tf ? .white : AppColors.accent)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(selectedTimeframe == tf ? AppColors.accent : AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1))
+                                            .cornerRadius(14)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
 
                             // Sort by score
                             Rectangle()
@@ -1076,6 +1112,14 @@ struct SignalCard: View {
                             .background(grade.hasPrefix("A") ? AppColors.success : AppColors.accent)
                             .cornerRadius(4)
                     }
+
+                    Text(signal.timeframeBadge.uppercased())
+                        .font(.system(size: 8, weight: .heavy))
+                        .foregroundColor(signal.isScalp ? AppColors.accent : AppColors.textSecondary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background((signal.isScalp ? AppColors.accent : AppColors.textSecondary).opacity(0.15))
+                        .cornerRadius(3)
 
                     Spacer()
 

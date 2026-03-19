@@ -131,8 +131,8 @@ struct LeverageCalculatorView: View {
         )
         .onAppear {
             isExpanded = startExpanded
-            // Auto-scale down to 0.5R for counter-trend signals
-            if signal.isCounterTrend {
+            // Auto-scale down to 0.5R for counter-trend or scalp signals
+            if signal.isCounterTrend || signal.isScalp {
                 riskSize = .halfR
             }
             // Restore saved wallet size

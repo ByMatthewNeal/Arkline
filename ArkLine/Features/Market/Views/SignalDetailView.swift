@@ -274,6 +274,14 @@ struct SignalDetailView: View {
                             .background(AppColors.textSecondary.opacity(0.1))
                             .cornerRadius(4)
                     }
+                    Text(signal.timeframeBadge)
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(signal.isScalp ? AppColors.accent : AppColors.textSecondary)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background((signal.isScalp ? AppColors.accent : AppColors.textSecondary).opacity(0.12))
+                        .cornerRadius(4)
+
                     if signal.isCounterTrend {
                         Text("Counter-Trend")
                             .font(.system(size: 9, weight: .medium))

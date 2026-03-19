@@ -66,6 +66,14 @@ struct FlashIntelCard: View {
 
                     confidenceBadge
 
+                    Text(signal.timeframeBadge.uppercased())
+                        .font(.system(size: 8, weight: .heavy))
+                        .foregroundColor(signal.isScalp ? AppColors.accent : AppColors.textSecondary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background((signal.isScalp ? AppColors.accent : AppColors.textSecondary).opacity(0.15))
+                        .cornerRadius(3)
+
                     if let grade = signal.scoreGrade {
                         Text(grade)
                             .font(.system(size: 9, weight: .heavy, design: .rounded))
