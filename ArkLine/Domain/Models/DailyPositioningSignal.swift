@@ -8,6 +8,8 @@ enum QPSAssetCategory: String, Codable, CaseIterable, Hashable {
     case macro
     case commodity
     case stock
+    // swiftlint:disable:next identifier_name
+    case alt_btc
 
     var displayName: String {
         switch self {
@@ -16,6 +18,7 @@ enum QPSAssetCategory: String, Codable, CaseIterable, Hashable {
         case .macro: return "Macro"
         case .commodity: return "Commodities"
         case .stock: return "Stocks"
+        case .alt_btc: return "Alt/BTC"
         }
     }
 
@@ -26,6 +29,7 @@ enum QPSAssetCategory: String, Codable, CaseIterable, Hashable {
         case .macro: return "building.columns"
         case .commodity: return "cube.fill"
         case .stock: return "chart.bar.fill"
+        case .alt_btc: return "arrow.left.arrow.right"
         }
     }
 
@@ -37,6 +41,7 @@ enum QPSAssetCategory: String, Codable, CaseIterable, Hashable {
         case .commodity: return 2
         case .stock: return 3
         case .crypto: return 4
+        case .alt_btc: return 5
         }
     }
 }
@@ -163,6 +168,10 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         "COIN": "Coinbase", "MSTR": "MicroStrategy",
         "MARA": "Marathon Digital", "RIOT": "Riot Platforms",
         "GLXY": "Galaxy Digital",
+        // Alt/BTC Pairs
+        "ETH/BTC": "ETH/BTC", "SOL/BTC": "SOL/BTC", "LINK/BTC": "LINK/BTC",
+        "XRP/BTC": "XRP/BTC", "BNB/BTC": "BNB/BTC", "HYPE/BTC": "HYPE/BTC",
+        "ZEC/BTC": "ZEC/BTC",
     ]
 
     private static func inferCategory(for ticker: String) -> QPSAssetCategory {
@@ -171,6 +180,7 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         case "VIX", "DXY", "TLT": return .macro
         case "GOLD", "SILVER", "OIL", "COPPER", "URA", "DBA", "DBB", "REMX": return .commodity
         case "AAPL", "NVDA", "GOOGL", "COIN", "MSTR", "MARA", "RIOT", "GLXY": return .stock
+        case _ where ticker.contains("/BTC"): return .alt_btc
         default: return .crypto
         }
     }

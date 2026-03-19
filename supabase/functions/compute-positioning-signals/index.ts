@@ -14,14 +14,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 // ─── Asset Configuration ────────────────────────────────────────────────────
 
-type AssetSource = "coinbase" | "fmp"
-type AssetCategory = "crypto" | "index" | "macro" | "commodity" | "stock"
+type AssetSource = "coinbase" | "fmp" | "synthetic_btc"
+type AssetCategory = "crypto" | "index" | "macro" | "commodity" | "stock" | "alt_btc"
 
 interface AssetConfig {
   ticker: string        // Display ticker (stored in DB)
   displayName: string   // Full name for UI
   source: AssetSource
-  symbol: string        // Coinbase pair or FMP symbol
+  symbol: string        // Coinbase pair, FMP symbol, or ALT-USD pair for synthetic
   category: AssetCategory
 }
 
@@ -40,6 +40,15 @@ const ASSETS: AssetConfig[] = [
   { ticker: "HYPE",   displayName: "Hyperliquid",   source: "fmp",      symbol: "HYPEUSD",    category: "crypto" },
   { ticker: "TAO",    displayName: "Bittensor",     source: "coinbase", symbol: "TAO-USD",    category: "crypto" },
   { ticker: "ZEC",    displayName: "Zcash",         source: "coinbase", symbol: "ZEC-USD",    category: "crypto" },
+
+  // ── Alt/BTC Pairs (relative strength vs Bitcoin) ──
+  { ticker: "ETH/BTC",    displayName: "ETH/BTC",    source: "coinbase",      symbol: "ETH-BTC",  category: "alt_btc" },
+  { ticker: "SOL/BTC",    displayName: "SOL/BTC",    source: "coinbase",      symbol: "SOL-BTC",  category: "alt_btc" },
+  { ticker: "LINK/BTC",   displayName: "LINK/BTC",   source: "coinbase",      symbol: "LINK-BTC", category: "alt_btc" },
+  { ticker: "XRP/BTC",    displayName: "XRP/BTC",    source: "synthetic_btc", symbol: "XRP-USD",  category: "alt_btc" },
+  { ticker: "BNB/BTC",    displayName: "BNB/BTC",    source: "synthetic_btc", symbol: "BNB-USD",  category: "alt_btc" },
+  { ticker: "HYPE/BTC",   displayName: "HYPE/BTC",   source: "synthetic_btc", symbol: "HYPE-USD", category: "alt_btc" },
+  { ticker: "ZEC/BTC",    displayName: "ZEC/BTC",    source: "synthetic_btc", symbol: "ZEC-USD",  category: "alt_btc" },
 
   // ── Indices (FMP — ETF proxies) ──
   { ticker: "SPY",    displayName: "S&P 500",       source: "fmp", symbol: "SPY",   category: "index" },
@@ -375,7 +384,22 @@ Deno.serve(async (req) => {
     try {
       // Fetch candles from appropriate source
       let candles: Candle[]
-      if (asset.source === "coinbase") {
+      if (asset.source === "synthetic_btc") {
+        // Compute ALT/BTC ratio from ALT-USD / BTC-USD candles
+        const altCandles = await fetchCoinbaseCandles(asset.symbol, 210)
+        const btcCandles = await fetchCoinbaseCandles("BTC-USD", 210)
+        const minLen = Math.min(altCandles.length, btcCandles.length)
+        // Align from the end (most recent) and divide
+        const altSlice = altCandles.slice(-minLen)
+        const btcSlice = btcCandles.slice(-minLen)
+        candles = altSlice.map((a, i) => ({
+          open:   a.open   / btcSlice[i].open,
+          high:   a.high   / btcSlice[i].low,    // ALT high / BTC low = max ratio
+          low:    a.low    / btcSlice[i].high,    // ALT low / BTC high = min ratio
+          close:  a.close  / btcSlice[i].close,
+          volume: a.volume,
+        }))
+      } else if (asset.source === "coinbase") {
         candles = await fetchCoinbaseCandles(asset.symbol, 210)
       } else {
         candles = await fetchFMPCandles(asset.symbol, fmpKey)
@@ -457,6 +481,7 @@ Deno.serve(async (req) => {
     changes: changes.length,
     breakdown: {
       crypto: results.filter((r) => r.category === "crypto").length,
+      alt_btc: results.filter((r) => r.category === "alt_btc").length,
       index: results.filter((r) => r.category === "index").length,
       macro: results.filter((r) => r.category === "macro").length,
       commodity: results.filter((r) => r.category === "commodity").length,

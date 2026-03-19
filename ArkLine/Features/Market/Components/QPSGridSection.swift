@@ -12,11 +12,6 @@ struct QPSGridSection: View {
     private var bearishCount: Int { signals.filter { $0.positioningSignal == .bearish }.count }
     private var changedCount: Int { signals.filter { $0.hasChanged }.count }
 
-    private var groupedSignals: [(QPSAssetCategory, [DailyPositioningSignal])] {
-        let grouped = Dictionary(grouping: signals) { $0.assetCategory }
-        return grouped.sorted { $0.key.sortOrder < $1.key.sortOrder }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
@@ -56,21 +51,24 @@ struct QPSGridSection: View {
     // MARK: - Summary Card
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(spacing: 14) {
             if signals.isEmpty {
                 emptyState
             } else {
-                // Signal distribution bar
-                signalDistribution
-
-                // Category breakdown
-                categoryBreakdown
+                // Signal counts
+                HStack(spacing: 0) {
+                    signalCount(count: bullishCount, signal: .bullish)
+                    Divider().frame(height: 32).opacity(0.15)
+                    signalCount(count: neutralCount, signal: .neutral)
+                    Divider().frame(height: 32).opacity(0.15)
+                    signalCount(count: bearishCount, signal: .bearish)
+                }
 
                 // Changes today
                 if changedCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.triangle.swap")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundColor(AppColors.warning)
                         Text("\(changedCount) signal \(changedCount == 1 ? "change" : "changes") today")
                             .font(AppFonts.caption12Medium)
@@ -78,7 +76,7 @@ struct QPSGridSection: View {
                     }
                 }
 
-                // Chevron
+                // Tap hint
                 HStack {
                     Spacer()
                     HStack(spacing: 4) {
@@ -100,99 +98,18 @@ struct QPSGridSection: View {
         .padding(.horizontal)
     }
 
-    // MARK: - Signal Distribution
+    // MARK: - Signal Count
 
-    private var signalDistribution: some View {
-        VStack(spacing: 8) {
-            // Bar — uses flexible frames instead of GeometryReader
-            HStack(spacing: 2) {
-                if bullishCount > 0 {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(PositioningSignal.bullish.color)
-                        .frame(height: 8)
-                        .frame(maxWidth: .infinity)
-                        .layoutPriority(Double(bullishCount))
-                }
-                if neutralCount > 0 {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(PositioningSignal.neutral.color)
-                        .frame(height: 8)
-                        .frame(maxWidth: .infinity)
-                        .layoutPriority(Double(neutralCount))
-                }
-                if bearishCount > 0 {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(PositioningSignal.bearish.color)
-                        .frame(height: 8)
-                        .frame(maxWidth: .infinity)
-                        .layoutPriority(Double(bearishCount))
-                }
-            }
-
-            // Labels
-            HStack {
-                signalLabel("Bullish", count: bullishCount, signal: .bullish)
-                Spacer()
-                signalLabel("Neutral", count: neutralCount, signal: .neutral)
-                Spacer()
-                signalLabel("Bearish", count: bearishCount, signal: .bearish)
-            }
-        }
-    }
-
-    private func signalLabel(_ text: String, count: Int, signal: PositioningSignal) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(signal.color)
-                .frame(width: 6, height: 6)
-            Text("\(count) \(text)")
-                .font(.system(size: 11, weight: .medium))
+    private func signalCount(count: Int, signal: PositioningSignal) -> some View {
+        VStack(spacing: 4) {
+            Text("\(count)")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(signal.color)
+            Text(signal.label)
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(AppColors.textSecondary)
         }
-    }
-
-    // MARK: - Category Breakdown
-
-    private var categoryBreakdown: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(groupedSignals.enumerated()), id: \.element.0) { index, pair in
-                let (category, catSignals) = pair
-                HStack(spacing: 8) {
-                    Image(systemName: category.icon)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(AppColors.textSecondary)
-                        .frame(width: 16)
-
-                    Text(category.displayName)
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    Spacer()
-
-                    // Mini signal badges
-                    HStack(spacing: 3) {
-                        ForEach(catSignals.prefix(6), id: \.id) { signal in
-                            Text(signal.positioningSignal.label.prefix(1))
-                                .font(.system(size: 8, weight: .heavy))
-                                .foregroundColor(.white)
-                                .frame(width: 16, height: 16)
-                                .background(signal.positioningSignal.color)
-                                .cornerRadius(3)
-                        }
-                        if catSignals.count > 6 {
-                            Text("+\(catSignals.count - 6)")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                    }
-                }
-                .padding(.vertical, 6)
-
-                if index < groupedSignals.count - 1 {
-                    Divider().opacity(0.1)
-                }
-            }
-        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Empty & Locked States
@@ -215,7 +132,7 @@ struct QPSGridSection: View {
             Image(systemName: "arrow.triangle.swap")
                 .font(.title2)
                 .foregroundColor(AppColors.accent.opacity(0.5))
-            Text("Unlock daily positioning signals across 36 assets with Arkline Premium.")
+            Text("Unlock daily positioning signals across 43 assets with Arkline Premium.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
