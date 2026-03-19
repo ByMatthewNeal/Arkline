@@ -149,6 +149,28 @@ final class InviteCodeService: InviteCodeServiceProtocol {
         logInfo("Deleted invite code: \(id)", category: .data)
     }
 
+    // MARK: - Update Code (Admin)
+
+    func updateCode(id: UUID, recipientName: String?, note: String?, email: String?) async throws {
+        guard supabase.isConfigured else {
+            throw AppError.custom(message: "Service unavailable")
+        }
+
+        let request = UpdateInviteCodeRequest(
+            recipientName: recipientName,
+            note: note,
+            email: email
+        )
+
+        try await supabase.database
+            .from(SupabaseTable.inviteCodes.rawValue)
+            .update(request)
+            .eq("id", value: id.uuidString)
+            .execute()
+
+        logInfo("Updated invite code: \(id)", category: .data)
+    }
+
     // MARK: - Referral Code (User)
 
     func fetchReferralCode(for userId: UUID) async throws -> InviteCode? {

@@ -99,6 +99,21 @@ class InviteCodeAdminViewModel {
         }
     }
 
+    // MARK: - Update Code
+
+    func updateCode(_ code: InviteCode, recipientName: String?, note: String?, email: String?) async {
+        do {
+            try await service.updateCode(id: code.id, recipientName: recipientName, note: note, email: email)
+            if let index = codes.firstIndex(where: { $0.id == code.id }) {
+                codes[index].recipientName = recipientName
+                codes[index].note = note
+                codes[index].email = email
+            }
+        } catch {
+            errorMessage = AppError.from(error).userMessage
+        }
+    }
+
     // MARK: - Revoke Code
 
     func revokeCode(_ code: InviteCode) async {

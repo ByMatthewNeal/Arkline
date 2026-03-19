@@ -19,6 +19,7 @@
 		0622105383FB4CA6C1E1D8AC /* PerformanceMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B763BEA23279F34CAFF78659 /* PerformanceMetrics.swift */; };
 		0623B4FCFD70266B815496D1 /* AssetRiskConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CD818131D183C8C17AD487F /* AssetRiskConfig.swift */; };
 		07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */; };
+		08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D6E945C9404E29820C25CE /* QPSFullGridView.swift */; };
 		0ABDC16775229FAEB1DC2E18 /* MacroStatisticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6268CFEC85C00257A9DE85B /* MacroStatisticsService.swift */; };
 		0AFACB63A213C388CBCF2FB8 /* StatisticsCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCCF8F7630E794F2311459AE /* StatisticsCalculatorTests.swift */; };
 		0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */; };
@@ -226,6 +227,12 @@
 		A1A7C64917430768 /* MockGoldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32413FFE14DC79 /* MockGoldService.swift */; };
 		A1B2C3D4E5F60002AUDI0B /* AudioPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60001AUDI0R /* AudioPlayerView.swift */; };
 		A1B2C3D4E5F60004VIEW0B /* FullscreenImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60003VIEW0R /* FullscreenImageViewer.swift */; };
+		A1B2C3D4E5F6QPS00001B1 /* DailyPositioningSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */; };
+		A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */; };
+		A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */; };
+		A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */; };
+		A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */; };
+		A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */; };
 		A206DCEB00A900E4EA7FA1F3 /* CoinglassData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */; };
 		A2D7CC6E4E64921E64FB4270 /* MockTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267B802EB8458A0C8582EA6F /* MockTechnicalAnalysisService.swift */; };
 		A3B4C5D6E7F80192A3B4C5D6 /* SentimentRegimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E7A9B3C1D2F4E6A8B0C3D5E /* SentimentRegimeService.swift */; };
@@ -411,7 +418,7 @@
 		E42AD0E11FB19C0D446A3F51 /* IncrementalPriceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E8E373B1B7ED58816CFE76 /* IncrementalPriceStore.swift */; };
 		E44EDD8D9EA83E2822F9DF65 /* MockPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92D28E4D3A8673A58AC2262 /* MockPortfolioService.swift */; };
 		E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */; };
-		E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* EmptyStateView.swift */; };
+		E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */; };
 		E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */; };
 		E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */; };
 		E819430F3E00303F1A55EFAE /* MacroDashboardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7ABF94C0D0269A2DE157EA /* MacroDashboardModels.swift */; };
@@ -463,13 +470,6 @@
 		S3TT1NG5APP3AR000002 /* SettingsAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5APP3AR000001 /* SettingsAppearance.swift */; };
 		S3TT1NG5SUBV13W500002 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */; };
 		STRKT00BUILDFIL000000001 /* ArkLineProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = STRKT00FILEREF000000001 /* ArkLineProducts.storekit */; };
-		A1B2C3D4E5F6QPS00001B1 /* DailyPositioningSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */; };
-		A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */; };
-		A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */; };
-		A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */; };
-		A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */; };
-		A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */; };
-		08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D6E945C9404E29820C25CE /* QPSFullGridView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -511,6 +511,7 @@
 		113A8E64E944C7FC4AC33E01 /* MetalAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalAsset.swift; sourceTree = "<group>"; };
 		1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITechnicalAnalysisService.swift; sourceTree = "<group>"; };
 		130AFC1808DDE23C84A31C0B /* SupplyInProfitHistorical.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SupplyInProfitHistorical.swift; path = Data/StaticData/SupplyInProfitHistorical.swift; sourceTree = "<group>"; };
+		14D6E945C9404E29820C25CE /* QPSFullGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSFullGridView.swift; sourceTree = "<group>"; };
 		153A4CDBB8CF61BA375BD929 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		15B357FD7402C8C699282690 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDCAComponents.swift; sourceTree = "<group>"; };
@@ -628,6 +629,7 @@
 		5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHeader.swift; sourceTree = "<group>"; };
 		5F459B2AE85AD191B9ACB0AD /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		604A203FE3FF13EF63B715EF /* CreateInviteCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateInviteCodeSheet.swift; sourceTree = "<group>"; };
+
 		608A536AA089EA6F8D512468 /* DCAReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminder.swift; sourceTree = "<group>"; };
 		60C92EA963C7A8B668467866 /* DataPrefetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPrefetcher.swift; sourceTree = "<group>"; };
 		6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
@@ -706,8 +708,14 @@
 		A1B2C3D4E5F60003VIEW0R /* FullscreenImageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenImageViewer.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304A5B /* GEIData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIData.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5C /* ArkLineScoreDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineScoreDetailView.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCANotificationScheduler.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPositioningSignal.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSSignalChangesCard.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSGridSection.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
 		A1C0D1E2F3B4A5C6D7E8F901 /* AltcoinScreenerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AltcoinScreenerSection.swift; sourceTree = "<group>"; };
 		A1F2E3D4C5B6A7089192A3B4 /* PerformanceExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceExportSheet.swift; sourceTree = "<group>"; };
 		A1F5409EE3FED4A42BA318B3 /* YahooVIXService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YahooVIXService.swift; sourceTree = "<group>"; };
@@ -939,13 +947,6 @@
 		S3TT1NG5SUBV13W500001 /* SettingsSubviews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSubviews.swift; sourceTree = "<group>"; };
 		SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Secrets.plist; sourceTree = "<group>"; };
 		STRKT00FILEREF000000001 /* ArkLineProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = ArkLineProducts.storekit; path = Resources/ArkLineProducts.storekit; sourceTree = "<group>"; };
-		A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPositioningSignal.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalService.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSViewModel.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSSignalChangesCard.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSGridSection.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
-		14D6E945C9404E29820C25CE /* QPSFullGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSFullGridView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1993,7 +1994,7 @@
 			children = (
 				9430188723426BB7F6C20A98 /* ArkLineLogoShape.swift */,
 				8AE42B1F64D053FD667B857C /* AvatarView.swift */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* EmptyStateView.swift */,
+				2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */,
 				F1NANC1ALD15CLA1M3R01 /* FinancialDisclaimer.swift */,
 				F78845800D59A83C7C923898 /* PercentageChangeView.swift */,
 				6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */,
@@ -2728,6 +2729,7 @@
 				ABC5BF8C2864FD576A61F29D /* InviteCodeAdminViewModel.swift in Sources */,
 				FF481E74F4541C46F5048752 /* InviteCodeManagementView.swift in Sources */,
 				FC8C003F9476588510C39A33 /* CreateInviteCodeSheet.swift in Sources */,
+
 				70681017B5DBD6ADF9C1BF63 /* StripePlan.swift in Sources */,
 				21BE4DE4D274D78538A30191 /* AdminQuickShareViewModel.swift in Sources */,
 				9C754E9CB774CD2134BD99F4 /* AdminQuickShareView.swift in Sources */,
@@ -2887,7 +2889,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArkLine.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2.1;
+				CURRENT_PROJECT_VERSION = 2.2;
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -2909,7 +2911,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArkLine.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2.1;
+				CURRENT_PROJECT_VERSION = 2.2;
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;

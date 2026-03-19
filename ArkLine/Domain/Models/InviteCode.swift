@@ -109,6 +109,20 @@ struct RedeemInviteCodeRequest: Encodable {
     }
 }
 
+// MARK: - Update Request
+
+struct UpdateInviteCodeRequest: Encodable {
+    let recipientName: String?
+    let note: String?
+    let email: String?
+
+    enum CodingKeys: String, CodingKey {
+        case recipientName = "recipient_name"
+        case note
+        case email
+    }
+}
+
 // MARK: - Revoke Request
 
 struct RevokeInviteCodeRequest: Encodable {

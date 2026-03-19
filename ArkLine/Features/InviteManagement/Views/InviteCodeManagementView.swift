@@ -8,6 +8,8 @@ struct InviteCodeManagementView: View {
     @EnvironmentObject var appState: AppState
     @State private var viewModel = InviteCodeAdminViewModel()
     @State private var showingCreateSheet = false
+    @State private var showingEditSheet = false
+    @State private var editingCode: InviteCode?
     @State private var copiedCodeId: UUID?
 
     var body: some View {
@@ -51,6 +53,9 @@ struct InviteCodeManagementView: View {
                 viewModel: viewModel,
                 userId: appState.currentUser?.id ?? UUID()
             )
+        }
+        .sheet(item: $editingCode) { code in
+            EditInviteCodeSheet(code: code, viewModel: viewModel)
         }
         .task {
             await viewModel.loadCodes()
@@ -107,6 +112,7 @@ struct InviteCodeManagementView: View {
                     code: code,
                     isCopied: copiedCodeId == code.id,
                     onCopy: { copyCode(code) },
+                    onEdit: { editingCode = code },
                     onRevoke: { Task { await viewModel.revokeCode(code) } },
                     onDelete: { Task { await viewModel.deleteCode(code) } }
                 )
@@ -177,6 +183,7 @@ struct InviteCodeRow: View {
     let code: InviteCode
     let isCopied: Bool
     let onCopy: () -> Void
+    let onEdit: () -> Void
     let onRevoke: () -> Void
     let onDelete: () -> Void
 
@@ -298,9 +305,9 @@ struct InviteCodeRow: View {
                 }
             }
 
-            // Actions for active codes
-            if code.isValid {
-                HStack(spacing: ArkSpacing.md) {
+            // Actions
+            HStack(spacing: ArkSpacing.md) {
+                if code.isValid {
                     Button(action: onCopy) {
                         Label(isCopied ? "Copied" : "Copy", systemImage: isCopied ? "checkmark" : "doc.on.doc")
                             .font(AppFonts.caption12Medium)
@@ -312,15 +319,23 @@ struct InviteCodeRow: View {
                             .font(AppFonts.caption12Medium)
                             .foregroundColor(AppColors.accent)
                     }
+                }
 
+                Button(action: onEdit) {
+                    Label("Edit", systemImage: "pencil")
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(AppColors.accent)
+                }
+
+                if code.isValid {
                     Button(action: onRevoke) {
                         Label("Revoke", systemImage: "xmark.circle")
                             .font(AppFonts.caption12Medium)
                             .foregroundColor(AppColors.error)
                     }
-
-                    Spacer()
                 }
+
+                Spacer()
             }
 
             // QR code (expandable)
@@ -350,6 +365,148 @@ struct InviteCodeRow: View {
         case "Expired": return AppColors.textSecondary
         case "Revoked": return AppColors.error
         default: return AppColors.textSecondary
+        }
+    }
+}
+
+// MARK: - Invite Code Role
+
+enum InviteCodeRole: String, CaseIterable {
+    case betaTester = "Beta Tester"
+    case client = "Client"
+    case custom = "Custom"
+
+    var icon: String {
+        switch self {
+        case .betaTester: return "hammer.fill"
+        case .client: return "person.crop.circle.badge.checkmark"
+        case .custom: return "pencil"
+        }
+    }
+}
+
+// MARK: - Edit Invite Code Sheet
+
+struct EditInviteCodeSheet: View {
+    let code: InviteCode
+    var viewModel: InviteCodeAdminViewModel
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var recipientName = ""
+    @State private var email = ""
+    @State private var note = ""
+    @State private var selectedRole: InviteCodeRole = .betaTester
+    @State private var isSaving = false
+    @State private var didLoad = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: ArkSpacing.lg) {
+                    Text(code.code)
+                        .font(AppFonts.title24)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .padding(.top, ArkSpacing.md)
+
+                    CustomTextField(
+                        placeholder: "Recipient name",
+                        text: $recipientName,
+                        icon: "person.fill"
+                    )
+
+                    CustomTextField(
+                        placeholder: "Email",
+                        text: $email,
+                        icon: "envelope.fill"
+                    )
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.emailAddress)
+
+                    VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                        Text("Role")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        HStack(spacing: ArkSpacing.xs) {
+                            ForEach(InviteCodeRole.allCases, id: \.self) { role in
+                                Button {
+                                    selectedRole = role
+                                    if role != .custom {
+                                        note = role.rawValue
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: role.icon)
+                                            .font(.system(size: 11))
+                                        Text(role.rawValue)
+                                            .font(AppFonts.caption12Medium)
+                                    }
+                                    .foregroundColor(
+                                        selectedRole == role ? .white : AppColors.textSecondary
+                                    )
+                                    .padding(.horizontal, ArkSpacing.sm)
+                                    .padding(.vertical, ArkSpacing.xs)
+                                    .background(
+                                        selectedRole == role ? AppColors.accent : AppColors.cardBackground(colorScheme)
+                                    )
+                                    .clipShape(Capsule())
+                                }
+                            }
+                        }
+                    }
+
+                    if selectedRole == .custom {
+                        CustomTextField(
+                            placeholder: "Custom note",
+                            text: $note,
+                            icon: "note.text"
+                        )
+                    }
+
+                    PrimaryButton(
+                        title: "Save Changes",
+                        action: {
+                            isSaving = true
+                            Task {
+                                await viewModel.updateCode(
+                                    code,
+                                    recipientName: recipientName.nilIfEmpty,
+                                    note: note.nilIfEmpty,
+                                    email: email.nilIfEmpty
+                                )
+                                isSaving = false
+                                dismiss()
+                            }
+                        },
+                        isLoading: isSaving
+                    )
+                }
+                .padding(.horizontal, ArkSpacing.xl)
+                .padding(.vertical, ArkSpacing.lg)
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Edit Invite Code")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .onAppear {
+                guard !didLoad else { return }
+                didLoad = true
+                recipientName = code.recipientName ?? ""
+                email = code.email ?? ""
+                note = code.note ?? ""
+                switch code.note {
+                case "Beta Tester": selectedRole = .betaTester
+                case "Client": selectedRole = .client
+                default: selectedRole = (code.note?.isEmpty == false) ? .custom : .betaTester
+                }
+            }
         }
     }
 }

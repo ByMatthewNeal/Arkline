@@ -30,6 +30,9 @@ protocol InviteCodeServiceProtocol {
     /// Deletes an invite code (admin only).
     func deleteCode(id: UUID) async throws
 
+    /// Updates an invite code's editable fields (admin only).
+    func updateCode(id: UUID, recipientName: String?, note: String?, email: String?) async throws
+
     /// Fetches the user's existing referral code, if any.
     func fetchReferralCode(for userId: UUID) async throws -> InviteCode?
 
