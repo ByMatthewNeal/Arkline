@@ -3,14 +3,19 @@ import SwiftUI
 // MARK: - Traditional Markets Section
 
 /// Combined section for Indexes (S&P 500, Nasdaq) and Precious Metals (Gold, Silver).
-/// Replaces two separate sections with one consolidated view.
+/// Signal badges come from the unified QPS pipeline.
 struct TraditionalMarketsSection: View {
+    let qpsSignals: [DailyPositioningSignal]
     @Environment(\.colorScheme) var colorScheme
     @State private var metals: [MetalAsset] = []
-    @State private var sma20: [String: Double] = [:]  // symbol → 20-day SMA
     @State private var isLoadingMetals = true
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    /// Look up QPS signal for a given ticker
+    private func qpsSignal(for ticker: String) -> PositioningSignal? {
+        qpsSignals.first(where: { $0.asset == ticker })?.positioningSignal
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -27,8 +32,8 @@ struct TraditionalMarketsSection: View {
 
             VStack(spacing: 10) {
                 // Indexes
-                IndexWidgetCard(index: .sp500)
-                IndexWidgetCard(index: .nasdaq)
+                IndexWidgetCard(index: .sp500, qpsSignal: qpsSignal(for: "SPY"))
+                IndexWidgetCard(index: .nasdaq, qpsSignal: qpsSignal(for: "QQQ"))
 
                 // Precious Metals
                 if isLoadingMetals {
@@ -40,7 +45,8 @@ struct TraditionalMarketsSection: View {
                     }
                 } else {
                     ForEach(metals) { metal in
-                        PreciousMetalCard(metal: metal, sma20: sma20[metal.symbol])
+                        let ticker = metal.symbol == "XAU" ? "GOLD" : "SILVER"
+                        PreciousMetalCard(metal: metal, qpsSignal: qpsSignal(for: ticker))
                     }
                 }
             }
@@ -58,7 +64,6 @@ struct TraditionalMarketsSection: View {
         ]
 
         var loaded: [MetalAsset] = []
-        var smaMap: [String: Double] = [:]
 
         for mapping in futuresMap {
             do {
@@ -75,20 +80,12 @@ struct TraditionalMarketsSection: View {
                     currency: "USD",
                     timestamp: Date()
                 ))
-
-                // Fetch 20-day SMA for trend signal
-                if let history = try? await FMPService.shared.fetchHistoricalPrices(symbol: mapping.futures, limit: 20),
-                   history.count >= 10 {
-                    let avg = history.reduce(0.0) { $0 + $1.close } / Double(history.count)
-                    smaMap[mapping.symbol] = avg
-                }
             } catch {
                 logWarning("TraditionalMarkets: Failed to fetch \(mapping.futures): \(error.localizedDescription)", category: .network)
             }
         }
 
         metals = loaded
-        sma20 = smaMap
         isLoadingMetals = false
     }
 }

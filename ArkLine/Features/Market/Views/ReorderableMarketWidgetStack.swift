@@ -107,7 +107,7 @@ struct ReorderableMarketWidgetStack: View {
             )
 
         case .traditionalMarkets:
-            TraditionalMarketsSection()
+            TraditionalMarketsSection(qpsSignals: viewModel.qpsSignals)
 
         case .topCoins:
             TopCoinsSection(viewModel: viewModel)

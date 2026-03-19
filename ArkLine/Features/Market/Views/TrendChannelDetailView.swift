@@ -596,6 +596,7 @@ struct IndexesSection: View {
 
 struct IndexWidgetCard: View {
     let index: IndexSymbol
+    var qpsSignal: PositioningSignal? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
     @State private var viewModel = TrendChannelViewModel()
@@ -607,10 +608,11 @@ struct IndexWidgetCard: View {
         }
     }
 
-    /// Map trend channel zone → investing signal
-    /// At or below long-term trend = uptrend intact = Bullish
-    /// Above trend = stretched, flag caution
+    /// Signal badge — uses unified QPS signal when available, falls back to trend channel zone
     private var zoneSignal: (color: Color, label: String)? {
+        if let signal = qpsSignal {
+            return (signal.color, signal.label)
+        }
         guard let zone = viewModel.channelData?.currentZone else { return nil }
         switch zone {
         case .deepValue, .value, .fair:

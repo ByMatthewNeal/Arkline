@@ -6,7 +6,6 @@ import SwiftUI
 struct PreciousMetalsSection: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var metals: [MetalAsset] = []
-    @State private var sma20: [String: Double] = [:]  // symbol → 20-day SMA
     @State private var isLoading = true
     @State private var loadFailed = false
 
@@ -63,7 +62,7 @@ struct PreciousMetalsSection: View {
                 // Metal Cards
                 VStack(spacing: 12) {
                     ForEach(metals) { metal in
-                        PreciousMetalCard(metal: metal, sma20: sma20[metal.symbol])
+                        PreciousMetalCard(metal: metal)
                     }
                 }
                 .padding(.horizontal)
@@ -83,7 +82,6 @@ struct PreciousMetalsSection: View {
         ]
 
         var loaded: [MetalAsset] = []
-        var smaMap: [String: Double] = [:]
 
         for mapping in futuresMap {
             do {
@@ -100,20 +98,12 @@ struct PreciousMetalsSection: View {
                     currency: "USD",
                     timestamp: Date()
                 ))
-
-                // Fetch 20-day SMA for trend signal
-                if let history = try? await FMPService.shared.fetchHistoricalPrices(symbol: mapping.futures, limit: 20),
-                   history.count >= 10 {
-                    let avg = history.reduce(0.0) { $0 + $1.close } / Double(history.count)
-                    smaMap[mapping.symbol] = avg
-                }
             } catch {
                 logWarning("PreciousMetals: Failed to fetch \(mapping.futures): \(error.localizedDescription)", category: .network)
             }
         }
 
         metals = loaded
-        sma20 = smaMap
         loadFailed = loaded.isEmpty
         isLoading = false
     }
@@ -122,25 +112,21 @@ struct PreciousMetalsSection: View {
 // MARK: - Precious Metal Card
 struct PreciousMetalCard: View {
     let metal: MetalAsset
-    var sma20: Double? = nil
+    var qpsSignal: PositioningSignal? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var isPositive: Bool { metal.priceChangePercentage24h >= 0 }
 
-    /// Trend signal based on 20-day SMA — price above SMA = bullish trend,
-    /// within 1% = neutral, below = bearish. Falls back to 24h change if no SMA data.
+    /// Signal badge — uses unified QPS signal when available
     private var priceSignal: (color: Color, label: String) {
-        guard let sma = sma20, sma > 0 else {
-            // Fallback when no historical data available
-            if metal.priceChangePercentage24h > -1.0 { return (AppColors.success, "Bullish") }
-            if metal.priceChangePercentage24h > -3.0 { return (AppColors.warning, "Neutral") }
-            return (AppColors.error, "Bearish")
+        if let signal = qpsSignal {
+            return (signal.color, signal.label)
         }
-        let deviation = (metal.currentPrice - sma) / sma
-        if deviation > 0.01 { return (AppColors.success, "Bullish") }
-        if deviation > -0.01 { return (AppColors.warning, "Neutral") }
+        // Fallback when QPS data unavailable
+        if metal.priceChangePercentage24h > -1.0 { return (AppColors.success, "Bullish") }
+        if metal.priceChangePercentage24h > -3.0 { return (AppColors.warning, "Neutral") }
         return (AppColors.error, "Bearish")
     }
 
