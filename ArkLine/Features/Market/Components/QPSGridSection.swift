@@ -132,7 +132,7 @@ struct QPSGridSection: View {
             Image(systemName: "arrow.triangle.swap")
                 .font(.title2)
                 .foregroundColor(AppColors.accent.opacity(0.5))
-            Text("Unlock daily positioning signals across 43 assets with Arkline Premium.")
+            Text("Unlock daily positioning signals across 54 assets with Arkline Premium.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
