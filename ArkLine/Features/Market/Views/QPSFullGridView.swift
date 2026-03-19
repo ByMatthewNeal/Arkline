@@ -18,7 +18,8 @@ struct QPSFullGridView: View {
                     categorySection(category, signals: categorySignals)
                 }
             }
-            .padding(.vertical, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 100)
         }
         .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
         .navigationTitle("Daily Positioning")

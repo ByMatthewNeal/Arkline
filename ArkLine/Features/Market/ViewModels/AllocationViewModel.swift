@@ -2,36 +2,25 @@ import Foundation
 
 // MARK: - Allocation View Model
 
-/// Orchestrates the three allocation calculators to produce a unified AllocationSummary.
-/// Reads macro data from an existing SentimentViewModel to avoid duplicate fetches.
-/// TA fetches are sequential with 16s delays to respect Taapi.io rate limits (1 req/15s).
+/// Orchestrates macro regime + positioning signals + allocation engine to produce AllocationSummary.
+/// Signals now come from the server-side QPS pipeline (Daily Positioning), unified across the app.
+/// Risk caps and DCA detection are still applied on top of QPS signals.
 @MainActor
 @Observable
 class AllocationViewModel {
     // MARK: - Dependencies
-    private let technicalAnalysisService: TechnicalAnalysisServiceProtocol
     private let sentimentViewModel: SentimentViewModel
+    private let positioningService = PositioningSignalService()
 
     // MARK: - State
     var allocationSummary: AllocationSummary?
     var isLoading = false
     var errorMessage: String?
 
-    /// TA results cache — survives across refreshes until replaced.
-    /// 4-hour TTL: signals are based on daily candles, so refreshing more than
-    /// a few times per day adds API cost without adding signal value.
-    private var taCache: [String: TechnicalAnalysis] = [:]
-    private var taCacheTimestamp: Date?
-    private let taCacheTTL: TimeInterval = 14_400 // 4 hours
-
-    /// Taapi.io rate limit: 1 request per 15 seconds
-    private static let taapiDelay: UInt64 = 16_000_000_000 // 16s in nanoseconds
-
     // MARK: - Init
 
     init(sentimentViewModel: SentimentViewModel) {
         self.sentimentViewModel = sentimentViewModel
-        self.technicalAnalysisService = ServiceContainer.shared.technicalAnalysisService
     }
 
     // MARK: - Load
@@ -52,22 +41,32 @@ class AllocationViewModel {
             macroZScores: sentimentViewModel.macroZScores
         )
 
-        // 2. Build signals for ALL assets — use cached TA if available, bearish fallback otherwise
+        // 2. Fetch QPS signals from Supabase (single fast query, 1-hour cache)
+        var qpsSignals: [DailyPositioningSignal] = []
+        do {
+            qpsSignals = try await positioningService.fetchLatestSignals()
+        } catch {
+            logWarning("QPS fetch failed for allocation: \(error)", category: .network)
+        }
+
+        // Index QPS signals by ticker for fast lookup
+        let qpsByTicker = Dictionary(uniqueKeysWithValues: qpsSignals.map { ($0.asset, $0) })
+
+        // 3. Build signals for each asset — QPS base signal + risk cap
         var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal, riskLevel: Double?)] = []
 
         for config in configs {
             let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
             let signal: PositioningSignal
 
-            if let ta = taCache[config.assetId] {
-                signal = PositioningSignalCalculator.computeSignal(
-                    trendScore: ta.trendScore,
-                    riskLevel: riskLevel,
-                    isAbove200SMA: ta.smaAnalysis.above200SMA
+            if let qps = qpsByTicker[config.assetId] {
+                // Use QPS signal as base, apply risk cap on top
+                signal = PositioningSignalCalculator.applyRiskCap(
+                    baseSignal: qps.positioningSignal,
+                    riskLevel: riskLevel
                 )
             } else {
-                // Conservative fallback: default to bearish when TA is unavailable.
-                // We don't tell users to deploy capital without actual trend data.
+                // Conservative fallback: default to bearish when QPS data unavailable
                 signal = .bearish
             }
 
@@ -81,102 +80,18 @@ class AllocationViewModel {
             ))
         }
 
-        // 3. Publish initial summary immediately (with whatever data we have)
+        // 4. Compute allocations and publish
         allocationSummary = AllocationEngine.computeAll(signals: signals, regime: regime)
-
-        // 4. Fetch TA sequentially in background, updating summary as each completes
-        let isCacheStale = taCacheTimestamp.map { Date().timeIntervalSince($0) > taCacheTTL } ?? true
-        if isCacheStale {
-            await fetchTASequentially(configs: configs, regime: regime)
-        }
     }
 
-    /// Refresh — alias for loadAllocations for pull-to-refresh consistency
+    /// Refresh — clears QPS cache so fresh data is fetched
     func refresh() async {
-        // Clear cache on manual refresh so TA is re-fetched
-        taCache.removeAll()
-        taCacheTimestamp = nil
+        do {
+            _ = try await positioningService.fetchLatestSignals(forceRefresh: true)
+        } catch {
+            logWarning("QPS refresh failed: \(error)", category: .network)
+        }
         await loadAllocations()
-    }
-
-    // MARK: - Sequential TA Fetching
-
-    /// Fetches TA for each asset one at a time with rate limit delays.
-    /// Updates the summary after each successful fetch for progressive loading.
-    private func fetchTASequentially(configs: [AssetRiskConfig], regime: MacroRegimeResult) async {
-        var isFirst = true
-        var fetchedAny = false
-
-        for config in configs {
-            // Exit early if Task was cancelled (e.g. user navigated away)
-            guard !Task.isCancelled else { break }
-            guard let binanceSymbol = config.binanceSymbol else { continue }
-
-            // Rate limit delay (skip for first request)
-            if !isFirst {
-                do {
-                    try await Task.sleep(nanoseconds: Self.taapiDelay)
-                } catch {
-                    // Task cancelled during sleep — stop fetching
-                    break
-                }
-            }
-            isFirst = false
-
-            let symbol = binanceSymbol.replacingOccurrences(of: "USDT", with: "/USDT")
-
-            do {
-                let ta = try await technicalAnalysisService.fetchTechnicalAnalysis(
-                    symbol: symbol,
-                    exchange: "binance",
-                    interval: .daily
-                )
-                taCache[config.assetId] = ta
-                fetchedAny = true
-
-                // Rebuild and publish updated summary
-                rebuildSummary(configs: configs, regime: regime)
-            } catch {
-                logWarning("TA fetch failed for \(config.assetId): \(error)", category: .network)
-            }
-        }
-
-        // Only update timestamp if we completed successfully (not cancelled mid-way)
-        if !Task.isCancelled && fetchedAny {
-            taCacheTimestamp = Date()
-        }
-    }
-
-    /// Rebuild the allocation summary from current cache + fallbacks.
-    private func rebuildSummary(configs: [AssetRiskConfig], regime: MacroRegimeResult) {
-        var signals: [(assetId: String, displayName: String, iconUrl: String?, signal: PositioningSignal, riskLevel: Double?)] = []
-
-        for config in configs {
-            let riskLevel = sentimentViewModel.riskLevels[config.assetId]?.riskLevel
-            let signal: PositioningSignal
-
-            if let ta = taCache[config.assetId] {
-                signal = PositioningSignalCalculator.computeSignal(
-                    trendScore: ta.trendScore,
-                    riskLevel: riskLevel,
-                    isAbove200SMA: ta.smaAnalysis.above200SMA
-                )
-            } else {
-                // Conservative fallback: bearish until proven otherwise
-                signal = .bearish
-            }
-
-            let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
-            signals.append((
-                assetId: config.assetId,
-                displayName: config.displayName,
-                iconUrl: iconUrl,
-                signal: signal,
-                riskLevel: riskLevel
-            ))
-        }
-
-        allocationSummary = AllocationEngine.computeAll(signals: signals, regime: regime)
     }
 
     // MARK: - Icon URL

@@ -152,7 +152,8 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         "BNB": "BNB", "SUI": "Sui", "UNI": "Uniswap",
         "ONDO": "Ondo", "RENDER": "Render", "XRP": "XRP",
         "LINK": "Chainlink", "TAO": "Bittensor", "HYPE": "Hyperliquid",
-        "ZEC": "Zcash",
+        "ZEC": "Zcash", "AVAX": "Avalanche", "DOGE": "Dogecoin",
+        "BCH": "Bitcoin Cash",
         // Indices
         "SPY": "S&P 500", "QQQ": "Nasdaq 100", "DIA": "Dow Jones",
         "IWM": "Russell 2000",
@@ -170,17 +171,19 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         "GLXY": "Galaxy Digital",
         // Alt/BTC Pairs
         "ETH/BTC": "ETH/BTC", "SOL/BTC": "SOL/BTC", "LINK/BTC": "LINK/BTC",
-        "XRP/BTC": "XRP/BTC", "BNB/BTC": "BNB/BTC", "HYPE/BTC": "HYPE/BTC",
-        "ZEC/BTC": "ZEC/BTC",
+        "AVAX/BTC": "AVAX/BTC", "DOGE/BTC": "DOGE/BTC", "BCH/BTC": "BCH/BTC",
+        "UNI/BTC": "UNI/BTC", "XRP/BTC": "XRP/BTC", "BNB/BTC": "BNB/BTC",
+        "HYPE/BTC": "HYPE/BTC", "ZEC/BTC": "ZEC/BTC", "TAO/BTC": "TAO/BTC",
+        "SUI/BTC": "SUI/BTC", "ONDO/BTC": "ONDO/BTC", "RENDER/BTC": "RENDER/BTC",
     ]
 
     private static func inferCategory(for ticker: String) -> QPSAssetCategory {
+        if ticker.contains("/BTC") { return .alt_btc }
         switch ticker {
         case "SPY", "QQQ", "DIA", "IWM": return .index
         case "VIX", "DXY", "TLT": return .macro
         case "GOLD", "SILVER", "OIL", "COPPER", "URA", "DBA", "DBB", "REMX": return .commodity
         case "AAPL", "NVDA", "GOOGL", "COIN", "MSTR", "MARA", "RIOT", "GLXY": return .stock
-        case _ where ticker.contains("/BTC"): return .alt_btc
         default: return .crypto
         }
     }
