@@ -45,12 +45,16 @@ struct QPSFullGridView: View {
             // Signal rows
             LazyVStack(spacing: 0) {
                 ForEach(Array(signals.enumerated()), id: \.element.id) { index, signal in
-                    NavigationLink {
-                        QPSDetailView(asset: signal.asset)
-                    } label: {
-                        signalRow(signal)
+                    if category == .alt_btc {
+                        signalRow(signal, showChevron: false)
+                    } else {
+                        NavigationLink {
+                            QPSDetailView(asset: signal.asset)
+                        } label: {
+                            signalRow(signal, showChevron: true)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
 
                     if index < signals.count - 1 {
                         Divider().opacity(0.1).padding(.horizontal, 12)
@@ -65,7 +69,7 @@ struct QPSFullGridView: View {
         }
     }
 
-    private func signalRow(_ signal: DailyPositioningSignal) -> some View {
+    private func signalRow(_ signal: DailyPositioningSignal, showChevron: Bool) -> some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
@@ -97,9 +101,11 @@ struct QPSFullGridView: View {
                 .cornerRadius(4)
                 .frame(width: 70)
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.4))
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
