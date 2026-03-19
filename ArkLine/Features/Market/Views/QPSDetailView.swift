@@ -12,18 +12,42 @@ struct QPSDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Current signal header
-                if let latest = history.last {
-                    currentSignalCard(latest)
+            if isLoading {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("Loading history…")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 80)
+            } else {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Current signal header
+                    if let latest = history.last {
+                        currentSignalCard(latest)
+                    }
 
-                // History
-                if history.count > 1 {
-                    historySection
+                    // History
+                    if history.count > 1 {
+                        historySection
+                    }
+
+                    if history.isEmpty {
+                        VStack(spacing: 6) {
+                            Text("No history available")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                            Text("Signals are computed daily at midnight UTC.")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                    }
                 }
+                .padding(20)
             }
-            .padding(20)
         }
         .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
         .navigationTitle("\(asset) Positioning")
