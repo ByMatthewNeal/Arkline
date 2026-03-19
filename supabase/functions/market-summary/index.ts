@@ -292,6 +292,75 @@ Deno.serve(async (req) => {
     sections.push(`HEADLINES: ${payload.newsHeadlines.join("; ")}`)
   }
 
+  // --- Daily Positioning Signals (QPS) ---
+  try {
+    // Fetch today's signals (or most recent date)
+    let { data: qpsSignals } = await supabase
+      .from("positioning_signals")
+      .select("asset, signal, prev_signal, category")
+      .eq("signal_date", todayUTC)
+      .order("asset", { ascending: true })
+
+    // If no data for today, fetch most recent date
+    if (!qpsSignals || qpsSignals.length === 0) {
+      const { data: probe } = await supabase
+        .from("positioning_signals")
+        .select("signal_date")
+        .order("signal_date", { ascending: false })
+        .limit(1)
+      if (probe && probe.length > 0) {
+        const latestDate = probe[0].signal_date
+        const { data: fallback } = await supabase
+          .from("positioning_signals")
+          .select("asset, signal, prev_signal, category")
+          .eq("signal_date", latestDate)
+          .order("asset", { ascending: true })
+        qpsSignals = fallback
+      }
+    }
+
+    if (qpsSignals && qpsSignals.length > 0) {
+      const qpsLines: string[] = []
+
+      // Signal changes (most important)
+      const changes = qpsSignals.filter((s: any) => s.prev_signal && s.signal !== s.prev_signal)
+      if (changes.length > 0) {
+        const changeStrs = changes.map((s: any) =>
+          `${s.asset}: ${s.prev_signal} → ${s.signal}`
+        )
+        qpsLines.push(`Signal Changes Today: ${changeStrs.join(", ")}`)
+      } else {
+        qpsLines.push("Signal Changes Today: None")
+      }
+
+      // Summary by signal
+      const bullish = qpsSignals.filter((s: any) => s.signal === "bullish")
+      const neutral = qpsSignals.filter((s: any) => s.signal === "neutral")
+      const bearish = qpsSignals.filter((s: any) => s.signal === "bearish")
+      qpsLines.push(`Overview: ${bullish.length} bullish, ${neutral.length} neutral, ${bearish.length} bearish (${qpsSignals.length} assets total)`)
+
+      // Category breakdown for crypto only
+      const cryptoSignals = qpsSignals.filter((s: any) => s.category === "crypto")
+      if (cryptoSignals.length > 0) {
+        const cryptoBullish = cryptoSignals.filter((s: any) => s.signal === "bullish").map((s: any) => s.asset)
+        const cryptoBearish = cryptoSignals.filter((s: any) => s.signal === "bearish").map((s: any) => s.asset)
+        if (cryptoBullish.length > 0) qpsLines.push(`Crypto Bullish: ${cryptoBullish.join(", ")}`)
+        if (cryptoBearish.length > 0) qpsLines.push(`Crypto Bearish: ${cryptoBearish.join(", ")}`)
+      }
+
+      // Index signals
+      const indexSignals = qpsSignals.filter((s: any) => s.category === "index")
+      if (indexSignals.length > 0) {
+        const indexSummary = indexSignals.map((s: any) => `${s.asset}: ${s.signal}`).join(", ")
+        qpsLines.push(`Indices: ${indexSummary}`)
+      }
+
+      sections.push(`DAILY POSITIONING:\n${qpsLines.join("\n")}`)
+    }
+  } catch (err) {
+    console.error("Failed to fetch QPS signals:", err instanceof Error ? err.message : String(err))
+  }
+
   // --- Active Swing Trade Signals ---
   try {
     const { data: activeSignals } = await supabase
@@ -366,7 +435,7 @@ One sentence with the overall market stance and crypto positioning. If the MACRO
 3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS and DERIVATIVES. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If key fib support/resistance levels are available, mention them. Explain in plain language what the technicals and derivatives suggest about momentum and positioning. If no BTC TA data is available, skip this section entirely.
 
 ## Signals
-2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime, BTC/ETH risk zones, season indicator, Coinbase app ranking, BTC search interest, BTC dominance, ETF flows, capital rotation. If CAPITAL FLOW data is available, weave in the key takeaway (e.g. rising BTC dominance = risk-off rotation, strong ETF inflows = institutional conviction). Explain what each means in plain language.
+2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime, BTC/ETH risk zones, season indicator, Coinbase app ranking, BTC search interest, BTC dominance, ETF flows, capital rotation. If CAPITAL FLOW data is available, weave in the key takeaway (e.g. rising BTC dominance = risk-off rotation, strong ETF inflows = institutional conviction). If DAILY POSITIONING data is available and there are signal changes today, mention the most notable ones (e.g. "Gold flipped from neutral to bullish" or "3 crypto assets shifted bearish overnight"). If there are no changes, you can briefly note the overall positioning balance (e.g. "positioning remains mixed with X bullish vs Y bearish across 54 assets"). Don't list every asset — just highlight what changed or what stands out. Explain what each means in plain language.
 
 Rules:
 - Write for someone checking their phone over coffee, not a Wall Street analyst
