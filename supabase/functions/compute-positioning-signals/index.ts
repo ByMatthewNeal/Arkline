@@ -74,7 +74,7 @@ const ASSETS: AssetConfig[] = [
 
   // ── Commodities ──
   { ticker: "GOLD",   displayName: "Gold",            source: "fmp", symbol: "GCUSD", category: "commodity" },
-  { ticker: "SILVER", displayName: "Silver",          source: "fmp", symbol: "SLV",   category: "commodity" },
+  { ticker: "SILVER", displayName: "Silver",          source: "fmp", symbol: "SIUSD", category: "commodity" },
   { ticker: "OIL",    displayName: "Oil",             source: "fmp", symbol: "USO",   category: "commodity" },
   { ticker: "COPPER", displayName: "Copper",          source: "fmp", symbol: "CPER",  category: "commodity" },
   { ticker: "URA",    displayName: "Uranium",         source: "fmp", symbol: "URA",   category: "commodity" },
