@@ -120,7 +120,12 @@ struct Broadcast: Codable, Identifiable, Equatable {
         content = try container.decode(String.self, forKey: .content)
         audioURL = try container.decodeIfPresent(URL.self, forKey: .audioURL)
         images = (try? container.decodeIfPresent([BroadcastImage].self, forKey: .images)) ?? []
-        appReferences = (try? container.decodeIfPresent([AppReference].self, forKey: .appReferences)) ?? []
+        do {
+            appReferences = try container.decodeIfPresent([AppReference].self, forKey: .appReferences) ?? []
+        } catch {
+            logError("Failed to decode appReferences: \(error)", category: .data)
+            appReferences = []
+        }
         portfolioAttachment = try? container.decodeIfPresent(BroadcastPortfolioAttachment.self, forKey: .portfolioAttachment)
         meetingLink = try? container.decodeIfPresent(URL.self, forKey: .meetingLink)
         videoURL = try? container.decodeIfPresent(URL.self, forKey: .videoURL)
@@ -361,6 +366,48 @@ struct AssetReference: Codable, Equatable {
     let assetType: AssetType
     let displayName: String
     let coinGeckoId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case symbol
+        case assetType = "asset_type"
+        case displayName = "display_name"
+        case coinGeckoId = "coin_gecko_id"
+    }
+
+    // Decode from either snake_case (SDK default) or camelCase (existing DB data)
+    init(from decoder: Decoder) throws {
+        // Try snake_case keys first (SDK default)
+        if let container = try? decoder.container(keyedBy: CodingKeys.self),
+           let symbol = try? container.decode(String.self, forKey: .symbol),
+           let assetType = try? container.decode(AssetType.self, forKey: .assetType),
+           let displayName = try? container.decode(String.self, forKey: .displayName) {
+            self.symbol = symbol
+            self.assetType = assetType
+            self.displayName = displayName
+            self.coinGeckoId = try? container.decodeIfPresent(String.self, forKey: .coinGeckoId)
+        } else {
+            // Fallback: camelCase keys (existing JSONB data)
+            let container = try decoder.container(keyedBy: CamelCaseKeys.self)
+            self.symbol = try container.decode(String.self, forKey: .symbol)
+            self.assetType = try container.decode(AssetType.self, forKey: .assetType)
+            self.displayName = try container.decode(String.self, forKey: .displayName)
+            self.coinGeckoId = try container.decodeIfPresent(String.self, forKey: .coinGeckoId)
+        }
+    }
+
+    private enum CamelCaseKeys: String, CodingKey {
+        case symbol
+        case assetType
+        case displayName
+        case coinGeckoId
+    }
+
+    init(symbol: String, assetType: AssetType, displayName: String, coinGeckoId: String? = nil) {
+        self.symbol = symbol
+        self.assetType = assetType
+        self.displayName = displayName
+        self.coinGeckoId = coinGeckoId
+    }
 
     var iconName: String {
         switch assetType {
