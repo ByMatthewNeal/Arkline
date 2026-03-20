@@ -37,7 +37,7 @@ struct ArkLineApp: App {
             if newPhase == .background {
                 Task { await AnalyticsService.shared.flush() }
             } else if newPhase == .active {
-                Task { await appState.refreshUserProfile() }
+                appState.refreshUserProfileCancellable()
                 Task { await IncrementalPriceStore.shared.resetCooldowns() }
                 BroadcastNotificationService.shared.clearBadge()
             }
@@ -209,6 +209,10 @@ class AppState: ObservableObject {
     @Published var marketWidgetConfiguration: MarketWidgetConfiguration = MarketWidgetConfiguration()
     @Published var enabledCoreAssets: Set<CoreAsset> = CoreAsset.defaultEnabled
     @Published var didJustSignOut = false
+
+    /// Tracks in-flight refresh so rapid foreground/background cycling
+    /// cancels the previous call instead of stacking concurrent fetches.
+    private var refreshTask: Task<Void, Never>?
 
     // Navigation reset triggers - increment to pop to root
     @Published var homeNavigationReset = UUID()
@@ -507,6 +511,15 @@ class AppState: ObservableObject {
 
     // MARK: - Profile Refresh
 
+    /// Cancels any in-flight refresh and starts a new one.
+    /// Use this from scenePhase handlers to prevent task stacking.
+    func refreshUserProfileCancellable() {
+        refreshTask?.cancel()
+        refreshTask = Task {
+            await refreshUserProfile()
+        }
+    }
+
     func refreshUserProfile() async {
         guard SupabaseManager.shared.isConfigured else { return }
 
@@ -524,6 +537,9 @@ class AppState: ObservableObject {
             guard let profile = try await withTimeout(seconds: 10, operation: {
                 try await SupabaseDatabase.shared.getProfile(userId: userId)
             }) else { return }
+
+            // Exit early if this refresh was superseded by a newer one
+            guard !Task.isCancelled else { return }
 
             // Build user from existing cached user or create a new one from the DB profile
             var updatedUser = currentUser ?? User(
