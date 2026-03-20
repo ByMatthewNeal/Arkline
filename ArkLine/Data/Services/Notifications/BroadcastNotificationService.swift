@@ -242,7 +242,7 @@ class BroadcastNotificationService: ObservableObject {
 
         let content = UNMutableNotificationContent()
         let emoji = signal.signalType.isBuy ? "🎯" : "⚠️"
-        content.title = "\(emoji) \(signal.asset) Swing Setup"
+        content.title = "\(emoji) \(signal.asset) Trade Signal"
         content.body = "\(signal.signalType.displayName) detected at $\(formatNotifPrice(signal.entryZoneLow))–$\(formatNotifPrice(signal.entryZoneHigh)). R:R \(String(format: "%.1f", signal.riskRewardRatio))x"
         content.sound = .default
         content.badge = 1

@@ -69,7 +69,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .supplyInProfit: return "BTC Supply in Profit"
         case .favorites: return "Favorites"
         case .aiMarketSummary: return "Daily Briefing"
-        case .flashIntel: return "Swing Setups"
+        case .flashIntel: return "Trade Signals"
         case .usFutures: return "US Futures"
         case .qpsSignals: return "Signal Changes"
         }
@@ -92,7 +92,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .supplyInProfit: return "Percentage of BTC supply currently in profit"
         case .favorites: return "Your starred coins at a glance"
         case .aiMarketSummary: return "AI-generated daily market summary"
-        case .flashIntel: return "Fibonacci pattern detection across timeframes"
+        case .flashIntel: return "Fibonacci-based trade signals across timeframes"
         case .usFutures: return "S&P 500, Dow, and NASDAQ futures with session indicator"
         case .qpsSignals: return "Daily positioning signal changes across 8 assets"
         }

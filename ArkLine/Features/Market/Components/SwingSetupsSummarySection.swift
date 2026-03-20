@@ -15,7 +15,7 @@ struct SwingSetupsSummarySection: View {
             HStack {
                 Image(systemName: "scope")
                     .foregroundColor(AppColors.accent)
-                Text("Swing Setups")
+                Text("Trade Signals")
                     .font(.headline)
                     .foregroundColor(textPrimary)
 

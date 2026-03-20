@@ -299,9 +299,9 @@ final class TradeSignalTests: XCTestCase {
 
     func testFlashIntelWidget_properties() {
         let widget = HomeWidgetType.flashIntel
-        XCTAssertEqual(widget.displayName, "Swing Setups")
+        XCTAssertEqual(widget.displayName, "Trade Signals")
         XCTAssertEqual(widget.icon, "scope")
-        XCTAssertEqual(widget.description, "Fibonacci pattern detection across timeframes")
+        XCTAssertEqual(widget.description, "Fibonacci-based trade signals across timeframes")
         XCTAssertTrue(widget.isPremium)
         XCTAssertEqual(widget.rawValue, "flash_intel")
     }

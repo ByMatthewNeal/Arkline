@@ -345,7 +345,7 @@ struct SwingSetupsDetailView: View {
             .padding(.top, 8)
         }
         .background(AppColors.background(colorScheme))
-        .navigationTitle("Swing Setups")
+        .navigationTitle("Trade Signals")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -1589,7 +1589,7 @@ struct SignalGuideSheet: View {
                     }
 
                     // Disclaimer
-                    Text("Swing Setups is an educational analysis tool, not financial advice. Always do your own research and consult a licensed financial advisor.")
+                    Text("Trade Signals is an educational analysis tool, not financial advice. Always do your own research and consult a licensed financial advisor.")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)

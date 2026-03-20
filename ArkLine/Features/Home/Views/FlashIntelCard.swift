@@ -174,7 +174,7 @@ struct FlashIntelSection: View {
             HStack {
                 Image(systemName: "scope")
                     .foregroundColor(AppColors.accent)
-                Text("Swing Setups")
+                Text("Trade Signals")
                     .font(size == .compact ? .subheadline : .title3)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -347,7 +347,7 @@ struct FlashIntelSection: View {
                     .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                Text("Upgrade to Pro for swing setup analysis")
+                Text("Upgrade to Pro for trade signal analysis")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
@@ -583,7 +583,7 @@ struct SignalMethodologySheet: View {
                     .padding(.horizontal, 20)
 
                     // Disclaimer
-                    Text("Swing Setups is an educational analysis tool, not financial advice. Arkline does not recommend any specific trades. Always do your own research and consult a licensed financial advisor.")
+                    Text("Trade Signals is an educational analysis tool, not financial advice. Arkline does not recommend any specific trades. Always do your own research and consult a licensed financial advisor.")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -595,7 +595,7 @@ struct SignalMethodologySheet: View {
                 .padding(.top, 16)
             }
             .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
-            .navigationTitle("Swing Setups")
+            .navigationTitle("Trade Signals")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

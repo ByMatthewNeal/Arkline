@@ -29,7 +29,7 @@ enum PremiumFeature: String, CaseIterable {
         case .premiumWidgets: return "Premium Widgets"
         case .exportData: return "Export Data"
         case .fedWatchDetail: return "Fed Watch Detail"
-        case .swingSetups: return "Swing Trade Setups"
+        case .swingSetups: return "Trade Signals"
         }
     }
 
@@ -60,7 +60,7 @@ enum PremiumFeature: String, CaseIterable {
         case .fedWatchDetail:
             return "Detailed Fed interest rate probabilities and meeting schedules."
         case .swingSetups:
-            return "Multi-timeframe Fibonacci swing trade signals with defined entries, targets, and stop losses."
+            return "Multi-timeframe Fibonacci trade signals with defined entries, targets, and stop losses."
         }
     }
 
