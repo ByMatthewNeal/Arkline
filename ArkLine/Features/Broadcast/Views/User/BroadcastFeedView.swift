@@ -170,8 +170,8 @@ struct BroadcastFeedView: View {
             .task {
                 if let userId = appState.currentUser?.id {
                     await viewModel.loadPublishedBroadcasts(for: userId)
-                    await viewModel.updateUnreadCount(for: userId)
-                    appState.insightsUnreadCount = viewModel.unreadCount
+                    await viewModel.markAllAsRead(userId: userId)
+                    appState.insightsUnreadCount = 0
                 }
                 await checkNotificationStatus()
             }
@@ -211,6 +211,9 @@ struct BroadcastFeedView: View {
             .onChange(of: appState.selectedTab) { _, newTab in
                 if newTab == .insights {
                     appState.insightsUnreadCount = 0
+                    if let userId = appState.currentUser?.id {
+                        Task { await viewModel.markAllAsRead(userId: userId) }
+                    }
                 }
             }
             } // ScrollViewReader

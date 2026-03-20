@@ -152,6 +152,16 @@ class BroadcastViewModel: ObservableObject {
         await updateUnreadCount(for: userId)
     }
 
+    /// Mark all published broadcasts as read for a user
+    func markAllAsRead(userId: UUID) async {
+        do {
+            try await broadcastService.markAllAsRead(userId: userId)
+            unreadCount = 0
+        } catch {
+            logError("Failed to mark all as read: \(error)", category: .data)
+        }
+    }
+
     // MARK: - View Tracking
 
     /// Increment the total view count for a broadcast (fire-and-forget)

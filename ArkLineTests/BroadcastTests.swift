@@ -47,6 +47,7 @@ fileprivate final class MockBroadcastService: BroadcastServiceProtocol {
     }
 
     func markAsRead(broadcastId: UUID, userId: UUID) async throws { markAsReadCalled = true }
+    func markAllAsRead(userId: UUID) async throws { markAsReadCalled = true }
     func hasBeenRead(broadcastId: UUID, userId: UUID) async throws -> Bool { markAsReadCalled }
     func unreadCount(for userId: UUID) async throws -> Int { unreadCountValue }
     func incrementViewCount(broadcastId: UUID) async throws {}

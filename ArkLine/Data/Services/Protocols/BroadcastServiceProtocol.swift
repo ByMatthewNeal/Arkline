@@ -63,6 +63,9 @@ protocol BroadcastServiceProtocol {
     ///   - userId: The user's ID
     func markAsRead(broadcastId: UUID, userId: UUID) async throws
 
+    /// Marks all published broadcasts as read for a user
+    func markAllAsRead(userId: UUID) async throws
+
     /// Checks if a broadcast has been read by a user
     /// - Parameters:
     ///   - broadcastId: The broadcast ID

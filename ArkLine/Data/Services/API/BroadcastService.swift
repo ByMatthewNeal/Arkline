@@ -221,6 +221,49 @@ final class BroadcastService: BroadcastServiceProtocol {
         logInfo("Marked broadcast as read", category: .data)
     }
 
+    func markAllAsRead(userId: UUID) async throws {
+        guard supabase.isConfigured else {
+            throw AppError.supabaseNotConfigured
+        }
+
+        // Get all published broadcast IDs
+        struct IdRow: Codable { let id: UUID }
+        let publishedIds: [IdRow] = try await supabase.database
+            .from(SupabaseTable.broadcasts.rawValue)
+            .select("id")
+            .eq("status", value: BroadcastStatus.published.rawValue)
+            .limit(500)
+            .execute()
+            .value
+
+        // Get already-read IDs for this user
+        struct BroadcastIdRow: Codable {
+            let broadcastId: UUID
+            enum CodingKeys: String, CodingKey { case broadcastId = "broadcast_id" }
+        }
+        let readIds: [BroadcastIdRow] = try await supabase.database
+            .from(SupabaseTable.broadcastReads.rawValue)
+            .select("broadcast_id")
+            .eq("user_id", value: userId.uuidString)
+            .limit(500)
+            .execute()
+            .value
+
+        let readSet = Set(readIds.map { $0.broadcastId })
+        let unreadIds = publishedIds.map(\.id).filter { !readSet.contains($0) }
+
+        guard !unreadIds.isEmpty else { return }
+
+        // Batch upsert read records
+        let records = unreadIds.map { BroadcastRead(id: UUID(), broadcastId: $0, userId: userId, readAt: Date()) }
+        try await supabase.database
+            .from(SupabaseTable.broadcastReads.rawValue)
+            .upsert(records)
+            .execute()
+
+        logInfo("Marked \(unreadIds.count) broadcasts as read", category: .data)
+    }
+
     func hasBeenRead(broadcastId: UUID, userId: UUID) async throws -> Bool {
         guard supabase.isConfigured else {
             return false
