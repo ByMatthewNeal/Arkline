@@ -48,7 +48,8 @@ struct QPSSignalChangesCard: View {
             Text(signal.asset)
                 .font(AppFonts.body14Bold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
-                .frame(width: 60, alignment: .leading)
+                .lineLimit(1)
+                .fixedSize()
 
             if let prev = signal.prevPositioningSignal {
                 HStack(spacing: 6) {
@@ -75,10 +76,6 @@ struct QPSSignalChangesCard: View {
             }
 
             Spacer()
-
-            Text(String(format: "%.0f", signal.trendScore))
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(AppColors.textSecondary)
         }
         .padding(12)
         .background(
