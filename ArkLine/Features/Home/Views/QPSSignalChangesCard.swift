@@ -49,7 +49,7 @@ struct QPSSignalChangesCard: View {
                 .font(AppFonts.body14Bold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .lineLimit(1)
-                .fixedSize()
+                .frame(width: 70, alignment: .leading)
 
             if let prev = signal.prevPositioningSignal {
                 HStack(spacing: 6) {
