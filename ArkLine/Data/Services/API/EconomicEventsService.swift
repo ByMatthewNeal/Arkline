@@ -105,10 +105,11 @@ final class EconomicEventsService {
     private func filterEvents(_ events: [EconomicEvent], from: Date, to: Date, impactFilter: [EventImpact]) -> [EconomicEvent] {
         let calendar = Calendar.current
         let startOfFrom = calendar.startOfDay(for: from)
+        let endOfTo = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: to) ?? to)
 
         return events.filter { event in
             let currencyOk = event.currency.map { allowedCurrencies.contains($0) } ?? true
-            return event.date >= startOfFrom && event.date <= to && impactFilter.contains(event.impact) && currencyOk
+            return event.date >= startOfFrom && event.date < endOfTo && impactFilter.contains(event.impact) && currencyOk
         }.sorted { $0.date < $1.date }
     }
 }

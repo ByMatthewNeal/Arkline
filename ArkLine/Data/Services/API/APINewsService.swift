@@ -31,9 +31,9 @@ final class APINewsService: NewsServiceProtocol {
     }
 
     func fetchTodaysEvents() async throws -> [EconomicEvent] {
-        let start = Calendar.current.startOfDay(for: Date())
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
-        return await EconomicEventsService.shared.fetchEvents(from: start, to: end, impactFilter: [.high, .medium])
+        let today = Date()
+        // Use same date for from/to so fetchFromSupabase queries only today's date
+        return await EconomicEventsService.shared.fetchEvents(from: today, to: today, impactFilter: [.high, .medium])
     }
 
     func fetchEconomicEvents(from startDate: Date, to endDate: Date) async throws -> [EconomicEvent] {
