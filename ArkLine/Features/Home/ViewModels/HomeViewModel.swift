@@ -895,7 +895,9 @@ class HomeViewModel {
                 await MainActor.run { self.hasLoadedPortfolios = true }
                 return
             }
-            let fetchedPortfolios = try await portfolioService.fetchPortfolios(userId: userId)
+            let fetchedPortfolios = try await withTimeout(seconds: 15) { [portfolioService] in
+                try await portfolioService.fetchPortfolios(userId: userId)
+            }
 
             await MainActor.run {
                 self.portfolios = fetchedPortfolios
@@ -1486,7 +1488,9 @@ class HomeViewModel {
         )
 
         do {
-            let summary = try await service.fetchSummary(payload: payload)
+            let summary = try await withTimeout(seconds: 30) {
+                try await service.fetchSummary(payload: payload)
+            }
             let textQuadrant = Self.quadrantFromBriefingText(summary.summary)
             let liveQuadrant = self.currentRegimeResult?.quadrant
 
