@@ -31,7 +31,11 @@ final class SupabaseAuthManager {
         defer { isLoading = false }
 
         do {
-            currentSession = try await auth.session
+            // Timeout after 8 seconds to prevent hanging on poor network
+            let authClient = self.auth
+            currentSession = try await withTimeout(seconds: 8) {
+                try await authClient.session
+            }
             currentAuthUser = currentSession?.user
             isAuthenticated = currentSession != nil
         } catch {

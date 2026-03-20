@@ -237,6 +237,26 @@ extension AppError {
     }
 }
 
+// MARK: - Async Timeout
+
+/// Runs an async operation with a timeout. Throws `AppError.timeout` if the operation
+/// doesn't complete within the specified duration.
+func withTimeout<T: Sendable>(seconds: Double, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask {
+            try await operation()
+        }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw AppError.timeout
+        }
+        // Return whichever finishes first
+        let result = try await group.next()!
+        group.cancelAll()
+        return result
+    }
+}
+
 // MARK: - HTTP Status Code Mapping
 extension AppError {
     static func from(httpStatusCode: Int, message: String? = nil) -> AppError {

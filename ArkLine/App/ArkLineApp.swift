@@ -521,7 +521,9 @@ class AppState: ObservableObject {
         }
 
         do {
-            guard let profile = try await SupabaseDatabase.shared.getProfile(userId: userId) else { return }
+            guard let profile = try await withTimeout(seconds: 10, operation: {
+                try await SupabaseDatabase.shared.getProfile(userId: userId)
+            }) else { return }
 
             // Build user from existing cached user or create a new one from the DB profile
             var updatedUser = currentUser ?? User(
