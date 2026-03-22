@@ -56,7 +56,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.0
+const MIN_RR_RATIO = 0.75
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
@@ -265,11 +265,108 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Compute & store market conditions summary ──
+    const conditionsSummary = computeMarketConditions(allResults)
+    await supabase.from("market_data_cache").upsert({
+      key: "signal_market_conditions",
+      data: conditionsSummary,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "key" })
+
     return jsonResponse({ success: true, assets: allResults })
   } catch (err) {
     return jsonResponse({ error: "Pipeline failed", detail: String(err), partial: allResults }, 500)
   }
 })
+
+// ─── Market Conditions Summary ───────────────────────────────────────────────
+
+function computeMarketConditions(allResults: Record<string, any>): {
+  status: string
+  headline: string
+  detail: string
+  topReasons: string[]
+  totalSkipped: number
+  totalGenerated: number
+  updatedAt: string
+} {
+  const reasonCounts: Record<string, number> = {}
+  let totalSkipped = 0
+  let totalGenerated = 0
+
+  for (const [, asset] of Object.entries(allResults)) {
+    for (const key of ["newSignals", "scalpSignals"]) {
+      const s = asset[key]
+      if (!s) continue
+      totalGenerated += s.generated ?? 0
+      totalSkipped += s.skipped ?? 0
+      for (const reason of s.skipReasons ?? []) {
+        // Normalize: strip asset-specific price info to group similar reasons
+        const normalized = reason
+          .replace(/^(support|resistance) @[\d.]+: /, "")
+          .replace(/\(price=[\d.]+\)/, "")
+          .replace(/R:R [\d.]+ < [\d.]+/, "R:R too low")
+          .replace(/score \d+ < 60/, "score below B-grade")
+          .trim()
+        reasonCounts[normalized] = (reasonCounts[normalized] ?? 0) + 1
+      }
+    }
+  }
+
+  const topReasons = Object.entries(reasonCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([reason, count]) => {
+      const label = `${reason.charAt(0).toUpperCase()}${reason.slice(1)}`
+      return `${label} — ${count} asset${count === 1 ? "" : "s"}`
+    })
+
+  const now = new Date().toISOString()
+
+  if (totalGenerated > 0) {
+    return {
+      status: "active",
+      headline: `${totalGenerated} signal${totalGenerated > 1 ? "s" : ""} generated`,
+      detail: "The pipeline found setups that meet all quality criteria.",
+      topReasons,
+      totalSkipped,
+      totalGenerated,
+      updatedAt: now,
+    }
+  }
+
+  // Determine dominant reason
+  const dominant = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]
+  let headline = "Markets are choppy — no setups right now"
+  let detail = "Price is ranging between levels without clean entries."
+
+  if (dominant) {
+    const [reason] = dominant
+    if (reason.includes("no bounce")) {
+      headline = "Zones identified, waiting for bounce confirmation"
+      detail = "Price is near Fibonacci zones but hasn't shown a rejection candle yet. Signals fire after a confirmed bounce."
+    } else if (reason.includes("EMA") || reason.includes("misalign")) {
+      headline = "Trend isn't aligned with nearby zones"
+      detail = "Support zones are nearby but the trend is bearish, or resistance zones are nearby but the trend is bullish. Waiting for alignment."
+    } else if (reason.includes("R:R")) {
+      headline = "Ranges are too tight for clean entries"
+      detail = "Fibonacci zones exist but the risk-to-reward ratio is below 1:1. Waiting for price to stretch into better setups."
+    } else if (reason.includes("score")) {
+      headline = "Setups found but quality is below threshold"
+      detail = "Potential signals didn't meet the B-grade (60+) composite score. This filters out low-conviction trades."
+    }
+  }
+
+  return {
+    status: "quiet",
+    headline,
+    detail,
+    topReasons,
+    totalSkipped,
+    totalGenerated,
+    updatedAt: now,
+  }
+}
 
 // ─── Fetch Candles from Binance ──────────────────────────────────────────────
 
@@ -1438,9 +1535,10 @@ async function evaluateSignals(
   btcRiskScore?: number,
   swings?: Record<string, SwingPoint[]>,
   tier: TierConfig = TIER_SWING,
-): Promise<{ generated: number; skipped: number }> {
-  const stats = { generated: 0, skipped: 0 }
+): Promise<{ generated: number; skipped: number; skipReasons: string[] }> {
+  const stats = { generated: 0, skipped: 0, skipReasons: [] as string[] }
   const trendCandles = candles[tier.trendTimeframe]
+  const candles4h = candles["4h"] ?? []
 
   if (!trendCandles || trendCandles.length < EMA_SLOW_PERIOD + EMA_SLOPE_LOOKBACK) {
     return stats
@@ -1467,6 +1565,7 @@ async function evaluateSignals(
       .limit(1)
 
     if (existing && existing.length > 0) {
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: duplicate signal exists`)
       stats.skipped++
       continue
     }
@@ -1483,6 +1582,7 @@ async function evaluateSignals(
         .lte("entry_zone_high", zone.high * 1.015)
         .limit(1)
       if (higherTf && higherTf.length > 0) {
+        stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: swing signal covers zone`)
         stats.skipped++
         continue
       }
@@ -1496,11 +1596,13 @@ async function evaluateSignals(
     const zonePastPct = 5.0
     if (isBuy && currentPrice < zone.low * (1 - zonePastPct / 100)) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): price broke below support`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: price broke below support (price=${currentPrice.toFixed(2)})`)
       stats.skipped++
       continue
     }
     if (!isBuy && currentPrice > zone.high * (1 + zonePastPct / 100)) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): price broke above resistance`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: price broke above resistance (price=${currentPrice.toFixed(2)})`)
       stats.skipped++
       continue
     }
@@ -1508,6 +1610,7 @@ async function evaluateSignals(
     // EMA trend filter (always on trend timeframe)
     if (!checkTrendAlignment(trendCandles, isBuy)) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): EMA misalign [${tier.tierName}]`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: EMA trend misaligned for ${isBuy ? "buy" : "sell"} [${tier.tierName}]`)
       stats.skipped++
       continue
     }
@@ -1526,6 +1629,7 @@ async function evaluateSignals(
     }
     if (!bounce.confirmed) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce [${tier.tierName}]`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: no bounce confirmation [${tier.tierName}]`)
       stats.skipped++
       continue
     }
@@ -1542,6 +1646,8 @@ async function evaluateSignals(
 
     if (rrRatio < MIN_RR_RATIO) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): R:R ${rrRatio.toFixed(2)} < ${MIN_RR_RATIO}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: R:R ${rrRatio.toFixed(2)} < ${MIN_RR_RATIO}`)
+      stats.skipped++
       continue
     }
 
@@ -1572,6 +1678,7 @@ async function evaluateSignals(
     // Only publish B-grade or higher signals (score >= 60)
     if (compositeScore < 60) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < 60`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: score ${compositeScore} < 60`)
       stats.skipped++
       continue
     }
