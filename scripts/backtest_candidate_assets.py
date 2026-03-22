@@ -21,33 +21,39 @@ from datetime import datetime, timedelta, timezone
 # These are tested alongside the current 6 for comparison
 
 CURRENT_ASSETS = [
-    {"symbol": "BTCUSDT",  "ticker": "BTC"},
-    {"symbol": "ETHUSDT",  "ticker": "ETH"},
-    {"symbol": "SOLUSDT",  "ticker": "SOL"},
-    {"symbol": "SUIUSDT",  "ticker": "SUI"},
-    {"symbol": "LINKUSDT", "ticker": "LINK"},
-    {"symbol": "ADAUSDT",  "ticker": "ADA"},
+    {"pair": "BTC-USD",    "ticker": "BTC"},
+    {"pair": "ETH-USD",    "ticker": "ETH"},
+    {"pair": "SOL-USD",    "ticker": "SOL"},
+    {"pair": "SUI-USD",    "ticker": "SUI"},
+    {"pair": "LINK-USD",   "ticker": "LINK"},
+    {"pair": "ADA-USD",    "ticker": "ADA"},
+    {"pair": "AVAX-USD",   "ticker": "AVAX"},
+    {"pair": "RENDER-USD", "ticker": "RENDER"},
+    {"pair": "APT-USD",    "ticker": "APT"},
+    {"pair": "HYPE-USD",   "ticker": "HYPE"},
 ]
 
 CANDIDATE_ASSETS = [
-    {"symbol": "AVAXUSDT",  "ticker": "AVAX"},
-    {"symbol": "DOTUSDT",   "ticker": "DOT"},
-    {"symbol": "NEARUSDT",  "ticker": "NEAR"},
-    {"symbol": "DOGEUSDT",  "ticker": "DOGE"},
-    {"symbol": "ARBUSDT",   "ticker": "ARB"},
-    {"symbol": "OPUSDT",    "ticker": "OP"},
-    {"symbol": "ATOMUSDT",  "ticker": "ATOM"},
-    {"symbol": "FETUSDT",   "ticker": "FET"},
-    {"symbol": "INJUSDT",   "ticker": "INJ"},
-    {"symbol": "APTUSDT",   "ticker": "APT"},
-    {"symbol": "TIAUSDT",   "ticker": "TIA"},
-    {"symbol": "MATICUSDT", "ticker": "MATIC"},
-    {"symbol": "RENDERUSDT","ticker": "RENDER"},
-    {"symbol": "ONDOUSDT",  "ticker": "ONDO"},
-    {"symbol": "WIFUSDT",   "ticker": "WIF"},
-    {"symbol": "JUPUSDT",   "ticker": "JUP"},
-    {"symbol": "XRPUSDT",   "ticker": "XRP"},
-    {"symbol": "BNBUSDT",   "ticker": "BNB"},
+    {"pair": "DOT-USD",    "ticker": "DOT"},
+    {"pair": "NEAR-USD",   "ticker": "NEAR"},
+    {"pair": "DOGE-USD",   "ticker": "DOGE"},
+    {"pair": "ARB-USD",    "ticker": "ARB"},
+    {"pair": "OP-USD",     "ticker": "OP"},
+    {"pair": "ATOM-USD",   "ticker": "ATOM"},
+    {"pair": "FET-USD",    "ticker": "FET"},
+    {"pair": "INJ-USD",    "ticker": "INJ"},
+    {"pair": "TIA-USD",    "ticker": "TIA"},
+    {"pair": "POL-USD",    "ticker": "POL"},
+    {"pair": "ONDO-USD",   "ticker": "ONDO"},
+    {"pair": "WIF-USD",    "ticker": "WIF"},
+    {"pair": "JUP-USD",    "ticker": "JUP"},
+    {"pair": "XRP-USD",    "ticker": "XRP"},
+    {"pair": "BNB-USD",    "ticker": "BNB"},
+    {"pair": "PEPE-USD",   "ticker": "PEPE"},
+    {"pair": "PENGU-USD",  "ticker": "PENGU"},
+    {"pair": "ENA-USD",    "ticker": "ENA"},
+    {"pair": "AAVE-USD",   "ticker": "AAVE"},
+    {"pair": "UNI-USD",    "ticker": "UNI"},
 ]
 
 ALL_ASSETS = CURRENT_ASSETS + CANDIDATE_ASSETS
@@ -55,32 +61,63 @@ ALL_ASSETS = CURRENT_ASSETS + CANDIDATE_ASSETS
 # ─── Configuration (same as live pipeline) ───────────────────────────────────
 
 TIMEFRAME_CONFIGS = [
-    {"tf": "4h", "interval": "4h", "limit": 2400},
-    {"tf": "1d", "interval": "1d", "limit": 500},
+    {"tf": "1h", "granularity": "ONE_HOUR",  "seconds": 3600,  "limit": 2400},
+    {"tf": "4h", "granularity": "FOUR_HOUR", "seconds": 14400, "limit": 2400},
+    {"tf": "1d", "granularity": "ONE_DAY",   "seconds": 86400, "limit": 500},
 ]
 
 SWING_PARAMS = {
+    "1h": {"lookback": 10, "min_reversal": 2.5},
     "4h": {"lookback": 8, "min_reversal": 5.0},
     "1d": {"lookback": 5, "min_reversal": 8.0},
 }
 
 FIB_RATIOS = [0.618, 0.786]
-CONFLUENCE_TOLERANCE_PCT = 1.5
-SIGNAL_PROXIMITY_PCT = 2.0
-MIN_RR_RATIO = 1.0
+MIN_RR_RATIO = 0.75
 STRONG_MIN_RR_RATIO = 2.0
 STRONG_MIN_CONFLUENCE = 2
-SIGNAL_EXPIRY_HOURS = 72
-WICK_REJECTION_RATIO = 1.5
-VOLUME_SPIKE_RATIO = 1.3
+WICK_REJECTION_RATIO = 1.2
+VOLUME_SPIKE_RATIO = 1.15
 
 EMA_FAST_PERIOD = 20
 EMA_SLOW_PERIOD = 50
 EMA_SLOPE_LOOKBACK = 6
-EMA_PULLBACK_TOLERANCE = 0.008
+EMA_PULLBACK_TOLERANCE = 0.015
 
 BACKTEST_DAYS = 365
 WARMUP_CANDLES_4H = 60
+
+# ─── Tier Configuration (matches live pipeline) ──────────────────────────────
+
+@dataclass
+class TierConfig:
+    tier_name: str              # "4h" (swing) or "1h" (scalp)
+    swing_timeframes: list      # which TFs to detect swings on
+    trend_timeframe: str        # which TF for EMA trend check
+    bounce_timeframe: str       # which TF candles to check bounce on
+    signal_proximity_pct: float
+    confluence_tolerance_pct: float
+    expiry_hours: int
+
+TIER_SWING = TierConfig(
+    tier_name="4h",
+    swing_timeframes=["4h", "1d"],
+    trend_timeframe="4h",
+    bounce_timeframe="4h",
+    signal_proximity_pct=3.0,
+    confluence_tolerance_pct=1.5,
+    expiry_hours=72,
+)
+
+TIER_SCALP = TierConfig(
+    tier_name="1h",
+    swing_timeframes=["1h", "4h"],
+    trend_timeframe="4h",
+    bounce_timeframe="1h",
+    signal_proximity_pct=2.0,
+    confluence_tolerance_pct=1.0,
+    expiry_hours=48,
+)
 
 
 # ─── Data Structures ─────────────────────────────────────────────────────────
@@ -177,48 +214,67 @@ class AssetResults:
     signals_per_month: float = 0.0
 
 
-# ─── Fetch Historical Data ───────────────────────────────────────────────────
+# ─── Fetch Historical Data (Coinbase Advanced Trade API) ─────────────────────
 
-def fetch_candles(symbol: str, interval: str, limit: int) -> list[Candle]:
-    all_candles = []
-    end_time = None
+CB_BASE = "https://api.coinbase.com/api/v3/brokerage/market/products"
+CB_MAX_CANDLES = 350  # Coinbase caps at 350 per request
+
+def fetch_candles(pair: str, granularity: str, candle_seconds: int, limit: int) -> list[Candle]:
+    """Fetch historical candles from Coinbase public API, paginating backwards."""
+    all_candles: list[Candle] = []
+    end_ts = int(datetime.now(timezone.utc).timestamp())
 
     while len(all_candles) < limit:
-        batch = min(1000, limit - len(all_candles))
-        url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={batch}"
-        if end_time:
-            url += f"&endTime={end_time}"
+        batch = min(CB_MAX_CANDLES, limit - len(all_candles))
+        start_ts = end_ts - (batch * candle_seconds)
+
+        url = (f"{CB_BASE}/{pair}/candles"
+               f"?granularity={granularity}&start={start_ts}&end={end_ts}&limit={batch}")
 
         try:
             req = urllib.request.Request(url, headers={"Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read())
         except Exception as e:
-            print(f"  Error fetching {symbol} {interval}: {e}")
+            print(f"    Error fetching {pair} {granularity}: {e}")
             break
 
-        if not data:
+        raw = data.get("candles", [])
+        if not raw:
             break
 
         candles = []
-        for k in data:
+        for k in raw:
             candles.append(Candle(
-                open_time=datetime.fromtimestamp(k[0] / 1000, tz=timezone.utc),
-                open=float(k[1]),
-                high=float(k[2]),
-                low=float(k[3]),
-                close=float(k[4]),
-                volume=float(k[5]),
+                open_time=datetime.fromtimestamp(int(k["start"]), tz=timezone.utc),
+                open=float(k["open"]),
+                high=float(k["high"]),
+                low=float(k["low"]),
+                close=float(k["close"]),
+                volume=float(k["volume"]),
             ))
 
+        # Coinbase returns newest-first, sort oldest-first
+        candles.sort(key=lambda c: c.open_time)
         all_candles = candles + all_candles
-        end_time = int(candles[0].open_time.timestamp() * 1000) - 1
 
-        if len(data) < batch:
+        # Move window back
+        end_ts = start_ts - 1
+
+        if len(raw) < batch:
             break
         time.sleep(0.3)
 
-    return all_candles
+    # Deduplicate by timestamp (overlapping pages) and sort
+    seen = set()
+    unique = []
+    for c in all_candles:
+        ts = c.open_time.timestamp()
+        if ts not in seen:
+            seen.add(ts)
+            unique.append(c)
+    unique.sort(key=lambda c: c.open_time)
+    return unique
 
 
 # ─── Swing Detection ─────────────────────────────────────────────────────────
@@ -276,7 +332,7 @@ def compute_fibs(swings: list[SwingPoint], tf: str) -> list[FibLevel]:
 
 # ─── Confluence Clustering ────────────────────────────────────────────────────
 
-def cluster_levels(fibs: list[FibLevel], current_price: float) -> list[ConfluenceZone]:
+def cluster_levels(fibs: list[FibLevel], current_price: float, tolerance_pct: float = 1.5) -> list[ConfluenceZone]:
     if not fibs:
         return []
 
@@ -296,7 +352,7 @@ def cluster_levels(fibs: list[FibLevel], current_price: float) -> list[Confluenc
         cl_mid = (cl_low + cl_high) / 2
         dist_pct = abs((level.price - cl_mid) / cl_mid) * 100
 
-        if dist_pct <= CONFLUENCE_TOLERANCE_PCT:
+        if dist_pct <= tolerance_pct:
             current_cluster.append(level)
             cl_high = max(cl_high, level.price)
             cl_low = min(cl_low, level.price)
@@ -574,58 +630,65 @@ def compute_results(ticker: str, signals: list[Signal], is_candidate: bool) -> A
 
 # ─── Main Backtest ────────────────────────────────────────────────────────────
 
-def run_asset_backtest(asset_symbol: str, asset_ticker: str) -> list[Signal]:
-    print(f"\n  Fetching {asset_ticker} data...")
+def run_tier(tier: TierConfig, candles: dict, all_candles_4h: list[Candle]) -> list[Signal]:
+    """Run a single tier (swing or scalp) over historical data."""
+    # Determine the primary iteration timeframe (4h for swing, 1h for scalp)
+    if tier.tier_name == "4h":
+        iter_candles = candles["4h"]
+        warmup = WARMUP_CANDLES_4H
+        eval_interval = 3  # evaluate every 3rd candle
+    else:
+        iter_candles = candles.get("1h", [])
+        warmup = 60
+        eval_interval = 3
 
-    candles = {}
-    for config in TIMEFRAME_CONFIGS:
-        tf = config["tf"]
-        candles[tf] = fetch_candles(asset_symbol, config["interval"], config["limit"])
-        print(f"    {tf}: {len(candles[tf])} candles")
-        time.sleep(0.3)
-
-    candles_4h = candles["4h"]
-    candles_1d = candles["1d"]
-
-    if len(candles_4h) < WARMUP_CANDLES_4H:
-        print(f"    Not enough 4H data for {asset_ticker}")
+    if len(iter_candles) < warmup:
         return []
 
     signals: list[Signal] = []
 
-    for i in range(WARMUP_CANDLES_4H, len(candles_4h)):
-        candle = candles_4h[i]
+    for i in range(warmup, len(iter_candles)):
+        candle = iter_candles[i]
         eval_time = candle.open_time
         current_price = candle.close
 
+        # Resolve open signals on every candle
         for sig in signals:
             if sig.status == "triggered":
                 resolve_signal(sig, candle, eval_time)
 
-        if i % 3 != 0:
+        if i % eval_interval != 0:
             continue
 
-        history_4h = candles_4h[:i + 1]
-        history_1d = [c for c in candles_1d if c.open_time <= eval_time]
-
-        swings_4h = detect_swings(history_4h[-250:], "4h")
-        swings_1d = detect_swings(history_1d[-120:], "1d")
-
-        fibs_4h = compute_fibs(swings_4h, "4h")
-        fibs_1d = compute_fibs(swings_1d, "1d")
-        all_fibs = fibs_4h + fibs_1d
+        # Build swing histories for this tier's timeframes
+        all_fibs = []
+        for tf in tier.swing_timeframes:
+            tf_candles = candles.get(tf, [])
+            history = [c for c in tf_candles if c.open_time <= eval_time]
+            limit = 250 if tf in ("4h", "1h") else 120
+            swings = detect_swings(history[-limit:], tf)
+            fibs = compute_fibs(swings, tf)
+            all_fibs.extend(fibs)
 
         if not all_fibs:
             continue
 
-        zones = cluster_levels(all_fibs, current_price)
+        zones = cluster_levels(all_fibs, current_price, tier.confluence_tolerance_pct)
         all_fib_prices = [f.price for f in all_fibs]
+
+        # Get trend candles (always 4h for both tiers)
+        trend_candles = [c for c in all_candles_4h if c.open_time <= eval_time]
+
+        # Get bounce candles
+        bounce_tf_candles = candles.get(tier.bounce_timeframe, [])
+        bounce_history = [c for c in bounce_tf_candles if c.open_time <= eval_time]
 
         for zone in zones:
             dist_pct = abs((current_price - zone.mid) / current_price) * 100
-            if dist_pct > SIGNAL_PROXIMITY_PCT:
+            if dist_pct > tier.signal_proximity_pct:
                 continue
 
+            # Dedup against open signals
             duplicate = False
             for s in signals:
                 if s.status == "triggered" and abs(s.entry_mid - zone.mid) / zone.mid < 0.005:
@@ -636,10 +699,10 @@ def run_asset_backtest(asset_symbol: str, asset_ticker: str) -> list[Signal]:
 
             is_buy = zone.zone_type == "support"
 
-            if not check_trend_alignment(history_4h, is_buy):
+            if not check_trend_alignment(trend_candles, is_buy):
                 continue
 
-            if not check_bounce(history_4h[-25:], zone.low, zone.high, is_buy):
+            if not check_bounce(bounce_history[-25:], zone.low, zone.high, is_buy):
                 continue
 
             result = compute_targets_and_stop(zone, all_fib_prices, is_buy)
@@ -673,13 +736,36 @@ def run_asset_backtest(asset_symbol: str, asset_ticker: str) -> list[Signal]:
                 risk_1r=risk_dist,
                 rr_ratio=round(rr, 2),
                 confluence_strength=zone.strength,
-                expires_at=eval_time + timedelta(hours=SIGNAL_EXPIRY_HOURS),
+                expires_at=eval_time + timedelta(hours=tier.expiry_hours),
                 best_price=entry_mid,
                 runner_stop=sl,
             )
             signals.append(signal)
 
     return signals
+
+
+def run_asset_backtest(asset_pair: str, asset_ticker: str) -> list[Signal]:
+    print(f"\n  Fetching {asset_ticker} data...")
+
+    candles = {}
+    for config in TIMEFRAME_CONFIGS:
+        tf = config["tf"]
+        candles[tf] = fetch_candles(asset_pair, config["granularity"], config["seconds"], config["limit"])
+        print(f"    {tf}: {len(candles[tf])} candles")
+        time.sleep(0.3)
+
+    if len(candles.get("4h", [])) < WARMUP_CANDLES_4H:
+        print(f"    Not enough 4H data for {asset_ticker}")
+        return []
+
+    # Run both tiers
+    swing_signals = run_tier(TIER_SWING, candles, candles["4h"])
+    scalp_signals = run_tier(TIER_SCALP, candles, candles["4h"])
+
+    all_signals = swing_signals + scalp_signals
+    print(f"    Swing: {len(swing_signals)} signals, Scalp: {len(scalp_signals)} signals")
+    return all_signals
 
 
 def classify_confidence(win_rate: float, profit_factor: float) -> str:
@@ -718,7 +804,7 @@ def main():
         ticker = asset["ticker"]
         is_candidate = ticker not in current_tickers
 
-        signals = run_asset_backtest(asset["symbol"], ticker)
+        signals = run_asset_backtest(asset["pair"], ticker)
         results = compute_results(ticker, signals, is_candidate)
         all_results[ticker] = results
 
@@ -813,7 +899,7 @@ def main():
         print(f"{'=' * 110}\n")
 
         for r in recommended:
-            print(f'  {{ symbol: "{r.ticker}USDT", ticker: "{r.ticker}" }},')
+            print(f'  {{ cbPair: "{r.ticker}-USD", ticker: "{r.ticker}" }},')
 
     print()
 

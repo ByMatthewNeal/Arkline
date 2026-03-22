@@ -26,6 +26,7 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
+  // Original assets
   { cbPair: "BTC-USD",    ticker: "BTC" },
   { cbPair: "ETH-USD",    ticker: "ETH" },
   { cbPair: "SOL-USD",    ticker: "SOL" },
@@ -36,6 +37,23 @@ const ASSETS: AssetConfig[] = [
   { cbPair: "RENDER-USD", ticker: "RENDER" },
   { cbPair: "APT-USD",    ticker: "APT" },
   { cbPair: "HYPE-USD",   ticker: "HYPE", tiers: ["1h"] },  // Scalp only — limited 1D history on Coinbase
+  // Added 2026-03-22 (backtest-qualified)
+  { cbPair: "ONDO-USD",   ticker: "ONDO" },
+  { cbPair: "POL-USD",    ticker: "POL" },
+  { cbPair: "BNB-USD",    ticker: "BNB" },
+  { cbPair: "ATOM-USD",   ticker: "ATOM" },
+  { cbPair: "TIA-USD",    ticker: "TIA" },
+  { cbPair: "XRP-USD",    ticker: "XRP" },
+  { cbPair: "INJ-USD",    ticker: "INJ" },
+  { cbPair: "DOGE-USD",   ticker: "DOGE" },
+  { cbPair: "AAVE-USD",   ticker: "AAVE" },
+  { cbPair: "PEPE-USD",   ticker: "PEPE" },
+  { cbPair: "ENA-USD",    ticker: "ENA" },
+  { cbPair: "FET-USD",    ticker: "FET" },
+  { cbPair: "ARB-USD",    ticker: "ARB" },
+  { cbPair: "DOT-USD",    ticker: "DOT" },
+  { cbPair: "UNI-USD",    ticker: "UNI" },
+  { cbPair: "NEAR-USD",   ticker: "NEAR" },
 ]
 
 // Coinbase granularities: ONE_HOUR, TWO_HOUR, FOUR_HOUR, SIX_HOUR, ONE_DAY

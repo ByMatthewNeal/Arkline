@@ -332,17 +332,36 @@ struct AssetProfile {
 
 extension TradeSignal {
     /// Backtest-derived profiles. Update these when backtests are re-run.
+    /// Backtest: 2026-03-22, 365 days, Coinbase data, swing+scalp tiers, live pipeline params
     static let assetProfiles: [String: AssetProfile] = [
-        "LINK": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 68.9, shortWinRate: 70.4, profitFactor: 3.25),
-        "SUI":  AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 67.5, shortWinRate: 68.1, profitFactor: 3.85),
-        "AVAX": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 64.9, shortWinRate: 66.0, profitFactor: 3.08),
-        "RENDER": AssetProfile(confidence: .high, directionBias: .longPreferred, longWinRate: 78.8, shortWinRate: 60.8, profitFactor: 3.07),
-        "APT":  AssetProfile(confidence: .medium, directionBias: .balanced, longWinRate: 67.6, shortWinRate: 65.5, profitFactor: 2.85),
-        "ETH":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 60.0, profitFactor: 2.59),
-        "ADA":  AssetProfile(confidence: .medium, directionBias: .shortPreferred, longWinRate: 55.2, shortWinRate: 69.0, profitFactor: 2.68),
-        "SOL":  AssetProfile(confidence: .medium, directionBias: .longPreferred, longWinRate: 71.1, shortWinRate: 52.9, profitFactor: 2.34),
-        "BTC":  AssetProfile(confidence: .low, directionBias: .shortPreferred, longWinRate: 48.5, shortWinRate: 63.0, profitFactor: 1.95),
-        "HYPE": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 66.7, shortWinRate: 68.8, profitFactor: 2.88),
+        // Current assets
+        "BTC":    AssetProfile(confidence: .high, directionBias: .shortPreferred, longWinRate: 70.1, shortWinRate: 78.7, profitFactor: 3.48),
+        "ETH":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 78.8, shortWinRate: 80.7, profitFactor: 4.52),
+        "SOL":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 76.3, shortWinRate: 76.2, profitFactor: 3.56),
+        "SUI":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 82.9, shortWinRate: 75.3, profitFactor: 4.51),
+        "LINK":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 82.6, shortWinRate: 77.1, profitFactor: 4.31),
+        "ADA":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 77.4, shortWinRate: 81.3, profitFactor: 4.75),
+        "AVAX":   AssetProfile(confidence: .high, directionBias: .longPreferred, longWinRate: 79.0, shortWinRate: 70.7, profitFactor: 3.62),
+        "RENDER": AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 74.7, shortWinRate: 74.5, profitFactor: 3.55),
+        "APT":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 73.8, shortWinRate: 72.8, profitFactor: 3.53),
+        "HYPE":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 81.6, shortWinRate: 78.0, profitFactor: 4.43),
+        // New assets (2026-03-22)
+        "ONDO":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 84.4, shortWinRate: 80.9, profitFactor: 5.31),
+        "POL":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 80.3, shortWinRate: 76.1, profitFactor: 4.62),
+        "BNB":    AssetProfile(confidence: .high, directionBias: .shortPreferred, longWinRate: 71.7, shortWinRate: 80.8, profitFactor: 4.51),
+        "ATOM":   AssetProfile(confidence: .high, directionBias: .longPreferred, longWinRate: 84.6, shortWinRate: 75.3, profitFactor: 4.50),
+        "TIA":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 80.7, shortWinRate: 78.1, profitFactor: 4.40),
+        "XRP":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 79.6, shortWinRate: 77.1, profitFactor: 4.29),
+        "INJ":    AssetProfile(confidence: .high, directionBias: .shortPreferred, longWinRate: 68.6, shortWinRate: 79.5, profitFactor: 3.99),
+        "DOGE":   AssetProfile(confidence: .high, directionBias: .longPreferred, longWinRate: 87.2, shortWinRate: 73.0, profitFactor: 3.98),
+        "AAVE":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 80.3, shortWinRate: 76.9, profitFactor: 3.52),
+        "PEPE":   AssetProfile(confidence: .high, directionBias: .shortPreferred, longWinRate: 64.7, shortWinRate: 78.2, profitFactor: 3.51),
+        "ENA":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 71.4, shortWinRate: 74.1, profitFactor: 3.48),
+        "FET":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 71.2, shortWinRate: 75.0, profitFactor: 3.43),
+        "ARB":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 74.7, shortWinRate: 75.5, profitFactor: 3.25),
+        "DOT":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 75.2, shortWinRate: 70.7, profitFactor: 3.23),
+        "UNI":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 72.2, shortWinRate: 76.4, profitFactor: 3.13),
+        "NEAR":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 75.6, shortWinRate: 70.6, profitFactor: 3.04),
     ]
 
     var assetProfile: AssetProfile {

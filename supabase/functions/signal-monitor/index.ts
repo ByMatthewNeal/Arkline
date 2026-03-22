@@ -17,13 +17,17 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  *   - Sends push notifications on resolution events
  */
 
-const ASSETS = ["BTC-USD", "ETH-USD", "SOL-USD", "SUI-USD", "LINK-USD", "ADA-USD", "AVAX-USD", "RENDER-USD", "APT-USD"]
+const ASSETS = [
+  "BTC-USD", "ETH-USD", "SOL-USD", "SUI-USD", "LINK-USD", "ADA-USD",
+  "AVAX-USD", "RENDER-USD", "APT-USD", "HYPE-USD",
+  "ONDO-USD", "POL-USD", "BNB-USD", "ATOM-USD", "TIA-USD", "XRP-USD",
+  "INJ-USD", "DOGE-USD", "AAVE-USD", "PEPE-USD", "ENA-USD",
+  "FET-USD", "ARB-USD", "DOT-USD", "UNI-USD", "NEAR-USD",
+]
 
-const TICKER_MAP: Record<string, string> = {
-  "BTC-USD": "BTC", "ETH-USD": "ETH", "SOL-USD": "SOL",
-  "SUI-USD": "SUI", "LINK-USD": "LINK", "ADA-USD": "ADA",
-  "AVAX-USD": "AVAX", "RENDER-USD": "RENDER", "APT-USD": "APT",
-}
+const TICKER_MAP: Record<string, string> = Object.fromEntries(
+  ASSETS.map(a => [a, a.replace("-USD", "")])
+)
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
