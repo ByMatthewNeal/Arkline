@@ -30,6 +30,9 @@ class HomeViewModel {
     /// Whether a refresh is currently in flight (prevents stacking)
     private var isRefreshing = false
 
+    /// Tracks QPS signal IDs already notified this session to prevent repeated push notifications
+    private var notifiedQPSIds: Set<String> = []
+
     // MARK: - Properties
     var isLoading = false
     var errorMessage: String?
@@ -860,10 +863,14 @@ class HomeViewModel {
             do {
                 let signals = try await self.qpsService.fetchLatestSignals(forceRefresh: forceRefresh)
                 await MainActor.run {
-                    // Notify for signal changes
-                    let changed = signals.filter { $0.hasChanged }
+                    // Notify for signal changes (only today's, only once per signal)
+                    let today = Calendar.current.startOfDay(for: Date())
+                    let changed = signals.filter { $0.hasChanged && $0.signalDate >= today }
                     if !changed.isEmpty && !self.qpsSignals.isEmpty {
                         for signal in changed {
+                            let notifId = "qps_\(signal.asset)_\(signal.signal)"
+                            guard !self.notifiedQPSIds.contains(notifId) else { continue }
+                            self.notifiedQPSIds.insert(notifId)
                             Task { await BroadcastNotificationService.shared.sendQPSChangeNotification(for: signal) }
                         }
                     }
