@@ -186,8 +186,19 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   )
 
-  // Consume request body (ignored — all runs are full pipeline)
-  try { await req.json() } catch {}
+  // Parse request body for batch parameter
+  let requestBody: Record<string, unknown> = {}
+  try { requestBody = await req.json() } catch {}
+
+  // Split assets into batches: batch=0 (first half), batch=1 (second half), undefined = all
+  const batchIndex = typeof requestBody.batch === "number" ? requestBody.batch : undefined
+  const midpoint = Math.ceil(ASSETS.length / 2)
+  const assetsToProcess = batchIndex === 0
+    ? ASSETS.slice(0, midpoint)
+    : batchIndex === 1
+      ? ASSETS.slice(midpoint)
+      : ASSETS
+  console.log(`Processing batch=${batchIndex ?? "all"}: ${assetsToProcess.map(a => a.ticker).join(", ")}`)
 
   const allResults: Record<string, unknown> = {}
 
@@ -218,8 +229,8 @@ Deno.serve(async (req) => {
 
   try {
     // Process assets in parallel batches of 3 to stay within compute limits
-    for (let batchStart = 0; batchStart < ASSETS.length; batchStart += 3) {
-      const batch = ASSETS.slice(batchStart, batchStart + 3)
+    for (let batchStart = 0; batchStart < assetsToProcess.length; batchStart += 3) {
+      const batch = assetsToProcess.slice(batchStart, batchStart + 3)
       const batchResults = await Promise.all(batch.map(async (asset) => {
         const assetResults: Record<string, unknown> = {}
 
