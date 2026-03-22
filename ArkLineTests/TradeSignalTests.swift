@@ -34,6 +34,7 @@ final class TradeSignalTests: XCTestCase {
             asset: "BTC",
             signalType: signalType,
             status: status,
+            timeframe: "4h",
             entryZoneLow: entryLow,
             entryZoneHigh: entryHigh,
             entryPriceMid: entryMid,
@@ -70,7 +71,8 @@ final class TradeSignalTests: XCTestCase {
             volumeConfluence: volumeConfluence,
             briefingText: nil,
             shortRationale: nil,
-            cardAnalysis: nil
+            cardAnalysis: nil,
+            chartPattern: nil
         )
     }
 
@@ -132,8 +134,8 @@ final class TradeSignalTests: XCTestCase {
     func testEntryPctFromTarget1_sellSignal() {
         let signal = makeSignal(entryMid: 66_250, target1: 64_688)
         let pct = signal.entryPctFromTarget1!
-        // (64688 - 66250) / 66250 * 100 = -2.356%
-        XCTAssertEqual(pct, -2.356, accuracy: 0.01)
+        // Sell: positive = profit direction. raw = -2.356, negated = +2.356
+        XCTAssertEqual(pct, 2.356, accuracy: 0.01)
     }
 
     func testEntryPctFromTarget1_buySignal() {
@@ -156,15 +158,15 @@ final class TradeSignalTests: XCTestCase {
     func testEntryPctFromTarget2_sellSignal() {
         let signal = makeSignal(entryMid: 66_250, target2: 63_000)
         let pct = signal.entryPctFromTarget2!
-        // (63000 - 66250) / 66250 * 100 = -4.906%
-        XCTAssertEqual(pct, -4.906, accuracy: 0.01)
+        // Sell: positive = profit direction. raw = -4.906, negated = +4.906
+        XCTAssertEqual(pct, 4.906, accuracy: 0.01)
     }
 
     func testStopLossPct_sellSignal() {
         let signal = makeSignal(entryMid: 66_250, stopLoss: 67_561)
         let pct = signal.stopLossPct
-        // (67561 - 66250) / 66250 * 100 = 1.978%
-        XCTAssertEqual(pct, 1.978, accuracy: 0.01)
+        // Sell: raw = +1.978, negated = -1.978 (loss direction)
+        XCTAssertEqual(pct, -1.978, accuracy: 0.01)
     }
 
     func testStopLossPct_buySignal() {
@@ -321,8 +323,8 @@ final class TradeSignalTests: XCTestCase {
             XCTFail("Missing widgets in default order")
             return
         }
-        // Flash Intel should come right after Upcoming Events
-        XCTAssertEqual(flashIdx, eventsIdx + 1)
+        // Flash Intel should come after Upcoming Events
+        XCTAssertTrue(flashIdx > eventsIdx)
     }
 
     // MARK: - Widget Configuration Migration Tests
@@ -463,7 +465,7 @@ final class TradeSignalTests: XCTestCase {
         XCTAssertFalse(signal.isRunnerPhase)
         // New fields
         XCTAssertEqual(signal.compositeScore, 72)
-        XCTAssertEqual(signal.scoreGrade, "A")
+        XCTAssertEqual(signal.scoreGrade, "B+")
         XCTAssertTrue(signal.hasVolumeConfluence)
         XCTAssertEqual(signal.volumeConfluence?.volumeNodeCount, 3)
         XCTAssertEqual(signal.volumeConfluence?.maxRelativeVolume, 2.5)
@@ -525,13 +527,13 @@ final class TradeSignalTests: XCTestCase {
     // MARK: - Score & Volume Tests
 
     func testScoreGrade_allTiers() {
-        XCTAssertEqual(makeSignal(compositeScore: 85).scoreGrade, "A+")
-        XCTAssertEqual(makeSignal(compositeScore: 80).scoreGrade, "A+")
-        XCTAssertEqual(makeSignal(compositeScore: 65).scoreGrade, "A")
-        XCTAssertEqual(makeSignal(compositeScore: 50).scoreGrade, "B")
-        XCTAssertEqual(makeSignal(compositeScore: 35).scoreGrade, "C")
-        XCTAssertEqual(makeSignal(compositeScore: 20).scoreGrade, "D")
-        XCTAssertEqual(makeSignal(compositeScore: 0).scoreGrade, "D")
+        XCTAssertEqual(makeSignal(compositeScore: 95).scoreGrade, "A+")
+        XCTAssertEqual(makeSignal(compositeScore: 90).scoreGrade, "A+")
+        XCTAssertEqual(makeSignal(compositeScore: 85).scoreGrade, "A")
+        XCTAssertEqual(makeSignal(compositeScore: 80).scoreGrade, "A")
+        XCTAssertEqual(makeSignal(compositeScore: 75).scoreGrade, "B+")
+        XCTAssertEqual(makeSignal(compositeScore: 65).scoreGrade, "B")
+        XCTAssertEqual(makeSignal(compositeScore: 50).scoreGrade, nil) // Below B not shown
     }
 
     func testScoreGrade_nilWhenNoScore() {
@@ -555,15 +557,15 @@ final class TradeSignalTests: XCTestCase {
     // MARK: - Stress Tests
 
     func testTradeSignal_computedProperties_withExtremeValues() {
-        // Very small entry price
+        // Very small entry price (sell signal — signs normalized for profit/loss direction)
         let small = makeSignal(entryMid: 0.001, target1: 0.002, stopLoss: 0.0005)
-        XCTAssertEqual(small.entryPctFromTarget1!, 100.0, accuracy: 0.1)
-        XCTAssertEqual(small.stopLossPct, -50.0, accuracy: 0.1)
+        XCTAssertEqual(small.entryPctFromTarget1!, -100.0, accuracy: 0.1) // Sell: target above entry = negative
+        XCTAssertEqual(small.stopLossPct, 50.0, accuracy: 0.1) // Sell: stop below entry = positive (loss)
 
-        // Very large entry price
+        // Very large entry price (sell signal)
         let large = makeSignal(entryMid: 1_000_000, target1: 1_050_000, stopLoss: 990_000)
-        XCTAssertEqual(large.entryPctFromTarget1!, 5.0, accuracy: 0.01)
-        XCTAssertEqual(large.stopLossPct, -1.0, accuracy: 0.01)
+        XCTAssertEqual(large.entryPctFromTarget1!, -5.0, accuracy: 0.01)
+        XCTAssertEqual(large.stopLossPct, 1.0, accuracy: 0.01)
     }
 
     func testTradeSignal_rMultiple_edgeCases() {

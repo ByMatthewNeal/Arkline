@@ -8,8 +8,10 @@ struct RiskScoreCard: View {
     var size: WidgetSize = .standard
     var selectedCoin: String = "BTC"
     var onCoinChanged: ((String) -> Void)? = nil
+    var fearGreedIndex: FearGreedIndex? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
+    @State private var showShareSheet = false
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -212,12 +214,16 @@ struct RiskScoreCard: View {
                 ITCRiskDetailView(riskLevel: itc)
             } else if let riskScore = riskScore {
                 NavigationStack {
-                    ArkLineScoreDetailView(riskScore: riskScore)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") { showingDetail = false }
-                            }
+                    ArkLineScoreDetailView(
+                        riskScore: riskScore,
+                        fearGreedValue: fearGreedIndex?.value,
+                        fearGreedClassification: fearGreedIndex?.classification
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { showingDetail = false }
                         }
+                    }
                 }
             }
         }
@@ -488,6 +494,7 @@ struct RiskIndicatorPlaceholderRow: View {
 struct HomeArkLineScoreWidget: View {
     let score: ArkLineRiskScore
     var size: WidgetSize = .standard
+    var fearGreedIndex: FearGreedIndex? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
 
@@ -578,12 +585,16 @@ struct HomeArkLineScoreWidget: View {
         .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
             NavigationStack {
-                ArkLineScoreDetailView(riskScore: score)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") { showingDetail = false }
-                        }
+                ArkLineScoreDetailView(
+                    riskScore: score,
+                    fearGreedValue: fearGreedIndex?.value,
+                    fearGreedClassification: fearGreedIndex?.classification
+                )
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") { showingDetail = false }
                     }
+                }
             }
         }
     }

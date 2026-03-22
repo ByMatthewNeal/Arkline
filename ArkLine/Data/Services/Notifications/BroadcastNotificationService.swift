@@ -402,6 +402,12 @@ extension BroadcastNotificationService {
             if let signalId = userInfo["signal_id"] as? String {
                 return (type: "swing_signal", id: signalId)
             }
+        case "qps_change":
+            let asset = userInfo["asset"] as? String ?? ""
+            return (type: "qps_change", id: asset)
+        case "dca_reminder":
+            let reminderId = userInfo["reminder_id"] as? String ?? ""
+            return (type: "dca_reminder", id: reminderId)
         default:
             break
         }

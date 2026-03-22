@@ -10,6 +10,7 @@ struct HomeAISummaryWidget: View {
     var liveRegime: MacroRegimeResult? = nil
     var onFeedback: ((Bool, String?) -> Void)? = nil
     var audioService: BriefingAudioService = .shared
+    var forceExpand: Binding<Bool>? = nil
     @State private var showNoteField = false
     @State private var selectedRating: Bool?
     @State private var feedbackNote = ""
@@ -118,6 +119,11 @@ struct HomeAISummaryWidget: View {
                     }
             }
 
+            // Next update indicator
+            if let summary, !isLoading {
+                nextUpdateLabel(for: summary)
+            }
+
             // Admin feedback row — only when expanded
             if isAdmin, summary != nil, isExpanded {
                 feedbackRow
@@ -149,6 +155,12 @@ struct HomeAISummaryWidget: View {
                 if !currentBriefingKey.isEmpty {
                     lastReadBriefingKey = currentBriefingKey
                 }
+            }
+        }
+        .onChange(of: forceExpand?.wrappedValue) { _, shouldExpand in
+            if shouldExpand == true {
+                withAnimation(.arkSpring) { isExpanded = true }
+                forceExpand?.wrappedValue = false
             }
         }
     }
@@ -617,6 +629,69 @@ struct HomeAISummaryWidget: View {
                     : Color.black.opacity(0.06)
             )
             .frame(maxWidth: maxWidth, minHeight: 14, maxHeight: 14)
+    }
+
+    // MARK: - Next Update Label
+
+    private func nextUpdateLabel(for summary: MarketSummary) -> some View {
+        let text = nextUpdateText(slot: summary.slot)
+        return HStack(spacing: 4) {
+            Circle()
+                .fill(AppColors.accent.opacity(0.5))
+                .frame(width: 4, height: 4)
+            Text(text)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(textPrimary.opacity(0.3))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 4)
+    }
+
+    private func nextUpdateText(slot: String) -> String {
+        let now = Date()
+        var estCal = Calendar(identifier: .gregorian)
+        estCal.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
+        let weekday = estCal.component(.weekday, from: now) // 1=Sun, 7=Sat
+
+        // Use current day to determine the next update, not just the slot
+        // (the slot may be stale from a previous day's briefing)
+        let isWeekend = weekday == 1 || weekday == 7 // Sun or Sat
+        let estHour = estCal.component(.hour, from: now)
+
+        if isWeekend {
+            if weekday == 7 { // Saturday
+                if estHour < 12 {
+                    return "Next update at 12:00 PM ET"
+                } else {
+                    return "Next update Sunday 12:00 PM ET"
+                }
+            } else { // Sunday
+                if estHour < 12 {
+                    return "Next update at 12:00 PM ET"
+                } else {
+                    return "Next update Monday 10:00 AM ET"
+                }
+            }
+        } else { // Weekday
+            switch slot {
+            case "morning":
+                return "Next update at 5:00 PM ET"
+            case "evening":
+                if weekday == 6 { // Friday evening
+                    return "Next update Saturday 12:00 PM ET"
+                } else {
+                    return "Next update at 10:00 AM ET"
+                }
+            default:
+                if estHour < 10 {
+                    return "Next update at 10:00 AM ET"
+                } else if estHour < 17 {
+                    return "Next update at 5:00 PM ET"
+                } else {
+                    return "Next update at 10:00 AM ET"
+                }
+            }
+        }
     }
 
     // MARK: - Relative Time

@@ -49,18 +49,38 @@ struct BrandedShareCard<Content: View>: View {
             content
                 .padding(.horizontal, 16)
 
-            // Footer
-            if showBranding {
-                Text("Created with ArkLine")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color.white.opacity(0.3))
-                    .padding(.top, 12)
-                    .padding(.bottom, 14)
-            } else {
-                Spacer().frame(height: 12)
-            }
+            Spacer().frame(height: 12)
         }
         .background(Color(hex: "121212"))
+    }
+}
+
+/// Reusable QR code footer with QR code and arkline.io label
+struct ShareCardQRFooter: View {
+    var isLight: Bool = false
+    var qrImage: UIImage?
+
+    private var textColor: Color { isLight ? Color(hex: "94A3B8") : Color.white.opacity(0.4) }
+
+    var body: some View {
+        HStack {
+            Spacer()
+
+            if let qr = qrImage {
+                VStack(spacing: 2) {
+                    Image(uiImage: qr)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 48, height: 48)
+                        .background(Color.white)
+                        .cornerRadius(4)
+
+                    Text("arkline.io")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundColor(textColor)
+                }
+            }
+        }
     }
 }
 

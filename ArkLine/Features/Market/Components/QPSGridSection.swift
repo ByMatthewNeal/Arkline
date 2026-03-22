@@ -16,7 +16,7 @@ struct QPSGridSection: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Image(systemName: "arrow.triangle.swap")
+                Image(systemName: "waveform.path.ecg")
                     .foregroundColor(AppColors.accent)
                 Text("Daily Positioning")
                     .font(.headline)
@@ -67,7 +67,7 @@ struct QPSGridSection: View {
                 // Changes today
                 if changedCount > 0 {
                     HStack(spacing: 4) {
-                        Image(systemName: "arrow.triangle.swap")
+                        Image(systemName: "waveform.path.ecg")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundColor(AppColors.warning)
                         Text("\(changedCount) signal \(changedCount == 1 ? "change" : "changes") today")
@@ -129,7 +129,7 @@ struct QPSGridSection: View {
 
     private var lockedCard: some View {
         VStack(spacing: 8) {
-            Image(systemName: "arrow.triangle.swap")
+            Image(systemName: "waveform.path.ecg")
                 .font(.title2)
                 .foregroundColor(AppColors.accent.opacity(0.5))
             Text("Unlock daily positioning signals across 54 assets with Arkline Premium.")

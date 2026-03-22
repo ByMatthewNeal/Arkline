@@ -23,7 +23,7 @@ struct MarketSentimentSection: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     // ArkLine Risk Score (Proprietary)
                     if let arkLineScore = viewModel.arkLineRiskScore {
-                        NavigationLink(destination: ArkLineScoreDetailView(riskScore: arkLineScore).zoomDestination(id: "arkline-score", in: zoomNamespace)) {
+                        NavigationLink(destination: ArkLineScoreDetailView(riskScore: arkLineScore, fearGreedValue: viewModel.fearGreedIndex?.value, fearGreedClassification: viewModel.fearGreedIndex?.classification).zoomDestination(id: "arkline-score", in: zoomNamespace)) {
                             ArkLineScoreCard(score: arkLineScore)
                                 .cardAppearance(delay: 0)
                         }

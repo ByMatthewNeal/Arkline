@@ -201,6 +201,32 @@ final class FMPService {
         }
     }
 
+    // MARK: - Federal Funds Rate
+
+    /// Fetch the current effective Federal Funds Rate from FMP economic indicators
+    /// Returns the midpoint rate (e.g. 3.625 for a 3.50-3.75% target range)
+    func fetchFederalFundsRate() async throws -> Double {
+        let data = try await invokeProxy(
+            path: "/economic-indicators",
+            queryItems: [
+                URLQueryItem(name: "name", value: "federalFunds")
+            ]
+        )
+
+        struct EconomicIndicator: Codable {
+            let date: String
+            let value: Double
+        }
+
+        let indicators = try JSONDecoder().decode([EconomicIndicator].self, from: data)
+        guard let latest = indicators.first else {
+            throw FMPError.noDataAvailable
+        }
+
+        logDebug("FMP: Federal Funds Rate = \(latest.value)% as of \(latest.date)", category: .network)
+        return latest.value
+    }
+
     // MARK: - Economic Calendar
 
     /// Fetch economic calendar events from FMP
@@ -307,6 +333,7 @@ enum FMPError: Error, LocalizedError {
     case rateLimitExceeded
     case symbolNotFound(String)
     case httpError(statusCode: Int)
+    case noDataAvailable
 
     var errorDescription: String? {
         switch self {
@@ -326,6 +353,8 @@ enum FMPError: Error, LocalizedError {
             return "Symbol not found: \(symbol)"
         case .httpError(let code):
             return "HTTP error: \(code)"
+        case .noDataAvailable:
+            return "No data available"
         }
     }
 }

@@ -8,6 +8,7 @@ class SwingSetupsViewModel {
     var activeSignals: [TradeSignal] = []
     var recentSignals: [TradeSignal] = []
     var stats: SignalStats?
+    var marketConditions: SignalMarketConditions?
     var isLoading = false
     var errorMessage: String?
 
@@ -31,6 +32,7 @@ class SwingSetupsViewModel {
         async let active = service.fetchActiveSignals()
         async let recent = service.fetchRecentSignals()
         async let signalStats = service.fetchSignalStats()
+        async let conditions = service.fetchMarketConditions()
 
         do {
             activeSignals = try await active
@@ -48,6 +50,12 @@ class SwingSetupsViewModel {
             stats = try await signalStats
         } catch {
             logWarning("Failed to fetch signal stats: \(error)", category: .network)
+        }
+
+        do {
+            marketConditions = try await conditions
+        } catch {
+            logWarning("Failed to fetch market conditions: \(error)", category: .network)
         }
     }
 

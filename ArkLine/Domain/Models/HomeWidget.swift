@@ -117,7 +117,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .aiMarketSummary: return "sparkles"
         case .flashIntel: return "scope"
         case .usFutures: return "chart.line.uptrend.xyaxis"
-        case .qpsSignals: return "arrow.triangle.swap"
+        case .qpsSignals: return "waveform.path.ecg"
         }
     }
 

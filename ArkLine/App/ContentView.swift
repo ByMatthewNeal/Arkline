@@ -15,28 +15,6 @@ struct ContentView: View {
                     .transition(.opacity)
             }
 
-            #if DEBUG && targetEnvironment(simulator)
-            // Dev button to skip login (simulator only)
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        skipToMainApp()
-                    }) {
-                        Text("DEV")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.red.opacity(0.7))
-                            .cornerRadius(4)
-                    }
-                    .padding(.trailing, 4)
-                    .padding(.top, 60)
-                }
-                Spacer()
-            }
-            #endif
         }
         .toastContainer()
         .animation(.easeInOut(duration: 0.5), value: showSplash)
@@ -52,43 +30,6 @@ struct ContentView: View {
             }
         }
     }
-
-    #if DEBUG && targetEnvironment(simulator)
-    private func skipToMainApp() {
-        Task {
-            // Try anonymous Supabase auth so the api-proxy Edge Function
-            // receives a valid JWT (required for all proxied API calls).
-            if SupabaseManager.shared.isConfigured {
-                do {
-                    _ = try await SupabaseManager.shared.auth.signInAnonymously()
-                    logInfo("DEV: Signed in anonymously to Supabase", category: .auth)
-                } catch {
-                    logWarning("DEV: Anonymous auth failed (\(error.localizedDescription)), data will use direct fallback", category: .auth)
-                }
-            }
-
-            let mockUser = User(
-                id: UUID(),
-                username: "matt",
-                email: "matt@arkline.app",
-                fullName: "Matt",
-                dateOfBirth: nil,
-                careerIndustry: "Technology",
-                experienceLevel: "advanced",
-                socialLinks: nil,
-                passcodeHash: nil,
-                faceIdEnabled: false,
-                role: .admin
-            )
-
-            withAnimation {
-                showSplash = false
-                appState.setOnboarded(true)
-                appState.setAuthenticated(true, user: mockUser)
-            }
-        }
-    }
-    #endif // DEBUG && targetEnvironment(simulator)
 
     @ViewBuilder
     private var mainContent: some View {

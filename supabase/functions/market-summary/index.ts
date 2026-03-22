@@ -13,25 +13,25 @@ Deno.serve(async (req) => {
   try {
     payload = await req.json()
   } catch {
-    return ok({ error: "Invalid request body" })
+    payload = {}
   }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  const supabase = createClient(supabaseUrl, supabaseKey)
 
   // Admin: clear cache for today if requested (requires admin JWT)
   if (payload.clearCache === true) {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    const sb = createClient(supabaseUrl, supabaseKey)
-
     const authHeader = req.headers.get("Authorization")
     if (!authHeader) {
       return ok({ error: "Unauthorized" })
     }
     const token = authHeader.replace("Bearer ", "")
-    const { data: { user }, error: authErr } = await sb.auth.getUser(token)
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
     if (authErr || !user) {
       return ok({ error: "Unauthorized" })
     }
-    const { data: profile } = await sb
+    const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
@@ -41,38 +41,65 @@ Deno.serve(async (req) => {
     }
 
     const today = new Date().toISOString().split("T")[0]
-    await sb.from("market_summaries").delete().eq("summary_date", today)
+    await supabase.from("market_summaries").delete().eq("summary_date", today)
     console.log(`Admin ${user.id} cleared cache for ${today}`)
     return ok({ cleared: true })
   }
 
-  // Determine current slot based on EST time
+  // Detect cron call — force fresh generation
+  const isCron = req.headers.get("x-cron-secret") === (Deno.env.get("CRON_SECRET") ?? "")
+    && req.headers.get("x-cron-secret") !== ""
+
+  // Determine slot. Cron passes explicit slot; otherwise compute from EST time.
   const now = new Date()
   const estHour = getESTHour(now)
-  const slot = estHour >= 16 ? "evening" : "morning"
+  const estOffsetMs = ((now.getUTCHours() - estHour + 24) % 24) * 3600000
+  const estWeekday = new Date(now.getTime() - estOffsetMs).getUTCDay()
+  const isWeekend = estWeekday === 0 || estWeekday === 6
+  const slot = (isCron && typeof payload.slot === "string") ? payload.slot : (isWeekend ? "weekend" : estHour >= 17 ? "evening" : "morning")
   const todayUTC = now.toISOString().split("T")[0]
 
-  console.log(`Slot: ${slot}, EST hour: ${estHour}, date: ${todayUTC}`)
+  console.log(`Slot: ${slot}, EST hour: ${estHour}, date: ${todayUTC}, cron: ${isCron}`)
 
-  // Check cache for current slot
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  const supabase = createClient(supabaseUrl, supabaseKey)
+  // Check cache (skip for cron — always generate fresh)
+  if (!isCron) {
+    // Try exact slot for today
+    const { data: cached, error: cacheError } = await supabase
+      .from("market_summaries")
+      .select("summary, generated_at")
+      .eq("summary_date", todayUTC)
+      .eq("slot", slot)
+      .maybeSingle()
 
-  const { data: cached, error: cacheError } = await supabase
-    .from("market_summaries")
-    .select("summary, generated_at")
-    .eq("summary_date", todayUTC)
-    .eq("slot", slot)
-    .maybeSingle()
+    if (cacheError) {
+      console.error("Cache lookup error:", cacheError.message)
+    }
 
-  if (cacheError) {
-    console.error("Cache lookup error:", cacheError.message)
+    if (cached) {
+      console.log(`Returning cached ${slot} summary for ${todayUTC}`)
+      return ok({ summary: cached.summary, generatedAt: cached.generated_at })
+    }
+
+    // No exact match — fall back to most recent briefing (any date/slot)
+    const { data: fallback } = await supabase
+      .from("market_summaries")
+      .select("summary, generated_at")
+      .order("summary_date", { ascending: false })
+      .order("generated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (fallback) {
+      console.log(`No ${slot} for ${todayUTC}, returning most recent briefing`)
+      return ok({ summary: fallback.summary, generatedAt: fallback.generated_at })
+    }
   }
 
-  if (cached) {
-    console.log(`Returning cached ${slot} summary for ${todayUTC}`)
-    return ok({ summary: cached.summary, generatedAt: cached.generated_at })
+  // --- Fetch server-side data if payload is empty (cron or fallback) ---
+  const hasClientData = payload.btcPrice != null || payload.sp500Price != null
+  if (!hasClientData) {
+    console.log("No client payload — fetching server-side market data")
+    await enrichPayloadFromServer(payload, supabase, todayUTC)
   }
 
   // No cache — build prompt and call Claude
@@ -202,7 +229,7 @@ Deno.serve(async (req) => {
   // --- Events ---
   if (Array.isArray(payload.economicEvents) && payload.economicEvents.length > 0) {
     const eventLines = payload.economicEvents.map((e: any) => {
-      let line = e.title
+      let line = e.title ?? e.event
       if (e.time) line += ` (${e.time})`
       // Include actual vs forecast for released data
       const parts: string[] = []
@@ -221,7 +248,7 @@ Deno.serve(async (req) => {
     taLines.push(`Trend: ${payload.btcTrend}`)
   }
   if (payload.btcRsi) {
-    taLines.push(payload.btcRsi)
+    taLines.push(payload.btcRsi as string)
   }
   if (payload.btcSmaPosition) {
     taLines.push(`SMA Position: ${payload.btcSmaPosition}`)
@@ -392,7 +419,7 @@ Deno.serve(async (req) => {
   }
 
   const marketContext = sections.join("\n\n")
-  const timeLabel = slot === "morning" ? "morning" : "evening"
+  const timeLabel = slot === "weekend" ? "weekend" : slot === "morning" ? "morning" : "evening"
   const sessionContext = payload.marketSession ? `Current market session: ${payload.marketSession}.` : ""
   console.log(`Market context for Claude (${timeLabel}):\n${marketContext}`)
 
@@ -402,7 +429,8 @@ Deno.serve(async (req) => {
   try {
     const morningInstructions = `This is the MORNING briefing (around market open). Frame it as a look-ahead: what happened overnight, what futures are signaling for today's open, key events to watch, and how to think about positioning going into the session.`
     const eveningInstructions = `This is the EVENING briefing (after market close). Frame it as a review: how the day played out, what moved and why, what happened with economic data releases (beats/misses), and what to watch heading into tomorrow or the weekend.`
-    const slotInstructions = slot === "morning" ? morningInstructions : eveningInstructions
+    const weekendInstructions = `This is the WEEKEND briefing. Traditional markets are closed — focus entirely on crypto. Cover weekend price action, funding rates, weekend momentum patterns, and any macro news that dropped. Keep it shorter and more casual than weekday briefings. If there are notable moves, highlight them. Frame the end with a brief look ahead to Monday's open.`
+    const slotInstructions = slot === "weekend" ? weekendInstructions : slot === "morning" ? morningInstructions : eveningInstructions
 
     const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -413,8 +441,35 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1500,
-        system: `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual update — clear, conversational, no jargon.
+        max_tokens: slot === "weekend" ? 800 : 1500,
+        system: slot === "weekend"
+          ? `You are writing a short weekend crypto update for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual weekend check-in — clear, conversational, no jargon.
+
+${slotInstructions}
+
+Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
+
+## Posture
+One sentence with the weekend crypto stance. If a "Macro Regime" or "Crypto Positioning" value is present, align with it.
+
+## Weekend Pulse
+3-4 sentences on crypto weekend action. Cover BTC, ETH, SOL price movement and momentum. Note any notable weekend moves, funding rate shifts, or liquidation events. Mention Fear & Greed if available. Traditional markets are closed — don't discuss equities.
+
+## Technical
+2-3 sentences on BTC's technical picture if BTC TECHNICAL ANALYSIS data is available. Focus on key levels, trend, and derivatives. Skip this section entirely if no TA data is present.
+
+## Week Ahead
+1-2 sentences previewing Monday. Mention any known economic events coming up, or note what levels to watch for the Monday open.
+
+Rules:
+- This is a weekend check-in, keep it casual and brief
+- Focus on crypto — traditional markets are closed
+- Never give investment advice or say "buy" / "sell"
+- Keep total length under 200 words
+- Never start any section with "Today" or "The market"
+- If SWING SETUPS data is present, briefly mention active setups. Use "Long Setup" or "Short Setup" — never "buy" or "sell".${feedbackBlock}`
+
+          : `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual update — clear, conversational, no jargon.
 
 ${slotInstructions}
 
@@ -486,14 +541,16 @@ Rules:
       }, { onConflict: "summary_date,slot" })
 
     if (insertError) {
-      console.error("Failed to cache summary:", insertError.message)
+      console.error("Failed to cache summary:", insertError.message, insertError.details, insertError.code)
+    } else {
+      console.log(`Cached ${slot} briefing for ${todayUTC}`)
     }
 
     // --- Push notification + TTS pre-generation (fire-and-forget) ---
     const briefingKey = `${todayUTC}_${slot}`
     const postureMatch = summary.match(/##\s*Posture\s*\n+([^\n#]+)/)
     const posture = (postureMatch?.[1]?.trim() ?? "").replace(/^#+\s*/, "")
-    const slotLabel = slot === "morning" ? "Morning Intel" : "Close & Context"
+    const slotLabel = slot === "weekend" ? "Weekend Pulse" : slot === "morning" ? "Morning Intel" : "Close & Context"
     const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
 
     // Send push notification to all users
@@ -526,6 +583,127 @@ Rules:
     return ok({ error: "Summary generation failed" })
   }
 })
+
+// MARK: - Server-side data fetching for cron/fallback mode
+
+async function enrichPayloadFromServer(
+  payload: Record<string, unknown>,
+  supabase: ReturnType<typeof createClient>,
+  todayUTC: string,
+) {
+  const fmpKey = Deno.env.get("FMP_API_KEY")
+
+  // Fetch all data sources in parallel
+  const [cryptoData, fmpQuotes, fearGreed, events] = await Promise.allSettled([
+    // 1. Crypto prices from server cache (synced every 5 min)
+    supabase
+      .from("market_data_cache")
+      .select("data")
+      .eq("cache_key", "crypto_assets_1_100")
+      .maybeSingle(),
+
+    // 2. Stock indices + VIX + DXY + Gold from FMP
+    fmpKey
+      ? fetch(`https://financialmodelingprep.com/api/v3/quote/%5EGSPC,%5EIXIC,%5EVIX,DX-Y.NYB,GC=F?apikey=${fmpKey}`)
+          .then(r => r.json())
+          .catch(() => [])
+      : Promise.resolve([]),
+
+    // 3. Fear & Greed Index (free API)
+    fetch("https://api.alternative.me/fng/?limit=1")
+      .then(r => r.json())
+      .catch(() => null),
+
+    // 4. Economic events from Supabase
+    supabase
+      .from("economic_events")
+      .select("event, date, time, actual, forecast, previous, impact")
+      .eq("date", todayUTC)
+      .eq("impact", "High")
+      .order("time", { ascending: true })
+      .limit(5),
+  ])
+
+  // --- Parse crypto prices ---
+  if (cryptoData.status === "fulfilled" && cryptoData.value.data?.data) {
+    try {
+      const assets = JSON.parse(cryptoData.value.data.data)
+      if (Array.isArray(assets)) {
+        const btc = assets.find((a: any) => a.id === "bitcoin" || a.symbol === "btc")
+        const eth = assets.find((a: any) => a.id === "ethereum" || a.symbol === "eth")
+        const sol = assets.find((a: any) => a.id === "solana" || a.symbol === "sol")
+
+        if (btc) {
+          payload.btcPrice = btc.current_price
+          payload.btcChange24h = btc.price_change_percentage_24h
+        }
+        if (eth) {
+          payload.ethPrice = eth.current_price
+          payload.ethChange24h = eth.price_change_percentage_24h
+        }
+        if (sol) {
+          payload.solPrice = sol.current_price
+          payload.solChange24h = sol.price_change_percentage_24h
+        }
+
+        // BTC dominance from global market data
+        const topGainer = assets
+          .filter((a: any) => a.price_change_percentage_24h > 0)
+          .sort((a: any, b: any) => b.price_change_percentage_24h - a.price_change_percentage_24h)[0]
+        if (topGainer) {
+          payload.topGainer = `${(topGainer.symbol as string).toUpperCase()} ${topGainer.price_change_percentage_24h > 0 ? "+" : ""}${Number(topGainer.price_change_percentage_24h).toFixed(1)}%`
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse crypto cache:", e)
+    }
+  }
+
+  // --- Parse FMP quotes ---
+  if (fmpQuotes.status === "fulfilled" && Array.isArray(fmpQuotes.value)) {
+    const quotes = fmpQuotes.value as any[]
+    for (const q of quotes) {
+      const symbol = q.symbol
+      if (symbol === "^GSPC") {
+        payload.sp500Price = q.price
+        payload.sp500Change = q.changesPercentage
+      } else if (symbol === "^IXIC") {
+        payload.nasdaqPrice = q.price
+        payload.nasdaqChange = q.changesPercentage
+      } else if (symbol === "^VIX") {
+        payload.vixValue = q.price
+        const vl = q.price
+        payload.vixSignal = vl >= 30 ? "Extreme fear" : vl >= 20 ? "Elevated volatility" : vl >= 15 ? "Normal" : "Low volatility"
+      } else if (symbol === "DX-Y.NYB") {
+        payload.dxyValue = q.price
+        payload.dxySignal = q.changesPercentage > 0 ? "Strengthening" : "Weakening"
+      } else if (symbol === "GC=F") {
+        const changeStr = q.changesPercentage != null ? ` (${q.changesPercentage > 0 ? "+" : ""}${Number(q.changesPercentage).toFixed(1)}%)` : ""
+        payload.goldSignal = `$${Number(q.price).toLocaleString()}${changeStr}`
+      }
+    }
+  }
+
+  // --- Parse Fear & Greed ---
+  if (fearGreed.status === "fulfilled" && fearGreed.value?.data?.[0]) {
+    const fg = fearGreed.value.data[0]
+    payload.fearGreedValue = Number(fg.value)
+    payload.fearGreedClassification = fg.value_classification
+  }
+
+  // --- Parse economic events ---
+  if (events.status === "fulfilled" && events.value.data && events.value.data.length > 0) {
+    payload.economicEvents = events.value.data.map((e: any) => ({
+      title: e.event,
+      time: e.time,
+      actual: e.actual,
+      forecast: e.forecast,
+      previous: e.previous,
+    }))
+  }
+
+  console.log(`Server data enrichment complete: BTC=$${payload.btcPrice}, SP500=$${payload.sp500Price}, FG=${payload.fearGreedValue}, VIX=${payload.vixValue}, events=${(payload.economicEvents as any[])?.length ?? 0}`)
+}
 
 function formatChange(value: unknown): string {
   if (value == null) return "N/A"

@@ -154,7 +154,7 @@ struct NotificationsDetailView: View {
 
                     Toggle(isOn: $qpsChanges) {
                         NotificationRow(
-                            icon: "arrow.triangle.swap",
+                            icon: "waveform.path.ecg",
                             iconColor: AppColors.accent,
                             title: "Positioning Changes",
                             description: "When daily signal changes (e.g. Bearish → Neutral)"

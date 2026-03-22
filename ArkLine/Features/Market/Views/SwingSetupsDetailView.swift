@@ -947,22 +947,49 @@ struct SwingSetupsDetailView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "scope")
+        let conditions = viewModel.marketConditions
+        let isActive = selectedFilter == .active
+
+        return VStack(spacing: 12) {
+            Image(systemName: isActive && conditions?.status == "quiet" ? "waveform.path" : "scope")
                 .font(.system(size: 40))
                 .foregroundColor(AppColors.textSecondary.opacity(0.4))
 
-            Text(selectedFilter == .active ? "No active setups" : "No signal history yet")
+            Text(isActive ? (conditions?.headline ?? "No active setups") : "No signal history yet")
                 .font(AppFonts.body14Medium)
                 .foregroundColor(textPrimary)
+                .multilineTextAlignment(.center)
 
-            Text("Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.")
+            Text(isActive ? (conditions?.detail ?? "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.") : "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            if selectedFilter == .active {
+            // Top skip reasons
+            if isActive, let reasons = conditions?.topReasons, !reasons.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(reasons.prefix(3), id: \.self) { reason in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(AppColors.textSecondary.opacity(0.4))
+                                .frame(width: 4, height: 4)
+                            Text(reason)
+                                .font(.system(size: 11))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                if conditions?.totalSkipped ?? 0 > 0 {
+                    Text("\(conditions!.totalSkipped) setups evaluated and filtered")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
+            }
+
+            if isActive {
                 nextPipelineCheck
             }
         }

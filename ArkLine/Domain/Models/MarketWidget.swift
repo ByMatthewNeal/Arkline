@@ -65,7 +65,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .swingSetups: return "scope"
         case .globalLiquidity: return "banknote"
         case .liquidityCycle: return "clock.arrow.2.circlepath"
-        case .qpsGrid: return "arrow.triangle.swap"
+        case .qpsGrid: return "waveform.path.ecg"
         }
     }
 

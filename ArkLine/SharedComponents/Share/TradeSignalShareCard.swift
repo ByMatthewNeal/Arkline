@@ -11,6 +11,7 @@ struct TradeSignalCardContent: View {
     var leverageInfo: ShareLeverageInfo? = nil
     var includeAnalysis: Bool = true
     var currentPrice: Double? = nil
+    var qrImage: UIImage? = nil
 
     private var textPrimary: Color { isLight ? Color(hex: "1A1A2E") : .white }
     private var textSecondary: Color { isLight ? Color(hex: "64748B") : Color.white.opacity(0.6) }
@@ -228,15 +229,9 @@ struct TradeSignalCardContent: View {
                 .padding(.top, 12)
             }
 
-            // CTA
-            HStack {
-                Spacer()
-                Text("Full analysis at arkline.io")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(AppColors.accent)
-                Spacer()
-            }
-            .padding(.top, 14)
+            // QR footer
+            ShareCardQRFooter(isLight: isLight, qrImage: qrImage)
+                .padding(.top, 14)
         }
     }
 
@@ -348,15 +343,7 @@ private struct SignalBrandedCard<Content: View>: View {
             content
                 .padding(.horizontal, 16)
 
-            if showBranding {
-                Text("Created with ArkLine")
-                    .font(.system(size: 10))
-                    .foregroundColor(mutedColor)
-                    .padding(.top, 12)
-                    .padding(.bottom, 14)
-            } else {
-                Spacer().frame(height: 12)
-            }
+            Spacer().frame(height: 12)
         }
         .background(bgColor)
     }
@@ -380,6 +367,7 @@ struct TradeSignalShareSheet: View {
     @State private var isExporting = false
     @State private var copiedText = false
     @State private var logoImage: UIImage?
+    @State private var qrImage: UIImage?
 
     var body: some View {
         NavigationStack {
@@ -517,6 +505,7 @@ struct TradeSignalShareSheet: View {
             }
             .task {
                 logoImage = UIImage(named: "ArkLineAppIcon")
+                qrImage = QRCodeGenerator.generate(forURL: "https://arkline.io")
             }
         }
     }
@@ -534,7 +523,8 @@ struct TradeSignalShareSheet: View {
                 isLight: useLightTheme,
                 leverageInfo: includeLeverage ? leverageInfo : nil,
                 includeAnalysis: includeAnalysis,
-                currentPrice: currentPrice
+                currentPrice: currentPrice,
+                qrImage: qrImage
             )
         }
     }
@@ -554,6 +544,7 @@ struct TradeSignalShareSheet: View {
             if info.entryStrategyLabel != nil { height += 20 }
         }
         if showBranding { height += 70 }
+        height += 70 // QR footer
 
         guard let image = ShareCardRenderer.renderImage(
             content: cardView,

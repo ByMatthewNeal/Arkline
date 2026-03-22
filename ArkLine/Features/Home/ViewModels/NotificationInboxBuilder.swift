@@ -7,11 +7,12 @@ struct NotificationInboxBuilder {
 
     private static let inboxWindow: TimeInterval = 48 * 3600  // 48 hours
 
-    static func build(
+    @MainActor static func build(
         todayReminders: [DCAReminder],
         recentSignals: [TradeSignal],
         marketSummary: MarketSummary?,
         extremeMoveHistory: [ExtremeMove],
+        qpsSignals: [DailyPositioningSignal] = [],
         readIds: Set<String>
     ) -> [AppNotification] {
         let cutoff = Date().addingTimeInterval(-inboxWindow)
@@ -141,6 +142,68 @@ struct NotificationInboxBuilder {
                 title: "DCA Reminder: \(reminder.name)",
                 subtitle: "Time to invest \(reminder.amount.asCurrency) in \(reminder.symbol)",
                 time: notifTime,
+                isRead: readIds.contains(id)
+            ))
+        }
+
+        // 7. QPS signal changes
+        for signal in qpsSignals where signal.hasChanged {
+            let time = signal.createdAt ?? signal.signalDate
+            guard time > cutoff else { continue }
+
+            let id = "qps_\(signal.asset)_\(signal.signal)_\(Int(signal.signalDate.timeIntervalSince1970))"
+            let prev = signal.prevPositioningSignal?.label ?? "Unknown"
+            let current = signal.positioningSignal.label
+            // Color by direction of change: upgrade = green, downgrade = red, lateral = yellow
+            let order: [PositioningSignal] = [.bearish, .neutral, .bullish]
+            let prevIdx = signal.prevPositioningSignal.flatMap { order.firstIndex(of: $0) } ?? 1
+            let newIdx = order.firstIndex(of: signal.positioningSignal) ?? 1
+            let color: Color = newIdx > prevIdx ? AppColors.success
+                : newIdx < prevIdx ? AppColors.error : AppColors.warning
+
+            notifications.append(AppNotification(
+                id: id,
+                type: .qpsSignalChange,
+                icon: "waveform.path.ecg",
+                iconColor: color,
+                title: "\(signal.asset) Signal Changed",
+                subtitle: "\(prev) → \(current)",
+                time: time,
+                isRead: readIds.contains(id)
+            ))
+        }
+
+        // 8. Market regime change
+        if let regime = RegimeChangeManager.shared.lastKnownRegime,
+           regime != .noData,
+           let changeDate = RegimeChangeManager.shared.lastRegimeChange,
+           changeDate > cutoff {
+            let id = "regime_\(regime.rawValue)_\(Int(changeDate.timeIntervalSince1970))"
+            notifications.append(AppNotification(
+                id: id,
+                type: .marketRegimeChange,
+                icon: "globe.americas.fill",
+                iconColor: regime.color,
+                title: regime.notificationTitle,
+                subtitle: regime.description,
+                time: changeDate,
+                isRead: readIds.contains(id)
+            ))
+        }
+
+        // 9. Sentiment regime shift
+        if let regime = SentimentRegimeAlertManager.shared.lastKnownRegime,
+           let changeDate = SentimentRegimeAlertManager.shared.lastRegimeChange,
+           changeDate > cutoff {
+            let id = "sentiment_\(regime.rawValue)_\(Int(changeDate.timeIntervalSince1970))"
+            notifications.append(AppNotification(
+                id: id,
+                type: .sentimentRegimeShift,
+                icon: regime.icon,
+                iconColor: Color(hex: regime.colorHex),
+                title: "Sentiment Shift: \(regime.rawValue)",
+                subtitle: regime.description,
+                time: changeDate,
                 isRead: readIds.contains(id)
             ))
         }

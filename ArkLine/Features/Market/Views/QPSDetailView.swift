@@ -127,7 +127,7 @@ struct QPSDetailView: View {
                         Spacer()
 
                         if signal.hasChanged {
-                            Image(systemName: "arrow.triangle.swap")
+                            Image(systemName: "waveform.path.ecg")
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundColor(AppColors.warning)
                         }

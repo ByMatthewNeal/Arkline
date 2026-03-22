@@ -31,6 +31,15 @@ struct ArkLineApp: App {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BriefingNotificationTapped"))) { _ in
                     appState.selectedTab = .home
+                    appState.shouldExpandBriefing = true
+                }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("QPSChangeNotificationTapped"))) { _ in
+                    appState.selectedTab = .home
+                    appState.pendingQPSAsset = "scroll"
+                }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("DCANotificationTapped"))) { _ in
+                    appState.selectedTab = .profile
+                    appState.pendingDCAReminderId = "open"
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -224,8 +233,11 @@ class AppState: ObservableObject {
     // All users get full access (invite-only app, no subscription)
     var isPro: Bool { true }
 
-    // Deep link pending broadcast (from notification tap or URL scheme)
+    // Deep link pending navigation (from notification tap or URL scheme)
     @Published var pendingBroadcastId: String?
+    @Published var pendingQPSAsset: String?
+    @Published var pendingDCAReminderId: String?
+    @Published var shouldExpandBriefing = false
 
     // Unread broadcast badge count for Insights tab
     @Published var insightsUnreadCount: Int = 0
@@ -637,6 +649,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 notificationName = Notification.Name("BriefingNotificationTapped")
             case "swing_signal":
                 notificationName = Notification.Name("SwingSignalNotificationTapped")
+            case "qps_change":
+                notificationName = Notification.Name("QPSChangeNotificationTapped")
+            case "dca_reminder":
+                notificationName = Notification.Name("DCANotificationTapped")
             default:
                 notificationName = Notification.Name("BroadcastNotificationTapped")
             }

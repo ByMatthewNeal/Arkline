@@ -132,6 +132,7 @@ class HomeViewModel {
     // Flash Intel (strong swing signals)
     var flashIntelSignals: [TradeSignal] = []
     var signalStats: SignalStats?
+    var marketConditions: SignalMarketConditions?
     private let swingSetupService = SwingSetupService()
 
     // QPS (Daily Positioning Signals)
@@ -391,9 +392,13 @@ class HomeViewModel {
     // Notification Inbox
     var recentSignalsForInbox: [TradeSignal] = []
     var readNotificationIds: Set<String> = [] {
-        didSet { persistReadIds() }
+        didSet {
+            guard !isLoadingReadIds else { return }
+            persistReadIds()
+        }
     }
     private static let readIdsKey = "arkline_read_notification_ids"
+    private var isLoadingReadIds = false
 
     var inboxNotifications: [AppNotification] {
         NotificationInboxBuilder.build(
@@ -401,6 +406,7 @@ class HomeViewModel {
             recentSignals: recentSignalsForInbox,
             marketSummary: marketSummary,
             extremeMoveHistory: ExtremeMoveAlertManager.shared.getAlertHistory(),
+            qpsSignals: qpsSignals,
             readIds: readNotificationIds
         )
     }
@@ -420,14 +426,22 @@ class HomeViewModel {
     }
 
     private func persistReadIds() {
+        // Only prune if notifications have loaded, otherwise save all IDs
         let currentIds = Set(inboxNotifications.map(\.id))
-        let pruned = readNotificationIds.intersection(currentIds)
-        UserDefaults.standard.set(Array(pruned), forKey: Self.readIdsKey)
+        let idsToSave: Set<String>
+        if currentIds.isEmpty {
+            idsToSave = readNotificationIds
+        } else {
+            idsToSave = readNotificationIds.intersection(currentIds)
+        }
+        UserDefaults.standard.set(Array(idsToSave), forKey: Self.readIdsKey)
     }
 
     private func loadReadIds() {
         if let array = UserDefaults.standard.stringArray(forKey: Self.readIdsKey) {
+            isLoadingReadIds = true
             readNotificationIds = Set(array)
+            isLoadingReadIds = false
         }
     }
 
@@ -749,24 +763,42 @@ class HomeViewModel {
             return zScores
         }
 
-        // Await all progressive tasks, then compute regime + failure count
-        _ = await eventsTask.value
-        let crypto = await cryptoTask.value
-        let (vix, dxy, liquidity) = await macroTask.value
-        _ = await riskTask.value
-        let (fg, riskScore) = await sentimentTask.value
-        let zScores = await zScoreTask.value
+        // Await all progressive tasks, then compute regime + failure count.
+        // Race against a 20-second deadline so the Home tab never stays stuck
+        // in loading state (e.g. on flaky wifi / airplane mode).
+        let timedOut = await withTaskGroup(of: Bool.self) { group in
+            group.addTask { @MainActor in
+                _ = await eventsTask.value
+                _ = await cryptoTask.value
+                _ = await macroTask.value
+                _ = await riskTask.value
+                _ = await sentimentTask.value
+                _ = await zScoreTask.value
+                return false // completed
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                return true // timed out
+            }
+            let first = await group.next() ?? true
+            group.cancelAll()
+            return first
+        }
 
-        // Regime computation depends on macro + z-scores
+        if timedOut {
+            logWarning("HomeViewModel: refresh timed out after 20s, showing partial data", category: .network)
+        }
+
+        // Compute regime from whatever data arrived (tasks update published properties directly)
         self.currentRegimeResult = MacroRegimeCalculator.computeRegime(
-            vixData: vix,
-            dxyData: dxy,
-            globalM2Data: liquidity,
-            macroZScores: zScores
+            vixData: self.vixData,
+            dxyData: self.dxyData,
+            globalM2Data: self.globalLiquidityChanges,
+            macroZScores: self.macroZScores
         )
-        self.failedFetchCount = (crypto.isEmpty ? 1 : 0) + (fg == nil ? 1 : 0) + (riskScore == nil ? 1 : 0)
+        self.failedFetchCount = (self.cachedCryptoAssets.isEmpty ? 1 : 0) + (self.fearGreedIndex == nil ? 1 : 0) + (self.arkLineRiskScore == nil ? 1 : 0)
 
-        // All data has arrived — finalize
+        // All data has arrived (or timed out) — finalize
         self.lastRefreshed = Date()
         self.isLoading = false
         self.isRefreshing = false
@@ -800,6 +832,16 @@ class HomeViewModel {
                 await MainActor.run { self.signalStats = stats }
             } catch {
                 logWarning("Signal stats fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
+        // Fetch market conditions (explains why signals are quiet)
+        Task {
+            do {
+                let conditions = try await self.swingSetupService.fetchMarketConditions()
+                await MainActor.run { self.marketConditions = conditions }
+            } catch {
+                logWarning("Market conditions fetch failed: \(error.localizedDescription)", category: .network)
             }
         }
 
@@ -840,11 +882,10 @@ class HomeViewModel {
             }
         }
 
-        // Fetch AI market summary (uses already-loaded state).
-        // Regime-shift detection happens inside fetchMarketSummary itself.
-        // On force refresh (pull-to-refresh), clear stale briefing cache first.
+        // Fetch latest pre-generated briefing from server.
+        // On force refresh (pull-to-refresh), clear local cache to get latest from DB.
         if forceRefresh {
-            APICache.shared.remove("market_summary_session")
+            MarketSummaryService.shared.clearLocalCache()
         }
         // Set loading flag BEFORE launching task to avoid race where isLoading=false
         // and isLoadingSummary=false simultaneously → "unavailable" flash
@@ -1199,333 +1240,31 @@ class HomeViewModel {
 
     // MARK: - AI Market Summary
 
-    func fetchMarketSummary(checkRegimeShift: Bool = true, retryCount: Int = 0) async {
+    /// Fetch the latest pre-generated daily briefing.
+    /// Briefings are generated server-side by cron at 10am and 5pm ET.
+    func fetchMarketSummary(retryCount: Int = 0) async {
         guard enableSideEffects else { return }
         isLoadingSummary = true
         defer { isLoadingSummary = false }
 
         let service = MarketSummaryService.shared
 
-        // Fetch index quotes, sentiment data, financial news, BTC TA, and futures in parallel
-        async let indexQuotes = service.fetchIndexQuotes()
-        async let sentimentRefresh: () = { [weak self] in
-            await self?.sentimentViewModel?.refresh()
-        }()
-        async let btcTA: TechnicalAnalysis? = {
-            do {
-                let taService: TechnicalAnalysisServiceProtocol = ServiceContainer.shared.technicalAnalysisService
-                return try await taService.fetchTechnicalAnalysis(symbol: "BTC/USDT", exchange: "binance", interval: .daily)
-            } catch { return nil }
-        }()
-        async let financialNews: [NewsItem] = {
-            do {
-                return try await GoogleNewsRSSService().fetchNews(
-                    query: "stock market OR federal reserve OR economy OR inflation OR interest rates OR earnings",
-                    limit: 5
-                )
-            } catch { return [] }
-        }()
-        async let futuresData: [USFuturesQuote] = {
-            do {
-                return try await YahooFinanceService.shared.fetchFutures()
-            } catch { return [] }
-        }()
-
-        let (sp500, nasdaq) = await indexQuotes
-        _ = await sentimentRefresh
-        let finNews = await financialNews
-        let btcTechnical = await btcTA
-        let futures = await futuresData
-        logDebug("Briefing data ready — SP500: \(sp500 != nil), BTC: \(btcPrice), TA: \(btcTechnical != nil), news: \(finNews.count), futures: \(futures.count)", category: .network)
-
-        // Build net liquidity signal
-        var netLiqSignal: String? = nil
-        if let nl = netLiquidityData {
-            netLiqSignal = "\(nl.overallSignal.rawValue) (\(nl.formattedCurrent), weekly \(String(format: "%+.1f", nl.weeklyChange))%)"
-        }
-
-        // Build gold signal
-        var goldSignal: String? = nil
-        if let gold = sentimentViewModel?.goldData {
-            let changeStr = gold.changePercent.map { String(format: "%+.1f%%", $0) } ?? ""
-            goldSignal = "\(gold.signalDescription) ($\(String(format: "%.0f", gold.value))\(changeStr.isEmpty ? "" : " \(changeStr)"))"
-        }
-
-        // Build top gainer string
-        var topGainerStr: String? = nil
-        if let top = topGainers.first, top.priceChangePercentage24h > 0 {
-            topGainerStr = "\(top.symbol.uppercased()) \(String(format: "%+.1f", top.priceChangePercentage24h))%"
-        }
-
-        // Build BTC search interest signal
-        var btcSearchStr: String? = nil
-        if let trends = sentimentViewModel?.googleTrends {
-            btcSearchStr = "\(trends.currentIndex)/100 (\(trends.trend.rawValue))"
-        }
-
-        // Build derivatives strings
-        var fundingRateStr: String? = nil
-        if let funding = sentimentViewModel?.fundingRate {
-            fundingRateStr = "\(funding.displayRate) (\(funding.sentiment)), annualized \(funding.annualizedDisplay)"
-        }
-
-        var liquidationsStr: String? = nil
-        if let liq = sentimentViewModel?.liquidations {
-            liquidationsStr = "\(liq.longsFormatted) longs / \(liq.shortsFormatted) shorts liquidated, \(liq.dominantSide.lowercased()) dominant"
-        }
-
-        // No long/short ratio data available on SentimentViewModel
-        let longShortStr: String? = nil
-
-        var openInterestStr: String? = nil
-        if let oi = sentimentViewModel?.btcOpenInterest {
-            openInterestStr = "\(oi.formattedOI) (\(String(format: "%+.1f%%", oi.openInterestChangePercent24h)))"
-        }
-
-        // Build capital flow strings
-        var btcDomStr: String? = nil
-        if let dom = sentimentViewModel?.btcDominance {
-            btcDomStr = "\(dom.displayValue) (\(dom.changeFormatted))"
-        }
-
-        var capitalRotationStr: String? = nil
-        if let rotation = sentimentViewModel?.capitalRotation {
-            capitalRotationStr = "\(rotation.phase.rawValue) (score \(Int(rotation.score))/100)"
-        }
-
-        var etfFlowStr: String? = nil
-        if let etf = sentimentViewModel?.etfNetFlow {
-            let direction = etf.isPositive ? "inflow" : "outflow"
-            etfFlowStr = "\(etf.dailyFormatted) daily net \(direction)"
-        }
-
-        // Build risk factors string
-        var riskFactorsStr: String? = nil
-        if let mfr = sentimentViewModel?.multiFactorRisk {
-            let available = mfr.factors.filter { $0.isAvailable }
-            let top = available.sorted { ($0.normalizedValue ?? 0) > ($1.normalizedValue ?? 0) }.prefix(3)
-            let parts = top.map { "\($0.type.rawValue): \(String(format: "%.2f", $0.normalizedValue ?? 0))" }
-            if !parts.isEmpty {
-                riskFactorsStr = parts.joined(separator: ", ")
-            }
-        }
-
-        // Build macro enrichment strings
-        var geiStr: String? = nil
-        if let gei = sentimentViewModel?.geiData {
-            let trendComponents = gei.components.filter { ["HG=F", "^TNX"].contains($0.seriesId) }
-            let trendNotes = trendComponents.map { "\($0.name) \($0.contribution > 0 ? "rising" : "declining")" }
-            let trendSuffix = trendNotes.isEmpty ? "" : ", \(trendNotes.joined(separator: "/"))"
-            geiStr = "GEI \(gei.formattedScore) (\(gei.signal.rawValue))\(trendSuffix)"
-        }
-
-        var supplyProfitStr: String? = nil
-        if let sp = supplyInProfitData {
-            supplyProfitStr = "\(sp.formattedValue) supply in profit (\(sp.signalDescription) zone)"
-        }
-
-        var rainbowStr: String? = nil
-        if let rainbow = rainbowChartData {
-            rainbowStr = "\(rainbow.currentBand.rawValue) band (normalized \(String(format: "%.2f", rainbow.normalizedPosition)))"
-        }
-
-        // Build BTC key levels from active signals
-        var btcKeyLevelsStr: String? = nil
-        let btcSignals = recentSignalsForInbox.filter {
-            $0.asset == "BTC" && ($0.status == .active || $0.status == .triggered)
-        }
-        if let sig = btcSignals.first {
-            var parts: [String] = []
-            parts.append("Entry zone: $\(sig.entryZoneLow.asSignalPrice)-$\(sig.entryZoneHigh.asSignalPrice)")
-            if let t1 = sig.target1 {
-                parts.append("T1: $\(t1.asSignalPrice)")
-            }
-            parts.append("Stop: $\(sig.stopLoss.asSignalPrice)")
-            btcKeyLevelsStr = parts.joined(separator: ", ")
-        }
-
-        // Build Central Bank Liquidity string
-        var cbLiquidityStr: String? = nil
-        if let gli = globalLiquidityIndex {
-            var parts: [String] = []
-            parts.append("Composite: \(gli.formattedComposite) (\(gli.signal))")
-            parts.append("US Net Liq: \(gli.formattedUSNetLiquidity) (Fed \(String(format: "$%.2fT", gli.fedAssetsT)) - TGA \(String(format: "$%.2fT", gli.tgaT)) - RRP \(String(format: "$%.3fT", gli.rrpT)))")
-            if let monthly = gli.changes.monthly {
-                parts.append(String(format: "1M: %+.2f%%", monthly))
-            }
-            if let quarterly = gli.changes.quarterly {
-                parts.append(String(format: "3M: %+.2f%%", quarterly))
-            }
-            if let annual = gli.changes.annual {
-                parts.append(String(format: "1Y: %+.2f%%", annual))
-            }
-            cbLiquidityStr = parts.joined(separator: ", ")
-        }
-
-        // Build Liquidity Cycle strings
-        var liquidityCyclePhaseStr: String? = nil
-        var liquidityMomentumStr: String? = nil
-        var yieldCurveRegimeStr: String? = nil
-        if let cycle = globalLiquidityIndex?.liquidityCycle {
-            liquidityCyclePhaseStr = "\(cycle.phase.displayName) (\(cycle.phase.cryptoLabel)) — \(cycle.cryptoGuidance). Equity: \(cycle.phase.equityLabel) — \(cycle.equityGuidance ?? cycle.phase.defaultEquityGuidance)"
-            var momParts: [String] = ["Index: \(cycle.momentumIndex)/100"]
-            if let m3 = cycle.momentum3m { momParts.append(String(format: "3M RoC: %+.2f%%", m3)) }
-            if let m6 = cycle.momentum6m { momParts.append(String(format: "6M RoC: %+.2f%%", m6)) }
-            momParts.append(String(format: "Acceleration: %+.3f", cycle.acceleration))
-            momParts.append(String(format: "65-month wave: %.0f/100", cycle.theoreticalWave))
-            liquidityMomentumStr = momParts.joined(separator: ", ")
-            if cycle.yieldCurve.parsedRegime != .unknown {
-                var ycParts = ["\(cycle.yieldCurve.parsedRegime.displayName) — \(cycle.yieldCurve.parsedRegime.interpretation)"]
-                if let spread = cycle.yieldCurve.t10y2y {
-                    ycParts.append(String(format: "10Y-2Y spread: %.2f%%", spread))
-                }
-                yieldCurveRegimeStr = ycParts.joined(separator: ", ")
-            }
-        }
-
-        // Build US Futures string
-        var usFuturesStr: String? = nil
-        if !futures.isEmpty {
-            let session = USMarketSession.current
-            let lines = futures.map { q in
-                "\(q.shortName): \(String(format: "%.2f", q.price)) (\(String(format: "%+.2f%%", q.changePercent)))"
-            }
-            usFuturesStr = "[\(session.rawValue)] \(lines.joined(separator: ", "))"
-        }
-
-        let payload = MarketSummaryService.MarketSummaryPayload(
-            btcPrice: btcPrice > 0 ? btcPrice : nil,
-            btcChange24h: btcPrice > 0 ? btcChange24h : nil,
-            ethPrice: ethPrice > 0 ? ethPrice : nil,
-            ethChange24h: ethPrice > 0 ? ethChange24h : nil,
-            solPrice: solPrice > 0 ? solPrice : nil,
-            solChange24h: solPrice > 0 ? solChange24h : nil,
-            sp500Price: sp500?.price,
-            sp500Change: sp500?.change,
-            nasdaqPrice: nasdaq?.price,
-            nasdaqChange: nasdaq?.change,
-            fearGreedValue: fearGreedIndex.map { $0.value },
-            fearGreedClassification: fearGreedIndex?.classification,
-            riskScore: arkLineRiskScore?.score,
-            riskTier: arkLineRiskScore?.tier.rawValue,
-            vixValue: vixData?.value,
-            vixSignal: vixData?.signalDescription,
-            dxyValue: dxyData?.value,
-            dxySignal: dxyData?.signalDescription,
-            netLiquiditySignal: netLiqSignal,
-            goldSignal: goldSignal,
-            macroRegime: currentRegimeResult.map {
-                "\($0.baseRegime.rawValue) (\($0.quadrant.rawValue), Growth: \(Int($0.growthScore))/100, Inflation: \(Int($0.inflationScore))/100)"
-            },
-            cryptoPositioning: currentRegimeResult?.quadrant.cryptoPositioning,
-            btcRiskZone: riskLevels["BTC"]?.riskCategory,
-            ethRiskZone: riskLevels["ETH"]?.riskCategory,
-            altcoinSeason: sentimentViewModel?.altcoinSeason?.season,
-            sentimentRegime: sentimentViewModel?.sentimentRegimeData?.currentRegime.rawValue,
-            coinbaseRank: sentimentViewModel?.primaryAppRanking?.ranking,
-            btcSearchInterest: btcSearchStr,
-            topGainer: topGainerStr,
-            btcTrend: btcTechnical.map { "\($0.trend.direction.rawValue) (\($0.trend.strength.rawValue), \($0.trend.daysInTrend)d)" },
-            btcRsi: btcTechnical.map { "RSI(\($0.rsi.period)) = \(String(format: "%.1f", $0.rsi.value)) (\($0.rsi.zone.rawValue))" },
-            btcSmaPosition: btcTechnical.map {
-                let sma = $0.smaAnalysis
-                var parts: [String] = []
-                parts.append("21 SMA: \(sma.above21SMA ? "above" : "below") (\(sma.sma21.distanceLabel))")
-                parts.append("50 SMA: \(sma.above50SMA ? "above" : "below") (\(sma.sma50.distanceLabel))")
-                parts.append("200 SMA: \(sma.above200SMA ? "above" : "below") (\(sma.sma200.distanceLabel))")
-                if sma.goldenCross { parts.append("Golden Cross active") }
-                if sma.deathCross { parts.append("Death Cross active") }
-                return parts.joined(separator: ", ")
-            },
-            btcBmsbPosition: btcTechnical.map {
-                let bmsb = $0.bullMarketBands
-                return "\(bmsb.position.rawValue) — 20W SMA: $\(String(format: "%.0f", bmsb.sma20Week)) (\(String(format: "%+.1f%%", bmsb.percentFromSMA))), 21W EMA: $\(String(format: "%.0f", bmsb.ema21Week)) (\(String(format: "%+.1f%%", bmsb.percentFromEMA)))"
-            },
-            btcBollingerPosition: btcTechnical.map {
-                let bb = $0.bollingerBands.daily
-                return "\(bb.position.rawValue) — %B: \(String(format: "%.2f", bb.percentB)), bandwidth: \(String(format: "%.3f", bb.bandwidth))"
-            },
-            btcFundingRate: fundingRateStr,
-            btcLiquidations: liquidationsStr,
-            btcLongShortRatio: longShortStr,
-            btcOpenInterest: openInterestStr,
-            btcDominance: btcDomStr,
-            capitalRotation: capitalRotationStr,
-            etfNetFlow: etfFlowStr,
-            riskFactors: riskFactorsStr,
-            geiScore: geiStr,
-            supplyInProfit: supplyProfitStr,
-            rainbowBand: rainbowStr,
-            btcKeyLevels: btcKeyLevelsStr,
-            cbLiquidity: cbLiquidityStr,
-            liquidityCyclePhase: liquidityCyclePhaseStr,
-            liquidityMomentum: liquidityMomentumStr,
-            yieldCurveRegime: yieldCurveRegimeStr,
-            usFutures: usFuturesStr,
-            marketSession: USMarketSession.current.rawValue,
-            economicEvents: todaysEvents.filter { $0.impact == .high }.prefix(5).map { event in
-                .init(
-                    title: event.title,
-                    time: event.timeFormatted,
-                    actual: event.actual,
-                    forecast: event.forecast,
-                    previous: event.previous
-                )
-            },
-            newsHeadlines: {
-                // Merge crypto + financial headlines, deduped
-                var seen = Set<String>()
-                var headlines: [String] = []
-                for item in (Array(newsItems.prefix(3)) + Array(finNews.prefix(3))) {
-                    let key = item.title.lowercased()
-                    if !seen.contains(key) {
-                        seen.insert(key)
-                        headlines.append(item.title)
-                    }
-                }
-                return Array(headlines.prefix(6))
-            }()
-        )
-
         do {
-            let summary = try await withTimeout(seconds: 30) {
-                try await service.fetchSummary(payload: payload)
+            let summary = try await withTimeout(seconds: 15) {
+                try await service.fetchLatestBriefing()
             }
             let textQuadrant = Self.quadrantFromBriefingText(summary.summary)
-            let liveQuadrant = self.currentRegimeResult?.quadrant
-
-            // If the briefing text quadrant doesn't match live, clear caches and regenerate (once)
-            if checkRegimeShift,
-               let live = liveQuadrant,
-               let text = textQuadrant,
-               text != live {
-                logInfo("Briefing text says \(text.rawValue) but live is \(live.rawValue), regenerating", category: .data)
-                try? await service.clearServerCache()
-                await fetchMarketSummary(checkRegimeShift: false)
-                return
-            }
-
-            // If this is a regenerated briefing (not first fetch), clear stale DB feedback
-            var result = summary
-            if !checkRegimeShift {
-                result.feedbackRating = nil
-                result.feedbackNote = nil
-            }
 
             await MainActor.run {
-                self.marketSummary = result
+                self.marketSummary = summary
                 self.briefingQuadrant = textQuadrant
             }
         } catch {
-            logError("Market summary fetch failed (attempt \(retryCount + 1)): \(error)", category: .network)
-            #if DEBUG
-            print("🔴 BRIEFING ERROR (attempt \(retryCount + 1)): \(error)")
-            #endif
+            logError("Briefing fetch failed (attempt \(retryCount + 1)): \(error)", category: .network)
             // Retry once after a short delay if first attempt failed
             if retryCount == 0 && marketSummary == nil {
-                logInfo("Retrying market summary fetch in 3s...", category: .network)
-                try? await Task.sleep(nanoseconds: 3_000_000_000)
-                await fetchMarketSummary(checkRegimeShift: false, retryCount: 1)
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await fetchMarketSummary(retryCount: 1)
             }
         }
     }

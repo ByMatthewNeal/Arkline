@@ -44,15 +44,7 @@ private struct LightBrandedCard<Content: View>: View {
             content
                 .padding(.horizontal, 16)
 
-            if showBranding {
-                Text("Created with ArkLine")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color(hex: "94A3B8"))
-                    .padding(.top, 12)
-                    .padding(.bottom, 14)
-            } else {
-                Spacer().frame(height: 12)
-            }
+            Spacer().frame(height: 12)
         }
         .background(Color.white)
     }
@@ -99,15 +91,7 @@ private struct DarkBrandedCard<Content: View>: View {
             content
                 .padding(.horizontal, 16)
 
-            if showBranding {
-                Text("Created with ArkLine")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color.white.opacity(0.3))
-                    .padding(.top, 12)
-                    .padding(.bottom, 14)
-            } else {
-                Spacer().frame(height: 12)
-            }
+            Spacer().frame(height: 12)
         }
         .background(Color(hex: "121212"))
     }
@@ -134,6 +118,7 @@ struct DailyMarketUpdateCardContent: View {
     var cardSize: DailyMarketUpdateViewModel.CardSize = .long
     var assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
     var briefingExcerpt: String? = nil
+    var qrImage: UIImage? = nil
 
     private var textPrimary: Color { isLight ? LightCard.textPrimary : .white }
     private var textMuted: Color { isLight ? LightCard.textMuted : Color.white.opacity(0.4) }
@@ -178,14 +163,9 @@ struct DailyMarketUpdateCardContent: View {
             riskLevelGuide
                 .padding(.top, 12)
 
-            HStack {
-                Spacer()
-                Text("Get full analysis at arkline.io")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(AppColors.accent)
-                Spacer()
-            }
-            .padding(.top, 10)
+            // QR footer
+            ShareCardQRFooter(isLight: isLight, qrImage: qrImage)
+                .padding(.top, 12)
         }
     }
 
@@ -508,6 +488,7 @@ struct DailyMarketUpdateShareSheet: View {
     @State private var useLightTheme = true
     @State private var isExporting = false
     @State private var logoImage: UIImage?
+    @State private var qrImage: UIImage?
     @State private var cardSize: DailyMarketUpdateViewModel.CardSize = .medium
     @State private var assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
 
@@ -588,6 +569,7 @@ struct DailyMarketUpdateShareSheet: View {
             }
             .task {
                 logoImage = UIImage(named: "ArkLineAppIcon")
+                qrImage = QRCodeGenerator.generate(forURL: "https://arkline.io")
                 await viewModel.loadData()
             }
         }
@@ -699,7 +681,8 @@ struct DailyMarketUpdateShareSheet: View {
             isLight: useLightTheme,
             cardSize: cardSize,
             assetFilter: assetFilter,
-            briefingExcerpt: briefingExcerpt
+            briefingExcerpt: briefingExcerpt,
+            qrImage: qrImage
         )
     }
 

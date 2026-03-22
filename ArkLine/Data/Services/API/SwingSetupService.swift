@@ -83,6 +83,24 @@ final class SwingSetupService {
         return zone
     }
 
+    // MARK: - Market Conditions
+
+    func fetchMarketConditions() async throws -> SignalMarketConditions? {
+        struct CacheRow: Decodable {
+            let data: SignalMarketConditions
+        }
+
+        let rows: [CacheRow] = try await supabase.database
+            .from(SupabaseTable.marketDataCache.rawValue)
+            .select("data")
+            .eq("key", value: "signal_market_conditions")
+            .limit(1)
+            .execute()
+            .value
+
+        return rows.first?.data
+    }
+
     // MARK: - Signal Stats
 
     func fetchSignalStats() async throws -> SignalStats {
@@ -176,6 +194,16 @@ struct SignalStats {
     let avgDurationHours: Int
     let assetBreakdown: [AssetStats]
     let currentStreak: Int // positive = wins, negative = losses
+}
+
+struct SignalMarketConditions: Codable {
+    let status: String           // "active" or "quiet"
+    let headline: String         // e.g. "Zones identified, waiting for bounce confirmation"
+    let detail: String           // Longer explanation
+    let topReasons: [String]     // e.g. ["no bounce confirmation (8x)"]
+    let totalSkipped: Int
+    let totalGenerated: Int
+    let updatedAt: String
 }
 
 struct AssetStats: Identifiable {

@@ -157,6 +157,7 @@ struct FlashIntelSection: View {
     var size: WidgetSize = .standard
     var stats: SignalStats? = nil
     var highImpactEvents: [EconomicEvent] = []
+    var marketConditions: SignalMarketConditions? = nil
     @State private var showMethodology = false
     @State private var showPaywall = false
     @Environment(\.colorScheme) var colorScheme
@@ -307,17 +308,52 @@ struct FlashIntelSection: View {
     }
 
     private var emptyStateCard: some View {
-        VStack(spacing: 8) {
-            Text("No active setups")
-                .font(AppFonts.body14Medium)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
+        let conditions = marketConditions
+        let headline = conditions?.headline ?? "No active setups"
+        let detail = conditions?.detail ?? "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions."
 
-            Text("Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.")
+        return VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: conditions?.status == "quiet" ? "waveform.path" : "scope")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+
+                Text(headline)
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer()
+            }
+
+            Text(detail)
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Top skip reasons
+            if let reasons = conditions?.topReasons, !reasons.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(reasons.prefix(2), id: \.self) { reason in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(AppColors.textSecondary.opacity(0.4))
+                                .frame(width: 4, height: 4)
+                            Text(reason)
+                                .font(.system(size: 10))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+                }
+            }
 
             HStack {
+                if let conditions, conditions.totalSkipped > 0 {
+                    Text("\(conditions.totalSkipped) setups filtered")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
                 Spacer()
                 HStack(spacing: 4) {
                     Text("View history")

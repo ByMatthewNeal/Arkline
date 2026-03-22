@@ -97,7 +97,18 @@ struct ProfileView: View {
                     appState.setAuthenticated(true, user: updatedUser)
                 }
             }
+            .onChange(of: appState.pendingDCAReminderId) { _, newId in
+                if newId != nil {
+                    navigationPath.append("dcaList")
+                    appState.pendingDCAReminderId = nil
+                }
+            }
             .onAppear {
+                // Handle pending DCA deep link
+                if appState.pendingDCAReminderId != nil {
+                    navigationPath.append("dcaList")
+                    appState.pendingDCAReminderId = nil
+                }
                 // Use the actual user from AppState if available
                 if let currentUser = appState.currentUser {
                     viewModel.user = currentUser

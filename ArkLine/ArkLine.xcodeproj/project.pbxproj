@@ -318,6 +318,9 @@
 		C2EB8B4DAC0C80D048AD7DA9 /* TrendChannelFullscreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBDD05F94986E25B0933540 /* TrendChannelFullscreenView.swift */; };
 		C379103721013AD9D5DC663A /* MacroDashboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C016882441A58FCC6F6BCC62 /* MacroDashboardDetailView.swift */; };
 		C3D4E5F6A7B80003CCDD3344 /* TradeSignalShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A70002BBCC2234 /* TradeSignalShareCard.swift */; };
+		D5E6F7A8B9C00011AABB1100 /* PortfolioShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E6F7A8B9C00012AABB1100 /* PortfolioShareCard.swift */; };
+		D5E6F7A8B9C00011AABB2200 /* SignalChangesShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E6F7A8B9C00012AABB2200 /* SignalChangesShareCard.swift */; };
+		D5E6F7A8B9C00011AABB3300 /* RiskScoreShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E6F7A8B9C00012AABB3300 /* RiskScoreShareCard.swift */; };
 		C3D7D61B294DE440C023152C /* MacroDashboardWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */; };
 		C3FBD16C521507EA40CFD953 /* EconomicEventsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F85984ECA110FEAA838B5870 /* EconomicEventsData.swift */; };
 		C515208CC5C1562E18F7B67F /* PasscodeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */; };
@@ -548,6 +551,7 @@
 		2B4BE3343EF57E36A6D3A2C8 /* SupabaseDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseDatabase.swift; sourceTree = "<group>"; };
 		2BF75F6804B0EEA5772F8BEE /* MarketMoversSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketMoversSection.swift; sourceTree = "<group>"; };
 		2C529AFE6D31B15B880E64C1 /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketServiceProtocol.swift; sourceTree = "<group>"; };
+		2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		2D81358145D7861C61D27013 /* SellAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SellAssetView.swift; sourceTree = "<group>"; };
 		2EEF32D24CEC66662543D000 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealEstateProperty.swift; sourceTree = "<group>"; };
@@ -629,7 +633,6 @@
 		5EA796A746917835E0ACEFE9 /* OnboardingHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingHeader.swift; sourceTree = "<group>"; };
 		5F459B2AE85AD191B9ACB0AD /* MarkdownContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownContentView.swift; sourceTree = "<group>"; };
 		604A203FE3FF13EF63B715EF /* CreateInviteCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateInviteCodeSheet.swift; sourceTree = "<group>"; };
-
 		608A536AA089EA6F8D512468 /* DCAReminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminder.swift; sourceTree = "<group>"; };
 		60C92EA963C7A8B668467866 /* DataPrefetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPrefetcher.swift; sourceTree = "<group>"; };
 		6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
@@ -708,7 +711,6 @@
 		A1B2C3D4E5F60003VIEW0R /* FullscreenImageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenImageViewer.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304A5B /* GEIData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GEIData.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5C /* ArkLineScoreDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkLineScoreDetailView.swift; sourceTree = "<group>"; };
-		2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCANotificationScheduler.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00001A1 /* DailyPositioningSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPositioningSignal.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalService.swift; sourceTree = "<group>"; };
@@ -763,6 +765,9 @@
 		B1E44D4880603DBCA1BA814B /* SendInviteView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendInviteView.swift; sourceTree = "<group>"; };
 		B235140A3BEE72D20E513F81 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		B2C3D4E5F6A70002BBCC2234 /* TradeSignalShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradeSignalShareCard.swift; sourceTree = "<group>"; };
+		D5E6F7A8B9C00012AABB1100 /* PortfolioShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioShareCard.swift; sourceTree = "<group>"; };
+		D5E6F7A8B9C00012AABB2200 /* SignalChangesShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalChangesShareCard.swift; sourceTree = "<group>"; };
+		D5E6F7A8B9C00012AABB3300 /* RiskScoreShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskScoreShareCard.swift; sourceTree = "<group>"; };
 		B2C3D4E5F6A7B8C9D0E1F2A3 /* SentimentRegimeAlertManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentRegimeAlertManager.swift; sourceTree = "<group>"; };
 		B3C4D5E6F7A8B9C0D1E2F3A4 /* StaleDataBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleDataBanner.swift; sourceTree = "<group>"; };
 		B4B455C1A7CD339880E0FD5B /* MarketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketViewModel.swift; sourceTree = "<group>"; };
@@ -1621,6 +1626,9 @@
 				A1B2C3D4E5F60001AABB1122 /* DailyMarketUpdateCard.swift */,
 				B2C3D4E5F6A70002BBCC2234 /* TradeSignalShareCard.swift */,
 				6DB9F2A3C4E5178290B3D4F5 /* ShareCardContent.swift */,
+				D5E6F7A8B9C00012AABB1100 /* PortfolioShareCard.swift */,
+				D5E6F7A8B9C00012AABB2200 /* SignalChangesShareCard.swift */,
+				D5E6F7A8B9C00012AABB3300 /* RiskScoreShareCard.swift */,
 			);
 			path = Share;
 			sourceTree = "<group>";
@@ -2400,6 +2408,9 @@
 				B2C3D4E5F6A70004DDEE4455 /* DailyMarketUpdateViewModel.swift in Sources */,
 				D4E5F6A7B8C90005EEFF5566 /* NotificationInboxBuilder.swift in Sources */,
 				8FD1B4C5E6A7390412D5F6B7 /* ShareCardContent.swift in Sources */,
+				D5E6F7A8B9C00011AABB1100 /* PortfolioShareCard.swift in Sources */,
+				D5E6F7A8B9C00011AABB2200 /* SignalChangesShareCard.swift in Sources */,
+				D5E6F7A8B9C00011AABB3300 /* RiskScoreShareCard.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
 				E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */,
 				D8AF87D5A1447E9A0DAE4A44 /* QRScannerSheet.swift in Sources */,
@@ -2729,7 +2740,6 @@
 				ABC5BF8C2864FD576A61F29D /* InviteCodeAdminViewModel.swift in Sources */,
 				FF481E74F4541C46F5048752 /* InviteCodeManagementView.swift in Sources */,
 				FC8C003F9476588510C39A33 /* CreateInviteCodeSheet.swift in Sources */,
-
 				70681017B5DBD6ADF9C1BF63 /* StripePlan.swift in Sources */,
 				21BE4DE4D274D78538A30191 /* AdminQuickShareViewModel.swift in Sources */,
 				9C754E9CB774CD2134BD99F4 /* AdminQuickShareView.swift in Sources */,
@@ -2889,7 +2899,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArkLine.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2.2;
+				CURRENT_PROJECT_VERSION = 2.3;
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -2911,7 +2921,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArkLine.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2.2;
+				CURRENT_PROJECT_VERSION = 2.3;
 				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;

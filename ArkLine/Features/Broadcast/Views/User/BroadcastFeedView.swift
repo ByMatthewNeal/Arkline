@@ -327,7 +327,10 @@ struct BroadcastFeedView: View {
             ForEach(groupedBroadcasts, id: \.key) { section in
                 Section {
                     ForEach(section.broadcasts) { broadcast in
-                        BroadcastCardView(broadcast: broadcast) {
+                        BroadcastCardView(
+                            broadcast: broadcast,
+                            isAdmin: appState.currentUser?.isAdmin == true
+                        ) {
                             selectedBroadcast = broadcast
                         }
                     }

@@ -7,6 +7,7 @@ struct QPSSignalChangesCard: View {
     let isPro: Bool
     var size: WidgetSize = .standard
     @State private var showPaywall = false
+    @State private var showShareSheet = false
     @Environment(\.colorScheme) var colorScheme
 
     private var changedSignals: [DailyPositioningSignal] {
@@ -16,13 +17,22 @@ struct QPSSignalChangesCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: "arrow.triangle.swap")
+                Image(systemName: "waveform.path.ecg")
                     .foregroundColor(AppColors.accent)
                 Text("Signal Changes")
                     .font(size == .compact ? .subheadline : .title3)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 Spacer()
+
+                if isPro && !changedSignals.isEmpty {
+                    Button { showShareSheet = true } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             if isPro {
@@ -41,6 +51,12 @@ struct QPSSignalChangesCard: View {
         .sheet(isPresented: $showPaywall) {
             PaywallView(feature: .swingSetups)
         }
+        .sheet(isPresented: $showShareSheet) {
+            SignalChangesShareSheet(
+                changes: changedSignals,
+                totalAssets: signals.count
+            )
+        }
     }
 
     private func signalChangeRow(_ signal: DailyPositioningSignal) -> some View {
@@ -58,7 +74,7 @@ struct QPSSignalChangesCard: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(prev.color.opacity(0.7))
+                        .background(prev.color)
                         .cornerRadius(4)
 
                     Image(systemName: "arrow.right")
@@ -83,9 +99,20 @@ struct QPSSignalChangesCard: View {
                 .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(signal.positioningSignal.color.opacity(0.3), lineWidth: 1)
+                        .stroke(changeDirectionColor(signal).opacity(0.3), lineWidth: 1)
                 )
         )
+    }
+
+    /// Border color based on direction of change: upgrade = green, downgrade = red, lateral = yellow
+    private func changeDirectionColor(_ signal: DailyPositioningSignal) -> Color {
+        guard let prev = signal.prevPositioningSignal else { return AppColors.textSecondary }
+        let order: [PositioningSignal] = [.bearish, .neutral, .bullish]
+        let prevIdx = order.firstIndex(of: prev) ?? 1
+        let newIdx = order.firstIndex(of: signal.positioningSignal) ?? 1
+        if newIdx > prevIdx { return AppColors.success }   // upgraded (e.g. neutral → bullish)
+        if newIdx < prevIdx { return AppColors.error }     // downgraded (e.g. bullish → neutral)
+        return AppColors.warning                           // lateral
     }
 
     private var noChangesCard: some View {

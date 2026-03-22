@@ -150,7 +150,11 @@ struct ReorderableWidgetStack: View {
         case .riskScore:
             // Show ArkLine Score widget (same as Market Overview)
             if let arkLineScore = viewModel.arkLineRiskScore {
-                HomeArkLineScoreWidget(score: arkLineScore, size: appState.widgetSize(.riskScore))
+                HomeArkLineScoreWidget(
+                    score: arkLineScore,
+                    size: appState.widgetSize(.riskScore),
+                    fearGreedIndex: viewModel.fearGreedIndex
+                )
             }
 
         case .fearGreedIndex:
@@ -259,7 +263,8 @@ struct ReorderableWidgetStack: View {
                 isPro: appState.isPro,
                 size: appState.widgetSize(.flashIntel),
                 stats: viewModel.signalStats,
-                highImpactEvents: viewModel.todaysEvents.filter { $0.isHighImpact }
+                highImpactEvents: viewModel.todaysEvents.filter { $0.isHighImpact },
+                marketConditions: viewModel.marketConditions
             )
 
         case .usFutures:
@@ -271,6 +276,7 @@ struct ReorderableWidgetStack: View {
                 isPro: appState.isPro,
                 size: appState.widgetSize(.qpsSignals)
             )
+            .id("widget_qpsSignals")
         }
     }
 }

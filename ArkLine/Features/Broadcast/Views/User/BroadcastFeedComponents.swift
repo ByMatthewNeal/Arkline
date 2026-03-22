@@ -5,6 +5,7 @@ import Kingfisher
 
 struct BroadcastCardView: View {
     let broadcast: Broadcast
+    var isAdmin: Bool = false
     let onTap: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
@@ -105,6 +106,35 @@ struct BroadcastCardView: View {
                         }
                     }
                 }
+
+                // Engagement stats footer
+                if (broadcast.reactionCount ?? 0) > 0 || (isAdmin && (broadcast.viewCount ?? 0) > 0) {
+                    HStack(spacing: ArkSpacing.md) {
+                        if let reactions = broadcast.reactionCount, reactions > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "heart.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.error)
+                                Text("\(reactions)")
+                                    .font(ArkFonts.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+
+                        if isAdmin, let views = broadcast.viewCount, views > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "eye.fill")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.success)
+                                Text("\(views)")
+                                    .font(ArkFonts.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+
+                        Spacer()
+                    }
+                }
             }
             .padding(ArkSpacing.md)
             .background(AppColors.cardBackground(colorScheme))
@@ -135,9 +165,25 @@ struct BroadcastDetailView: View {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
                     // Header
                     VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
+                        HStack {
+                            Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
+                                .font(ArkFonts.caption)
+                                .foregroundColor(AppColors.textSecondary)
+
+                            Spacer()
+
+                            // Admin-only view count
+                            if appState.currentUser?.isAdmin == true, let views = broadcast.viewCount, views > 0 {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "eye.fill")
+                                        .font(.caption2)
+                                        .foregroundColor(AppColors.success)
+                                    Text("\(views) views")
+                                        .font(ArkFonts.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                        }
 
                         Text(broadcast.title)
                             .font(ArkFonts.title2)

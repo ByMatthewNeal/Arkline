@@ -5,6 +5,7 @@ struct NotificationsSheet: View {
     let notifications: [AppNotification]
     var onNotificationTapped: ((AppNotification) -> Void)? = nil
     var onMarkAllRead: (() -> Void)? = nil
+    var onNavigate: ((AppNotification) -> Void)? = nil
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
@@ -85,6 +86,8 @@ struct NotificationsSheet: View {
                             AppNotificationRow(notification: notification)
                                 .onTapGesture {
                                     onNotificationTapped?(notification)
+                                    onNavigate?(notification)
+                                    dismiss()
                                 }
                         }
                     }
@@ -105,6 +108,8 @@ struct NotificationsSheet: View {
                             AppNotificationRow(notification: notification)
                                 .onTapGesture {
                                     onNotificationTapped?(notification)
+                                    onNavigate?(notification)
+                                    dismiss()
                                 }
                         }
                     }
@@ -136,6 +141,9 @@ struct AppNotification: Identifiable {
         case signalT1Hit
         case dailyBriefing
         case extremeMacroMove
+        case qpsSignalChange
+        case sentimentRegimeShift
+        case marketRegimeChange
     }
 
     var timeFormatted: String {

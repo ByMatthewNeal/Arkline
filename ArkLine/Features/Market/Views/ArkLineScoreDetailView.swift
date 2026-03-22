@@ -4,6 +4,9 @@ import SwiftUI
 struct ArkLineScoreDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     let riskScore: ArkLineRiskScore
+    var fearGreedValue: Int? = nil
+    var fearGreedClassification: String? = nil
+    @State private var showShareSheet = false
 
     private var tierColor: Color {
         Color(hex: riskScore.tier.color)
@@ -42,6 +45,24 @@ struct ArkLineScoreDetailView: View {
         )
         .navigationTitle("ArkLine Score")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    showShareSheet = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            RiskScoreShareSheet(
+                riskScore: riskScore,
+                fearGreedValue: fearGreedValue,
+                fearGreedClassification: fearGreedClassification
+            )
+        }
     }
 }
 

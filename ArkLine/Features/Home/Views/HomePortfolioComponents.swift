@@ -15,6 +15,7 @@ struct PortfolioHeroCard: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
+    @State private var showShareSheet = false
 
     private var currency: String { appState.preferredCurrency }
 
@@ -45,9 +46,19 @@ struct PortfolioHeroCard: View {
             RoundedRectangle(cornerRadius: 24)
                 .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
         )
-        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.04), radius: 16, x: 0, y: 6)
         .onChange(of: selectedTimePeriod) { _, _ in
             chartAnimationId = UUID()
+        }
+        .sheet(isPresented: $showShareSheet) {
+            PortfolioShareSheet(
+                portfolioName: portfolioName,
+                totalValue: totalValue,
+                change: change,
+                changePercent: changePercent,
+                timePeriod: selectedTimePeriod.rawValue,
+                chartData: chartData
+            )
         }
     }
 
@@ -129,6 +140,20 @@ struct PortfolioHeroCard: View {
                 .buttonStyle(.plain)
 
                 Spacer()
+
+                if totalValue > 0 {
+                    Button { showShareSheet = true } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(textPrimary.opacity(0.4))
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle()
+                                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F0F0F0"))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { isHidden.toggle() }
