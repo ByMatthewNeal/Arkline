@@ -126,7 +126,7 @@ struct DailyMarketUpdateCardContent: View {
     private var dividerColor: Color { isLight ? LightCard.divider : Color.white.opacity(0.08) }
 
     private var showETH: Bool {
-        assetFilter == .btcEth && cardSize != .short
+        assetFilter == .btcEth
     }
 
     var body: some View {
@@ -139,19 +139,28 @@ struct DailyMarketUpdateCardContent: View {
 
             // BTC — always shown
             if let btc = btcData {
-                assetSection(data: btc)
+                if cardSize == .short {
+                    compactAssetSection(data: btc)
+                } else {
+                    assetSection(data: btc)
+                }
             }
 
             // ETH — shown for medium/long when BTC+ETH selected
             if showETH, let eth = ethData {
                 sectionDivider
-                assetSection(data: eth)
+                if cardSize == .short {
+                    compactAssetSection(data: eth)
+                } else {
+                    assetSection(data: eth)
+                }
             }
 
-            sectionDivider
-
-            // Market overview — always shown
-            marketOverviewSection
+            // Market overview — medium and long only
+            if cardSize != .short {
+                sectionDivider
+                marketOverviewSection
+            }
 
             // Briefing excerpt — medium and long only
             if let excerpt = briefingExcerpt, !excerpt.isEmpty, cardSize != .short {
@@ -159,9 +168,11 @@ struct DailyMarketUpdateCardContent: View {
                 briefingSection(excerpt)
             }
 
-            // Risk level guide
-            riskLevelGuide
-                .padding(.top, 12)
+            // Risk level guide — medium and long only
+            if cardSize != .short {
+                riskLevelGuide
+                    .padding(.top, 12)
+            }
 
             // QR footer
             ShareCardQRFooter(isLight: isLight, qrImage: qrImage)
@@ -225,6 +236,44 @@ struct DailyMarketUpdateCardContent: View {
             ("High", RiskColors.highRisk),
             ("Extreme", RiskColors.extremeRisk)
         ]
+    }
+
+    // MARK: - Compact Asset Section (Short card)
+    private func compactAssetSection(data: AssetUpdateData) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(data.symbol)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                Text(data.price >= 1
+                    ? data.price.asCurrency
+                    : String(format: "$%.4f", data.price))
+                    .font(.system(size: 18, weight: .bold, design: .default))
+                    .foregroundColor(textPrimary)
+
+                HStack(spacing: 3) {
+                    Image(systemName: data.isPositive ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 10, weight: .bold))
+                    Text(String(format: "%+.2f%%", data.change24h))
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundColor(data.isPositive ? AppColors.success : AppColors.error)
+            }
+
+            // Trend row only (no sparkline, no risk score)
+            HStack(spacing: 0) {
+                trendBadge(label: "1H", direction: data.trend1H)
+                Spacer()
+                trendBadge(label: "4H", direction: data.trend4H)
+                Spacer()
+                trendBadge(label: "1D", direction: data.trend1D)
+                Spacer()
+                rsiBadge(value: data.rsi)
+            }
+        }
     }
 
     // MARK: - Asset Section
@@ -497,17 +546,21 @@ struct DailyMarketUpdateShareSheet: View {
     }
 
     private var renderHeight: CGFloat {
+        let hasETH = assetFilter == .btcEth
+        let hasExcerpt = briefingExcerpt != nil
+
         switch cardSize {
-        case .short: return 480
+        case .short:
+            // Compact: price + trends only, no sparkline/risk/market overview
+            return hasETH ? 240 : 170
         case .medium:
-            let hasExcerpt = briefingExcerpt != nil
-            let hasETH = assetFilter == .btcEth
+            // Full asset data + market overview + truncated briefing
             var height: CGFloat = hasETH ? 760 : 520
             if hasExcerpt { height += 140 }
             return height
         case .long:
-            let hasExcerpt = briefingExcerpt != nil
-            var height: CGFloat = 760
+            // Full asset data + market overview + full briefing
+            var height: CGFloat = hasETH ? 760 : 520
             if hasExcerpt { height += 260 }
             return height
         }
@@ -603,7 +656,7 @@ struct DailyMarketUpdateShareSheet: View {
 
                 Divider()
 
-                // Asset filter picker (disabled for short — always BTC only)
+                // Asset filter picker
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Image(systemName: "bitcoinsign.circle")
@@ -618,8 +671,6 @@ struct DailyMarketUpdateShareSheet: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .disabled(cardSize == .short)
-                    .opacity(cardSize == .short ? 0.4 : 1)
                 }
                 .padding(14)
 
