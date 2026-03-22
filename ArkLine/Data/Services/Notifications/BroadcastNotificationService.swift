@@ -115,6 +115,13 @@ class BroadcastNotificationService: ObservableObject {
         logError("Failed to register for remote notifications: \(error)", category: .data)
     }
 
+    /// Re-sync the locally cached device token to Supabase.
+    /// Call this after authentication is confirmed to ensure the token is stored server-side.
+    func syncDeviceTokenIfNeeded() async {
+        guard let token = deviceToken else { return }
+        await storeDeviceTokenInSupabase(token)
+    }
+
     /// Store device token in Supabase for server-side push notifications
     private func storeDeviceTokenInSupabase(_ token: String) async {
         // Get current user ID
