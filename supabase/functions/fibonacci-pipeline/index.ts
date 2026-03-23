@@ -1814,7 +1814,7 @@ async function evaluateSignals(
             title: `${emoji} ${tier.tierName === "1h" ? "Scalp" : "Swing"}: ${ticker} ${direction} Signal`,
             body: `${isStrong ? "Strong " : ""}${direction} at ${entryStr} | R:R ${rrRatio.toFixed(1)} | T1: ${t1Str} | SL: ${slStr}`,
             event_type: "signal_new",
-            target_audience: { type: "premium" },
+            target_audience: { type: "all" },
           }),
         }).catch(() => {})
       } catch {}
@@ -2151,7 +2151,7 @@ function notifyResolution(signal: any, event: ResolutionEvent, price: number): v
       broadcast_id: signal.id,
       title, body,
       event_type: eventTypeMap[event],
-      target_audience: { type: "premium" },
+      target_audience: { type: "all" },
     }),
   }).catch(() => {})
 }

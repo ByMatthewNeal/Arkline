@@ -376,7 +376,7 @@ Deno.serve(async (req) => {
           title: `🔔 ${signal.asset} approaching ${direction} entry zone`,
           body: `Price at ${priceStr} — ${distancePct.toFixed(1)}% from entry zone (${entryStr})${scoreStr}`,
           event_type: "signal_proximity",
-          target_audience: { type: "premium" },
+          target_audience: { type: "all" },
         }),
       })
 
@@ -471,7 +471,7 @@ async function notify(
         title,
         body,
         event_type: eventTypeMap[event],
-        target_audience: { type: "premium" },
+        target_audience: { type: "all" },
       }),
     })
   } catch (err) {
