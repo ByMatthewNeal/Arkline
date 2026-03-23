@@ -40,6 +40,14 @@ struct TradeSignalCardContent: View {
                 Spacer()
 
                 HStack(spacing: 6) {
+                    Text(signal.timeframeBadge.uppercased())
+                        .font(.system(size: 10, weight: .heavy))
+                        .foregroundColor(isLight ? Color(hex: "64748B") : Color.white.opacity(0.6))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
+                        .background(isLight ? Color(hex: "F1F5F9") : Color.white.opacity(0.1))
+                        .cornerRadius(5)
+
                     Text(signal.signalType.displayName.uppercased())
                         .font(.system(size: 12, weight: .heavy))
                         .foregroundColor(.white)
@@ -563,7 +571,7 @@ struct TradeSignalShareSheet: View {
 
         var lines: [String] = []
         let gradeLabel = signal.scoreGrade.map { " (\($0) Setup)" } ?? ""
-        lines.append("\(direction) on \(signal.asset)\(gradeLabel)")
+        lines.append("\(signal.timeframeBadge.uppercased()) — \(direction) on \(signal.asset)\(gradeLabel)")
         lines.append("")
 
         if let price = currentPrice {
