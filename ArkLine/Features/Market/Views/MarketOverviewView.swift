@@ -108,7 +108,25 @@ struct MarketOverviewView: View {
             .onChange(of: appState.selectedTab) { _, newTab in
                 if newTab == .market, let signalId = pendingSignalId {
                     pendingSignalId = nil
-                    navigationPath.append(signalId)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        navigationPath.append(signalId)
+                    }
+                }
+            }
+            .onAppear {
+                // Handle cold-start deep link from notification tap
+                if let pending = BroadcastNotificationService.shared.pendingNotificationResult,
+                   pending.type == "swing_signal",
+                   let signalId = UUID(uuidString: pending.id) {
+                    BroadcastNotificationService.shared.pendingNotificationResult = nil
+                    if appState.selectedTab == .market {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            navigationPath.append(signalId)
+                        }
+                    } else {
+                        pendingSignalId = signalId
+                        appState.selectedTab = .market
+                    }
                 }
             }
         }

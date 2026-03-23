@@ -196,6 +196,15 @@ struct MainTabView: View {
             try? await Task.sleep(for: .milliseconds(500))
             loadedTabs = Set(AppTab.allCases)
         }
+        .onAppear {
+            // Cold-start deep link: if app was launched via signal notification tap,
+            // switch to market tab so MarketOverviewView can pick up the pending signal
+            if let pending = BroadcastNotificationService.shared.pendingNotificationResult,
+               pending.type == "swing_signal" {
+                loadedTabs.insert(.market)
+                appState.selectedTab = .market
+            }
+        }
     }
 
     @ViewBuilder

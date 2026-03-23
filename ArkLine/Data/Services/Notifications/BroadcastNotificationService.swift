@@ -19,6 +19,10 @@ class BroadcastNotificationService: ObservableObject {
     @Published var isNotificationsEnabled = false
     @Published var notificationStatus: UNAuthorizationStatus = .notDetermined
 
+    /// Stores the last notification tap result for cold-start deep linking.
+    /// Views should check this on appear and clear it after handling.
+    var pendingNotificationResult: (type: String, id: String)?
+
     // MARK: - UserDefaults Keys
 
     private let deviceTokenKey = "arkline_device_token"
@@ -397,28 +401,35 @@ extension BroadcastNotificationService {
 
         guard let type = userInfo["type"] as? String else { return nil }
 
+        var result: (type: String, id: String)?
+
         switch type {
         case "broadcast":
             if let broadcastId = userInfo["broadcast_id"] as? String {
-                return (type: "broadcast", id: broadcastId)
+                result = (type: "broadcast", id: broadcastId)
             }
         case "briefing":
             let slot = userInfo["slot"] as? String ?? "morning"
-            return (type: "briefing", id: slot)
+            result = (type: "briefing", id: slot)
         case "swing_signal":
             if let signalId = userInfo["signal_id"] as? String {
-                return (type: "swing_signal", id: signalId)
+                result = (type: "swing_signal", id: signalId)
             }
         case "qps_change":
             let asset = userInfo["asset"] as? String ?? ""
-            return (type: "qps_change", id: asset)
+            result = (type: "qps_change", id: asset)
         case "dca_reminder":
             let reminderId = userInfo["reminder_id"] as? String ?? ""
-            return (type: "dca_reminder", id: reminderId)
+            result = (type: "dca_reminder", id: reminderId)
         default:
             break
         }
 
-        return nil
+        // Store for cold-start deep linking (views may not be mounted yet)
+        if let result {
+            pendingNotificationResult = result
+        }
+
+        return result
     }
 }

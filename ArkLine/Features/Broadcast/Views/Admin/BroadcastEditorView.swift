@@ -806,12 +806,22 @@ struct BroadcastEditorView: View {
 
     private func imagePreviewThumbnail(_ image: BroadcastImage) -> some View {
         ZStack(alignment: .topTrailing) {
-            KFImage(image.imageURL)
-                .resizable()
-                .placeholder {
-                    ProgressView()
+            Group {
+                if let data = pendingImageData[image.id],
+                   let uiImage = UIImage(data: data) {
+                    // Pending image — show from in-memory data
+                    Image(uiImage: uiImage)
+                        .resizable()
+                } else {
+                    // Already uploaded — load from remote URL
+                    KFImage(image.imageURL)
+                        .resizable()
+                        .placeholder {
+                            ProgressView()
+                        }
+                        .fade(duration: 0.2)
                 }
-                .fade(duration: 0.2)
+            }
                 .aspectRatio(contentMode: .fill)
                 .frame(width: 80, height: 80)
                 .background(AppColors.cardBackground(colorScheme))

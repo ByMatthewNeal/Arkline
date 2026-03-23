@@ -294,15 +294,26 @@ Deno.serve(async (req) => {
     // Generate APNs JWT (valid for ~1 hour, but we generate fresh each invocation)
     const jwt = await createApnsJwt(apnsKey, apnsKeyId, apnsTeamId)
 
-    const payload = {
+    // Map event_type to the "type" field iOS expects for deep linking
+    const isSignalEvent = (event_type || "").startsWith("signal_")
+    const notificationType = isSignalEvent ? "swing_signal"
+      : event_type === "briefing" ? "briefing"
+      : event_type === "qps_change" ? "qps_change"
+      : event_type === "dca_reminder" ? "dca_reminder"
+      : "broadcast"
+
+    const payload: Record<string, unknown> = {
       aps: {
         alert: { title, body: body || "" },
         sound: "default",
         badge: 1,
         "mutable-content": 1,
       },
+      type: notificationType,
       broadcast_id,
       event_type: event_type || "general",
+      // Include signal_id for deep link navigation to signal detail
+      ...(isSignalEvent && { signal_id: broadcast_id }),
     }
 
     const tokens = filteredDevices.map((d: { device_token: string }) => d.device_token)

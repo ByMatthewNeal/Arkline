@@ -236,6 +236,7 @@ class AppState: ObservableObject {
 
     // Deep link pending navigation (from notification tap or URL scheme)
     @Published var pendingBroadcastId: String?
+    @Published var pendingSignalId: UUID?
     @Published var pendingQPSAsset: String?
     @Published var pendingDCAReminderId: String?
     @Published var shouldExpandBriefing = false
