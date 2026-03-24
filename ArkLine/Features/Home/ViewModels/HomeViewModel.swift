@@ -388,9 +388,10 @@ class HomeViewModel {
         return cachedCryptoAssets.filter { favoriteIds.contains($0.id) }
     }
 
-    // AI Market Summary
-    var marketSummary: MarketSummary? = nil
-    var isLoadingSummary = true
+    // AI Market Summary — show persisted briefing instantly on cold start
+    private static let _persistedBriefing = MarketSummaryService.shared.loadPersistedBriefing()
+    var marketSummary: MarketSummary? = _persistedBriefing
+    var isLoadingSummary: Bool = _persistedBriefing == nil
 
     // Notification Inbox
     var recentSignalsForInbox: [TradeSignal] = []
@@ -766,6 +767,17 @@ class HomeViewModel {
             return zScores
         }
 
+        // Briefing: fetch in parallel with other data (not after).
+        // Persisted briefing is already showing, this refreshes it.
+        let briefingTask = Task { @MainActor [enableSideEffects] in
+            guard enableSideEffects else { return }
+            if forceRefresh {
+                MarketSummaryService.shared.clearLocalCache()
+            }
+            self.isLoadingSummary = true
+            await self.fetchMarketSummary()
+        }
+
         // Await all progressive tasks, then compute regime + failure count.
         // Race against a 20-second deadline so the Home tab never stays stuck
         // in loading state (e.g. on flaky wifi / airplane mode).
@@ -777,6 +789,7 @@ class HomeViewModel {
                 _ = await riskTask.value
                 _ = await sentimentTask.value
                 _ = await zScoreTask.value
+                _ = await briefingTask.value
                 return false // completed
             }
             group.addTask {
@@ -889,15 +902,6 @@ class HomeViewModel {
             }
         }
 
-        // Fetch latest pre-generated briefing from server.
-        // On force refresh (pull-to-refresh), clear local cache to get latest from DB.
-        if forceRefresh {
-            MarketSummaryService.shared.clearLocalCache()
-        }
-        // Set loading flag BEFORE launching task to avoid race where isLoading=false
-        // and isLoadingSummary=false simultaneously → "unavailable" flash
-        self.isLoadingSummary = true
-        Task { await self.fetchMarketSummary() }
     }
 
     func markReminderComplete(_ reminder: DCAReminder) async {

@@ -9,10 +9,53 @@ final class MarketSummaryService {
 
     private static let cacheKey = "market_summary_session"
     private static let cacheTTL: TimeInterval = 7200 // 2 hours
+    private static let diskCacheKey = "arkline_last_briefing"
 
     private let yahooService = YahooFinanceService.shared
 
     private init() {}
+
+    // MARK: - Disk-Persisted Briefing (survives app kill)
+
+    /// Load last briefing from disk immediately (no network). Returns nil if never cached.
+    func loadPersistedBriefing() -> MarketSummary? {
+        guard let data = UserDefaults.standard.data(forKey: Self.diskCacheKey),
+              let persisted = try? JSONDecoder().decode(PersistedBriefing.self, from: data) else {
+            return nil
+        }
+        return MarketSummary(
+            summary: persisted.summary,
+            generatedAt: persisted.generatedAt,
+            summaryDate: persisted.summaryDate,
+            slot: persisted.slot,
+            feedbackRating: persisted.feedbackRating,
+            feedbackNote: persisted.feedbackNote
+        )
+    }
+
+    /// Save briefing to disk so it's available on next cold start.
+    private func persistBriefing(_ briefing: MarketSummary) {
+        let persisted = PersistedBriefing(
+            summary: briefing.summary,
+            generatedAt: briefing.generatedAt,
+            summaryDate: briefing.summaryDate,
+            slot: briefing.slot,
+            feedbackRating: briefing.feedbackRating,
+            feedbackNote: briefing.feedbackNote
+        )
+        if let data = try? JSONEncoder().encode(persisted) {
+            UserDefaults.standard.set(data, forKey: Self.diskCacheKey)
+        }
+    }
+
+    private struct PersistedBriefing: Codable {
+        let summary: String
+        let generatedAt: Date
+        let summaryDate: String
+        let slot: String
+        let feedbackRating: Bool?
+        let feedbackNote: String?
+    }
 
     // MARK: - Request / Response
 
@@ -170,6 +213,7 @@ final class MarketSummaryService {
         do {
             let result = try await readBriefingFromDB(preferredDate: summaryDate, preferredSlot: slot)
             APICache.shared.set(Self.cacheKey, value: result, ttl: Self.cacheTTL)
+            persistBriefing(result)
             return result
         } catch {
             logWarning("DB briefing read failed, falling back to edge function: \(error)", category: .network)
@@ -268,6 +312,7 @@ final class MarketSummaryService {
             feedbackNote: feedback?.note
         )
         APICache.shared.set(Self.cacheKey, value: result, ttl: Self.cacheTTL)
+        persistBriefing(result)
         return result
     }
 
