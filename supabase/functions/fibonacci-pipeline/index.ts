@@ -1823,17 +1823,21 @@ async function evaluateSignals(
       try {
         const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
         const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-        await fetch(`${supabaseUrl}/functions/v1/generate-signal-briefing`, {
+        const briefingResp = await fetch(`${supabaseUrl}/functions/v1/generate-signal-briefing`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${anonKey}`,
             "x-cron-secret": cronSecret,
           },
           body: JSON.stringify({ signal_id: inserted.id }),
         })
-      } catch {}
+        if (!briefingResp.ok) {
+          const errText = await briefingResp.text().catch(() => "")
+          console.error(`[briefing] Failed for ${ticker} signal ${inserted.id}: ${briefingResp.status} ${errText}`)
+        }
+      } catch (err) {
+        console.error(`[briefing] Error for ${ticker}: ${err}`)
+      }
     }
   }
 
