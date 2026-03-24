@@ -339,6 +339,7 @@ final class MarketSummaryService {
         )
 
         APICache.shared.remove(Self.cacheKey)
+        UserDefaults.standard.removeObject(forKey: Self.diskCacheKey)
         logDebug("Server cache cleared for today's briefing", category: .network)
     }
 

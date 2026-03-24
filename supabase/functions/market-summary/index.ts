@@ -42,13 +42,14 @@ Deno.serve(async (req) => {
 
     const today = new Date().toISOString().split("T")[0]
     await supabase.from("market_summaries").delete().eq("summary_date", today)
-    console.log(`Admin ${user.id} cleared cache for ${today}`)
-    return ok({ cleared: true })
+    console.log(`Admin ${user.id} cleared cache for ${today} — will regenerate`)
+    // Don't return — fall through to regenerate a fresh briefing
   }
 
-  // Detect cron call — force fresh generation
+  // Detect cron call or admin regeneration — force fresh generation
   const isCron = req.headers.get("x-cron-secret") === (Deno.env.get("CRON_SECRET") ?? "")
     && req.headers.get("x-cron-secret") !== ""
+  const forceRegenerate = payload.clearCache === true
 
   // Determine slot. Cron passes explicit slot; otherwise compute from EST time.
   const now = new Date()
@@ -61,8 +62,8 @@ Deno.serve(async (req) => {
 
   console.log(`Slot: ${slot}, EST hour: ${estHour}, date: ${todayUTC}, cron: ${isCron}`)
 
-  // Check cache (skip for cron — always generate fresh)
-  if (!isCron) {
+  // Check cache (skip for cron/admin regeneration — always generate fresh)
+  if (!isCron && !forceRegenerate) {
     // Try exact slot for today
     const { data: cached, error: cacheError } = await supabase
       .from("market_summaries")

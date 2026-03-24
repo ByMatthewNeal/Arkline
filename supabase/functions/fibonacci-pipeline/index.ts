@@ -26,34 +26,17 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
-  // Original assets
-  { cbPair: "BTC-USD",    ticker: "BTC" },
-  { cbPair: "ETH-USD",    ticker: "ETH" },
-  { cbPair: "SOL-USD",    ticker: "SOL" },
-  { cbPair: "SUI-USD",    ticker: "SUI" },
-  { cbPair: "LINK-USD",   ticker: "LINK" },
-  { cbPair: "ADA-USD",    ticker: "ADA" },
-  { cbPair: "AVAX-USD",   ticker: "AVAX" },
-  { cbPair: "RENDER-USD", ticker: "RENDER" },
-  { cbPair: "APT-USD",    ticker: "APT" },
-  { cbPair: "HYPE-USD",   ticker: "HYPE", tiers: ["1h"] },  // Scalp only — limited 1D history on Coinbase
-  // Added 2026-03-22 (backtest-qualified)
-  { cbPair: "ONDO-USD",   ticker: "ONDO" },
-  { cbPair: "POL-USD",    ticker: "POL" },
-  { cbPair: "BNB-USD",    ticker: "BNB" },
-  { cbPair: "ATOM-USD",   ticker: "ATOM" },
-  { cbPair: "TIA-USD",    ticker: "TIA" },
-  { cbPair: "XRP-USD",    ticker: "XRP" },
-  { cbPair: "INJ-USD",    ticker: "INJ" },
-  { cbPair: "DOGE-USD",   ticker: "DOGE" },
-  { cbPair: "AAVE-USD",   ticker: "AAVE" },
-  { cbPair: "PEPE-USD",   ticker: "PEPE" },
-  { cbPair: "ENA-USD",    ticker: "ENA" },
-  { cbPair: "FET-USD",    ticker: "FET" },
-  { cbPair: "ARB-USD",    ticker: "ARB" },
-  { cbPair: "DOT-USD",    ticker: "DOT" },
-  { cbPair: "UNI-USD",    ticker: "UNI" },
-  { cbPair: "NEAR-USD",   ticker: "NEAR" },
+  // Top 10 — selected by live performance + 365-day backtest profit factor (2026-03-24)
+  { cbPair: "BTC-USD",    ticker: "BTC" },    // Core asset, 3.48 PF
+  { cbPair: "ETH-USD",    ticker: "ETH" },    // 4.52 PF, 57.1% live WR
+  { cbPair: "SOL-USD",    ticker: "SOL" },    // 3.56 PF, 60.0% live WR
+  { cbPair: "SUI-USD",    ticker: "SUI" },    // 4.51 PF, 72.7% live WR (best)
+  { cbPair: "LINK-USD",   ticker: "LINK" },   // 4.31 PF, 62.5% live WR
+  { cbPair: "ADA-USD",    ticker: "ADA" },    // 4.75 PF (highest backtest)
+  { cbPair: "AVAX-USD",   ticker: "AVAX" },   // 3.62 PF, 100% live WR (n=3)
+  { cbPair: "APT-USD",    ticker: "APT" },    // 3.53 PF, decent volume
+  { cbPair: "XRP-USD",    ticker: "XRP" },    // 4.29 PF backtest
+  { cbPair: "ATOM-USD",   ticker: "ATOM" },   // 4.50 PF, long-preferred
 ]
 
 // Coinbase granularities: ONE_HOUR, TWO_HOUR, FOUR_HOUR, SIX_HOUR, ONE_DAY
@@ -74,7 +57,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 0.75
+const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
@@ -254,7 +237,7 @@ Deno.serve(async (req) => {
 
         // Compute volume profile from 4h candles (shared across tiers)
         const volumeNodes = computeVolumeProfile(candles["4h"])
-        const enabledTiers = asset.tiers ?? ["4h", "1h"]  // Default: both tiers
+        const enabledTiers = asset.tiers ?? ["4h"]  // Swing only — scalp tier disabled
 
         // ── Tier 1: Swing (4H/1D) ──────────────────────────────────────
         if (enabledTiers.includes("4h")) {
@@ -745,6 +728,141 @@ function checkTrendAlignment(candles4h: Candle[], isBuy: boolean): boolean {
     const pullbackOk = emaSlopeDown && Math.abs(price - emaSlow) / emaSlow < EMA_PULLBACK_TOLERANCE
     return trendOk || pullbackOk
   }
+}
+
+/**
+ * Daily-timeframe trend guard — blocks shorts in clear daily uptrends.
+ * Asymmetric by design: longs are NEVER blocked because this strategy's
+ * best edge is buying support during pullbacks (even in "downtrends").
+ * Returns true if the signal direction is allowed.
+ */
+function checkDailyTrendGuard(dailyCandles: Candle[], isBuy: boolean): boolean {
+  // Never block longs — buying pullbacks is the strategy's core edge
+  if (isBuy) return true
+
+  if (dailyCandles.length < EMA_SLOW_PERIOD + 5) return true  // Not enough data, allow
+
+  const emaFast = calcEma(dailyCandles, EMA_FAST_PERIOD)
+  const emaSlow = calcEma(dailyCandles, EMA_SLOW_PERIOD)
+  const emaSlowPrev = calcEma(dailyCandles.slice(0, -5), EMA_SLOW_PERIOD)  // 5-day slope
+
+  if (emaFast === null || emaSlow === null || emaSlowPrev === null) return true
+
+  const spread = Math.abs(emaFast - emaSlow) / emaSlow * 100
+  const slopeUp = emaSlow > emaSlowPrev
+
+  // Block shorts when daily trend is clearly bullish: EMA20 > EMA50, slope rising, spread > 1%
+  if (emaFast > emaSlow && slopeUp && spread > 1.0) {
+    return false
+  }
+
+  return true
+}
+
+// ─── Choppiness Detector ─────────────────────────────────────────────────────
+
+interface MarketRegime {
+  isChoppy: boolean
+  emaSpreadPct: number
+  crossoverCount: number
+  priceWhipsaws: number
+}
+
+/**
+ * Detects choppy/ranging market conditions on 4H timeframe.
+ * Choppy = EMAs close together, frequent crossovers, price whipsawing around EMA20.
+ * Returns regime info used to raise signal quality thresholds.
+ */
+function detectMarketRegime(candles4h: Candle[]): MarketRegime {
+  const regime: MarketRegime = { isChoppy: false, emaSpreadPct: 0, crossoverCount: 0, priceWhipsaws: 0 }
+
+  if (candles4h.length < EMA_SLOW_PERIOD + 20) return regime
+
+  // Compute EMA series for crossover detection
+  const closes = candles4h.map(c => c.close)
+  const mult20 = 2 / (EMA_FAST_PERIOD + 1)
+  const mult50 = 2 / (EMA_SLOW_PERIOD + 1)
+
+  // Bootstrap EMA20
+  let ema20 = 0
+  for (let i = 0; i < EMA_FAST_PERIOD; i++) ema20 += closes[i]
+  ema20 /= EMA_FAST_PERIOD
+  for (let i = EMA_FAST_PERIOD; i < EMA_SLOW_PERIOD; i++) {
+    ema20 = (closes[i] - ema20) * mult20 + ema20
+  }
+
+  // Bootstrap EMA50
+  let ema50 = 0
+  for (let i = 0; i < EMA_SLOW_PERIOD; i++) ema50 += closes[i]
+  ema50 /= EMA_SLOW_PERIOD
+
+  // Walk forward from EMA_SLOW_PERIOD, tracking last 20 candles (~3.3 days)
+  const lookback = 20
+  let prevAbove = ema20 > ema50
+  const recentEma20Above: boolean[] = []
+  const recentPriceAboveEma20: boolean[] = []
+
+  for (let i = EMA_SLOW_PERIOD; i < closes.length; i++) {
+    ema20 = (closes[i] - ema20) * mult20 + ema20
+    ema50 = (closes[i] - ema50) * mult50 + ema50
+
+    const above = ema20 > ema50
+    recentEma20Above.push(above)
+    recentPriceAboveEma20.push(closes[i] > ema20)
+
+    // Keep only last N
+    if (recentEma20Above.length > lookback) recentEma20Above.shift()
+    if (recentPriceAboveEma20.length > lookback) recentPriceAboveEma20.shift()
+
+    prevAbove = above
+  }
+
+  // Current EMA spread
+  regime.emaSpreadPct = Math.abs(ema20 - ema50) / ema50 * 100
+
+  // Count EMA20/EMA50 crossovers in lookback
+  for (let i = 1; i < recentEma20Above.length; i++) {
+    if (recentEma20Above[i] !== recentEma20Above[i - 1]) regime.crossoverCount++
+  }
+
+  // Count price/EMA20 whipsaws in lookback
+  for (let i = 1; i < recentPriceAboveEma20.length; i++) {
+    if (recentPriceAboveEma20[i] !== recentPriceAboveEma20[i - 1]) regime.priceWhipsaws++
+  }
+
+  // Choppy if: EMAs tight AND (crossovers or whipsaws are frequent)
+  const tightSpread = regime.emaSpreadPct < 1.5
+  const frequentCrossovers = regime.crossoverCount >= 2
+  const frequentWhipsaws = regime.priceWhipsaws >= 6
+  regime.isChoppy = tightSpread && (frequentCrossovers || frequentWhipsaws)
+
+  return regime
+}
+
+// ─── Momentum Filter ─────────────────────────────────────────────────────────
+
+/**
+ * Blocks shorts when price has rallied strongly in the last N daily candles (bounce in progress).
+ * Blocks longs when price has dropped sharply in the last N daily candles (selloff in progress).
+ * Prevents entering against active short-term momentum even when the larger trend "agrees".
+ */
+function checkMomentumFilter(dailyCandles: Candle[], isBuy: boolean): boolean {
+  const lookback = 5   // 5 daily candles
+  const threshold = 5  // 5% move
+
+  if (dailyCandles.length < lookback + 1) return true  // Not enough data, allow
+
+  const current = dailyCandles[dailyCandles.length - 1].close
+  const past = dailyCandles[dailyCandles.length - 1 - lookback].close
+  const changePct = ((current - past) / past) * 100
+
+  // Block shorts during strong bounce (price up 5%+ in 5 days)
+  if (!isBuy && changePct >= threshold) return false
+
+  // Block longs during sharp selloff (price down 5%+ in 5 days)
+  if (isBuy && changePct <= -threshold) return false
+
+  return true
 }
 
 // ─── Bull Market Support Band ────────────────────────────────────────────────
@@ -1578,6 +1696,30 @@ async function evaluateSignals(
 
   const allFibPrices = fibs.map((f) => f.price)
 
+  // Detect market regime (choppy vs trending) — used to raise quality thresholds
+  const regime = detectMarketRegime(candles4h)
+  if (regime.isChoppy) {
+    console.log(`[${ticker}] Choppy market detected (spread=${regime.emaSpreadPct.toFixed(2)}%, crossovers=${regime.crossoverCount}, whipsaws=${regime.priceWhipsaws})`)
+  }
+  const choppyMinRR = regime.isChoppy ? 2.0 : MIN_RR_RATIO  // Require 2:1 R:R in choppy markets
+  const choppyBounceThreshold = regime.isChoppy ? 2 : 1       // Require 2 of 3 bounce signals in choppy markets
+
+  // 24-hour cooldown per asset: skip if any signal was generated in the last 24h
+  const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { data: recentSignals } = await supabase
+    .from("trade_signals")
+    .select("id")
+    .eq("asset", ticker)
+    .eq("timeframe", tier.tierName)
+    .gte("generated_at", cooldownCutoff)
+    .limit(1)
+
+  if (recentSignals && recentSignals.length > 0) {
+    stats.skipReasons.push(`24h cooldown: signal already generated for ${ticker}`)
+    stats.skipped++
+    return stats
+  }
+
   for (const zone of zones) {
     const distancePct = Math.abs((currentPrice - zone.mid) / currentPrice) * 100
     if (distancePct > tier.signalProximityPct) continue
@@ -1644,6 +1786,24 @@ async function evaluateSignals(
       continue
     }
 
+    // Daily trend guard — block counter-trend signals when daily trend is clearly directional
+    const dailyCandles = candles["1d"] ?? []
+    if (!checkDailyTrendGuard(dailyCandles, isBuy)) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): daily trend blocks ${isBuy ? "buy" : "sell"}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: daily trend blocks ${isBuy ? "long" : "short"}`)
+      stats.skipped++
+      continue
+    }
+
+    // Momentum filter — block signals against strong short-term moves (bounce/selloff)
+    if (!checkMomentumFilter(dailyCandles, isBuy)) {
+      const dir = isBuy ? "long during selloff" : "short during bounce"
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): momentum blocks ${dir}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: momentum blocks ${dir}`)
+      stats.skipped++
+      continue
+    }
+
     // Bounce confirmation — check preferred timeframes in order
     let bounce = { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false } }
     for (const btf of tier.bounceTimeframes) {
@@ -1663,6 +1823,19 @@ async function evaluateSignals(
       continue
     }
 
+    // In choppy markets, require stronger bounce confirmation (2 of 3 signals)
+    if (regime.isChoppy) {
+      const bounceCount = (bounce.details.wick_rejection ? 1 : 0)
+        + (bounce.details.volume_spike ? 1 : 0)
+        + (bounce.details.consecutive_closes ? 1 : 0)
+      if (bounceCount < choppyBounceThreshold) {
+        console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): choppy market — weak bounce (${bounceCount}/3) [${tier.tierName}]`)
+        stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: choppy market, weak bounce (${bounceCount}/${choppyBounceThreshold} needed)`)
+        stats.skipped++
+        continue
+      }
+    }
+
     // Targets and stop
     const targets = computeTargetsAndStop(zone, allFibPrices, isBuy)
     if (!targets) continue
@@ -1673,9 +1846,13 @@ async function evaluateSignals(
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
 
-    if (rrRatio < MIN_RR_RATIO) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): R:R ${rrRatio.toFixed(2)} < ${MIN_RR_RATIO}`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: R:R ${rrRatio.toFixed(2)} < ${MIN_RR_RATIO}`)
+    const effectiveMinRR = regime.isChoppy ? choppyMinRR : MIN_RR_RATIO
+    if (rrRatio < effectiveMinRR) {
+      const reason = regime.isChoppy
+        ? `R:R ${rrRatio.toFixed(2)} < ${effectiveMinRR} (choppy market)`
+        : `R:R ${rrRatio.toFixed(2)} < ${effectiveMinRR}`
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): ${reason}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: ${reason}`)
       stats.skipped++
       continue
     }
