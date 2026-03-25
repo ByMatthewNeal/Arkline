@@ -51,6 +51,7 @@ struct FlashIntelCard: View {
                     Text(signal.signalType.displayName.uppercased())
                         .font(.system(size: 10, weight: .heavy))
                         .foregroundColor(.white)
+                        .fixedSize()
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(signalColor)
