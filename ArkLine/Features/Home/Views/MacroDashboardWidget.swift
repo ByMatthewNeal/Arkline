@@ -296,6 +296,33 @@ struct MacroDashboardWidget: View {
                         .fill(subtleBackground)
                 )
 
+                // Fear Spike Banner (VIX z-score ≥ 2σ — contrarian bullish)
+                if let vixZ = macroZScores[.vix], vixZ.zScore.zScore >= 2.0, size != .compact {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.warning)
+
+                        Text("Fear Spike")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(AppColors.warning)
+
+                        Text("VIX elevated, markets historically bounce from these levels")
+                            .font(.system(size: 11))
+                            .foregroundColor(textPrimary.opacity(0.6))
+                            .lineLimit(1)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(AppColors.warning.opacity(0.12))
+                    )
+                    .padding(.top, 8)
+                }
+
                 // Market Regime Summary
                 if size != .compact {
                     let displayColor = quadrant?.color ?? regime.color

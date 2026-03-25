@@ -168,7 +168,11 @@ Deno.serve(async (req) => {
   // --- Macro ---
   const macroLines: string[] = []
   if (payload.vixValue != null) {
-    macroLines.push(`VIX: ${payload.vixValue}${payload.vixSignal ? ` — ${payload.vixSignal}` : ""}`)
+    let vixLine = `VIX: ${payload.vixValue}${payload.vixSignal ? ` — ${payload.vixSignal}` : ""}`
+    if (payload.vixZScore != null) {
+      vixLine += ` [z-score: ${Number(payload.vixZScore).toFixed(1)}σ]`
+    }
+    macroLines.push(vixLine)
   }
   if (payload.dxyValue != null) {
     macroLines.push(`DXY: ${payload.dxyValue}${payload.dxySignal ? ` — ${payload.dxySignal}` : ""}`)
@@ -675,6 +679,10 @@ async function enrichPayloadFromServer(
         payload.vixValue = q.price
         const vl = q.price
         payload.vixSignal = vl >= 30 ? "Extreme fear" : vl >= 20 ? "Elevated volatility" : vl >= 15 ? "Normal" : "Low volatility"
+        // Store VIX daily change for z-score context
+        if (q.changesPercentage != null) {
+          payload.vixDailyChange = q.changesPercentage
+        }
       } else if (symbol === "DX-Y.NYB") {
         payload.dxyValue = q.price
         payload.dxySignal = q.changesPercentage > 0 ? "Strengthening" : "Weakening"
@@ -701,6 +709,39 @@ async function enrichPayloadFromServer(
       forecast: e.forecast,
       previous: e.previous,
     }))
+  }
+
+  // --- Compute VIX z-score from 90-day history (contrarian fear indicator) ---
+  if (payload.vixValue != null && fmpKey) {
+    try {
+      const vixHistoryResp = await fetch(
+        `https://financialmodelingprep.com/api/v3/historical-price-full/%5EVIX?timeseries=90&apikey=${fmpKey}`
+      )
+      if (vixHistoryResp.ok) {
+        const vixHistoryData = await vixHistoryResp.json()
+        const historicalPrices = vixHistoryData?.historical
+        if (Array.isArray(historicalPrices) && historicalPrices.length >= 20) {
+          const closes = historicalPrices.map((d: any) => d.close as number)
+          const mean = closes.reduce((a: number, b: number) => a + b, 0) / closes.length
+          const sd = Math.sqrt(
+            closes.reduce((sum: number, v: number) => sum + (v - mean) ** 2, 0) / (closes.length - 1)
+          )
+          if (sd > 0) {
+            const zScore = ((payload.vixValue as number) - mean) / sd
+            payload.vixZScore = Math.round(zScore * 100) / 100
+            // Enhance VIX signal with contrarian context
+            if (zScore >= 2.0) {
+              payload.vixSignal = `${payload.vixSignal} — FEAR SPIKE (${zScore.toFixed(1)}σ above 90-day mean, historically contrarian bullish for risk assets)`
+            } else if (zScore <= -2.0) {
+              payload.vixSignal = `${payload.vixSignal} — Complacency (${zScore.toFixed(1)}σ below 90-day mean, watch for volatility expansion)`
+            }
+            console.log(`VIX z-score: ${zScore.toFixed(2)} (mean=${mean.toFixed(1)}, sd=${sd.toFixed(1)})`)
+          }
+        }
+      }
+    } catch (err) {
+      console.error("VIX z-score calc failed:", err instanceof Error ? err.message : String(err))
+    }
   }
 
   console.log(`Server data enrichment complete: BTC=$${payload.btcPrice}, SP500=$${payload.sp500Price}, FG=${payload.fearGreedValue}, VIX=${payload.vixValue}, events=${(payload.economicEvents as any[])?.length ?? 0}`)

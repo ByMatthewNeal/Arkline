@@ -460,6 +460,49 @@ Deno.serve(async (req) => {
     await sleep(INTER_ASSET_DELAY_MS)
   }
 
+  // ── VIX Contrarian Boost ──────────────────────────────────────────────────
+  // When VIX z-score ≥ 2σ (fear spike), apply contrarian bullish boost to
+  // crypto, index, and stock assets. This captures the insight that extreme
+  // fear readings historically precede risk-asset rallies.
+  const vixResult = results.find((r) => r.asset === "VIX")
+  if (vixResult) {
+    try {
+      // Fetch VIX 90-day history to compute z-score
+      const vixCandles = await fetchFMPCandles("^VIX", fmpKey)
+      const vixCloses = vixCandles.slice(-90).map((c) => c.close)
+      if (vixCloses.length >= 20) {
+        const mean = vixCloses.reduce((a, b) => a + b, 0) / vixCloses.length
+        const sd = Math.sqrt(
+          vixCloses.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (vixCloses.length - 1)
+        )
+        if (sd > 0) {
+          const vixZ = (vixResult.price - mean) / sd
+          console.log(`VIX z-score: ${vixZ.toFixed(2)} (price=${vixResult.price}, mean=${mean.toFixed(1)}, sd=${sd.toFixed(1)})`)
+
+          if (vixZ >= 2.0) {
+            // Fear spike: boost crypto, index, and stock scores by +5
+            const boostAmount = 5
+            const boostCategories = new Set(["crypto", "index", "stock"])
+            let boosted = 0
+            for (const r of results) {
+              if (boostCategories.has(r.category)) {
+                const oldScore = r.trend_score
+                r.trend_score = Math.min(100, r.trend_score + boostAmount)
+                // Rederive signal with boosted score
+                const has200 = r.above_200_sma !== undefined
+                r.signal = deriveSignal(r.trend_score, r.above_200_sma, has200)
+                boosted++
+              }
+            }
+            console.log(`VIX fear spike (${vixZ.toFixed(1)}σ): applied +${boostAmount} contrarian boost to ${boosted} assets`)
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`VIX z-score calculation failed: ${(err as Error).message}`)
+    }
+  }
+
   // Upsert all results
   if (results.length > 0) {
     const rows = results.map((r) => ({
