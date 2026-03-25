@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
 
         // Compute volume profile from 4h candles (shared across tiers)
         const volumeNodes = computeVolumeProfile(candles["4h"])
-        const enabledTiers = asset.tiers ?? ["4h"]  // Swing only — scalp tier disabled
+        const enabledTiers = asset.tiers ?? ["4h", "1h"]  // Both swing + scalp tiers
 
         // ── Tier 1: Swing (4H/1D) ──────────────────────────────────────
         if (enabledTiers.includes("4h")) {

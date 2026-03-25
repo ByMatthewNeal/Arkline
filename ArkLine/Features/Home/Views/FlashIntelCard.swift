@@ -449,7 +449,7 @@ struct SignalMethodologySheet: View {
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(textPrimary)
 
-                        Text("Fibonacci-based pattern detection running 24/7 across all 4H candle closes. For educational purposes only.")
+                        Text("Fibonacci-based pattern detection running 24/7 across 1H and 4H candle data. For educational purposes only.")
                             .font(.system(size: 14))
                             .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)
@@ -473,13 +473,13 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "arrow.triangle.merge",
                             title: "Multi-Timeframe Confluence",
-                            detail: "The zone must align across 4H and Daily timeframes. More overlapping levels = stronger pattern."
+                            detail: "The zone must align across multiple timeframes — 1H/4H for scalps and 4H/Daily for swings. More overlapping levels = stronger pattern."
                         )
 
                         conditionRow(
                             icon: "arrow.up.arrow.down",
                             title: "EMA Trend Alignment",
-                            detail: "The 4H EMAs must support the trade direction. In a strong trend the 20 EMA is above the 50 EMA for longs (below for shorts). In a pullback scenario, the 50 EMA slope must be favorable and price near the 50 EMA."
+                            detail: "The bias-timeframe EMAs must support the trade direction. The 20 EMA should be above the 50 EMA for longs (below for shorts). In a pullback, the 50 EMA slope must be favorable and price near the 50 EMA."
                         )
 
                         conditionRow(
@@ -491,7 +491,7 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "scalemass",
                             title: "Minimum 1:1 Risk/Reward",
-                            detail: "Every pattern must have at least a 1:1 risk-to-reward ratio. Strong patterns require 2:1+ with multi-timeframe confluence."
+                            detail: "Every pattern must have at least a 1:1 risk-to-reward ratio — raised to 2:1 in choppy market conditions. Strong patterns require 2:1+ with multi-timeframe confluence."
                         )
 
                         conditionRow(
@@ -504,6 +504,30 @@ struct SignalMethodologySheet: View {
                             icon: "chart.bar.xaxis",
                             title: "Volume Profile Confluence",
                             detail: "The pipeline computes a volume profile from recent 4H candles to identify high-volume nodes. When a node overlaps with the Fibonacci zone, it adds structural support/resistance — shown as the \"Vol Shelf\" badge."
+                        )
+
+                        conditionRow(
+                            icon: "waveform.badge.magnifyingglass",
+                            title: "Choppy Market Detection",
+                            detail: "When EMAs are tightly compressed with frequent crossovers or price whipsaws, the market is flagged as choppy. In these conditions, the minimum R:R is raised to 2:1 and bounce confirmation requires stronger evidence."
+                        )
+
+                        conditionRow(
+                            icon: "bolt.horizontal",
+                            title: "Momentum Filter",
+                            detail: "Blocks signals that go against strong recent momentum — no shorts during a 5%+ rally over 5 days, and no longs during a 5%+ selloff."
+                        )
+
+                        conditionRow(
+                            icon: "chart.line.uptrend.xyaxis",
+                            title: "Daily Trend Guard",
+                            detail: "When the daily chart shows a clear uptrend (EMA 20 above 50 with rising slope and >1% spread), short signals are blocked. Longs are never blocked by this filter."
+                        )
+
+                        conditionRow(
+                            icon: "timer",
+                            title: "24-Hour Cooldown",
+                            detail: "After a signal is generated for an asset, the same asset won't produce another signal for 24 hours — preventing signal spam in volatile conditions."
                         )
                     }
                     .padding(.horizontal, 20)
@@ -540,7 +564,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 24)
 
-                            Text("Patterns are evaluated **every 30 minutes** using 1H and 4H candle data for fast bounce detection. A **lightweight monitor** checks open signals against live prices for stop loss, target, and trailing stop resolution. Signals that don't hit a target or stop within 72 hours expire and close at the current price.")
+                            Text("Patterns are evaluated **every 30 minutes** using 1H and 4H candle data for fast bounce detection. A **lightweight monitor** checks open signals against live prices for stop loss, target, and trailing stop resolution. Swing signals (4H) expire after 72 hours and scalp signals (1H) expire after 48 hours, closing at the current price.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)
@@ -560,7 +584,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.success)
                                 .frame(width: 24)
 
-                            Text("This detection methodology has been backtested across 9 assets (BTC, ETH, SOL, SUI, LINK, ADA, AVAX, RENDER, APT) over 12+ months of data covering multiple market regimes. 24/7 coverage outperformed US-session-only in both win rate and total P&L. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
+                            Text("This detection methodology has been backtested across 10 assets (BTC, ETH, SOL, SUI, LINK, ADA, AVAX, APT, XRP, ATOM) over 12+ months of data covering multiple market regimes. Both 1H scalp and 4H swing tiers include choppiness detection, momentum filtering, and daily trend analysis. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)
@@ -601,7 +625,7 @@ struct SignalMethodologySheet: View {
                         stepRow(
                             number: "5",
                             title: "Expiry — No Trade",
-                            detail: "If neither target nor stop is hit within 72 hours, the signal expires and is closed at the current price. Patience is the edge."
+                            detail: "If neither target nor stop is hit within the time window (48h for scalps, 72h for swings), the signal expires and is closed at the current price. Patience is the edge."
                         )
 
                         HStack(alignment: .top, spacing: 12) {
