@@ -1495,17 +1495,17 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(confidenceSample("High", color: AppColors.success)),
                             title: "High Confidence",
-                            detail: "Asset has 65%+ win rate in backtests (e.g. LINK, SUI)"
+                            detail: "Asset has 65%+ win rate in backtests (e.g. LINK, SUI, AVAX)"
                         )
                         legendRow(
                             visual: AnyView(confidenceSample("Medium", color: AppColors.warning)),
                             title: "Medium Confidence",
-                            detail: "Asset has 60–65% win rate (e.g. ETH, SOL, ADA)"
+                            detail: "Asset has 55–65% win rate (e.g. ETH, SOL, ADA, APT)"
                         )
                         legendRow(
                             visual: AnyView(confidenceSample("Low", color: AppColors.error)),
                             title: "Low Confidence",
-                            detail: "Asset has <60% win rate — extra caution warranted (e.g. BTC)"
+                            detail: "Asset has <55% win rate — extra caution warranted (e.g. BTC)"
                         )
                     }
 
@@ -1545,7 +1545,7 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(chipSample("EMA Aligned", color: AppColors.accent)),
                             title: "EMA Aligned",
-                            detail: "The 20 and 50 EMA on 4H confirm the signal direction — a positive confluence factor"
+                            detail: "The 20 and 50 EMA on the bias timeframe (4H for scalps, 4H for swings) confirm the signal direction — a positive confluence factor"
                         )
                         legendRow(
                             visual: AnyView(chipSample("Counter-Trend", color: AppColors.warning)),
