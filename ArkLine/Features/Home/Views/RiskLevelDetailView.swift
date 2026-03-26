@@ -108,10 +108,13 @@ struct RiskLevelChartView: View {
 
     // Load enhanced risk history for selected coin
     // Always fetch at least 30 days so short ranges (7D) have data to display
-    private func loadEnhancedHistory() {
+    private func loadEnhancedHistory(resetCooldown: Bool = false) {
         isLoadingHistory = true
         let coin = selectedCoin
         Task {
+            if resetCooldown {
+                await IncrementalPriceStore.shared.resetCooldowns()
+            }
             let fetchDays: Int? = if let days = selectedTimeRange.days {
                 max(days, 30)
             } else {
@@ -372,7 +375,7 @@ struct RiskLevelChartView: View {
                         .font(.subheadline)
                         .foregroundColor(textSecondary)
 
-                    Button(action: { loadEnhancedHistory() }) {
+                    Button(action: { loadEnhancedHistory(resetCooldown: true) }) {
                         Text("Retry")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(AppColors.accent)

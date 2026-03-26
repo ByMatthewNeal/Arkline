@@ -128,11 +128,22 @@ struct AssetRiskConfig {
         binanceSymbol: "ONDOUSDT"
     )
 
+    /// Bittensor - decentralized AI network
+    static let tao = AssetRiskConfig(
+        assetId: "TAO",
+        geckoId: "bittensor",
+        originDate: safeDate(year: 2023, month: 4, day: 20),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Bittensor",
+        binanceSymbol: "TAOUSDT"
+    )
+
     // MARK: - All Configs
 
     /// All supported assets
     static let allConfigs: [AssetRiskConfig] = [
-        .btc, .eth, .sol, .bnb, .sui, .uni, .ondo, .render
+        .btc, .eth, .sol, .bnb, .sui, .uni, .ondo, .render, .tao
     ]
 
     /// Dictionary for quick lookup by symbol

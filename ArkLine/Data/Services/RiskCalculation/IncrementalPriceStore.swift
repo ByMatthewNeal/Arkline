@@ -117,7 +117,10 @@ actor IncrementalPriceStore {
 
     // MARK: - Full Baseline History Fetch
 
-    /// Fetches the complete price history for coins without embedded data using Coinbase daily candles.
+    /// Fetches the complete price history for coins without embedded data.
+    /// Uses Binance (data-api.binance.vision) as primary source, then fills
+    /// recent gaps with Coinbase. Binance typically lists assets earlier and
+    /// allows 1000 candles per request vs Coinbase's 350.
     private func fetchFullBaselineHistory(coin: String) async {
         // Already have baseline data
         if baselineData[coin] != nil { return }
@@ -131,24 +134,106 @@ actor IncrementalPriceStore {
         guard let config = AssetRiskConfig.forCoin(coin) else { return }
 
         baselineFetchFailed[coin] = Date()
-        await fetchFullHistoryFromCoinbase(coin: coin, pair: config.coinbasePair, originDate: config.originDate)
-    }
-
-    /// Fetch full history from Coinbase using paginated daily candles (~350 per request).
-    private func fetchFullHistoryFromCoinbase(coin: String, pair: String, originDate: Date) async {
-        logDebug("IncrementalPriceStore: Fetching full history from Coinbase for \(coin) (\(pair))", category: .network)
 
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: Date())
         var allPoints: [PersistedPricePoint] = []
-        // Coinbase uses seconds, not milliseconds
-        var currentStart = Int64(originDate.timeIntervalSince1970)
+
+        // Step 1: Try Binance first (earlier listings, bigger pages)
+        if let binanceSymbol = config.binanceSymbol {
+            let binancePoints = await fetchHistoryFromBinance(
+                coin: coin, symbol: binanceSymbol, originDate: config.originDate, todayStart: todayStart
+            )
+            allPoints.append(contentsOf: binancePoints)
+        }
+
+        // Step 2: Fill recent gap with Coinbase (USD prices, more recent data)
+        let coinbaseStart: Date
+        if let lastBinanceDate = allPoints.last?.date, let date = dateFormatter.date(from: lastBinanceDate) {
+            coinbaseStart = calendar.date(byAdding: .day, value: 1, to: date) ?? todayStart
+        } else {
+            coinbaseStart = config.originDate
+        }
+
+        if coinbaseStart < todayStart {
+            let coinbasePoints = await fetchHistoryFromCoinbase(
+                coin: coin, pair: config.coinbasePair, startDate: coinbaseStart, todayStart: todayStart
+            )
+            allPoints.append(contentsOf: coinbasePoints)
+        }
+
+        // Deduplicate by date and sort
+        var seen = Set<String>()
+        allPoints = allPoints.filter { seen.insert($0.date).inserted }
+        allPoints.sort { $0.date < $1.date }
+
+        guard !allPoints.isEmpty else {
+            logDebug("IncrementalPriceStore: No data found for \(coin) from any source", category: .network)
+            return
+        }
+
+        let file = CoinPriceFile(prices: allPoints, lastUpdated: Date())
+        baselineData[coin] = file
+        saveBaselineToDisk(coin: coin, file: file)
+        mergedCache.removeValue(forKey: coin)
+        baselineFetchFailed.removeValue(forKey: coin)
+
+        logDebug("IncrementalPriceStore: Loaded \(allPoints.count) historical points for \(coin) (Binance + Coinbase)", category: .network)
+    }
+
+    /// Fetch history from Binance data API (1000 candles per page, no geo-block).
+    private func fetchHistoryFromBinance(coin: String, symbol: String, originDate: Date, todayStart: Date) async -> [PersistedPricePoint] {
+        logDebug("IncrementalPriceStore: Fetching Binance history for \(coin) (\(symbol))", category: .network)
+
+        let calendar = Calendar.current
+        var points: [PersistedPricePoint] = []
+        // Binance uses milliseconds
+        var currentStartMs = Int64(originDate.timeIntervalSince1970) * 1000
+
+        do {
+            while true {
+                let candles = try await BinanceCandle.fetch(symbol: symbol, startTime: currentStartMs)
+                if candles.isEmpty { break }
+
+                for candle in candles {
+                    let candleDate = Date(timeIntervalSince1970: Double(candle.startSeconds))
+                    let candleDay = calendar.startOfDay(for: candleDate)
+                    guard candleDay < todayStart else { continue }
+
+                    let dateStr = dateFormatter.string(from: candleDay)
+                    points.append(PersistedPricePoint(date: dateStr, close: candle.close))
+                }
+
+                // Move past the last candle
+                if let last = candles.last {
+                    currentStartMs = last.openTime + 86_400_000
+                } else {
+                    break
+                }
+
+                // Stop if we've reached today
+                if currentStartMs >= Int64(todayStart.timeIntervalSince1970) * 1000 { break }
+            }
+
+            logDebug("IncrementalPriceStore: Got \(points.count) points from Binance for \(coin)", category: .network)
+        } catch {
+            logDebug("IncrementalPriceStore: Binance fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+        }
+
+        return points
+    }
+
+    /// Fetch history from Coinbase using paginated daily candles (~350 per request).
+    private func fetchHistoryFromCoinbase(coin: String, pair: String, startDate: Date, todayStart: Date) async -> [PersistedPricePoint] {
+        logDebug("IncrementalPriceStore: Fetching Coinbase history for \(coin) (\(pair)) from \(dateFormatter.string(from: startDate))", category: .network)
+
+        let calendar = Calendar.current
+        var points: [PersistedPricePoint] = []
+        var currentStart = Int64(startDate.timeIntervalSince1970)
         let todaySec = Int64(todayStart.timeIntervalSince1970)
 
         do {
-            // Paginate through history (Coinbase returns ~350 candles per request)
             while currentStart < todaySec {
-                // End = start + 300 days (leave margin under Coinbase's limit)
                 let pageEnd = min(currentStart + (300 * 86400), todaySec)
 
                 let candles = try await CoinbaseCandle.fetch(
@@ -158,48 +243,33 @@ actor IncrementalPriceStore {
                     end: pageEnd
                 )
 
-                if candles.isEmpty { break }
+                if candles.isEmpty {
+                    currentStart = pageEnd + 86400
+                    continue
+                }
 
                 for candle in candles {
                     let candleDate = Date(timeIntervalSince1970: Double(candle.start))
                     let candleDay = calendar.startOfDay(for: candleDate)
-
-                    // Skip today's incomplete candle
                     guard candleDay < todayStart else { continue }
 
                     let dateStr = dateFormatter.string(from: candleDay)
-                    allPoints.append(PersistedPricePoint(date: dateStr, close: candle.close))
+                    points.append(PersistedPricePoint(date: dateStr, close: candle.close))
                 }
 
-                // Move start past the last candle
                 if let lastCandle = candles.last {
-                    currentStart = lastCandle.start + 86400 // Next day
+                    currentStart = lastCandle.start + 86400
                 } else {
                     break
                 }
             }
 
-            // Deduplicate by date
-            var seen = Set<String>()
-            allPoints = allPoints.filter { seen.insert($0.date).inserted }
-            allPoints.sort { $0.date < $1.date }
-
-            guard !allPoints.isEmpty else {
-                logDebug("IncrementalPriceStore: No Coinbase data for \(coin)", category: .network)
-                return
-            }
-
-            let file = CoinPriceFile(prices: allPoints, lastUpdated: Date())
-            baselineData[coin] = file
-            saveBaselineToDisk(coin: coin, file: file)
-            mergedCache.removeValue(forKey: coin)
-            baselineFetchFailed.removeValue(forKey: coin)
-
-            logDebug("IncrementalPriceStore: Loaded \(allPoints.count) historical points for \(coin) from Coinbase", category: .network)
-
+            logDebug("IncrementalPriceStore: Got \(points.count) points from Coinbase for \(coin)", category: .network)
         } catch {
-            logDebug("IncrementalPriceStore: Coinbase full history fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            logDebug("IncrementalPriceStore: Coinbase fetch failed for \(coin): \(error.localizedDescription)", category: .network)
         }
+
+        return points
     }
 
     // MARK: - Disk Persistence

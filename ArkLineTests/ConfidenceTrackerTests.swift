@@ -12,63 +12,66 @@ final class ConfidenceTrackerTests: XCTestCase {
     }
 
     func testRSquaredBonus_lowRSquared() {
-        // R² = 0.75 → (0.75 - 0.85) * 5.0 = -0.5
+        // R² = 0.75 → (0.75 - 0.85) * 5.0 = -0.5, clamped to [-1.0, 1.0]
         let raw = (0.75 - 0.85) * 5.0
-        let clamped = max(-0.5, min(1.0, raw))
+        let clamped = max(-1.0, min(1.0, raw))
         XCTAssertEqual(clamped, -0.5, accuracy: 0.001)
     }
 
     func testRSquaredBonus_baseline() {
         // R² = 0.85 → 0.0
-        let bonus = max(-0.5, min(1.0, (0.85 - 0.85) * 5.0))
+        let bonus = max(-1.0, min(1.0, (0.85 - 0.85) * 5.0))
         XCTAssertEqual(bonus, 0.0, accuracy: 0.001)
     }
 
     func testRSquaredBonus_veryHigh_clampsAtOne() {
-        // R² = 1.0 → (1.0 - 0.85) * 5.0 = 0.75, within [−0.5, 1.0]
-        let bonus = max(-0.5, min(1.0, (1.0 - 0.85) * 5.0))
+        // R² = 1.0 → (1.0 - 0.85) * 5.0 = 0.75, within [−1.0, 1.0]
+        let bonus = max(-1.0, min(1.0, (1.0 - 0.85) * 5.0))
         XCTAssertEqual(bonus, 0.75, accuracy: 0.001)
     }
 
-    func testRSquaredBonus_veryLow_clampsAtMinusHalf() {
-        // R² = 0.5 → (0.5 - 0.85) * 5.0 = -1.75, clamped to -0.5
-        let bonus = max(-0.5, min(1.0, (0.5 - 0.85) * 5.0))
-        XCTAssertEqual(bonus, -0.5, accuracy: 0.001)
+    func testRSquaredBonus_veryLow_clampsAtMinusOne() {
+        // R² = 0.5 → (0.5 - 0.85) * 5.0 = -1.75, clamped to -1.0
+        let bonus = max(-1.0, min(1.0, (0.5 - 0.85) * 5.0))
+        XCTAssertEqual(bonus, -1.0, accuracy: 0.001)
     }
 
-    // MARK: - Data Point Bonus
+    // MARK: - Data-Driven Base Confidence
 
-    func testDataPointBonus_oneYear() {
-        // 365 points → 0.0 (threshold not exceeded)
-        let points = 365
-        let bonus: Double = points > 365 ? min(1.0, log2(Double(points) / 365.0) / 4.0) : 0.0
-        XCTAssertEqual(bonus, 0.0, accuracy: 0.001)
+    func testBaseConfidence_fewDays() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(15), 1)
     }
 
-    func testDataPointBonus_twoYears() {
-        // 730 points → log2(730/365) / 4 = log2(2) / 4 = 1/4 = 0.25
-        let points = 730.0
-        let bonus = min(1.0, log2(points / 365.0) / 4.0)
-        XCTAssertEqual(bonus, 0.25, accuracy: 0.001)
+    func testBaseConfidence_oneMonth() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(60), 2)
     }
 
-    func testDataPointBonus_fourYears() {
-        // 1460 → log2(4) / 4 = 2/4 = 0.5
-        let bonus = min(1.0, log2(1460.0 / 365.0) / 4.0)
-        XCTAssertEqual(bonus, 0.5, accuracy: 0.001)
+    func testBaseConfidence_sixMonths() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(180), 3)
     }
 
-    func testDataPointBonus_btcRange() {
-        // ~5840 → log2(16) / 4 = 4/4 = 1.0 (capped)
-        let bonus = min(1.0, log2(5840.0 / 365.0) / 4.0)
-        XCTAssertEqual(bonus, 1.0, accuracy: 0.001)
+    func testBaseConfidence_oneYear() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(400), 4)
     }
 
-    func testDataPointBonus_belowThreshold() {
-        // 200 points → 0.0
-        let points = 200
-        let bonus: Double = points > 365 ? min(1.0, log2(Double(points) / 365.0) / 4.0) : 0.0
-        XCTAssertEqual(bonus, 0.0)
+    func testBaseConfidence_twoYears() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(730), 5)
+    }
+
+    func testBaseConfidence_threeYears() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(1100), 6)
+    }
+
+    func testBaseConfidence_fiveYears() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(1900), 7)
+    }
+
+    func testBaseConfidence_sevenYears() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(2600), 8)
+    }
+
+    func testBaseConfidence_tenPlusYears() {
+        XCTAssertEqual(ConfidenceTracker.baseConfidenceFromDataPoints(4000), 9)
     }
 
     // MARK: - Accuracy Bonus
@@ -190,10 +193,9 @@ final class ConfidenceTrackerTests: XCTestCase {
             dataPointCount: 5800, riskLevel: 0.35, price: 70000
         )
         let result = await tracker.computeAdaptiveConfidence(for: "BTC")
-        // Base 9 + R² bonus ~0.55 + data point bonus ~1.0 = ~10.55 → clamped to 9
+        // Data-driven base: 5800 pts → 9, R² bonus ~0.55 → clamped to 9
         XCTAssertEqual(result.adaptiveConfidence, 9)
         XCTAssertGreaterThan(result.rSquaredBonus, 0)
-        XCTAssertGreaterThan(result.dataPointBonus, 0)
     }
 
     func testAdaptiveConfidence_lowQualityData() async {
@@ -204,23 +206,32 @@ final class ConfidenceTrackerTests: XCTestCase {
             dataPointCount: 300, riskLevel: 0.30, price: 1.50
         )
         let result = await tracker.computeAdaptiveConfidence(for: "ONDO")
-        // Base 3, R² bonus = -0.5, data point bonus = 0.0
-        // Raw: 2.5, floor = max(1, 3-1) = 2 → rounded to 3 (2.5 rounds to 2 or 3 depending)
+        // Data-driven base: 300 pts → 3 (static also 3), R² bonus = -0.5
+        // Raw: 3 - 0.5 = 2.5 → rounds to 3 or 2
         XCTAssertGreaterThanOrEqual(result.adaptiveConfidence, 2)
         XCTAssertLessThanOrEqual(result.adaptiveConfidence, 3)
         XCTAssertLessThan(result.rSquaredBonus, 0)
     }
 
-    func testAdaptiveConfidence_neverDropsMoreThanOne() async {
+    func testAdaptiveConfidence_dataGrowthIncreasesBase() async {
         let tracker = ConfidenceTracker(loadFromDisk: false)
-        // SOL base = 6, bad R² and no accuracy
+        // TAO-like: starts with few points, grows over time
         await tracker.recordCalculation(
-            assetId: "SOL", rSquared: 0.50,
-            dataPointCount: 100, riskLevel: 0.80, price: 150
+            assetId: "TAO", rSquared: 0.88,
+            dataPointCount: 400, riskLevel: 0.30, price: 300
         )
-        let result = await tracker.computeAdaptiveConfidence(for: "SOL")
-        // Floor = max(1, 6-1) = 5
-        XCTAssertGreaterThanOrEqual(result.adaptiveConfidence, 5)
+        let result1 = await tracker.computeAdaptiveConfidence(for: "TAO")
+        // 400 pts → base 4, R² bonus ~0.15 → 4
+
+        // Simulate more data accumulated
+        await tracker.recordCalculation(
+            assetId: "TAO", rSquared: 0.90,
+            dataPointCount: 800, riskLevel: 0.35, price: 350
+        )
+        let result2 = await tracker.computeAdaptiveConfidence(for: "TAO")
+        // 800 pts → base 5, R² bonus ~0.25 → 5
+
+        XCTAssertGreaterThanOrEqual(result2.adaptiveConfidence, result1.adaptiveConfidence)
     }
 
     func testAdaptiveConfidence_cappedAtNine() async {
@@ -232,6 +243,20 @@ final class ConfidenceTrackerTests: XCTestCase {
         )
         let result = await tracker.computeAdaptiveConfidence(for: "ETH")
         XCTAssertLessThanOrEqual(result.adaptiveConfidence, 9)
+    }
+
+    func testAdaptiveConfidence_poorRegressionCanDrop() async {
+        let tracker = ConfidenceTracker(loadFromDisk: false)
+        // Asset with lots of data but terrible R² — confidence should reflect that
+        await tracker.recordCalculation(
+            assetId: "SOL", rSquared: 0.50,
+            dataPointCount: 2100, riskLevel: 0.80, price: 150
+        )
+        let result = await tracker.computeAdaptiveConfidence(for: "SOL")
+        // Data base: 2100 pts → 7, R² bonus: (0.5-0.85)*5 = -1.0
+        // Raw: 7 - 1.0 = 6 → can drop below static (6)
+        XCTAssertGreaterThanOrEqual(result.adaptiveConfidence, 1)
+        XCTAssertLessThan(result.rSquaredBonus, 0)
     }
 
     // MARK: - Record Calculation

@@ -116,6 +116,7 @@ enum RiskCoin: String, CaseIterable {
     case uni = "UNI"
     case ondo = "ONDO"
     case render = "RENDER"
+    case tao = "TAO"
 
     var displayName: String {
         AssetRiskConfig.forCoin(rawValue)?.displayName ?? rawValue
@@ -131,6 +132,7 @@ enum RiskCoin: String, CaseIterable {
         case .uni: return "u.circle.fill"
         case .ondo: return "o.circle.fill"
         case .render: return "r.circle.fill"
+        case .tao: return "t.circle.fill"
         }
     }
 

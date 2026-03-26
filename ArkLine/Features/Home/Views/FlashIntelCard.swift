@@ -47,12 +47,11 @@ struct FlashIntelCard: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Text(signal.signalType.displayName.uppercased())
-                        .font(.system(size: 10, weight: .heavy))
+                        .font(.system(size: 9, weight: .heavy))
                         .foregroundColor(.white)
-                        .fixedSize()
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, 5)
                         .padding(.vertical, 2)
                         .background(signalColor)
                         .cornerRadius(4)
@@ -95,6 +94,7 @@ struct FlashIntelCard: View {
                             .cornerRadius(3)
                     }
                 }
+                .fixedSize(horizontal: true, vertical: false)
 
                 Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
                     .font(AppFonts.caption12)

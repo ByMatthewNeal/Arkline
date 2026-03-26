@@ -170,24 +170,19 @@ actor ConfidenceTracker {
             )
         }
 
-        let base = Double(staticConf)
+        // Data-driven base: computed from actual data points, not hardcoded
+        // The static confidenceLevel is only a fallback for first launch
+        let dataPointCount = metrics.dataPointCounts.last?.count ?? 0
+        let dataDrivenBase = Self.baseConfidenceFromDataPoints(dataPointCount)
+        let base = Double(max(dataDrivenBase, staticConf))
 
-        // R² bonus: (R² - 0.85) * 5.0, clamped to [-0.5, +1.0]
+        // R² bonus: measures regression quality, clamped to [-1.0, +1.0]
         let latestRSquared = metrics.rSquaredHistory.last?.rSquared
         let rSquaredBonus: Double
         if let r2 = latestRSquared {
-            rSquaredBonus = max(-0.5, min(1.0, (r2 - 0.85) * 5.0))
+            rSquaredBonus = max(-1.0, min(1.0, (r2 - 0.85) * 5.0))
         } else {
             rSquaredBonus = 0.0
-        }
-
-        // Data point bonus: min(1.0, log2(points/365) / 4.0)
-        let dataPointCount = metrics.dataPointCounts.last?.count ?? 0
-        let dataPointBonus: Double
-        if dataPointCount > 365 {
-            dataPointBonus = min(1.0, log2(Double(dataPointCount) / 365.0) / 4.0)
-        } else {
-            dataPointBonus = 0.0
         }
 
         // Accuracy bonus: (accuracy - 0.5) * 2.0, requires 5+ validated predictions
@@ -205,10 +200,9 @@ actor ConfidenceTracker {
             accuracyBonus = 0.0
         }
 
-        // Final: clamp to [base-1, 9]
-        let rawAdaptive = base + rSquaredBonus + dataPointBonus + accuracyBonus
-        let floor = Double(max(1, staticConf - 1))
-        let adaptive = Int(max(floor, min(9.0, rawAdaptive)).rounded())
+        // Final: floor at 1, ceiling at 9
+        let rawAdaptive = base + rSquaredBonus + accuracyBonus
+        let adaptive = Int(max(1.0, min(9.0, rawAdaptive)).rounded())
 
         return AdaptiveConfidenceResult(
             assetId: assetId,
@@ -220,10 +214,35 @@ actor ConfidenceTracker {
             validatedPredictionCount: validatedCount,
             totalPredictionCount: metrics.predictionSnapshots.count,
             rSquaredBonus: rSquaredBonus,
-            dataPointBonus: dataPointBonus,
+            dataPointBonus: Double(dataDrivenBase),
             accuracyBonus: accuracyBonus,
             lastUpdated: metrics.lastUpdated
         )
+    }
+
+    // MARK: - Data-Driven Base Confidence
+
+    /// Computes base confidence purely from the number of daily data points available.
+    /// As more data accumulates over time, the base automatically increases.
+    ///
+    /// Tiers:
+    ///   1: <30 days        5: 730-1095 days (~2-3yr)
+    ///   2: 30-90 days      6: 1095-1825 days (~3-5yr)
+    ///   3: 90-365 days     7: 1825-2555 days (~5-7yr)
+    ///   4: 365-730 days    8: 2555-3650 days (~7-10yr)
+    ///                      9: 3650+ days (~10yr+)
+    static func baseConfidenceFromDataPoints(_ count: Int) -> Int {
+        switch count {
+        case ..<30:    return 1
+        case ..<90:    return 2
+        case ..<365:   return 3
+        case ..<730:   return 4
+        case ..<1095:  return 5
+        case ..<1825:  return 6
+        case ..<2555:  return 7
+        case ..<3650:  return 8
+        default:       return 9
+        }
     }
 
     // MARK: - Get Metrics (for testing/debugging)

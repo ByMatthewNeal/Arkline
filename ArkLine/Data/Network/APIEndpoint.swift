@@ -607,3 +607,57 @@ struct CoinbaseCandle {
         return candles.reversed()
     }
 }
+
+// MARK: - Binance Candle (data-api.binance.vision)
+/// Uses the Binance data API which is accessible worldwide (no geo-block).
+/// Returns USDT-denominated prices. Used as a supplementary data source
+/// for coins listed on Binance before Coinbase.
+struct BinanceCandle {
+    let openTime: Int64   // Unix timestamp (milliseconds)
+    let open: Double
+    let high: Double
+    let low: Double
+    let close: Double
+    let volume: Double
+
+    init?(from arr: [Any]) {
+        guard arr.count >= 6,
+              let openTimeNumber = arr[0] as? NSNumber,
+              let openStr = arr[1] as? String, let open = Double(openStr),
+              let highStr = arr[2] as? String, let high = Double(highStr),
+              let lowStr = arr[3] as? String, let low = Double(lowStr),
+              let closeStr = arr[4] as? String, let close = Double(closeStr),
+              let volStr = arr[5] as? String, let volume = Double(volStr)
+        else { return nil }
+        let openTime = openTimeNumber.int64Value
+
+        self.openTime = openTime
+        self.open = open
+        self.high = high
+        self.low = low
+        self.close = close
+        self.volume = volume
+    }
+
+    /// Unix timestamp in seconds (for consistency with CoinbaseCandle)
+    var startSeconds: Int64 { openTime / 1000 }
+
+    /// Fetch daily candles from Binance data API.
+    /// - Parameters:
+    ///   - symbol: Trading pair (e.g., "TAOUSDT")
+    ///   - startTime: Start time as Unix timestamp in milliseconds.
+    ///   - limit: Max candles per request (Binance max 1000).
+    /// - Returns: Array of candles sorted oldest-first.
+    static func fetch(symbol: String, startTime: Int64, limit: Int = 1000) async throws -> [BinanceCandle] {
+        let urlString = "https://data-api.binance.vision/api/v3/klines?symbol=\(symbol)&interval=1d&startTime=\(startTime)&limit=\(limit)"
+
+        guard let url = URL(string: urlString) else { throw AppError.invalidData }
+        let (data, _) = try await URLSession.shared.data(from: url)
+
+        guard let arr = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
+            throw AppError.invalidData
+        }
+
+        return arr.compactMap { BinanceCandle(from: $0) }
+    }
+}
