@@ -304,6 +304,21 @@ struct SwingSetupsDetailView: View {
                             }
                         }
                         .padding(.horizontal)
+                    } else if viewModel.loadFailed && filteredSignals.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.system(size: 40))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                            Text("Failed to load signals")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(textPrimary)
+                            Button("Retry") {
+                                Task { await viewModel.loadAllData() }
+                            }
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.accent)
+                        }
+                        .padding(.top, 40)
                     } else if filteredSignals.isEmpty {
                         emptyState
                             .padding(.top, 40)

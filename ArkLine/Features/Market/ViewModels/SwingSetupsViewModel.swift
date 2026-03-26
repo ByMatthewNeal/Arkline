@@ -10,7 +10,17 @@ class SwingSetupsViewModel {
     var stats: SignalStats?
     var marketConditions: SignalMarketConditions?
     var isLoading = false
-    var errorMessage: String?
+    var loadFailed = false
+
+    // MARK: - Init
+
+    init() {
+        // Pre-populate with cached signals so the view isn't empty
+        // while waiting for a fresh fetch (home screen already loaded these)
+        if let cached = SwingSetupService.cachedActiveSignals {
+            activeSignals = cached
+        }
+    }
 
     // MARK: - Load
 
@@ -20,14 +30,19 @@ class SwingSetupsViewModel {
 
         do {
             activeSignals = try await service.fetchActiveSignals()
+            loadFailed = false
         } catch {
             logWarning("Failed to fetch active signals: \(error)", category: .network)
+            loadFailed = activeSignals.isEmpty
         }
     }
 
     func loadAllData() async {
         isLoading = true
+        loadFailed = false
         defer { isLoading = false }
+
+        var anyFailed = false
 
         async let active = service.fetchActiveSignals()
         async let recent = service.fetchRecentSignals()
@@ -38,12 +53,14 @@ class SwingSetupsViewModel {
             activeSignals = try await active
         } catch {
             logWarning("Failed to fetch active signals: \(error)", category: .network)
+            anyFailed = true
         }
 
         do {
             recentSignals = try await recent
         } catch {
             logWarning("Failed to fetch recent signals: \(error)", category: .network)
+            anyFailed = true
         }
 
         do {
@@ -57,6 +74,9 @@ class SwingSetupsViewModel {
         } catch {
             logWarning("Failed to fetch market conditions: \(error)", category: .network)
         }
+
+        // Only mark as failed if we have no data to show
+        loadFailed = anyFailed && activeSignals.isEmpty && recentSignals.isEmpty
     }
 
     func fetchConfluenceZone(for signal: TradeSignal) async -> FibConfluenceZone? {

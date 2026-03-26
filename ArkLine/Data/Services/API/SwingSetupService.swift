@@ -6,10 +6,14 @@ import Foundation
 final class SwingSetupService {
     private let supabase = SupabaseManager.shared
 
-    /// Short-lived cache to avoid duplicate fetches across multiple ViewModels
-    private static var activeSignalsCache: [TradeSignal]?
+    /// Short-lived cache to avoid duplicate fetches across multiple ViewModels.
+    /// Exposed as internal so detail views can pre-populate with cached data.
+    static var activeSignalsCache: [TradeSignal]?
     private static var activeSignalsCacheTime: Date?
     private static let cacheTTL: TimeInterval = 30
+
+    /// Returns cached active signals if available (does not fetch).
+    static var cachedActiveSignals: [TradeSignal]? { activeSignalsCache }
 
     // MARK: - Active Signals
 
