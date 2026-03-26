@@ -2065,6 +2065,10 @@ async function resolveOpenSignals(
 
   if (!signals || signals.length === 0) return stats
 
+  // Wick buffer: SL must be breached by 0.3% to count as a stop-out.
+  // Prevents false triggers from exchange-specific wicks (Coinbase spot vs perp).
+  const SL_BUFFER_PCT = 0.003
+
   for (const signal of signals) {
     // Skip if already resolved by signal-monitor (race condition guard)
     if (signal.closed_at) continue
@@ -2129,7 +2133,8 @@ async function resolveOpenSignals(
     if (isBuy) {
       if (!t1AlreadyHit) {
         // Phase 1: Full position — check SL then T1
-        if (candle.low <= sl) {
+        // SL must be breached by buffer to filter out exchange-specific wicks
+        if (candle.low <= sl * (1 - SL_BUFFER_PCT)) {
           const pnl = ((sl - entryMid) / entryMid) * 100
           await supabase.from("trade_signals").update({
             status: "invalidated",
@@ -2191,7 +2196,8 @@ async function resolveOpenSignals(
     } else {
       // --- SHORT ---
       if (!t1AlreadyHit) {
-        if (candle.high >= sl) {
+        // SL must be breached by buffer to filter out exchange-specific wicks
+        if (candle.high >= sl * (1 + SL_BUFFER_PCT)) {
           const pnl = ((entryMid - sl) / entryMid) * 100
           await supabase.from("trade_signals").update({
             status: "invalidated",

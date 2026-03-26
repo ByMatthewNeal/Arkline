@@ -29,6 +29,18 @@ const TICKER_MAP: Record<string, string> = Object.fromEntries(
   ASSETS.map(a => [a, a.replace("-USD", "")])
 )
 
+// Binance symbol mapping (ticker → USDT pair)
+// Some tickers differ between Coinbase and Binance
+const BINANCE_MAP: Record<string, string> = {
+  BTC: "BTCUSDT", ETH: "ETHUSDT", SOL: "SOLUSDT", SUI: "SUIUSDT",
+  LINK: "LINKUSDT", ADA: "ADAUSDT", AVAX: "AVAXUSDT", RENDER: "RENDERUSDT",
+  APT: "APTUSDT", HYPE: "HYPEUSDT", ONDO: "ONDOUSDT", POL: "POLUSDT",
+  BNB: "BNBUSDT", ATOM: "ATOMUSDT", TIA: "TIAUSDT", XRP: "XRPUSDT",
+  INJ: "INJUSDT", DOGE: "DOGEUSDT", AAVE: "AAVEUSDT", PEPE: "PEPEUSDT",
+  ENA: "ENAUSDT", FET: "FETUSDT", ARB: "ARBUSDT", DOT: "DOTUSDT",
+  UNI: "UNIUSDT", NEAR: "NEARUSDT",
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return json({ error: "Method not allowed" }, 405)
@@ -75,9 +87,14 @@ Deno.serve(async (req) => {
     return json({ resolved: 0, message: "No assets to check" })
   }
 
-  // Fetch last 6 1H candles with timestamps so we can filter per-signal
-  // Only candles AFTER a signal's triggered_at should count for resolution
-  const rawCandles: Record<string, { start: number; high: number; low: number; close: number }[]> = {}
+  // Fetch last 6 1H candles from BOTH Coinbase and Binance for dual-source verification.
+  // Coinbase = primary source, Binance = confirmation for SL checks.
+  // This prevents false stop-outs from exchange-specific wicks.
+  type CandleEntry = { start: number; high: number; low: number; close: number }
+  const rawCandles: Record<string, CandleEntry[]> = {}
+  const binanceCandles: Record<string, CandleEntry[]> = {}
+
+  // Fetch Coinbase candles
   for (const symbol of symbolsToCheck) {
     try {
       const resp = await fetch(
@@ -95,9 +112,35 @@ Deno.serve(async (req) => {
         }))
       }
     } catch (err) {
-      console.error(`Failed to fetch ${symbol}: ${err}`)
+      console.error(`Failed to fetch Coinbase ${symbol}: ${err}`)
     }
-    await new Promise(r => setTimeout(r, 100))
+    await new Promise(r => setTimeout(r, 80))
+  }
+
+  // Fetch Binance candles (data-api.binance.vision — public, no geo-block, no auth)
+  const sixHoursAgo = Date.now() - 6 * 3600000
+  for (const symbol of symbolsToCheck) {
+    const ticker = TICKER_MAP[symbol]
+    const binanceSym = BINANCE_MAP[ticker]
+    if (!binanceSym) continue
+    try {
+      const resp = await fetch(
+        `https://data-api.binance.vision/api/v3/klines?symbol=${binanceSym}&interval=1h&startTime=${sixHoursAgo}&limit=6`
+      )
+      if (resp.ok) {
+        const klines = await resp.json()
+        // Binance returns oldest-first as arrays: [openTime, open, high, low, close, ...]
+        binanceCandles[ticker] = klines.map((k: any) => ({
+          start: Number(k[0]),  // already ms
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4]),
+        })).reverse()  // newest-first to match Coinbase format
+      }
+    } catch (err) {
+      console.error(`Failed to fetch Binance ${binanceSym}: ${err}`)
+    }
+    await new Promise(r => setTimeout(r, 80))
   }
 
   // Helper: aggregate candles only after a given timestamp
@@ -121,11 +164,52 @@ Deno.serve(async (req) => {
     return { high: aggHigh, low: aggLow, close: valid[0].close }
   }
 
+  // Binance aggregate helper (same logic as Coinbase)
+  function binanceAggregateAfter(ticker: string, afterMs: number): { high: number; low: number; close: number } | null {
+    const all = binanceCandles[ticker]
+    if (!all || all.length === 0) return null
+    const valid = all.filter(c => c.start >= afterMs)
+    if (valid.length === 0) {
+      const latest = all[0]
+      return { high: latest.high, low: latest.low, close: latest.close }
+    }
+    let aggHigh = -Infinity
+    let aggLow = Infinity
+    for (const c of valid) {
+      aggHigh = Math.max(aggHigh, c.high)
+      aggLow = Math.min(aggLow, c.low)
+    }
+    return { high: aggHigh, low: aggLow, close: valid[0].close }
+  }
+
   // Simple latest-price lookup for proximity alerts
   function latestPrice(ticker: string): { high: number; low: number; close: number } | null {
     const all = rawCandles[ticker]
     if (!all || all.length === 0) return null
     return { high: all[0].high, low: all[0].low, close: all[0].close }
+  }
+
+  // Dual-source SL check: requires BOTH Coinbase and Binance to confirm breach.
+  // If Binance data is unavailable, falls back to Coinbase-only with buffer.
+  function isSlBreached(
+    ticker: string, sl: number, isBuy: boolean,
+    cbCandle: { high: number; low: number },
+    triggerMs: number,
+  ): boolean {
+    const SL_BUFFER_PCT = 0.003
+    const bnCandle = binanceAggregateAfter(ticker, triggerMs)
+
+    if (isBuy) {
+      const cbBreached = cbCandle.low <= sl * (1 - SL_BUFFER_PCT)
+      if (!bnCandle) return cbBreached  // Binance unavailable, fallback with buffer
+      const bnBreached = bnCandle.low <= sl
+      return cbBreached && bnBreached   // Both must confirm
+    } else {
+      const cbBreached = cbCandle.high >= sl * (1 + SL_BUFFER_PCT)
+      if (!bnCandle) return cbBreached
+      const bnBreached = bnCandle.high >= sl
+      return cbBreached && bnBreached
+    }
   }
 
   const now = new Date()
@@ -198,7 +282,8 @@ Deno.serve(async (req) => {
     if (isBuy) {
       if (!t1AlreadyHit) {
         // Phase 1: check SL then T1
-        if (candle.low <= sl) {
+        // Dual-source: both Coinbase AND Binance must confirm SL breach
+        if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
           const pnl = ((sl - entryMid) / entryMid) * 100
           await supabase.from("trade_signals").update({
             status: "invalidated",
@@ -264,7 +349,8 @@ Deno.serve(async (req) => {
     } else {
       // --- SHORT ---
       if (!t1AlreadyHit) {
-        if (candle.high >= sl) {
+        // Dual-source: both Coinbase AND Binance must confirm SL breach
+        if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
           const pnl = ((entryMid - sl) / entryMid) * 100
           await supabase.from("trade_signals").update({
             status: "invalidated",
