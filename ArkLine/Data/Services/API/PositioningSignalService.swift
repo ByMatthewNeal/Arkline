@@ -77,6 +77,25 @@ final class PositioningSignalService {
         return signals.filter { $0.hasChanged }
     }
 
+    /// Fetch signal changes for a specific date
+    func fetchSignalChangesForDate(_ date: Date) async throws -> [DailyPositioningSignal] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        let dateStr = formatter.string(from: date)
+
+        let signals: [DailyPositioningSignal] = try await supabase.database
+            .from("positioning_signals")
+            .select()
+            .eq("signal_date", value: dateStr)
+            .not("prev_signal", operator: .is, value: "null")
+            .order("asset", ascending: true)
+            .execute()
+            .value
+
+        return signals.filter { $0.hasChanged }
+    }
+
     /// Fetch the most recent date that has signals
     private func fetchMostRecentSignals() async throws -> [DailyPositioningSignal] {
         // Get one row to find the latest date

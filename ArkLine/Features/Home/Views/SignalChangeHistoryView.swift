@@ -7,7 +7,20 @@ struct SignalChangeHistoryView: View {
     @State private var isLoading = true
     @Environment(\.colorScheme) var colorScheme
 
+    // Date lookup
+    @State private var selectedDate: Date = Date()
+    @State private var lookupChanges: [DailyPositioningSignal]?
+    @State private var isLoadingLookup = false
+    @State private var showDatePicker = false
+
     private let service = PositioningSignalService()
+
+    /// QPS launched March 18, 2026
+    private let earliestDate: Date = {
+        var c = DateComponents()
+        c.year = 2026; c.month = 3; c.day = 18
+        return Calendar.current.date(from: c) ?? Date()
+    }()
 
     private let timeFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -19,6 +32,13 @@ struct SignalChangeHistoryView: View {
     private let dayFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "EEEE, MMM d"
+        f.timeZone = TimeZone(identifier: "America/New_York")
+        return f
+    }()
+
+    private let lookupFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d, yyyy"
         f.timeZone = TimeZone(identifier: "America/New_York")
         return f
     }()
@@ -35,12 +55,56 @@ struct SignalChangeHistoryView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
+                // Date lookup section
+                dateLookupSection
+
+                // Lookup results
+                if let lookup = lookupChanges {
+                    if isLoadingLookup {
+                        SkeletonCard()
+                            .padding(.horizontal)
+                    } else if lookup.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "minus.circle")
+                                .font(.system(size: 14))
+                                .foregroundColor(AppColors.textSecondary)
+                            Text("No signal changes on \(lookupFormatter.string(from: selectedDate))")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(AppColors.textSecondary)
+                            Spacer()
+                        }
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                        )
+                        .padding(.horizontal)
+                    } else {
+                        daySection(
+                            date: Calendar.current.startOfDay(for: selectedDate),
+                            changes: lookup.sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) },
+                            isLookup: true
+                        )
+                    }
+
+                    dividerRow
+                }
+
+                // Recent changes header
+                if !changes.isEmpty || isLoading {
+                    Text("RECENT")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(AppColors.textSecondary)
+                        .tracking(1.0)
+                        .padding(.horizontal)
+                }
+
                 if isLoading {
                     ForEach(0..<5, id: \.self) { _ in
                         SkeletonCard()
                     }
                     .padding(.horizontal)
-                } else if changes.isEmpty {
+                } else if changes.isEmpty && lookupChanges == nil {
                     VStack(spacing: 12) {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 40))
@@ -58,6 +122,7 @@ struct SignalChangeHistoryView: View {
                 }
             }
             .padding(.top, 8)
+            .padding(.bottom, 100)
         }
         .navigationTitle("Signal History")
         .navigationBarTitleDisplayMode(.large)
@@ -69,9 +134,94 @@ struct SignalChangeHistoryView: View {
         }
     }
 
+    // MARK: - Date Lookup Section
+
+    private var dateLookupSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("LOOK UP DATE")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(1.0)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showDatePicker.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.accent)
+
+                    Text(lookupChanges != nil ? lookupFormatter.string(from: selectedDate) : "Select a date...")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(lookupChanges != nil ? AppColors.textPrimary(colorScheme) : AppColors.textSecondary)
+
+                    Spacer()
+
+                    if lookupChanges != nil {
+                        Button {
+                            withAnimation {
+                                lookupChanges = nil
+                                showDatePicker = false
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                            .rotationEffect(.degrees(showDatePicker ? 180 : 0))
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppColors.textSecondary.opacity(0.15), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+
+            if showDatePicker {
+                DatePicker(
+                    "Select date",
+                    selection: $selectedDate,
+                    in: earliestDate...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .tint(AppColors.accent)
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                )
+                .onChange(of: selectedDate) { _, _ in
+                    Task { await lookupDate() }
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private var dividerRow: some View {
+        Rectangle()
+            .fill(AppColors.textSecondary.opacity(0.1))
+            .frame(height: 1)
+            .padding(.horizontal)
+    }
+
     // MARK: - Day Section
 
-    private func daySection(date: Date, changes: [DailyPositioningSignal]) -> some View {
+    private func daySection(date: Date, changes: [DailyPositioningSignal], isLookup: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // Day header
             HStack {
@@ -86,6 +236,17 @@ struct SignalChangeHistoryView: View {
                     .foregroundColor(AppColors.textSecondary)
 
                 Spacer()
+
+                if isLookup {
+                    Text("LOOKUP")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(AppColors.accent)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(AppColors.accent.opacity(0.12))
+                        )
+                }
             }
             .padding(.horizontal)
 
@@ -183,6 +344,19 @@ struct SignalChangeHistoryView: View {
             changes = try await service.fetchRecentSignalChanges(days: 30)
         } catch {
             logWarning("Failed to load signal change history: \(error)", category: .network)
+        }
+    }
+
+    private func lookupDate() async {
+        isLoadingLookup = true
+        lookupChanges = []
+        showDatePicker = false
+        defer { isLoadingLookup = false }
+        do {
+            lookupChanges = try await service.fetchSignalChangesForDate(selectedDate)
+        } catch {
+            logWarning("Failed to look up signal changes: \(error)", category: .network)
+            lookupChanges = []
         }
     }
 }
