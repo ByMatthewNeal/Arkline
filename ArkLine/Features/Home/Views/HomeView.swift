@@ -22,13 +22,10 @@ struct HomeView: View {
                     .allowsHitTesting(false)
 
                 // Content
-                ZStack(alignment: .top) {
-                    // Scrollable content (goes under the header)
                     ScrollViewReader { scrollProxy in
                     ScrollView(.vertical) {
                         VStack(spacing: 20) {
-                            // Spacer to push content below the header
-                            Color.clear.frame(height: 80).id("scrollTop")
+                            Color.clear.frame(height: 0).id("scrollTop")
 
                         // Stale data warning (shown when fetches failed)
                         if viewModel.failedFetchCount > 0, !viewModel.isLoading {
@@ -126,8 +123,7 @@ struct HomeView: View {
                     }
                 }
             } // ScrollViewReader
-
-                    // Floating header with fading material background
+                .safeAreaInset(edge: .top) {
                     GlassHeader(
                         greeting: viewModel.greeting,
                         userName: appState.currentUser?.firstName ?? "User",
@@ -159,8 +155,7 @@ struct HomeView: View {
                                 .ignoresSafeArea(.all, edges: .top)
                             )
                     }
-                    .allowsHitTesting(true)
-            } // ZStack (scroll + floating header)
+                }
             }
             .sheet(isPresented: $showPortfolioPicker) {
                 PortfolioPickerSheet(
@@ -232,13 +227,20 @@ struct HomeView: View {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 guard newPhase == .active, appState.selectedTab == .home else { return }
-                // Check for a newer briefing when returning to foreground
-                // (cron generates at 10am and 5pm ET, so clear local cache to pick up new one)
-                if let generated = viewModel.marketSummary?.generatedAt,
-                   Date().timeIntervalSince(generated) > 1800,
+
+                // Full refresh if data is older than 5 minutes
+                if let last = viewModel.lastRefreshed,
+                   Date().timeIntervalSince(last) > 300,
                    !viewModel.isLoading {
-                    MarketSummaryService.shared.clearLocalCache()
-                    Task { await viewModel.fetchMarketSummary() }
+                    // Also clear briefing cache if it's stale (cron generates at 10am and 5pm ET)
+                    if let generated = viewModel.marketSummary?.generatedAt,
+                       Date().timeIntervalSince(generated) > 1800 {
+                        MarketSummaryService.shared.clearLocalCache()
+                    }
+                    Task { await viewModel.refresh(forceRefresh: true) }
+                } else if viewModel.lastRefreshed == nil {
+                    // First launch / no data yet
+                    Task { await viewModel.refresh(forceRefresh: true) }
                 }
             }
             .onChange(of: appState.selectedTab) { _, newTab in
