@@ -461,8 +461,10 @@ struct HomeAISummaryWidget: View {
         guard let postureSection = sections.first(where: { $0.header.lowercased() == "posture" }) else { return nil }
         let body = postureSection.body.lowercased()
 
-        // Match against the 4 quadrants for exact label + color
-        for q in MacroRegimeQuadrant.allCases {
+        // Match against the 4 quadrants for exact label + color.
+        // Sort by label length descending so "Disinflation" matches before "Inflation"
+        // (since "disinflation" contains the substring "inflation").
+        for q in MacroRegimeQuadrant.allCases.sorted(by: { $0.rawValue.count > $1.rawValue.count }) {
             if body.contains(q.rawValue.lowercased()) {
                 if q.rawValue.lowercased().contains("risk-on") {
                     return .riskOn(postureSection.body, q.rawValue, color: q.color)

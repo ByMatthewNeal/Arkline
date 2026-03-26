@@ -231,6 +231,7 @@
 		A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */; };
 		A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */; };
 		A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */; };
+		A1B2C3D4E5F6SCH00001B1 /* SignalChangeHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6SCH00001A1 /* SignalChangeHistoryView.swift */; };
 		A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */; };
 		A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */; };
 		A206DCEB00A900E4EA7FA1F3 /* CoinglassData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */; };
@@ -716,6 +717,7 @@
 		A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSSignalChangesCard.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6SCH00001A1 /* SignalChangeHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalChangeHistoryView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSGridSection.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
 		A1C0D1E2F3B4A5C6D7E8F901 /* AltcoinScreenerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AltcoinScreenerSection.swift; sourceTree = "<group>"; };
@@ -1650,6 +1652,7 @@
 				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
 				C831006104AE4F24A0E28C46 /* FlashIntelCard.swift */,
 				A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */,
+				A1B2C3D4E5F6SCH00001A1 /* SignalChangeHistoryView.swift */,
 				6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */,
 				72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */,
 				3CBED16E617AF07C45FCA8D3 /* FearGreedWidget.swift */,
@@ -2343,6 +2346,7 @@
 				08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */,
 				A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */,
 				A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */,
+				A1B2C3D4E5F6SCH00001B1 /* SignalChangeHistoryView.swift in Sources */,
 				A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */,
 				A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */,
 				A1B2C3D4E5F6QPS00001B1 /* DailyPositioningSignal.swift in Sources */,

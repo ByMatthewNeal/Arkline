@@ -43,6 +43,18 @@ struct QPSSignalChangesCard: View {
                         signalChangeRow(signal)
                     }
                 }
+
+                NavigationLink(destination: SignalChangeHistoryView()) {
+                    HStack(spacing: 4) {
+                        Text("View History")
+                            .font(.system(size: 12, weight: .medium))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(AppColors.accent)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .buttonStyle(.plain)
             } else {
                 Button { showPaywall = true } label: { lockedCard }
                     .buttonStyle(PlainButtonStyle())
