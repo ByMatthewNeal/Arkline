@@ -2132,6 +2132,9 @@ async function resolveOpenSignals(
 
     if (isBuy) {
       if (!t1AlreadyHit) {
+        // Track best price (MFE) on every check, even before T1
+        bestPrice = Math.max(bestPrice, candle.high)
+
         // Phase 1: Full position — check SL then T1
         // SL must be breached by buffer to filter out exchange-specific wicks
         if (candle.low <= sl * (1 - SL_BUFFER_PCT)) {
@@ -2140,6 +2143,7 @@ async function resolveOpenSignals(
             status: "invalidated",
             outcome: "loss",
             outcome_pct: Math.round(pnl * 100) / 100,
+            best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
@@ -2154,12 +2158,17 @@ async function resolveOpenSignals(
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: Math.round(t1Pnl * 100) / 100,
-            best_price: candle.high,
+            best_price: bestPrice,
             runner_stop: entryMid,  // Move to breakeven
           }).eq("id", signal.id)
           notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
-          continue // Skip runner eval this cycle
+          continue
+        }
+
+        // No resolution — persist best price for MFE tracking
+        if (bestPrice > (signal.best_price ? Number(signal.best_price) : 0)) {
+          await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
         }
       } else {
         // Phase 2: Runner — use latest candle only (not aggregated) to avoid stale data
@@ -2196,6 +2205,9 @@ async function resolveOpenSignals(
     } else {
       // --- SHORT ---
       if (!t1AlreadyHit) {
+        // Track best price (MFE) on every check, even before T1
+        bestPrice = Math.min(bestPrice, candle.low)
+
         // SL must be breached by buffer to filter out exchange-specific wicks
         if (candle.high >= sl * (1 + SL_BUFFER_PCT)) {
           const pnl = ((entryMid - sl) / entryMid) * 100
@@ -2203,6 +2215,7 @@ async function resolveOpenSignals(
             status: "invalidated",
             outcome: "loss",
             outcome_pct: Math.round(pnl * 100) / 100,
+            best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
@@ -2217,12 +2230,18 @@ async function resolveOpenSignals(
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: Math.round(t1Pnl * 100) / 100,
-            best_price: candle.low,
+            best_price: bestPrice,
             runner_stop: entryMid,  // Move to breakeven
           }).eq("id", signal.id)
           notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
           continue // Skip runner eval this cycle
+        }
+
+        // No resolution — persist best price for MFE tracking
+        const currentBest = signal.best_price ? Number(signal.best_price) : Infinity
+        if (bestPrice < currentBest) {
+          await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
         }
       } else {
         // Phase 2: Runner — use latest candle only (not aggregated) to avoid stale data

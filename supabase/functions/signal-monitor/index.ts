@@ -281,6 +281,9 @@ Deno.serve(async (req) => {
     // --- LONG ---
     if (isBuy) {
       if (!t1AlreadyHit) {
+        // Track best price (MFE) on every check, even before T1
+        bestPrice = Math.max(bestPrice, candle.high)
+
         // Phase 1: check SL then T1
         // Dual-source: both Coinbase AND Binance must confirm SL breach
         if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
@@ -289,6 +292,7 @@ Deno.serve(async (req) => {
             status: "invalidated",
             outcome: "loss",
             outcome_pct: round2(pnl),
+            best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: hoursSince(signal.triggered_at, now),
           }).eq("id", signal.id)
@@ -304,13 +308,18 @@ Deno.serve(async (req) => {
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: round2(t1Pnl),
-            best_price: candle.high,
+            best_price: bestPrice,
             runner_stop: entryMid, // Move to breakeven
           }).eq("id", signal.id)
           stats.t1Hits++
           await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1)
           stats.notifications++
-          continue // Skip runner eval this cycle — let it trail with fresh data next check
+          continue
+        }
+
+        // No resolution — persist best price for MFE tracking
+        if (bestPrice > (signal.best_price ? Number(signal.best_price) : 0)) {
+          await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
         }
       } else {
         // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
@@ -349,6 +358,9 @@ Deno.serve(async (req) => {
     } else {
       // --- SHORT ---
       if (!t1AlreadyHit) {
+        // Track best price (MFE) on every check, even before T1
+        bestPrice = Math.min(bestPrice, candle.low)
+
         // Dual-source: both Coinbase AND Binance must confirm SL breach
         if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
           const pnl = ((entryMid - sl) / entryMid) * 100
@@ -356,6 +368,7 @@ Deno.serve(async (req) => {
             status: "invalidated",
             outcome: "loss",
             outcome_pct: round2(pnl),
+            best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: hoursSince(signal.triggered_at, now),
           }).eq("id", signal.id)
@@ -371,13 +384,19 @@ Deno.serve(async (req) => {
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: round2(t1Pnl),
-            best_price: candle.low,
+            best_price: bestPrice,
             runner_stop: entryMid,
           }).eq("id", signal.id)
           stats.t1Hits++
           await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1)
           stats.notifications++
-          continue // Skip runner eval this cycle — let it trail with fresh data next check
+          continue
+        }
+
+        // No resolution — persist best price for MFE tracking
+        const currentBest = signal.best_price ? Number(signal.best_price) : Infinity
+        if (bestPrice < currentBest) {
+          await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
         }
       } else {
         // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
