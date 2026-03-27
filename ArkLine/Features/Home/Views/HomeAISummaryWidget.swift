@@ -474,11 +474,12 @@ struct HomeAISummaryWidget: View {
             }
         }
 
-        // Fallback: broad match
+        // Fallback: broad match — use neutral color since we don't know the specific quadrant.
+        // The live regime will replace this with the correct color once it loads.
         if body.contains("risk-on") || body.contains("risk on") {
-            return .riskOn(postureSection.body, "Risk-On")
+            return .riskOn(postureSection.body, "Risk-On", color: AppColors.success)
         } else if body.contains("risk-off") || body.contains("risk off") {
-            return .riskOff(postureSection.body, "Risk-Off")
+            return .riskOff(postureSection.body, "Risk-Off", color: AppColors.textSecondary)
         }
         return nil
     }
