@@ -457,6 +457,29 @@ extension TradeSignal {
         return String(format: "%+.2f%%", pnl)
     }
 
+    /// Maximum favorable excursion — how far price moved in the profitable direction before closing.
+    var bestPricePct: Double? {
+        guard let best = bestPrice else { return nil }
+        let raw = ((best - entryPriceMid) / entryPriceMid) * 100
+        return signalType.isBuy ? raw : -raw
+    }
+
+    /// "Consider Profit" zone — 60-75% of the way from entry to T1.
+    /// Shown on live signals as guidance for active risk management.
+    var considerProfitZone: (low: Double, high: Double)? {
+        guard let t1 = target1 else { return nil }
+        let distance = t1 - entryPriceMid  // positive for longs, negative for shorts
+        let low = entryPriceMid + distance * 0.6
+        let high = entryPriceMid + distance * 0.75
+        return signalType.isBuy ? (low: low, high: high) : (low: high, high: low)
+    }
+
+    /// Whether the best price reached at least 50% of the way to T1 (opportunity was there).
+    var hadOpportunity: Bool {
+        guard let bestPct = bestPricePct, let t1Pct = entryPctFromTarget1, t1Pct > 0 else { return false }
+        return bestPct >= t1Pct * 0.5
+    }
+
     var phaseDescription: String {
         if status == .triggered {
             return isT1Hit ? "Runner trailing" : "Watching T1"

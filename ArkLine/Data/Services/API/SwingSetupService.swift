@@ -168,6 +168,10 @@ final class SwingSetupService {
         }
         .sorted { $0.total > $1.total }
 
+        // Opportunity rate: % of closed signals where best price reached 50%+ of T1
+        let opportunityCount = allSignals.filter { $0.hadOpportunity }.count
+        let opportunityRate = total > 0 ? Double(opportunityCount) / Double(total) * 100 : 0
+
         return SignalStats(
             totalSignals: total,
             wins: wins,
@@ -179,7 +183,8 @@ final class SwingSetupService {
             profitFactor: profitFactor,
             avgDurationHours: avgDuration,
             assetBreakdown: assetBreakdown,
-            currentStreak: streak
+            currentStreak: streak,
+            opportunityRate: opportunityRate
         )
     }
 }
@@ -198,6 +203,7 @@ struct SignalStats {
     let avgDurationHours: Int
     let assetBreakdown: [AssetStats]
     let currentStreak: Int // positive = wins, negative = losses
+    let opportunityRate: Double // % of signals where best price reached 50%+ of T1
 }
 
 struct SignalMarketConditions: Codable {

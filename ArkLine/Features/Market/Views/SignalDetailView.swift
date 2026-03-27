@@ -402,18 +402,34 @@ struct SignalDetailView: View {
                 color: AppColors.success
             )
         case .invalidated:
+            let subtitle: String? = {
+                var parts: [String] = []
+                if let pnl = signal.outcomePct {
+                    parts.append(String(format: "Closed at %+.2f%%", pnl))
+                }
+                if let bestPct = signal.bestPricePct, bestPct > 0 {
+                    parts.append(String(format: "Reached %+.1f%% before reversing", bestPct))
+                }
+                return parts.isEmpty ? nil : parts.joined(separator: " · ")
+            }()
             return BannerConfig(
                 icon: "xmark.circle.fill",
                 title: "Stopped Out",
-                subtitle: signal.outcomePct.map { String(format: "Closed at %+.2f%%", $0) },
+                subtitle: subtitle,
                 badge: signal.rMultiple.map { String(format: "%+.1fR", $0) },
                 color: AppColors.error
             )
         case .expired:
+            let subtitle: String = {
+                if signal.triggeredAt != nil, let bestPct = signal.bestPricePct, bestPct > 0 {
+                    return String(format: "Reached %+.1f%% before expiring", bestPct)
+                }
+                return "Price never reached the entry zone"
+            }()
             return BannerConfig(
                 icon: "clock.badge.xmark",
                 title: "Expired",
-                subtitle: "Price never reached the entry zone",
+                subtitle: subtitle,
                 badge: nil,
                 color: AppColors.textSecondary
             )
@@ -544,6 +560,15 @@ struct SignalDetailView: View {
 
                 paramRow(label: "Entry Zone",
                          value: "$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
+
+                if signal.status.isLive, let zone = signal.considerProfitZone {
+                    let low = min(zone.low, zone.high)
+                    let high = max(zone.low, zone.high)
+                    paramRow(label: "Consider Profit",
+                             value: "$\(formatSignalPrice(low)) – $\(formatSignalPrice(high))",
+                             badge: "60–75%",
+                             badgeColor: AppColors.warning)
+                }
 
                 if let t1 = signal.target1, let pct = signal.entryPctFromTarget1 {
                     paramRow(label: "Target 1",

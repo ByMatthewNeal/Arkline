@@ -136,11 +136,15 @@ struct SwingSetupsDetailView: View {
             return AssetStats(asset: asset, total: t, wins: w, losses: l, partials: p, hitRate: hr, avgReturnPct: avgRet)
         }.sorted { $0.total > $1.total }
 
+        let opportunityCount = signals.filter { $0.hadOpportunity }.count
+        let opportunityRate = total > 0 ? Double(opportunityCount) / Double(total) * 100 : 0
+
         return SignalStats(
             totalSignals: total, wins: wins, losses: losses, partials: partials,
             hitRate: hitRate, avgWinPct: avgWinPct, avgLossPct: avgLossPct,
             profitFactor: profitFactor, avgDurationHours: avgDuration,
-            assetBreakdown: assetBreakdown, currentStreak: streak
+            assetBreakdown: assetBreakdown, currentStreak: streak,
+            opportunityRate: opportunityRate
         )
     }
 
@@ -425,6 +429,23 @@ struct SwingSetupsDetailView: View {
                             value: stats.currentStreak >= 0 ? "+\(stats.currentStreak)" : "\(stats.currentStreak)",
                             label: "Streak",
                             color: stats.currentStreak >= 0 ? AppColors.success : AppColors.error
+                        )
+                    }
+
+                    HStack(spacing: 16) {
+                        miniStat(
+                            value: String(format: "%.0f%%", stats.opportunityRate),
+                            label: "Opportunity",
+                            color: AppColors.accent
+                        )
+                        miniStat(
+                            value: String(format: "%.1fx", stats.profitFactor),
+                            label: "Profit Factor",
+                            color: stats.profitFactor >= 2 ? AppColors.success : AppColors.warning
+                        )
+                        miniStat(
+                            value: stats.avgDurationHours >= 24 ? "\(stats.avgDurationHours / 24)d" : "\(stats.avgDurationHours)h",
+                            label: "Avg Duration"
                         )
                     }
                 }
