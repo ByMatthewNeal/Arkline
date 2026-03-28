@@ -215,6 +215,87 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
   }
 }
 
+// ── Claude: Generate Additional Editorial Slides from Admin Insights ─────────
+async function generateEditorialSlidesFromInsights(
+  anthropicKey: string,
+  adminInsights: string,
+  existingEditorialContext: string,
+  monday: string,
+  friday: string,
+  imageUrls?: string[],
+): Promise<EditorialSlide[]> {
+  const prompt = `You are a senior financial analyst. An admin has provided additional context and insights for the weekly market update covering ${monday} to ${friday}.
+
+Your job: determine if the admin's insights warrant NEW editorial sections that are NOT already covered in the existing deck. Only generate new sections — do NOT repeat or rephrase existing content.
+
+=== EXISTING EDITORIAL SECTIONS (DO NOT DUPLICATE) ===
+${existingEditorialContext}
+
+=== ADMIN INSIGHTS (NEW INFORMATION) ===
+${adminInsights}
+
+INSTRUCTIONS:
+- If the admin insights cover a topic already addressed in the existing sections, respond with an empty array []
+- If the insights introduce a genuinely new topic or angle, generate 1-2 new editorial sections
+- Each section should follow the same format: section_title, section_subtitle, analysis_title, category, bullets
+- Categories: "fed", "inflation", "central banks", "geopolitics", "liquidity", "crypto", "economic"
+- Bullets should have "text" (1-3 sentences with specifics) and optional "detail"
+- Always connect insights back to risk assets (crypto, equities)
+
+Respond ONLY with a JSON array. Empty array [] if no new sections needed:
+[
+  {
+    "section_title": "...",
+    "section_subtitle": "...",
+    "analysis_title": "...",
+    "category": "...",
+    "bullets": [
+      { "text": "...", "detail": "..." }
+    ]
+  }
+]`
+
+  const contentParts: Array<Record<string, unknown>> = []
+  if (imageUrls?.length) {
+    for (const imgUrl of imageUrls.slice(0, 4)) {
+      contentParts.push({
+        type: "image",
+        source: { type: "url", url: imgUrl },
+      })
+    }
+  }
+  contentParts.push({ type: "text", text: prompt })
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        messages: [{ role: "user", content: contentParts }],
+      }),
+    })
+
+    if (!response.ok) {
+      console.error("Claude insight editorial generation failed:", await response.text())
+      return []
+    }
+
+    const data = await response.json()
+    const text = data.content?.[0]?.text ?? "[]"
+    const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
+    return JSON.parse(cleaned)
+  } catch (e) {
+    console.error("Claude insight editorial generation error:", e)
+    return []
+  }
+}
+
 // ── Claude: Generate Weekly Outlook ──────────────────────────────────────────
 interface WeeklyOutlook {
   headline: string
@@ -510,6 +591,46 @@ Deno.serve(async (req) => {
         attachmentContext,
       ].filter(Boolean).join("\n\n")
 
+      // Generate new editorial slides from admin insights if provided
+      let newEditorialSlides: SlidePayload[] = []
+      if (fullInsights && anthropicKey) {
+        console.log("Generating additional editorial slides from admin insights...")
+        const newEditorials = await generateEditorialSlidesFromInsights(
+          anthropicKey,
+          fullInsights,
+          editorialContext,
+          existingDeck.week_start,
+          existingDeck.week_end,
+          attachmentImageUrls,
+        )
+        if (newEditorials.length > 0) {
+          console.log(`Generated ${newEditorials.length} new editorial slide(s) from insights`)
+          // Convert to slide format with section title slides (same as full generation)
+          for (const ed of newEditorials) {
+            newEditorialSlides.push({
+              type: "sectionTitle",
+              title: ed.section_title,
+              data: {
+                type: "sectionTitle",
+                payload: { subtitle: ed.section_subtitle ?? null },
+              },
+            })
+            newEditorialSlides.push({
+              type: "editorial",
+              title: ed.analysis_title,
+              data: {
+                type: "editorial",
+                payload: {
+                  category: ed.category,
+                  analysis_title: ed.analysis_title,
+                  bullets: ed.bullets,
+                },
+              },
+            })
+          }
+        }
+      }
+
       const narrative = anthropicKey
         ? await generateRundownNarrative(
             anthropicKey,
@@ -522,12 +643,33 @@ Deno.serve(async (req) => {
           )
         : "Narrative generation requires an API key."
 
-      const updatedSlides = slides.map((s: SlidePayload) => {
+      // Merge slides: keep all existing, insert new editorial slides before
+      // the non-editorial slides at the end (market pulse, snapshot, economic, rundown)
+      let updatedSlides = slides.map((s: SlidePayload) => {
         if (s.type === "rundown") {
           return { ...s, data: { type: "rundown", payload: { narrative } } }
         }
         return s
       })
+
+      if (newEditorialSlides.length > 0) {
+        // Find insertion point: before the first non-editorial, non-sectionTitle slide
+        // that comes after the editorial section (e.g., marketPulse, snapshot, economic, rundown)
+        const nonEditorialTypes = ["marketPulse", "snapshot", "economic", "rundown", "correlation"]
+        const insertIndex = updatedSlides.findIndex(
+          (s: SlidePayload) => nonEditorialTypes.includes(s.type)
+        )
+        if (insertIndex >= 0) {
+          updatedSlides = [
+            ...updatedSlides.slice(0, insertIndex),
+            ...newEditorialSlides,
+            ...updatedSlides.slice(insertIndex),
+          ]
+        } else {
+          // Append before last slide (rundown) or at end
+          updatedSlides.push(...newEditorialSlides)
+        }
+      }
 
       const { data: updatedDeck, error: updateErr } = await supabase
         .from("market_update_decks")
