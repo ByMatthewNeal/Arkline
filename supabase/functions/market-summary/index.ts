@@ -393,36 +393,6 @@ Deno.serve(async (req) => {
     console.error("Failed to fetch QPS signals:", err instanceof Error ? err.message : String(err))
   }
 
-  // --- Active Swing Trade Signals ---
-  try {
-    const { data: activeSignals } = await supabase
-      .from("trade_signals")
-      .select("asset, signal_type, status, entry_zone_low, entry_zone_high, target_1, stop_loss, risk_reward_ratio, generated_at, triggered_at")
-      .in("status", ["active", "triggered"])
-      .order("generated_at", { ascending: false })
-      .limit(3)
-
-    if (activeSignals && activeSignals.length > 0) {
-      const setupLabels: Record<string, string> = {
-        strong_buy: "STRONG LONG SETUP",
-        buy: "LONG SETUP",
-        strong_sell: "STRONG SHORT SETUP",
-        sell: "SHORT SETUP",
-      }
-      const signalDescriptions = activeSignals.map((s: Record<string, unknown>) => {
-        const entryLow = Number(s.entry_zone_low).toLocaleString()
-        const entryHigh = Number(s.entry_zone_high).toLocaleString()
-        const t1 = s.target_1 ? `T1: $${Number(s.target_1).toLocaleString()}` : ""
-        const statusLabel = s.status === "triggered" ? "IN PLAY" : "WATCHING"
-        const label = setupLabels[s.signal_type as string] ?? (s.signal_type as string).replace("_", " ").toUpperCase()
-        return `${s.asset} ${label} [${statusLabel}]: Zone $${entryLow}-$${entryHigh}, ${t1}, R:R ${s.risk_reward_ratio}x`
-      })
-      sections.push(`SWING SETUPS:\n${signalDescriptions.join("\n")}`)
-    }
-  } catch (err) {
-    console.error("Failed to fetch active signals:", err instanceof Error ? err.message : String(err))
-  }
-
   const marketContext = sections.join("\n\n")
   const timeLabel = slot === "weekend" ? "weekend" : slot === "morning" ? "morning" : "evening"
   const sessionContext = payload.marketSession ? `Current market session: ${payload.marketSession}.` : ""
@@ -472,7 +442,7 @@ Rules:
 - Never give investment advice or say "buy" / "sell"
 - Keep total length under 200 words
 - Never start any section with "Today" or "The market"
-- If SWING SETUPS data is present, briefly mention active setups. Use "Long Setup" or "Short Setup" — never "buy" or "sell".${feedbackBlock}`
+${feedbackBlock}`
 
           : `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual update — clear, conversational, no jargon.
 
@@ -508,7 +478,7 @@ Rules:
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
 - Keep total length under 350 words
 - Never start any section with "Today" or "The market"
-- If SWING SETUPS data is present, naturally reference any active or triggered setups in the Signals section. Use ONLY these terms: "Long Setup conditions detected" or "Short Setup conditions detected". Never use the words "buy", "sell", "buy signal", or "sell signal". Frame setups as pattern observations, not action directives. Keep it brief — one sentence max per setup.${feedbackBlock}`,
+${feedbackBlock}`,
         messages: [
           {
             role: "user",
