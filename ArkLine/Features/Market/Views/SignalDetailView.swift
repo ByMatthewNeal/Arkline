@@ -20,6 +20,7 @@ struct SignalDetailView: View {
     @State private var isResolving = false
     @State private var resolveError: String?
     @State private var resolveSuccess = false
+    @FocusState private var isTextFieldFocused: Bool
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
@@ -157,6 +158,10 @@ struct SignalDetailView: View {
                             .foregroundColor(AppColors.textSecondary)
                     }
                 }
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { isTextFieldFocused = false }
             }
         }
         .sheet(isPresented: $showMethodology) {
@@ -695,6 +700,7 @@ struct SignalDetailView: View {
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundColor(textPrimary)
                             .keyboardType(.decimalPad)
+                            .focused($isTextFieldFocused)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
@@ -1090,6 +1096,7 @@ struct SignalDetailView: View {
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundColor(textPrimary)
                             .keyboardType(.decimalPad)
+                            .focused($isTextFieldFocused)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)

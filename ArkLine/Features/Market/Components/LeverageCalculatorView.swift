@@ -17,7 +17,10 @@ struct LeverageCalculatorView: View {
     @State private var walletText: String = ""
     @State private var riskPercent: Double = 0
     @State private var riskSize: RiskSize = .oneR
+    @FocusState private var focusedField: Field?
     @Environment(\.colorScheme) private var colorScheme
+
+    private enum Field { case wallet, margin }
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBg: Color { colorScheme == .dark ? Color(hex: "1F1F1F") : .white }
@@ -131,6 +134,12 @@ struct LeverageCalculatorView: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(cardBg)
         )
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
+            }
+        }
         .onAppear {
             isExpanded = startExpanded
             // Auto-scale down to 0.5R for counter-trend or scalp signals
@@ -210,6 +219,7 @@ struct LeverageCalculatorView: View {
                             .foregroundColor(AppColors.textSecondary)
                         TextField("0", text: $walletText)
                             .keyboardType(.decimalPad)
+                            .focused($focusedField, equals: .wallet)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(textPrimary)
                             .frame(width: 80)
@@ -316,6 +326,7 @@ struct LeverageCalculatorView: View {
                                 .foregroundColor(AppColors.textSecondary)
                             TextField("0", text: $marginText)
                                 .keyboardType(.decimalPad)
+                                .focused($focusedField, equals: .margin)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(textPrimary)
                                 .frame(width: 80)
