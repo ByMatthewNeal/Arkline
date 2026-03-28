@@ -397,6 +397,19 @@ class MarketDeckViewModel {
         }
     }
 
+    func removeSlideFeedback(slideType: DeckSlide.SlideType) async {
+        guard let deckId = deck?.id else { return }
+
+        // Optimistic removal
+        slideFeedback.removeValue(forKey: slideType.rawValue)
+
+        do {
+            try await service.deleteSlideFeedback(deckId: deckId, slideType: slideType.rawValue)
+        } catch {
+            logError("Failed to remove slide feedback: \(error)", category: .network)
+        }
+    }
+
     func regenerateSlide(slideType: DeckSlide.SlideType, feedback: String) async {
         guard let deckId = deck?.id else { return }
 

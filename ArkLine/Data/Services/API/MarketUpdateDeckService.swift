@@ -226,6 +226,19 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
         logDebug("Slide feedback: \(rating ? "👍" : "👎") for \(slideType)", category: .data)
     }
 
+    func deleteSlideFeedback(deckId: UUID, slideType: String) async throws {
+        guard supabase.isConfigured else { return }
+
+        try await supabase.database
+            .from("deck_slide_feedback")
+            .delete()
+            .eq("deck_id", value: deckId.uuidString)
+            .eq("slide_type", value: slideType)
+            .execute()
+
+        logDebug("Slide feedback removed for \(slideType)", category: .data)
+    }
+
     func fetchSlideFeedback(deckId: UUID) async throws -> [SlideFeedback] {
         guard supabase.isConfigured else { return [] }
 

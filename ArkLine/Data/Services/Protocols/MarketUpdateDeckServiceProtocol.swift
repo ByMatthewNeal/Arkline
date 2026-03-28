@@ -32,6 +32,9 @@ protocol MarketUpdateDeckServiceProtocol {
     /// Admin: Submit per-slide feedback (rating + optional guidance)
     func submitSlideFeedback(deckId: UUID, slideType: String, rating: Bool, feedback: String?) async throws
 
+    /// Admin: Remove per-slide feedback (un-approve)
+    func deleteSlideFeedback(deckId: UUID, slideType: String) async throws
+
     /// Fetch all slide feedback for a deck
     func fetchSlideFeedback(deckId: UUID) async throws -> [SlideFeedback]
 

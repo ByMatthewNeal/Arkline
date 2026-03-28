@@ -107,6 +107,9 @@ struct MarketDeckViewer: View {
                             onRate: { rating, feedback in
                                 Task { await viewModel.submitSlideFeedback(slideType: currentSlide.type, rating: rating, feedback: feedback) }
                             },
+                            onRemove: {
+                                Task { await viewModel.removeSlideFeedback(slideType: currentSlide.type) }
+                            },
                             onRegenerate: { feedback in
                                 Task { await viewModel.regenerateSlide(slideType: currentSlide.type, feedback: feedback) }
                             }
@@ -196,6 +199,7 @@ struct SlideReviewBar: View {
     let isRegenerating: Bool
     let canRegenerate: Bool
     let onRate: (Bool, String?) -> Void
+    let onRemove: () -> Void
     let onRegenerate: (String) -> Void
 
     @State private var selectedRating: Bool?
@@ -218,13 +222,18 @@ struct SlideReviewBar: View {
                 }
                 .padding(.vertical, ArkSpacing.sm)
             } else if hasSubmitted && selectedRating == true {
-                // Approved
-                HStack(spacing: ArkSpacing.xs) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(AppColors.success)
-                    Text("Approved")
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(AppColors.success)
+                // Approved — tap to undo
+                Button(action: { undoApprove() }) {
+                    HStack(spacing: ArkSpacing.xs) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(AppColors.success)
+                        Text("Approved")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.success)
+                        Text("(tap to undo)")
+                            .font(AppFonts.footnote10)
+                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    }
                 }
                 .padding(.vertical, ArkSpacing.sm)
             } else if showFeedbackInput {
@@ -331,6 +340,12 @@ struct SlideReviewBar: View {
         selectedRating = true
         hasSubmitted = true
         onRate(true, nil)
+    }
+
+    private func undoApprove() {
+        selectedRating = nil
+        hasSubmitted = false
+        onRemove()
     }
 
     private func tapNeedsWork() {
