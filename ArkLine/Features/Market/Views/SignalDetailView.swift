@@ -161,7 +161,10 @@ struct SignalDetailView: View {
             }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { isTextFieldFocused = false }
+                Button("Done") {
+                    isTextFieldFocused = false
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
             }
         }
         .sheet(isPresented: $showMethodology) {
