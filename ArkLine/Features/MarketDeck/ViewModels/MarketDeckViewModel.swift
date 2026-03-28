@@ -89,6 +89,32 @@ class MarketDeckViewModel {
         }
     }
 
+    /// Load the most recent deck (draft or published), preferring whichever has the later week
+    func loadMostRecentDeck() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            async let draftTask = service.fetchDraft()
+            async let publishedTask = service.fetchLatestPublished()
+            let (draft, published) = try await (draftTask, publishedTask)
+
+            if let draft, let published {
+                // Show whichever covers the more recent week
+                if draft.weekStart >= published.weekStart {
+                    deck = draft
+                } else {
+                    deck = published
+                }
+            } else {
+                deck = draft ?? published
+            }
+            syncEditingState()
+        } catch {
+            logWarning("Failed to load deck: \(error)", category: .data)
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Admin: Generate
 
     func loadDraft() async {

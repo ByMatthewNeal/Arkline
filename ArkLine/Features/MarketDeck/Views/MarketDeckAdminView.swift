@@ -56,10 +56,8 @@ struct MarketDeckAdminView: View {
         }
         .task {
             viewModel.checkForCompletedGeneration()
-            await viewModel.loadDraft()
-            if viewModel.deck == nil {
-                await viewModel.loadLatest()
-            }
+            // Load both draft and latest published, show whichever is more recent
+            await viewModel.loadMostRecentDeck()
         }
         .onAppear {
             viewModel.checkForCompletedGeneration()
@@ -91,6 +89,11 @@ struct MarketDeckAdminView: View {
 
     private func deckHeader(_ deck: MarketUpdateDeck) -> some View {
         VStack(spacing: ArkSpacing.sm) {
+            // Show "Generate Next Week" prompt when current deck is already published
+            if deck.status == .published {
+                generateNextWeekCard(currentDeck: deck)
+            }
+
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(deck.weekLabel)
@@ -110,7 +113,7 @@ struct MarketDeckAdminView: View {
             Button(action: { showViewer = true }) {
                 HStack(spacing: ArkSpacing.xs) {
                     Image(systemName: "eye")
-                    Text("Preview Full Deck")
+                    Text(deck.status == .published ? "View Published Deck" : "Preview Full Deck")
                 }
                 .font(AppFonts.body14Medium)
                 .foregroundColor(.white)
@@ -121,6 +124,55 @@ struct MarketDeckAdminView: View {
         }
         .padding(ArkSpacing.md)
         .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.cardBackground(colorScheme)))
+    }
+
+    private func generateNextWeekCard(currentDeck: MarketUpdateDeck) -> some View {
+        VStack(spacing: ArkSpacing.sm) {
+            HStack(spacing: ArkSpacing.xs) {
+                Image(systemName: "sparkles")
+                    .foregroundColor(AppColors.accent)
+                Text("This deck has been published")
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                Spacer()
+            }
+
+            Text("Ready to create next week's update?")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: {
+                generateWithParams()
+            }) {
+                HStack(spacing: ArkSpacing.xs) {
+                    if viewModel.isGenerating {
+                        ProgressView()
+                            .tint(.white)
+                            .controlSize(.small)
+                        Text("Generating...")
+                    } else {
+                        Image(systemName: "wand.and.stars")
+                        Text("Generate Next Week's Deck")
+                    }
+                }
+                .font(AppFonts.body14Medium)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, ArkSpacing.sm)
+                .background(RoundedRectangle(cornerRadius: 10).fill(AppColors.success))
+            }
+            .disabled(viewModel.isGenerating)
+        }
+        .padding(ArkSpacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(AppColors.success.opacity(0.08))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(AppColors.success.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 
     // MARK: - Admin Insights
