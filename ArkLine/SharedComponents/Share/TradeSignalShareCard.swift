@@ -113,6 +113,13 @@ struct TradeSignalCardContent: View {
                     sectionDivider
                 }
 
+                if let zone = signal.considerProfitZone {
+                    paramRow(label: "Consider Profit",
+                             value: "$\(zone.low.asSignalPrice) – $\(zone.high.asSignalPrice)",
+                             badgeColor: AppColors.warning)
+                    sectionDivider
+                }
+
                 paramRow(label: "Stop Loss",
                          value: "$\(signal.stopLoss.asSignalPrice)",
                          badge: String(format: "%.1f%%", signal.stopLossPct),
@@ -545,6 +552,7 @@ struct TradeSignalShareSheet: View {
         var height: CGFloat = 320
         if currentPrice != nil { height += 36 }
         if signal.target2 != nil { height += 36 }
+        if signal.considerProfitZone != nil { height += 36 }
         if signal.outcomePct != nil { height += 56 }
         if includeAnalysis, signal.cardAnalysis != nil { height += 160 }
         if includeLeverage, let info = leverageInfo {
@@ -590,6 +598,12 @@ struct TradeSignalShareSheet: View {
             if let t2 = signal.target2, let pct = signal.entryPctFromTarget2 {
                 lines.append("TP2: $\(t2.asSignalPrice) (\(String(format: "%+.1f%%", pct)))")
             }
+            lines.append("")
+        }
+
+        if let zone = signal.considerProfitZone {
+            lines.append("Consider Profit:")
+            lines.append("$\(zone.low.asSignalPrice) – $\(zone.high.asSignalPrice)")
             lines.append("")
         }
 
