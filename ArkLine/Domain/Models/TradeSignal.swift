@@ -50,6 +50,9 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let outcomePct: Double?
     let durationHours: Int?
 
+    // Resolution
+    let resolutionSource: String?  // "automated" or "manual"
+
     // Metadata
     let generatedAt: Date
     let triggeredAt: Date?
@@ -90,6 +93,7 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case t1PnlPct = "t1_pnl_pct"
         case runnerPnlPct = "runner_pnl_pct"
         case emaTrendAligned = "ema_trend_aligned"
+        case resolutionSource = "resolution_source"
         case outcomePct = "outcome_pct"
         case durationHours = "duration_hours"
         case generatedAt = "generated_at"
@@ -479,6 +483,8 @@ extension TradeSignal {
         guard let bestPct = bestPricePct, let t1Pct = entryPctFromTarget1, t1Pct > 0 else { return false }
         return bestPct >= t1Pct * 0.5
     }
+
+    var isManuallyResolved: Bool { resolutionSource == "manual" }
 
     var phaseDescription: String {
         if status == .triggered {

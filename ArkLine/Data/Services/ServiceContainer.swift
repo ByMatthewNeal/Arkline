@@ -70,6 +70,9 @@ final class ServiceContainer {
     // MARK: - Lazy Services - Broadcast
     private lazy var _broadcastService = BroadcastService()
 
+    // MARK: - Lazy Services - Market Deck
+    private lazy var _marketDeckService = MarketUpdateDeckService()
+
     // MARK: - Service Accessors
 
     /// Market service uses real CoinGecko API for live crypto prices
@@ -167,6 +170,11 @@ final class ServiceContainer {
     /// Broadcast service - manages broadcasts for the Broadcast Studio
     var broadcastService: BroadcastServiceProtocol {
         _broadcastService
+    }
+
+    /// Market deck service - weekly market update slide decks
+    var marketDeckService: MarketUpdateDeckServiceProtocol {
+        _marketDeckService
     }
 
     // MARK: - Initialization

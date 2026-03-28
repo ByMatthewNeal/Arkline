@@ -164,6 +164,8 @@ enum Constants {
         static let sentimentDataUpdated = Notification.Name("sentimentDataUpdated")
         static let themeChanged = Notification.Name("themeChanged")
         static let subscriptionStatusChanged = Notification.Name("subscriptionStatusChanged")
+        static let marketDeckPublished = Notification.Name("marketDeckPublished")
+        static let signalManuallyResolved = Notification.Name("signalManuallyResolved")
     }
 
     // MARK: - Date Formats

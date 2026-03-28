@@ -142,6 +142,10 @@ class HomeViewModel {
     var qpsSignals: [DailyPositioningSignal] = []
     private let qpsService = PositioningSignalService()
 
+    // Weekly Market Deck
+    var latestDeck: MarketUpdateDeck?
+    private let marketDeckService: MarketUpdateDeckServiceProtocol = ServiceContainer.shared.marketDeckService
+
     // Market Summary
     var btcPrice: Double = 0
     var ethPrice: Double = 0
@@ -512,6 +516,7 @@ class HomeViewModel {
         // Initialize user data synchronously; data loading is triggered by HomeView.task
         self.sentimentViewModel = SentimentViewModel()
         loadReadIds()
+        restoreCachedPortfolio()
     }
 
     nonisolated deinit {
@@ -894,6 +899,16 @@ class HomeViewModel {
             }
         }
 
+        // Fetch latest weekly market deck
+        Task {
+            do {
+                let deck = try await self.marketDeckService.fetchLatestPublished()
+                await MainActor.run { self.latestDeck = deck }
+            } catch {
+                logWarning("Market deck fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
         // Fetch Rainbow Chart data (needs BTC price) in background
         if btcPrice > 0 {
             Task {
@@ -1010,9 +1025,33 @@ class HomeViewModel {
                 withAnimation(.easeInOut(duration: 0.4)) {
                     self.portfolioValue = totalValue
                 }
+                self.cachePortfolioSnapshot()
             }
         } catch {
             logError("Failed to load portfolio data: \(error)", category: .data)
+        }
+    }
+
+    // MARK: - Portfolio Cache (instant launch)
+
+    private static let portfolioCacheKey = "cachedPortfolioSnapshot"
+
+    private func cachePortfolioSnapshot() {
+        guard portfolioValue > 0, let portfolio = selectedPortfolio else { return }
+        let snapshot: [String: Any] = [
+            "value": portfolioValue,
+            "name": portfolio.name,
+            "portfolioId": portfolio.id.uuidString
+        ]
+        UserDefaults.standard.set(snapshot, forKey: Self.portfolioCacheKey)
+    }
+
+    private func restoreCachedPortfolio() {
+        guard let snapshot = UserDefaults.standard.dictionary(forKey: Self.portfolioCacheKey) else { return }
+        if let value = snapshot["value"] as? Double, value > 0 {
+            portfolioValue = value
+            // Don't set hasLoadedPortfolios here — let the real fetch set portfolios array
+            // This just pre-fills the value so the card shows a number instead of $0
         }
     }
 

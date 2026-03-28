@@ -84,6 +84,15 @@ struct AdminDashboardView: View {
                             subtitle: "MRR, ARR & metrics"
                         )
                     }
+
+                    NavigationLink(destination: MarketDeckAdminView()) {
+                        AdminDashboardRow(
+                            icon: "doc.richtext",
+                            iconColor: AppColors.accent,
+                            title: "Weekly Market Deck",
+                            subtitle: "Generate & publish weekly updates"
+                        )
+                    }
                 } header: {
                     Text("Management")
                 }

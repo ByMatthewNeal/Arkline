@@ -113,6 +113,7 @@ enum SupabaseTable: String {
     case ohlcCandles = "ohlc_candles"
     case economicEvents = "economic_events"
     case positioningSignals = "positioning_signals"
+    case marketUpdateDecks = "market_update_decks"
 }
 
 // MARK: - Storage Buckets

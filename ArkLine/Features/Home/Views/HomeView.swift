@@ -191,7 +191,17 @@ struct HomeView: View {
                         case .dailyBriefing:
                             appState.shouldExpandBriefing = true
                         case .signalGenerated, .signalT1Hit, .signalOutcome:
-                            appState.selectedTab = .market
+                            // Extract signal UUID from notification ID (e.g. "signal_new_{uuid}")
+                            let parts = notification.id.components(separatedBy: "_")
+                            if let uuidString = parts.last, let _ = UUID(uuidString: uuidString) {
+                                NotificationCenter.default.post(
+                                    name: Notification.Name("SwingSignalNotificationTapped"),
+                                    object: nil,
+                                    userInfo: ["id": uuidString]
+                                )
+                            } else {
+                                appState.selectedTab = .market
+                            }
                         case .dcaReminder:
                             appState.selectedTab = .profile
                             appState.pendingDCAReminderId = "open"
@@ -219,6 +229,16 @@ struct HomeView: View {
             .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.authStateChanged)) { _ in
                 if !viewModel.hasLoadedPortfolios || (viewModel.portfolioValue == 0 && SupabaseAuthManager.shared.isAuthenticated) {
                     Task { await viewModel.loadPortfolios(forceRefresh: true) }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.marketDeckPublished)) { notification in
+                if let deck = notification.object as? MarketUpdateDeck {
+                    viewModel.latestDeck = deck
+                } else {
+                    Task {
+                        let deck = try? await ServiceContainer.shared.marketDeckService.fetchLatestPublished()
+                        viewModel.latestDeck = deck
+                    }
                 }
             }
             .onAppear {

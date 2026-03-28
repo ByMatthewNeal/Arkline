@@ -87,6 +87,134 @@ final class SwingSetupService {
         return zone
     }
 
+    // MARK: - Manual Resolution (Admin)
+
+    /// Encodable patch for manual signal resolution. Skips nil values to avoid overwriting existing data.
+    private struct ManualResolutionPatch: Encodable {
+        var status: String
+        var outcome: String
+        var outcome_pct: Double
+        var closed_at: String
+        var resolution_source: String = "manual"
+        var duration_hours: Int?
+        var best_price: Double?
+        var t1_hit_at: String?
+        var t1_pnl_pct: Double?
+        var runner_exit_price: Double?
+        var runner_pnl_pct: Double?
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(status, forKey: .status)
+            try container.encode(outcome, forKey: .outcome)
+            try container.encode(outcome_pct, forKey: .outcome_pct)
+            try container.encode(closed_at, forKey: .closed_at)
+            try container.encode(resolution_source, forKey: .resolution_source)
+            if let v = duration_hours { try container.encode(v, forKey: .duration_hours) }
+            if let v = best_price { try container.encode(v, forKey: .best_price) }
+            if let v = t1_hit_at { try container.encode(v, forKey: .t1_hit_at) }
+            if let v = t1_pnl_pct { try container.encode(v, forKey: .t1_pnl_pct) }
+            if let v = runner_exit_price { try container.encode(v, forKey: .runner_exit_price) }
+            if let v = runner_pnl_pct { try container.encode(v, forKey: .runner_pnl_pct) }
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case status, outcome, outcome_pct, closed_at, resolution_source
+            case duration_hours, best_price, t1_hit_at, t1_pnl_pct
+            case runner_exit_price, runner_pnl_pct
+        }
+    }
+
+    /// Manually resolve a trade signal with a given exit price.
+    /// Auto-determines outcome based on where the exit price falls relative to entry/SL/T1.
+    func resolveSignalManually(signal: TradeSignal, exitPrice: Double) async throws -> TradeSignal {
+        let isBuy = signal.signalType.isBuy
+        let entry = signal.entryPriceMid
+
+        let exitPnlPct = isBuy
+            ? ((exitPrice - entry) / entry) * 100
+            : ((entry - exitPrice) / entry) * 100
+
+        let now = ISO8601DateFormatter().string(from: Date())
+        let duration: Int? = signal.triggeredAt.map { Int(Date().timeIntervalSince($0) / 3600) }
+
+        let t1Hit: Bool = {
+            guard let t1 = signal.target1 else { return false }
+            return isBuy ? exitPrice >= t1 : exitPrice <= t1
+        }()
+        let slHit = isBuy ? exitPrice <= signal.stopLoss : exitPrice >= signal.stopLoss
+
+        var patch: ManualResolutionPatch
+
+        if signal.isT1Hit {
+            // Runner phase: T1 already hit, resolves the runner half
+            let runnerPnl = exitPnlPct
+            let t1Pnl = signal.t1PnlPct ?? 0
+            let combinedPnl = (t1Pnl + runnerPnl) / 2
+
+            patch = ManualResolutionPatch(
+                status: combinedPnl > 0 ? "target_hit" : "invalidated",
+                outcome: combinedPnl > 0 ? "win" : "loss",
+                outcome_pct: round(combinedPnl * 100) / 100,
+                closed_at: now,
+                duration_hours: duration,
+                runner_exit_price: exitPrice,
+                runner_pnl_pct: round(runnerPnl * 100) / 100
+            )
+        } else if t1Hit {
+            // Exit at or beyond T1 — T1 half at T1 price, runner half at exit price
+            let t1Pnl: Double = {
+                guard let t1 = signal.target1 else { return exitPnlPct }
+                return isBuy
+                    ? ((t1 - entry) / entry) * 100
+                    : ((entry - t1) / entry) * 100
+            }()
+            let combinedPnl = (t1Pnl + exitPnlPct) / 2
+
+            patch = ManualResolutionPatch(
+                status: "target_hit",
+                outcome: "win",
+                outcome_pct: round(combinedPnl * 100) / 100,
+                closed_at: now,
+                duration_hours: duration,
+                best_price: exitPrice,
+                t1_hit_at: now,
+                t1_pnl_pct: round(t1Pnl * 100) / 100,
+                runner_exit_price: exitPrice,
+                runner_pnl_pct: round(exitPnlPct * 100) / 100
+            )
+        } else {
+            // Pre-T1 exit (SL hit or manual close in between)
+            let bestPrice: Double? = {
+                if let current = signal.bestPrice {
+                    let isBetter = isBuy ? exitPrice > current : exitPrice < current
+                    return isBetter ? exitPrice : nil
+                }
+                return exitPrice
+            }()
+
+            patch = ManualResolutionPatch(
+                status: slHit ? "invalidated" : (exitPnlPct > 0 ? "target_hit" : "invalidated"),
+                outcome: exitPnlPct > 0 ? "win" : "loss",
+                outcome_pct: round(exitPnlPct * 100) / 100,
+                closed_at: now,
+                duration_hours: duration,
+                best_price: bestPrice
+            )
+        }
+
+        try await supabase.database
+            .from(SupabaseTable.tradeSignals.rawValue)
+            .update(patch)
+            .eq("id", value: signal.id.uuidString)
+            .execute()
+
+        // Clear cache so lists update
+        Self.activeSignalsCache = nil
+
+        return try await fetchSignal(id: signal.id)
+    }
+
     // MARK: - Market Conditions
 
     func fetchMarketConditions() async throws -> SignalMarketConditions? {

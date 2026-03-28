@@ -403,6 +403,9 @@ struct SwingSetupsDetailView: View {
         .refreshable {
             await viewModel.loadAllData()
         }
+        .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.signalManuallyResolved)) { _ in
+            Task { await viewModel.loadAllData() }
+        }
     }
 
     // MARK: - Stats Card
@@ -1018,8 +1021,8 @@ struct SwingSetupsDetailView: View {
                 }
                 .padding(.horizontal, 20)
 
-                if conditions?.totalSkipped ?? 0 > 0 {
-                    Text("\(conditions!.totalSkipped) setups evaluated and filtered")
+                if let skipped = conditions?.totalSkipped, skipped > 0 {
+                    Text("\(skipped) setups evaluated and filtered")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                 }

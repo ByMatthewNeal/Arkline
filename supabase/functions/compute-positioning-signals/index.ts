@@ -345,7 +345,7 @@ function computeTrendScore(candles: Candle[]): {
   // Clamp to 0-100
   score = Math.max(0, Math.min(100, score))
 
-  return { trendScore: score, rsi, above200SMA: above200SMA, price }
+  return { trendScore: score, rsi, above200SMA: above200SMA, price, aboveSma21, aboveSma50 }
 }
 
 // ─── Signal Derivation ──────────────────────────────────────────────────────
@@ -353,11 +353,16 @@ function computeTrendScore(candles: Candle[]): {
 function deriveSignal(
   trendScore: number,
   above200SMA: boolean,
-  has200SMA: boolean
+  has200SMA: boolean,
+  aboveSma21: boolean,
+  aboveSma50: boolean
 ): "bullish" | "neutral" | "bearish" {
   if (trendScore >= 70) {
     // Below 200 SMA caps bullish → neutral (only if we have 200 SMA data)
     if (has200SMA && !above200SMA) return "neutral"
+    // Below both 21 AND 50 SMA caps bullish → neutral
+    // (short-term trend is broken, 200 SMA alone can't make it bullish)
+    if (!aboveSma21 && !aboveSma50) return "neutral"
     return "bullish"
   }
   if (trendScore >= 45) {
@@ -427,11 +432,11 @@ Deno.serve(async (req) => {
       }
 
       // Compute indicators
-      const { trendScore, rsi, above200SMA, price } = computeTrendScore(candles)
+      const { trendScore, rsi, above200SMA, price, aboveSma21, aboveSma50 } = computeTrendScore(candles)
       const has200SMA = candles.length >= 200
 
       // Derive signal
-      const signal = deriveSignal(trendScore, above200SMA, has200SMA)
+      const signal = deriveSignal(trendScore, above200SMA, has200SMA, aboveSma21, aboveSma50)
 
       // Fetch yesterday's signal for change detection
       const { data: prevRow } = await supabase
@@ -452,6 +457,8 @@ Deno.serve(async (req) => {
         rsi: rsi !== null ? Math.round(rsi * 10) / 10 : null,
         price: Math.round(price * 100) / 100,
         above_200_sma: above200SMA,
+        _aboveSma21: aboveSma21,
+        _aboveSma50: aboveSma50,
       })
     } catch (err) {
       errors.push(`${asset.ticker}: ${(err as Error).message}`)
@@ -490,7 +497,7 @@ Deno.serve(async (req) => {
                 r.trend_score = Math.min(100, r.trend_score + boostAmount)
                 // Rederive signal with boosted score
                 const has200 = r.above_200_sma !== undefined
-                r.signal = deriveSignal(r.trend_score, r.above_200_sma, has200)
+                r.signal = deriveSignal(r.trend_score, r.above_200_sma, has200, r._aboveSma21 ?? false, r._aboveSma50 ?? false)
                 boosted++
               }
             }
@@ -528,11 +535,34 @@ Deno.serve(async (req) => {
 
   const changes = results.filter((r) => r.prev_signal && r.signal !== r.prev_signal)
 
+  // ── Store daily Fear & Greed snapshot ──────────────────────────────────────
+  let fearGreedStored = false
+  try {
+    const fgResp = await fetch("https://api.alternative.me/fng/?limit=1")
+    if (fgResp.ok) {
+      const fgData = await fgResp.json()
+      const fg = fgData?.data?.[0]
+      if (fg?.value) {
+        await supabase
+          .from("fear_greed_history")
+          .upsert({
+            date: today,
+            value: Number(fg.value),
+            classification: fg.value_classification ?? "Unknown",
+          }, { onConflict: "date" })
+        fearGreedStored = true
+      }
+    }
+  } catch (e) {
+    console.error("Fear & Greed fetch failed (non-fatal):", e)
+  }
+
   return jsonResponse({
     success: true,
     date: today,
     signals: results.length,
     changes: changes.length,
+    fear_greed_stored: fearGreedStored,
     breakdown: {
       crypto: results.filter((r) => r.category === "crypto").length,
       alt_btc: results.filter((r) => r.category === "alt_btc").length,

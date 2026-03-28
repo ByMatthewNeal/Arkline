@@ -15,8 +15,14 @@ struct SignalDetailView: View {
     @State private var customEntryText: String = ""
     @State private var showCustomEntry = false
     @State private var refreshTimer: Timer?
+    @State private var manualExitText: String = ""
+    @State private var showManualResolve = false
+    @State private var isResolving = false
+    @State private var resolveError: String?
+    @State private var resolveSuccess = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
 
     private let service = SwingSetupService()
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -82,6 +88,26 @@ struct SignalDetailView: View {
 
                     if signal.isT1Hit || signal.isRunnerPhase {
                         runnerTrackingCard(signal)
+                    }
+
+                    // Admin: Manual Resolution
+                    if appState.currentUser?.isAdmin == true && signal.status.isLive {
+                        adminManualResolveCard(signal)
+                    }
+
+                    // Show badge if signal was manually resolved
+                    if signal.isManuallyResolved {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.fill.checkmark")
+                                .font(.system(size: 11))
+                            Text("Manually resolved by admin")
+                                .font(AppFonts.caption12)
+                        }
+                        .foregroundColor(AppColors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(AppColors.textSecondary.opacity(0.08))
+                        .cornerRadius(8)
                     }
 
                     statusTimeline(signal)
@@ -168,15 +194,24 @@ struct SignalDetailView: View {
     }
 
     private func loadData() async {
-        isLoading = true
+        // Pre-populate from cache if available (avoids stuck skeleton)
+        if signal == nil, let cached = SwingSetupService.cachedActiveSignals?.first(where: { $0.id == signalId }) {
+            signal = cached
+        }
+
+        // Only show skeleton if we have no cached data
+        if signal == nil {
+            isLoading = true
+        }
         loadError = nil
         defer { isLoading = false }
 
         do {
-            signal = try await service.fetchSignal(id: signalId)
-            if let asset = signal?.asset {
-                await fetchCurrentPrice(asset: asset)
+            let fetched = try await withTimeout(seconds: 10) { [service, signalId] in
+                try await service.fetchSignal(id: signalId)
             }
+            signal = fetched
+            await fetchCurrentPrice(asset: fetched.asset)
         } catch {
             logWarning("Failed to load signal: \(error)", category: .network)
             if signal == nil {
@@ -210,7 +245,10 @@ struct SignalDetailView: View {
     private func fetchCurrentPrice(asset: String) async {
         do {
             let pair = "\(asset.uppercased())-USD"
-            let url = URL(string: "https://api.coinbase.com/api/v3/brokerage/market/products/\(pair)/candles?granularity=ONE_HOUR&limit=1")!
+            guard let url = URL(string: "https://api.coinbase.com/api/v3/brokerage/market/products/\(pair)/candles?granularity=ONE_HOUR&limit=1") else {
+                logDebug("Invalid URL for price fetch: \(pair)", category: .network)
+                return
+            }
             let (data, _) = try await URLSession.shared.data(from: url)
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let candles = json["candles"] as? [[String: Any]],
@@ -1000,6 +1038,227 @@ struct SignalDetailView: View {
                     .foregroundColor(AppColors.textSecondary)
             }
             .padding(.bottom, isLast ? 0 : 16)
+        }
+    }
+
+    // MARK: - Admin Manual Resolution
+
+    private func adminManualResolveCard(_ signal: TradeSignal) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation(.arkSpring) {
+                    showManualResolve.toggle()
+                    if !showManualResolve {
+                        manualExitText = ""
+                        resolveError = nil
+                    }
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "wrench.and.screwdriver.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.warning)
+                    Text("Manual Resolution")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary)
+                    Spacer()
+                    Text("ADMIN")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(AppColors.warning)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.warning.opacity(0.12))
+                        .cornerRadius(4)
+                    Image(systemName: showManualResolve ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+
+            if showManualResolve {
+                VStack(spacing: 12) {
+                    Text("Enter the actual exit price to resolve this signal. The system will auto-determine outcome and P&L.")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    // Price input
+                    HStack {
+                        Text("$")
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(AppColors.textSecondary)
+                        TextField("Exit price", text: $manualExitText)
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(textPrimary)
+                            .keyboardType(.decimalPad)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Double(manualExitText) != nil ? AppColors.accent.opacity(0.4) : Color.clear, lineWidth: 1)
+                    )
+
+                    // Preview what will happen
+                    if let exitPrice = Double(manualExitText), exitPrice > 0 {
+                        manualResolvePreview(signal, exitPrice: exitPrice)
+                    }
+
+                    if let error = resolveError {
+                        Text(error)
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.error)
+                    }
+
+                    if resolveSuccess {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Signal resolved successfully")
+                        }
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(AppColors.success)
+                    }
+
+                    // Resolve button
+                    if let exitPrice = Double(manualExitText), exitPrice > 0, !resolveSuccess {
+                        Button {
+                            Task { await performManualResolve(signal: signal, exitPrice: exitPrice) }
+                        } label: {
+                            HStack {
+                                if isResolving {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "checkmark.circle")
+                                    Text("Resolve Signal")
+                                }
+                            }
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(AppColors.warning)
+                            .cornerRadius(10)
+                        }
+                        .disabled(isResolving)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(AppColors.warning.opacity(0.2), lineWidth: 1)
+                )
+        )
+    }
+
+    private func manualResolvePreview(_ signal: TradeSignal, exitPrice: Double) -> some View {
+        let isBuy = signal.signalType.isBuy
+        let entry = signal.entryPriceMid
+
+        let exitPnlPct = isBuy
+            ? ((exitPrice - entry) / entry) * 100
+            : ((entry - exitPrice) / entry) * 100
+
+        let t1Hit: Bool = {
+            guard let t1 = signal.target1 else { return false }
+            return isBuy ? exitPrice >= t1 : exitPrice <= t1
+        }()
+        let slHit = isBuy ? exitPrice <= signal.stopLoss : exitPrice >= signal.stopLoss
+
+        let outcomeLabel: String
+        let outcomeColor: Color
+        let finalPnl: Double
+
+        if signal.isT1Hit {
+            let t1Pnl = signal.t1PnlPct ?? 0
+            finalPnl = (t1Pnl + exitPnlPct) / 2
+            outcomeLabel = finalPnl > 0 ? "Win (runner close)" : "Loss (runner close)"
+            outcomeColor = finalPnl > 0 ? AppColors.success : AppColors.error
+        } else if t1Hit {
+            let t1Pnl: Double = {
+                guard let t1 = signal.target1 else { return exitPnlPct }
+                return isBuy ? ((t1 - entry) / entry) * 100 : ((entry - t1) / entry) * 100
+            }()
+            finalPnl = (t1Pnl + exitPnlPct) / 2
+            outcomeLabel = "Win (T1 + runner at exit)"
+            outcomeColor = AppColors.success
+        } else if slHit {
+            finalPnl = exitPnlPct
+            outcomeLabel = "Loss (stop loss)"
+            outcomeColor = AppColors.error
+        } else {
+            finalPnl = exitPnlPct
+            outcomeLabel = exitPnlPct > 0 ? "Win (early exit)" : "Loss (early exit)"
+            outcomeColor = exitPnlPct > 0 ? AppColors.success : AppColors.error
+        }
+
+        return VStack(spacing: 8) {
+            Divider()
+
+            HStack {
+                Text("Projected Outcome")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                Text(outcomeLabel)
+                    .font(AppFonts.caption12Medium)
+                    .foregroundColor(outcomeColor)
+            }
+
+            HStack {
+                Text("Projected P&L")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                Text(String(format: "%+.2f%%", finalPnl))
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(outcomeColor)
+
+                if let r1r = signal.risk1r, r1r > 0 {
+                    let rPct = (r1r / entry) * 100
+                    let rMult = rPct > 0 ? finalPnl / rPct : 0
+                    Text(String(format: "(%+.1fR)", rMult))
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(outcomeColor)
+                }
+            }
+
+            // Reference levels
+            HStack {
+                Text("Entry: $\(formatSignalPrice(entry))")
+                Spacer()
+                Text("SL: $\(formatSignalPrice(signal.stopLoss))")
+                if let t1 = signal.target1 {
+                    Text("T1: $\(formatSignalPrice(t1))")
+                }
+            }
+            .font(.system(size: 10))
+            .foregroundColor(AppColors.textSecondary.opacity(0.6))
+        }
+    }
+
+    private func performManualResolve(signal: TradeSignal, exitPrice: Double) async {
+        isResolving = true
+        resolveError = nil
+        defer { isResolving = false }
+
+        do {
+            let updated = try await service.resolveSignalManually(signal: signal, exitPrice: exitPrice)
+            self.signal = updated
+            resolveSuccess = true
+            refreshTimer?.invalidate()
+            refreshTimer = nil
+            NotificationCenter.default.post(name: Constants.Notifications.signalManuallyResolved, object: nil)
+        } catch {
+            resolveError = error.localizedDescription
         }
     }
 

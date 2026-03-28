@@ -133,6 +133,8 @@ struct ReorderableWidgetStack: View {
             return true
         case .qpsSignals:
             return true
+        case .marketDeck:
+            return viewModel.latestDeck != nil
         }
     }
 
@@ -277,6 +279,11 @@ struct ReorderableWidgetStack: View {
                 size: appState.widgetSize(.qpsSignals)
             )
             .id("widget_qpsSignals")
+
+        case .marketDeck:
+            if let deck = viewModel.latestDeck {
+                MarketDeckCard(deck: deck)
+            }
         }
     }
 }

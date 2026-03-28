@@ -46,7 +46,8 @@ struct LeverageCalculatorView: View {
     }
 
     private var hasEntryZone: Bool {
-        abs(signal.entryZoneHigh - signal.entryZoneLow) / signal.entryPriceMid * 100 > 0.1
+        guard signal.entryPriceMid > 0 else { return false }
+        return abs(signal.entryZoneHigh - signal.entryZoneLow) / signal.entryPriceMid * 100 > 0.1
     }
 
     private var maxSafe: Int {
@@ -55,6 +56,7 @@ struct LeverageCalculatorView: View {
             zoneHigh: signal.entryZoneHigh,
             isLong: signal.signalType.isBuy
         )
+        guard entry > 0 else { return 200 }
         let stopPct = abs(signal.stopLoss - entry) / entry * 100
         guard stopPct > 0 else { return 200 }
         return max(1, Int(floor((100.0 / stopPct) * 0.55)))
