@@ -419,7 +419,6 @@ struct MarketDeckAdminView: View {
 
     private func slideRow(_ slide: DeckSlide) -> some View {
         let isExpanded = selectedSlideType == slide.type
-        let hasNote = !(viewModel.noteForSlide(slide.type).isEmpty)
 
         return VStack(alignment: .leading, spacing: 0) {
             // Slide header row
@@ -438,12 +437,6 @@ struct MarketDeckAdminView: View {
                         .font(AppFonts.body14Medium)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    if hasNote {
-                        Image(systemName: "note.text")
-                            .font(.system(size: 10))
-                            .foregroundColor(AppColors.warning)
-                    }
-
                     Spacer()
 
                     Image(systemName: "chevron.down")
@@ -454,30 +447,10 @@ struct MarketDeckAdminView: View {
                 .padding(.vertical, ArkSpacing.sm)
             }
 
-            // Expanded editor
+            // Expanded data preview
             if isExpanded {
                 VStack(alignment: .leading, spacing: ArkSpacing.xs) {
                     slideDataPreview(slide)
-
-                    Text("Admin Note")
-                        .font(AppFonts.footnote10)
-                        .foregroundColor(AppColors.textSecondary)
-                        .padding(.top, ArkSpacing.xs)
-
-                    TextField("Add context or commentary for this slide...",
-                              text: Binding(
-                                get: { viewModel.noteForSlide(slide.type) },
-                                set: { viewModel.setNoteForSlide(slide.type, note: $0) }
-                              ),
-                              axis: .vertical)
-                        .font(AppFonts.body14)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                        .lineLimit(2...6)
-                        .padding(ArkSpacing.xs)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(AppColors.textPrimary(colorScheme).opacity(0.05))
-                        )
                 }
                 .padding(.bottom, ArkSpacing.sm)
                 .transition(.opacity.combined(with: .move(edge: .top)))
