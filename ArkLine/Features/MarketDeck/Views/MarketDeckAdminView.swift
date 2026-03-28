@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 struct MarketDeckAdminView: View {
     @State private var viewModel = MarketDeckViewModel()
     @State private var showViewer = false
-    @State private var selectedSlideType: DeckSlide.SlideType?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var showPDFImporter = false
     @State private var urlInput = ""
@@ -31,7 +30,6 @@ struct MarketDeckAdminView: View {
                     VStack(spacing: ArkSpacing.md) {
                         deckHeader(deck)
                         insightsSection
-                        slidesSection(deck)
                         actionsSection(deck)
                     }
                     .padding(.horizontal, ArkSpacing.md)
@@ -394,160 +392,6 @@ struct MarketDeckAdminView: View {
         case .image: return .purple
         case .pdf: return .red
         case .url: return .blue
-        }
-    }
-
-    // MARK: - Slides Section
-
-    private func slidesSection(_ deck: MarketUpdateDeck) -> some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            HStack {
-                Image(systemName: "rectangle.stack")
-                    .foregroundColor(AppColors.accent)
-                Text("Slides")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-            }
-
-            ForEach(deck.slides) { slide in
-                slideRow(slide)
-            }
-        }
-        .padding(ArkSpacing.md)
-        .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.cardBackground(colorScheme)))
-    }
-
-    private func slideRow(_ slide: DeckSlide) -> some View {
-        let isExpanded = selectedSlideType == slide.type
-
-        return VStack(alignment: .leading, spacing: 0) {
-            // Slide header row
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedSlideType = isExpanded ? nil : slide.type
-                }
-            }) {
-                HStack(spacing: ArkSpacing.sm) {
-                    Image(systemName: slide.type.icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(AppColors.accent)
-                        .frame(width: 24)
-
-                    Text(slide.title)
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    Spacer()
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12))
-                        .foregroundColor(AppColors.textSecondary)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                }
-                .padding(.vertical, ArkSpacing.sm)
-            }
-
-            // Expanded data preview
-            if isExpanded {
-                VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                    slideDataPreview(slide)
-                }
-                .padding(.bottom, ArkSpacing.sm)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            if slide.type != .rundown {
-                Divider().opacity(0.2)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func slideDataPreview(_ slide: DeckSlide) -> some View {
-        switch slide.data {
-        case .cover(let data):
-            HStack(spacing: ArkSpacing.md) {
-                miniStat("Regime", data.regime)
-                if let change = data.btcWeeklyChange {
-                    miniStat("BTC", String(format: "%+.1f%%", change))
-                }
-                if let fg = data.fearGreedEnd {
-                    miniStat("F&G", "\(fg)")
-                }
-            }
-        case .marketPulse(let data):
-            Text("\(data.assets.count) assets tracked")
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-        case .macro(let data):
-            HStack(spacing: ArkSpacing.md) {
-                if let vix = data.vixValue {
-                    miniStat("VIX", String(format: "%.1f", vix))
-                }
-                if let dxy = data.dxyValue {
-                    miniStat("DXY", String(format: "%.1f", dxy))
-                }
-            }
-        case .positioning(let data):
-            Text("\(data.signalChanges.count) signal changes this week")
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-        case .economic(let data):
-            Text("\(data.thisWeek.count) events this week, \(data.nextWeek.count) upcoming")
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-        case .setups(let data):
-            HStack(spacing: ArkSpacing.md) {
-                miniStat("Triggered", "\(data.signalsTriggered)")
-                miniStat("Resolved", "\(data.signalsResolved)")
-                if let wr = data.winRate {
-                    miniStat("WR", String(format: "%.0f%%", wr))
-                }
-            }
-        case .rundown(let data):
-            Text(data.narrative.prefix(100) + (data.narrative.count > 100 ? "..." : ""))
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-                .lineLimit(2)
-        case .sectionTitle(let data):
-            Text(data.subtitle ?? "Section divider")
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-        case .editorial(let data):
-            Text("\(data.bullets.count) bullet points — \(data.category ?? "analysis")")
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-        case .snapshot(let data):
-            HStack(spacing: ArkSpacing.md) {
-                miniStat("Risks", "\(data.assetRisks.count)")
-                if let fg = data.fearGreedEnd {
-                    miniStat("F&G", "\(fg)")
-                }
-                if let regime = data.sentimentRegime {
-                    miniStat("Regime", regime)
-                }
-            }
-        case .weeklyOutlook(let data):
-            Text(data.headline)
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-                .lineLimit(2)
-        case .correlation(let data):
-            HStack(spacing: ArkSpacing.md) {
-                miniStat("Groups", "\(data.groups.count)")
-                miniStat("Assets", "\(data.groups.flatMap(\.assets).count)")
-            }
-        }
-    }
-
-    private func miniStat(_ label: String, _ value: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(AppFonts.caption12Medium)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-            Text(label)
-                .font(.system(size: 9))
-                .foregroundColor(AppColors.textSecondary)
         }
     }
 
