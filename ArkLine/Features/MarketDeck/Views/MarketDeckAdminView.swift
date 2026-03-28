@@ -671,9 +671,9 @@ struct MarketDeckAdminView: View {
             .disabled(viewModel.isGenerating)
 
             // Publish
-            if deck.status == .draft {
+            if deck.status == .draft, let authorId = appState.currentUser?.id {
                 Button(action: {
-                    Task { await viewModel.publish(authorId: appState.currentUser?.id ?? UUID()) }
+                    Task { await viewModel.publish(authorId: authorId) }
                 }) {
                     HStack(spacing: ArkSpacing.xs) {
                         Image(systemName: "paperplane.fill")

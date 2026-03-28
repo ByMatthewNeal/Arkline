@@ -340,7 +340,7 @@ struct SnapshotSlideView: View {
     private func supplyColor(_ pct: Double) -> Color {
         switch pct {
         case 0..<50: return AppColors.success
-        case 50..<85: return AppColors.textPrimary(.light)
+        case 50..<85: return AppColors.textPrimary(colorScheme)
         case 85..<97: return AppColors.warning
         default: return AppColors.error
         }

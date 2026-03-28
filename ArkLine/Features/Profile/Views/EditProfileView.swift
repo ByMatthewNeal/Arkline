@@ -16,6 +16,7 @@ struct EditProfileView: View {
     @State private var usePhotoAvatar: Bool = true
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImageData: Data?
+    @State private var isLoadingPhoto: Bool = false
     @State private var isUploading: Bool = false
     @State private var showError = false
     @State private var errorMessage = ""
@@ -57,6 +58,17 @@ struct EditProfileView: View {
                             letterAvatar
                         }
 
+                        // Loading overlay
+                        if isLoadingPhoto {
+                            Circle()
+                                .fill(.black.opacity(0.4))
+                                .frame(width: 100, height: 100)
+                                .overlay(
+                                    ProgressView()
+                                        .tint(.white)
+                                )
+                        }
+
                         // Camera badge
                         Circle()
                             .fill(AppColors.accent)
@@ -69,10 +81,13 @@ struct EditProfileView: View {
                     }
                 }
                 .onChange(of: selectedItem) { _, newItem in
+                    guard let newItem else { return }
+                    isLoadingPhoto = true
                     Task {
-                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                        if let data = try? await newItem.loadTransferable(type: Data.self) {
                             selectedImageData = data
                         }
+                        isLoadingPhoto = false
                     }
                 }
                 .padding(.top, 20)
@@ -179,9 +194,9 @@ struct EditProfileView: View {
         isUploading = true
 
         Task {
-            // Upload new image if selected
-            if let imageData = selectedImageData {
-                do {
+            do {
+                // Upload new image if selected
+                if let imageData = selectedImageData {
                     // Convert to JPEG format (PhotosPicker may return HEIC/PNG)
                     let jpegData: Data
                     if let uiImage = UIImage(data: imageData),
@@ -191,55 +206,50 @@ struct EditProfileView: View {
                         jpegData = imageData
                     }
 
-                    let avatarURL = try await AvatarUploadService.shared.uploadAvatar(
-                        data: jpegData,
-                        for: updatedUser.id
-                    )
+                    let avatarURL = try await withTimeout(seconds: 15) {
+                        try await AvatarUploadService.shared.uploadAvatar(
+                            data: jpegData,
+                            for: updatedUser.id
+                        )
+                    }
                     updatedUser.avatarUrl = avatarURL.absoluteString
                     updatedUser.usePhotoAvatar = true
-                } catch {
-                    AppLogger.shared.error("Avatar upload failed: \(error)")
-                    await MainActor.run {
-                        isUploading = false
-                        errorMessage = "Failed to upload photo: \(error.localizedDescription)"
-                        showError = true
-                    }
-                    return
                 }
-            }
 
-            updatedUser.fullName = fullName.trimmingCharacters(in: .whitespaces)
-            updatedUser.username = username.trimmingCharacters(in: .whitespaces)
-            updatedUser.usePhotoAvatar = usePhotoAvatar
+                updatedUser.fullName = fullName.trimmingCharacters(in: .whitespaces)
+                updatedUser.username = username.trimmingCharacters(in: .whitespaces)
+                updatedUser.usePhotoAvatar = usePhotoAvatar
 
-            // Save to database
-            let updateRequest = UpdateUserRequest(
-                username: updatedUser.username,
-                fullName: updatedUser.fullName,
-                avatarUrl: updatedUser.avatarUrl,
-                usePhotoAvatar: updatedUser.usePhotoAvatar
-            )
-
-            do {
-                try await SupabaseDatabase.shared.update(
-                    in: .profiles,
-                    values: updateRequest,
-                    id: updatedUser.id.uuidString
+                // Save to database
+                let updateRequest = UpdateUserRequest(
+                    username: updatedUser.username,
+                    fullName: updatedUser.fullName,
+                    avatarUrl: updatedUser.avatarUrl,
+                    usePhotoAvatar: updatedUser.usePhotoAvatar
                 )
-            } catch {
-                AppLogger.shared.error("Profile update failed: \(error.localizedDescription)")
+
+                try await withTimeout(seconds: 10) {
+                    try await SupabaseDatabase.shared.update(
+                        in: .profiles,
+                        values: updateRequest,
+                        id: updatedUser.id.uuidString
+                    )
+                }
+
                 await MainActor.run {
                     isUploading = false
-                    errorMessage = "Failed to save profile. Please try again."
+                    onSave(updatedUser)
+                    dismiss()
+                }
+            } catch {
+                AppLogger.shared.error("Profile save failed: \(error)")
+                await MainActor.run {
+                    isUploading = false
+                    errorMessage = error.localizedDescription.contains("timed out")
+                        ? "Save timed out. Please check your connection and try again."
+                        : "Failed to save profile. Please try again."
                     showError = true
                 }
-                return
-            }
-
-            await MainActor.run {
-                isUploading = false
-                onSave(updatedUser)
-                dismiss()
             }
         }
     }

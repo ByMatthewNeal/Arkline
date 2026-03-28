@@ -3,6 +3,7 @@ import SwiftUI
 struct PositioningSlideView: View {
     let data: PositioningSlideData
     let title: String
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.lg) {
@@ -22,7 +23,7 @@ struct PositioningSlideView: View {
                 VStack(alignment: .leading, spacing: ArkSpacing.sm) {
                     Text("NOTABLE CHANGES")
                         .font(AppFonts.interFont(size: 11, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.35))
+                        .foregroundColor(AppColors.textSecondary)
                         .tracking(1.5)
 
                     ForEach(data.signalChanges) { change in
@@ -41,7 +42,7 @@ struct PositioningSlideView: View {
             HStack {
                 Text(cat.category.capitalized)
                     .font(AppFonts.body14Medium)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.7))
 
                 Spacer()
 
@@ -74,7 +75,7 @@ struct PositioningSlideView: View {
             .frame(height: 6)
         }
         .padding(ArkSpacing.md)
-        .background(Color.white.opacity(0.06))
+        .background(AppColors.textPrimary(colorScheme).opacity(0.06))
         .cornerRadius(ArkSpacing.Radius.md)
     }
 
@@ -90,18 +91,18 @@ struct PositioningSlideView: View {
         HStack(spacing: ArkSpacing.sm) {
             Text(change.asset)
                 .font(AppFonts.body14Medium)
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Spacer()
 
             // From
             Text(change.from)
                 .font(AppFonts.caption12)
-                .foregroundColor(.white.opacity(0.35))
+                .foregroundColor(AppColors.textSecondary)
 
             Image(systemName: "arrow.right")
                 .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.2))
+                .foregroundColor(AppColors.textSecondary)
 
             // To (colored)
             Text(change.to)
@@ -110,7 +111,7 @@ struct PositioningSlideView: View {
         }
         .padding(.vertical, ArkSpacing.xs)
         .padding(.horizontal, ArkSpacing.md)
-        .background(Color.white.opacity(0.04))
+        .background(AppColors.textPrimary(colorScheme).opacity(0.04))
         .cornerRadius(ArkSpacing.Radius.sm)
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct SetupsSlideView: View {
     let data: SetupsSlideData
     let title: String
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.lg) {
@@ -32,7 +33,7 @@ struct SetupsSlideView: View {
             } else {
                 Text("No signals triggered this week")
                     .font(AppFonts.body14)
-                    .foregroundColor(.white.opacity(0.35))
+                    .foregroundColor(AppColors.textSecondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, ArkSpacing.xxl)
             }
@@ -40,19 +41,19 @@ struct SetupsSlideView: View {
     }
 
     @ViewBuilder
-    private func statCard(value: String, label: String, valueColor: Color = .white) -> some View {
+    private func statCard(value: String, label: String, valueColor: Color? = nil) -> some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(AppFonts.number20)
-                .foregroundColor(valueColor)
+                .foregroundColor(valueColor ?? AppColors.textPrimary(colorScheme))
 
             Text(label)
                 .font(AppFonts.footnote10)
-                .foregroundColor(.white.opacity(0.35))
+                .foregroundColor(AppColors.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, ArkSpacing.sm)
-        .background(Color.white.opacity(0.06))
+        .background(AppColors.textPrimary(colorScheme).opacity(0.06))
         .cornerRadius(ArkSpacing.Radius.md)
     }
 
@@ -73,11 +74,11 @@ struct SetupsSlideView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(signal.asset)
                     .font(AppFonts.body14Medium)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
 
                 Text(signal.entry.asSignalPrice)
                     .font(AppFonts.caption12)
-                    .foregroundColor(.white.opacity(0.35))
+                    .foregroundColor(AppColors.textSecondary)
             }
 
             Spacer()
@@ -98,7 +99,7 @@ struct SetupsSlideView: View {
             }
         }
         .padding(ArkSpacing.sm)
-        .background(Color.white.opacity(0.04))
+        .background(AppColors.textPrimary(colorScheme).opacity(0.04))
         .cornerRadius(ArkSpacing.Radius.sm)
     }
 
@@ -107,7 +108,7 @@ struct SetupsSlideView: View {
         case "win": return AppColors.success
         case "loss": return AppColors.error
         case "in play": return AppColors.accent
-        default: return Color.white.opacity(0.3)
+        default: return AppColors.textSecondary
         }
     }
 }

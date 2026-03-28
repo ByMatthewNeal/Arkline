@@ -111,7 +111,7 @@ struct AdminContext: Codable {
 
 /// An attachment added by admin to provide additional context for deck generation.
 struct InsightAttachment: Codable, Identifiable {
-    var id: String { storagePath ?? url ?? label ?? UUID().uuidString }
+    var id: String { storagePath ?? url ?? label ?? "attachment_unknown" }
     let type: AttachmentType
     let storagePath: String?   // Supabase storage path (for images/PDFs)
     let url: String?           // External URL
@@ -133,10 +133,29 @@ struct InsightAttachment: Codable, Identifiable {
 // MARK: - Deck Slide
 
 struct DeckSlide: Codable, Identifiable {
-    var id: String { "\(type.rawValue)_\(title)" }
+    let id: String
     let type: SlideType
     let title: String
     var data: SlideData
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, title, data
+    }
+
+    init(id: String = UUID().uuidString, type: SlideType, title: String, data: SlideData) {
+        self.id = id
+        self.type = type
+        self.title = title
+        self.data = data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? container.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        type = try container.decode(SlideType.self, forKey: .type)
+        title = try container.decode(String.self, forKey: .title)
+        data = try container.decode(SlideData.self, forKey: .data)
+    }
 
     enum SlideType: String, Codable, CaseIterable {
         case cover, marketPulse, macro, positioning, economic, setups, rundown
@@ -420,7 +439,7 @@ struct EditorialSlideData: Codable {
 }
 
 struct EditorialBullet: Codable, Identifiable {
-    var id: String { text.prefix(40).description }
+    var id: String { "\(text.hashValue)" }
     let text: String
     let detail: String?  // optional secondary line / source attribution
 }

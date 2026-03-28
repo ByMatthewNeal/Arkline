@@ -134,9 +134,9 @@ struct MarketDeckViewer: View {
                     }
 
                     // Admin publish button
-                    if isAdmin && deck.status == .draft {
+                    if isAdmin && deck.status == .draft, let userId {
                         Button(action: {
-                            Task { await viewModel.publish(authorId: userId ?? UUID()) }
+                            Task { await viewModel.publish(authorId: userId) }
                         }) {
                             HStack(spacing: ArkSpacing.xs) {
                                 Image(systemName: "paperplane.fill")

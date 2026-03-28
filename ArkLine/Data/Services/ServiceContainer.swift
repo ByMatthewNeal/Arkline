@@ -206,5 +206,14 @@ final class ServiceContainer {
         _apiGlobalLiquidityService = APIGlobalLiquidityService()
         _apiSantimentOnChainService = APISantimentService()
         _apiCoinglassService = APICoinglassService()
+        _yahooVIXService = YahooVIXService()
+        _yahooDXYService = YahooDXYService()
+        _yahooCrudeOilService = YahooCrudeOilService()
+        _yahooGoldService = YahooGoldService()
+        _apiGEIService = APIGEIService()
+        _macroStatisticsService = MacroStatisticsService()
+        _historicalContextService = HistoricalContextService()
+        _broadcastService = BroadcastService()
+        _marketDeckService = MarketUpdateDeckService()
     }
 }

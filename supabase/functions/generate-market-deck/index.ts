@@ -21,7 +21,9 @@ function jsonResponse(data: unknown, status = 200) {
 function getWeekRange(): { monday: string; friday: string; nextMonday: string; nextFriday: string } {
   const now = new Date()
   const dayOfWeek = now.getUTCDay()
-  const daysBackToFriday = dayOfWeek === 6 ? 1 : dayOfWeek === 0 ? 2 : dayOfWeek
+  // Find most recent completed Mon-Fri week's Friday:
+  // Sat(6)→1, Sun(0)→2, Mon(1)→3, Tue(2)→4, Wed(3)→5, Thu(4)→6, Fri(5)→7 (previous Friday)
+  const daysBackToFriday = dayOfWeek === 6 ? 1 : dayOfWeek === 0 ? 2 : dayOfWeek + 2
   const friday = new Date(now)
   friday.setUTCDate(now.getUTCDate() - daysBackToFriday)
   const monday = new Date(friday)
@@ -422,17 +424,37 @@ Deno.serve(async (req) => {
   const deckId = url.searchParams.get("deck_id") ?? ""
   const adminInsights = url.searchParams.get("admin_insights") ?? ""
 
-  if (!isManual) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  if (isManual) {
+    // Verify admin JWT for manual triggers
+    const authHeader = req.headers.get("Authorization")
+    if (!authHeader) {
+      return jsonResponse({ error: "Authorization header required" }, 401)
+    }
+    const token = authHeader.replace("Bearer ", "")
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return jsonResponse({ error: "Invalid or expired token" }, 401)
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    if (profile?.role !== "admin") {
+      return jsonResponse({ error: "Admin access required" }, 403)
+    }
+  } else {
+    // Verify cron secret for automated triggers
     const secret = req.headers.get("x-cron-secret") ?? ""
     const expectedSecret = Deno.env.get("CRON_SECRET") ?? ""
     if (!expectedSecret || secret !== expectedSecret) {
       return jsonResponse({ error: "Unauthorized" }, 401)
     }
   }
-
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  const supabase = createClient(supabaseUrl, supabaseKey)
   const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY") ?? ""
   const tavilyKey = Deno.env.get("TAVILY_API_KEY") ?? ""
 
@@ -526,6 +548,7 @@ Deno.serve(async (req) => {
   const isRegenerateSlide = url.searchParams.get("regenerate_slide") === "true"
   const slideType = url.searchParams.get("slide_type") ?? ""
   const slideFeedback = url.searchParams.get("slide_feedback") ?? ""
+  const slideIndexParam = url.searchParams.get("slide_index")
 
   if (isRegenerateSlide && deckId && slideType) {
     console.log(`Regenerating slide "${slideType}" for deck ${deckId} with feedback: ${slideFeedback}`)
@@ -578,13 +601,11 @@ Deno.serve(async (req) => {
         .join("\n")
 
       // Find the current slide to regenerate
-      const currentSlide = slides.find((s: SlidePayload) => {
-        if (slideType === "editorial") {
-          // For editorials, match by the specific title since there are multiple
-          return s.type === "editorial"
-        }
-        return s.type === slideType
-      })
+      // Use slide_index if provided to target a specific slide (especially for editorials where there are multiple)
+      const slideIndex = slideIndexParam != null ? parseInt(slideIndexParam, 10) : null
+      const currentSlide = slideIndex != null && slideIndex >= 0 && slideIndex < slides.length
+        ? slides[slideIndex]
+        : slides.find((s: SlidePayload) => s.type === slideType)
 
       if (!currentSlide) {
         return jsonResponse({ error: `Slide type "${slideType}" not found in deck` }, 404)
@@ -769,8 +790,11 @@ Respond ONLY with JSON: { "regime": "..." }`
       }
 
       // Replace the slide in the deck
-      const updatedSlides = slides.map((s: SlidePayload) => {
-        // Match by type and title for editorials (multiple editorial slides)
+      const updatedSlides = slides.map((s: SlidePayload, i: number) => {
+        // Use index if provided for precise targeting, otherwise match by type + title
+        if (slideIndex != null) {
+          return i === slideIndex ? regeneratedSlide : s
+        }
         if (s.type === currentSlide.type && s.title === currentSlide.title) {
           return regeneratedSlide
         }
@@ -1236,13 +1260,13 @@ Respond ONLY with JSON: { "regime": "..." }`
         daysAtLevel = count > 0 ? count : null
       }
 
-      let riskLabel = "Moderate"
-      if (riskLevel < 0.2) riskLabel = "Low Risk"
+      let riskLabel = "Moderate Risk"
+      if (riskLevel < 0.2) riskLabel = "Very Low Risk"
       else if (riskLevel < 0.4) riskLabel = "Low Risk"
-      else if (riskLevel < 0.55) riskLabel = "Moderate"
-      else if (riskLevel < 0.7) riskLabel = "Elevated"
+      else if (riskLevel < 0.55) riskLabel = "Moderate Risk"
+      else if (riskLevel < 0.7) riskLabel = "Elevated Risk"
       else if (riskLevel < 0.9) riskLabel = "High Risk"
-      else riskLabel = "Extreme"
+      else riskLabel = "Extreme Risk"
 
       return {
         symbol,
@@ -1279,6 +1303,56 @@ Respond ONLY with JSON: { "regime": "..." }`
         },
       },
     })
+
+    // Economic Calendar slide — this week's results + next week's upcoming events
+    slides.push({
+      type: "economic",
+      title: "Economic Calendar",
+      data: {
+        type: "economic",
+        payload: {
+          this_week: (thisWeekEvents ?? []).map((e: Record<string, unknown>) => ({
+            title: e.title,
+            event_date: e.event_date,
+            actual: e.actual ?? null,
+            forecast: e.forecast ?? null,
+            impact: e.impact,
+          })),
+          next_week: (nextWeekEvents ?? []).map((e: Record<string, unknown>) => ({
+            title: e.title,
+            event_date: e.event_date,
+            forecast: e.forecast ?? null,
+            impact: e.impact,
+          })),
+        },
+      },
+    })
+
+    // ── Generate rundown narrative as the final slide ──────────────────
+    if (anthropicKey) {
+      const editorialContext = slides
+        .filter((s: SlidePayload) => s.type === "editorial")
+        .map((s: SlidePayload) => {
+          const bullets = (s.data?.payload?.bullets as Array<{ text: string }>) ?? []
+          return `${s.title}:\n${bullets.map((b) => `- ${b.text}`).join("\n")}`
+        })
+        .join("\n\n")
+
+      const narrative = await generateRundownNarrative(
+        anthropicKey,
+        briefings ?? [],
+        editorialContext,
+        monday,
+        friday,
+        adminInsights || undefined,
+      )
+
+      slides.push({
+        type: "rundown",
+        title: "Weekly Rundown",
+        data: { type: "rundown", payload: { narrative } },
+      })
+    }
 
     // ── Upsert deck ───────────────────────────────────────────────────────
     const { data: deck, error: upsertError } = await supabase

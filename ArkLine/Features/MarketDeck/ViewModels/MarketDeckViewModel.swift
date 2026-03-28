@@ -85,6 +85,7 @@ class MarketDeckViewModel {
             deck = try await service.fetchLatestPublished()
         } catch {
             logWarning("Failed to load latest deck: \(error)", category: .data)
+            errorMessage = error.localizedDescription
         }
     }
 
