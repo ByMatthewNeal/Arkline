@@ -24,8 +24,8 @@ struct RiskFactorBreakdownView: View {
 
                 Spacer()
 
-                // Factor availability badge
-                Text("\(multiFactorRisk.availableFactorCount)/\(RiskFactorType.allCases.count) factors")
+                // Factor availability badge (only count factors that have data)
+                Text("\(multiFactorRisk.availableFactorCount) factors")
                     .font(.footnote)
                     .foregroundColor(textSecondary.opacity(0.85))
                     .padding(.horizontal, 8)
@@ -74,9 +74,9 @@ struct RiskFactorBreakdownView: View {
                     .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.black.opacity(0.02))
             )
 
-            // Factor rows
+            // Factor rows (hide unavailable factors like funding rate for stocks)
             VStack(spacing: ArkSpacing.sm) {
-                ForEach(multiFactorRisk.factors, id: \.type) { factor in
+                ForEach(multiFactorRisk.factors.filter { $0.rawValue != nil || $0.normalizedValue != nil }, id: \.type) { factor in
                     RiskFactorRow(factor: factor)
                 }
             }

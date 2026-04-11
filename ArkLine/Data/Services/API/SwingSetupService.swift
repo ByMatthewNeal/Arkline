@@ -42,11 +42,33 @@ final class SwingSetupService {
     // MARK: - Recent Signals (including closed)
 
     func fetchRecentSignals(limit: Int = 20) async throws -> [TradeSignal] {
+        // Fetch closed signals for History + Performance tabs
+        // Pipeline resolves to: target_hit (wins), invalidated (manual), expired (losses/partials)
         let signals: [TradeSignal] = try await supabase.database
             .from(SupabaseTable.tradeSignals.rawValue)
             .select()
+            .in("status", values: ["target_hit", "invalidated", "expired"])
             .order("generated_at", ascending: false)
             .limit(limit)
+            .execute()
+            .value
+
+        return signals
+    }
+
+    // MARK: - Closed Signals Since Date (no limit)
+
+    /// Fetches all closed signals since a given date for historical performance analysis.
+    func fetchClosedSignals(since date: Date) async throws -> [TradeSignal] {
+        let iso = ISO8601DateFormatter()
+        let dateStr = iso.string(from: date)
+
+        let signals: [TradeSignal] = try await supabase.database
+            .from(SupabaseTable.tradeSignals.rawValue)
+            .select()
+            .in("status", values: ["target_hit", "invalidated", "expired"])
+            .gte("closed_at", value: dateStr)
+            .order("closed_at", ascending: true)
             .execute()
             .value
 
@@ -215,6 +237,24 @@ final class SwingSetupService {
         return try await fetchSignal(id: signal.id)
     }
 
+    // MARK: - Signal Analytics (Adaptive Feedback)
+
+    func fetchSignalAnalytics() async throws -> SignalAnalytics? {
+        struct CacheRow: Decodable {
+            let data: SignalAnalytics
+        }
+
+        let rows: [CacheRow] = try await supabase.database
+            .from(SupabaseTable.marketDataCache.rawValue)
+            .select("data")
+            .eq("key", value: "signal_analytics")
+            .limit(1)
+            .execute()
+            .value
+
+        return rows.first?.data
+    }
+
     // MARK: - Market Conditions
 
     func fetchMarketConditions() async throws -> SignalMarketConditions? {
@@ -239,7 +279,7 @@ final class SwingSetupService {
         let allSignals: [TradeSignal] = try await supabase.database
             .from(SupabaseTable.tradeSignals.rawValue)
             .select()
-            .in("status", values: ["target_hit", "invalidated"])
+            .in("status", values: ["target_hit", "invalidated", "expired"])
             .order("closed_at", ascending: false)
             .limit(100)
             .execute()
@@ -249,11 +289,11 @@ final class SwingSetupService {
         let losses = allSignals.filter { $0.outcome == .loss }.count
         let partials = allSignals.filter { $0.outcome == .partial }.count
         let total = wins + losses + partials
-        let hitRate = total > 0 ? Double(wins + partials) / Double(total) * 100 : 0
+        let hitRate = total > 0 ? Double(wins) / Double(total) * 100 : 0
 
-        let winPcts = allSignals.filter { $0.outcome == .win || $0.outcome == .partial }
+        let winPcts = allSignals.filter { $0.outcome == .win }
             .compactMap { $0.outcomePct }
-        let lossPcts = allSignals.filter { $0.outcome == .loss }
+        let lossPcts = allSignals.filter { $0.outcome == .loss || $0.outcome == .partial }
             .compactMap { $0.outcomePct }
 
         let avgWinPct = winPcts.isEmpty ? 0 : winPcts.reduce(0, +) / Double(winPcts.count)
@@ -266,11 +306,12 @@ final class SwingSetupService {
         let avgDuration = durations.isEmpty ? 0 : durations.reduce(0, +) / durations.count
 
         // Current streak (most recent signals first, skip signals without outcomes)
+        // Only full wins count as wins; partials and losses break a win streak
         var streak = 0
         for signal in allSignals {
             guard let outcome = signal.outcome else { continue }
-            let isWin = outcome == .win || outcome == .partial
-            let isLoss = outcome == .loss
+            let isWin = outcome == .win
+            let isLoss = outcome == .loss || outcome == .partial
             if streak == 0 {
                 streak = isWin ? 1 : -1
             } else if streak > 0 && isWin {
@@ -289,7 +330,7 @@ final class SwingSetupService {
             let l = signals.filter { $0.outcome == .loss }.count
             let p = signals.filter { $0.outcome == .partial }.count
             let t = w + l + p
-            let hr = t > 0 ? Double(w + p) / Double(t) * 100 : 0
+            let hr = t > 0 ? Double(w) / Double(t) * 100 : 0
             let returns = signals.compactMap { $0.outcomePct }
             let avgRet = returns.isEmpty ? 0 : returns.reduce(0, +) / Double(returns.count)
             return AssetStats(asset: asset, total: t, wins: w, losses: l, partials: p, hitRate: hr, avgReturnPct: avgRet)
@@ -353,4 +394,79 @@ struct AssetStats: Identifiable {
     let partials: Int
     let hitRate: Double
     let avgReturnPct: Double
+}
+
+// MARK: - Signal Analytics (Adaptive Feedback Loop)
+
+struct SignalAnalytics: Codable {
+    let computedAt: String
+    let system: SystemAnalytics
+    let adaptive: AdaptiveParams
+
+    struct SystemAnalytics: Codable {
+        let rolling30d: AnalyticsBucket
+        let allTime: AnalyticsBucket
+
+        enum CodingKeys: String, CodingKey {
+            case rolling30d = "rolling_30d"
+            case allTime = "all_time"
+        }
+    }
+
+    struct AnalyticsBucket: Codable {
+        let signalCount: Int
+        let wins: Int
+        let losses: Int
+        let winRate: Double
+        let profitFactor: Double
+        let avgPnl: Double
+        let avgDurationHours: Int
+        let longCount: Int
+        let shortCount: Int
+        let longWinRate: Double
+        let shortWinRate: Double
+
+        enum CodingKeys: String, CodingKey {
+            case signalCount = "signal_count"
+            case wins, losses
+            case winRate = "win_rate"
+            case profitFactor = "profit_factor"
+            case avgPnl = "avg_pnl"
+            case avgDurationHours = "avg_duration_hours"
+            case longCount = "long_count"
+            case shortCount = "short_count"
+            case longWinRate = "long_win_rate"
+            case shortWinRate = "short_win_rate"
+        }
+    }
+
+    struct AdaptiveParams: Codable {
+        let pausedAssets: [String]
+        let directionBonus: [String: DirectionBonus]
+        let minRr: Double
+        let minScore: Int
+        let state: String
+        let stateLabel: String
+        let reasons: [String]
+
+        enum CodingKeys: String, CodingKey {
+            case pausedAssets = "paused_assets"
+            case directionBonus = "direction_bonus"
+            case minRr = "min_rr"
+            case minScore = "min_score"
+            case state
+            case stateLabel = "state_label"
+            case reasons
+        }
+    }
+
+    struct DirectionBonus: Codable {
+        let long: Int
+        let short: Int
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case computedAt = "computed_at"
+        case system, adaptive
+    }
 }

@@ -155,6 +155,13 @@ struct DCACoinIconView: View {
         "TRX": "https://assets.coingecko.com/coins/images/1094/large/tron-logo.png",
         "SHIB": "https://assets.coingecko.com/coins/images/11939/large/shiba.png",
         "XRP": "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png",
+        "TAO": "https://assets.coingecko.com/coins/images/28452/large/ARUsPeNQ_400x400.jpeg",
+        "ZEC": "https://assets.coingecko.com/coins/images/486/large/circle-zcash-color.png",
+        "LTC": "https://assets.coingecko.com/coins/images/2/large/litecoin-logo.png",
+        "AAVE": "https://assets.coingecko.com/coins/images/12645/large/aave-token.png",
+        "ENA": "https://assets.coingecko.com/coins/images/37986/large/ethena.png",
+        "JUP": "https://assets.coingecko.com/coins/images/34188/large/jup.png",
+        "SYRUP": "https://assets.coingecko.com/coins/images/14097/large/photo_2021-09-08_03-20-50.jpg",
     ]
 
     var body: some View {
@@ -163,8 +170,8 @@ struct DCACoinIconView: View {
                 .fill(coinColor.opacity(0.15))
                 .frame(width: size, height: size)
 
-            if let urlString = Self.coinGeckoImageUrls[symbol.uppercased()],
-               let url = URL(string: urlString) {
+            if let url = Self.coinGeckoImageUrls[symbol.uppercased()].flatMap({ URL(string: $0) })
+                ?? AssetRiskConfig.forSymbol(symbol)?.logoURL {
                 KFImage(url)
                     .resizable()
                     .placeholder {

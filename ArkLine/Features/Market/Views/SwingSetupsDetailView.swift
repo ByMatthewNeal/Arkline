@@ -14,6 +14,7 @@ struct SwingSetupsDetailView: View {
     @State private var performancePeriod: PerformancePeriod = .all
     @State private var showExportSheet = false
     @State private var highImpactEvents: [EconomicEvent] = []
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -94,10 +95,10 @@ struct SwingSetupsDetailView: View {
         let losses = signals.filter { $0.outcome == .loss }.count
         let partials = signals.filter { $0.outcome == .partial }.count
         let total = wins + losses + partials
-        let hitRate = total > 0 ? Double(wins + partials) / Double(total) * 100 : 0
+        let hitRate = total > 0 ? Double(wins) / Double(total) * 100 : 0
 
-        let winPcts = signals.filter { $0.outcome == .win || $0.outcome == .partial }.compactMap(\.outcomePct)
-        let lossPcts = signals.filter { $0.outcome == .loss }.compactMap(\.outcomePct)
+        let winPcts = signals.filter { $0.outcome == .win }.compactMap(\.outcomePct)
+        let lossPcts = signals.filter { $0.outcome == .loss || $0.outcome == .partial }.compactMap(\.outcomePct)
         let avgWinPct = winPcts.isEmpty ? 0 : winPcts.reduce(0, +) / Double(winPcts.count)
         let avgLossPct = lossPcts.isEmpty ? 0 : lossPcts.reduce(0, +) / Double(lossPcts.count)
         let totalWinPct = winPcts.reduce(0, +)
@@ -111,8 +112,8 @@ struct SwingSetupsDetailView: View {
         let sorted = signals.sorted { ($0.closedAt ?? .distantPast) > ($1.closedAt ?? .distantPast) }
         for signal in sorted {
             guard let outcome = signal.outcome else { continue }
-            let isWin = outcome == .win || outcome == .partial
-            let isLoss = outcome == .loss
+            let isWin = outcome == .win
+            let isLoss = outcome == .loss || outcome == .partial
             if streak == 0 {
                 streak = isWin ? 1 : -1
             } else if streak > 0 && isWin {
@@ -130,7 +131,7 @@ struct SwingSetupsDetailView: View {
             let l = sigs.filter { $0.outcome == .loss }.count
             let p = sigs.filter { $0.outcome == .partial }.count
             let t = w + l + p
-            let hr = t > 0 ? Double(w + p) / Double(t) * 100 : 0
+            let hr = t > 0 ? Double(w) / Double(t) * 100 : 0
             let returns = sigs.compactMap(\.outcomePct)
             let avgRet = returns.isEmpty ? 0 : returns.reduce(0, +) / Double(returns.count)
             return AssetStats(asset: asset, total: t, wins: w, losses: l, partials: p, hitRate: hr, avgReturnPct: avgRet)
@@ -265,18 +266,26 @@ struct SwingSetupsDetailView: View {
                         }
                         .pickerStyle(.segmented)
 
-                        Button {
-                            showExportSheet = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(AppColors.accent)
-                                .padding(8)
-                                .background(AppColors.accent.opacity(colorScheme == .dark ? 0.12 : 0.08))
-                                .cornerRadius(8)
+                        if appState.currentUser?.isAdmin == true {
+                            Button {
+                                showExportSheet = true
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(AppColors.accent)
+                                    .padding(8)
+                                    .background(AppColors.accent.opacity(colorScheme == .dark ? 0.12 : 0.08))
+                                    .cornerRadius(8)
+                            }
                         }
                     }
                     .padding(.horizontal)
+
+                    // Adaptive feedback banner
+                    if let analytics = viewModel.analytics {
+                        adaptiveStateBanner(analytics)
+                            .padding(.horizontal)
+                    }
 
                     // Performance dashboard
                     if viewModel.isLoading {
@@ -286,6 +295,21 @@ struct SwingSetupsDetailView: View {
                             }
                         }
                         .padding(.horizontal)
+                    } else if viewModel.statsLoadFailed {
+                        VStack(spacing: 12) {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.system(size: 40))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                            Text("Failed to load performance")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(textPrimary)
+                            Button("Retry") {
+                                Task { await viewModel.loadAllData() }
+                            }
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.accent)
+                        }
+                        .padding(.top, 40)
                     } else if let stats = periodStats, stats.totalSignals > 0 {
                         performanceDashboard(stats)
                     } else {
@@ -308,7 +332,8 @@ struct SwingSetupsDetailView: View {
                             }
                         }
                         .padding(.horizontal)
-                    } else if viewModel.loadFailed && filteredSignals.isEmpty {
+                    } else if (selectedFilter == .active && viewModel.loadFailed && filteredSignals.isEmpty) ||
+                              (selectedFilter == .history && viewModel.historyLoadFailed) {
                         VStack(spacing: 12) {
                             Image(systemName: "wifi.exclamationmark")
                                 .font(.system(size: 40))
@@ -336,16 +361,18 @@ struct SwingSetupsDetailView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(filteredSignals) { signal in
                                 NavigationLink {
-                                    SignalDetailView(signalId: signal.id)
+                                    SignalDetailView(signalId: signal.id, signal: signal)
                                 } label: {
-                                    SignalCard(signal: signal, colorScheme: colorScheme)
+                                    SignalCard(signal: signal, colorScheme: colorScheme, livePrice: viewModel.livePrices[signal.asset])
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .contextMenu {
-                                    Button {
-                                        signalToShare = signal
-                                    } label: {
-                                        Label("Share Signal", systemImage: "square.and.arrow.up")
+                                    if appState.currentUser?.isAdmin == true {
+                                        Button {
+                                            signalToShare = signal
+                                        } label: {
+                                            Label("Share Signal", systemImage: "square.and.arrow.up")
+                                        }
                                     }
                                 }
                             }
@@ -373,7 +400,7 @@ struct SwingSetupsDetailView: View {
                 } label: {
                     Image(systemName: "questionmark.circle")
                         .font(.system(size: 15))
-                        .foregroundColor(AppColors.textSecondary)
+                        .foregroundStyle(textPrimary.opacity(0.6))
                 }
             }
         }
@@ -472,7 +499,7 @@ struct SwingSetupsDetailView: View {
                 .font(.system(size: 9, weight: .medium))
                 .foregroundColor(AppColors.textSecondary)
         }
-        .frame(minWidth: 44)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Asset Breakdown
@@ -549,7 +576,113 @@ struct SwingSetupsDetailView: View {
 
             // Key metrics grid
             keyMetricsCard(stats)
+
+            // 30-day history link
+            NavigationLink {
+                SignalPerformanceHistoryView(viewModel: viewModel)
+            } label: {
+                HStack {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 15))
+                    Text("Signal History & Event Analysis")
+                        .font(.system(size: 14, weight: .semibold))
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundColor(AppColors.accent)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(AppColors.accent.opacity(colorScheme == .dark ? 0.1 : 0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppColors.accent.opacity(0.2), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal)
         }
+    }
+
+    // MARK: - Adaptive State Banner
+
+    private func adaptiveStateBanner(_ analytics: SignalAnalytics) -> some View {
+        let adaptive = analytics.adaptive
+        let stateColor: Color = {
+            switch adaptive.state {
+            case "hot": return AppColors.success
+            case "cold": return AppColors.error
+            case "cautious": return AppColors.warning
+            case "learning": return AppColors.accent
+            default: return AppColors.textSecondary
+            }
+        }()
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(stateColor)
+                    .frame(width: 8, height: 8)
+                Text(adaptive.stateLabel)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(textPrimary)
+                Spacer()
+                Text("ADAPTIVE")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(stateColor)
+                    .tracking(1)
+            }
+
+            HStack(spacing: 16) {
+                VStack(spacing: 2) {
+                    Text(String(format: "%.1f", adaptive.minRr))
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(adaptive.minRr > 1.0 ? AppColors.warning : textPrimary)
+                        .monospacedDigit()
+                    Text("Min R:R")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                VStack(spacing: 2) {
+                    Text("\(adaptive.minScore)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(adaptive.minScore != 60 ? AppColors.warning : textPrimary)
+                        .monospacedDigit()
+                    Text("Min Score")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                if !adaptive.pausedAssets.isEmpty {
+                    VStack(spacing: 2) {
+                        Text(adaptive.pausedAssets.joined(separator: ", "))
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(AppColors.error)
+                        Text("Paused")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+                Spacer()
+            }
+
+            if let reason = adaptive.reasons.first {
+                Text(reason)
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(stateColor.opacity(colorScheme == .dark ? 0.08 : 0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(stateColor.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 
     // MARK: - Best & Worst Trades
@@ -770,8 +903,8 @@ struct SwingSetupsDetailView: View {
         let longs = closedSignals.filter { $0.signalType.isBuy }
         let shorts = closedSignals.filter { !$0.signalType.isBuy }
 
-        let longWins = longs.filter { $0.outcome == .win || $0.outcome == .partial }.count
-        let shortWins = shorts.filter { $0.outcome == .win || $0.outcome == .partial }.count
+        let longWins = longs.filter { $0.outcome == .win }.count
+        let shortWins = shorts.filter { $0.outcome == .win }.count
         let longHitRate = longs.isEmpty ? 0 : Double(longWins) / Double(longs.count) * 100
         let shortHitRate = shorts.isEmpty ? 0 : Double(shortWins) / Double(shorts.count) * 100
         let longAvgPnl = longs.compactMap(\.outcomePct).isEmpty ? 0 : longs.compactMap(\.outcomePct).reduce(0, +) / Double(longs.compactMap(\.outcomePct).count)
@@ -1108,6 +1241,7 @@ private struct WinRateGauge: View {
 struct SignalCard: View {
     let signal: TradeSignal
     let colorScheme: ColorScheme
+    var livePrice: Double? = nil
 
     private var signalColor: Color {
         signal.signalType.isBuy ? AppColors.success : AppColors.error
@@ -1284,6 +1418,17 @@ struct SignalCard: View {
                             }
                             chipView(text: "Runner trailing", color: AppColors.accent)
                         } else {
+                            // Unrealized P&L from live price
+                            if let price = livePrice, signal.status == .triggered {
+                                let entryMid = signal.entryPriceMid
+                                let pnl = signal.signalType.isBuy
+                                    ? ((price - entryMid) / entryMid) * 100
+                                    : ((entryMid - price) / entryMid) * 100
+                                chipView(
+                                    text: String(format: "%+.2f%%", pnl),
+                                    color: pnl >= 0 ? AppColors.success : AppColors.error
+                                )
+                            }
                             if signal.emaTrendAligned == true {
                                 chipView(text: "EMA Aligned", color: AppColors.accent)
                             }
@@ -1292,6 +1437,9 @@ struct SignalCard: View {
                             }
                             if signal.isCounterTrend {
                                 chipView(text: "Counter-Trend", color: AppColors.warning)
+                            }
+                            if signal.isRangeCompressed {
+                                chipView(text: "Compressed", color: AppColors.warning)
                             }
                             if signal.hasVolumeConfluence {
                                 chipView(text: "Vol Shelf")
@@ -1595,6 +1743,11 @@ struct SignalGuideSheet: View {
                             visual: AnyView(chipSample("Off-trend", color: nil)),
                             title: "Off-trend",
                             detail: "Signal direction is the weaker side for this asset based on backtests (e.g. longing BTC when shorts historically perform better)"
+                        )
+                        legendRow(
+                            visual: AnyView(chipSample("Compressed", color: AppColors.warning)),
+                            title: "Compressed",
+                            detail: "Asset is trading in an unusually tight range with low volume — a low-conviction environment. Signals may be less reliable as compressed markets often precede false breakouts. Score threshold is raised and a penalty is applied."
                         )
                         legendRow(
                             visual: AnyView(chipSample("Vol Shelf", color: nil)),

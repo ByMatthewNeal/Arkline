@@ -10,7 +10,7 @@ struct AssetTechnicalDetailSheet: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var technicalAnalysis: TechnicalAnalysis?
-    @State private var isLoading = false
+    @State private var isLoading = true
     @State private var errorMessage: String?
 
     // Multi-timeframe trend data
@@ -164,11 +164,13 @@ struct AssetTechnicalDetailSheet: View {
             let symbol = TaapiSymbolMapper.symbol(for: asset)
             let exchange = TaapiSymbolMapper.exchange(for: asset)
 
-            let analysis = try await technicalAnalysisService.fetchTechnicalAnalysis(
-                symbol: symbol,
-                exchange: exchange,
-                interval: .daily
-            )
+            let analysis = try await withTimeout(seconds: 10) { [technicalAnalysisService] in
+                try await technicalAnalysisService.fetchTechnicalAnalysis(
+                    symbol: symbol,
+                    exchange: exchange,
+                    interval: .daily
+                )
+            }
 
             // Archive technicals (fire-and-forget)
             Task { await MarketDataCollector.shared.recordTechnicals(analysis) }
@@ -179,11 +181,9 @@ struct AssetTechnicalDetailSheet: View {
             }
         } catch {
             await MainActor.run {
-                // Fallback to mock data on error
+                // Fallback to generated data on error
                 self.technicalAnalysis = TechnicalAnalysisGenerator.generate(for: asset)
                 self.isLoading = false
-                // Don't show error if we have fallback data
-                // self.errorMessage = "Unable to fetch live data. Showing estimated values."
             }
         }
     }

@@ -9,6 +9,7 @@ struct CreateDCASheetView: View {
 
     @State private var selectedCoin: CoinOption?
     @State private var showCoinPicker = false
+    @State private var showStockPicker = false
     @State private var amount: String = "1000"
     @State private var attachRiskLevel = false
     @State private var riskSource: RiskSourceType = .composite
@@ -38,11 +39,12 @@ struct CreateDCASheetView: View {
 
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Coin selection
+                        // Coin/Stock selection
                         if let coin = selectedCoin {
                             coinSelectedSection(coin)
                         } else {
                             coinSelectionButton
+                            stockSelectionButton
                         }
 
                         if selectedCoin != nil {
@@ -86,6 +88,9 @@ struct CreateDCASheetView: View {
             .sheet(isPresented: $showCoinPicker) {
                 CoinPickerView(selectedCoin: $selectedCoin, viewModel: viewModel)
             }
+            .sheet(isPresented: $showStockPicker) {
+                StockPickerView(selectedCoin: $selectedCoin)
+            }
             .alert("Error", isPresented: $showErrorAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -115,6 +120,44 @@ struct CreateDCASheetView: View {
                         .foregroundColor(textPrimary)
 
                     Text("Select a cryptocurrency to set up DCA")
+                        .font(.system(size: 14))
+                        .foregroundColor(textPrimary.opacity(0.6))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(textPrimary.opacity(0.4))
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(sectionBackground)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var stockSelectionButton: some View {
+        Button(action: { showStockPicker = true }) {
+            HStack {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "3B82F6").opacity(0.15))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(Color(hex: "3B82F6"))
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Choose Stock")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(textPrimary)
+
+                    Text("Select a stock to set up DCA")
                         .font(.system(size: 14))
                         .foregroundColor(textPrimary.opacity(0.6))
                 }

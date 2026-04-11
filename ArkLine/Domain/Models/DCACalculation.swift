@@ -191,8 +191,8 @@ enum DCADuration: Equatable, Hashable {
     }
 
     var approximateWeeks: Int {
-        // Approximate 4.33 weeks per month
-        return Int(Double(months) * 4.33)
+        // 365.25 days / 7 = 52.18 weeks per year = 4.348 weeks per month
+        return Int((Double(months) * 4.348).rounded())
     }
 
     var approximateDays: Int {
@@ -351,8 +351,20 @@ extension DCAAsset {
 
     /// Crypto assets with risk-level data (derived from AssetRiskConfig)
     static var riskSupportedCryptoAssets: [DCAAsset] {
-        AssetRiskConfig.allConfigs.map { config in
+        AssetRiskConfig.cryptoConfigs.map { config in
             DCAAsset(symbol: config.assetId, name: config.displayName, type: .crypto)
         }
+    }
+
+    /// Stock assets with risk-level data
+    static var riskSupportedStockAssets: [DCAAsset] {
+        AssetRiskConfig.stockConfigs.map { config in
+            DCAAsset(symbol: config.assetId, name: config.displayName, type: .stock)
+        }
+    }
+
+    /// All assets (crypto + stocks) with risk-level data
+    static var riskSupportedAllAssets: [DCAAsset] {
+        riskSupportedCryptoAssets + riskSupportedStockAssets
     }
 }

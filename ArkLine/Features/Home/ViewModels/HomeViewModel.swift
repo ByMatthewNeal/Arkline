@@ -24,7 +24,9 @@ class HomeViewModel {
 
     // MARK: - Auto-Refresh
     private var refreshTimer: Timer?
+    private var portfolioPriceTimer: Timer?
     private let refreshInterval: TimeInterval = 300 // 5 minutes for events
+    private let portfolioPriceInterval: TimeInterval = 60 // 60 seconds for portfolio prices
     var eventsLastUpdated: Date?
 
     /// Whether a refresh is currently in flight (prevents stacking)
@@ -342,6 +344,32 @@ class HomeViewModel {
         }
     }
 
+    // MARK: - Stock Risk Levels
+
+    var stockRiskLevels: [String: ITCRiskLevel] = [:]
+    var stockRiskHistories: [String: [ITCRiskLevel]] = [:]
+
+    /// Default stocks to show risk for
+    var stockRiskSymbols: [String] {
+        AssetRiskConfig.stockConfigs.map(\.assetId)
+    }
+
+    /// Stock risk data formatted for MultiCoinRiskSection
+    var stockSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?)] {
+        stockRiskSymbols.compactMap { symbol in
+            let level = stockRiskLevels[symbol]
+            let history = stockRiskHistories[symbol] ?? []
+            guard level != nil || !history.isEmpty else { return nil }
+            return (symbol, level, consecutiveDaysAtCurrentLevel(history: history, current: level), stockWeeklyAvg(symbol))
+        }
+    }
+
+    private func stockWeeklyAvg(_ symbol: String) -> Double? {
+        guard let history = stockRiskHistories[symbol], history.count >= 3 else { return nil }
+        let last7 = history.suffix(7)
+        return last7.map(\.riskLevel).reduce(0, +) / Double(last7.count)
+    }
+
     // Calculate consecutive days at current risk category
     private func consecutiveDaysAtCurrentLevel(history: [ITCRiskLevel], current: ITCRiskLevel?) -> Int? {
         guard let current = current, !history.isEmpty else { return nil }
@@ -367,19 +395,111 @@ class HomeViewModel {
         return count >= 1 ? count : nil
     }
 
+    // Thread-safe date formatter for risk history parsing
+    private static let riskDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     // Calculate rolling 7-day average risk level from history
     private func weeklyAverageRiskLevel(for coin: String) -> Double? {
-        guard let history = riskHistories[coin], !history.isEmpty else { return nil }
-        let calendar = Calendar.current
-        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        let history = riskHistories[coin] ?? []
+        guard !history.isEmpty else { return nil }
+        let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
         let recentPoints = history.filter { level in
-            guard let date = formatter.date(from: level.date) else { return false }
+            guard let date = Self.riskDateFormatter.date(from: level.date) else { return false }
             return date >= sevenDaysAgo
         }
         guard recentPoints.count >= 3 else { return nil }
         return recentPoints.reduce(0.0) { $0 + $1.riskLevel } / Double(recentPoints.count)
+    }
+
+    // MARK: - Stock Risk Loading
+
+    private func loadStockRiskLevels() async {
+        guard let riskService = ServiceContainer.shared.itcRiskService as? APIITCRiskService else { return }
+
+        // Process in batches of 4 to avoid overwhelming the network
+        let batchSize = 4
+        for batchStart in stride(from: 0, to: stockRiskSymbols.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, stockRiskSymbols.count)
+            let batch = Array(stockRiskSymbols[batchStart..<batchEnd])
+
+            await withTaskGroup(of: (String, ITCRiskLevel?).self) { group in
+                for symbol in batch {
+                    group.addTask {
+                        do {
+                            let risk = try await riskService.calculateStockCurrentRisk(symbol: symbol)
+                            return (symbol, ITCRiskLevel(from: risk))
+                        } catch {
+                            return (symbol, nil)
+                        }
+                    }
+                }
+
+                for await (symbol, level) in group {
+                    if let level {
+                        stockRiskLevels[symbol] = level
+                    }
+                }
+            }
+        }
+
+        // Archive stock risk levels to Supabase (fire-and-forget)
+        if enableSideEffects {
+            Task {
+                let collector = MarketDataCollector.shared
+                for (symbol, level) in stockRiskLevels {
+                    await collector.recordIndicator(
+                        name: "stock_risk_\(symbol.lowercased())",
+                        value: level.riskLevel,
+                        metadata: [
+                            "symbol": .string(symbol),
+                            "price": .double(level.price ?? 0),
+                            "fair_value": .double(level.fairValue ?? 0),
+                            "category": .string(RiskColors.category(for: level.riskLevel))
+                        ]
+                    )
+                }
+                // Also archive crypto risk levels
+                for (coin, level) in riskLevels {
+                    await collector.recordIndicator(
+                        name: "crypto_risk_\(coin.lowercased())",
+                        value: level.riskLevel,
+                        metadata: [
+                            "symbol": .string(coin),
+                            "price": .double(level.price ?? 0),
+                            "fair_value": .double(level.fairValue ?? 0),
+                            "category": .string(RiskColors.category(for: level.riskLevel))
+                        ]
+                    )
+                }
+            }
+        }
+
+        // Load 7-day history in parallel batches after cards are populated
+        for batchStart in stride(from: 0, to: stockRiskSymbols.count, by: 4) {
+            let batchEnd = min(batchStart + 4, stockRiskSymbols.count)
+            let batch = Array(stockRiskSymbols[batchStart..<batchEnd])
+
+            await withTaskGroup(of: (String, [ITCRiskLevel]).self) { group in
+                for symbol in batch {
+                    group.addTask {
+                        guard let history = try? await riskService.fetchStockRiskHistory(symbol: symbol, days: 7) else {
+                            return (symbol, [])
+                        }
+                        return (symbol, history.map { ITCRiskLevel(from: $0) })
+                    }
+                }
+                for await (symbol, history) in group {
+                    if !history.isEmpty {
+                        stockRiskHistories[symbol] = history
+                    }
+                }
+            }
+        }
     }
 
     // Cached crypto assets for favorites filtering
@@ -524,6 +644,8 @@ class HomeViewModel {
         MainActor.assumeIsolated {
             refreshTimer?.invalidate()
             refreshTimer = nil
+            portfolioPriceTimer?.invalidate()
+            portfolioPriceTimer = nil
         }
     }
 
@@ -535,11 +657,18 @@ class HomeViewModel {
                 await self?.refreshEvents()
             }
         }
+        portfolioPriceTimer = Timer.scheduledTimer(withTimeInterval: portfolioPriceInterval, repeats: true) { [weak self] _ in
+            Task { [weak self] in
+                await self?.refreshPortfolioPrices()
+            }
+        }
     }
 
     func stopAutoRefresh() {
         refreshTimer?.invalidate()
         refreshTimer = nil
+        portfolioPriceTimer?.invalidate()
+        portfolioPriceTimer = nil
     }
 
     /// Refresh events and news data (lighter weight than full refresh)
@@ -577,12 +706,24 @@ class HomeViewModel {
 
     // MARK: - Public Methods
     func refresh(forceRefresh: Bool = false) async {
-        guard !isRefreshing else { return }
+        // If a previous refresh is somehow stuck, force-reset after 30s
+        if isRefreshing {
+            if let last = lastRefreshed, Date().timeIntervalSince(last) > 30 {
+                logWarning("HomeViewModel: isRefreshing was stuck — force-resetting", category: .data)
+                isRefreshing = false
+            } else {
+                return
+            }
+        }
         // Skip re-fetch if data loaded within the last 30 seconds (unless forced)
         if !forceRefresh, let last = lastRefreshed, Date().timeIntervalSince(last) < refreshCooldown { return }
         isRefreshing = true
         isLoading = true
         errorMessage = nil
+        defer {
+            isLoading = false
+            isRefreshing = false
+        }
 
         let userId = await MainActor.run { SupabaseAuthManager.shared.currentUserId }
         let riskCoins = AssetRiskConfig.allConfigs.map(\.assetId)
@@ -824,6 +965,11 @@ class HomeViewModel {
         self.isLoading = false
         self.isRefreshing = false
 
+        // Load stock risk levels AFTER main content is rendered (deferred to avoid lag)
+        Task { @MainActor in
+            await self.loadStockRiskLevels()
+        }
+
         guard enableSideEffects else { return }
 
         // Fetch Flash Intel signals (all active signals)
@@ -984,6 +1130,24 @@ class HomeViewModel {
         } catch {
             logError("Failed to load portfolios: \(error)", category: .data)
             await MainActor.run { self.hasLoadedPortfolios = true }
+        }
+    }
+
+    /// Lightweight price-only refresh — reuses existing holdings, skips history fetch
+    private func refreshPortfolioPrices() async {
+        guard !portfolioHoldings.isEmpty else { return }
+        do {
+            let updated = try await portfolioService.refreshHoldingPrices(holdings: portfolioHoldings)
+            let totalValue = updated.reduce(0) { $0 + $1.currentValue }
+            await MainActor.run {
+                self.portfolioHoldings = updated
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    self.portfolioValue = totalValue
+                }
+                self.cachePortfolioSnapshot()
+            }
+        } catch {
+            // Silent failure — stale prices are fine, next tick will retry
         }
     }
 

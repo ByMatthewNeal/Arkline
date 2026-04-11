@@ -194,7 +194,7 @@ struct RiskLevelSelectView: View {
                         // Free users see locked coins
                         Button(action: { showPaywall = true }) {
                             HStack {
-                                CoinIconView(symbol: coin, size: 36)
+                                CoinIconView(symbol: coin, size: 36, iconUrl: RiskCoin(rawValue: coin)?.iconURL?.absoluteString ?? AssetRiskConfig.forSymbol(coin)?.logoURL?.absoluteString)
                                     .opacity(0.4)
 
                                 Text(coin)
@@ -237,8 +237,9 @@ struct RiskLevelSelectView: View {
     }
 
     private func riskCoinRow(coin: String, isSelected: Bool) -> some View {
-        HStack {
-            CoinIconView(symbol: coin, size: 36)
+        let iconUrl = RiskCoin(rawValue: coin)?.iconURL?.absoluteString ?? AssetRiskConfig.forSymbol(coin)?.logoURL?.absoluteString
+        return HStack {
+            CoinIconView(symbol: coin, size: 36, iconUrl: iconUrl)
 
             Text(coin)
                 .font(AppFonts.body14Medium)

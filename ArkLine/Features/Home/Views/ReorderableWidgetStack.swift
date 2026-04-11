@@ -13,8 +13,13 @@ struct ReorderableWidgetStack: View {
         appState.widgetConfiguration.orderedEnabledWidgets.filter { shouldShowWidget($0) }
     }
 
+    // Avoid re-filtering inside shouldShowWidget — cache check results
+    private var hasStockRiskData: Bool {
+        !viewModel.stockRiskLevels.isEmpty
+    }
+
     var body: some View {
-        VStack(spacing: 16) {
+        LazyVStack(spacing: 16) {
             // Edit mode toggle
             HStack {
                 Text("Widgets")
@@ -104,8 +109,9 @@ struct ReorderableWidgetStack: View {
         case .dailyNews:
             return true
         case .assetRiskLevel:
-            // Show if any user-selected coin has risk data
-            return !viewModel.userSelectedRiskLevels.filter { $0.riskLevel != nil }.isEmpty
+            return !viewModel.riskLevels.isEmpty
+        case .stockRiskLevel:
+            return hasStockRiskData
         case .vixIndicator:
             // Hidden when Macro Dashboard is enabled (already shows VIX)
             return !appState.isWidgetEnabled(.macroDashboard)
@@ -199,6 +205,12 @@ struct ReorderableWidgetStack: View {
             MultiCoinRiskSection(
                 riskLevels: appState.isPro ? viewModel.userSelectedRiskLevels : viewModel.userSelectedRiskLevels.filter { $0.coin == "BTC" },
                 size: appState.widgetSize(.assetRiskLevel)
+            )
+
+        case .stockRiskLevel:
+            StockRiskLevelSection(
+                riskLevels: viewModel.stockSelectedRiskLevels,
+                size: appState.widgetSize(.stockRiskLevel)
             )
 
         case .vixIndicator:

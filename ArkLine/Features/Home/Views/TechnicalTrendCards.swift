@@ -173,10 +173,15 @@ struct AssetHeaderSection: View {
 
     var isPositive: Bool { asset.priceChangePercentage24h >= 0 }
 
+    private var resolvedIconURL: URL? {
+        if let url = asset.iconUrl, let parsed = URL(string: url) { return parsed }
+        return AssetRiskConfig.forCoin(asset.symbol)?.logoURL
+    }
+
     var body: some View {
         HStack(spacing: ArkSpacing.md) {
             // Icon
-            KFImage(URL(string: asset.iconUrl ?? ""))
+            KFImage(resolvedIconURL)
                 .resizable()
                 .placeholder {
                     ZStack {

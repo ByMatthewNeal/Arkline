@@ -1,9 +1,11 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Signal Detail View
 
 struct SignalDetailView: View {
     let signalId: UUID
+    private let initialSignal: TradeSignal?
     @State private var signal: TradeSignal?
     @State private var isLoading = true
     @State private var loadError: String?
@@ -27,6 +29,14 @@ struct SignalDetailView: View {
 
     private let service = SwingSetupService()
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    init(signalId: UUID, signal: TradeSignal? = nil) {
+        self.signalId = signalId
+        self.initialSignal = signal
+        // If we have the signal upfront, skip the loading skeleton
+        self._signal = State(initialValue: signal)
+        self._isLoading = State(initialValue: signal == nil)
+    }
 
     var body: some View {
         ScrollView {
@@ -134,29 +144,27 @@ struct SignalDetailView: View {
                 .padding()
             }
         }
+        .refreshable {
+            await loadData()
+        }
         .background(AppColors.background(colorScheme))
         .navigationTitle("Signal Detail")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    if signal != nil {
-                        Button {
-                            showShareSheet = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 15))
-                                .foregroundColor(AppColors.textSecondary)
-                        }
-                    }
-
+            if signal != nil, appState.currentUser?.isAdmin == true {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        showMethodology = true
+                        showShareSheet = true
                     } label: {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.textSecondary)
+                        Image(systemName: "square.and.arrow.up")
                     }
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showMethodology = true
+                } label: {
+                    Image(systemName: "info.circle")
                 }
             }
             ToolbarItemGroup(placement: .keyboard) {
@@ -215,15 +223,16 @@ struct SignalDetailView: View {
         defer { isLoading = false }
 
         do {
-            let fetched = try await withTimeout(seconds: 10) { [service, signalId] in
+            let fetched = try await withTimeout(seconds: 5) { [service, signalId] in
                 try await service.fetchSignal(id: signalId)
             }
             signal = fetched
             await fetchCurrentPrice(asset: fetched.asset)
         } catch {
-            logWarning("Failed to load signal: \(error)", category: .network)
+            logError("Signal detail load failed for \(signalId): \(error)", category: .network)
+            // If we already have data (from init or cache), just log — don't overwrite
             if signal == nil {
-                loadError = error.localizedDescription
+                loadError = "Unable to load signal. Please try again."
             }
         }
     }
@@ -275,9 +284,26 @@ struct SignalDetailView: View {
     private func headerSection(_ signal: TradeSignal) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(signal.asset)
-                    .font(.title.bold())
-                    .foregroundColor(textPrimary)
+                HStack(spacing: 10) {
+                    if let logoURL = AssetRiskConfig.forCoin(signal.asset)?.logoURL
+                        ?? RiskCoin(rawValue: signal.asset)?.iconURL {
+                        KFImage(logoURL)
+                            .resizable()
+                            .placeholder {
+                                Circle()
+                                    .fill(AppColors.accent.opacity(0.2))
+                                    .frame(width: 32, height: 32)
+                            }
+                            .fade(duration: 0.2)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                    }
+
+                    Text(signal.asset)
+                        .font(.title.bold())
+                        .foregroundColor(textPrimary)
+                }
 
                 Text(signal.generatedAt.formatted(date: .abbreviated, time: .shortened))
                     .font(AppFonts.caption12)
@@ -330,6 +356,15 @@ struct SignalDetailView: View {
 
                     if signal.isCounterTrend {
                         Text("Counter-Trend")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.warning)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(AppColors.warning.opacity(0.12))
+                            .cornerRadius(4)
+                    }
+                    if signal.isRangeCompressed {
+                        Text("Compressed")
                             .font(.system(size: 9, weight: .medium))
                             .foregroundColor(AppColors.warning)
                             .padding(.horizontal, 5)
@@ -432,12 +467,29 @@ struct SignalDetailView: View {
                 color: AppColors.warning
             )
         case .triggered:
+            let unrealizedPnl: Double? = currentPrice.map { price in
+                let entryMid = signal.entryPriceMid
+                return signal.signalType.isBuy
+                    ? ((price - entryMid) / entryMid) * 100
+                    : ((entryMid - price) / entryMid) * 100
+            }
+            let pnlSubtitle: String = {
+                if let pnl = unrealizedPnl {
+                    let prefix = pnl >= 0 ? "Currently" : "Currently"
+                    return "\(prefix) \(String(format: "%+.2f%%", pnl)) — watching T1"
+                }
+                return "Price confirmed in zone — watching T1"
+            }()
+            let pnlColor: Color = {
+                guard let pnl = unrealizedPnl else { return AppColors.accent }
+                return pnl >= 0 ? AppColors.success : AppColors.error
+            }()
             return BannerConfig(
-                icon: "bolt.fill",
+                icon: pnlColor == AppColors.success ? "arrow.up.right.circle.fill" : (pnlColor == AppColors.error ? "arrow.down.right.circle.fill" : "bolt.fill"),
                 title: "In Play",
-                subtitle: "Price confirmed in zone — watching T1",
-                badge: nil,
-                color: AppColors.accent
+                subtitle: pnlSubtitle,
+                badge: unrealizedPnl.map { String(format: "%+.2f%%", $0) },
+                color: pnlColor
             )
         case .targetHit:
             return BannerConfig(
@@ -612,7 +664,7 @@ struct SignalDetailView: View {
                     let high = max(zone.low, zone.high)
                     paramRow(label: "Consider Profit",
                              value: "$\(formatSignalPrice(low)) – $\(formatSignalPrice(high))",
-                             badge: "60–75%",
+                             badge: "30–75%",
                              badgeColor: AppColors.warning)
                 }
 
@@ -649,7 +701,7 @@ struct SignalDetailView: View {
     // MARK: - Custom Entry Card
 
     private func customEntryCard(_ signal: TradeSignal) -> some View {
-        let customEntry = Double(customEntryText)
+        let customEntry = customEntryText.asLocalizedDouble
         let isBuy = signal.signalType.isBuy
 
         // Original risk distance as a percentage of entry mid

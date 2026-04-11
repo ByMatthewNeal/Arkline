@@ -67,10 +67,17 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         }
 
         // Calculate risk history from embedded data
-        let fullRiskHistory = riskCalculator.calculateRiskHistory(prices: fullPriceHistory, config: config)
+        var fullRiskHistory = riskCalculator.calculateRiskHistory(prices: fullPriceHistory, config: config)
 
         guard !fullRiskHistory.isEmpty else {
             throw RiskCalculationError.insufficientData(coin)
+        }
+
+        // Apply EMA smoothing for low-confidence coins (noisy regression due to limited history)
+        if config.confidenceLevel <= 4 {
+            // Smoothing window scales with confidence: lower confidence = more smoothing
+            let span = config.confidenceLevel <= 2 ? 14 : 7
+            fullRiskHistory = smoothRiskHistory(fullRiskHistory, span: span)
         }
 
         // Filter by days if specified
@@ -86,6 +93,175 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
         await cache.store(riskHistory, for: coin, days: days)
 
         return riskHistory
+    }
+
+    /// Apply exponential moving average smoothing to risk history values.
+    /// Preserves date, price, fairValue, and deviation — only smooths riskLevel.
+    private func smoothRiskHistory(_ history: [RiskHistoryPoint], span: Int) -> [RiskHistoryPoint] {
+        guard history.count > 1 else { return history }
+
+        let alpha = 2.0 / Double(span + 1)
+        var smoothed = [RiskHistoryPoint]()
+        var ema = history[0].riskLevel
+
+        for point in history {
+            ema = alpha * point.riskLevel + (1 - alpha) * ema
+            smoothed.append(RiskHistoryPoint(
+                dateString: point.dateString,
+                date: point.date,
+                riskLevel: ema,
+                price: point.price,
+                fairValue: point.fairValue,
+                deviation: point.deviation
+            ))
+        }
+
+        return smoothed
+    }
+
+    // MARK: - Stock Multi-Factor Risk
+
+    /// Calculate multi-factor risk for a stock, combining log regression with technical and macro indicators.
+    /// Uses the same RiskCalculator as crypto but with FMP-sourced technicals and no funding rate.
+    func calculateStockMultiFactorRisk(
+        symbol: String,
+        weights: RiskFactorWeights = .default
+    ) async throws -> MultiFactorRiskPoint {
+        let key = symbol.uppercased()
+
+        guard let config = AssetRiskConfig.forStock(key) else {
+            throw RiskCalculationError.unsupportedAsset(key)
+        }
+
+        // Fetch price history and factor data in parallel
+        async let priceHistoryResult: [(date: Date, price: Double)] = StockPriceStore.shared.fullPriceHistory(for: key)
+        async let factorTask = factorFetcher.fetchStockFactors(for: key)
+
+        let priceHistory = await priceHistoryResult
+        let factorData = await factorTask
+
+        guard !priceHistory.isEmpty else {
+            throw RiskCalculationError.insufficientData(key)
+        }
+
+        let price = priceHistory.last?.price ?? 0
+        guard price > 0 else {
+            throw RiskCalculationError.noDataAvailable(key)
+        }
+
+        guard let multiFactorRisk = riskCalculator.calculateMultiFactorRisk(
+            price: price,
+            date: Date(),
+            config: config,
+            factorData: factorData,
+            weights: weights,
+            priceHistory: priceHistory
+        ) else {
+            throw RiskCalculationError.insufficientData(key)
+        }
+
+        return multiFactorRisk
+    }
+
+    // MARK: - Stock Risk History
+
+    /// Fetch risk history for a stock using FMP price data + logarithmic regression.
+    func fetchStockRiskHistory(symbol: String, days: Int? = nil) async throws -> [RiskHistoryPoint] {
+        let key = symbol.uppercased()
+
+        // Check cache for this specific range
+        if let cached = await cache.get(coin: key, days: days) {
+            return cached
+        }
+
+        // Check if full history is cached — if so, just filter locally
+        if let fullCached = await cache.get(coin: key, days: nil) {
+            let filtered: [RiskHistoryPoint]
+            if let days {
+                let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+                filtered = fullCached.filter { $0.date >= cutoff }
+            } else {
+                filtered = fullCached
+            }
+            await cache.store(filtered, for: key, days: days)
+            return filtered
+        }
+
+        guard let config = AssetRiskConfig.forStock(key) else {
+            throw RiskCalculationError.unsupportedAsset(key)
+        }
+
+        let priceHistory = await StockPriceStore.shared.fullPriceHistory(for: key)
+        guard !priceHistory.isEmpty else {
+            throw RiskCalculationError.insufficientData(key)
+        }
+
+        var fullRiskHistory = riskCalculator.calculateRiskHistory(prices: priceHistory, config: config)
+        guard !fullRiskHistory.isEmpty else {
+            throw RiskCalculationError.insufficientData(key)
+        }
+
+        // Smooth low-confidence stocks
+        if config.confidenceLevel <= 4 {
+            let span = config.confidenceLevel <= 2 ? 14 : 7
+            fullRiskHistory = smoothRiskHistory(fullRiskHistory, span: span)
+        }
+
+        let riskHistory: [RiskHistoryPoint]
+        if let days = days {
+            let cutoffDate = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+            riskHistory = fullRiskHistory.filter { $0.date >= cutoffDate }
+        } else {
+            riskHistory = fullRiskHistory
+        }
+
+        // Cache both the full history and the filtered result
+        if days != nil {
+            await cache.store(fullRiskHistory, for: key, days: nil)
+        }
+        await cache.store(riskHistory, for: key, days: days)
+        return riskHistory
+    }
+
+    /// Calculate current stock risk level.
+    func calculateStockCurrentRisk(symbol: String) async throws -> RiskHistoryPoint {
+        let key = symbol.uppercased()
+
+        // Check cache
+        if let cached = cacheQueue.sync(execute: { currentRiskCache[key] }) {
+            if !shouldRefreshRisk(lastCalculation: cached.calculatedAt) {
+                return cached.risk
+            }
+        }
+
+        guard let config = AssetRiskConfig.forStock(key) else {
+            throw RiskCalculationError.unsupportedAsset(key)
+        }
+
+        let priceHistory = await StockPriceStore.shared.fullPriceHistory(for: key)
+        guard !priceHistory.isEmpty else {
+            throw RiskCalculationError.insufficientData(key)
+        }
+
+        // Use the most recent price from history as current price
+        guard let latestPrice = priceHistory.last?.price else {
+            throw RiskCalculationError.noDataAvailable(key)
+        }
+
+        guard let result = riskCalculator.calculateRiskWithRegression(
+            price: latestPrice,
+            date: Date(),
+            config: config,
+            priceHistory: priceHistory
+        ) else {
+            throw RiskCalculationError.insufficientData(key)
+        }
+
+        cacheQueue.sync {
+            currentRiskCache[key] = (risk: result.risk, calculatedAt: Date())
+        }
+
+        return result.risk
     }
 
     // MARK: - Embedded Data Access

@@ -257,14 +257,13 @@ struct DCACalculatorView: View {
             // When leaving strategy step, validate asset selection
             if calculatorState.currentStep == 2 {
                 if calculatorState.strategyType == .riskBased {
-                    // Clear asset if it's not a supported risk asset
+                    // Clear asset if it's not a supported risk asset (crypto or stock)
                     if let asset = calculatorState.selectedAsset {
-                        let supported = DCAAsset.riskSupportedCryptoAssets.map { $0.symbol }
+                        let supported = DCAAsset.riskSupportedAllAssets.map { $0.symbol }
                         if !supported.contains(asset.symbol) {
                             calculatorState.selectedAsset = nil
                         }
                     }
-                    calculatorState.selectedAssetType = .crypto
                 }
             }
 

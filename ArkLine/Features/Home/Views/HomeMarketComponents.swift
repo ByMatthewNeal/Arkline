@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Glass Fear & Greed Card
 struct GlassFearGreedCard: View {
@@ -264,28 +265,46 @@ struct CompactCoinCard: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(accentColor.opacity(0.2))
-                    .frame(width: 28, height: 28)
-
-                if let icon = icon {
-                    if isSystemIcon {
-                        Image(systemName: icon)
+            if let logoURL = AssetRiskConfig.forCoin(symbol)?.logoURL {
+                KFImage(logoURL)
+                    .resizable()
+                    .placeholder {
+                        ZStack {
+                            Circle()
+                                .fill(accentColor.opacity(0.2))
+                                .frame(width: 28, height: 28)
+                            Text(symbol.prefix(1))
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(accentColor)
+                        }
+                    }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
+                    .clipShape(Circle())
+            } else {
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.2))
+                        .frame(width: 28, height: 28)
+                    if let icon = icon {
+                        if isSystemIcon {
+                            Image(systemName: icon)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(accentColor)
+                        } else {
+                            Image(icon)
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 18, height: 18)
+                                .foregroundColor(accentColor)
+                        }
+                    } else {
+                        Text(symbol.prefix(1))
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(accentColor)
-                    } else {
-                        Image(icon)
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 18, height: 18)
-                            .foregroundColor(accentColor)
                     }
-                } else {
-                    Text(symbol.prefix(1))
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(accentColor)
                 }
             }
 
@@ -338,24 +357,43 @@ struct GlassCoinCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: isExpanded ? 16 : 12) {
             HStack {
-                // Coin icon with glow
-                ZStack {
-                    Circle()
-                        .fill(accentColor.opacity(0.3))
-                        .blur(radius: isExpanded ? 10 : 8)
-                        .frame(width: isExpanded ? 44 : 36, height: isExpanded ? 44 : 36)
+                // Coin logo
+                if let logoURL = AssetRiskConfig.forCoin(symbol)?.logoURL {
+                    KFImage(logoURL)
+                        .resizable()
+                        .placeholder {
+                            ZStack {
+                                Circle()
+                                    .fill(accentColor.opacity(0.3))
+                                    .frame(width: isExpanded ? 44 : 36, height: isExpanded ? 44 : 36)
+                                Text(symbol.prefix(1))
+                                    .font(.system(size: isExpanded ? 16 : 12, weight: .bold))
+                                    .foregroundColor(accentColor)
+                            }
+                        }
+                        .fade(duration: 0.2)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: isExpanded ? 36 : 28, height: isExpanded ? 36 : 28)
+                        .clipShape(Circle())
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(accentColor.opacity(0.3))
+                            .blur(radius: isExpanded ? 10 : 8)
+                            .frame(width: isExpanded ? 44 : 36, height: isExpanded ? 44 : 36)
 
-                    if isSystemIcon {
-                        Image(systemName: icon)
-                            .font(.system(size: isExpanded ? 24 : 20))
-                            .foregroundColor(accentColor)
-                    } else {
-                        Image(icon)
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: isExpanded ? 28 : 24, height: isExpanded ? 28 : 24)
-                            .foregroundColor(accentColor)
+                        if isSystemIcon {
+                            Image(systemName: icon)
+                                .font(.system(size: isExpanded ? 24 : 20))
+                                .foregroundColor(accentColor)
+                        } else {
+                            Image(icon)
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: isExpanded ? 28 : 24, height: isExpanded ? 28 : 24)
+                                .foregroundColor(accentColor)
+                        }
                     }
                 }
 

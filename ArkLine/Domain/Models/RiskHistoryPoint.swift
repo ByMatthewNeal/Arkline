@@ -62,6 +62,15 @@ struct RiskHistoryPoint: Identifiable, Codable {
         }
     }
 
+    // MARK: - Shared Formatter
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
     // MARK: - Coding Keys
 
     enum CodingKeys: String, CodingKey {
@@ -83,9 +92,7 @@ struct RiskHistoryPoint: Identifiable, Codable {
         deviation = try container.decode(Double.self, forKey: .deviation)
 
         // Parse date from string
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        date = formatter.date(from: dateString) ?? Date()
+        date = Self.dateFormatter.date(from: dateString) ?? Date()
     }
 
     // MARK: - Initializers
@@ -100,9 +107,7 @@ struct RiskHistoryPoint: Identifiable, Codable {
     }
 
     init(date: Date, riskLevel: Double, price: Double, fairValue: Double, deviation: Double) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        self.dateString = formatter.string(from: date)
+        self.dateString = Self.dateFormatter.string(from: date)
         self.date = date
         self.riskLevel = riskLevel
         self.price = price
@@ -116,9 +121,7 @@ struct RiskHistoryPoint: Identifiable, Codable {
 extension RiskHistoryPoint {
     /// Convert from legacy ITCRiskLevel (for backwards compatibility)
     init(from itcRiskLevel: ITCRiskLevel, price: Double = 0, fairValue: Double = 0) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let parsedDate = formatter.date(from: itcRiskLevel.date) ?? Date()
+        let parsedDate = RiskHistoryPoint.dateFormatter.date(from: itcRiskLevel.date) ?? Date()
 
         self.init(
             dateString: itcRiskLevel.date,

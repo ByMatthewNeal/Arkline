@@ -9,9 +9,13 @@ import UIKit
 struct BrandedShareCard<Content: View>: View {
     let showBranding: Bool
     let showTimestamp: Bool
+    var isLight: Bool = false
     @ViewBuilder let content: Content
 
     private var logoImage: UIImage? { UIImage(named: "ArkLineAppIcon") }
+    private var bgColor: Color { isLight ? .white : Color(hex: "121212") }
+    private var textColor: Color { isLight ? Color(hex: "1A1A2E") : .white }
+    private var subtextColor: Color { isLight ? Color(hex: "64748B") : Color.white.opacity(0.5) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,7 +33,7 @@ struct BrandedShareCard<Content: View>: View {
 
                         Text("ArkLine")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(textColor)
                     }
 
                     Spacer()
@@ -37,7 +41,7 @@ struct BrandedShareCard<Content: View>: View {
                     if showTimestamp {
                         Text(Date().formatted(date: .abbreviated, time: .shortened))
                             .font(.system(size: 11))
-                            .foregroundColor(Color.white.opacity(0.5))
+                            .foregroundColor(subtextColor)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -51,7 +55,7 @@ struct BrandedShareCard<Content: View>: View {
 
             Spacer().frame(height: 12)
         }
-        .background(Color(hex: "121212"))
+        .background(bgColor)
     }
 }
 
@@ -141,10 +145,14 @@ enum ShareCardRenderer {
 struct ShareCardSheet<Content: View>: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     @State private var showBranding = true
     @State private var showTimestamp = true
+    @State private var useLightTheme = false
     @State private var isExporting = false
+
+    private var isAdmin: Bool { appState.currentUser?.isAdmin == true }
 
     let title: String
     let cardHeight: CGFloat
@@ -166,9 +174,10 @@ struct ShareCardSheet<Content: View>: View {
                             .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                        BrandedShareCard(showBranding: showBranding, showTimestamp: showTimestamp) {
+                        BrandedShareCard(showBranding: showBranding, showTimestamp: showTimestamp, isLight: useLightTheme) {
                             content(showBranding, showTimestamp)
                         }
+                        .environment(\.colorScheme, useLightTheme ? .light : .dark)
                         .cornerRadius(14)
                         .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
                     }
@@ -180,11 +189,26 @@ struct ShareCardSheet<Content: View>: View {
                             .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         VStack(spacing: 0) {
-                            Toggle(isOn: $showBranding) {
+                            if isAdmin {
+                                Toggle(isOn: $showBranding) {
+                                    HStack {
+                                        Image(systemName: "star.circle")
+                                            .foregroundColor(AppColors.accent)
+                                        Text("Show ArkLine Branding")
+                                            .font(AppFonts.body14)
+                                    }
+                                }
+                                .tint(AppColors.accent)
+                                .padding(14)
+
+                                Divider()
+                            }
+
+                            Toggle(isOn: $showTimestamp) {
                                 HStack {
-                                    Image(systemName: "star.circle")
+                                    Image(systemName: "clock")
                                         .foregroundColor(AppColors.accent)
-                                    Text("Show ArkLine Branding")
+                                    Text("Show Timestamp")
                                         .font(AppFonts.body14)
                                 }
                             }
@@ -193,11 +217,11 @@ struct ShareCardSheet<Content: View>: View {
 
                             Divider()
 
-                            Toggle(isOn: $showTimestamp) {
+                            Toggle(isOn: $useLightTheme) {
                                 HStack {
-                                    Image(systemName: "clock")
+                                    Image(systemName: useLightTheme ? "sun.max.fill" : "moon.fill")
                                         .foregroundColor(AppColors.accent)
-                                    Text("Show Timestamp")
+                                    Text("Light Theme")
                                         .font(AppFonts.body14)
                                 }
                             }
@@ -243,9 +267,10 @@ struct ShareCardSheet<Content: View>: View {
         isExporting = true
         defer { isExporting = false }
 
-        let cardView = BrandedShareCard(showBranding: showBranding, showTimestamp: showTimestamp) {
+        let cardView = BrandedShareCard(showBranding: showBranding, showTimestamp: showTimestamp, isLight: useLightTheme) {
             content(showBranding, showTimestamp)
         }
+        .environment(\.colorScheme, useLightTheme ? .light : .dark)
 
         guard let image = ShareCardRenderer.renderImage(content: cardView, width: 390, height: cardHeight) else {
             logError("Share card render failed", category: .ui)

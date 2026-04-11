@@ -10,6 +10,9 @@ struct StockDetailView: View {
     @State private var chartAnimationId = UUID()
     @State private var profile: FMPCompanyProfile?
     @State private var isLoadingProfile = false
+    @State private var riskLevel: RiskHistoryPoint?
+    @State private var riskHistory: [RiskHistoryPoint] = []
+    @State private var isLoadingRisk = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
@@ -71,6 +74,17 @@ struct StockDetailView: View {
                     .padding(.horizontal, 20)
                     .animation(.easeInOut(duration: 0.3), value: chartAnimationId)
 
+                    // Risk Level
+                    if AssetRiskConfig.forStock(asset.symbol) != nil {
+                        StockRiskSection(
+                            symbol: asset.symbol,
+                            riskLevel: riskLevel,
+                            riskHistory: riskHistory,
+                            isLoading: isLoadingRisk
+                        )
+                        .padding(.horizontal, 20)
+                    }
+
                     // Stats
                     StockStatsSection(asset: asset)
                         .padding(.horizontal, 20)
@@ -112,7 +126,28 @@ struct StockDetailView: View {
     private func loadData() async {
         async let chartTask: () = loadChart()
         async let profileTask: () = loadProfile()
-        _ = await (chartTask, profileTask)
+        async let riskTask: () = loadRisk()
+        _ = await (chartTask, profileTask, riskTask)
+    }
+
+    private func loadRisk() async {
+        guard AssetRiskConfig.forStock(asset.symbol) != nil else { return }
+        isLoadingRisk = true
+        defer { isLoadingRisk = false }
+
+        let riskService = ServiceContainer.shared.itcRiskService as? APIITCRiskService
+        guard let service = riskService else { return }
+
+        do {
+            async let currentRisk = service.calculateStockCurrentRisk(symbol: asset.symbol)
+            async let history = service.fetchStockRiskHistory(symbol: asset.symbol, days: 365)
+
+            let (risk, hist) = try await (currentRisk, history)
+            riskLevel = risk
+            riskHistory = hist
+        } catch {
+            logWarning("Failed to load stock risk for \(asset.symbol): \(error.localizedDescription)", category: .network)
+        }
     }
 
     private func loadChart() async {
@@ -403,6 +438,214 @@ struct StockAboutSection: View {
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
+        }
+    }
+}
+
+// MARK: - Stock Risk Section
+
+struct StockRiskSection: View {
+    @Environment(\.colorScheme) var colorScheme
+    let symbol: String
+    let riskLevel: RiskHistoryPoint?
+    let riskHistory: [RiskHistoryPoint]
+    let isLoading: Bool
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+
+    private func riskColor(_ level: Double) -> Color {
+        if level < 0.20 { return Color(hex: "3B82F6") }     // Deep value — blue
+        if level < 0.40 { return AppColors.success }         // Low risk — green
+        if level < 0.55 { return AppColors.warning }         // Neutral — yellow
+        if level < 0.70 { return Color(hex: "F97316") }      // Elevated — orange
+        if level < 0.90 { return AppColors.error }           // High risk — red
+        return Color(hex: "DC2626")                          // Extreme — dark red
+    }
+
+    private func riskLabel(_ level: Double) -> String {
+        if level < 0.20 { return "Deep Value" }
+        if level < 0.40 { return "Low Risk" }
+        if level < 0.55 { return "Neutral" }
+        if level < 0.70 { return "Elevated Risk" }
+        if level < 0.90 { return "High Risk" }
+        return "Extreme Risk"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+                Text("Risk Level")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+                Spacer()
+
+                if let config = AssetRiskConfig.forStock(symbol) {
+                    HStack(spacing: 3) {
+                        ForEach(0..<9, id: \.self) { i in
+                            Circle()
+                                .fill(i < config.confidenceLevel ? AppColors.accent : AppColors.textSecondary.opacity(0.2))
+                                .frame(width: 4, height: 4)
+                        }
+                    }
+                }
+            }
+
+            if isLoading {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .padding(.vertical, 20)
+                    Spacer()
+                }
+            } else if let risk = riskLevel {
+                // Risk gauge
+                HStack(spacing: 16) {
+                    // Circular gauge
+                    ZStack {
+                        Circle()
+                            .stroke(riskColor(risk.riskLevel).opacity(0.15), lineWidth: 6)
+
+                        Circle()
+                            .trim(from: 0, to: min(max(risk.riskLevel, 0), 1))
+                            .stroke(riskColor(risk.riskLevel), style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+
+                        VStack(spacing: 0) {
+                            Text(String(format: "%.2f", risk.riskLevel))
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(riskColor(risk.riskLevel))
+                                .monospacedDigit()
+                        }
+                    }
+                    .frame(width: 70, height: 70)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(riskLabel(risk.riskLevel))
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(riskColor(risk.riskLevel))
+
+                        if risk.fairValue > 0 {
+                            Text("Fair Value: \(risk.fairValue.asCurrency)")
+                                .font(.system(size: 12))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+
+                        let devPct = risk.deviation * 100
+                        Text(String(format: "%+.1f%% from fair value", devPct))
+                            .font(.system(size: 11))
+                            .foregroundColor(devPct >= 0 ? AppColors.error : AppColors.success)
+                    }
+
+                    Spacer()
+                }
+
+                // Mini risk chart (last 90 days)
+                if riskHistory.count >= 5 {
+                    let displayHistory = Array(riskHistory.suffix(90))
+                    miniRiskChart(displayHistory)
+                }
+            } else {
+                Text("Risk data unavailable")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.vertical, 12)
+            }
+        }
+        .padding(16)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(12)
+    }
+
+    private func miniRiskChart(_ data: [RiskHistoryPoint]) -> some View {
+        let maxVal = data.map(\.riskLevel).max() ?? 1
+        let minVal = data.map(\.riskLevel).min() ?? 0
+        let range = max(maxVal - minVal, 0.01)
+        let latest = data.last?.riskLevel ?? 0.5
+
+        return VStack(alignment: .leading, spacing: 4) {
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                let stepX = w / CGFloat(max(data.count - 1, 1))
+
+                ZStack(alignment: .topLeading) {
+                    // Threshold zones
+                    let zones: [(threshold: Double, color: Color)] = [
+                        (0.7, AppColors.error.opacity(0.06)),
+                        (0.55, Color(hex: "F97316").opacity(0.04)),
+                    ]
+
+                    ForEach(Array(zones.enumerated()), id: \.offset) { _, zone in
+                        let y = h * CGFloat((maxVal - zone.threshold) / range)
+                        if y > 0 && y < h {
+                            Path { path in
+                                path.move(to: CGPoint(x: 0, y: y))
+                                path.addLine(to: CGPoint(x: w, y: y))
+                            }
+                            .stroke(zone.color.opacity(0.5), style: StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
+                        }
+                    }
+
+                    // Line
+                    Path { path in
+                        for (i, point) in data.enumerated() {
+                            let x = CGFloat(i) * stepX
+                            let y = h * CGFloat((maxVal - point.riskLevel) / range)
+                            if i == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
+                        }
+                    }
+                    .stroke(
+                        riskColor(latest),
+                        style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+                    )
+
+                    // Gradient fill
+                    Path { path in
+                        for (i, point) in data.enumerated() {
+                            let x = CGFloat(i) * stepX
+                            let y = h * CGFloat((maxVal - point.riskLevel) / range)
+                            if i == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
+                        }
+                        path.addLine(to: CGPoint(x: CGFloat(data.count - 1) * stepX, y: h))
+                        path.addLine(to: CGPoint(x: 0, y: h))
+                        path.closeSubpath()
+                    }
+                    .fill(
+                        LinearGradient(
+                            colors: [riskColor(latest).opacity(0.15), riskColor(latest).opacity(0.02)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+            }
+            .frame(height: 60)
+
+            // Date labels
+            if let first = data.first, let last = data.last {
+                let fmt = DateFormatter()
+                let _ = fmt.dateFormat = "MMM d"
+                HStack {
+                    Text(fmt.string(from: first.date))
+                        .font(.system(size: 8))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    Spacer()
+                    Text(fmt.string(from: last.date))
+                        .font(.system(size: 8))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                }
+            }
         }
     }
 }

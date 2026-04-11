@@ -128,9 +128,9 @@ struct DCAAssetPickerCard: View {
     }
 
     private var displayAssets: [DCAAsset] {
-        // Risk-based mode: only show supported crypto assets
+        // Risk-based mode: show all assets with risk data (crypto + stocks)
         if isRiskBased {
-            let assets = DCAAsset.riskSupportedCryptoAssets
+            let assets = DCAAsset.riskSupportedAllAssets
             if searchText.isEmpty { return assets }
             return assets.filter {
                 $0.symbol.localizedCaseInsensitiveContains(searchText) ||
@@ -174,7 +174,7 @@ struct DCAAssetPickerCard: View {
                         .font(.system(size: 16))
                         .foregroundColor(AppColors.accent)
 
-                    Text("Risk-based DCA is only available for crypto assets with risk-level data.")
+                    Text("Risk-based DCA is available for assets with risk-level data.")
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
                 }

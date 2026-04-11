@@ -50,6 +50,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case usFutures = "us_futures"
     case qpsSignals = "qps_signals"
     case marketDeck = "market_deck"
+    case stockRiskLevel = "stock_risk_level"
 
     var id: String { rawValue }
 
@@ -62,7 +63,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .dcaReminders: return "DCA Reminders"
         case .fedWatch: return "Fed Watch"
         case .dailyNews: return "Daily News"
-        case .assetRiskLevel: return "Asset Risk Level"
+        case .assetRiskLevel: return "Crypto Risk Levels"
         case .vixIndicator: return "VIX"
         case .dxyIndicator: return "DXY"
         case .globalLiquidity: return "Global M2"
@@ -74,6 +75,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .usFutures: return "US Futures"
         case .qpsSignals: return "Signal Changes"
         case .marketDeck: return "Weekly Update"
+        case .stockRiskLevel: return "Stock Risk Levels"
         }
     }
 
@@ -86,7 +88,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .dcaReminders: return "Your dollar-cost averaging reminders"
         case .fedWatch: return "Fed interest rate probability from CME"
         case .dailyNews: return "Latest crypto and market news"
-        case .assetRiskLevel: return "BTC risk level based on cycle analysis"
+        case .assetRiskLevel: return "Crypto regression risk from genesis date"
         case .vixIndicator: return "CBOE Volatility Index - Market fear gauge"
         case .dxyIndicator: return "US Dollar Index - Dollar strength"
         case .globalLiquidity: return "Global M2 money supply trends"
@@ -98,6 +100,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .usFutures: return "S&P 500, Dow, and NASDAQ futures with session indicator"
         case .qpsSignals: return "Daily positioning signal changes across 8 assets"
         case .marketDeck: return "Weekly market update slide deck"
+        case .stockRiskLevel: return "Regression risk levels for select stocks"
         }
     }
 
@@ -122,6 +125,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .usFutures: return "chart.line.uptrend.xyaxis"
         case .qpsSignals: return "waveform.path.ecg"
         case .marketDeck: return "doc.richtext"
+        case .stockRiskLevel: return "chart.line.uptrend.xyaxis"
         }
     }
 
@@ -133,7 +137,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck:
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals:
             return true
@@ -142,12 +146,12 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.marketDeck, .upcomingEvents, .flashIntel, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .dcaReminders])
+        Set([.marketDeck, .upcomingEvents, .flashIntel, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .stockRiskLevel, .dcaReminders])
     }
 }
 

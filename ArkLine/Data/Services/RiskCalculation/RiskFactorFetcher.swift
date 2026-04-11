@@ -1,17 +1,17 @@
 import Foundation
 
 // MARK: - Risk Factor Fetcher
-/// Actor-based service for fetching all risk factor data with rate limiting.
+/// Actor-based service for fetching all risk factor data.
 /// - Alpha Vantage (VIX/DXY): 2-hour cache to stay within 25 requests/day limit
-/// - Taapi.io (RSI/SMA/Price): Sequential calls with 16s delay to respect 1 req/15s limit
-/// - Other APIs (Fear & Greed, Funding): No strict limits, fetched in parallel
+/// - RSI/SMA200: Calculated from Coinbase daily candles (no rate limits)
+/// - Other APIs (Fear & Greed, Funding, Oil): Fetched in parallel
+/// All factors are fetched concurrently for maximum speed (~5s vs ~35s with Taapi.io).
 actor RiskFactorFetcher {
 
     // MARK: - Singleton
     static let shared = RiskFactorFetcher()
 
     // MARK: - Dependencies
-    private let technicalService: TechnicalAnalysisServiceProtocol
     private let sentimentService: SentimentServiceProtocol
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
@@ -24,9 +24,6 @@ actor RiskFactorFetcher {
 
     /// Alpha Vantage cache TTL (2 hours) - keeps us well under 25 requests/day
     private let macroCacheTTL: TimeInterval = 7200
-
-    /// Delay between Taapi.io API calls (16 seconds for safety margin over 15s limit)
-    private let taapiDelaySeconds: TimeInterval = 16
 
     // MARK: - Standard Cache (5 min TTL)
     private struct CacheEntry {
@@ -53,19 +50,14 @@ actor RiskFactorFetcher {
 
     private var macroCache: MacroCacheEntry?
 
-    // MARK: - Taapi.io Rate Limiting
-    private var lastTaapiCallTime: Date?
-
     // MARK: - Initialization
 
     init(
-        technicalService: TechnicalAnalysisServiceProtocol = ServiceContainer.shared.technicalAnalysisService,
         sentimentService: SentimentServiceProtocol = ServiceContainer.shared.sentimentService,
         vixService: VIXServiceProtocol = ServiceContainer.shared.vixService,
         dxyService: DXYServiceProtocol = ServiceContainer.shared.dxyService,
         crudeOilService: CrudeOilServiceProtocol = ServiceContainer.shared.crudeOilService
     ) {
-        self.technicalService = technicalService
         self.sentimentService = sentimentService
         self.vixService = vixService
         self.dxyService = dxyService
@@ -90,22 +82,27 @@ actor RiskFactorFetcher {
 
         logDebug("Fetching fresh factor data for \(coin)...", category: .network)
 
-        // 1. Fetch macro data (VIX/DXY) - uses 2-hour cache
-        let (vix, dxy) = await fetchMacroData(forceRefresh: false)
-
-        // 2. Fetch Taapi.io data SEQUENTIALLY with delays (RSI, SMA, Price)
-        let (rsi, sma, price) = await fetchTaapiDataSequentially(coin: coin)
-
-        // 3. Fetch non-rate-limited data in parallel (Binance funding, Alternative.me F&G, Yahoo oil)
+        // Fetch ALL data in parallel — Coinbase-first for RSI/SMA avoids Taapi.io 16s rate limit waits.
+        // Taapi.io is tried first inline but falls back to Coinbase calculation on failure,
+        // so we skip the sequential Taapi path entirely and use Coinbase directly for speed.
+        async let priceResult = fetchPriceFromCoinbase(coin: coin)
+        async let rsiResult = fetchRSIFromCoinbase(coin: coin)
+        async let smaResult = fetchSMA200FromCoinbase(coin: coin)
+        async let macroResult = fetchMacroData(forceRefresh: false)
         async let fundingResult = fetchFundingRate()
         async let fearGreedResult = fetchFearGreed()
         async let oilResult = fetchCrudeOil()
 
+        // Await all in parallel
+        let price = await priceResult
+        let rsi = await rsiResult
+        let sma = await smaResult
+        let (vix, dxy) = await macroResult
         let funding = await fundingResult
         let fearGreed = await fearGreedResult
         let oil = await oilResult
 
-        // 4. Fetch Bull Market Support Bands (from Coinbase daily data)
+        // Bull Market Bands needs price, but the Coinbase fetch is fast
         let bullMarketBands = await fetchBullMarketBands(coin: coin, currentPrice: price)
 
         let factorData = RiskFactorData(
@@ -132,7 +129,6 @@ actor RiskFactorFetcher {
     func clearCache() {
         cache.removeAll()
         macroCache = nil
-        lastTaapiCallTime = nil
     }
 
     /// Clear cache for a specific coin (keeps macro cache)
@@ -143,6 +139,131 @@ actor RiskFactorFetcher {
     /// Force refresh macro data (VIX/DXY) - use sparingly due to API limits
     func refreshMacroData() async -> (vix: Double?, dxy: Double?) {
         return await fetchMacroData(forceRefresh: true)
+    }
+
+    // MARK: - Stock Factor Fetching
+
+    /// Fetch risk factor data for a stock symbol.
+    /// Uses cached FMP price history from StockPriceStore for RSI, SMA200, and Bull Market Bands.
+    /// Funding rate is unavailable for stocks (weight redistributed automatically).
+    /// Fear & Greed uses VIX as stock market fear proxy.
+    func fetchStockFactors(for symbol: String, forceRefresh: Bool = false) async -> RiskFactorData {
+        let cacheKey = "STOCK_\(symbol.uppercased())"
+
+        if !forceRefresh, let entry = cache[cacheKey], !entry.isExpired(ttl: standardCacheTTL) {
+            return entry.data
+        }
+
+        logDebug("Fetching stock factor data for \(symbol)...", category: .network)
+
+        // Get cached price history from StockPriceStore
+        let priceHistory = await StockPriceStore.shared.fullPriceHistory(for: symbol)
+
+        // Calculate technicals from price history (no API calls needed)
+        let rsi = calculateRSI(from: priceHistory)
+        let sma200 = calculateSMA200(from: priceHistory)
+        let price = priceHistory.last?.price
+        let bullMarketBands = calculateBullMarketBands(from: priceHistory, currentPrice: price)
+
+        // Fetch market-wide factors in parallel (shared with crypto)
+        async let macroResult = fetchMacroData(forceRefresh: false)
+        async let oilResult = fetchCrudeOil()
+
+        let (vix, dxy) = await macroResult
+        let oil = await oilResult
+
+        // Use VIX as stock fear gauge (inverted: high VIX = extreme fear = 0-25 on F&G scale)
+        let fearGreed: Double? = vix.map { v in
+            // Map VIX to 0-100 Fear & Greed equivalent:
+            // VIX 10 → F&G 90 (extreme greed), VIX 40+ → F&G 10 (extreme fear)
+            max(0, min(100, 100 - ((v - 10) / 30) * 90))
+        }
+
+        let factorData = RiskFactorData(
+            rsi: rsi,
+            sma200: sma200,
+            currentPrice: price,
+            bullMarketBands: bullMarketBands,
+            fundingRate: nil, // Not applicable for stocks
+            fearGreedValue: fearGreed,
+            vixValue: vix,
+            dxyValue: dxy,
+            oilValue: oil,
+            fetchedAt: Date()
+        )
+
+        cache[cacheKey] = CacheEntry(data: factorData, timestamp: Date())
+        logDebug("Stock factor data complete for \(symbol) (\(factorData.availableCount) factors)", category: .network)
+        return factorData
+    }
+
+    // MARK: - Price History Technical Calculations
+
+    /// Calculate 14-period RSI from price history tuples
+    private func calculateRSI(from prices: [(date: Date, price: Double)]) -> Double? {
+        guard prices.count >= 15 else { return nil }
+        let recent = Array(prices.suffix(15))
+
+        var gains: [Double] = []
+        var losses: [Double] = []
+
+        for i in 1..<recent.count {
+            let change = recent[i].price - recent[i-1].price
+            gains.append(max(change, 0))
+            losses.append(max(-change, 0))
+        }
+
+        let avgGain = gains.reduce(0, +) / 14.0
+        let avgLoss = losses.reduce(0, +) / 14.0
+        guard avgLoss > 0 else { return 100.0 }
+
+        let rs = avgGain / avgLoss
+        return 100.0 - (100.0 / (1.0 + rs))
+    }
+
+    /// Calculate 200-day SMA from price history tuples
+    private func calculateSMA200(from prices: [(date: Date, price: Double)]) -> Double? {
+        guard prices.count >= 200 else { return nil }
+        let last200 = prices.suffix(200).map(\.price)
+        return last200.reduce(0, +) / Double(last200.count)
+    }
+
+    /// Calculate Bull Market Support Bands (20W SMA + 21W EMA) from daily price history
+    private func calculateBullMarketBands(from prices: [(date: Date, price: Double)], currentPrice: Double?) -> BullMarketSupportBands? {
+        guard let price = currentPrice, prices.count >= 147 else { return nil }
+
+        let calendar = Calendar(identifier: .iso8601)
+        var weeklyCloses: [(yearWeek: Int, close: Double)] = []
+        var currentYearWeek = 0
+
+        for point in prices {
+            let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: point.date)
+            let yw = (components.yearForWeekOfYear ?? 0) * 100 + (components.weekOfYear ?? 0)
+
+            if yw != currentYearWeek {
+                weeklyCloses.append((yearWeek: yw, close: point.price))
+                currentYearWeek = yw
+            } else {
+                weeklyCloses[weeklyCloses.count - 1] = (yearWeek: yw, close: point.price)
+            }
+        }
+
+        if weeklyCloses.count > 1 { weeklyCloses.removeLast() }
+        guard weeklyCloses.count >= 21 else { return nil }
+
+        let closingPrices = weeklyCloses.map(\.close)
+
+        let last20 = Array(closingPrices.suffix(20))
+        let sma20Week = last20.reduce(0, +) / Double(last20.count)
+
+        let last21 = Array(closingPrices.suffix(21))
+        let multiplier = 2.0 / 22.0
+        var ema21Week = last21[0]
+        for i in 1..<last21.count {
+            ema21Week = (last21[i] - ema21Week) * multiplier + ema21Week
+        }
+
+        return BullMarketSupportBands(sma20Week: sma20Week, ema21Week: ema21Week, currentPrice: price)
     }
 
     // MARK: - Macro Data Fetching (Alpha Vantage - 2hr cache)
@@ -170,88 +291,7 @@ actor RiskFactorFetcher {
         return (vix, dxy)
     }
 
-    // MARK: - Taapi.io Sequential Fetching with Rate Limiting
-
-    private func fetchTaapiDataSequentially(coin: String) async -> (rsi: Double?, sma: Double?, price: Double?) {
-        logDebug("Fetching Taapi.io data sequentially (16s delay between calls)...", category: .network)
-
-        // Fetch price from Coinbase in parallel (no rate limit) while we wait for Taapi
-        async let priceTask = fetchPriceFromCoinbase(coin: coin)
-
-        // First Taapi call: RSI
-        await waitForTaapiRateLimit()
-        let rsi = await fetchRSI(coin: coin)
-
-        // Second Taapi call: SMA200
-        await waitForTaapiRateLimit()
-        let sma = await fetchSMA200(coin: coin)
-
-        // Get the price (already fetched in parallel)
-        let price = await priceTask
-
-        return (rsi, sma, price)
-    }
-
-    private func waitForTaapiRateLimit() async {
-        guard let lastCall = lastTaapiCallTime else {
-            // First call, no wait needed
-            lastTaapiCallTime = Date()
-            return
-        }
-
-        let elapsed = Date().timeIntervalSince(lastCall)
-        if elapsed < taapiDelaySeconds {
-            let waitTime = taapiDelaySeconds - elapsed
-            logDebug("Rate limit: waiting \(String(format: "%.1f", waitTime))s before next Taapi.io call...", category: .network)
-            try? await Task.sleep(nanoseconds: UInt64(waitTime * 1_000_000_000))
-        }
-        lastTaapiCallTime = Date()
-    }
-
-    // MARK: - Individual Fetch Methods
-
-    private func fetchRSI(coin: String) async -> Double? {
-        // Try Taapi.io first
-        do {
-            let symbol = "\(coin.uppercased())/USDT"
-            let rsi = try await technicalService.fetchRSI(
-                symbol: symbol,
-                exchange: "binance",
-                interval: "1d",
-                period: 14
-            )
-            logDebug("RSI for \(coin) (Taapi): \(rsi)", category: .network)
-            return rsi
-        } catch {
-            logWarning("RSI fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Coinbase fallback...", category: .network)
-            // Fall back to calculating from Coinbase klines
-            return await fetchRSIFromCoinbase(coin: coin)
-        }
-    }
-
-    private func fetchSMA200(coin: String) async -> Double? {
-        // Try Taapi.io first
-        do {
-            let symbol = "\(coin.uppercased())/USDT"
-            let smaValues = try await technicalService.fetchSMAValues(
-                symbol: symbol,
-                exchange: "binance",
-                periods: [200],
-                interval: "1d"
-            )
-            let sma200 = smaValues[200]
-            if let sma = sma200 {
-                logDebug("SMA200 for \(coin) (Taapi): \(sma)", category: .network)
-            }
-            return sma200
-        } catch {
-            logWarning("SMA200 fetch failed for \(coin) via Taapi: \(error.localizedDescription), trying Coinbase fallback...", category: .network)
-            // Fall back to calculating from Coinbase klines
-            return await fetchSMA200FromCoinbase(coin: coin)
-        }
-    }
-
-    // MARK: - Coinbase Fallback Methods
+    // MARK: - Coinbase Technical Indicators
 
     /// Calculate RSI from Coinbase kline data (14-period)
     private func fetchRSIFromCoinbase(coin: String) async -> Double? {
@@ -321,22 +361,7 @@ actor RiskFactorFetcher {
         }
     }
 
-    private func fetchCurrentPrice(coin: String) async -> Double? {
-        do {
-            let symbol = "\(coin.uppercased())/USDT"
-            let price = try await technicalService.fetchCurrentPrice(
-                symbol: symbol,
-                exchange: "binance"
-            )
-            logDebug("Price for \(coin): \(price)", category: .network)
-            return price
-        } catch {
-            logWarning("Price fetch failed for \(coin): \(error.localizedDescription)", category: .network)
-            return nil
-        }
-    }
-
-    /// Fetch current price from Coinbase (no rate limit)
+    /// Fetch current price from Coinbase
     private func fetchPriceFromCoinbase(coin: String) async -> Double? {
         do {
             let pair = "\(coin.uppercased())-USD"

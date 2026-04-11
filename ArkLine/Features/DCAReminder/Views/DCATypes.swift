@@ -53,6 +53,7 @@ struct CoinOption: Identifiable, Equatable {
     let hasRiskData: Bool
 
     static let cryptoCoins: [CoinOption] = [
+        // Coins with risk data (AssetRiskConfig)
         CoinOption(symbol: "BTC", name: "Bitcoin", hasRiskData: true),
         CoinOption(symbol: "ETH", name: "Ethereum", hasRiskData: true),
         CoinOption(symbol: "SOL", name: "Solana", hasRiskData: true),
@@ -61,6 +62,15 @@ struct CoinOption: Identifiable, Equatable {
         CoinOption(symbol: "UNI", name: "Uniswap", hasRiskData: true),
         CoinOption(symbol: "ONDO", name: "Ondo", hasRiskData: true),
         CoinOption(symbol: "RENDER", name: "Render", hasRiskData: true),
+        CoinOption(symbol: "TAO", name: "Bittensor", hasRiskData: true),
+        CoinOption(symbol: "ZEC", name: "Zcash", hasRiskData: true),
+        CoinOption(symbol: "XRP", name: "XRP", hasRiskData: true),
+        CoinOption(symbol: "LTC", name: "Litecoin", hasRiskData: true),
+        CoinOption(symbol: "AAVE", name: "Aave", hasRiskData: true),
+        CoinOption(symbol: "ENA", name: "Ethena", hasRiskData: true),
+        CoinOption(symbol: "JUP", name: "Jupiter", hasRiskData: true),
+        CoinOption(symbol: "SYRUP", name: "Syrup", hasRiskData: true),
+        // Coins without risk data
         CoinOption(symbol: "ADA", name: "Cardano", hasRiskData: false),
         CoinOption(symbol: "DOT", name: "Polkadot", hasRiskData: false),
         CoinOption(symbol: "AVAX", name: "Avalanche", hasRiskData: false),
@@ -68,8 +78,11 @@ struct CoinOption: Identifiable, Equatable {
         CoinOption(symbol: "DOGE", name: "Dogecoin", hasRiskData: false),
         CoinOption(symbol: "TRX", name: "TRON", hasRiskData: false),
         CoinOption(symbol: "SHIB", name: "Shiba Inu", hasRiskData: false),
-        CoinOption(symbol: "XRP", name: "XRP", hasRiskData: false),
     ]
+
+    static let stockCoins: [CoinOption] = AssetRiskConfig.stockConfigs.map {
+        CoinOption(symbol: $0.assetId, name: $0.displayName, hasRiskData: true)
+    }
 }
 
 // MARK: - Risk Source Type

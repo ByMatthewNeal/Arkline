@@ -110,3 +110,70 @@ struct CoinRowView: View {
             .padding(.leading, 70)
     }
 }
+
+// MARK: - Stock Picker View
+struct StockPickerView: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+    @Binding var selectedCoin: CoinOption?
+
+    private var textPrimary: Color {
+        AppColors.textPrimary(colorScheme)
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                (colorScheme == .dark ? Color(hex: "0F0F0F") : Color(hex: "F5F5F7"))
+                    .ignoresSafeArea()
+
+                VStack(spacing: 16) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 14))
+                            .foregroundColor(AppColors.accent)
+
+                        Text("All stocks have risk level data for your DCA reminder")
+                            .font(.system(size: 13))
+                            .foregroundColor(textPrimary.opacity(0.6))
+
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(CoinOption.stockCoins) { stock in
+                                CoinRowView(
+                                    coin: stock,
+                                    hasRiskData: true,
+                                    onSelect: {
+                                        selectedCoin = stock
+                                        dismiss()
+                                    }
+                                )
+                            }
+                        }
+                        .background(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                        .cornerRadius(16)
+                        .padding(.horizontal, 20)
+                    }
+                }
+                .padding(.top, 16)
+            }
+            .navigationTitle("Choose Stock")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(textPrimary)
+                    }
+                }
+            }
+            #endif
+        }
+    }
+}
