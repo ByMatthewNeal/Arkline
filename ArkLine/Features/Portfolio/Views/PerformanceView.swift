@@ -48,6 +48,60 @@ struct PerformanceView: View {
         return viewModel.historyPoints.filter { $0.date >= cutoff }
     }
 
+    /// Compute period-specific metrics from filtered history
+    private var periodMetrics: PerformanceMetrics {
+        guard selectedPeriod != .all else { return viewModel.performanceMetrics }
+
+        let points = filteredHistoryPoints
+        guard let firstValue = points.first?.value, firstValue > 0,
+              let lastValue = points.last?.value else {
+            return viewModel.performanceMetrics
+        }
+
+        let periodReturn = lastValue - firstValue
+        let periodReturnPct = (periodReturn / firstValue) * 100
+
+        // Recalculate risk metrics for this period
+        let dailyReturns: [Double] = zip(points.dropFirst(), points).map { current, prev in
+            guard prev.value > 0 else { return 0 }
+            return (current.value - prev.value) / prev.value
+        }
+
+        let avgReturn = dailyReturns.isEmpty ? 0 : dailyReturns.reduce(0, +) / Double(dailyReturns.count)
+        let variance = dailyReturns.isEmpty ? 0 : dailyReturns.map { pow($0 - avgReturn, 2) }.reduce(0, +) / Double(dailyReturns.count)
+        let dailyVol = sqrt(variance)
+        let annualizedVol = dailyVol * sqrt(365) * 100
+
+        let riskFreeRate = 0.05 / 365
+        let excessReturns = dailyReturns.map { $0 - riskFreeRate }
+        let avgExcess = excessReturns.isEmpty ? 0 : excessReturns.reduce(0, +) / Double(excessReturns.count)
+        let excessVariance = excessReturns.isEmpty ? 0 : excessReturns.map { pow($0 - avgExcess, 2) }.reduce(0, +) / Double(excessReturns.count)
+        let sharpe = excessVariance > 0 ? (avgExcess / sqrt(excessVariance)) * sqrt(365) : 0
+
+        var maxDrawdown = 0.0
+        var maxDrawdownValue = 0.0
+        var peak = points.first?.value ?? 0
+        for point in points {
+            if point.value > peak { peak = point.value }
+            let drawdown = peak > 0 ? (peak - point.value) / peak * 100 : 0
+            let drawdownVal = peak - point.value
+            if drawdown > maxDrawdown { maxDrawdown = drawdown; maxDrawdownValue = drawdownVal }
+        }
+
+        return PerformanceMetrics(
+            totalReturn: periodReturn,
+            totalReturnPercentage: periodReturnPct,
+            totalInvested: viewModel.performanceMetrics.totalInvested,
+            currentValue: lastValue,
+            numberOfAssets: viewModel.performanceMetrics.numberOfAssets,
+            maxDrawdown: maxDrawdown,
+            maxDrawdownValue: maxDrawdownValue,
+            sharpeRatio: sharpe,
+            volatility: annualizedVol,
+            monthlyInvestments: viewModel.performanceMetrics.monthlyInvestments
+        )
+    }
+
     private var performanceContent: some View {
         VStack(spacing: 20) {
             // Time period picker
@@ -59,12 +113,12 @@ struct PerformanceView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal, 20)
 
-            // Return Summary
-            ReturnSummaryCard(metrics: viewModel.performanceMetrics)
+            // Return Summary (period-specific)
+            ReturnSummaryCard(metrics: periodMetrics)
                 .padding(.horizontal, 20)
 
-            // Risk Metrics
-            RiskMetricsCard(metrics: viewModel.performanceMetrics)
+            // Risk Metrics (period-specific)
+            RiskMetricsCard(metrics: periodMetrics)
                 .padding(.horizontal, 20)
 
             // Portfolio Value Chart

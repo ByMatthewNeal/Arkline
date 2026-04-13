@@ -24,8 +24,8 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifyQPSChanges)
     private var qpsChanges = true
 
-    @AppStorage(Constants.UserDefaults.notifySignalNew)
-    private var signalNew = true
+    @AppStorage(Constants.UserDefaults.notifyInsights)
+    private var insights = true
 
     @AppStorage(Constants.UserDefaults.notifySignalT1Hit)
     private var signalT1Hit = true
@@ -38,27 +38,6 @@ struct NotificationsDetailView: View {
 
     @AppStorage(Constants.UserDefaults.notifySignalExpiry)
     private var signalExpiry = true
-
-    @AppStorage(Constants.UserDefaults.notifySignalProximity)
-    private var signalProximity = true
-
-    @AppStorage(Constants.UserDefaults.notifyInsights)
-    private var insights = true
-
-    @AppStorage(Constants.UserDefaults.notifyEmail)
-    private var emailNotifications = true
-
-    @AppStorage(Constants.UserDefaults.notifyEmailMarketAlerts)
-    private var emailMarketAlerts = true
-
-    @AppStorage(Constants.UserDefaults.notifyEmailInsights)
-    private var emailInsights = true
-
-    @AppStorage(Constants.UserDefaults.notifyEmailDCAReminders)
-    private var emailDCAReminders = true
-
-    @AppStorage(Constants.UserDefaults.notifyEmailAccountUpdates)
-    private var emailAccountUpdates = true
 
     var body: some View {
         ZStack {
@@ -143,13 +122,12 @@ struct NotificationsDetailView: View {
                         NotificationRow(
                             icon: "scope",
                             iconColor: AppColors.success,
-                            title: "Swing Trade Alerts",
-                            description: "Master toggle for all signal notifications"
+                            title: "Trade Signals",
+                            description: "New Fibonacci-based trade signals"
                         )
                     }
-                    .onChange(of: swingSignals) { _, newValue in
+                    .onChange(of: swingSignals) { _, _ in
                         Haptics.selection()
-                        syncSignalPreferences()
                     }
 
                     Toggle(isOn: $qpsChanges) {
@@ -171,19 +149,6 @@ struct NotificationsDetailView: View {
                 // MARK: - Signal Alert Types
                 if swingSignals {
                     Section {
-                        Toggle(isOn: $signalNew) {
-                            NotificationRow(
-                                icon: "plus.circle.fill",
-                                iconColor: AppColors.accent,
-                                title: "New Signals",
-                                description: "When a new trade signal is generated"
-                            )
-                        }
-                        .onChange(of: signalNew) { _, _ in
-                            Haptics.selection()
-                            syncSignalPreferences()
-                        }
-
                         Toggle(isOn: $signalT1Hit) {
                             NotificationRow(
                                 icon: "target",
@@ -235,19 +200,6 @@ struct NotificationsDetailView: View {
                             Haptics.selection()
                             syncSignalPreferences()
                         }
-
-                        Toggle(isOn: $signalProximity) {
-                            NotificationRow(
-                                icon: "location.circle.fill",
-                                iconColor: AppColors.accent,
-                                title: "Entry Zone Approaching",
-                                description: "When price nears an active signal's entry zone"
-                            )
-                        }
-                        .onChange(of: signalProximity) { _, _ in
-                            Haptics.selection()
-                            syncSignalPreferences()
-                        }
                     } header: {
                         Text("Signal Alert Types")
                     }
@@ -270,66 +222,6 @@ struct NotificationsDetailView: View {
                     }
                 } header: {
                     Text("Insights")
-                }
-                .listRowBackground(AppColors.cardBackground(colorScheme))
-
-                // MARK: - Email
-                Section {
-                    Toggle(isOn: $emailNotifications) {
-                        NotificationRow(
-                            icon: "envelope.fill",
-                            iconColor: AppColors.accent,
-                            title: "Email Notifications",
-                            description: "Master toggle for all email notifications"
-                        )
-                    }
-                    .onChange(of: emailNotifications) { _, newValue in
-                        Haptics.selection()
-                    }
-
-                    if emailNotifications {
-                        Toggle(isOn: $emailMarketAlerts) {
-                            NotificationRow(
-                                icon: "chart.line.uptrend.xyaxis",
-                                iconColor: AppColors.warning,
-                                title: "Market Alerts",
-                                description: "Significant market movements and macro events"
-                            )
-                        }
-                        .onChange(of: emailMarketAlerts) { _, _ in Haptics.selection() }
-
-                        Toggle(isOn: $emailInsights) {
-                            NotificationRow(
-                                icon: "megaphone",
-                                iconColor: AppColors.accent,
-                                title: "Insights & Broadcasts",
-                                description: "New insights and broadcasts from the team"
-                            )
-                        }
-                        .onChange(of: emailInsights) { _, _ in Haptics.selection() }
-
-                        Toggle(isOn: $emailDCAReminders) {
-                            NotificationRow(
-                                icon: "calendar.badge.clock",
-                                iconColor: AppColors.success,
-                                title: "DCA Reminders",
-                                description: "Scheduled purchase reminders"
-                            )
-                        }
-                        .onChange(of: emailDCAReminders) { _, _ in Haptics.selection() }
-
-                        Toggle(isOn: $emailAccountUpdates) {
-                            NotificationRow(
-                                icon: "person.crop.circle",
-                                iconColor: AppColors.textSecondary,
-                                title: "Account Updates",
-                                description: "Security alerts and account changes"
-                            )
-                        }
-                        .onChange(of: emailAccountUpdates) { _, _ in Haptics.selection() }
-                    }
-                } header: {
-                    Text("Email")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
@@ -356,12 +248,10 @@ struct NotificationsDetailView: View {
         Task {
             guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
             let prefs: [String: Bool] = [
-                "signal_new": swingSignals && signalNew,
                 "signal_t1_hit": swingSignals && signalT1Hit,
                 "signal_stop_loss": swingSignals && signalStopLoss,
                 "signal_runner_close": swingSignals && signalRunnerClose,
                 "signal_expiry": swingSignals && signalExpiry,
-                "signal_proximity": swingSignals && signalProximity,
             ]
             do {
                 try await SupabaseManager.shared.client
