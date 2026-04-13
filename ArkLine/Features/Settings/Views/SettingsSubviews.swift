@@ -215,9 +215,10 @@ struct RiskLevelSelectView: View {
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
             } header: {
-                Text("Select coins to track for risk analysis")
+                Text("Select assets to track for risk analysis")
             } footer: {
-                Text("Selected coins will be displayed as risk widgets on your Home Screen.")
+                Text("Selected assets will be displayed as risk widgets on your Home Screen.")
+                    .padding(.bottom, 80)
             }
         }
         #if os(iOS)
@@ -227,7 +228,7 @@ struct RiskLevelSelectView: View {
         #endif
         .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Risk Coins")
+        .navigationTitle("Risk Assets")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

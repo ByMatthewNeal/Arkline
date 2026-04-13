@@ -138,7 +138,7 @@ actor StockPriceStore {
     // MARK: - Disk Persistence
 
     private var cacheDirectory: URL {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first ?? FileManager.default.temporaryDirectory
         let dir = caches.appendingPathComponent("StockPriceHistory", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir

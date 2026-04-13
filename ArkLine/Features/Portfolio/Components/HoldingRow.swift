@@ -19,7 +19,11 @@ struct HoldingRow: View {
             if isRealEstate {
                 RealEstateIconView(size: 44)
             } else {
-                CoinIconView(symbol: holding.symbol, size: 44)
+                CoinIconView(
+                    symbol: holding.symbol,
+                    size: 44,
+                    iconUrl: AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
+                )
             }
 
             // Info
@@ -87,7 +91,11 @@ struct HoldingRowCompact: View {
             if isRealEstate {
                 RealEstateIconView(size: 36)
             } else {
-                CoinIconView(symbol: holding.symbol, size: 36)
+                CoinIconView(
+                    symbol: holding.symbol,
+                    size: 36,
+                    iconUrl: AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
+                )
             }
 
             VStack(alignment: .leading, spacing: 2) {

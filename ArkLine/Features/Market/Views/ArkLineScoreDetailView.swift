@@ -7,6 +7,9 @@ struct ArkLineScoreDetailView: View {
     var fearGreedValue: Int? = nil
     var fearGreedClassification: String? = nil
     @State private var showShareSheet = false
+    @State private var scoreHistory: [RiskSnapshotDTO] = []
+    @State private var isLoadingHistory = false
+    @State private var selectedHistoryPoint: RiskSnapshotDTO?
 
     private var tierColor: Color {
         Color(hex: riskScore.tier.color)
@@ -27,6 +30,9 @@ struct ArkLineScoreDetailView: View {
                 // Tier Spectrum Bar
                 TierSpectrumBar(score: riskScore.score)
                     .padding(.horizontal, ArkSpacing.lg)
+
+                // Score History
+                scoreHistorySection
 
                 // Component Breakdown
                 ComponentBreakdownSection(components: riskScore.components)
@@ -62,6 +68,131 @@ struct ArkLineScoreDetailView: View {
                 fearGreedValue: fearGreedValue,
                 fearGreedClassification: fearGreedClassification
             )
+        }
+        .task {
+            await loadScoreHistory()
+        }
+    }
+
+    // MARK: - Score History
+
+    private var scoreHistorySection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            Text("SCORE HISTORY")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(1)
+                .padding(.horizontal, ArkSpacing.lg)
+
+            if isLoadingHistory {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+            } else if scoreHistory.count >= 2 {
+                // Chart
+                scoreChart
+                    .padding(.horizontal, ArkSpacing.lg)
+
+                // Selected point detail
+                if let point = selectedHistoryPoint {
+                    HStack {
+                        Text(point.recordedDate)
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        Text("Score: \(point.compositeScore)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(Color(hex: SentimentTier(rawValue: point.tier)?.color ?? "3B82F6"))
+                        Text("(\(point.tier.capitalized))")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.horizontal, ArkSpacing.lg)
+                }
+            } else {
+                Text("Not enough history data yet")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+            }
+        }
+        .padding(.vertical, ArkSpacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+        )
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
+    private var scoreChart: some View {
+        let data = scoreHistory.sorted { $0.recordedDate < $1.recordedDate }
+        let scores = data.map { Double($0.compositeScore) }
+        let maxVal = scores.max() ?? 100
+        let minVal = scores.min() ?? 0
+        let range = max(maxVal - minVal, 1)
+
+        return GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let stepX = w / CGFloat(max(data.count - 1, 1))
+
+            ZStack(alignment: .topLeading) {
+                // 50 line (neutral)
+                let neutralY = h * CGFloat((maxVal - 50) / range)
+                if neutralY > 0 && neutralY < h {
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: neutralY))
+                        path.addLine(to: CGPoint(x: w, y: neutralY))
+                    }
+                    .stroke(AppColors.textSecondary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                }
+
+                // Line
+                Path { path in
+                    for (i, score) in scores.enumerated() {
+                        let x = CGFloat(i) * stepX
+                        let y = h * CGFloat((maxVal - score) / range)
+                        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                        else { path.addLine(to: CGPoint(x: x, y: y)) }
+                    }
+                }
+                .stroke(tierColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+                // Gradient fill
+                Path { path in
+                    for (i, score) in scores.enumerated() {
+                        let x = CGFloat(i) * stepX
+                        let y = h * CGFloat((maxVal - score) / range)
+                        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                        else { path.addLine(to: CGPoint(x: x, y: y)) }
+                    }
+                    path.addLine(to: CGPoint(x: CGFloat(scores.count - 1) * stepX, y: h))
+                    path.addLine(to: CGPoint(x: 0, y: h))
+                    path.closeSubpath()
+                }
+                .fill(LinearGradient(colors: [tierColor.opacity(0.2), tierColor.opacity(0.02)], startPoint: .top, endPoint: .bottom))
+            }
+        }
+        .frame(height: 120)
+    }
+
+    private func loadScoreHistory() async {
+        guard SupabaseManager.shared.isConfigured else { return }
+        isLoadingHistory = true
+        defer { isLoadingHistory = false }
+
+        do {
+            let rows: [RiskSnapshotDTO] = try await SupabaseManager.shared.client
+                .from(SupabaseTable.riskSnapshots.rawValue)
+                .select()
+                .order("recorded_date", ascending: false)
+                .limit(90)
+                .execute()
+                .value
+            scoreHistory = rows
+        } catch {
+            logWarning("Failed to load score history: \(error.localizedDescription)", category: .network)
         }
     }
 }

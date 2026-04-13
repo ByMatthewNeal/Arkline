@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Customize Home View
 /// Allows users to select which widgets appear on their home screen
@@ -398,22 +399,40 @@ struct CoreAssetToggleRow: View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
                 // Asset icon
-                ZStack {
-                    Circle()
-                        .fill(AppColors.accent.opacity(0.15))
-                        .frame(width: 40, height: 40)
-
-                    if asset.isSystemIcon {
-                        Image(systemName: asset.icon)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(AppColors.accent)
-                    } else {
-                        Image(asset.icon)
-                            .resizable()
-                            .renderingMode(.template)
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(AppColors.accent)
+                if let logoURL = AssetRiskConfig.forCoin(asset.rawValue)?.logoURL {
+                    KFImage(logoURL)
+                        .resizable()
+                        .placeholder {
+                            ZStack {
+                                Circle()
+                                    .fill(AppColors.accent.opacity(0.15))
+                                    .frame(width: 40, height: 40)
+                                Text(asset.rawValue.prefix(1))
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
+                        .fade(duration: 0.2)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 32, height: 32)
+                        .clipShape(Circle())
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(AppColors.accent.opacity(0.15))
+                            .frame(width: 40, height: 40)
+                        if asset.isSystemIcon {
+                            Image(systemName: asset.icon)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(AppColors.accent)
+                        } else {
+                            Image(asset.icon)
+                                .resizable()
+                                .renderingMode(.template)
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(AppColors.accent)
+                        }
                     }
                 }
 

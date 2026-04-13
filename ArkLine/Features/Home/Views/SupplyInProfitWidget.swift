@@ -304,16 +304,18 @@ Note: Data is updated daily with approximately a 30-day lag.
         Task {
             do {
                 let service = ServiceContainer.shared.santimentService
-                async let supplyTask = service.fetchSupplyInProfitHistory(days: 5000)
-                async let btcTask = fetchBTCPriceHistory()
-
-                let history = try await supplyTask
-                let priceMap = await btcTask
+                // Fetch supply history (5 years is sufficient for all chart ranges)
+                let history = try await service.fetchSupplyInProfitHistory(days: 1825)
 
                 await MainActor.run {
                     self.historyData = history.reversed()
-                    self.btcPriceMap = priceMap
                     self.isLoading = false
+                }
+
+                // Fetch BTC price overlay in background after chart appears
+                let priceMap = await fetchBTCPriceHistory()
+                await MainActor.run {
+                    self.btcPriceMap = priceMap
                 }
             } catch {
                 await MainActor.run {

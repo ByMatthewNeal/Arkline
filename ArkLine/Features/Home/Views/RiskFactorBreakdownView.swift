@@ -26,13 +26,13 @@ struct RiskFactorBreakdownView: View {
 
                 // Factor availability badge (only count factors that have data)
                 Text("\(multiFactorRisk.availableFactorCount) factors")
-                    .font(.footnote)
-                    .foregroundColor(textSecondary.opacity(0.85))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.accent)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(
                         Capsule()
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.05))
+                            .fill(AppColors.accent.opacity(colorScheme == .dark ? 0.15 : 0.1))
                     )
             }
 

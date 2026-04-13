@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Amount Input Card
 struct DCAAmountInputCard: View {
@@ -246,8 +247,9 @@ struct DCAAssetPickerCard: View {
                         )
                     }
                 }
+                .padding(.bottom, 20)
             }
-            .frame(maxHeight: 280)
+            .frame(maxHeight: 350)
         }
         .padding(20)
         .glassCard(cornerRadius: 16)
@@ -411,6 +413,22 @@ struct DCAAssetIconView: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
+        if let logoURL = AssetRiskConfig.forSymbol(asset.symbol)?.logoURL {
+            KFImage(logoURL)
+                .resizable()
+                .placeholder {
+                    fallbackIcon
+                }
+                .fade(duration: 0.2)
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size * 0.75, height: size * 0.75)
+                .clipShape(Circle())
+        } else {
+            fallbackIcon
+        }
+    }
+
+    private var fallbackIcon: some View {
         ZStack {
             Circle()
                 .fill(assetColor.opacity(0.15))

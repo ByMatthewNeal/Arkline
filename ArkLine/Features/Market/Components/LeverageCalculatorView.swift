@@ -17,6 +17,7 @@ struct LeverageCalculatorView: View {
     @State private var walletText: String = ""
     @State private var riskPercent: Double = 0
     @State private var riskSize: RiskSize = .oneR
+    @State private var riskTolerance: RiskTolerance = .moderate
     @Environment(\.colorScheme) private var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -24,7 +25,7 @@ struct LeverageCalculatorView: View {
     private var subtleBg: Color { colorScheme == .dark ? Color(hex: "2A2A2E") : Color(hex: "F5F5F7") }
 
     private var walletAmount: Double {
-        Double(walletText.replacingOccurrences(of: ",", with: "")) ?? 0
+        walletText.asLocalizedDouble ?? 0
     }
 
     private var isWalletMode: Bool {
@@ -35,14 +36,14 @@ struct LeverageCalculatorView: View {
         if isWalletMode {
             return walletAmount * (riskPercent / 100) * riskSize.multiplier
         }
-        return Double(marginText.replacingOccurrences(of: ",", with: "")) ?? 0
+        return marginText.asLocalizedDouble ?? 0
     }
 
     private var leverageInt: Int { max(1, Int(leverage.rounded())) }
 
     private var calculation: LeverageCalculation? {
         guard leverageInt > 1, marginAmount > 0 else { return nil }
-        return LeverageCalculation(signal: signal, leverage: leverageInt, margin: marginAmount, strategy: entryStrategy)
+        return LeverageCalculation(signal: signal, leverage: leverageInt, margin: marginAmount, strategy: entryStrategy, riskTolerance: riskTolerance)
     }
 
     private var hasEntryZone: Bool {
@@ -59,7 +60,7 @@ struct LeverageCalculatorView: View {
         guard entry > 0 else { return 200 }
         let stopPct = abs(signal.stopLoss - entry) / entry * 100
         guard stopPct > 0 else { return 200 }
-        return max(1, Int(floor((100.0 / stopPct) * 0.55)))
+        return max(1, Int(floor((100.0 / stopPct) * riskTolerance.safetyFactor)))
     }
 
     var body: some View {
@@ -137,6 +138,11 @@ struct LeverageCalculatorView: View {
             if signal.isCounterTrend || signal.isScalp {
                 riskSize = .halfR
             }
+            // Restore saved risk tolerance
+            if let savedTolerance = UserDefaults.standard.string(forKey: Constants.UserDefaults.leverageRiskTolerance),
+               let tolerance = RiskTolerance(rawValue: savedTolerance) {
+                riskTolerance = tolerance
+            }
             // Restore saved wallet size
             let savedWallet = UserDefaults.standard.string(forKey: Constants.UserDefaults.leverageWalletSize) ?? ""
             if !savedWallet.isEmpty && walletText.isEmpty {
@@ -160,6 +166,7 @@ struct LeverageCalculatorView: View {
         }
         .onChange(of: riskPercent) { _, _ in onCalculationChange?(calculation) }
         .onChange(of: riskSize) { _, _ in onCalculationChange?(calculation) }
+        .onChange(of: riskTolerance) { _, _ in onCalculationChange?(calculation) }
     }
 
     // MARK: - Input Section
@@ -257,7 +264,7 @@ struct LeverageCalculatorView: View {
                 HStack(spacing: 8) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 6) {
-                            ForEach([1.0, 2.0, 5.0, 10.0, 25.0], id: \.self) { pct in
+                            ForEach([1.0, 2.0, 5.0, 7.0, 10.0, 15.0, 25.0], id: \.self) { pct in
                                 quickButton("\(Int(pct))%", isActive: riskPercent == pct) {
                                     riskPercent = pct
                                 }
@@ -337,6 +344,47 @@ struct LeverageCalculatorView: View {
                         }
                     }
                 }
+            }
+
+            // Risk Tolerance
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Risk Tolerance")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    Text("Max loss per trade: \(riskTolerance.maxMarginLoss)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(riskTolerance == .aggressive ? AppColors.error : riskTolerance == .moderate ? AppColors.warning : AppColors.success)
+                }
+
+                HStack(spacing: 0) {
+                    ForEach(RiskTolerance.allCases, id: \.self) { tolerance in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                riskTolerance = tolerance
+                                UserDefaults.standard.set(tolerance.rawValue, forKey: Constants.UserDefaults.leverageRiskTolerance)
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: tolerance.icon)
+                                    .font(.system(size: 10))
+                                Text(tolerance.rawValue)
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(riskTolerance == tolerance ? .white : AppColors.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(riskTolerance == tolerance ? toleranceColor(tolerance) : toleranceColor(tolerance).opacity(colorScheme == .dark ? 0.12 : 0.06))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .cornerRadius(10)
+
+                Text(riskTolerance.description)
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textSecondary)
             }
 
             // Mode
@@ -425,6 +473,8 @@ struct LeverageCalculatorView: View {
 
             resultRow("Notional Position", value: formatDollar(calc.notionalPosition))
             resultRow("Quantity (\(signal.asset))", value: formatQuantity(calc.assetQuantity))
+            resultRow("Stop Loss Price", value: "$\(calc.stopLossPrice.asSignalPrice)", valueColor: AppColors.error)
+            resultRow("Stop Loss Distance", value: String(format: "%.1f%%", calc.stopLossPercent), valueColor: AppColors.error)
             resultRow("Liquidation Price", value: "$\(calc.entryPrice > 1000 ? String(format: "%.0f", calc.liquidationPrice) : calc.liquidationPrice.asSignalPrice)")
             resultRow("Liquidation Distance", value: String(format: "%.2f%%", calc.liquidationPercent))
 
@@ -665,6 +715,14 @@ struct LeverageCalculatorView: View {
     }
 
     // MARK: - Helpers
+
+    private func toleranceColor(_ tolerance: RiskTolerance) -> Color {
+        switch tolerance {
+        case .conservative: return AppColors.success
+        case .moderate: return AppColors.warning
+        case .aggressive: return AppColors.error
+        }
+    }
 
     private func quickButton(_ label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {

@@ -215,13 +215,13 @@ struct SignalPerformanceHistoryView: View {
 
         let quietWins = quiet.filter { $0.outcome == .win }.count
         let quietHitRate = quiet.isEmpty ? 0 : Double(quietWins) / Double(quiet.count) * 100
-        let quietAvgPnl = quiet.compactMap(\.outcomePct).isEmpty ? 0 :
-            quiet.compactMap(\.outcomePct).reduce(0, +) / Double(quiet.compactMap(\.outcomePct).count)
+        let quietPnls = quiet.compactMap(\.outcomePct)
+        let quietAvgPnl = quietPnls.isEmpty ? 0 : quietPnls.reduce(0, +) / Double(quietPnls.count)
 
         let volWins = volatile.filter { $0.outcome == .win }.count
         let volHitRate = volatile.isEmpty ? 0 : Double(volWins) / Double(volatile.count) * 100
-        let volAvgPnl = volatile.compactMap(\.outcomePct).isEmpty ? 0 :
-            volatile.compactMap(\.outcomePct).reduce(0, +) / Double(volatile.compactMap(\.outcomePct).count)
+        let volPnls = volatile.compactMap(\.outcomePct)
+        let volAvgPnl = volPnls.isEmpty ? 0 : volPnls.reduce(0, +) / Double(volPnls.count)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -344,7 +344,7 @@ struct SignalPerformanceHistoryView: View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
         let numDays = selectedPeriod.calendarDays
-        let startDate = calendar.date(byAdding: .day, value: -(numDays - 1), to: today)!
+        let startDate = calendar.date(byAdding: .day, value: -(numDays - 1), to: today) ?? today
 
         let days: [Date] = (0..<numDays).compactMap { offset in
             calendar.date(byAdding: .day, value: offset, to: startDate)

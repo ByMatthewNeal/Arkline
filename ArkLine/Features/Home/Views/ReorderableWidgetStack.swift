@@ -255,6 +255,7 @@ struct ReorderableWidgetStack: View {
         case .favorites:
             FavoritesSection(
                 assets: viewModel.favoriteAssets,
+                allCryptoAssets: viewModel.cachedCryptoAssets,
                 size: appState.widgetSize(.favorites)
             )
 

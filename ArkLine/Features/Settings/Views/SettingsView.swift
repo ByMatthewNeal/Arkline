@@ -68,7 +68,7 @@ struct SettingsView: View {
                         SettingsRow(
                             icon: "chart.bar.fill",
                             iconColor: AppColors.warning,
-                            title: "Risk Coins",
+                            title: "Risk Assets",
                             value: viewModel.riskCoins.joined(separator: ", ")
                         )
                     }

@@ -162,6 +162,18 @@ struct DCACoinIconView: View {
         "ENA": "https://assets.coingecko.com/coins/images/37986/large/ethena.png",
         "JUP": "https://assets.coingecko.com/coins/images/34188/large/jup.png",
         "SYRUP": "https://assets.coingecko.com/coins/images/14097/large/photo_2021-09-08_03-20-50.jpg",
+        "MATIC": "https://assets.coingecko.com/coins/images/4713/large/polygon.png",
+        "USDT": "https://assets.coingecko.com/coins/images/325/large/Tether.png",
+        "USDC": "https://assets.coingecko.com/coins/images/6319/large/usdc.png",
+        "HYPE": "https://assets.coingecko.com/coins/images/40845/large/hyperliquid.jpeg",
+        "NEAR": "https://assets.coingecko.com/coins/images/10365/large/near.jpg",
+        "APT": "https://assets.coingecko.com/coins/images/26455/large/aptos_round.png",
+        "ARB": "https://assets.coingecko.com/coins/images/16547/large/arbitrum.png",
+        "FET": "https://assets.coingecko.com/coins/images/5681/large/Fetch.jpg",
+        "ATOM": "https://assets.coingecko.com/coins/images/1481/large/cosmos_hub.png",
+        "TIA": "https://assets.coingecko.com/coins/images/31967/large/tia.jpg",
+        "INJ": "https://assets.coingecko.com/coins/images/12882/large/Secondary_Symbol.png",
+        "PEPE": "https://assets.coingecko.com/coins/images/29850/large/pepe-token.jpeg",
     ]
 
     var body: some View {
@@ -170,8 +182,8 @@ struct DCACoinIconView: View {
                 .fill(coinColor.opacity(0.15))
                 .frame(width: size, height: size)
 
-            if let url = Self.coinGeckoImageUrls[symbol.uppercased()].flatMap({ URL(string: $0) })
-                ?? AssetRiskConfig.forSymbol(symbol)?.logoURL {
+            if let url = AssetRiskConfig.forSymbol(symbol)?.logoURL
+                ?? Self.coinGeckoImageUrls[symbol.uppercased()].flatMap({ URL(string: $0) }) {
                 KFImage(url)
                     .resizable()
                     .placeholder {

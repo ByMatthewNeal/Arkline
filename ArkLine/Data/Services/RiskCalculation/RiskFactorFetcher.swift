@@ -244,7 +244,9 @@ actor RiskFactorFetcher {
                 weeklyCloses.append((yearWeek: yw, close: point.price))
                 currentYearWeek = yw
             } else {
-                weeklyCloses[weeklyCloses.count - 1] = (yearWeek: yw, close: point.price)
+                if !weeklyCloses.isEmpty {
+                    weeklyCloses[weeklyCloses.count - 1] = (yearWeek: yw, close: point.price)
+                }
             }
         }
 
@@ -399,7 +401,9 @@ actor RiskFactorFetcher {
                     currentYearWeek = yw
                 } else {
                     // Update the close for this week (last daily close wins)
-                    weeklyCloses[weeklyCloses.count - 1] = (yearWeek: yw, close: candle.close)
+                    if !weeklyCloses.isEmpty {
+                        weeklyCloses[weeklyCloses.count - 1] = (yearWeek: yw, close: candle.close)
+                    }
                 }
             }
 

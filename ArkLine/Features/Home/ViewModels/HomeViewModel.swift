@@ -487,7 +487,7 @@ class HomeViewModel {
             await withTaskGroup(of: (String, [ITCRiskLevel]).self) { group in
                 for symbol in batch {
                     group.addTask {
-                        guard let history = try? await riskService.fetchStockRiskHistory(symbol: symbol, days: 7) else {
+                        guard let history = try? await riskService.fetchStockRiskHistory(symbol: symbol, days: 30) else {
                             return (symbol, [])
                         }
                         return (symbol, history.map { ITCRiskLevel(from: $0) })
@@ -500,16 +500,53 @@ class HomeViewModel {
                 }
             }
         }
+
+        // Fetch live quotes for favorited stocks
+        let favoriteStockSymbols = AssetRiskConfig.stockConfigs
+            .map(\.assetId)
+            .filter { FavoritesStore.shared.isFavorite($0) }
+        if !favoriteStockSymbols.isEmpty {
+            do {
+                let quotes = try await FMPService.shared.fetchStockQuotes(symbols: favoriteStockSymbols)
+                for quote in quotes {
+                    cachedStockQuotes[quote.symbol.uppercased()] = quote
+                }
+            } catch {
+                logDebug("Failed to fetch stock quotes for favorites: \(error.localizedDescription)", category: .network)
+            }
+        }
     }
 
     // Cached crypto assets for favorites filtering
     private(set) var cachedCryptoAssets: [CryptoAsset] = []
 
-    /// Favorite assets computed from FavoritesStore + cached crypto data
+    /// Cached stock quotes for favorite stocks
+    var cachedStockQuotes: [String: FMPQuote] = [:]
+
+    /// Favorite assets computed from FavoritesStore + cached crypto data + stock configs
     var favoriteAssets: [CryptoAsset] {
         let favoriteIds = FavoritesStore.shared.allFavoriteIds()
         guard !favoriteIds.isEmpty else { return [] }
-        return cachedCryptoAssets.filter { favoriteIds.contains($0.id) }
+
+        // Crypto favorites (matched by CoinGecko ID)
+        var results = cachedCryptoAssets.filter { favoriteIds.contains($0.id) }
+
+        // Stock favorites (matched by symbol, with live price if available)
+        for config in AssetRiskConfig.stockConfigs where favoriteIds.contains(config.assetId) {
+            let quote = cachedStockQuotes[config.assetId]
+            let stub = CryptoAsset(
+                id: config.assetId,
+                symbol: config.assetId,
+                name: config.displayName,
+                currentPrice: quote?.price ?? 0,
+                priceChange24h: quote?.change ?? 0,
+                priceChangePercentage24h: quote?.changePercentage ?? 0,
+                iconUrl: config.logoURL?.absoluteString
+            )
+            results.append(stub)
+        }
+
+        return results
     }
 
     // AI Market Summary — show persisted briefing instantly on cold start
