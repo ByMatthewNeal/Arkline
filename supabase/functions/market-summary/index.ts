@@ -324,6 +324,100 @@ Deno.serve(async (req) => {
     sections.push(`HEADLINES: ${payload.newsHeadlines.join("; ")}`)
   }
 
+  // --- Key Support/Resistance Levels (from Fibonacci system) ---
+  try {
+    const keyLevelAssets = ["BTC", "ETH", "SOL"]
+    const keyLevelLines: string[] = []
+
+    for (const asset of keyLevelAssets) {
+      // Fetch active confluence zones sorted by strength
+      const { data: zones } = await supabase
+        .from("fib_confluence_zones")
+        .select("zone_type, zone_mid, strength, distance_pct")
+        .eq("asset", asset)
+        .eq("is_active", true)
+        .order("strength", { ascending: false })
+        .limit(6)
+
+      if (zones && zones.length > 0) {
+        const supports = zones
+          .filter((z: any) => z.zone_type === "support")
+          .slice(0, 2)
+          .map((z: any) => `$${Number(z.zone_mid).toLocaleString()} (str:${z.strength})`)
+        const resistances = zones
+          .filter((z: any) => z.zone_type === "resistance")
+          .slice(0, 2)
+          .map((z: any) => `$${Number(z.zone_mid).toLocaleString()} (str:${z.strength})`)
+
+        const parts: string[] = []
+        if (supports.length > 0) parts.push(`Support: ${supports.join(", ")}`)
+        if (resistances.length > 0) parts.push(`Resistance: ${resistances.join(", ")}`)
+        if (parts.length > 0) keyLevelLines.push(`${asset}: ${parts.join(" | ")}`)
+      }
+    }
+
+    if (keyLevelLines.length > 0) {
+      sections.push(`KEY LEVELS (Fibonacci Confluence):\n${keyLevelLines.join("\n")}`)
+    }
+  } catch (err) {
+    console.error("Failed to fetch key levels:", err instanceof Error ? err.message : String(err))
+  }
+
+  // --- Model Portfolio Updates ---
+  try {
+    // Fetch today's rebalance trades
+    const { data: trades } = await supabase
+      .from("model_portfolio_trades")
+      .select("portfolio_id, trigger, from_allocation, to_allocation, trade_date")
+      .eq("trade_date", todayUTC)
+
+    // Fetch portfolio names
+    const { data: portfolios } = await supabase
+      .from("model_portfolios")
+      .select("id, name, strategy")
+
+    if (trades && trades.length > 0 && portfolios) {
+      const portfolioMap: Record<string, string> = {}
+      for (const p of portfolios) portfolioMap[p.id] = p.name
+
+      const portfolioLines: string[] = []
+      for (const t of trades) {
+        const name = portfolioMap[t.portfolio_id] ?? "Unknown"
+        const toAlloc = t.to_allocation as Record<string, number>
+        const allocStr = Object.entries(toAlloc)
+          .filter(([, pct]) => pct > 0)
+          .sort(([, a], [, b]) => b - a)
+          .map(([asset, pct]) => `${asset} ${pct}%`)
+          .join(", ")
+        portfolioLines.push(`${name}: Rebalanced (${t.trigger}). New allocation: ${allocStr}`)
+      }
+
+      if (portfolioLines.length > 0) {
+        sections.push(`MODEL PORTFOLIOS (today's changes):\n${portfolioLines.join("\n")}`)
+      }
+    } else {
+      // No rebalances — fetch latest NAV for context
+      const { data: latestNav } = await supabase
+        .from("model_portfolio_nav")
+        .select("portfolio_id, nav, allocations, btc_signal, macro_regime")
+        .order("nav_date", { ascending: false })
+        .limit(3)
+
+      if (latestNav && latestNav.length > 0 && portfolios) {
+        const portfolioMap: Record<string, string> = {}
+        for (const p of portfolios) portfolioMap[p.id] = p.name
+
+        const navLines = latestNav.map((n: any) => {
+          const name = portfolioMap[n.portfolio_id] ?? "Unknown"
+          return `${name}: NAV $${Number(n.nav).toLocaleString()}, signal: ${n.btc_signal}, regime: ${n.macro_regime}`
+        })
+        sections.push(`MODEL PORTFOLIOS (no changes today):\n${navLines.join("\n")}`)
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch model portfolio data:", err instanceof Error ? err.message : String(err))
+  }
+
   // --- Daily Positioning Signals (QPS) ---
   try {
     // Fetch today's signals (or most recent date)
@@ -393,17 +487,145 @@ Deno.serve(async (req) => {
     console.error("Failed to fetch QPS signals:", err instanceof Error ? err.message : String(err))
   }
 
+  // --- Weekly Performance (Friday only) ---
+  const isFriday = estWeekday === 5
+  if (isFriday) {
+    try {
+      // Get Monday's date
+      const mondayDate = new Date(now.getTime() - estOffsetMs)
+      mondayDate.setUTCDate(mondayDate.getUTCDate() - (mondayDate.getUTCDay() - 1))
+      const mondayStr = mondayDate.toISOString().split("T")[0]
+
+      // Fetch Monday's briefing context for opening prices
+      const { data: mondayBriefing } = await supabase
+        .from("market_summaries")
+        .select("context")
+        .eq("summary_date", mondayStr)
+        .eq("slot", "morning")
+        .maybeSingle()
+
+      const weeklyLines: string[] = []
+      if (mondayBriefing?.context) {
+        const mondayCtx = typeof mondayBriefing.context === "string"
+          ? JSON.parse(mondayBriefing.context)
+          : mondayBriefing.context
+
+        const weekChange = (current: unknown, previous: unknown, label: string) => {
+          const c = Number(current), p = Number(previous)
+          if (!isNaN(c) && !isNaN(p) && p > 0) {
+            const pct = ((c - p) / p * 100)
+            weeklyLines.push(`${label}: $${c.toLocaleString()} (week: ${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%)`)
+          }
+        }
+
+        weekChange(payload.btcPrice, mondayCtx.btcPrice, "BTC")
+        weekChange(payload.ethPrice, mondayCtx.ethPrice, "ETH")
+        weekChange(payload.solPrice, mondayCtx.solPrice, "SOL")
+        weekChange(payload.sp500Price, mondayCtx.sp500Price, "S&P 500")
+        weekChange(payload.nasdaqPrice, mondayCtx.nasdaqPrice, "Nasdaq")
+
+        if (mondayCtx.fearGreedValue != null && payload.fearGreedValue != null) {
+          weeklyLines.push(`Fear & Greed: ${mondayCtx.fearGreedValue} → ${payload.fearGreedValue}`)
+        }
+        if (mondayCtx.vixValue != null && payload.vixValue != null) {
+          weeklyLines.push(`VIX: ${mondayCtx.vixValue} → ${payload.vixValue}`)
+        }
+      }
+
+      // Model portfolio weekly NAV change
+      const { data: portfolios } = await supabase
+        .from("model_portfolios")
+        .select("id, name")
+      if (portfolios) {
+        for (const p of portfolios) {
+          const { data: navRows } = await supabase
+            .from("model_portfolio_nav")
+            .select("nav, nav_date")
+            .eq("portfolio_id", p.id)
+            .gte("nav_date", mondayStr)
+            .order("nav_date", { ascending: true })
+            .limit(2)
+
+          const { data: latestNav } = await supabase
+            .from("model_portfolio_nav")
+            .select("nav")
+            .eq("portfolio_id", p.id)
+            .order("nav_date", { ascending: false })
+            .limit(1)
+
+          if (navRows && navRows.length > 0 && latestNav && latestNav.length > 0) {
+            const startNav = navRows[0].nav
+            const endNav = latestNav[0].nav
+            const pct = ((endNav - startNav) / startNav * 100)
+            weeklyLines.push(`${p.name}: ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% this week`)
+          }
+        }
+      }
+
+      if (weeklyLines.length > 0) {
+        sections.push(`WEEKLY PERFORMANCE (Monday → Friday):\n${weeklyLines.join("\n")}`)
+      }
+    } catch (err) {
+      console.error("Failed to compute weekly performance:", err instanceof Error ? err.message : String(err))
+    }
+  }
+
   const marketContext = sections.join("\n\n")
   const timeLabel = slot === "weekend" ? "weekend" : slot === "morning" ? "morning" : "evening"
   const sessionContext = payload.marketSession ? `Current market session: ${payload.marketSession}.` : ""
   console.log(`Market context for Claude (${timeLabel}):\n${marketContext}`)
 
+  // --- Fetch recent briefings for continuity ---
+  let priorBriefingContext = ""
+  try {
+    const { data: recentBriefings } = await supabase
+      .from("market_summaries")
+      .select("summary, slot, summary_date")
+      .lt("summary_date", todayUTC)
+      .order("summary_date", { ascending: false })
+      .order("generated_at", { ascending: false })
+      .limit(2)
+
+    // Also fetch today's morning briefing if this is an evening briefing
+    if (slot === "evening") {
+      const { data: todayMorning } = await supabase
+        .from("market_summaries")
+        .select("summary, slot")
+        .eq("summary_date", todayUTC)
+        .eq("slot", "morning")
+        .maybeSingle()
+
+      if (todayMorning?.summary) {
+        priorBriefingContext += `\nTODAY'S MORNING BRIEFING (for continuity — reference what you said this morning where relevant):\n${todayMorning.summary}\n`
+      }
+    }
+
+    if (recentBriefings && recentBriefings.length > 0) {
+      const priorLines = recentBriefings.map((b: any) =>
+        `[${b.summary_date} ${b.slot}]: ${b.summary}`
+      ).join("\n\n")
+      priorBriefingContext += `\nPREVIOUS BRIEFINGS (use for context and continuity — do NOT repeat or summarize these, just be aware of what was said so your update feels like a natural continuation):\n${priorLines}\n`
+      console.log(`Injecting ${recentBriefings.length} prior briefings for continuity`)
+    }
+  } catch (err) {
+    console.error("Prior briefing fetch failed (non-fatal):", err instanceof Error ? err.message : String(err))
+  }
+
   // Store full context alongside the briefing for historical analysis
   const contextPayload = JSON.stringify(payload)
 
   try {
-    const morningInstructions = `This is the MORNING briefing (around market open). Frame it as a look-ahead: what happened overnight, what futures are signaling for today's open, key events to watch, and how to think about positioning going into the session.`
-    const eveningInstructions = `This is the EVENING briefing (after market close). Frame it as a review: how the day played out, what moved and why, what happened with economic data releases (beats/misses), and what to watch heading into tomorrow or the weekend.`
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const dayName = dayNames[estWeekday]
+
+    const morningInstructions = isFriday
+      ? `This is the FRIDAY MORNING briefing. Frame it as the final trading day of the week: what happened overnight, what futures signal for today's open, and what needs to happen today to close the week strong or weak. Reference this being the last session before the weekend.`
+      : `This is the ${dayName.toUpperCase()} MORNING briefing. Focus specifically on TODAY: what happened overnight, what futures are signaling for today's open, key events to watch today, and how to think about positioning for this specific session. Be concrete about today's setup — not vague generalizations.`
+
+    const eveningInstructions = isFriday
+      ? `This is the FRIDAY EVENING briefing — the weekly wrap-up. Review how today AND the full week played out. Use the WEEKLY PERFORMANCE data to give a clear picture of how markets moved Monday through Friday. Highlight the week's biggest winners, losers, and key turning points. Summarize what changed in positioning, macro regime, or sentiment over the week. End with what to watch over the weekend and heading into next week.`
+      : `This is the ${dayName.toUpperCase()} EVENING briefing. Focus specifically on how TODAY played out: what moved and why, how economic data releases landed (beats/misses), and what changed from this morning. Be specific to today's price action — don't recap yesterday or generalize. End with what to watch heading into tomorrow.`
+
     const weekendInstructions = `This is the WEEKEND briefing. Traditional markets are closed — focus entirely on crypto. Cover weekend price action, funding rates, weekend momentum patterns, and any macro news that dropped. Keep it shorter and more casual than weekday briefings. If there are notable moves, highlight them. Frame the end with a brief look ahead to Monday's open.`
     const slotInstructions = slot === "weekend" ? weekendInstructions : slot === "morning" ? morningInstructions : eveningInstructions
 
@@ -416,7 +638,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: slot === "weekend" ? 800 : 1500,
+        max_tokens: slot === "weekend" ? 800 : (isFriday && slot === "evening") ? 2000 : 1500,
         system: slot === "weekend"
           ? `You are writing a short weekend crypto update for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual weekend check-in — clear, conversational, no jargon.
 
@@ -431,7 +653,7 @@ One sentence with the weekend crypto stance. If a "Macro Regime" or "Crypto Posi
 3-4 sentences on crypto weekend action. Cover BTC, ETH, SOL price movement and momentum. Note any notable weekend moves, funding rate shifts, or liquidation events. Mention Fear & Greed if available. Traditional markets are closed — don't discuss equities.
 
 ## Technical
-2-3 sentences on BTC's technical picture if BTC TECHNICAL ANALYSIS data is available. Focus on key levels, trend, and derivatives. Skip this section entirely if no TA data is present.
+2-3 sentences on BTC's technical picture if BTC TECHNICAL ANALYSIS data is available. Focus on key levels, trend, and derivatives. If KEY LEVELS data is present, mention the nearest Fibonacci confluence support and resistance for BTC (and ETH/SOL if notable). Higher strength numbers mean stronger zones. Skip this section entirely if no TA data is present.
 
 ## Week Ahead
 1-2 sentences previewing Monday. Mention any known economic events coming up, or note what levels to watch for the Monday open.
@@ -456,16 +678,17 @@ Write a structured briefing using exactly these section headers on their own lin
 One sentence with the overall market stance and crypto positioning. If the MACRO section includes a "Macro Regime" value, your posture MUST align with it — use "Risk-on" if RISK-ON, "Risk-off" if RISK-OFF, or "Neutral" if MIXED. If a "Crypto Positioning" line is present, weave its guidance into the posture (e.g. "full exposure", "selective exposure", "defensive", "cautious accumulation"). Always name the regime quadrant (e.g. "Risk-On Disinflation") rather than just saying "risk on". Example: "Risk-On Disinflation — full exposure. Growth is solid and liquidity is expanding, the best backdrop for crypto."
 
 ## The Rundown
-3-4 sentences covering what's happening across markets. Start with US futures or equity performance (S&P, Nasdaq) depending on the session. Cover crypto (BTC, ETH, SOL) strength or weakness, and note if gold or the dollar are doing anything significant. Don't just list numbers — tell the story of the day. If there's a major headline or economic event driving things, weave it in naturally. If EVENTS data includes Actual vs Forecast values, analyze the results: a beat (actual better than forecast) is bullish, a miss is bearish. For inflation data (CPI, PPI, PCE): lower-than-expected = dovish/bullish for risk; higher = hawkish/bearish. For jobs data (NFP, Jobless Claims): strong jobs = mixed (good economy but hawkish Fed); weak jobs = recession fear but dovish. Always explain the market impact in plain terms. If US FUTURES data is available, mention what futures are signaling (especially in the morning briefing).
+3-4 sentences covering what's happening across markets. Start with US futures or equity performance (S&P, Nasdaq) depending on the session. Cover crypto (BTC, ETH, SOL) strength or weakness, and note if gold or the dollar are doing anything significant. Don't just list numbers — tell the story of the day. If there's a major headline or economic event driving things, weave it in naturally. If EVENTS data includes Actual vs Forecast values, analyze the results: a beat (actual better than forecast) is bullish, a miss is bearish. For inflation data (CPI, PPI, PCE): lower-than-expected = dovish/bullish for risk; higher = hawkish/bearish. For jobs data (NFP, Jobless Claims): strong jobs = mixed (good economy but hawkish Fed); weak jobs = recession fear but dovish. Always explain the market impact in plain terms. If US FUTURES data includes a Session Breakdown, use it to paint the picture of how the trading day unfolded across sessions — e.g. "Futures drifted lower overnight but recovered in pre-market" or "After a flat overnight session, pre-market selling pushed ES down 0.3%." This session-level context is especially valuable for morning and evening briefings.
 
 ## Macro & Liquidity
 2-3 sentences covering the macro and liquidity landscape. If GLOBAL LIQUIDITY data is present, this is critical context: mention the composite central bank liquidity level and whether it's expanding or contracting (and the monthly/quarterly/annual rate of change if available). If a Liquidity Cycle Phase is present, explain where we are in the ~65-month liquidity cycle and what it means for positioning (e.g. "We're in Early Contraction — the liquidity cycle peaked mid-2025 and momentum is fading, historically a phase where defensiveness pays off"). If Yield Curve data is present, mention the regime (steepening = early cycle, flattening = late cycle, inverted = recession risk) and what it confirms or contradicts about the cycle position. Connect VIX and DXY to the broader picture. This section should help the user understand the forest, not just the trees.
 
 ## Technical
-3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS and DERIVATIVES. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If key fib support/resistance levels are available, mention them. Explain in plain language what the technicals and derivatives suggest about momentum and positioning. If no BTC TA data is available, skip this section entirely.
+3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS, DERIVATIVES, and KEY LEVELS. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If KEY LEVELS data is present, call out the nearest Fibonacci confluence support and resistance for BTC, ETH, and SOL — these are the levels to watch. Do NOT include raw strength numbers or scores in parentheses — just mention the price levels naturally. Explain in plain language what the technicals and derivatives suggest about momentum and positioning. If no BTC TA data is available, skip this section entirely.
 
-## Signals
-2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime, BTC/ETH risk zones, season indicator, Coinbase app ranking, BTC search interest, BTC dominance, ETF flows, capital rotation. If CAPITAL FLOW data is available, weave in the key takeaway (e.g. rising BTC dominance = risk-off rotation, strong ETF inflows = institutional conviction). If DAILY POSITIONING data is available and there are signal changes today, mention the most notable ones (e.g. "Gold flipped from neutral to bullish" or "3 crypto assets shifted bearish overnight"). If there are no changes, you can briefly note the overall positioning balance (e.g. "positioning remains mixed with X bullish vs Y bearish across 54 assets"). Don't list every asset — just highlight what changed or what stands out. Explain what each means in plain language.
+${isFriday && slot === "evening" ? `## Week in Review
+4-6 sentences wrapping up the full trading week. Use the WEEKLY PERFORMANCE data to paint a clear picture: how did BTC, ETH, SOL, S&P 500, and Nasdaq move from Monday to Friday? Identify the week's biggest winners and losers. Highlight the key turning point or narrative that defined the week (e.g. "CPI miss on Tuesday set the tone for a risk-on rally that carried through Friday"). Note any shifts in macro regime, positioning, or sentiment over the week. If model portfolio NAV changes are in the weekly data, mention how they performed. End with what to watch over the weekend and heading into next week — upcoming economic events, key levels, or open questions the market left unanswered.` : `## Signals
+2-3 sentences highlighting the most interesting signals from the data. Pick the 3-4 most notable from: Fear & Greed level, sentiment regime, BTC/ETH risk zones, season indicator, Coinbase app ranking, BTC search interest, BTC dominance, ETF flows, capital rotation. If CAPITAL FLOW data is available, weave in the key takeaway (e.g. rising BTC dominance = risk-off rotation, strong ETF inflows = institutional conviction). If DAILY POSITIONING data is available and there are signal changes today, mention the most notable ones (e.g. "Gold flipped from neutral to bullish" or "3 crypto assets shifted bearish overnight"). If there are no changes, you can briefly note the overall positioning balance (e.g. "positioning remains mixed with X bullish vs Y bearish across 54 assets"). Don't list every asset — just highlight what changed or what stands out. Explain what each means in plain language. If MODEL PORTFOLIOS data shows rebalances today, mention it briefly (e.g. "Model portfolios rebalanced — Core shifted to 60% BTC as the signal turned bullish"). If no rebalances, skip the portfolio mention.`}
 
 Rules:
 - Write for someone checking their phone over coffee, not a Wall Street analyst
@@ -476,13 +699,13 @@ Rules:
 - If GLOBAL LIQUIDITY data shows expanding/contracting with specific percentage changes, use those numbers to paint the picture
 - Never give investment advice or say "buy" / "sell"
 - If risk zones are Low Risk or Very Low Risk, you can note it's historically been a favorable DCA period
-- Keep total length under 350 words
+- Keep total length under ${isFriday && slot === "evening" ? "500" : "350"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`,
         messages: [
           {
             role: "user",
-            content: `Here is the latest market data:\n\n${marketContext}\n\nWrite the ${timeLabel} briefing.`,
+            content: `Here is the latest market data:\n\n${marketContext}${priorBriefingContext ? "\n\n" + priorBriefingContext : ""}\n\nWrite the ${timeLabel} briefing.`,
           },
         ],
       }),
@@ -577,9 +800,9 @@ async function enrichPayloadFromServer(
       .eq("cache_key", "crypto_assets_1_100")
       .maybeSingle(),
 
-    // 2. Stock indices + VIX + DXY + Gold from FMP
+    // 2. Stock indices + VIX + DXY + Gold + Futures from FMP
     fmpKey
-      ? fetch(`https://financialmodelingprep.com/api/v3/quote/%5EGSPC,%5EIXIC,%5EVIX,DX-Y.NYB,GC=F?apikey=${fmpKey}`)
+      ? fetch(`https://financialmodelingprep.com/api/v3/quote/%5EGSPC,%5EIXIC,%5EVIX,DX-Y.NYB,GC=F,ES=F,NQ=F,YM=F?apikey=${fmpKey}`)
           .then(r => r.json())
           .catch(() => [])
       : Promise.resolve([]),
@@ -661,6 +884,32 @@ async function enrichPayloadFromServer(
         payload.goldSignal = `$${Number(q.price).toLocaleString()}${changeStr}`
       }
     }
+
+    // Build futures summary string from ES, NQ, YM (daily change + session breakdown)
+    const futuresMap: Record<string, { name: string; price?: number; change?: number }> = {}
+    for (const q of quotes) {
+      if (q.symbol === "ES=F") futuresMap["ES"] = { name: "S&P 500", price: q.price, change: q.changesPercentage }
+      else if (q.symbol === "NQ=F") futuresMap["NQ"] = { name: "NASDAQ", price: q.price, change: q.changesPercentage }
+      else if (q.symbol === "YM=F") futuresMap["YM"] = { name: "Dow", price: q.price, change: q.changesPercentage }
+    }
+    const futuresLines = Object.entries(futuresMap)
+      .filter(([, v]) => v.change != null)
+      .map(([ticker, v]) => `${ticker} (${v.name}): ${Number(v.price).toLocaleString()} (${v.change! > 0 ? "+" : ""}${Number(v.change).toFixed(2)}%)`)
+    if (futuresLines.length > 0) {
+      payload.usFutures = futuresLines.join("\n")
+    }
+
+    // Fetch session-level breakdown from 1-hour intraday candles
+    if (fmpKey) {
+      try {
+        const sessionBreakdown = await computeFuturesSessionBreakdown(fmpKey)
+        if (sessionBreakdown) {
+          payload.usFutures = (payload.usFutures ? payload.usFutures + "\n" : "") + sessionBreakdown
+        }
+      } catch (err) {
+        console.error("Futures session breakdown failed:", err instanceof Error ? err.message : String(err))
+      }
+    }
   }
 
   // --- Parse Fear & Greed ---
@@ -715,6 +964,116 @@ async function enrichPayloadFromServer(
   }
 
   console.log(`Server data enrichment complete: BTC=$${payload.btcPrice}, SP500=$${payload.sp500Price}, FG=${payload.fearGreedValue}, VIX=${payload.vixValue}, events=${(payload.economicEvents as any[])?.length ?? 0}`)
+}
+
+/**
+ * Fetches 1-hour intraday candles for ES=F and computes per-session changes.
+ * Sessions (all ET): Overnight (prev 8PM→4AM), Pre-Market (4AM→9:30AM),
+ * Regular (9:30AM→4PM), After-Hours (4PM→8PM).
+ */
+async function computeFuturesSessionBreakdown(fmpKey: string): Promise<string | null> {
+  // Fetch last 48 hours of 1-hour candles for ES (most representative)
+  const resp = await fetch(
+    `https://financialmodelingprep.com/api/v3/historical-chart/1hour/ES=F?apikey=${fmpKey}`
+  )
+  if (!resp.ok) return null
+
+  const candles = await resp.json()
+  if (!Array.isArray(candles) || candles.length < 4) return null
+
+  // FMP returns candles newest-first with `date` field like "2026-04-01 10:00:00"
+  // Convert to ET timestamps and sort oldest-first
+  const now = new Date()
+  const etOffset = getETOffset(now) // hours behind UTC (4 or 5)
+
+  interface Candle { date: string; open: number; close: number; etHour: number; etDate: Date }
+  const parsed: Candle[] = candles
+    .slice(0, 48) // last 48 hours max
+    .map((c: any) => {
+      // Parse as UTC, then compute ET hour
+      const utcDate = new Date(c.date + "Z") // treat FMP timestamp as UTC
+      // Actually FMP historical-chart returns ET timestamps, not UTC
+      const etDate = new Date(c.date) // local parse = ET
+      const etHour = etDate.getHours()
+      return { date: c.date, open: c.open, close: c.close, etHour, etDate }
+    })
+    .filter((c: Candle) => !isNaN(c.etDate.getTime()))
+    .sort((a: Candle, b: Candle) => a.etDate.getTime() - b.etDate.getTime())
+
+  if (parsed.length < 4) return null
+
+  // Determine which sessions have completed based on current ET hour
+  const estHour = getESTHour(now)
+  const estMinute = now.getUTCMinutes() // minutes are same in any timezone
+
+  // Get today's date string in ET for filtering
+  const todayET = new Date(now.getTime() - etOffset * 3600000)
+  const todayStr = todayET.toISOString().split("T")[0]
+  const yesterdayET = new Date(todayET.getTime() - 86400000)
+  const yesterdayStr = yesterdayET.toISOString().split("T")[0]
+
+  // Bucket candles into sessions
+  // Overnight: yesterday 20:00 → today 04:00
+  // Pre-market: today 04:00 → 09:00 (9:30 but hourly candles align to 09:00)
+  // Regular: today 09:00 → 16:00
+  // After-hours: today 16:00 → 20:00
+  const sessionRanges: { name: string; candles: Candle[] }[] = [
+    { name: "Overnight", candles: [] },
+    { name: "Pre-Market", candles: [] },
+    { name: "Regular", candles: [] },
+    { name: "After-Hours", candles: [] },
+  ]
+
+  for (const c of parsed) {
+    const dateStr = c.date.split(" ")[0]
+    const hour = c.etHour
+
+    // Overnight: previous day 20:00-23:00 or today 00:00-03:00
+    if ((dateStr === yesterdayStr && hour >= 20) || (dateStr === todayStr && hour < 4)) {
+      sessionRanges[0].candles.push(c)
+    }
+    // Pre-market: today 4:00-8:00 (candle at 09:00 is the 9:00-9:30 transition)
+    else if (dateStr === todayStr && hour >= 4 && hour < 9) {
+      sessionRanges[1].candles.push(c)
+    }
+    // Regular: today 9:00-15:00 (candle at 15:00 covers 15:00-16:00)
+    else if (dateStr === todayStr && hour >= 9 && hour < 16) {
+      sessionRanges[2].candles.push(c)
+    }
+    // After-hours: today 16:00-19:00
+    else if (dateStr === todayStr && hour >= 16 && hour < 20) {
+      sessionRanges[3].candles.push(c)
+    }
+  }
+
+  // Compute change per session (open of first candle → close of last candle)
+  const parts: string[] = []
+  for (const session of sessionRanges) {
+    if (session.candles.length === 0) continue
+    const openPrice = session.candles[0].open
+    const closePrice = session.candles[session.candles.length - 1].close
+    if (openPrice <= 0) continue
+    const changePct = ((closePrice - openPrice) / openPrice) * 100
+    const sign = changePct >= 0 ? "+" : ""
+    // Mark in-progress sessions
+    const isInProgress =
+      (session.name === "Pre-Market" && estHour >= 4 && estHour < 9) ||
+      (session.name === "Regular" && estHour >= 9 && estHour < 16) ||
+      (session.name === "After-Hours" && estHour >= 16 && estHour < 20)
+    const suffix = isInProgress ? " (live)" : ""
+    parts.push(`${session.name}: ${sign}${changePct.toFixed(2)}%${suffix}`)
+  }
+
+  if (parts.length === 0) return null
+  return `Session Breakdown (ES): ${parts.join(", ")}`
+}
+
+/** Returns ET offset from UTC (4 for EDT, 5 for EST) */
+function getETOffset(date: Date): number {
+  const year = date.getUTCFullYear()
+  const marchSecondSunday = nthSunday(year, 2, 2)
+  const novFirstSunday = nthSunday(year, 10, 1)
+  return date >= marchSecondSunday && date < novFirstSunday ? 4 : 5
 }
 
 function formatChange(value: unknown): string {
