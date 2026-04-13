@@ -91,12 +91,67 @@ struct DCACalculatorView: View {
             .padding(.horizontal, 20)
 
         case 3:
-            // Step 3: Asset Selection
-            DCAAssetPickerCard(
-                selectedAsset: $calculatorState.selectedAsset,
-                selectedType: $calculatorState.selectedAssetType,
-                isRiskBased: calculatorState.strategyType == .riskBased
-            )
+            // Step 3: Asset Selection (multi-asset support)
+            VStack(spacing: 12) {
+                // Selected assets chips
+                if !calculatorState.selectedAssets.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Selected (\(calculatorState.selectedAssets.count))")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                            ForEach(calculatorState.selectedAssets, id: \.symbol) { asset in
+                                HStack(spacing: 6) {
+                                    Text(asset.symbol)
+                                        .font(.system(size: 13, weight: .semibold))
+                                    Button {
+                                        calculatorState.selectedAssets.removeAll { $0.symbol == asset.symbol }
+                                        if calculatorState.selectedAssets.isEmpty {
+                                            calculatorState.selectedAsset = nil
+                                        } else {
+                                            calculatorState.selectedAsset = calculatorState.selectedAssets.first
+                                        }
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 9, weight: .bold))
+                                    }
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(AppColors.accent)
+                                .cornerRadius(8)
+                            }
+                            }
+                        }
+
+                        if calculatorState.selectedAssets.count > 1 {
+                            Text("$\(String(format: "%.0f", calculatorState.amount / Double(calculatorState.selectedAssets.count))) per asset")
+                                .font(.system(size: 12))
+                                .foregroundColor(AppColors.accent)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+
+                DCAAssetPickerCard(
+                    selectedAsset: Binding(
+                        get: { calculatorState.selectedAsset },
+                        set: { newAsset in
+                            if let asset = newAsset {
+                                if !calculatorState.selectedAssets.contains(where: { $0.symbol == asset.symbol }) {
+                                    calculatorState.selectedAssets.append(asset)
+                                }
+                                calculatorState.selectedAsset = asset
+                            }
+                        }
+                    ),
+                    selectedType: $calculatorState.selectedAssetType,
+                    isRiskBased: calculatorState.strategyType == .riskBased
+                )
+            }
             .padding(.horizontal, 20)
 
         case 4:
@@ -212,7 +267,7 @@ struct DCACalculatorView: View {
             return true // Strategy type always has a default
 
         case 3:
-            return calculatorState.selectedAsset != nil
+            return !calculatorState.selectedAssets.isEmpty
 
         case 4:
             if calculatorState.strategyType == .timeBased {
@@ -282,10 +337,18 @@ struct DCACalculatorView: View {
                     throw AppError.custom(message: "Please sign in to create DCA reminders")
                 }
 
-                if calculation.strategyType == .timeBased {
-                    try await createTimeBasedReminder(calculation, userId: userId)
-                } else {
-                    try await createRiskBasedReminder(calculation, userId: userId)
+                // Multi-asset: create a reminder for each selected asset with split amount
+                let assets = calculatorState.selectedAssets.isEmpty
+                    ? [calculation.asset]
+                    : calculatorState.selectedAssets
+                let splitAmount = calculation.amountPerPurchase / Double(max(assets.count, 1))
+
+                for asset in assets {
+                    if calculation.strategyType == .timeBased {
+                        try await createTimeBasedReminderForAsset(calculation, asset: asset, amount: splitAmount, userId: userId)
+                    } else {
+                        try await createRiskBasedReminderForAsset(calculation, asset: asset, amount: splitAmount, userId: userId)
+                    }
                 }
 
                 await MainActor.run {
@@ -337,6 +400,40 @@ struct DCACalculatorView: View {
 
         _ = try await dcaService.createRiskBasedReminder(request)
     }
+
+    // MARK: - Per-Asset Helpers (Multi-Asset DCA)
+
+    private func createTimeBasedReminderForAsset(_ calculation: DCACalculation, asset: DCAAsset, amount: Double, userId: UUID) async throws {
+        let dcaService = ServiceContainer.shared.dcaService
+        let request = CreateDCARequest(
+            userId: userId,
+            symbol: asset.symbol,
+            name: asset.name,
+            amount: amount,
+            frequency: calculation.frequency.rawValue,
+            totalPurchases: calculation.numberOfPurchases,
+            notificationTime: CreateDCARequest.timeString(from: Date()),
+            startDate: calculation.startDate,
+            nextReminderDate: calculation.purchaseDates.first ?? Date()
+        )
+        _ = try await dcaService.createReminder(request)
+    }
+
+    private func createRiskBasedReminderForAsset(_ calculation: DCACalculation, asset: DCAAsset, amount: Double, userId: UUID) async throws {
+        let dcaService = ServiceContainer.shared.dcaService
+        let sortedBands = calculation.riskBands.sorted { $0.riskRange.lowerBound < $1.riskRange.lowerBound }
+        let riskThreshold = sortedBands.first?.riskRange.upperBound ?? 40
+        let request = CreateRiskBasedDCARequest(
+            userId: userId,
+            symbol: asset.symbol,
+            name: asset.name,
+            amount: amount,
+            riskThreshold: riskThreshold,
+            riskCondition: RiskCondition.below.rawValue,
+            portfolioId: calculation.targetPortfolioId
+        )
+        _ = try await dcaService.createRiskBasedReminder(request)
+    }
 }
 
 // MARK: - Calculator State
@@ -354,8 +451,9 @@ class DCACalculatorState {
     // Step 2: Strategy Type
     var strategyType: DCAStrategyType = .timeBased
 
-    // Step 3: Asset
+    // Step 3: Asset(s) — supports single or multi-asset DCA
     var selectedAsset: DCAAsset?
+    var selectedAssets: [DCAAsset] = []
     var selectedAssetType: DCAAssetType = .crypto
 
     // Step 4 (time-based): Frequency

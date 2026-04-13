@@ -15,11 +15,21 @@ struct QPSFullGridView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                // Hint
+                HStack(spacing: 6) {
+                    Image(systemName: "hand.tap")
+                        .font(.system(size: 11))
+                    Text("Tap any asset to view its signal history")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                .padding(.horizontal, 24)
+
                 ForEach(groupedSignals, id: \.0) { category, categorySignals in
                     categorySection(category, signals: categorySignals)
                 }
             }
-            .padding(.top, 16)
+            .padding(.top, 8)
             .padding(.bottom, 100)
         }
         .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
@@ -46,16 +56,12 @@ struct QPSFullGridView: View {
             // Signal rows
             LazyVStack(spacing: 0) {
                 ForEach(Array(signals.enumerated()), id: \.element.id) { index, signal in
-                    if category == .alt_btc {
-                        signalRow(signal, showChevron: false)
-                    } else {
-                        NavigationLink {
-                            QPSDetailView(asset: signal.asset)
-                        } label: {
-                            signalRow(signal, showChevron: true)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                    NavigationLink {
+                        QPSDetailView(asset: signal.asset)
+                    } label: {
+                        signalRow(signal, showChevron: true)
                     }
+                    .buttonStyle(PlainButtonStyle())
 
                     if index < signals.count - 1 {
                         Divider().opacity(0.1).padding(.horizontal, 12)

@@ -7,6 +7,25 @@ struct PerformanceView: View {
     @State private var showExportSheet = false
     @State private var isExporting = false
     @State private var showExportError = false
+    @State private var selectedPeriod: PerformancePeriod = .all
+
+    enum PerformancePeriod: String, CaseIterable {
+        case week = "7D"
+        case month = "30D"
+        case threeMonths = "90D"
+        case year = "1Y"
+        case all = "All"
+
+        var days: Int? {
+            switch self {
+            case .week: return 7
+            case .month: return 30
+            case .threeMonths: return 90
+            case .year: return 365
+            case .all: return nil
+            }
+        }
+    }
 
     private var hasData: Bool {
         !viewModel.holdings.isEmpty
@@ -23,8 +42,23 @@ struct PerformanceView: View {
         }
     }
 
+    private var filteredHistoryPoints: [PortfolioHistoryPoint] {
+        guard let days = selectedPeriod.days else { return viewModel.historyPoints }
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        return viewModel.historyPoints.filter { $0.date >= cutoff }
+    }
+
     private var performanceContent: some View {
         VStack(spacing: 20) {
+            // Time period picker
+            Picker("Period", selection: $selectedPeriod) {
+                ForEach(PerformancePeriod.allCases, id: \.self) { period in
+                    Text(period.rawValue).tag(period)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 20)
+
             // Return Summary
             ReturnSummaryCard(metrics: viewModel.performanceMetrics)
                 .padding(.horizontal, 20)
@@ -34,8 +68,8 @@ struct PerformanceView: View {
                 .padding(.horizontal, 20)
 
             // Portfolio Value Chart
-            if !viewModel.historyPoints.isEmpty {
-                EquityCurveCard(historyPoints: viewModel.historyPoints)
+            if !filteredHistoryPoints.isEmpty {
+                EquityCurveCard(historyPoints: filteredHistoryPoints)
                     .padding(.horizontal, 20)
                     .premiumRequired(.advancedPortfolio)
             }
