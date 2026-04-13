@@ -27,6 +27,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifyInsights)
     private var insights = true
 
+    @AppStorage(Constants.UserDefaults.notifyModelPortfolio)
+    private var modelPortfolio = true
+
     @AppStorage(Constants.UserDefaults.notifySignalT1Hit)
     private var signalT1Hit = true
 
@@ -141,6 +144,19 @@ struct NotificationsDetailView: View {
                     .onChange(of: qpsChanges) { _, _ in
                         Haptics.selection()
                     }
+
+                    Toggle(isOn: $modelPortfolio) {
+                        NotificationRow(
+                            icon: "briefcase.fill",
+                            iconColor: Color(hex: "8B5CF6"),
+                            title: "Portfolio Rebalances",
+                            description: "When model portfolios adjust allocations"
+                        )
+                    }
+                    .onChange(of: modelPortfolio) { _, newValue in
+                        Haptics.selection()
+                        syncModelPortfolioPreference(newValue)
+                    }
                 } header: {
                     Text("Market Alerts")
                 }
@@ -242,6 +258,29 @@ struct NotificationsDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private func syncModelPortfolioPreference(_ enabled: Bool) {
+        Task {
+            guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
+            do {
+                // Merge with existing preferences
+                let prefs: [String: Bool] = [
+                    "model_portfolio_rebalance": enabled,
+                    "signal_t1_hit": swingSignals && signalT1Hit,
+                    "signal_stop_loss": swingSignals && signalStopLoss,
+                    "signal_runner_close": swingSignals && signalRunnerClose,
+                    "signal_expiry": swingSignals && signalExpiry,
+                ]
+                try await SupabaseManager.shared.client
+                    .from("profiles")
+                    .update(["notification_preferences": prefs])
+                    .eq("id", value: userId.uuidString)
+                    .execute()
+            } catch {
+                logWarning("Failed to sync model portfolio preference: \(error)", category: .network)
+            }
+        }
     }
 
     private func syncSignalPreferences() {
