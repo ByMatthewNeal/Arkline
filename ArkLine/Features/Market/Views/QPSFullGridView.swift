@@ -78,16 +78,6 @@ struct QPSFullGridView: View {
 
     private func signalRow(_ signal: DailyPositioningSignal, showChevron: Bool) -> some View {
         HStack(spacing: 10) {
-            // Asset logo
-            if let logoURL = AssetRiskConfig.forSymbol(signal.asset)?.logoURL {
-                KFImage(logoURL)
-                    .resizable()
-                    .fade(duration: 0.2)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
-                    .clipShape(Circle())
-            }
-
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 4) {
                     Text(signal.displayName)

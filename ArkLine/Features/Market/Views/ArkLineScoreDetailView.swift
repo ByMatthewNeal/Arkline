@@ -77,38 +77,88 @@ struct ArkLineScoreDetailView: View {
     // MARK: - Score History
 
     private var scoreHistorySection: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.md) {
-            Text("SCORE HISTORY")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(AppColors.textSecondary)
-                .tracking(1)
-                .padding(.horizontal, ArkSpacing.lg)
+        let sortedHistory = scoreHistory.sorted { $0.recordedDate < $1.recordedDate }
+
+        return VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack {
+                Text("SCORE HISTORY")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary)
+                    .tracking(1)
+
+                Spacer()
+
+                if selectedHistoryPoint != nil {
+                    Button { selectedHistoryPoint = nil } label: {
+                        Text("Reset")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
+            .padding(.horizontal, ArkSpacing.lg)
 
             if isLoadingHistory {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)
-            } else if scoreHistory.count >= 2 {
-                // Chart
-                scoreChart
-                    .padding(.horizontal, ArkSpacing.lg)
-
-                // Selected point detail
+            } else if sortedHistory.count >= 2 {
+                // Selected point tooltip
                 if let point = selectedHistoryPoint {
-                    HStack {
-                        Text(point.recordedDate)
+                    let pointTier = SentimentTier(rawValue: point.tier)
+                    let pointColor = Color(hex: pointTier?.color ?? "3B82F6")
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(formatScoreDate(point.recordedDate))
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.textSecondary)
-                        Spacer()
-                        Text("Score: \(point.compositeScore)")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color(hex: SentimentTier(rawValue: point.tier)?.color ?? "3B82F6"))
-                        Text("(\(point.tier.capitalized))")
-                            .font(.system(size: 12))
-                            .foregroundColor(AppColors.textSecondary)
+
+                        HStack(spacing: 8) {
+                            Text("\(point.compositeScore)")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(pointColor)
+                            Text(point.tier.capitalized)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(pointColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(pointColor.opacity(0.12))
+                                .cornerRadius(6)
+                        }
                     }
                     .padding(.horizontal, ArkSpacing.lg)
+                    .transition(.opacity)
+                } else {
+                    // Hint
+                    HStack(spacing: 6) {
+                        Image(systemName: "hand.draw")
+                            .font(.system(size: 11))
+                        Text("Touch chart to view historical scores")
+                            .font(.system(size: 11))
+                    }
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                    .padding(.horizontal, ArkSpacing.lg)
                 }
+
+                // Interactive chart
+                scoreChart(data: sortedHistory)
+                    .padding(.horizontal, ArkSpacing.lg)
+
+                // Date labels
+                HStack {
+                    if let first = sortedHistory.first {
+                        Text(formatShortDate(first.recordedDate))
+                            .font(.system(size: 9))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    }
+                    Spacer()
+                    if let last = sortedHistory.last {
+                        Text(formatShortDate(last.recordedDate))
+                            .font(.system(size: 9))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    }
+                }
+                .padding(.horizontal, ArkSpacing.lg)
             } else {
                 Text("Not enough history data yet")
                     .font(AppFonts.caption12)
@@ -125,56 +175,121 @@ struct ArkLineScoreDetailView: View {
         .padding(.horizontal, ArkSpacing.lg)
     }
 
-    private var scoreChart: some View {
-        let data = scoreHistory.sorted { $0.recordedDate < $1.recordedDate }
+    private func scoreChart(data: [RiskSnapshotDTO]) -> some View {
         let scores = data.map { Double($0.compositeScore) }
-        let maxVal = scores.max() ?? 100
-        let minVal = scores.min() ?? 0
+        let maxVal = max(scores.max() ?? 100, 60)
+        let minVal = min(scores.min() ?? 0, 20)
         let range = max(maxVal - minVal, 1)
 
-        return GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let stepX = w / CGFloat(max(data.count - 1, 1))
-
-            ZStack(alignment: .topLeading) {
-                // 50 line (neutral)
-                let neutralY = h * CGFloat((maxVal - 50) / range)
-                if neutralY > 0 && neutralY < h {
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: neutralY))
-                        path.addLine(to: CGPoint(x: w, y: neutralY))
-                    }
-                    .stroke(AppColors.textSecondary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                }
-
-                // Line
-                Path { path in
-                    for (i, score) in scores.enumerated() {
-                        let x = CGFloat(i) * stepX
-                        let y = h * CGFloat((maxVal - score) / range)
-                        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
-                        else { path.addLine(to: CGPoint(x: x, y: y)) }
-                    }
-                }
-                .stroke(tierColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-
-                // Gradient fill
-                Path { path in
-                    for (i, score) in scores.enumerated() {
-                        let x = CGFloat(i) * stepX
-                        let y = h * CGFloat((maxVal - score) / range)
-                        if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
-                        else { path.addLine(to: CGPoint(x: x, y: y)) }
-                    }
-                    path.addLine(to: CGPoint(x: CGFloat(scores.count - 1) * stepX, y: h))
-                    path.addLine(to: CGPoint(x: 0, y: h))
-                    path.closeSubpath()
-                }
-                .fill(LinearGradient(colors: [tierColor.opacity(0.2), tierColor.opacity(0.02)], startPoint: .top, endPoint: .bottom))
+        return HStack(spacing: 0) {
+            // Y-axis labels
+            VStack {
+                Text("\(Int(maxVal))")
+                Spacer()
+                Text("50")
+                Spacer()
+                Text("\(Int(minVal))")
             }
+            .font(.system(size: 8, weight: .medium))
+            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+            .frame(width: 22)
+
+            // Chart area
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+                let stepX = w / CGFloat(max(data.count - 1, 1))
+
+                ZStack(alignment: .topLeading) {
+                    // Threshold lines
+                    ForEach([30.0, 50.0, 70.0], id: \.self) { threshold in
+                        let y = h * CGFloat((maxVal - threshold) / range)
+                        if y > 0 && y < h {
+                            Path { path in
+                                path.move(to: CGPoint(x: 0, y: y))
+                                path.addLine(to: CGPoint(x: w, y: y))
+                            }
+                            .stroke(AppColors.textSecondary.opacity(0.1), style: StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
+                        }
+                    }
+
+                    // Line
+                    Path { path in
+                        for (i, score) in scores.enumerated() {
+                            let x = CGFloat(i) * stepX
+                            let y = h * CGFloat((maxVal - score) / range)
+                            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                            else { path.addLine(to: CGPoint(x: x, y: y)) }
+                        }
+                    }
+                    .stroke(tierColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+                    // Gradient fill
+                    Path { path in
+                        for (i, score) in scores.enumerated() {
+                            let x = CGFloat(i) * stepX
+                            let y = h * CGFloat((maxVal - score) / range)
+                            if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                            else { path.addLine(to: CGPoint(x: x, y: y)) }
+                        }
+                        path.addLine(to: CGPoint(x: CGFloat(scores.count - 1) * stepX, y: h))
+                        path.addLine(to: CGPoint(x: 0, y: h))
+                        path.closeSubpath()
+                    }
+                    .fill(LinearGradient(colors: [tierColor.opacity(0.15), tierColor.opacity(0.02)], startPoint: .top, endPoint: .bottom))
+
+                    // Selection indicator
+                    if let selected = selectedHistoryPoint,
+                       let idx = data.firstIndex(where: { $0.recordedDate == selected.recordedDate }) {
+                        let x = CGFloat(idx) * stepX
+                        let y = h * CGFloat((maxVal - Double(selected.compositeScore)) / range)
+
+                        // Vertical line
+                        Path { path in
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: h))
+                        }
+                        .stroke(tierColor.opacity(0.4), lineWidth: 1)
+
+                        // Dot
+                        Circle()
+                            .fill(tierColor)
+                            .frame(width: 8, height: 8)
+                            .position(x: x, y: y)
+                    }
+                }
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let x = value.location.x
+                            let idx = max(0, min(data.count - 1, Int(round(x / stepX))))
+                            withAnimation(.easeOut(duration: 0.1)) {
+                                selectedHistoryPoint = data[idx]
+                            }
+                        }
+                )
+            }
+            .frame(height: 160)
         }
-        .frame(height: 120)
+    }
+
+    private func formatScoreDate(_ dateStr: String) -> String {
+        let input = DateFormatter()
+        input.dateFormat = "yyyy-MM-dd"
+        let output = DateFormatter()
+        output.dateFormat = "EEEE, MMMM d, yyyy"
+        guard let date = input.date(from: dateStr) else { return dateStr }
+        return output.string(from: date)
+    }
+
+    private func formatShortDate(_ dateStr: String) -> String {
+        let input = DateFormatter()
+        input.dateFormat = "yyyy-MM-dd"
+        let output = DateFormatter()
+        output.dateFormat = "MMM d"
+        guard let date = input.date(from: dateStr) else { return dateStr }
+        return output.string(from: date)
     }
 
     private func loadScoreHistory() async {

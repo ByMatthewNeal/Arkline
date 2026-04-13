@@ -73,11 +73,11 @@ struct AssetRiskConfig {
         "bittensor": "28452/large/ARUsPeNQ_400x400.jpeg",
         "zcash": "486/large/circle-zcash-color.png",
         "ripple": "44/large/xrp-symbol-white-128.png",
-        "litecoin": "2/large/litecoin-logo.png",
-        "aave": "12645/large/aave-token.png",
-        "ethena": "37986/large/ethena.png",
+        "litecoin": "2/standard/litecoin.png",
+        "aave": "12645/standard/AAVE.png",
+        "ethena": "36530/standard/ethena.png",
         "jupiter-exchange-solana": "34188/large/jup.png",
-        "maple-finance": "14097/large/photo_2021-09-08_03-20-50.jpg",
+        "maple-finance": "14097/standard/photo_2021-09-08_03-20-50.jpg",
     ]
 
     // MARK: - Crypto Initializer (backward compatible)

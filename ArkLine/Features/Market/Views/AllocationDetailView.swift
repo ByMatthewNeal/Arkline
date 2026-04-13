@@ -319,7 +319,8 @@ struct AllocationDetailView: View {
     private func assetRow(allocation: AssetAllocation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
-                if let url = allocation.iconUrl.flatMap({ URL(string: $0) }) {
+                if let url = allocation.iconUrl.flatMap({ URL(string: $0) })
+                    ?? AssetRiskConfig.forSymbol(allocation.assetId)?.logoURL {
                     KFImage(url)
                         .resizable()
                         .placeholder {

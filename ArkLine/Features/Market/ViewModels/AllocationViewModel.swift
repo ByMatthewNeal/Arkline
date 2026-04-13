@@ -70,7 +70,8 @@ class AllocationViewModel {
                 signal = .bearish
             }
 
-            let iconUrl = "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
+            let iconUrl = config.logoURL?.absoluteString
+                ?? "https://assets.coingecko.com/coins/images/\(coinGeckoImageId(for: config.geckoId))"
             signals.append((
                 assetId: config.assetId,
                 displayName: config.displayName,

@@ -73,21 +73,12 @@ struct QPSSignalChangesCard: View {
     }
 
     private func signalChangeRow(_ signal: DailyPositioningSignal) -> some View {
-        HStack(spacing: 10) {
-            if let logoURL = AssetRiskConfig.forSymbol(signal.asset)?.logoURL {
-                KFImage(logoURL)
-                    .resizable()
-                    .fade(duration: 0.2)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 22, height: 22)
-                    .clipShape(Circle())
-            }
-
+        HStack(spacing: 12) {
             Text(signal.asset)
                 .font(AppFonts.body14Bold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .lineLimit(1)
-                .frame(width: 55, alignment: .leading)
+                .frame(width: 70, alignment: .leading)
 
             if let prev = signal.prevPositioningSignal {
                 HStack(spacing: 6) {
