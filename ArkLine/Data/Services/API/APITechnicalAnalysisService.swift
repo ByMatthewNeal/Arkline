@@ -1,13 +1,17 @@
 import Foundation
 
 // MARK: - API Technical Analysis Service
-/// Taapi.io implementation of TechnicalAnalysisServiceProtocol
+/// Calculates technical indicators from Coinbase candle data (no external API rate limits).
 final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
     // MARK: - Dependencies
     private let networkManager: NetworkManager
 
     // MARK: - Configuration
     private let defaultExchange = "binance"
+
+    // MARK: - Cache
+    private var analysisCache: [String: (result: TechnicalAnalysis, timestamp: Date)] = [:]
+    private let cacheTTL: TimeInterval = 300 // 5 minutes
 
     // MARK: - Initialization
     init(networkManager: NetworkManager = .shared) {
@@ -17,7 +21,14 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
     // MARK: - TechnicalAnalysisServiceProtocol
 
     func fetchTechnicalAnalysis(symbol: String, exchange: String, interval: AnalysisTimeframe = .daily) async throws -> TechnicalAnalysis {
-        // Calculate all indicators from Coinbase candle data (no Taapi.io rate limits)
+        // Check cache first
+        let cacheKey = "\(symbol)_\(interval.rawValue)"
+        if let cached = analysisCache[cacheKey],
+           Date().timeIntervalSince(cached.timestamp) < cacheTTL {
+            return cached.result
+        }
+
+        // Calculate all indicators from Coinbase candle data (no rate limits)
         let asset = symbol.split(separator: "/").first ?? Substring(symbol)
         let cbPair = "\(asset)-USD"
 
@@ -128,7 +139,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
         // Extract asset info from symbol
         let assetSymbol = symbol.split(separator: "/").first.map(String.init) ?? symbol
 
-        return TechnicalAnalysis(
+        let result = TechnicalAnalysis(
             assetId: assetSymbol.lowercased(),
             assetSymbol: assetSymbol,
             currentPrice: currentPrice,
@@ -140,6 +151,11 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             bullMarketBands: bullMarketBands,
             timestamp: Date()
         )
+
+        // Cache for 5 minutes
+        analysisCache[cacheKey] = (result: result, timestamp: Date())
+
+        return result
     }
 
     /// Fetches weekly candle data and calculates the 20-week SMA and 21-week EMA
