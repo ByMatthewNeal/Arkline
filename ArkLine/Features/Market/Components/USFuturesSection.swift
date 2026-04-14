@@ -185,6 +185,7 @@ enum USMarketSession: String {
 // MARK: - US Futures Section
 
 struct USFuturesSection: View {
+    var refreshId: UUID = UUID()
     @Environment(\.colorScheme) var colorScheme
     @State private var futures: [USFuturesQuote] = []
     @State private var isLoading = true
@@ -197,10 +198,13 @@ struct USFuturesSection: View {
     /// Overall market bias based on majority of futures direction
     private var marketBias: (label: String, color: Color)? {
         guard !futures.isEmpty else { return nil }
+        // If all futures are flat (0.00%), don't show a bias
+        if futures.allSatisfy(\.isFlat) { return nil }
         let positiveCount = futures.filter(\.isPositive).count
+        let negativeCount = futures.filter { !$0.isPositive && !$0.isFlat }.count
         if positiveCount == futures.count {
             return ("bullish", AppColors.success)
-        } else if positiveCount == 0 {
+        } else if negativeCount == futures.count {
             return ("bearish", AppColors.error)
         }
         return ("mixed", AppColors.warning)
@@ -256,9 +260,8 @@ struct USFuturesSection: View {
             if isLoading {
                 ForEach(0..<3, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+                        .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "E8E8ED"))
                         .frame(height: 64)
-                        .redacted(reason: .placeholder)
                 }
             } else if futures.isEmpty {
                 Text("Unable to load futures data")
@@ -285,7 +288,7 @@ struct USFuturesSection: View {
             }
         }
         .padding(.horizontal)
-        .task {
+        .task(id: refreshId) {
             await loadFutures()
         }
         .onAppear {
@@ -314,7 +317,10 @@ struct USFuturesSection: View {
     private func loadFutures() async {
         session = USMarketSession.current
         do {
-            futures = try await yahoo.fetchFutures()
+            let result = try await withTimeout(seconds: 10) { [yahoo] in
+                try await yahoo.fetchFutures()
+            }
+            futures = result
         } catch {
             logWarning("USFuturesSection: \(error.localizedDescription)", category: .network)
         }
@@ -329,7 +335,7 @@ private struct FuturesQuoteRow: View {
     @Environment(\.colorScheme) var colorScheme
 
     private var changeColor: Color {
-        quote.isPositive ? AppColors.success : AppColors.error
+        quote.isFlat ? AppColors.textSecondary : (quote.isPositive ? AppColors.success : AppColors.error)
     }
 
     private var abbreviation: String {
@@ -374,7 +380,7 @@ private struct FuturesQuoteRow: View {
             }
 
             // Direction indicator
-            Image(systemName: quote.isPositive ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
+            Image(systemName: quote.isFlat ? "minus" : (quote.isPositive ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill"))
                 .font(.system(size: 10))
                 .foregroundColor(changeColor)
         }

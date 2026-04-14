@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -17,6 +17,14 @@ const RATE_LIMIT_MS = 30_000; // 30 seconds between submissions
 export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  // Capture ?ref= query param on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) setReferralCode(ref);
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,9 +41,12 @@ export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps)
     localStorage.setItem(RATE_LIMIT_KEY, String(Date.now()));
     try {
       const supabase = createClient();
+      const insertData: Record<string, string> = { email: trimmed };
+      if (referralCode) insertData.referral_code = referralCode;
+
       const { error } = await supabase
         .from('early_access_signups')
-        .insert({ email: trimmed });
+        .insert(insertData);
 
       if (error) {
         // Unique constraint violation = duplicate

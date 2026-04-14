@@ -227,14 +227,28 @@ final class InviteCodeService: InviteCodeServiceProtocol {
             return 0
         }
 
-        let result = try await supabase.database
+        // Count from invite_codes (in-app referrals)
+        let inviteResult = try await supabase.database
             .from(SupabaseTable.inviteCodes.rawValue)
             .select("id", head: true, count: .exact)
             .eq("created_by", value: userId.uuidString)
             .eq("note", value: "referral")
             .not("used_by", operator: .is, value: "null")
             .execute()
+        let inviteCount = inviteResult.count ?? 0
 
-        return result.count ?? 0
+        // Count from early_access_signups (website referrals via ?ref= link)
+        // First get the user's referral code
+        guard let code = try await fetchReferralCode(for: userId) else {
+            return inviteCount
+        }
+        let signupResult = try await supabase.database
+            .from(SupabaseTable.earlyAccessSignups.rawValue)
+            .select("id", head: true, count: .exact)
+            .eq("referral_code", value: code.code)
+            .execute()
+        let signupCount = signupResult.count ?? 0
+
+        return inviteCount + signupCount
     }
 }

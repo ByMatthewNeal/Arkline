@@ -83,10 +83,13 @@ struct ProfileView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape")
+                            .font(.system(size: 17))
                             .foregroundColor(AppColors.accent)
                     }
+                    .id("settings-gear")
                 }
             }
+            .toolbarRole(.navigationStack)
             #endif
             .sheet(isPresented: $showReferral) {
                 ReferFriendView(viewModel: viewModel)
