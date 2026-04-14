@@ -80,9 +80,12 @@ struct AssetTechnicalDetailSheet: View {
                         // Loading state
                         VStack(spacing: ArkSpacing.md) {
                             ProgressView()
-                            Text("Fetching technical data...")
-                                .font(.caption)
+                            Text("Analyzing \(asset.name)...")
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(AppColors.textSecondary)
+                            Text("Calculating RSI, SMAs, Bollinger Bands & trend")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.6))
                         }
                         .padding(.top, 40)
                     } else if let error = errorMessage {
