@@ -17,42 +17,25 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
     // MARK: - TechnicalAnalysisServiceProtocol
 
     func fetchTechnicalAnalysis(symbol: String, exchange: String, interval: AnalysisTimeframe = .daily) async throws -> TechnicalAnalysis {
-        // Fetch all data concurrently using bulk endpoint for efficiency
-        let indicators: [TaapiIndicator] = [
-            // SMAs
-            TaapiIndicator(id: "sma21", indicator: "sma", period: 21),
-            TaapiIndicator(id: "sma50", indicator: "sma", period: 50),
-            TaapiIndicator(id: "sma200", indicator: "sma", period: 200),
-            // Bollinger Bands
-            TaapiIndicator(id: "bbands", indicator: "bbands", period: 20, stddev: 2),
-            // RSI
-            TaapiIndicator(id: "rsi", indicator: "rsi", period: 14),
-            // Price
-            TaapiIndicator(id: "price", indicator: "price")
-        ]
+        // Calculate all indicators from Coinbase candle data (no Taapi.io rate limits)
+        let asset = symbol.split(separator: "/").first ?? Substring(symbol)
+        let cbPair = "\(asset)-USD"
 
-        let endpoint = TaapiEndpoint.bulk(
-            exchange: exchange,
-            symbol: symbol,
-            interval: interval.rawValue,
-            indicators: indicators
-        )
-
-        let bulkResponse: TaapiBulkResponse = try await networkManager.request(endpoint)
-
-        // Parse results into a dictionary for easy access
-        var results: [String: TaapiIndicatorValue] = [:]
-        for item in bulkResponse.data {
-            results[item.id] = item.resolvedResult
+        // Fetch 300 daily candles (enough for 200-SMA + Bollinger + RSI)
+        let candles = try await CoinbaseCandle.fetch(pair: String(cbPair), granularity: "ONE_DAY", limit: 300)
+        guard candles.count >= 21 else {
+            throw AppError.custom(message: "Not enough data for technical analysis")
         }
 
-        // Get current price
-        let currentPrice = results["price"]?.value ?? 0
+        let closes = candles.map(\.close)
 
-        // Build SMA Analysis
-        let sma21Value = results["sma21"]?.value ?? 0
-        let sma50Value = results["sma50"]?.value ?? 0
-        let sma200Value = results["sma200"]?.value ?? 0
+        // Current price = latest candle close
+        let currentPrice = closes.last ?? 0
+
+        // Calculate SMAs
+        let sma21Value = closes.count >= 21 ? calculateSMA(prices: Array(closes.suffix(21))) : 0
+        let sma50Value = closes.count >= 50 ? calculateSMA(prices: Array(closes.suffix(50))) : 0
+        let sma200Value = closes.count >= 200 ? calculateSMA(prices: Array(closes.suffix(200))) : 0
 
         let smaAnalysis = SMAAnalysis(
             sma21: SMAData(
@@ -75,33 +58,25 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             )
         )
 
-        // Build Bollinger Bands for the selected timeframe
-        let primaryBB = buildBollingerData(
-            from: results["bbands"],
-            timeframe: interval.bollingerTimeframe,
-            currentPrice: currentPrice
+        // Calculate Bollinger Bands from last 20 daily closes
+        let bbPeriod = min(closes.count, 20)
+        let bbCloses = Array(closes.suffix(bbPeriod))
+        let bbMiddle = calculateSMA(prices: bbCloses)
+        let bbStdDev = sqrt(bbCloses.map { pow($0 - bbMiddle, 2) }.reduce(0, +) / Double(bbPeriod))
+        let bbUpper = bbMiddle + (2.0 * bbStdDev)
+        let bbLower = bbMiddle - (2.0 * bbStdDev)
+
+        let dailyBB = BollingerBandData(
+            timeframe: .daily,
+            upperBand: bbUpper,
+            middleBand: bbMiddle,
+            lowerBand: bbLower,
+            currentPrice: currentPrice,
+            bandwidth: bbMiddle != 0 ? (bbUpper - bbLower) / bbMiddle : 0,
+            position: determineBollingerPosition(price: currentPrice, upper: bbUpper, lower: bbLower)
         )
-
-        // For the BollingerBandAnalysis structure, we set the selected timeframe's data
-        // and estimate the others based on the primary
-        let dailyBB: BollingerBandData
-        let weeklyBB: BollingerBandData
-        let monthlyBB: BollingerBandData
-
-        switch interval {
-        case .oneHour, .fourHour, .daily:
-            dailyBB = primaryBB
-            weeklyBB = estimateBollingerData(from: primaryBB, timeframe: .weekly, currentPrice: currentPrice)
-            monthlyBB = estimateBollingerData(from: primaryBB, timeframe: .monthly, currentPrice: currentPrice)
-        case .weekly:
-            dailyBB = estimateBollingerData(from: primaryBB, timeframe: .daily, currentPrice: currentPrice)
-            weeklyBB = primaryBB
-            monthlyBB = estimateBollingerData(from: primaryBB, timeframe: .monthly, currentPrice: currentPrice)
-        case .monthly:
-            dailyBB = estimateBollingerData(from: primaryBB, timeframe: .daily, currentPrice: currentPrice)
-            weeklyBB = estimateBollingerData(from: primaryBB, timeframe: .weekly, currentPrice: currentPrice)
-            monthlyBB = primaryBB
-        }
+        let weeklyBB = estimateBollingerData(from: dailyBB, timeframe: .weekly, currentPrice: currentPrice)
+        let monthlyBB = estimateBollingerData(from: dailyBB, timeframe: .monthly, currentPrice: currentPrice)
 
         let bollingerBands = BollingerBandAnalysis(
             daily: dailyBB,
@@ -117,8 +92,23 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
             sma200: sma200Value
         )
 
-        // Determine sentiment from RSI and trend
-        let rsiValue = results["rsi"]?.value ?? 50
+        // Calculate RSI from last 15 daily closes
+        let rsiValue: Double = {
+            guard closes.count >= 15 else { return 50 }
+            let recent = Array(closes.suffix(15))
+            var gains: [Double] = []
+            var losses: [Double] = []
+            for i in 1..<recent.count {
+                let change = recent[i] - recent[i-1]
+                gains.append(max(change, 0))
+                losses.append(max(-change, 0))
+            }
+            let avgGain = gains.reduce(0, +) / 14.0
+            let avgLoss = losses.reduce(0, +) / 14.0
+            guard avgLoss > 0 else { return 100 }
+            let rs = avgGain / avgLoss
+            return 100.0 - (100.0 / (1.0 + rs))
+        }()
         let sentiment = determineSentiment(
             rsi: rsiValue,
             trend: trend,
