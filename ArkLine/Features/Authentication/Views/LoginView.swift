@@ -48,12 +48,11 @@ struct LoginView: View {
                             .scaleEffect(isAnimating ? 1.1 : 1.0)
                             .opacity(isAnimating ? 1 : 0.6)
 
-                        if let logo = UIImage(named: "ArkLineAppIcon") {
+                        if let logo = UIImage(named: "ArkLineLogo") {
                             Image(uiImage: logo)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 18))
                         } else {
                             Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
                                 .resizable()
