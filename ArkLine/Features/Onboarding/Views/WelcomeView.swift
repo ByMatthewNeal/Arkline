@@ -12,19 +12,19 @@ struct WelcomeView: View {
             icon: "shield.checkered",
             assetImage: "ArkLineLogo",
             title: "Invest with Confidence",
-            description: "Real-time risk scoring, macro indicators, and AI analysis — so you always know when to act, hold, or wait.",
+            description: "Real-time risk scoring, macro indicators, and daily intel — so you always know when to act, hold, or wait.",
             accentColor: AppColors.fillPrimary
         ),
         WelcomeSlide(
             icon: "bell.badge.fill",
             title: "Always On, Always Informed",
-            description: "Live broadcasts, DCA reminders, and market alerts — delivered the moment conditions shift.",
+            description: "Live broadcasts, DCA reminders, and market alerts — so you never miss a move.",
             accentColor: AppColors.success
         ),
         WelcomeSlide(
             icon: "sparkles",
-            title: "Smarter Over Time",
-            description: "Adaptive risk models that learn from the market, portfolio tracking, and AI chat — all in one place.",
+            title: "Intel That Keeps Up",
+            description: "Risk models that recalibrate as markets move — so your read is never a day behind.",
             accentColor: AppColors.info
         )
     ]
