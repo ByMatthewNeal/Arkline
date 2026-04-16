@@ -276,7 +276,7 @@ extension View {
 #Preview("Step Indicator") {
     VStack {
         OnboardingStepIndicator(step: .email)
-        OnboardingStepIndicator(step: .careerIndustry)
+        OnboardingStepIndicator(step: .investmentInterests)
         OnboardingStepIndicator(step: .faceIDSetup)
     }
     .background(Color(hex: "0F0F0F"))

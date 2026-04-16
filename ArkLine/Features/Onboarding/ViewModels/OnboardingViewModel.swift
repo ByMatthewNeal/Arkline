@@ -7,11 +7,9 @@ enum OnboardingStep: Int, CaseIterable {
     case email
     case verification
     case username
-    case personalInfo
-    case careerIndustry
-    case careerInfo
-    case socialLinks
-    case profilePicture
+    case investmentInterests   // NEW: What do you invest in?
+    case careerInfo            // Experience level + portfolio size
+    case portfolioGoals        // NEW: What matters most to you?
     case createPasscode
     case confirmPasscode
     case faceIDSetup
@@ -48,11 +46,9 @@ enum OnboardingStep: Int, CaseIterable {
         case .email: return "Enter Email"
         case .verification: return "Verify Email"
         case .username: return "Your Name"
-        case .personalInfo: return "Personal Info"
-        case .careerIndustry: return "Industry"
+        case .investmentInterests: return "Investments"
         case .careerInfo: return "Experience"
-        case .socialLinks: return "Social Links"
-        case .profilePicture: return "Profile Picture"
+        case .portfolioGoals: return "Goals"
         case .createPasscode: return "Create Passcode"
         case .confirmPasscode: return "Confirm Passcode"
         case .faceIDSetup: return "Face ID"
@@ -63,7 +59,7 @@ enum OnboardingStep: Int, CaseIterable {
     /// Whether this step can be skipped
     var isSkippable: Bool {
         switch self {
-        case .careerIndustry, .careerInfo, .socialLinks, .profilePicture, .notifications:
+        case .investmentInterests, .careerInfo, .portfolioGoals, .notifications:
             return true
         default:
             return false
@@ -77,12 +73,80 @@ enum OnboardingStep: Int, CaseIterable {
             return .intro
         case .email, .verification:
             return .authentication
-        case .username, .personalInfo, .careerIndustry, .careerInfo, .socialLinks, .profilePicture:
+        case .username, .investmentInterests, .careerInfo, .portfolioGoals:
             return .profile
         case .createPasscode, .confirmPasscode, .faceIDSetup:
             return .security
         case .notifications:
             return .setup
+        }
+    }
+}
+
+// MARK: - Investment Interest
+enum InvestmentInterest: String, CaseIterable, Identifiable {
+    case crypto = "Crypto"
+    case stocks = "Stocks & ETFs"
+    case commodities = "Commodities"
+    case realEstate = "Real Estate"
+    case forex = "Forex"
+    case options = "Options"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .crypto: return "bitcoinsign.circle.fill"
+        case .stocks: return "chart.line.uptrend.xyaxis"
+        case .commodities: return "leaf.fill"
+        case .realEstate: return "building.2.fill"
+        case .forex: return "dollarsign.arrow.circlepath"
+        case .options: return "arrow.up.arrow.down.circle.fill"
+        }
+    }
+}
+
+// MARK: - Portfolio Size Range
+enum PortfolioSizeRange: String, CaseIterable, Identifiable {
+    case under1k = "Under $1K"
+    case from1kTo10k = "$1K – $10K"
+    case from10kTo50k = "$10K – $50K"
+    case from50kTo250k = "$50K – $250K"
+    case over250k = "$250K+"
+
+    var id: String { rawValue }
+}
+
+// MARK: - Portfolio Goal
+enum PortfolioGoal: String, CaseIterable, Identifiable {
+    case riskManagement = "Risk Management"
+    case entrySignals = "Finding Entries"
+    case portfolioTracking = "Portfolio Tracking"
+    case marketIntelligence = "Market Intelligence"
+    case dcaStrategy = "DCA Strategy"
+    case macroAnalysis = "Macro Analysis"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .riskManagement: return "shield.checkered"
+        case .entrySignals: return "scope"
+        case .portfolioTracking: return "chart.pie.fill"
+        case .marketIntelligence: return "sparkles"
+        case .dcaStrategy: return "calendar.badge.clock"
+        case .macroAnalysis: return "globe.americas.fill"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .riskManagement: return "Know when to size up or de-risk"
+        case .entrySignals: return "Fibonacci-based trade signals"
+        case .portfolioTracking: return "Track holdings and performance"
+        case .marketIntelligence: return "Daily briefings and sentiment"
+        case .dcaStrategy: return "Systematic accumulation plans"
+        case .macroAnalysis: return "VIX, DXY, liquidity cycles"
         }
     }
 }
@@ -125,6 +189,11 @@ class OnboardingViewModel {
     var passcode = ""
     var confirmPasscode = ""
     var isFaceIDEnabled = false
+
+    // MARK: - New Onboarding Data
+    var investmentInterests: Set<InvestmentInterest> = []
+    var portfolioSizeRange: PortfolioSizeRange?
+    var portfolioGoal: PortfolioGoal?
 
     // MARK: - Invite Code
     var inviteCode = ""
@@ -304,19 +373,10 @@ class OnboardingViewModel {
         let trimmedFirst = firstName.trimmingCharacters(in: .whitespaces)
         let trimmedLast = lastName.trimmingCharacters(in: .whitespaces)
         fullName = trimmedLast.isEmpty ? trimmedFirst : "\(trimmedFirst) \(trimmedLast)"
-        // Skip personalInfo step, go directly to careerIndustry
-        currentStep = .careerIndustry
-    }
-
-    func savePersonalInfo() {
-        guard isPersonalInfoValid else {
-            errorMessage = "Please enter your name"
-            return
-        }
         nextStep()
     }
 
-    func saveCareerIndustry() {
+    func saveInvestmentInterests() {
         nextStep()
     }
 
@@ -324,31 +384,15 @@ class OnboardingViewModel {
         nextStep()
     }
 
-    func saveSocialLinks() {
+    func savePortfolioGoals() {
         nextStep()
     }
 
-    func saveProfilePicture() async {
-        // Upload image if provided
-        if let imageData = profileImageData {
-            guard let userId = SupabaseAuthManager.shared.currentUserId else {
-                nextStep()
-                return
-            }
-
-            do {
-                let avatarURL = try await AvatarUploadService.shared.uploadAvatar(
-                    data: imageData,
-                    for: userId
-                )
-                uploadedAvatarUrl = avatarURL.absoluteString
-            } catch {
-                AppLogger.shared.error("Avatar upload failed: \(error.localizedDescription)")
-                // Continue without avatar - user can add later
-            }
-        }
-        nextStep()
-    }
+    // MARK: - Legacy (views still in project but not in flow)
+    func savePersonalInfo() { nextStep() }
+    func saveCareerIndustry() { nextStep() }
+    func saveSocialLinks() { nextStep() }
+    func saveProfilePicture() async { nextStep() }
 
     func createPasscode() {
         guard isPasscodeValid else {
@@ -402,12 +446,7 @@ class OnboardingViewModel {
                 // Store passcode securely using PBKDF2 hashing in Keychain
                 try passcodeManager.setPasscode(passcode)
 
-                let socialLinks = SocialLinks(
-                    twitter: twitterHandle.nilIfEmpty,
-                    linkedin: linkedinUrl.nilIfEmpty,
-                    telegram: telegramHandle.nilIfEmpty,
-                    website: websiteUrl.nilIfEmpty
-                )
+                let socialLinks: SocialLinks? = nil // Collected in Profile settings now
 
                 // Generate username from email (part before @) since we no longer collect username
                 let generatedUsername = email.components(separatedBy: "@").first ?? "user"

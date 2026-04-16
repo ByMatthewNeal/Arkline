@@ -105,16 +105,12 @@ struct OnboardingFlowView: View {
                 VerificationCodeView(viewModel: viewModel)
             case .username:
                 ChooseUsernameView(viewModel: viewModel)
-            case .personalInfo:
-                PersonalInfoView(viewModel: viewModel)
-            case .careerIndustry:
-                CareerIndustryView(viewModel: viewModel)
+            case .investmentInterests:
+                InvestmentInterestsView(viewModel: viewModel)
             case .careerInfo:
                 CareerInfoView(viewModel: viewModel)
-            case .socialLinks:
-                SocialLinksView(viewModel: viewModel)
-            case .profilePicture:
-                ProfilePictureView(viewModel: viewModel)
+            case .portfolioGoals:
+                PortfolioGoalsView(viewModel: viewModel)
             case .createPasscode:
                 CreatePasscodeView(viewModel: viewModel)
             case .confirmPasscode:

@@ -8,27 +8,83 @@ struct CareerInfoView: View {
     var body: some View {
         OnboardingContainer(step: viewModel.currentStep) {
             ScrollView {
-                VStack(spacing: ArkSpacing.xxl) {
+                VStack(spacing: ArkSpacing.xl) {
                     // Header
                     OnboardingHeader(
                         icon: "chart.bar.xaxis",
-                        title: "Your investing experience?",
+                        title: "Your investing profile",
                         isOptional: true
                     )
 
-                    // Experience level options
-                    VStack(spacing: ArkSpacing.sm) {
-                        ForEach(ExperienceLevel.allCases, id: \.self) { level in
-                            ExperienceLevelCard(
-                                level: level,
-                                isSelected: viewModel.experienceLevel == level,
-                                colorScheme: colorScheme
-                            ) {
-                                viewModel.experienceLevel = level
+                    // Experience level
+                    VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                        Text("EXPERIENCE LEVEL")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(AppColors.textSecondary)
+                            .tracking(1)
+                            .padding(.horizontal, ArkSpacing.xl)
+
+                        VStack(spacing: ArkSpacing.sm) {
+                            ForEach(ExperienceLevel.allCases, id: \.self) { level in
+                                ExperienceLevelCard(
+                                    level: level,
+                                    isSelected: viewModel.experienceLevel == level,
+                                    colorScheme: colorScheme
+                                ) {
+                                    viewModel.experienceLevel = level
+                                }
                             }
                         }
+                        .padding(.horizontal, ArkSpacing.xl)
                     }
-                    .padding(.horizontal, ArkSpacing.xl)
+
+                    // Portfolio size
+                    VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                        Text("PORTFOLIO SIZE")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(AppColors.textSecondary)
+                            .tracking(1)
+                            .padding(.horizontal, ArkSpacing.xl)
+
+                        VStack(spacing: ArkSpacing.xs) {
+                            ForEach(PortfolioSizeRange.allCases) { size in
+                                Button {
+                                    Haptics.selection()
+                                    viewModel.portfolioSizeRange = size
+                                } label: {
+                                    HStack {
+                                        Text(size.rawValue)
+                                            .font(AppFonts.title16)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                                        Spacer()
+
+                                        if viewModel.portfolioSizeRange == size {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 22))
+                                                .foregroundColor(AppColors.fillPrimary)
+                                        }
+                                    }
+                                    .padding(ArkSpacing.md)
+                                    .background(
+                                        viewModel.portfolioSizeRange == size
+                                            ? AppColors.fillPrimary.opacity(0.1)
+                                            : AppColors.cardBackground(colorScheme)
+                                    )
+                                    .cornerRadius(ArkSpacing.Radius.md)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                                            .stroke(
+                                                viewModel.portfolioSizeRange == size ? AppColors.fillPrimary : Color.clear,
+                                                lineWidth: ArkSpacing.Border.medium
+                                            )
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, ArkSpacing.xl)
+                    }
 
                     Spacer(minLength: ArkSpacing.xxxl)
                 }
