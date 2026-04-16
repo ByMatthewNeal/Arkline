@@ -17,8 +17,8 @@ struct WelcomeView: View {
         ),
         WelcomeSlide(
             icon: "bell.badge.fill",
-            title: "Your Personal Coach",
-            description: "Receive live broadcasts, DCA reminders, and market alerts directly from your coach — never miss a move.",
+            title: "Always On, Always Informed",
+            description: "Live broadcasts, DCA reminders, and market alerts — delivered the moment conditions shift.",
             accentColor: AppColors.success
         ),
         WelcomeSlide(
