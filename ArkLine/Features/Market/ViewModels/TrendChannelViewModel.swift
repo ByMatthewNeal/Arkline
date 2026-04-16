@@ -77,17 +77,43 @@ class TrendChannelViewModel {
             if let cached = cachedBars[key] {
                 bars = cached
             } else {
-                let result = try await yahooService.fetchChartBars(
-                    symbol: symbol,
-                    interval: range.yahooInterval,
-                    range: range.yahooRange
-                )
+                var rawBars: [OHLCBar] = []
 
-                let rawBars: [OHLCBar]
-                if range.needsAggregation {
-                    rawBars = yahooService.aggregate4HBars(from: result.bars)
-                } else {
-                    rawBars = result.bars
+                // Try Yahoo Finance first
+                do {
+                    let result = try await withTimeout(seconds: 8) { [yahooService, symbol, range] in
+                        try await yahooService.fetchChartBars(
+                            symbol: symbol,
+                            interval: range.yahooInterval,
+                            range: range.yahooRange
+                        )
+                    }
+                    if range.needsAggregation {
+                        rawBars = yahooService.aggregate4HBars(from: result.bars)
+                    } else {
+                        rawBars = result.bars
+                    }
+
+                    // Also cache daily quote
+                    if cachedDailyQuote[symbol] == nil {
+                        let price = result.currentPrice
+                        var change = 0.0
+                        if let prevClose = result.previousClose, prevClose > 0 {
+                            change = ((price - prevClose) / prevClose) * 100
+                        }
+                        cachedDailyQuote[symbol] = (price: price, change: change)
+                    }
+                } catch {
+                    logWarning("TrendChannel Yahoo failed for \(symbol): \(error.localizedDescription), trying FMP...", category: .network)
+                }
+
+                // Fallback to FMP if Yahoo returned nothing
+                if rawBars.isEmpty {
+                    rawBars = await fetchBarsFromFMP(symbol: symbol, range: range)
+                }
+
+                guard !rawBars.isEmpty else {
+                    throw AppError.custom(message: "No data available")
                 }
 
                 cachedBars[key] = rawBars
@@ -122,6 +148,64 @@ class TrendChannelViewModel {
             selectedDate = nil
         }
         await loadData()
+    }
+
+    // MARK: - FMP Fallback
+
+    /// Map Yahoo symbols to FMP-compatible symbols
+    private func fmpSymbol(for yahooSymbol: String) -> String? {
+        switch yahooSymbol {
+        case "^GSPC": return "^GSPC"      // S&P 500 index
+        case "^IXIC": return "^IXIC"      // Nasdaq composite
+        case "GC=F": return "GCUSD"       // Gold futures
+        case "SI=F": return "SIUSD"       // Silver futures
+        default: return nil
+        }
+    }
+
+    private func fetchBarsFromFMP(symbol: String, range: TrendChannelTimeRange) async -> [OHLCBar] {
+        guard let fmpSym = fmpSymbol(for: symbol) else { return [] }
+
+        let limit: Int
+        switch range {
+        case .fourHour: limit = 60    // ~10 days of 4H bars → use daily as proxy
+        case .daily: limit = 365
+        case .weekly: limit = 520     // ~10 years of weekly
+        case .monthly: limit = 240    // ~20 years of monthly
+        }
+
+        do {
+            let fmpPrices = try await FMPService.shared.fetchHistoricalPrices(symbol: fmpSym, limit: limit)
+
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd"
+            fmt.timeZone = TimeZone(identifier: "America/New_York")
+
+            let bars = fmpPrices.compactMap { price -> OHLCBar? in
+                guard let date = fmt.date(from: price.date),
+                      price.close > 0, price.open > 0, price.high > 0, price.low > 0 else { return nil }
+                return OHLCBar(date: date, open: price.open, high: price.high, low: price.low, close: price.close)
+            }.sorted { $0.date < $1.date }
+
+            if !bars.isEmpty {
+                // Update price from FMP data
+                if let latest = bars.last, cachedDailyQuote[symbol] == nil {
+                    let prevClose = bars.count >= 2 ? bars[bars.count - 2].close : latest.close
+                    let change = prevClose > 0 ? ((latest.close - prevClose) / prevClose) * 100 : 0
+                    await MainActor.run {
+                        self.currentPrice = latest.close
+                        self.priceChange = change
+                    }
+                    cachedDailyQuote[symbol] = (price: latest.close, change: change)
+                }
+                logInfo("TrendChannel: FMP fallback loaded \(bars.count) bars for \(fmpSym)", category: .network)
+            }
+
+            return bars
+        } catch {
+            logWarning("TrendChannel FMP fallback failed for \(fmpSym): \(error.localizedDescription)", category: .network)
+            return []
+        }
     }
 
     // MARK: - Selection Helpers
