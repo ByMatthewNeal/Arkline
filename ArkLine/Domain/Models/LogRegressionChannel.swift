@@ -6,6 +6,8 @@ import SwiftUI
 enum IndexSymbol: String, CaseIterable, Identifiable {
     case sp500 = "^GSPC"
     case nasdaq = "^IXIC"
+    case gold = "GC=F"
+    case silver = "SI=F"
 
     var id: String { rawValue }
 
@@ -13,6 +15,8 @@ enum IndexSymbol: String, CaseIterable, Identifiable {
         switch self {
         case .sp500: return "S&P 500"
         case .nasdaq: return "Nasdaq"
+        case .gold: return "Gold"
+        case .silver: return "Silver"
         }
     }
 }

@@ -80,6 +80,9 @@ struct TrendChannelDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
             }
+            .refreshable {
+                await viewModel.loadData()
+            }
             .background(AppColors.background(colorScheme))
             .navigationTitle("\(initialIndex.displayName) Trend Channel")
             .navigationBarTitleDisplayMode(.inline)
@@ -605,6 +608,16 @@ struct IndexWidgetCard: View {
         switch index {
         case .sp500: return "SPX"
         case .nasdaq: return "NDX"
+        case .gold: return "Au"
+        case .silver: return "Ag"
+        }
+    }
+
+    private var iconColor: Color {
+        switch index {
+        case .sp500, .nasdaq: return AppColors.accent
+        case .gold: return Color(hex: "F59E0B")
+        case .silver: return Color(hex: "94A3B8")
         }
     }
 
@@ -675,9 +688,9 @@ struct IndexWidgetCard: View {
                 HStack(spacing: 16) {
                     Text(abbreviation)
                         .font(.system(size: 14, weight: .bold, design: .default))
-                        .foregroundStyle(AppColors.accent)
+                        .foregroundStyle(iconColor)
                         .frame(width: 44, height: 44)
-                        .background(AppColors.accent.opacity(0.12))
+                        .background(iconColor.opacity(0.12))
                         .cornerRadius(12)
 
                     VStack(alignment: .leading, spacing: 2) {
