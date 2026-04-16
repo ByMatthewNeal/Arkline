@@ -343,11 +343,11 @@ Deno.serve(async (req) => {
         const supports = zones
           .filter((z: any) => z.zone_type === "support")
           .slice(0, 2)
-          .map((z: any) => `$${Number(z.zone_mid).toLocaleString()} (str:${z.strength})`)
+          .map((z: any) => `$${Number(z.zone_mid).toLocaleString()}`)
         const resistances = zones
           .filter((z: any) => z.zone_type === "resistance")
           .slice(0, 2)
-          .map((z: any) => `$${Number(z.zone_mid).toLocaleString()} (str:${z.strength})`)
+          .map((z: any) => `$${Number(z.zone_mid).toLocaleString()}`)
 
         const parts: string[] = []
         if (supports.length > 0) parts.push(`Support: ${supports.join(", ")}`)
@@ -653,7 +653,7 @@ One sentence with the weekend crypto stance. If a "Macro Regime" or "Crypto Posi
 3-4 sentences on crypto weekend action. Cover BTC, ETH, SOL price movement and momentum. Note any notable weekend moves, funding rate shifts, or liquidation events. Mention Fear & Greed if available. Traditional markets are closed — don't discuss equities.
 
 ## Technical
-2-3 sentences on BTC's technical picture if BTC TECHNICAL ANALYSIS data is available. Focus on key levels, trend, and derivatives. If KEY LEVELS data is present, mention the nearest Fibonacci confluence support and resistance for BTC (and ETH/SOL if notable). Higher strength numbers mean stronger zones. Skip this section entirely if no TA data is present.
+2-3 sentences on BTC's technical picture if BTC TECHNICAL ANALYSIS data is available. Focus on key levels, trend, and derivatives. If KEY LEVELS data is present, mention the nearest Fibonacci confluence support and resistance for BTC (and ETH/SOL if notable). NEVER include strength numbers, scores, or any numbers in parentheses like "(strength 20)" — just state the price levels naturally. Skip this section entirely if no TA data is present.
 
 ## Week Ahead
 1-2 sentences previewing Monday. Mention any known economic events coming up, or note what levels to watch for the Monday open.
