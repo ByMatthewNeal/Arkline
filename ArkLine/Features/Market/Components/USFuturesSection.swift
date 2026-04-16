@@ -317,14 +317,53 @@ struct USFuturesSection: View {
     private func loadFutures() async {
         session = USMarketSession.current
         do {
-            let result = try await withTimeout(seconds: 10) { [yahoo] in
+            let result = try await withTimeout(seconds: 8) { [yahoo] in
                 try await yahoo.fetchFutures()
             }
-            futures = result
+            if !result.isEmpty {
+                futures = result
+                isLoading = false
+                return
+            }
         } catch {
-            logWarning("USFuturesSection: \(error.localizedDescription)", category: .network)
+            logWarning("USFuturesSection Yahoo failed: \(error.localizedDescription), trying FMP...", category: .network)
+        }
+
+        // Fallback: fetch from FMP
+        do {
+            let fmpQuotes = try await fetchFuturesFromFMP()
+            if !fmpQuotes.isEmpty {
+                futures = fmpQuotes
+            }
+        } catch {
+            logWarning("USFuturesSection FMP fallback also failed: \(error.localizedDescription)", category: .network)
         }
         isLoading = false
+    }
+
+    private func fetchFuturesFromFMP() async throws -> [USFuturesQuote] {
+        let symbols = ["^GSPC", "^DJI", "^IXIC"] // S&P 500, Dow, Nasdaq indices
+        let names = ["S&P 500", "Dow", "NASDAQ"]
+        let fmp = FMPService.shared
+
+        var results: [USFuturesQuote] = []
+        for (i, symbol) in symbols.enumerated() {
+            do {
+                let quote = try await fmp.fetchStockQuote(symbol: symbol)
+                results.append(USFuturesQuote(
+                    symbol: symbol,
+                    name: names[i],
+                    shortName: names[i],
+                    price: quote.price,
+                    previousClose: quote.price - quote.change,
+                    change: quote.change,
+                    changePercent: quote.changePercentage
+                ))
+            } catch {
+                // Skip failed individual quotes
+            }
+        }
+        return results
     }
 }
 
