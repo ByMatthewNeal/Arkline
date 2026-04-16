@@ -12,7 +12,7 @@ struct WelcomeView: View {
             icon: "shield.checkered",
             assetImage: "ArkLineLogo",
             title: "Invest with Confidence",
-            description: "Real-time risk scoring, macro indicators, and AI analysis — so you always know when to buy, hold, or wait.",
+            description: "Real-time risk scoring, macro indicators, and AI analysis — so you always know when to act, hold, or wait.",
             accentColor: AppColors.fillPrimary
         ),
         WelcomeSlide(
@@ -139,8 +139,16 @@ struct WelcomeSlideView: View {
                     if let assetImage = slide.assetImage {
                         Image(assetImage)
                             .resizable()
+                            .renderingMode(.template)
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 80, height: 80)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [slide.accentColor, slide.accentColor.opacity(0.7)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                     } else {
                         Image(systemName: slide.icon)
                             .font(.system(size: 48, weight: .medium))
