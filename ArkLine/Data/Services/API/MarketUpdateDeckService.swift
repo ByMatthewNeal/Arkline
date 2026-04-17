@@ -53,7 +53,6 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let token = try? await supabase.auth.session.accessToken
         request.setValue("Bearer \(token ?? Constants.API.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("arkline-cron-2026", forHTTPHeaderField: "x-cron-secret")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

@@ -260,6 +260,12 @@ final class APIProxy {
         queryItems: [String: String]?
     ) async throws -> Data {
         let config = directConfig(for: service)
+
+        // If no local API key is available (release builds), fail immediately
+        if config.apiKey == nil && service != .binanceFutures {
+            throw APIProxyError.httpError(statusCode: 0, data: Data())
+        }
+
         let request = try buildDirectRequest(config: config, path: path, method: method, queryItems: queryItems)
 
         let (data, response) = try await PinnedURLSession.shared.data(for: request)

@@ -768,9 +768,10 @@ ${feedbackBlock}`,
     }).catch((err) => console.error("Briefing push failed:", err))
 
     // Pre-generate TTS audio
+    const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
     fetch(`${supabaseUrl}/functions/v1/briefing-tts`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
       body: JSON.stringify({ briefingKey, summaryText: summary }),
     }).catch((err) => console.error("TTS pre-generation failed:", err))
 

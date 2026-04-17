@@ -25,7 +25,7 @@ struct PortfolioGoalsView: View {
                     .foregroundColor(textPrimary)
                     .multilineTextAlignment(.center)
 
-                Text("Select up to 3. We'll prioritize features based on your focus.")
+                Text("Select up to 3.")
                     .font(.subheadline)
                     .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)

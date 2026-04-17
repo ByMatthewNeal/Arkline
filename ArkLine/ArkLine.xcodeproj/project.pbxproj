@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
+		OBFSC4T3DBLD00000000001 /* ObfuscatedSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBFSC4T3DSECR3TS0000001 /* ObfuscatedSecrets.swift */; };
 		0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD3282515B7877788D18601 /* TrendChannelChart.swift */; };
 		0163AAB9E3115D7C8026A39F /* GlobalLiquidityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */; };
 		0287C168D12A0BBB5F6AAD51 /* DoubleExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0226AB419D7AB03D9541784 /* DoubleExtensionsTests.swift */; };
@@ -336,7 +337,6 @@
 		BDF8D9BCC56B4057930F72C5 /* SwingSetupsSummarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1952CB3C02234FC9885208EB /* SwingSetupsSummarySection.swift */; };
 		BE518BD133BCA4B82F9178E4 /* SupplyInProfitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */; };
 		BE89C92611163C89B015EF91 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CBCD28DAB9835627BA87F5 /* VIXData.swift */; };
-		BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */; };
 		C01NP1CK3RV13W0000002 /* CoinPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01NP1CK3RV13W0000001 /* CoinPickerView.swift */; };
 		C04B4FC3C23778233ABA6322 /* PositioningSignalCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECA6B164AD3765E2BDD5E4A9 /* PositioningSignalCalculator.swift */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
@@ -458,6 +458,7 @@
 		E44EDD8D9EA83E2822F9DF65 /* MockPortfolioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92D28E4D3A8673A58AC2262 /* MockPortfolioService.swift */; };
 		E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC08066BF3931DF639585239 /* ArkSystemPrompt.swift */; };
 		E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */; };
+		PR1VACYOVERL4YBLD001 /* PrivacyOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = PR1VACYOVERL4YV1EW001 /* PrivacyOverlayView.swift */; };
 		E58A43C4DB3375C547C8EF40 /* ITCRiskLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */; };
 		E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */; };
 		E819430F3E00303F1A55EFAE /* MacroDashboardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC7ABF94C0D0269A2DE157EA /* MacroDashboardModels.swift */; };
@@ -596,8 +597,10 @@
 		2BF75F6804B0EEA5772F8BEE /* MarketMoversSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketMoversSection.swift; sourceTree = "<group>"; };
 		2C529AFE6D31B15B880E64C1 /* MarketServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketServiceProtocol.swift; sourceTree = "<group>"; };
 		2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		PR1VACYOVERL4YV1EW001 /* PrivacyOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyOverlayView.swift; sourceTree = "<group>"; };
 		2D81358145D7861C61D27013 /* SellAssetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SellAssetView.swift; sourceTree = "<group>"; };
 		2EEF32D24CEC66662543D000 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		OBFSC4T3DSECR3TS0000001 /* ObfuscatedSecrets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObfuscatedSecrets.swift; sourceTree = "<group>"; };
 		2F6057DEBFA6F8F614A45561 /* RealEstateProperty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealEstateProperty.swift; sourceTree = "<group>"; };
 		2FCAAA036F4F22E773961096 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		300F3C3ADC6447F0A253B473 /* SwingSetupsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwingSetupsViewModel.swift; sourceTree = "<group>"; };
@@ -2140,6 +2143,7 @@
 				8AE42B1F64D053FD667B857C /* AvatarView.swift */,
 				2C8D47F6E1A3B905D6C4E8A1 /* EmptyStateView.swift */,
 				F1NANC1ALD15CLA1M3R01 /* FinancialDisclaimer.swift */,
+				PR1VACYOVERL4YV1EW001 /* PrivacyOverlayView.swift */,
 				F78845800D59A83C7C923898 /* PercentageChangeView.swift */,
 				6BE67669225D167E5E88C27E /* PortfolioSparkline.swift */,
 				3EE2665720A65FC3925637A9 /* QRScannerSheet.swift */,
@@ -2289,6 +2293,7 @@
 				A7F8B9C0D1E2F3A4B5C6D7E8 /* SplashSoundPlayer.swift */,
 				BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */,
 				2EEF32D24CEC66662543D000 /* Logger.swift */,
+				OBFSC4T3DSECR3TS0000001 /* ObfuscatedSecrets.swift */,
 				E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */,
 				22BFE18532B42396BDE06325 /* KeychainManager.swift */,
 				92616793BB6A8D055197B7AD /* QRCodeGenerator.swift */,
@@ -2447,7 +2452,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */,
 				ASSETSCATALOGBUILD00000001 /* Resources/Assets.xcassets in Resources */,
 				C2C3EA3D9F185775264FEC14 /* PrivacyInfo.xcprivacy in Resources */,
 				SPLASHCHIME0BUILDFIL0001 /* splash_chime.mp3 in Resources */,
@@ -2589,6 +2593,7 @@
 				D5E6F7A8B9C00011AABB3300 /* RiskScoreShareCard.swift in Sources */,
 				AB7FF6407063DB24404734D3 /* AvatarView.swift in Sources */,
 				E4B3C9F0A1D2E5F6B7C8D9E0 /* EmptyStateView.swift in Sources */,
+				PR1VACYOVERL4YBLD001 /* PrivacyOverlayView.swift in Sources */,
 				D8AF87D5A1447E9A0DAE4A44 /* QRScannerSheet.swift in Sources */,
 				81B2D0ABA4818E5E08471B8D /* QRScannerView.swift in Sources */,
 				DFBF1D1241B9AFEC2DCB15AC /* SubscriptionBannerView.swift in Sources */,
@@ -2704,6 +2709,7 @@
 				DEB18F951F4E9D8E064B2453 /* LoadingView.swift in Sources */,
 				07D313D4ED0D7ACFEBE1E22B /* LogarithmicRegression.swift in Sources */,
 				0040B691123D65196663027A /* Logger.swift in Sources */,
+				OBFSC4T3DBLD00000000001 /* ObfuscatedSecrets.swift in Sources */,
 				7D1907EAF98D6A040AF2FEBA /* PasscodeManager.swift in Sources */,
 				C985CEFF2F3B827C00E10778 /* SubscriptionService.swift in Sources */,
 				7ED721E1F9E60C2EC964C734 /* KeychainManager.swift in Sources */,

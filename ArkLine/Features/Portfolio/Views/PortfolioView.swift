@@ -184,6 +184,12 @@ struct PortfolioView: View {
                     PortfolioShowcaseView()
                 }
             }
+            .onChange(of: viewModel.showAddTransaction) { _, show in
+                if show {
+                    activeSheet = .addTransaction
+                    viewModel.showAddTransaction = false
+                }
+            }
             .onChange(of: appState.shouldShowPortfolioCreation) { _, shouldShow in
                 if shouldShow {
                     Task {

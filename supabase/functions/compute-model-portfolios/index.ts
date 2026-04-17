@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
  * computes new NAV, and logs trades on allocation changes.
  */
 
-const CRON_SECRET = "arkline-cron-2026"
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? ""
 const STABLECOIN_APY = 0.045
 const DAILY_STABLE_RATE = Math.pow(1 + STABLECOIN_APY, 1 / 365) - 1
 
@@ -472,7 +472,7 @@ function jsonResponse(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   // Auth: cron secret or service role
   const authHeader = req.headers.get("authorization") ?? ""
-  const cronSecret = req.headers.get("x-cron-secret") ?? new URL(req.url).searchParams.get("cron_secret") ?? ""
+  const cronSecret = req.headers.get("x-cron-secret") ?? ""
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   const fmpKey = Deno.env.get("FMP_API_KEY") ?? ""

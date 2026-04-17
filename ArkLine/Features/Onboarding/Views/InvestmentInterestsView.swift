@@ -6,13 +6,10 @@ struct InvestmentInterestsView: View {
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12),
-    ]
-
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 0) {
+            Spacer()
+
             // Icon
             ZStack {
                 Circle()
@@ -22,6 +19,7 @@ struct InvestmentInterestsView: View {
                     .font(.system(size: 28))
                     .foregroundColor(AppColors.accent)
             }
+            .padding(.bottom, 24)
 
             // Title
             VStack(spacing: 8) {
@@ -36,9 +34,10 @@ struct InvestmentInterestsView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
             }
+            .padding(.bottom, 28)
 
-            // Interest grid
-            LazyVGrid(columns: columns, spacing: 12) {
+            // Interest list
+            VStack(spacing: 12) {
                 ForEach(InvestmentInterest.allCases) { interest in
                     let isSelected = viewModel.investmentInterests.contains(interest)
 

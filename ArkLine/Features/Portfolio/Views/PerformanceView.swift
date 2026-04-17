@@ -36,8 +36,14 @@ struct PerformanceView: View {
             if hasData {
                 performanceContent
             } else {
-                EmptyPerformanceState()
-                    .padding(.top, 40)
+                EmptyStateView(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "No Performance Data",
+                    message: "Add holdings to your portfolio to see performance metrics and analytics.",
+                    actionTitle: "Add Transaction",
+                    action: { viewModel.showAddTransaction = true }
+                )
+                .padding(.top, 40)
             }
         }
     }

@@ -23,7 +23,9 @@ struct PortfolioOverviewContent: View {
             EmptyStateView(
                 icon: "chart.pie",
                 title: "No Holdings Yet",
-                message: "Add your first asset to start tracking your portfolio performance."
+                message: "Add your first asset to start tracking your portfolio performance.",
+                actionTitle: "Add Transaction",
+                action: { viewModel.showAddTransaction = true }
             )
             .padding(.top, 40)
         } else {
@@ -136,7 +138,9 @@ struct PortfolioHoldingsContent: View {
                 EmptyStateView(
                     icon: "tray",
                     title: "No Holdings",
-                    message: "Start building your portfolio by adding your first asset."
+                    message: "Start building your portfolio by adding your first asset.",
+                    actionTitle: "Add Transaction",
+                    action: { viewModel.showAddTransaction = true }
                 )
                 .padding(.top, 20)
             } else if viewModel.filteredHoldings.isEmpty {
@@ -180,7 +184,9 @@ struct PortfolioAllocationContent: View {
             EmptyStateView(
                 icon: "chart.pie",
                 title: "No Allocation Data",
-                message: "Add assets to your portfolio to see your allocation breakdown."
+                message: "Add assets to your portfolio to see your allocation breakdown.",
+                actionTitle: "Add Transaction",
+                action: { viewModel.showAddTransaction = true }
             )
             .padding(.top, 40)
         } else {
@@ -399,7 +405,9 @@ struct PortfolioTransactionsContent: View {
                 EmptyStateView(
                     icon: "clock.arrow.circlepath",
                     title: "No Transactions",
-                    message: "Your transaction history will appear here once you start trading."
+                    message: "Your transaction history will appear here once you start trading.",
+                    actionTitle: "Add Transaction",
+                    action: { viewModel.showAddTransaction = true }
                 )
                 .padding(.top, 20)
             } else if viewModel.filteredTransactions.isEmpty {

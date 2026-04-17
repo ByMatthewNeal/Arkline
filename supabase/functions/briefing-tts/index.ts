@@ -8,6 +8,13 @@ Deno.serve(async (req) => {
     return ok({ error: "Method not allowed" })
   }
 
+  // Auth: require cron secret (only called server-to-server from market-summary)
+  const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+  const providedSecret = req.headers.get("x-cron-secret") ?? ""
+  if (!cronSecret || providedSecret !== cronSecret) {
+    return ok({ error: "Unauthorized" }, 401)
+  }
+
   let payload: { briefingKey?: string; summaryText?: string }
   try {
     payload = await req.json()
@@ -51,7 +58,7 @@ Deno.serve(async (req) => {
     console.error("OPENAI_API_KEY not set")
     return ok({ error: "TTS service unavailable — no API key" })
   }
-  console.log(`OPENAI_API_KEY present: ${openaiKey.substring(0, 7)}...${openaiKey.substring(openaiKey.length - 4)}`)
+  console.log(`OPENAI_API_KEY present: true`)
 
   // Call OpenAI TTS
   try {

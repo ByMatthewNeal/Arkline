@@ -38,6 +38,7 @@ final class PortfolioViewModel {
 
     // Target allocation
     var showTargetEditor = false
+    var showAddTransaction = false
 
     // User context
     private var currentUserId: UUID?

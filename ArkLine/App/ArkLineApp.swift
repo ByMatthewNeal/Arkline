@@ -9,12 +9,19 @@ struct ArkLineApp: App {
     @StateObject private var appState = AppState()
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) private var scenePhase
+    @State private var showPrivacyOverlay = false
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
                 .preferredColorScheme(appState.colorScheme)
+                .overlay {
+                    if showPrivacyOverlay {
+                        PrivacyOverlayView()
+                            .transition(.opacity)
+                    }
+                }
                 .onAppear {
                     setupAppearance()
                     setupNotifications()
@@ -52,9 +59,13 @@ struct ArkLineApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background {
-                Task { await AnalyticsService.shared.flush() }
+            if newPhase == .background || newPhase == .inactive {
+                showPrivacyOverlay = true
+                if newPhase == .background {
+                    Task { await AnalyticsService.shared.flush() }
+                }
             } else if newPhase == .active {
+                showPrivacyOverlay = false
                 appState.refreshUserProfileCancellable()
                 Task { await IncrementalPriceStore.shared.resetCooldowns() }
                 BroadcastNotificationService.shared.clearBadge()

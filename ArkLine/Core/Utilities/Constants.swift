@@ -3,32 +3,30 @@ import SwiftUI
 
 // MARK: - App Constants
 enum Constants {
-    // MARK: - API Keys (loaded from Secrets.plist - gitignored)
-    // SECURITY: Keys are ONLY loaded from Secrets.plist - no hardcoded fallbacks
+    // MARK: - API Keys
+    // Essential keys (Supabase, RevenueCat) are XOR-obfuscated in ObfuscatedSecrets.swift.
+    // Paid API keys are ONLY available server-side via the api-proxy edge function.
+    // In DEBUG builds, Secrets.plist is loaded for local development convenience.
+
+    #if DEBUG
     private static let secrets: [String: Any] = {
-        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist") else {
-            AppLogger.shared.error("Secrets.plist not found in bundle. API features will be unavailable.")
-            return [:]
-        }
-
-        guard let data = try? Data(contentsOf: url),
+        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
-            AppLogger.shared.error("Failed to parse Secrets.plist. API features will be unavailable.")
             return [:]
         }
-
-        AppLogger.shared.debug("Secrets.plist loaded with \(plist.count) keys")
         return plist
     }()
+    #endif
 
     enum API {
-        static let supabaseURL = Constants.secrets["SUPABASE_URL"] as? String ?? ""
-        static let supabaseAnonKey = Constants.secrets["SUPABASE_ANON_KEY"] as? String ?? ""
-        static let revenueCatAPIKey = Constants.secrets["REVENUE_CAT_API_KEY"] as? String ?? ""
+        static let supabaseURL = ObfuscatedSecrets.supabaseURL
+        static let supabaseAnonKey = ObfuscatedSecrets.supabaseAnonKey
+        static let revenueCatAPIKey = ObfuscatedSecrets.revenueCatAPIKey
 
-        // Optional fallback keys for direct API access when proxy is unavailable.
-        // Primary path: api-proxy Edge Function injects keys server-side.
-        // Fallback: local keys from Secrets.plist (for development / offline proxy).
+        // Paid API keys — only available in DEBUG via Secrets.plist for local development.
+        // In release builds these are nil, forcing all calls through the api-proxy.
+        #if DEBUG
         static let coinGeckoAPIKey = Constants.secrets["COINGECKO_API_KEY"] as? String
         static let fredAPIKey = Constants.secrets["FRED_API_KEY"] as? String
         static let fmpAPIKey = Constants.secrets["FMP_API_KEY"] as? String
@@ -37,6 +35,16 @@ enum Constants {
         static let metalsAPIKey = Constants.secrets["METALS_API_KEY"] as? String
         static let taapiAPIKey = Constants.secrets["TAAPI_API_KEY"] as? String
         static let collectTrendsSecret = Constants.secrets["COLLECT_TRENDS_SECRET"] as? String ?? ""
+        #else
+        static let coinGeckoAPIKey: String? = nil
+        static let fredAPIKey: String? = nil
+        static let fmpAPIKey: String? = nil
+        static let coinglassAPIKey: String? = nil
+        static let finnhubAPIKey: String? = nil
+        static let metalsAPIKey: String? = nil
+        static let taapiAPIKey: String? = nil
+        static let collectTrendsSecret = ""
+        #endif
     }
 
     // MARK: - API Endpoints

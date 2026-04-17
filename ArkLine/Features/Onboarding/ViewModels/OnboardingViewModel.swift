@@ -348,16 +348,6 @@ class OnboardingViewModel {
         errorMessage = nil
 
         do {
-            // If returning user, verify the account exists before sending OTP
-            if isReturningUser {
-                let exists = try await SupabaseDatabase.shared.emailExists(email)
-                if !exists {
-                    errorMessage = "No account found with this email"
-                    isLoading = false
-                    return
-                }
-            }
-
             try await SupabaseAuthManager.shared.signInWithOTP(email: email)
             // Only advance if we're not already on the verification step (i.e. not a resend)
             if currentStep != .verification {
