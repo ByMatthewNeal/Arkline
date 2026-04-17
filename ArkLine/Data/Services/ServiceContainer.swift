@@ -73,6 +73,9 @@ final class ServiceContainer {
     // MARK: - Lazy Services - Market Deck
     private lazy var _marketDeckService = MarketUpdateDeckService()
 
+    // MARK: - Lazy Services - Model Portfolios
+    private lazy var _modelPortfolioService = APIModelPortfolioService()
+
     // MARK: - Service Accessors
 
     /// Market service uses real CoinGecko API for live crypto prices
@@ -177,6 +180,11 @@ final class ServiceContainer {
         _marketDeckService
     }
 
+    /// Model portfolio service - Arkline Core & Edge systematic portfolios
+    var modelPortfolioService: ModelPortfolioServiceProtocol {
+        _modelPortfolioService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -215,5 +223,6 @@ final class ServiceContainer {
         _historicalContextService = HistoricalContextService()
         _broadcastService = BroadcastService()
         _marketDeckService = MarketUpdateDeckService()
+        _modelPortfolioService = APIModelPortfolioService()
     }
 }

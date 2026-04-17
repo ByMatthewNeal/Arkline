@@ -387,6 +387,7 @@ final class PortfolioViewModel {
             if self.selectedPortfolio?.id == portfolio.id {
                 self.selectedPortfolio = updated
             }
+            NotificationCenter.default.post(name: Constants.Notifications.portfolioUpdated, object: nil)
         }
     }
 

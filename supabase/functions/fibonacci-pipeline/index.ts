@@ -26,18 +26,42 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
-  // Top 10 — selected by live performance + 365-day backtest profit factor (2026-03-24)
-  { cbPair: "BTC-USD",    ticker: "BTC" },    // Core asset, 3.48 PF
-  { cbPair: "ETH-USD",    ticker: "ETH" },    // 4.52 PF, 57.1% live WR
-  { cbPair: "SOL-USD",    ticker: "SOL" },    // 3.56 PF, 60.0% live WR
-  { cbPair: "SUI-USD",    ticker: "SUI" },    // 4.51 PF, 72.7% live WR (best)
-  { cbPair: "LINK-USD",   ticker: "LINK" },   // 4.31 PF, 62.5% live WR
-  { cbPair: "ADA-USD",    ticker: "ADA" },    // 4.75 PF (highest backtest)
-  { cbPair: "AVAX-USD",   ticker: "AVAX" },   // 3.62 PF, 100% live WR (n=3)
-  { cbPair: "APT-USD",    ticker: "APT" },    // 3.53 PF, decent volume
-  { cbPair: "XRP-USD",    ticker: "XRP" },    // 4.29 PF backtest
-  { cbPair: "ATOM-USD",   ticker: "ATOM" },   // 4.50 PF, long-preferred
+  // Top 20 — selected by 365-day backtest profit factor (2026-04-10)
+  // Original 10
+  { cbPair: "BTC-USD",    ticker: "BTC" },    // 4.35 PF, 79.5% WR
+  { cbPair: "ETH-USD",    ticker: "ETH" },    // 4.87 PF, 81.0% WR
+  { cbPair: "SOL-USD",    ticker: "SOL" },    // 3.53 PF, 76.0% WR
+  { cbPair: "SUI-USD",    ticker: "SUI" },    // 4.95 PF, 80.6% WR
+  { cbPair: "LINK-USD",   ticker: "LINK" },   // 4.19 PF, 78.5% WR
+  { cbPair: "ADA-USD",    ticker: "ADA" },    // 4.96 PF, 80.7% WR
+  { cbPair: "AVAX-USD",   ticker: "AVAX" },   // 3.46 PF, 73.9% WR
+  { cbPair: "APT-USD",    ticker: "APT" },    // 3.24 PF, 72.5% WR
+  { cbPair: "XRP-USD",    ticker: "XRP" },    // 4.47 PF, 77.7% WR
+  { cbPair: "ATOM-USD",   ticker: "ATOM" },   // 5.15 PF, 80.6% WR
+  // Expansion — top 10 new by PF from 365d backtest
+  { cbPair: "ONDO-USD",   ticker: "ONDO" },   // 5.62 PF, 82.7% WR
+  { cbPair: "BNB-USD",    ticker: "BNB" },    // 5.13 PF, 78.0% WR
+  { cbPair: "ALGO-USD",   ticker: "ALGO" },   // 4.91 PF, 81.0% WR
+  { cbPair: "TIA-USD",    ticker: "TIA" },    // 4.66 PF, 79.7% WR
+  { cbPair: "FIL-USD",    ticker: "FIL" },    // 4.53 PF, 77.9% WR
+  { cbPair: "AAVE-USD",   ticker: "AAVE" },   // 4.45 PF, 79.6% WR
+  { cbPair: "INJ-USD",    ticker: "INJ" },    // 4.39 PF, 77.6% WR
+  { cbPair: "POL-USD",    ticker: "POL" },    // 4.20 PF, 75.5% WR
+  { cbPair: "ZEC-USD",    ticker: "ZEC" },    // 4.12 PF, 77.7% WR
+  { cbPair: "VET-USD",    ticker: "VET" },    // 4.05 PF, 78.2% WR
 ]
+
+// Binance symbol mapping for dual-source verification during signal resolution
+const BINANCE_MAP: Record<string, string> = {
+  BTC: "BTCUSDT", ETH: "ETHUSDT", SOL: "SOLUSDT", SUI: "SUIUSDT",
+  LINK: "LINKUSDT", ADA: "ADAUSDT", AVAX: "AVAXUSDT", RENDER: "RENDERUSDT",
+  APT: "APTUSDT", HYPE: "HYPEUSDT", ONDO: "ONDOUSDT", POL: "POLUSDT",
+  BNB: "BNBUSDT", ATOM: "ATOMUSDT", TIA: "TIAUSDT", XRP: "XRPUSDT",
+  INJ: "INJUSDT", DOGE: "DOGEUSDT", AAVE: "AAVEUSDT", PEPE: "PEPEUSDT",
+  ENA: "ENAUSDT", FET: "FETUSDT", ARB: "ARBUSDT", DOT: "DOTUSDT",
+  UNI: "UNIUSDT", NEAR: "NEARUSDT", ALGO: "ALGOUSDT", FIL: "FILUSDT",
+  ZEC: "ZECUSDT", VET: "VETUSDT",
+}
 
 // Coinbase granularities: ONE_HOUR, TWO_HOUR, FOUR_HOUR, SIX_HOUR, ONE_DAY
 const TIMEFRAME_CONFIGS = [
@@ -151,6 +175,23 @@ interface ChartPattern {
   target?: number        // Measured move target
 }
 
+interface FairValueGap {
+  type: "bullish" | "bearish"
+  timeframe: string
+  high: number           // Top of the gap
+  low: number            // Bottom of the gap
+  sizePct: number        // Gap size as % of price
+  candle_time: string    // When the gap was created (middle candle)
+}
+
+interface FVGConfluenceResult {
+  has_fvg_confluence: boolean
+  best_timeframe: string | null
+  fvg_type: "bullish" | "bearish" | null
+  score_bonus: number    // 0, 4, 6, or 8
+  gap_size_pct: number
+}
+
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -210,11 +251,39 @@ Deno.serve(async (req) => {
     console.error(`BTC risk score fetch failed: ${err}`)
   }
 
+  // Fetch adaptive parameters from signal analytics (computed daily)
+  let adaptiveParams: {
+    paused_assets: string[]
+    direction_bonus: Record<string, { long: number; short: number }>
+    min_rr: number
+    min_score: number
+    state: string
+    state_label: string
+  } | null = null
+  try {
+    const { data: analyticsRow } = await supabase
+      .from("market_data_cache")
+      .select("data")
+      .eq("key", "signal_analytics")
+      .single()
+    adaptiveParams = analyticsRow?.data?.adaptive ?? null
+    if (adaptiveParams) {
+      console.log(`Adaptive params loaded: state=${adaptiveParams.state}, min_rr=${adaptiveParams.min_rr}, min_score=${adaptiveParams.min_score}, paused=[${adaptiveParams.paused_assets.join(",")}]`)
+    }
+  } catch {
+    console.log("No adaptive params available — using defaults")
+  }
+
   try {
     // Process assets in parallel batches of 3 to stay within compute limits
     for (let batchStart = 0; batchStart < assetsToProcess.length; batchStart += 3) {
       const batch = assetsToProcess.slice(batchStart, batchStart + 3)
       const batchResults = await Promise.all(batch.map(async (asset) => {
+        // Adaptive feedback: skip paused assets
+        if (adaptiveParams?.paused_assets.includes(asset.ticker)) {
+          console.log(`[${asset.ticker}] PAUSED by adaptive feedback loop — skipping`)
+          return { ticker: asset.ticker, results: { paused: true } }
+        }
         const assetResults: Record<string, unknown> = {}
 
         // Fetch latest candles
@@ -224,8 +293,11 @@ Deno.serve(async (req) => {
         // Store candles in DB
         await storeCandles(supabase, asset.ticker, candles)
 
-        // Resolve open signals against latest candle
-        const resolveResult = await resolveOpenSignals(supabase, asset.ticker, candles)
+        // Fetch Binance 4H candles for dual-source T1/SL verification
+        const binance4h = await fetchBinance4hCandles(asset.ticker)
+
+        // Resolve open signals against latest candle (dual-source)
+        const resolveResult = await resolveOpenSignals(supabase, asset.ticker, candles, binance4h)
         assetResults.resolved = resolveResult
 
         if (candles["4h"].length === 0) {
@@ -253,7 +325,7 @@ Deno.serve(async (req) => {
           await storeZones(supabase, asset.ticker, zonesSwing, currentPrice)
           assetResults.zones = zonesSwing.length
 
-          const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING)
+          const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING, adaptiveParams)
           assetResults.newSignals = swingSignals
         }
 
@@ -263,7 +335,7 @@ Deno.serve(async (req) => {
           const fibsScalp = computeAllFibs(swingsScalp)
           const zonesScalp = clusterLevels(fibsScalp, currentPrice, TIER_SCALP.confluenceTolerancePct)
 
-          const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP)
+          const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP, adaptiveParams)
           assetResults.scalpSignals = scalpSignals
         }
 
@@ -318,7 +390,7 @@ function computeMarketConditions(allResults: Record<string, any>): {
           .replace(/^(support|resistance) @[\d.]+: /, "")
           .replace(/\(price=[\d.]+\)/, "")
           .replace(/R:R [\d.]+ < [\d.]+/, "R:R too low")
-          .replace(/score \d+ < 60/, "score below B-grade")
+          .replace(/score \d+ < \d+/, "score below threshold")
           .trim()
         reasonCounts[normalized] = (reasonCounts[normalized] ?? 0) + 1
       }
@@ -365,7 +437,7 @@ function computeMarketConditions(allResults: Record<string, any>): {
       detail = "Fibonacci zones exist but the risk-to-reward ratio is below 1:1. Waiting for price to stretch into better setups."
     } else if (reason.includes("score")) {
       headline = "Setups found but quality is below threshold"
-      detail = "Potential signals didn't meet the B-grade (60+) composite score. This filters out low-conviction trades."
+      detail = "Potential signals didn't meet the minimum composite score. This filters out low-conviction trades."
     }
   }
 
@@ -410,6 +482,32 @@ async function fetchCandles(cbPair: string): Promise<Record<string, Candle[]>> {
   }
 
   return result
+}
+
+// Fetch Binance 4H candles for dual-source signal verification
+async function fetchBinance4hCandles(ticker: string): Promise<Candle[]> {
+  const binanceSym = BINANCE_MAP[ticker]
+  if (!binanceSym) return []
+  try {
+    const twentyFourHoursAgo = Date.now() - 24 * 3600000
+    const resp = await fetch(
+      `https://data-api.binance.vision/api/v3/klines?symbol=${binanceSym}&interval=4h&startTime=${twentyFourHoursAgo}&limit=6`
+    )
+    if (!resp.ok) return []
+    const klines = await resp.json()
+    // Binance returns oldest-first as arrays: [openTime, open, high, low, close, volume, ...]
+    return klines.map((k: any) => ({
+      open_time: new Date(Number(k[0])).toISOString(),
+      open: parseFloat(k[1]),
+      high: parseFloat(k[2]),
+      low: parseFloat(k[3]),
+      close: parseFloat(k[4]),
+      volume: parseFloat(k[5]),
+    }))
+  } catch (err) {
+    console.error(`Failed to fetch Binance 4H ${binanceSym}: ${err}`)
+    return []
+  }
 }
 
 async function storeCandles(supabase: SupabaseClient, ticker: string, candles: Record<string, Candle[]>) {
@@ -839,6 +937,64 @@ function detectMarketRegime(candles4h: Candle[]): MarketRegime {
   return regime
 }
 
+// ─── Range Compression Detection ────────────────────────────────────────────
+
+interface RangeCompression {
+  isCompressed: boolean
+  rangeRatio: number      // 24h range / 14d ATR (< 0.4 = compressed)
+  volumeRatio: number     // 24h avg vol / 14d avg vol (< 0.5 = volume dried up)
+  range24h: number
+  atr14d: number
+}
+
+/**
+ * Detects when an asset is trading in an unusually tight range with low volume.
+ * Compressed markets = low conviction — signals are more likely to be false breakouts.
+ * Uses 4H candles: last 6 = 24h window, last 84 = 14-day window.
+ */
+function detectRangeCompression(candles4h: Candle[]): RangeCompression {
+  const result: RangeCompression = { isCompressed: false, rangeRatio: 1, volumeRatio: 1, range24h: 0, atr14d: 0 }
+
+  // Need at least 84 candles (14 days of 4H data)
+  if (candles4h.length < 84) return result
+
+  // Last 6 candles = 24h window
+  const recent6 = candles4h.slice(-6)
+  const range24h = Math.max(...recent6.map(c => c.high)) - Math.min(...recent6.map(c => c.low))
+  result.range24h = range24h
+
+  // 14-day ATR from last 84 candles (true range per bar, averaged, × 6 for daily equivalent)
+  const last84 = candles4h.slice(-84)
+  let trSum = 0
+  for (let i = 1; i < last84.length; i++) {
+    const tr = Math.max(
+      last84[i].high - last84[i].low,
+      Math.abs(last84[i].high - last84[i - 1].close),
+      Math.abs(last84[i].low - last84[i - 1].close)
+    )
+    trSum += tr
+  }
+  const atrPer4h = trSum / (last84.length - 1)
+  const atr14d = atrPer4h * 6 // Daily ATR equivalent
+  result.atr14d = atr14d
+
+  // Range ratio: how much of the normal daily range the last 24h covers
+  result.rangeRatio = atr14d > 0 ? range24h / atr14d : 1
+
+  // Volume comparison (only if volume data exists)
+  const hasVolume = recent6.some(c => (c.volume ?? 0) > 0)
+  if (hasVolume) {
+    const vol24h = recent6.reduce((s, c) => s + (c.volume ?? 0), 0) / recent6.length
+    const vol14d = last84.reduce((s, c) => s + (c.volume ?? 0), 0) / last84.length
+    result.volumeRatio = vol14d > 0 ? vol24h / vol14d : 1
+  }
+
+  // Compressed = tight range. Volume is secondary confirmation.
+  result.isCompressed = result.rangeRatio < 0.4 || (result.rangeRatio < 0.55 && result.volumeRatio < 0.5)
+
+  return result
+}
+
 // ─── Momentum Filter ─────────────────────────────────────────────────────────
 
 /**
@@ -984,6 +1140,137 @@ function checkVolumeConfluence(zone: ConfluenceZone, volumeNodes: VolumeNode[]):
   return result
 }
 
+// ─── Fair Value Gap Detection ────────────────────────────────────────────────
+
+/**
+ * Detects unfilled Fair Value Gaps across multiple timeframes.
+ * A bullish FVG: candle[i].low > candle[i-2].high (gap up — price moved up so fast it left a void)
+ * A bearish FVG: candle[i].high < candle[i-2].low (gap down — price moved down so fast it left a void)
+ * An FVG is "filled" once a subsequent candle closes through it.
+ */
+function detectFairValueGaps(candles: Record<string, Candle[]>): FairValueGap[] {
+  const fvgs: FairValueGap[] = []
+  const tfConfigs: { tf: string; lookback: number }[] = [
+    { tf: "1h", lookback: 50 },
+    { tf: "4h", lookback: 50 },
+    { tf: "1d", lookback: 30 },
+  ]
+
+  for (const { tf, lookback } of tfConfigs) {
+    const tfCandles = candles[tf]
+    if (!tfCandles || tfCandles.length < 5) continue
+
+    const startIdx = Math.max(2, tfCandles.length - lookback)
+
+    for (let i = startIdx; i < tfCandles.length; i++) {
+      const prev2 = tfCandles[i - 2]
+      const mid = tfCandles[i - 1]
+      const curr = tfCandles[i]
+
+      // Bullish FVG: current candle's low is above the candle-two-ago's high
+      if (curr.low > prev2.high) {
+        const gapLow = prev2.high
+        const gapHigh = curr.low
+        const sizePct = (gapHigh - gapLow) / mid.close * 100
+
+        // Check if any subsequent candle filled the gap (closed below gapHigh into the gap)
+        let filled = false
+        for (let j = i + 1; j < tfCandles.length; j++) {
+          if (tfCandles[j].close <= gapLow) {
+            filled = true
+            break
+          }
+        }
+
+        if (!filled && sizePct >= 0.1) {
+          fvgs.push({
+            type: "bullish",
+            timeframe: tf,
+            high: gapHigh,
+            low: gapLow,
+            sizePct: Math.round(sizePct * 100) / 100,
+            candle_time: mid.open_time,
+          })
+        }
+      }
+
+      // Bearish FVG: current candle's high is below the candle-two-ago's low
+      if (curr.high < prev2.low) {
+        const gapHigh = prev2.low
+        const gapLow = curr.high
+        const sizePct = (gapHigh - gapLow) / mid.close * 100
+
+        // Check if any subsequent candle filled the gap (closed above gapLow into the gap)
+        let filled = false
+        for (let j = i + 1; j < tfCandles.length; j++) {
+          if (tfCandles[j].close >= gapHigh) {
+            filled = true
+            break
+          }
+        }
+
+        if (!filled && sizePct >= 0.1) {
+          fvgs.push({
+            type: "bearish",
+            timeframe: tf,
+            high: gapHigh,
+            low: gapLow,
+            sizePct: Math.round(sizePct * 100) / 100,
+            candle_time: mid.open_time,
+          })
+        }
+      }
+    }
+  }
+
+  return fvgs
+}
+
+/**
+ * Checks if any unfilled FVG overlaps with a confluence zone and matches the trade direction.
+ * Bullish FVG + support zone = confluence for longs.
+ * Bearish FVG + resistance zone = confluence for shorts.
+ * Returns the best match (highest timeframe wins).
+ */
+function checkFVGConfluence(zone: ConfluenceZone, fvgs: FairValueGap[], isBuy: boolean): FVGConfluenceResult {
+  const result: FVGConfluenceResult = {
+    has_fvg_confluence: false,
+    best_timeframe: null,
+    fvg_type: null,
+    score_bonus: 0,
+    gap_size_pct: 0,
+  }
+
+  // Timeframe priority: 4h strongest edge (62% WR, 2.33 PF in backtest), 1d weaker, 1h marginal
+  const tfPriority: Record<string, number> = { "4h": 8, "1d": 4, "1h": 3 }
+  const margin = (zone.high - zone.low) * 0.5  // Allow half-zone-width overlap margin
+
+  for (const fvg of fvgs) {
+    // Direction must match: bullish FVG for longs (support), bearish FVG for shorts (resistance)
+    if (isBuy && fvg.type !== "bullish") continue
+    if (!isBuy && fvg.type !== "bearish") continue
+
+    // Check overlap: FVG range intersects zone range (with margin)
+    const overlaps = fvg.high >= (zone.low - margin) && fvg.low <= (zone.high + margin)
+    if (!overlaps) continue
+
+    const bonus = tfPriority[fvg.timeframe] ?? 4
+    // Wide gap bonus: +2 if gap is >= 1.5% of price
+    const wideBonus = fvg.sizePct >= 1.5 ? 2 : 0
+    const totalBonus = bonus + wideBonus
+
+    if (totalBonus > result.score_bonus) {
+      result.has_fvg_confluence = true
+      result.best_timeframe = fvg.timeframe
+      result.fvg_type = fvg.type
+      result.score_bonus = totalBonus
+      result.gap_size_pct = fvg.sizePct
+    }
+  }
+
+  return result
+}
+
 // ─── Composite Signal Scoring ───────────────────────────────────────────────
 
 function computeCompositeScore(params: {
@@ -991,6 +1278,7 @@ function computeCompositeScore(params: {
   candles4h: Candle[]
   bounce: { confirmed: boolean; details: Record<string, boolean> }
   volumeConfluence: VolumeConfluenceResult
+  fvgConfluence: FVGConfluenceResult
   isBuy: boolean
   rrRatio: number
   counterTrend: boolean
@@ -1055,7 +1343,14 @@ function computeCompositeScore(params: {
   }
   score += Math.max(0, Math.min(macroScore, 15))
 
-  return Math.min(Math.max(score, 0), 100)
+  // 6. Fair Value Gap Confluence (0-10 pts)
+  // FVG overlapping the zone = institutional imbalance confirmation
+  // 1D: +8, 4H: +6, 1H: +4, wide gap (>=1.5%): +2 extra
+  if (params.fvgConfluence.has_fvg_confluence) {
+    score += params.fvgConfluence.score_bonus
+  }
+
+  return Math.min(Math.max(score, 0), 105)  // Max now 105 → clamped to 100 at caller
 }
 
 // ─── Bounce Confirmation ─────────────────────────────────────────────────────
@@ -1682,6 +1977,14 @@ async function evaluateSignals(
   btcRiskScore?: number,
   swings?: Record<string, SwingPoint[]>,
   tier: TierConfig = TIER_SWING,
+  adaptiveParams?: {
+    paused_assets: string[]
+    direction_bonus: Record<string, { long: number; short: number }>
+    min_rr: number
+    min_score: number
+    state: string
+    state_label: string
+  } | null,
 ): Promise<{ generated: number; skipped: number; skipReasons: string[] }> {
   const stats = { generated: 0, skipped: 0, skipReasons: [] as string[] }
   const trendCandles = candles[tier.trendTimeframe]
@@ -1694,6 +1997,9 @@ async function evaluateSignals(
   // Detect chart pattern for this asset (once per evaluation, shared across zones)
   const chartPattern = swings ? detectChartPattern(candles, swings) : null
 
+  // Detect unfilled fair value gaps across all timeframes (once per asset, shared across zones)
+  const fvgs = detectFairValueGaps(candles)
+
   const allFibPrices = fibs.map((f) => f.price)
 
   // Detect market regime (choppy vs trending) — used to raise quality thresholds
@@ -1703,6 +2009,12 @@ async function evaluateSignals(
   }
   const choppyMinRR = regime.isChoppy ? 2.0 : MIN_RR_RATIO  // Require 2:1 R:R in choppy markets
   const choppyBounceThreshold = regime.isChoppy ? 2 : 1       // Require 2 of 3 bounce signals in choppy markets
+
+  // Detect range compression (tight range + low volume = low conviction)
+  const compression = detectRangeCompression(candles4h)
+  if (compression.isCompressed) {
+    console.log(`[${ticker}] Range compressed (rangeRatio=${compression.rangeRatio.toFixed(2)}, volRatio=${compression.volumeRatio.toFixed(2)}, 24hRange=${compression.range24h.toFixed(4)}, ATR=${compression.atr14d.toFixed(4)})`)
+  }
 
   // 24-hour cooldown per asset: skip if any signal was generated in the last 24h
   const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -1724,19 +2036,20 @@ async function evaluateSignals(
     const distancePct = Math.abs((currentPrice - zone.mid) / currentPrice) * 100
     if (distancePct > tier.signalProximityPct) continue
 
-    // Check for existing active/triggered signal near this zone for this tier
+    // Check for existing active/triggered signal for this asset + direction
+    // Only one signal per asset per direction at a time — prevents overlapping trades
+    const isBuyZone = zone.zone_type === "support" || zone.zone_type === "demand"
+    const signalDirection = isBuyZone ? ["buy", "strong_buy"] : ["sell", "strong_sell"]
     const { data: existing } = await supabase
       .from("trade_signals")
       .select("id")
       .eq("asset", ticker)
-      .eq("timeframe", tier.tierName)
       .in("status", ["active", "triggered"])
-      .gte("entry_zone_low", zone.low * 0.995)
-      .lte("entry_zone_high", zone.high * 1.005)
+      .in("signal_type", signalDirection)
       .limit(1)
 
     if (existing && existing.length > 0) {
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: duplicate signal exists`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: active ${isBuyZone ? "long" : "short"} signal exists`)
       stats.skipped++
       continue
     }
@@ -1846,7 +2159,8 @@ async function evaluateSignals(
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
 
-    const effectiveMinRR = regime.isChoppy ? choppyMinRR : MIN_RR_RATIO
+    const adaptiveMinRR = adaptiveParams?.min_rr ?? MIN_RR_RATIO
+    const effectiveMinRR = Math.max(regime.isChoppy ? choppyMinRR : adaptiveMinRR, adaptiveMinRR)
     if (rrRatio < effectiveMinRR) {
       const reason = regime.isChoppy
         ? `R:R ${rrRatio.toFixed(2)} < ${effectiveMinRR} (choppy market)`
@@ -1868,12 +2182,19 @@ async function evaluateSignals(
     // Volume confluence check
     const volConfluence = checkVolumeConfluence(zone, volumeNodes)
 
+    // Fair value gap confluence check
+    const fvgConfluence = checkFVGConfluence(zone, fvgs, isBuy)
+    if (fvgConfluence.has_fvg_confluence) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): FVG confluence — ${fvgConfluence.fvg_type} ${fvgConfluence.best_timeframe} gap (${fvgConfluence.gap_size_pct}%), +${fvgConfluence.score_bonus} pts`)
+    }
+
     // Composite signal score
-    const compositeScore = computeCompositeScore({
+    let compositeScore = computeCompositeScore({
       zone,
       candles4h,
       bounce,
       volumeConfluence: volConfluence,
+      fvgConfluence,
       isBuy,
       rrRatio: rrRatio,
       counterTrend,
@@ -1881,10 +2202,24 @@ async function evaluateSignals(
       btcRiskScore,
     })
 
-    // Only publish B-grade or higher signals (score >= 60)
-    if (compositeScore < 60) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < 60`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: score ${compositeScore} < 60`)
+    // Apply adaptive direction bonus
+    const dirBonus = adaptiveParams?.direction_bonus?.[ticker]
+    if (dirBonus) {
+      const bonus = isBuy ? dirBonus.long : dirBonus.short
+      compositeScore = Math.max(0, Math.min(100, compositeScore + bonus))
+    }
+
+    // Range compression penalty: reduce score in low-conviction environments
+    if (compression.isCompressed) {
+      compositeScore = Math.max(0, compositeScore - 8)
+    }
+
+    // Only publish signals meeting adaptive score threshold (default 60 = B-grade)
+    // Raise threshold by 5 in compressed markets — only strong setups pass
+    const effectiveMinScore = (adaptiveParams?.min_score ?? 60) + (compression.isCompressed ? 5 : 0)
+    if (compositeScore < effectiveMinScore) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < ${effectiveMinScore}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: score ${compositeScore} < ${effectiveMinScore}`)
       stats.skipped++
       continue
     }
@@ -1929,7 +2264,13 @@ async function evaluateSignals(
       runner_stop: targets.stopLoss,
       ema_trend_aligned: true,
       bounce_confirmed: true,
-      confirmation_details: bounce.details,
+      confirmation_details: {
+        ...bounce.details,
+        fvg_confluence: fvgConfluence.has_fvg_confluence,
+        fvg_timeframe: fvgConfluence.best_timeframe,
+        fvg_type: fvgConfluence.fvg_type,
+        fvg_gap_size_pct: fvgConfluence.gap_size_pct,
+      },
       counter_trend: counterTrend,
       composite_score: compositeScore,
       volume_confluence: volConfluence,
@@ -1937,6 +2278,8 @@ async function evaluateSignals(
       btc_risk_score: btcRiskScore ?? null,
       macro_regime: macroRegime,
       chart_pattern: chartPattern ?? null,
+      range_compressed: compression.isCompressed,
+      compression_score: compression.isCompressed ? Math.round(compression.rangeRatio * 100) : null,
       triggered_at: new Date().toISOString(),
       expires_at: expiresAt,
     }
@@ -2027,6 +2370,7 @@ async function resolveOpenSignals(
   supabase: SupabaseClient,
   ticker: string,
   candles: Record<string, Candle[]>,
+  binance4h: Candle[] = [],
 ): Promise<{ resolved: number; t1Hits: number; runnerStops: number; losses: number; expired: number }> {
   const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0 }
 
@@ -2038,14 +2382,78 @@ async function resolveOpenSignals(
   const latestClose = recent4h[recent4h.length - 1].close
   const now = new Date()
 
+  // Binance aggregate helper for dual-source verification
+  function binanceAggregateAfter(afterIso: string): { high: number; low: number; close: number } | null {
+    if (binance4h.length === 0) return null
+    const afterMs = new Date(afterIso).getTime()
+    const valid = binance4h.filter(c => new Date(c.open_time).getTime() >= afterMs)
+    if (valid.length === 0) {
+      // No candle started after trigger — skip to avoid pre-trigger data
+      return null
+    }
+    let aggHigh = -Infinity
+    let aggLow = Infinity
+    for (const c of valid) {
+      aggHigh = Math.max(aggHigh, c.high)
+      aggLow = Math.min(aggLow, c.low)
+    }
+    return { high: aggHigh, low: aggLow, close: valid[valid.length - 1].close }
+  }
+
+  // Dual-source T1 check: requires BOTH Coinbase and Binance to confirm target hit.
+  // If Binance data is unavailable, falls back to Coinbase-only.
+  function isT1Hit(
+    t1: number, isBuy: boolean,
+    cbCandle: { high: number; low: number },
+    triggerIso: string,
+  ): boolean {
+    const bnCandle = binanceAggregateAfter(triggerIso)
+    if (isBuy) {
+      const cbHit = cbCandle.high >= t1
+      if (!bnCandle) return cbHit
+      const bnHit = bnCandle.high >= t1
+      if (cbHit && bnHit) console.log(`[${ticker}] T1 CONFIRMED by both CB(H:${cbCandle.high}) & BN(H:${bnCandle.high}) >= ${t1}`)
+      if (cbHit && !bnHit) console.log(`[${ticker}] T1 REJECTED — CB(H:${cbCandle.high}) hit but BN(H:${bnCandle.high}) did not reach ${t1}`)
+      return cbHit && bnHit
+    } else {
+      const cbHit = cbCandle.low <= t1
+      if (!bnCandle) return cbHit
+      const bnHit = bnCandle.low <= t1
+      if (cbHit && bnHit) console.log(`[${ticker}] T1 CONFIRMED by both CB(L:${cbCandle.low}) & BN(L:${bnCandle.low}) <= ${t1}`)
+      if (cbHit && !bnHit) console.log(`[${ticker}] T1 REJECTED — CB(L:${cbCandle.low}) hit but BN(L:${bnCandle.low}) did not reach ${t1}`)
+      return cbHit && bnHit
+    }
+  }
+
+  // Dual-source SL check with buffer
+  function isSlBreached(
+    sl: number, isBuy: boolean,
+    cbCandle: { high: number; low: number },
+    triggerIso: string,
+  ): boolean {
+    const SL_BUFFER_PCT = 0.003
+    const bnCandle = binanceAggregateAfter(triggerIso)
+    if (isBuy) {
+      const cbBreached = cbCandle.low <= sl * (1 - SL_BUFFER_PCT)
+      if (!bnCandle) return cbBreached
+      const bnBreached = bnCandle.low <= sl
+      return cbBreached && bnBreached
+    } else {
+      const cbBreached = cbCandle.high >= sl * (1 + SL_BUFFER_PCT)
+      if (!bnCandle) return cbBreached
+      const bnBreached = bnCandle.high >= sl
+      return cbBreached && bnBreached
+    }
+  }
+
   // Aggregate candles only after a signal's trigger time (prevents false T1/SL hits)
   function aggregateAfter(afterIso: string): { high: number; low: number; close: number } | null {
     const afterMs = new Date(afterIso).getTime()
     const valid = recent4h.filter(c => new Date(c.open_time).getTime() >= afterMs)
     if (valid.length === 0) {
-      // Signal just created — use only the latest candle
-      const latest = recent4h[recent4h.length - 1]
-      return { high: latest.high, low: latest.low, close: latest.close }
+      // No candle started after trigger — signal was created mid-candle.
+      // Return null to skip T1/SL checks this cycle (avoids using pre-trigger highs/lows).
+      return null
     }
     let aggHigh = -Infinity
     let aggLow = Infinity
@@ -2064,10 +2472,6 @@ async function resolveOpenSignals(
     .eq("status", "triggered")
 
   if (!signals || signals.length === 0) return stats
-
-  // Wick buffer: SL must be breached by 0.3% to count as a stop-out.
-  // Prevents false triggers from exchange-specific wicks (Coinbase spot vs perp).
-  const SL_BUFFER_PCT = 0.003
 
   for (const signal of signals) {
     // Skip if already resolved by signal-monitor (race condition guard)
@@ -2115,14 +2519,19 @@ async function resolveOpenSignals(
           ? ((exitPrice - entryMid) / entryMid) * 100
           : ((entryMid - exitPrice) / entryMid) * 100
 
+        // Check if best price reached consider-profit zone before expiry
+        const reachedConsiderProfit = t1 && (isBuy
+          ? bestPrice >= entryMid + (t1 - entryMid) * 0.3
+          : bestPrice <= entryMid - (entryMid - t1) * 0.3)
+
         await supabase.from("trade_signals").update({
           status: "expired",
-          outcome: "loss",
+          outcome: reachedConsiderProfit ? "partial" : "loss",
           outcome_pct: Math.round(pnl * 100) / 100,
           closed_at: now.toISOString(),
           duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
         }).eq("id", signal.id)
-        notifyResolution(signal, "expired_loss", exitPrice)
+        notifyResolution(signal, reachedConsiderProfit ? "expired_partial" : "expired_loss", exitPrice)
       }
 
       stats.expired++
@@ -2135,25 +2544,26 @@ async function resolveOpenSignals(
         // Track best price (MFE) on every check, even before T1
         bestPrice = Math.max(bestPrice, candle.high)
 
-        // Phase 1: Full position — check SL then T1
-        // SL must be breached by buffer to filter out exchange-specific wicks
-        if (candle.low <= sl * (1 - SL_BUFFER_PCT)) {
+        // Phase 1: Full position — check SL then T1 (dual-source verification)
+        if (isSlBreached(sl, true, candle, signal.triggered_at)) {
           const pnl = ((sl - entryMid) / entryMid) * 100
+          // Check if best price reached consider-profit zone (30% of entry→T1)
+          const reachedConsiderProfit = t1 && bestPrice >= entryMid + (t1 - entryMid) * 0.3
           await supabase.from("trade_signals").update({
             status: "invalidated",
-            outcome: "loss",
+            outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: Math.round(pnl * 100) / 100,
             best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
-          notifyResolution(signal, "stop_loss", sl)
+          notifyResolution(signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
           stats.losses++
           stats.resolved++
           continue
         }
 
-        if (t1 && candle.high >= t1) {
+        if (t1 && isT1Hit(t1, true, candle, signal.triggered_at)) {
           const t1Pnl = ((t1 - entryMid) / entryMid) * 100
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
@@ -2208,24 +2618,26 @@ async function resolveOpenSignals(
         // Track best price (MFE) on every check, even before T1
         bestPrice = Math.min(bestPrice, candle.low)
 
-        // SL must be breached by buffer to filter out exchange-specific wicks
-        if (candle.high >= sl * (1 + SL_BUFFER_PCT)) {
+        // Dual-source SL verification
+        if (isSlBreached(sl, false, candle, signal.triggered_at)) {
           const pnl = ((entryMid - sl) / entryMid) * 100
+          // Check if best price reached consider-profit zone (30% of entry→T1)
+          const reachedConsiderProfit = t1 && bestPrice <= entryMid - (entryMid - t1) * 0.3
           await supabase.from("trade_signals").update({
             status: "invalidated",
-            outcome: "loss",
+            outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: Math.round(pnl * 100) / 100,
             best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
           }).eq("id", signal.id)
-          notifyResolution(signal, "stop_loss", sl)
+          notifyResolution(signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
           stats.losses++
           stats.resolved++
           continue
         }
 
-        if (t1 && candle.low <= t1) {
+        if (t1 && isT1Hit(t1, false, candle, signal.triggered_at)) {
           const t1Pnl = ((entryMid - t1) / entryMid) * 100
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),

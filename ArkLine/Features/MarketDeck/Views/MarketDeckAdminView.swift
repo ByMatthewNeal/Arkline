@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 struct MarketDeckAdminView: View {
     @State private var viewModel = MarketDeckViewModel()
     @State private var showViewer = false
-    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var showPDFImporter = false
     @State private var urlInput = ""
     @State private var showURLInput = false
@@ -237,18 +237,24 @@ struct MarketDeckAdminView: View {
         }
         .padding(ArkSpacing.md)
         .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.cardBackground(colorScheme)))
-        .onChange(of: selectedPhoto) { _, newItem in
-            guard let newItem else { return }
+        .onChange(of: selectedPhotos) { _, newItems in
+            guard !newItems.isEmpty else { return }
             Task {
-                if let data = try? await newItem.loadTransferable(type: Data.self) {
-                    await viewModel.addImage(data)
+                for item in newItems {
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        await viewModel.addImage(data)
+                    }
                 }
-                selectedPhoto = nil
+                selectedPhotos = []
             }
         }
-        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf]) { result in
-            if case .success(let url) = result {
-                Task { await viewModel.addPDF(from: url) }
+        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf], allowsMultipleSelection: true) { result in
+            if case .success(let urls) = result {
+                Task {
+                    for url in urls {
+                        await viewModel.addPDF(from: url)
+                    }
+                }
             }
         }
     }
@@ -263,7 +269,7 @@ struct MarketDeckAdminView: View {
 
             HStack(spacing: ArkSpacing.sm) {
                 // Image picker
-                PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                PhotosPicker(selection: $selectedPhotos, matching: .images) {
                     Label("Image", systemImage: "photo")
                         .font(AppFonts.caption12Medium)
                         .foregroundColor(AppColors.accent)

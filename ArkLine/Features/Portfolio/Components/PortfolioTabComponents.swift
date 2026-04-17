@@ -12,6 +12,13 @@ struct PortfolioOverviewContent: View {
     }
 
     var body: some View {
+        VStack(spacing: 20) {
+            // Model Portfolios
+            ModelPortfolioCard()
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+        }
+
         if viewModel.holdings.isEmpty {
             EmptyStateView(
                 icon: "chart.pie",

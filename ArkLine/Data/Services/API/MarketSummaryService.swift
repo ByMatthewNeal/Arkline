@@ -367,6 +367,45 @@ final class MarketSummaryService {
         logDebug("Briefing feedback submitted: \(rating ? "👍" : "👎") for \(summaryDate)/\(slot)", category: .data)
     }
 
+    // MARK: - Briefing Archive
+
+    /// Fetch past briefings for the archive view. Returns most recent first.
+    func fetchBriefingArchive(limit: Int = 30) async throws -> [MarketSummary] {
+        guard SupabaseManager.shared.isConfigured else { throw MarketSummaryError.notConfigured }
+
+        struct ArchiveRow: Decodable {
+            let summary: String
+            let generatedAt: String
+            let summaryDate: String
+            let slot: String
+
+            enum CodingKeys: String, CodingKey {
+                case summary
+                case generatedAt = "generated_at"
+                case summaryDate = "summary_date"
+                case slot
+            }
+        }
+
+        let rows: [ArchiveRow] = try await SupabaseManager.shared.database
+            .from("market_summaries")
+            .select("summary, generated_at, summary_date, slot")
+            .order("summary_date", ascending: false)
+            .order("generated_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+
+        return rows.map { row in
+            MarketSummary(
+                summary: row.summary,
+                generatedAt: parseDate(row.generatedAt),
+                summaryDate: row.summaryDate,
+                slot: row.slot
+            )
+        }
+    }
+
     // MARK: - Private
 
     private func fetchFeedback(summaryDate: String, slot: String) async -> BriefingFeedbackRow? {

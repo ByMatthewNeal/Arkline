@@ -54,6 +54,26 @@ CANDIDATE_ASSETS = [
     {"pair": "ENA-USD",    "ticker": "ENA"},
     {"pair": "AAVE-USD",   "ticker": "AAVE"},
     {"pair": "UNI-USD",    "ticker": "UNI"},
+    # New top-100 candidates
+    {"pair": "ALGO-USD",   "ticker": "ALGO"},
+    {"pair": "BCH-USD",    "ticker": "BCH"},
+    {"pair": "BONK-USD",   "ticker": "BONK"},
+    {"pair": "CRO-USD",    "ticker": "CRO"},
+    {"pair": "ETC-USD",    "ticker": "ETC"},
+    {"pair": "FIL-USD",    "ticker": "FIL"},
+    {"pair": "HBAR-USD",   "ticker": "HBAR"},
+    {"pair": "ICP-USD",    "ticker": "ICP"},
+    {"pair": "LTC-USD",    "ticker": "LTC"},
+    {"pair": "QNT-USD",    "ticker": "QNT"},
+    {"pair": "SHIB-USD",   "ticker": "SHIB"},
+    {"pair": "TAO-USD",    "ticker": "TAO"},
+    {"pair": "TON-USD",    "ticker": "TON"},
+    {"pair": "TRUMP-USD",  "ticker": "TRUMP"},
+    {"pair": "VET-USD",    "ticker": "VET"},
+    {"pair": "WLD-USD",    "ticker": "WLD"},
+    {"pair": "XLM-USD",    "ticker": "XLM"},
+    {"pair": "ZEC-USD",    "ticker": "ZEC"},
+    {"pair": "ZRO-USD",    "ticker": "ZRO"},
 ]
 
 ALL_ASSETS = CURRENT_ASSETS + CANDIDATE_ASSETS

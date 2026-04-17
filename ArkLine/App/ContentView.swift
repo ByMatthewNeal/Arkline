@@ -109,6 +109,8 @@ struct OnboardingFlowView: View {
                 InvestmentInterestsView(viewModel: viewModel)
             case .careerInfo:
                 CareerInfoView(viewModel: viewModel)
+            case .cryptoApproach:
+                CryptoApproachView(viewModel: viewModel)
             case .portfolioGoals:
                 PortfolioGoalsView(viewModel: viewModel)
             case .createPasscode:

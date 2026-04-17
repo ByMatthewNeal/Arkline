@@ -73,11 +73,13 @@ struct MarketUpdateDeck: Codable, Identifiable, Hashable {
 
     var weekLabel: String {
         let formatter = DateFormatter()
+        let startCal = Calendar.current
+        let sameMonth = startCal.component(.month, from: weekStart) == startCal.component(.month, from: weekEnd)
         formatter.dateFormat = "MMM d"
         let start = formatter.string(from: weekStart)
-        formatter.dateFormat = "d, yyyy"
+        formatter.dateFormat = sameMonth ? "d, yyyy" : "MMM d, yyyy"
         let end = formatter.string(from: weekEnd)
-        return "\(start)-\(end)"
+        return "\(start) – \(end)"
     }
 }
 
@@ -398,6 +400,40 @@ struct EconomicEventEntry: Codable, Identifiable {
     let forecast: String?
     let impact: String
     let beat: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case title, actual, forecast, impact, beat
+        case date = "event_date"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = try container.decode(String.self, forKey: .title)
+        impact = try container.decode(String.self, forKey: .impact)
+        beat = try container.decodeIfPresent(Bool.self, forKey: .beat)
+        // Handle forecast as String or Number
+        if let s = try? container.decode(String.self, forKey: .forecast) {
+            forecast = s
+        } else if let n = try? container.decode(Double.self, forKey: .forecast) {
+            forecast = String(format: "%g", n)
+        } else {
+            forecast = nil
+        }
+        // Handle actual as String or Number
+        if let s = try? container.decode(String.self, forKey: .actual) {
+            actual = s
+        } else if let n = try? container.decode(Double.self, forKey: .actual) {
+            actual = String(format: "%g", n)
+        } else {
+            actual = nil
+        }
+        // Handle date field — server sends "event_date" but might also send "date"
+        if let d = try? container.decode(String.self, forKey: .date) {
+            date = d
+        } else {
+            date = ""
+        }
+    }
 }
 
 struct SetupsSlideData: Codable {

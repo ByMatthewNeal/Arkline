@@ -8,6 +8,8 @@ struct SplashView: View {
     @State private var showTagline = false
     @State private var showSlogan = false
 
+    private let soundPlayer = SplashSoundPlayer()
+
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -86,6 +88,9 @@ struct SplashView: View {
     }
 
     private func startAnimations() {
+        // Play techy chime synced with logo reveal
+        soundPlayer.play()
+
         // Logo animation
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
             showLogo = true

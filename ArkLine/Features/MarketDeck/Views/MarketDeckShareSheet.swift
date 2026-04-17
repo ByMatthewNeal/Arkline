@@ -10,6 +10,7 @@ struct MarketDeckShareSheet: View {
     let currentSlideIndex: Int
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject var appState: AppState
 
     @State private var exportMode: ExportMode = .currentSlide
     @State private var exportFormat: ExportFormat = .png
@@ -130,19 +131,21 @@ struct MarketDeckShareSheet: View {
                             }
                             .padding(14)
 
-                            Divider()
+                            if appState.currentUser?.isAdmin == true {
+                                Divider()
 
-                            // Branding toggle
-                            Toggle(isOn: $showBranding) {
-                                HStack {
-                                    Image(systemName: "star.circle")
-                                        .foregroundColor(AppColors.accent)
-                                    Text("Show Branding")
-                                        .font(AppFonts.body14)
+                                // Branding toggle
+                                Toggle(isOn: $showBranding) {
+                                    HStack {
+                                        Image(systemName: "star.circle")
+                                            .foregroundColor(AppColors.accent)
+                                        Text("Show Branding")
+                                            .font(AppFonts.body14)
+                                    }
                                 }
+                                .tint(AppColors.accent)
+                                .padding(14)
                             }
-                            .tint(AppColors.accent)
-                            .padding(14)
                         }
                         .background(AppColors.cardBackground(colorScheme))
                         .cornerRadius(12)

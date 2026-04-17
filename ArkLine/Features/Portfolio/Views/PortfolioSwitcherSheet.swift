@@ -134,22 +134,22 @@ struct PortfolioSwitcherSheet: View {
             .sheet(item: $portfolioToEdit) { portfolio in
                 EditPortfolioView(viewModel: viewModel, portfolio: portfolio)
             }
-            .alert("Delete Portfolio", isPresented: $showDeleteConfirmation) {
+            .confirmationDialog(
+                "Delete Portfolio",
+                isPresented: $showDeleteConfirmation,
+                presenting: portfolioToDelete
+            ) { portfolio in
+                Button("Delete \"\(portfolio.name)\"", role: .destructive) {
+                    Task {
+                        try? await viewModel.deletePortfolio(portfolio)
+                    }
+                    portfolioToDelete = nil
+                }
                 Button("Cancel", role: .cancel) {
                     portfolioToDelete = nil
                 }
-                Button("Delete", role: .destructive) {
-                    if let portfolio = portfolioToDelete {
-                        Task {
-                            try? await viewModel.deletePortfolio(portfolio)
-                        }
-                        portfolioToDelete = nil
-                    }
-                }
-            } message: {
-                if let portfolio = portfolioToDelete {
-                    Text("Are you sure you want to delete \"\(portfolio.name)\"? This will permanently remove all holdings and transactions.")
-                }
+            } message: { portfolio in
+                Text("This will permanently remove all holdings and transactions.")
             }
         }
         .presentationDetents([.medium, .large])

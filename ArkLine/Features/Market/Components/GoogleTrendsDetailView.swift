@@ -14,33 +14,20 @@ struct GoogleTrendsDetailView: View {
         trends?.currentIndex ?? searchIndex ?? 0
     }
 
-    // Filter history to only show days where value changed
+    // Show all recent days with change from previous day
     private var changedHistory: [(dto: GoogleTrendsDTO, change: Int)] {
         guard history.count > 1 else {
             return history.map { ($0, 0) }
         }
 
-        var result: [(dto: GoogleTrendsDTO, change: Int)] = []
         let sortedHistory = history.sorted { $0.date > $1.date } // Most recent first
 
-        for (index, item) in sortedHistory.enumerated() {
-            if index == 0 {
-                // Most recent - always show, calculate change from previous
-                let change = sortedHistory.count > 1 ? item.searchIndex - sortedHistory[1].searchIndex : 0
-                if change != 0 || result.isEmpty {
-                    result.append((item, change))
-                }
-            } else {
-                // Compare with previous day
-                let previousIndex = sortedHistory[index - 1].searchIndex
-                let change = previousIndex - item.searchIndex // Change that happened after this day
-                if change != 0 {
-                    result.append((item, change))
-                }
-            }
+        return sortedHistory.enumerated().map { index, item in
+            let change = index < sortedHistory.count - 1
+                ? item.searchIndex - sortedHistory[index + 1].searchIndex
+                : 0
+            return (item, change)
         }
-
-        return result
     }
 
     // Static historical events for reference

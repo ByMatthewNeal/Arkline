@@ -4,6 +4,7 @@ import SwiftUI
 /// Displays composite central bank liquidity from BIS + FRED data
 /// with per-country breakdown and trend indicators.
 struct GlobalLiquiditySection: View {
+    var refreshId: UUID = UUID()
     @Environment(\.colorScheme) var colorScheme
     @State private var liquidityIndex: GlobalLiquidityIndex?
     @State private var isLoading = true
@@ -72,7 +73,7 @@ struct GlobalLiquiditySection: View {
             }
         }
         .padding(.horizontal)
-        .task {
+        .task(id: refreshId) {
             await loadData()
         }
         .sheet(isPresented: $showInfo) {

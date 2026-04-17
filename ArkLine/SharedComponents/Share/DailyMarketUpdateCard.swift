@@ -530,6 +530,7 @@ struct DailyMarketUpdateShareSheet: View {
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     @State private var viewModel = DailyMarketUpdateViewModel()
     @State private var showBranding = true
@@ -674,18 +675,20 @@ struct DailyMarketUpdateShareSheet: View {
                 }
                 .padding(14)
 
-                Divider()
+                if appState.currentUser?.isAdmin == true {
+                    Divider()
 
-                Toggle(isOn: $showBranding) {
-                    HStack {
-                        Image(systemName: "star.circle")
-                            .foregroundColor(AppColors.accent)
-                        Text("Show ArkLine Branding")
-                            .font(AppFonts.body14)
+                    Toggle(isOn: $showBranding) {
+                        HStack {
+                            Image(systemName: "star.circle")
+                                .foregroundColor(AppColors.accent)
+                            Text("Show ArkLine Branding")
+                                .font(AppFonts.body14)
+                        }
                     }
+                    .tint(AppColors.accent)
+                    .padding(14)
                 }
-                .tint(AppColors.accent)
-                .padding(14)
 
                 Divider()
 

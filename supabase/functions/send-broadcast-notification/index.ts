@@ -296,7 +296,9 @@ Deno.serve(async (req) => {
 
     // Map event_type to the "type" field iOS expects for deep linking
     const isSignalEvent = (event_type || "").startsWith("signal_")
+    const isPortfolioEvent = event_type === "model_portfolio_rebalance"
     const notificationType = isSignalEvent ? "swing_signal"
+      : isPortfolioEvent ? "model_portfolio"
       : event_type === "briefing" ? "briefing"
       : event_type === "qps_change" ? "qps_change"
       : event_type === "dca_reminder" ? "dca_reminder"
@@ -308,12 +310,15 @@ Deno.serve(async (req) => {
         sound: "default",
         badge: 1,
         "mutable-content": 1,
+        ...(isPortfolioEvent && { "thread-id": "model-portfolio" }),
       },
       type: notificationType,
       broadcast_id,
       event_type: event_type || "general",
       // Include signal_id for deep link navigation to signal detail
       ...(isSignalEvent && { signal_id: broadcast_id }),
+      // Include strategy for portfolio deep linking
+      ...(isPortfolioEvent && { strategy: broadcast_id }),
     }
 
     const tokens = filteredDevices.map((d: { device_token: string }) => d.device_token)

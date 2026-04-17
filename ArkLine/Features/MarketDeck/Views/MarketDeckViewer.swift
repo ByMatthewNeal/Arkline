@@ -17,6 +17,7 @@ struct MarketDeckViewer: View {
                 TabView(selection: $viewModel.currentSlideIndex) {
                     ForEach(Array(deck.slides.enumerated()), id: \.offset) { index, slide in
                         DeckSlideView(slide: slide, deck: deck)
+                            .padding(.bottom, isAdmin ? 100 : 0)
                             .tag(index)
                     }
                 }
@@ -101,14 +102,14 @@ struct MarketDeckViewer: View {
                     if isAdmin && deck.status == .draft, let currentSlide = currentSlide(in: deck) {
                         SlideReviewBar(
                             slideType: currentSlide.type,
-                            existingFeedback: viewModel.rateSlideFeedback(for: currentSlide.type),
+                            existingFeedback: viewModel.rateSlideFeedback(for: currentSlide.id),
                             isRegenerating: viewModel.isRegeneratingSlide && viewModel.regeneratingSlideType == currentSlide.type.rawValue,
                             canRegenerate: currentSlide.type.isRegeneratable,
                             onRate: { rating, feedback in
-                                Task { await viewModel.submitSlideFeedback(slideType: currentSlide.type, rating: rating, feedback: feedback) }
+                                Task { await viewModel.submitSlideFeedback(slideId: currentSlide.id, slideType: currentSlide.type, rating: rating, feedback: feedback) }
                             },
                             onRemove: {
-                                Task { await viewModel.removeSlideFeedback(slideType: currentSlide.type) }
+                                Task { await viewModel.removeSlideFeedback(slideId: currentSlide.id, slideType: currentSlide.type) }
                             },
                             onRegenerate: { feedback in
                                 Task { await viewModel.regenerateSlide(slideType: currentSlide.type, feedback: feedback) }
@@ -116,7 +117,7 @@ struct MarketDeckViewer: View {
                         )
                         .padding(.horizontal, ArkSpacing.lg)
                         .padding(.bottom, ArkSpacing.xs)
-                        .id(viewModel.currentSlideIndex) // Reset state when switching slides
+                        .id(currentSlide.id) // Reset state when switching slides
                     }
 
                     // Post-publish deck-level feedback (last slide only)

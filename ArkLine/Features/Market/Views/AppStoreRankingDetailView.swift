@@ -58,6 +58,9 @@ struct AppStoreRankingDetailView: View {
             }
             .ignoresSafeArea()
         }
+        .refreshable {
+            await loadRankingHistory()
+        }
         .navigationTitle("Coinbase Ranking")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)

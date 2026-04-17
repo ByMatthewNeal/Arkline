@@ -12,6 +12,7 @@ struct PerformanceExportSheet: View {
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     @State private var exportMode: ExportMode = .card
     @State private var showBranding = true
@@ -233,18 +234,20 @@ struct PerformanceExportSheet: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             VStack(spacing: 0) {
-                Toggle(isOn: $showBranding) {
-                    HStack {
-                        Image(systemName: "star.circle")
-                            .foregroundColor(AppColors.accent)
-                        Text("Show ArkLine Branding")
-                            .font(AppFonts.body14)
+                if appState.currentUser?.isAdmin == true {
+                    Toggle(isOn: $showBranding) {
+                        HStack {
+                            Image(systemName: "star.circle")
+                                .foregroundColor(AppColors.accent)
+                            Text("Show ArkLine Branding")
+                                .font(AppFonts.body14)
+                        }
                     }
-                }
-                .tint(AppColors.accent)
-                .padding(14)
+                    .tint(AppColors.accent)
+                    .padding(14)
 
-                Divider()
+                    Divider()
+                }
 
                 Toggle(isOn: $useLightTheme) {
                     HStack {

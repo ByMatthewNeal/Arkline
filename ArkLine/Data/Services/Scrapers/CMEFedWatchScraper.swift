@@ -76,7 +76,8 @@ final class CMEFedWatchScraper {
         var meetings: [FedWatchData] = []
         let year = calendar.component(.year, from: today)
 
-        for (index, dateInfo) in fomcDates.enumerated() {
+        var futureIndex = 0
+        for (_, dateInfo) in fomcDates.enumerated() {
             guard let meetingDate = calendar.date(from: DateComponents(
                 year: year,
                 month: dateInfo.month,
@@ -86,8 +87,9 @@ final class CMEFedWatchScraper {
             // Include today's meeting (keep visible all day) and future meetings
             guard Calendar.current.isDateInToday(meetingDate) || meetingDate > today else { continue }
 
-            // Generate probabilities that gradually shift toward cuts as year progresses
-            let probabilities = generateProbabilitiesForMeeting(index: index, totalMeetings: fomcDates.count, currentRate: currentRate)
+            // Generate probabilities based on position among remaining meetings
+            let probabilities = generateProbabilitiesForMeeting(index: futureIndex, totalMeetings: fomcDates.count, currentRate: currentRate)
+            futureIndex += 1
 
             meetings.append(FedWatchData(
                 meetingDate: meetingDate,
@@ -104,34 +106,37 @@ final class CMEFedWatchScraper {
     }
 
     private func generateProbabilitiesForMeeting(index: Int, totalMeetings: Int, currentRate: Double) -> [RateProbability] {
-        // Market typically prices in gradual rate cuts over time
-        // Earlier meetings: higher hold probability
-        // Later meetings: higher cut probability
-
-        // Base probabilities that shift over time
+        // Probabilities based on CME FedWatch data as of 2026-03-30
+        // Current target rate: 350-375 bps (3.50-3.75%)
         var holdProb: Double
         var cutProb: Double
-        var hikeProb: Double = 0.02 // Very low hike probability in current environment
+        var hikeProb: Double
 
         if index == 0 {
-            // Next meeting: strong hold expected (aligned with CME FedWatch Mar 2026)
-            holdProb = 0.876
+            // Apr 29: 97.4% hold, 0% cut, 2.6% hike
+            holdProb = 0.974
             cutProb = 0.0
-            hikeProb = 0.124
+            hikeProb = 0.026
         } else if index == 1 {
-            // Second meeting: mostly hold, some cut probability
-            holdProb = 0.70
-            cutProb = 0.25
-            hikeProb = 0.05
+            // Jun 17: 94.8% hold, 2.7% cut, 2.5% hike
+            holdProb = 0.948
+            cutProb = 0.027
+            hikeProb = 0.025
         } else if index == 2 {
-            // Third meeting: cuts more likely
-            holdProb = 0.50
-            cutProb = 0.47
-            hikeProb = 0.03
+            // Jul 29: 91.8% hold, 5.8% cut, 2.4% hike
+            holdProb = 0.918
+            cutProb = 0.058
+            hikeProb = 0.024
+        } else if index == 3 {
+            // Sep 16: 90.0% hold, 5.7% cut, 4.4% hike
+            holdProb = 0.900
+            cutProb = 0.057
+            hikeProb = 0.044
         } else {
-            // Later meetings: cuts expected
-            holdProb = 0.35
-            cutProb = 0.63
+            // Oct 28, Dec 9: estimate similar to Sep
+            holdProb = 0.88
+            cutProb = 0.07
+            hikeProb = 0.05
         }
 
         // Normalize to 100%

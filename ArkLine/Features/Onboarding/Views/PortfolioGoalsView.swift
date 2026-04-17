@@ -25,7 +25,7 @@ struct PortfolioGoalsView: View {
                     .foregroundColor(textPrimary)
                     .multilineTextAlignment(.center)
 
-                Text("We'll prioritize features based on your focus.")
+                Text("Select up to 3. We'll prioritize features based on your focus.")
                     .font(.subheadline)
                     .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -34,11 +34,15 @@ struct PortfolioGoalsView: View {
             // Goal cards
             VStack(spacing: 10) {
                 ForEach(PortfolioGoal.allCases) { goal in
-                    let isSelected = viewModel.portfolioGoal == goal
+                    let isSelected = viewModel.portfolioGoals.contains(goal)
 
                     Button {
                         Haptics.selection()
-                        viewModel.portfolioGoal = goal
+                        if isSelected {
+                            viewModel.portfolioGoals.remove(goal)
+                        } else if viewModel.portfolioGoals.count < 3 {
+                            viewModel.portfolioGoals.insert(goal)
+                        }
                     } label: {
                         HStack(spacing: 14) {
                             Image(systemName: goal.icon)
@@ -87,7 +91,7 @@ struct PortfolioGoalsView: View {
 
             // Continue
             Button(action: { viewModel.savePortfolioGoals() }) {
-                Text(viewModel.portfolioGoal == nil ? "Skip for now" : "Continue")
+                Text(viewModel.portfolioGoals.isEmpty ? "Skip for now" : "Continue")
                     .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

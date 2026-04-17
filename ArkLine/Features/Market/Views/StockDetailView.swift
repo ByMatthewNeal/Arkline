@@ -55,7 +55,7 @@ struct StockDetailView: View {
                         .foregroundColor(isPositive ? AppColors.success : AppColors.error)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
 
                     // Chart
                     VStack(spacing: 16) {
@@ -293,7 +293,7 @@ struct StockDetailHeader: View {
                     .cornerRadius(8)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
     }
 
     private var stockIconPlaceholder: some View {

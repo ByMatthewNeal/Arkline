@@ -174,6 +174,23 @@ extension String {
         Double(extractedNumbers)
     }
 
+    /// Parse a decimal string accepting both period and comma as decimal separator.
+    /// Handles EU locales where keyboard shows comma (e.g. "8,6" → 8.6).
+    var asLocalizedDouble: Double? {
+        let cleaned = trimmingCharacters(in: .whitespaces)
+        guard !cleaned.isEmpty else { return nil }
+        // If both . and , are present, treat . as thousands separator and , as decimal (EU: 1.234,56)
+        // If only , is present, treat it as decimal separator
+        // If only . is present, treat it as decimal separator (US default)
+        if cleaned.contains(".") && cleaned.contains(",") {
+            // EU format: 1.234,56 → remove dots, replace comma with dot
+            return Double(cleaned.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: "."))
+        } else if cleaned.contains(",") {
+            return Double(cleaned.replacingOccurrences(of: ",", with: "."))
+        }
+        return Double(cleaned)
+    }
+
     var asInt: Int? {
         Int(filter { $0.isNumber || $0 == "-" })
     }

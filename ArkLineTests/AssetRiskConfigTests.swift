@@ -6,7 +6,7 @@ final class AssetRiskConfigTests: XCTestCase {
     // MARK: - All Configs
 
     func testAllConfigs_count() {
-        XCTAssertEqual(AssetRiskConfig.allConfigs.count, 8)
+        XCTAssertEqual(AssetRiskConfig.allConfigs.count, 16)
     }
 
     func testAllConfigs_uniqueSymbols() {
@@ -37,12 +37,11 @@ final class AssetRiskConfigTests: XCTestCase {
 
     func testForCoin_unsupported_returnsNil() {
         XCTAssertNil(AssetRiskConfig.forCoin("DOGE"))
-        XCTAssertNil(AssetRiskConfig.forCoin("XRP"))
         XCTAssertNil(AssetRiskConfig.forCoin(""))
     }
 
     func testForCoin_allSupported() {
-        let symbols = ["BTC", "ETH", "SOL", "BNB", "UNI", "RENDER", "SUI", "ONDO"]
+        let symbols = ["BTC", "ETH", "SOL", "BNB", "UNI", "RENDER", "SUI", "ONDO", "TAO", "ZEC", "XRP", "LTC", "AAVE", "ENA", "JUP", "SYRUP"]
         for symbol in symbols {
             XCTAssertNotNil(AssetRiskConfig.forCoin(symbol), "\(symbol) should be supported")
         }
@@ -63,7 +62,7 @@ final class AssetRiskConfigTests: XCTestCase {
     // MARK: - isSupported
 
     func testIsSupported_allAssets() {
-        let symbols = ["BTC", "ETH", "SOL", "BNB", "UNI", "RENDER", "SUI", "ONDO"]
+        let symbols = ["BTC", "ETH", "SOL", "BNB", "UNI", "RENDER", "SUI", "ONDO", "TAO", "ZEC", "XRP", "LTC", "AAVE", "ENA", "JUP", "SYRUP"]
         for symbol in symbols {
             XCTAssertTrue(AssetRiskConfig.isSupported(symbol), "\(symbol) should be supported")
         }
@@ -71,6 +70,7 @@ final class AssetRiskConfigTests: XCTestCase {
 
     func testIsSupported_unsupported() {
         XCTAssertFalse(AssetRiskConfig.isSupported("DOGE"))
+        XCTAssertFalse(AssetRiskConfig.isSupported("SHIB"))
         XCTAssertFalse(AssetRiskConfig.isSupported(""))
     }
 
@@ -89,15 +89,15 @@ final class AssetRiskConfigTests: XCTestCase {
     // MARK: - Dictionary Lookups
 
     func testBySymbol_count() {
-        XCTAssertEqual(AssetRiskConfig.bySymbol.count, 8)
+        XCTAssertEqual(AssetRiskConfig.bySymbol.count, 16)
     }
 
     func testByGeckoId_count() {
-        XCTAssertEqual(AssetRiskConfig.byGeckoId.count, 8)
+        XCTAssertEqual(AssetRiskConfig.byGeckoId.count, 16)
     }
 
     func testCoinGeckoIds_count() {
-        XCTAssertEqual(AssetRiskConfig.coinGeckoIds.count, 8)
+        XCTAssertEqual(AssetRiskConfig.coinGeckoIds.count, 16)
     }
 
     func testCoinGeckoIds_consistency() {

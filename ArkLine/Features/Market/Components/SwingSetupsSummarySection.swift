@@ -5,6 +5,7 @@ import SwiftUI
 struct SwingSetupsSummarySection: View {
     @State private var viewModel = SwingSetupsViewModel()
     var isPro: Bool = false
+    var refreshId: UUID = UUID()
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -43,7 +44,7 @@ struct SwingSetupsSummarySection: View {
                 lockedCard
             }
         }
-        .task {
+        .task(id: refreshId) {
             if isPro {
                 await viewModel.loadActiveSignals()
             }

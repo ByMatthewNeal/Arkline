@@ -35,6 +35,8 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let bounceConfirmed: Bool
     let confirmationDetails: ConfirmationDetails?
     let counterTrend: Bool?
+    let rangeCompressed: Bool?
+    let compressionScore: Int?
 
     // Runner tracking (split exit: 50% at T1, trail runner)
     let bestPrice: Double?
@@ -86,6 +88,8 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case bounceConfirmed = "bounce_confirmed"
         case confirmationDetails = "confirmation_details"
         case counterTrend = "counter_trend"
+        case rangeCompressed = "range_compressed"
+        case compressionScore = "compression_score"
         case bestPrice = "best_price"
         case runnerStop = "runner_stop"
         case runnerExitPrice = "runner_exit_price"
@@ -366,6 +370,11 @@ extension TradeSignal {
         "DOT":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 75.2, shortWinRate: 70.7, profitFactor: 3.23),
         "UNI":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 72.2, shortWinRate: 76.4, profitFactor: 3.13),
         "NEAR":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 75.6, shortWinRate: 70.6, profitFactor: 3.04),
+        // New assets (2026-04-10)
+        "ALGO":   AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 78.8, shortWinRate: 82.0, profitFactor: 4.91),
+        "FIL":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 80.8, shortWinRate: 75.7, profitFactor: 4.53),
+        "ZEC":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 74.0, shortWinRate: 79.0, profitFactor: 4.12),
+        "VET":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 73.3, shortWinRate: 80.7, profitFactor: 4.05),
     ]
 
     var assetProfile: AssetProfile {
@@ -382,6 +391,7 @@ extension TradeSignal {
 
     /// True when signal goes against the Bull Market Support Band macro regime.
     var isCounterTrend: Bool { counterTrend == true }
+    var isRangeCompressed: Bool { rangeCompressed == true }
 
     /// All assets with backtest data are eligible for Flash Intel.
     var isFlashIntelWorthy: Bool { true }
@@ -468,12 +478,12 @@ extension TradeSignal {
         return signalType.isBuy ? raw : -raw
     }
 
-    /// "Consider Profit" zone — 60-75% of the way from entry to T1.
+    /// "Consider Profit" zone — 30-75% of the way from entry to T1.
     /// Shown on live signals as guidance for active risk management.
     var considerProfitZone: (low: Double, high: Double)? {
         guard let t1 = target1 else { return nil }
         let distance = t1 - entryPriceMid  // positive for longs, negative for shorts
-        let low = entryPriceMid + distance * 0.6
+        let low = entryPriceMid + distance * 0.3
         let high = entryPriceMid + distance * 0.75
         return signalType.isBuy ? (low: low, high: high) : (low: high, high: low)
     }

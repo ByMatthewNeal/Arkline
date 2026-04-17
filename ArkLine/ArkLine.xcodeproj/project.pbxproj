@@ -25,6 +25,7 @@
 		0B5345947CF96FAC5D432838 /* APIMarketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */; };
 		0BB9196B1B6620C4C16FA8DA /* DateExtensionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BC257F981A64B96EC641B0 /* DateExtensionsTests.swift */; };
 		0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */; };
+		A324CDC22A387AE0A2F87C60 /* CryptoApproachView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A8954B1BB0774EC39B4BDFE /* CryptoApproachView.swift */; };
 		65995D021B8358436A6B2F07 /* InvestmentInterestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C15FC65EAE7F24815107E71 /* InvestmentInterestsView.swift */; };
 		C175ACF1B76DBC4A9B9A43DC /* PortfolioGoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0DDB9801D573294E1970F2 /* PortfolioGoalsView.swift */; };
 		0CBE5B9F0D1C21DA431CED2F /* PerformanceMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ADAC4F7B0196234F927192D /* PerformanceMetricsTests.swift */; };
@@ -631,6 +632,7 @@
 		43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseUsernameView.swift; sourceTree = "<group>"; };
 		43F759895BAB16CAE9827A96 /* DCAListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAListView.swift; sourceTree = "<group>"; };
 		440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerInfoView.swift; sourceTree = "<group>"; };
+		8A8954B1BB0774EC39B4BDFE /* CryptoApproachView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoApproachView.swift; sourceTree = "<group>"; };
 		3C15FC65EAE7F24815107E71 /* InvestmentInterestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestmentInterestsView.swift; sourceTree = "<group>"; };
 		5A0DDB9801D573294E1970F2 /* PortfolioGoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioGoalsView.swift; sourceTree = "<group>"; };
 		440FC32555A994CF7B6FD757 /* AssetRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetRowView.swift; sourceTree = "<group>"; };
@@ -2164,6 +2166,7 @@
 			children = (
 				D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */,
 				440D17A41D9DB296AC0F0CCD /* CareerInfoView.swift */,
+				8A8954B1BB0774EC39B4BDFE /* CryptoApproachView.swift */,
 				43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */,
 				3C15FC65EAE7F24815107E71 /* InvestmentInterestsView.swift */,
 				5A0DDB9801D573294E1970F2 /* PortfolioGoalsView.swift */,
@@ -2593,6 +2596,7 @@
 				C6D58AAA96B8FBB851F1D0F0 /* CMEFedWatchScraper.swift in Sources */,
 				91252ECC56160C486655563C /* CareerIndustryView.swift in Sources */,
 				0C8C44086FA2589358642D46 /* CareerInfoView.swift in Sources */,
+				A324CDC22A387AE0A2F87C60 /* CryptoApproachView.swift in Sources */,
 				65995D021B8358436A6B2F07 /* InvestmentInterestsView.swift in Sources */,
 				C175ACF1B76DBC4A9B9A43DC /* PortfolioGoalsView.swift in Sources */,
 				C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */,

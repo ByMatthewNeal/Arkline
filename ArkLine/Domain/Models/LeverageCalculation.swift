@@ -14,9 +14,10 @@ struct LeverageCalculation {
     let leverageMultiplier: Int
     let marginAmount: Double
     let entryStrategy: EntryStrategy
+    let riskTolerance: RiskTolerance
 
-    /// Safety factor — stop must be within this fraction of liquidation distance
-    private let safetyFactor: Double = 0.55
+    /// Safety factor derived from user's risk tolerance
+    private var safetyFactor: Double { riskTolerance.safetyFactor }
 
     // MARK: - Entry
 
@@ -214,6 +215,47 @@ struct LeverageCalculation {
     }
 }
 
+// MARK: - Risk Tolerance
+
+enum RiskTolerance: String, CaseIterable {
+    case conservative = "Conservative"
+    case moderate = "Moderate"
+    case aggressive = "Aggressive"
+
+    /// Safety factor: determines max leverage so that SL hit costs at most `maxMarginLoss`% of margin
+    var safetyFactor: Double {
+        switch self {
+        case .conservative: return 0.20
+        case .moderate: return 0.35
+        case .aggressive: return 0.55
+        }
+    }
+
+    var maxMarginLoss: String {
+        switch self {
+        case .conservative: return "~20%"
+        case .moderate: return "~35%"
+        case .aggressive: return "~55%"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .conservative: return "Smaller losses, lower leverage"
+        case .moderate: return "Balanced risk and reward"
+        case .aggressive: return "Higher leverage, larger losses"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .conservative: return "shield.fill"
+        case .moderate: return "scale.3d"
+        case .aggressive: return "flame.fill"
+        }
+    }
+}
+
 // MARK: - Margin Mode
 
 enum MarginMode: String, CaseIterable {
@@ -240,7 +282,7 @@ enum RiskSize: String, CaseIterable {
 // MARK: - Convenience Init from TradeSignal
 
 extension LeverageCalculation {
-    init(signal: TradeSignal, leverage: Int, margin: Double, strategy: EntryStrategy = .midpoint) {
+    init(signal: TradeSignal, leverage: Int, margin: Double, strategy: EntryStrategy = .midpoint, riskTolerance: RiskTolerance = .aggressive) {
         self.entryZoneHigh = signal.entryZoneHigh
         self.entryZoneLow = signal.entryZoneLow
         self.stopLossPrice = signal.stopLoss
@@ -250,5 +292,6 @@ extension LeverageCalculation {
         self.leverageMultiplier = leverage
         self.marginAmount = margin
         self.entryStrategy = strategy
+        self.riskTolerance = riskTolerance
     }
 }

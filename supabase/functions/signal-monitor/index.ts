@@ -23,6 +23,7 @@ const ASSETS = [
   "ONDO-USD", "POL-USD", "BNB-USD", "ATOM-USD", "TIA-USD", "XRP-USD",
   "INJ-USD", "DOGE-USD", "AAVE-USD", "PEPE-USD", "ENA-USD",
   "FET-USD", "ARB-USD", "DOT-USD", "UNI-USD", "NEAR-USD",
+  "ALGO-USD", "FIL-USD", "ZEC-USD", "VET-USD",
 ]
 
 const TICKER_MAP: Record<string, string> = Object.fromEntries(
@@ -38,7 +39,8 @@ const BINANCE_MAP: Record<string, string> = {
   BNB: "BNBUSDT", ATOM: "ATOMUSDT", TIA: "TIAUSDT", XRP: "XRPUSDT",
   INJ: "INJUSDT", DOGE: "DOGEUSDT", AAVE: "AAVEUSDT", PEPE: "PEPEUSDT",
   ENA: "ENAUSDT", FET: "FETUSDT", ARB: "ARBUSDT", DOT: "DOTUSDT",
-  UNI: "UNIUSDT", NEAR: "NEARUSDT",
+  UNI: "UNIUSDT", NEAR: "NEARUSDT", ALGO: "ALGOUSDT", FIL: "FILUSDT",
+  ZEC: "ZECUSDT", VET: "VETUSDT",
 }
 
 Deno.serve(async (req) => {
@@ -150,10 +152,9 @@ Deno.serve(async (req) => {
     // Filter to candles that started at or after the signal trigger time
     const valid = all.filter(c => c.start >= afterMs)
     if (valid.length === 0) {
-      // If no candles started after trigger, use only the most recent candle
-      // (the signal was just created, use current price data)
-      const latest = all[0]
-      return { high: latest.high, low: latest.low, close: latest.close }
+      // No candle started after trigger — signal was created mid-candle.
+      // Return null to skip T1/SL checks this cycle (avoids using pre-trigger highs/lows).
+      return null
     }
     let aggHigh = -Infinity
     let aggLow = Infinity
@@ -170,8 +171,8 @@ Deno.serve(async (req) => {
     if (!all || all.length === 0) return null
     const valid = all.filter(c => c.start >= afterMs)
     if (valid.length === 0) {
-      const latest = all[0]
-      return { high: latest.high, low: latest.low, close: latest.close }
+      // No candle started after trigger — skip to avoid pre-trigger data
+      return null
     }
     let aggHigh = -Infinity
     let aggLow = Infinity
@@ -187,6 +188,29 @@ Deno.serve(async (req) => {
     const all = rawCandles[ticker]
     if (!all || all.length === 0) return null
     return { high: all[0].high, low: all[0].low, close: all[0].close }
+  }
+
+  // Dual-source T1 check: requires BOTH Coinbase and Binance to confirm target hit.
+  // If Binance data is unavailable, falls back to Coinbase-only.
+  // Prevents exchange-specific wicks from triggering false T1 hits.
+  function isT1Hit(
+    ticker: string, t1: number, isBuy: boolean,
+    cbCandle: { high: number; low: number },
+    triggerMs: number,
+  ): boolean {
+    const bnCandle = binanceAggregateAfter(ticker, triggerMs)
+
+    if (isBuy) {
+      const cbHit = cbCandle.high >= t1
+      if (!bnCandle) return cbHit  // Binance unavailable, fallback
+      const bnHit = bnCandle.high >= t1
+      return cbHit && bnHit   // Both must confirm
+    } else {
+      const cbHit = cbCandle.low <= t1
+      if (!bnCandle) return cbHit
+      const bnHit = bnCandle.low <= t1
+      return cbHit && bnHit
+    }
   }
 
   // Dual-source SL check: requires BOTH Coinbase and Binance to confirm breach.
@@ -261,15 +285,20 @@ Deno.serve(async (req) => {
           ? ((exitPrice - entryMid) / entryMid) * 100
           : ((entryMid - exitPrice) / entryMid) * 100
 
+        // Check if best price reached consider-profit zone before expiry
+        const reachedConsiderProfit = t1 && (isBuy
+          ? bestPrice >= entryMid + (t1 - entryMid) * 0.3
+          : bestPrice <= entryMid - (entryMid - t1) * 0.3)
+
         await supabase.from("trade_signals").update({
           status: "expired",
-          outcome: "loss",
+          outcome: reachedConsiderProfit ? "partial" : "loss",
           outcome_pct: round2(pnl),
           closed_at: now.toISOString(),
           duration_hours: hoursSince(signal.triggered_at, now),
         }).eq("id", signal.id)
 
-        await notify(supabaseUrl, cronSecret, signal, "expired_loss", exitPrice)
+        await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "expired_partial" : "expired_loss", exitPrice)
       }
 
       stats.expired++
@@ -288,9 +317,11 @@ Deno.serve(async (req) => {
         // Dual-source: both Coinbase AND Binance must confirm SL breach
         if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
           const pnl = ((sl - entryMid) / entryMid) * 100
+          // Check if best price reached consider-profit zone (30% of entry→T1)
+          const reachedConsiderProfit = t1 && bestPrice >= entryMid + (t1 - entryMid) * 0.3
           await supabase.from("trade_signals").update({
             status: "invalidated",
-            outcome: "loss",
+            outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: round2(pnl),
             best_price: bestPrice,
             closed_at: now.toISOString(),
@@ -298,12 +329,14 @@ Deno.serve(async (req) => {
           }).eq("id", signal.id)
           stats.losses++
           stats.resolved++
-          await notify(supabaseUrl, cronSecret, signal, "stop_loss", sl)
+          await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
           stats.notifications++
           continue
         }
 
-        if (t1 && candle.high >= t1) {
+        if (t1 && isT1Hit(signal.asset, t1, true, candle, triggerMs)) {
+          const bnCandle = binanceAggregateAfter(signal.asset, triggerMs)
+          console.log(`T1 HIT (buy) ${signal.asset}: T1=$${t1}, CB high=$${candle.high}, BN high=$${bnCandle?.high ?? "N/A"}, entry=$${entryMid}, trigger=${signal.triggered_at}`)
           const t1Pnl = ((t1 - entryMid) / entryMid) * 100
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
@@ -364,9 +397,11 @@ Deno.serve(async (req) => {
         // Dual-source: both Coinbase AND Binance must confirm SL breach
         if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
           const pnl = ((entryMid - sl) / entryMid) * 100
+          // Check if best price reached consider-profit zone (30% of entry→T1)
+          const reachedConsiderProfit = t1 && bestPrice <= entryMid - (entryMid - t1) * 0.3
           await supabase.from("trade_signals").update({
             status: "invalidated",
-            outcome: "loss",
+            outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: round2(pnl),
             best_price: bestPrice,
             closed_at: now.toISOString(),
@@ -374,12 +409,14 @@ Deno.serve(async (req) => {
           }).eq("id", signal.id)
           stats.losses++
           stats.resolved++
-          await notify(supabaseUrl, cronSecret, signal, "stop_loss", sl)
+          await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
           stats.notifications++
           continue
         }
 
-        if (t1 && candle.low <= t1) {
+        if (t1 && isT1Hit(signal.asset, t1, false, candle, triggerMs)) {
+          const bnCandle = binanceAggregateAfter(signal.asset, triggerMs)
+          console.log(`T1 HIT (short) ${signal.asset}: T1=$${t1}, CB low=$${candle.low}, BN low=$${bnCandle?.low ?? "N/A"}, entry=$${entryMid}, trigger=${signal.triggered_at}`)
           const t1Pnl = ((entryMid - t1) / entryMid) * 100
           await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),

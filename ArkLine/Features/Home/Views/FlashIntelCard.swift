@@ -207,7 +207,7 @@ struct FlashIntelSection: View {
                 } else {
                     ForEach(signals.prefix(maxSignals)) { signal in
                         NavigationLink {
-                            SignalDetailView(signalId: signal.id)
+                            SignalDetailView(signalId: signal.id, signal: signal)
                         } label: {
                             FlashIntelCard(signal: signal)
                         }
@@ -514,6 +514,12 @@ struct SignalMethodologySheet: View {
                         )
 
                         conditionRow(
+                            icon: "rectangle.compress.vertical",
+                            title: "Range Compression",
+                            detail: "When an asset's 24-hour trading range is significantly below its 14-day average — especially with low volume — the market is stalling. Signals generated in compressed conditions receive a score penalty and a higher threshold to publish. Shown as the \"Compressed\" badge."
+                        )
+
+                        conditionRow(
                             icon: "bolt.horizontal",
                             title: "Momentum Filter",
                             detail: "Blocks signals that go against strong recent momentum — no shorts during a 5%+ rally over 5 days, and no longs during a 5%+ selloff."
@@ -553,6 +559,32 @@ struct SignalMethodologySheet: View {
                     }
                     .padding(.horizontal, 20)
 
+                    // Risk Management
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Risk Management")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(textPrimary)
+
+                        conditionRow(
+                            icon: "shield.lefthalf.filled",
+                            title: "Stop Loss Placement",
+                            detail: "Your stop loss is placed just beyond the nearest key support or resistance level from the entry zone. These levels are derived from Fibonacci retracements of recent price swings — areas where price has historically reacted. For a long signal, the stop sits just below support. For a short, just above resistance. A small buffer is built in so normal price noise doesn't trigger it prematurely."
+                        )
+
+                        conditionRow(
+                            icon: "arrow.up.to.line",
+                            title: "Breakeven & Trailing Stop",
+                            detail: "If the trade moves in your favor and hits the first target (T1), the stop automatically moves to breakeven, locking in a risk-free position. The remaining 50% of the position then trails with price — the stop follows 1R behind the best price reached, only moving in your favor, never back. This lets winners run while protecting gains."
+                        )
+
+                        conditionRow(
+                            icon: "chart.line.flattrend.xyaxis",
+                            title: "Consider Profit Zone",
+                            detail: "If price reaches 30–75% of the distance from entry to T1 before getting stopped out, the outcome is classified as a partial win rather than a full loss — recognizing that the trade idea was directionally correct even if the full target wasn't reached."
+                        )
+                    }
+                    .padding(.horizontal, 20)
+
                     // Execution window
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Detection Window")
@@ -585,7 +617,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.success)
                                 .frame(width: 24)
 
-                            Text("This detection methodology has been backtested across 10 assets (BTC, ETH, SOL, SUI, LINK, ADA, AVAX, APT, XRP, ATOM) over 12+ months of data covering multiple market regimes. Both 1H scalp and 4H swing tiers include choppiness detection, momentum filtering, and daily trend analysis. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
+                            Text("This detection methodology has been backtested across 20 assets over 12+ months of data covering multiple market regimes. Both 1H scalp and 4H swing tiers include choppiness detection, momentum filtering, and daily trend analysis. The split-exit framework (50% at T1, 50% trailing) is designed for educational analysis of trade management.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)

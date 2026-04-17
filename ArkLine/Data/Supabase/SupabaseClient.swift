@@ -114,6 +114,11 @@ enum SupabaseTable: String {
     case economicEvents = "economic_events"
     case positioningSignals = "positioning_signals"
     case marketUpdateDecks = "market_update_decks"
+    case modelPortfolios = "model_portfolios"
+    case modelPortfolioNav = "model_portfolio_nav"
+    case modelPortfolioTrades = "model_portfolio_trades"
+    case benchmarkNav = "benchmark_nav"
+    case modelPortfolioRiskHistory = "model_portfolio_risk_history"
 }
 
 // MARK: - Storage Buckets

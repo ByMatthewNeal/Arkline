@@ -90,6 +90,7 @@ class SentimentRegimeAlertManager: ObservableObject {
         content.body = notificationBody(from: oldRegime, to: newRegime)
         content.sound = .default
         content.categoryIdentifier = "SENTIMENT_REGIME_SHIFT"
+        content.userInfo = ["type": "sentiment_regime"]
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(

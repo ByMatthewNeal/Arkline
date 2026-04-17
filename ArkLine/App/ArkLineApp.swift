@@ -42,6 +42,14 @@ struct ArkLineApp: App {
                     appState.selectedTab = .profile
                     appState.pendingDCAReminderId = "open"
                 }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ModelPortfolioNotificationTapped"))) { notification in
+                    appState.selectedTab = .portfolio
+                    appState.pendingModelPortfolioStrategy = notification.userInfo?["id"] as? String
+                }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SentimentRegimeNotificationTapped"))) { _ in
+                    appState.selectedTab = .market
+                    appState.pendingSentimentRegime = true
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -239,7 +247,9 @@ class AppState: ObservableObject {
     @Published var pendingSignalId: UUID?
     @Published var pendingQPSAsset: String?
     @Published var pendingDCAReminderId: String?
+    @Published var pendingModelPortfolioStrategy: String?
     @Published var shouldExpandBriefing = false
+    @Published var pendingSentimentRegime = false
 
     // Unread broadcast badge count for Insights tab
     @Published var insightsUnreadCount: Int = 0
@@ -655,6 +665,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 notificationName = Notification.Name("QPSChangeNotificationTapped")
             case "dca_reminder":
                 notificationName = Notification.Name("DCANotificationTapped")
+            case "model_portfolio":
+                notificationName = Notification.Name("ModelPortfolioNotificationTapped")
+            case "sentiment_regime":
+                notificationName = Notification.Name("SentimentRegimeNotificationTapped")
             default:
                 notificationName = Notification.Name("BroadcastNotificationTapped")
             }

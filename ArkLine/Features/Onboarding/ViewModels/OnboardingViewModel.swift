@@ -9,6 +9,7 @@ enum OnboardingStep: Int, CaseIterable {
     case username
     case investmentInterests   // NEW: What do you invest in?
     case careerInfo            // Experience level + portfolio size
+    case cryptoApproach        // NEW: How you approach crypto
     case portfolioGoals        // NEW: What matters most to you?
     case createPasscode
     case confirmPasscode
@@ -48,6 +49,7 @@ enum OnboardingStep: Int, CaseIterable {
         case .username: return "Your Name"
         case .investmentInterests: return "Investments"
         case .careerInfo: return "Experience"
+        case .cryptoApproach: return "Approach"
         case .portfolioGoals: return "Goals"
         case .createPasscode: return "Create Passcode"
         case .confirmPasscode: return "Confirm Passcode"
@@ -59,7 +61,7 @@ enum OnboardingStep: Int, CaseIterable {
     /// Whether this step can be skipped
     var isSkippable: Bool {
         switch self {
-        case .investmentInterests, .careerInfo, .portfolioGoals, .notifications:
+        case .investmentInterests, .careerInfo, .cryptoApproach, .portfolioGoals, .notifications:
             return true
         default:
             return false
@@ -73,7 +75,7 @@ enum OnboardingStep: Int, CaseIterable {
             return .intro
         case .email, .verification:
             return .authentication
-        case .username, .investmentInterests, .careerInfo, .portfolioGoals:
+        case .username, .investmentInterests, .careerInfo, .cryptoApproach, .portfolioGoals:
             return .profile
         case .createPasscode, .confirmPasscode, .faceIDSetup:
             return .security
@@ -88,9 +90,6 @@ enum InvestmentInterest: String, CaseIterable, Identifiable {
     case crypto = "Crypto"
     case stocks = "Stocks & ETFs"
     case commodities = "Commodities"
-    case realEstate = "Real Estate"
-    case forex = "Forex"
-    case options = "Options"
 
     var id: String { rawValue }
 
@@ -99,9 +98,6 @@ enum InvestmentInterest: String, CaseIterable, Identifiable {
         case .crypto: return "bitcoinsign.circle.fill"
         case .stocks: return "chart.line.uptrend.xyaxis"
         case .commodities: return "leaf.fill"
-        case .realEstate: return "building.2.fill"
-        case .forex: return "dollarsign.arrow.circlepath"
-        case .options: return "arrow.up.arrow.down.circle.fill"
         }
     }
 }
@@ -115,6 +111,34 @@ enum PortfolioSizeRange: String, CaseIterable, Identifiable {
     case over250k = "$250K+"
 
     var id: String { rawValue }
+}
+
+// MARK: - Crypto Approach
+enum CryptoApproach: String, CaseIterable, Identifiable {
+    case longTermHolder = "Long-term holder"
+    case activeTrader = "Active trader"
+    case systematicDCA = "Systematic DCA"
+    case buildingConviction = "Building conviction"
+
+    var id: String { rawValue }
+
+    var description: String {
+        switch self {
+        case .longTermHolder: return "Spot positions, multi-year horizon"
+        case .activeTrader: return "Swing setups and short-term moves"
+        case .systematicDCA: return "Scheduled or risk-adjusted accumulation"
+        case .buildingConviction: return "Getting started, learning the signals"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .longTermHolder: return "hourglass"
+        case .activeTrader: return "bolt.fill"
+        case .systematicDCA: return "calendar.badge.clock"
+        case .buildingConviction: return "lightbulb.fill"
+        }
+    }
 }
 
 // MARK: - Portfolio Goal
@@ -193,7 +217,8 @@ class OnboardingViewModel {
     // MARK: - New Onboarding Data
     var investmentInterests: Set<InvestmentInterest> = []
     var portfolioSizeRange: PortfolioSizeRange?
-    var portfolioGoal: PortfolioGoal?
+    var cryptoApproach: CryptoApproach?
+    var portfolioGoals: Set<PortfolioGoal> = []
 
     // MARK: - Invite Code
     var inviteCode = ""
@@ -381,6 +406,10 @@ class OnboardingViewModel {
     }
 
     func saveCareerInfo() {
+        nextStep()
+    }
+
+    func saveCryptoApproach() {
         nextStep()
     }
 

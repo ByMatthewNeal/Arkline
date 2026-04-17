@@ -214,11 +214,10 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Check if we got meaningful content
+  // Check if we got meaningful content — fall back to title-based summary
   if (articleText.length < 100) {
     console.log(`Insufficient content (${articleText.length} chars), falling back to title-based summary`)
-    // If we have a title and description from Google News, summarize from that
-    if (title.length > 20) {
+    if (title.length > 10) {
       articleText = title
     } else {
       return new Response(
@@ -250,7 +249,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 500,
-        system: "You summarize news articles for a financial app called ArkLine. Write a 4-6 sentence summary (about 120-150 words) that captures the key facts, context, and any implications for investors. Be direct, factual, and concise. Jump straight into the substance — never include headers, labels, markdown formatting, or phrases like 'Summary:', '# Summary', 'This article discusses', or 'Here is a summary'. Just write the plain text summary.",
+        system: "You summarize news articles for a financial app called ArkLine. Write a 2-4 sentence summary that captures the key facts, context, and any implications for investors. Be direct, factual, and concise. Jump straight into the substance — never include headers, labels, markdown formatting, or phrases like 'Summary:', '# Summary', 'This article discusses', or 'Here is a summary'. Just write the plain text summary. If given only a headline with minimal content, provide brief context about what the headline means and its potential market implications — do NOT say you lack information.",
         messages: [
           {
             role: "user",

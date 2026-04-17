@@ -52,7 +52,7 @@ interface SlidePayload {
 }
 
 // ── Tavily Search ───────────────────────────────────────────────────────────
-async function tavilySearch(query: string, apiKey: string): Promise<string[]> {
+async function tavilySearch(query: string, apiKey: string, days = 7): Promise<string[]> {
   try {
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
@@ -63,7 +63,7 @@ async function tavilySearch(query: string, apiKey: string): Promise<string[]> {
         search_depth: "advanced",
         max_results: 5,
         include_answer: true,
-        days: 7,
+        days,
       }),
     })
 
@@ -87,17 +87,21 @@ async function tavilySearch(query: string, apiKey: string): Promise<string[]> {
 }
 
 async function gatherWebResearch(tavilyKey: string, monday: string, friday: string): Promise<Record<string, string[]>> {
-  // 3 focused searches to stay fast and within free tier limits
+  // Calculate days lookback from today to the Monday of the target week (+ buffer)
+  const daysBack = Math.ceil((Date.now() - new Date(monday).getTime()) / 86400000) + 2
+  const searchDays = Math.min(Math.max(daysBack, 7), 14) // 7-14 day window
+
+  // 3 focused searches scoped to the target week
   const searches: Record<string, string> = {
-    macro: `Federal Reserve FOMC interest rates US inflation CPI GDP economic data tariffs trade policy this week ${monday} to ${friday}`,
-    global: `Bank of Japan ECB central bank global liquidity M2 money supply US dollar DXY treasury yields geopolitical risk ${monday} to ${friday}`,
-    crypto: `bitcoin cryptocurrency ETF regulation institutional crypto market outlook this week ${monday} to ${friday}`,
+    macro: `Federal Reserve FOMC interest rates US inflation CPI GDP economic data tariffs trade policy week of ${monday} to ${friday}`,
+    global: `Bank of Japan ECB central bank global liquidity M2 money supply US dollar DXY treasury yields geopolitical risk week of ${monday} to ${friday}`,
+    crypto: `bitcoin cryptocurrency ETF regulation institutional crypto market outlook week of ${monday} to ${friday}`,
   }
 
   const results: Record<string, string[]> = {}
   const entries = Object.entries(searches)
   const promises = entries.map(async ([key, query]) => {
-    results[key] = await tavilySearch(query, tavilyKey)
+    results[key] = await tavilySearch(query, tavilyKey, searchDays)
   })
   await Promise.all(promises)
   return results
@@ -143,8 +147,9 @@ Generate 4-6 editorial analysis sections based on what was MOST significant this
   - detail: Optional one-line source attribution or additional context
 
 IMPORTANT:
-- Only create sections for topics that had MEANINGFUL developments this week
-- Skip topics where nothing notable happened
+- ONLY include events and data from ${monday} to ${friday}. Do NOT reference anything from earlier weeks — if the research mentions older events, ignore them
+- Only create sections for topics that had MEANINGFUL developments THIS specific week
+- Skip topics where nothing notable happened this week
 - Prioritize: Fed/FOMC > major economic data > geopolitics/tariffs > international central banks > liquidity/M2 > crypto-specific themes
 - Each bullet should stand alone as a valuable insight
 - Use specific numbers (e.g. "CPI rose 0.2% MoM to 2.8% YoY" not "inflation rose slightly")
@@ -224,25 +229,27 @@ async function generateEditorialSlidesFromInsights(
   friday: string,
   imageUrls?: string[],
 ): Promise<EditorialSlide[]> {
-  const prompt = `You are a senior financial analyst. An admin has provided additional context and insights for the weekly market update covering ${monday} to ${friday}.
+  const prompt = `You are a senior financial analyst. An admin has provided additional context, data, or images for the weekly market update covering ${monday} to ${friday}.
 
-Your job: determine if the admin's insights warrant NEW editorial sections that are NOT already covered in the existing deck. Only generate new sections — do NOT repeat or rephrase existing content.
+Your job: turn the admin's insights into 1-2 NEW editorial sections for the deck. The admin specifically chose to add this information, so it MUST be incorporated — always generate at least one section.
 
-=== EXISTING EDITORIAL SECTIONS (DO NOT DUPLICATE) ===
+=== EXISTING EDITORIAL SECTIONS (for reference — avoid exact duplication but you may expand on related topics with the new information) ===
 ${existingEditorialContext}
 
-=== ADMIN INSIGHTS (NEW INFORMATION) ===
+=== ADMIN INSIGHTS ===
 ${adminInsights}
 
 INSTRUCTIONS:
-- If the admin insights cover a topic already addressed in the existing sections, respond with an empty array []
-- If the insights introduce a genuinely new topic or angle, generate 1-2 new editorial sections
+- ALWAYS generate at least 1 section from the admin's insights — the admin added this for a reason
+- NEVER copy the admin's text verbatim. Use the insights as source material and write your OWN original analysis in Arkline's voice. Rephrase, reframe, and add your own interpretation — treat the input as raw data to synthesize, not copy to paste
+- If the insights expand on an existing topic, create a section with the NEW angle or data the admin provided
+- If images are attached, analyze what they show (charts, data, screenshots) and write original commentary about the implications
 - Each section should follow the same format: section_title, section_subtitle, analysis_title, category, bullets
 - Categories: "fed", "inflation", "central banks", "geopolitics", "liquidity", "crypto", "economic"
 - Bullets should have "text" (1-3 sentences with specifics) and optional "detail"
 - Always connect insights back to risk assets (crypto, equities)
 
-Respond ONLY with a JSON array. Empty array [] if no new sections needed:
+Respond ONLY with a JSON array:
 [
   {
     "section_title": "...",
@@ -496,6 +503,83 @@ ${editorialContext}`
   }
 }
 
+// ── Log Regression Risk (matches iOS RiskCalculator + AssetRiskConfig) ──────
+
+interface AssetRiskConfig {
+  symbol: string
+  fmpSymbol: string
+  originDate: Date
+  deviationBounds: [number, number]
+}
+
+const RISK_CONFIGS: AssetRiskConfig[] = [
+  { symbol: "BTC", fmpSymbol: "BTCUSD", originDate: new Date("2009-01-03"), deviationBounds: [-0.8, 0.8] },
+  { symbol: "ETH", fmpSymbol: "ETHUSD", originDate: new Date("2015-07-30"), deviationBounds: [-0.7, 0.7] },
+  { symbol: "SOL", fmpSymbol: "SOLUSD", originDate: new Date("2020-04-10"), deviationBounds: [-0.6, 0.6] },
+]
+
+async function computeAssetRisk(fmpKey: string, config: AssetRiskConfig): Promise<{
+  risk_level: number
+  price: number
+  category: string
+} | null> {
+  try {
+    const url = `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${config.fmpSymbol}&apikey=${fmpKey}`
+    const resp = await fetch(url)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    if (!Array.isArray(data) || data.length < 50) return null
+
+    const sorted = [...data].sort((a: any, b: any) => a.date.localeCompare(b.date))
+    const originTime = config.originDate.getTime()
+    let n = 0, sumX = 0, sumY = 0, sumXX = 0, sumXY = 0
+    let lastPrice = 0
+
+    for (const row of sorted) {
+      const d = new Date(row.date)
+      const days = Math.round((d.getTime() - originTime) / 86400000)
+      const price = parseFloat(row.close)
+      if (days <= 0 || price <= 0) continue
+      const x = Math.log10(days)
+      const y = Math.log10(price)
+      sumX += x; sumY += y; sumXX += x * x; sumXY += x * y
+      n++
+      lastPrice = price
+    }
+
+    const denom = n * sumXX - sumX * sumX
+    if (Math.abs(denom) < 1e-10) return null
+
+    const b = (n * sumXY - sumX * sumY) / denom
+    const a = (sumY - b * sumX) / n
+    const todayDays = Math.round((Date.now() - originTime) / 86400000)
+    const logFair = a + b * Math.log10(todayDays)
+    const fairValue = Math.pow(10, logFair)
+
+    const deviation = Math.log10(lastPrice) - Math.log10(fairValue)
+    const [low, high] = config.deviationBounds
+    const clamped = Math.max(low, Math.min(high, deviation))
+    const riskLevel = (clamped - low) / (high - low)
+
+    let category: string
+    if (riskLevel < 0.20) category = "Very Low Risk"
+    else if (riskLevel < 0.40) category = "Low Risk"
+    else if (riskLevel < 0.55) category = "Neutral"
+    else if (riskLevel < 0.70) category = "Elevated Risk"
+    else if (riskLevel < 0.90) category = "High Risk"
+    else category = "Extreme Risk"
+
+    return {
+      risk_level: Math.round(riskLevel * 1000) / 1000,
+      price: lastPrice,
+      category,
+    }
+  } catch (e) {
+    console.error(`${config.symbol} risk computation error:`, e)
+    return null
+  }
+}
+
 // ── Main Handler ────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -538,6 +622,7 @@ Deno.serve(async (req) => {
   }
   const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY") ?? ""
   const tavilyKey = Deno.env.get("TAVILY_API_KEY") ?? ""
+  const fmpKey = Deno.env.get("FMP_API_KEY") ?? ""
 
   // ── Narrative-only regeneration path ──────────────────────────────────
   if (isRegenerateNarrative && deckId) {
@@ -575,8 +660,14 @@ Deno.serve(async (req) => {
       let attachmentContext = ""
       let attachmentImageUrls: string[] = []
       const adminContext = existingDeck.admin_context
+      console.log(`Admin context present: ${!!adminContext}`)
+      console.log(`Admin context attachments: ${JSON.stringify(adminContext?.attachments?.length ?? 0)}`)
+      console.log(`Admin insights param: "${adminInsights?.slice(0, 100)}"`)
       if (adminContext?.attachments?.length) {
         console.log(`Processing ${adminContext.attachments.length} admin attachments...`)
+        for (const att of adminContext.attachments) {
+          console.log(`  Attachment: type=${att.type}, storage_path=${att.storage_path}, url=${att.url}`)
+        }
         const processed = await processAttachments(
           adminContext.attachments,
           supabaseUrl,
@@ -584,27 +675,31 @@ Deno.serve(async (req) => {
         )
         attachmentContext = processed.textContext
         attachmentImageUrls = processed.imageUrls
+        console.log(`Processed: ${attachmentImageUrls.length} image URLs, ${attachmentContext.length} chars text`)
       }
 
       const fullInsights = [
         adminInsights,
         attachmentContext,
       ].filter(Boolean).join("\n\n")
+      console.log(`Full insights length: ${fullInsights.length}`)
 
       // Generate new editorial slides from admin insights if provided
       let newEditorialSlides: SlidePayload[] = []
-      if (fullInsights && anthropicKey) {
+      if ((fullInsights || attachmentImageUrls.length > 0) && anthropicKey) {
         console.log("Generating additional editorial slides from admin insights...")
+        const insightsForClaude = fullInsights || (attachmentImageUrls.length > 0 ? "See the attached images — analyze them and create editorial sections based on what they show." : "")
         const newEditorials = await generateEditorialSlidesFromInsights(
           anthropicKey,
-          fullInsights,
+          insightsForClaude,
           editorialContext,
           existingDeck.week_start,
           existingDeck.week_end,
           attachmentImageUrls,
         )
+        console.log(`Claude returned ${newEditorials.length} editorial slide(s) from insights`)
         if (newEditorials.length > 0) {
-          console.log(`Generated ${newEditorials.length} new editorial slide(s) from insights`)
+          console.log(`Adding ${newEditorials.length} new editorial slide(s) to deck`)
           // Convert to slide format with section title slides (same as full generation)
           for (const ed of newEditorials) {
             newEditorialSlides.push({
@@ -644,18 +739,13 @@ Deno.serve(async (req) => {
         : "Narrative generation requires an API key."
 
       // Merge slides: keep all existing, insert new editorial slides before
-      // the non-editorial slides at the end (market pulse, snapshot, economic, rundown)
-      let updatedSlides = slides.map((s: SlidePayload) => {
-        if (s.type === "rundown") {
-          return { ...s, data: { type: "rundown", payload: { narrative } } }
-        }
-        return s
-      })
+      // the non-editorial slides at the end (market pulse, snapshot, correlation)
+      let updatedSlides = [...slides]
 
       if (newEditorialSlides.length > 0) {
         // Find insertion point: before the first non-editorial, non-sectionTitle slide
-        // that comes after the editorial section (e.g., marketPulse, snapshot, economic, rundown)
-        const nonEditorialTypes = ["marketPulse", "snapshot", "economic", "rundown", "correlation"]
+        // that comes after the editorial section (e.g., marketPulse, snapshot, correlation)
+        const nonEditorialTypes = ["marketPulse", "snapshot", "correlation"]
         const insertIndex = updatedSlides.findIndex(
           (s: SlidePayload) => nonEditorialTypes.includes(s.type)
         )
@@ -1328,7 +1418,6 @@ Respond ONLY with JSON: { "regime": "..." }`
       { data: supplyData },
       { data: weekTrendScores },
     ] = await Promise.all([
-      // SPY/QQQ: earliest available as open, latest as close
       supabase.from("positioning_signals").select("price").eq("asset", "SPY").gte("signal_date", monday).lte("signal_date", friday).order("signal_date", { ascending: true }).limit(1),
       supabase.from("positioning_signals").select("price, signal, trend_score").eq("asset", "SPY").gte("signal_date", monday).lte("signal_date", friday).order("signal_date", { ascending: false }).limit(1),
       supabase.from("positioning_signals").select("price").eq("asset", "QQQ").gte("signal_date", monday).lte("signal_date", friday).order("signal_date", { ascending: true }).limit(1),
@@ -1337,7 +1426,6 @@ Respond ONLY with JSON: { "regime": "..." }`
       supabase.from("positioning_signals").select("asset, trend_score, signal, signal_date").gte("signal_date", monday).lte("signal_date", friday).in("asset", ["BTC", "ETH", "SOL"]).order("signal_date", { ascending: true }),
     ])
 
-    // SPY & QQQ weekly performance + trend signals (bounded to week range)
     const spyMonPrice = spyMon?.[0]?.price ?? null
     const spyFriPrice = spyFri?.[0]?.price ?? null
     const spyWeekChange = spyMonPrice != null && spyFriPrice != null ? Math.round(((spyFriPrice - spyMonPrice) / spyMonPrice) * 10000) / 100 : null
@@ -1348,10 +1436,8 @@ Respond ONLY with JSON: { "regime": "..." }`
     const qqqWeekChange = qqqMonPrice != null && qqqFriPrice != null ? Math.round(((qqqFriPrice - qqqMonPrice) / qqqMonPrice) * 10000) / 100 : null
     const qqqSignal = qqqFri?.[0]?.signal ?? null
 
-    // BTC Supply in Profit
     const btcSupplyInProfit = supplyData?.[0]?.value ?? null
 
-    // Sentiment regime: derive from bullish/bearish ratio + F&G
     const totalSignals = (latestSignals ?? []).length
     const bullishPct = totalSignals > 0 ? (bullishCount / totalSignals) * 100 : 50
     const emotionScore = fearGreedEnd ?? 50
@@ -1363,34 +1449,24 @@ Respond ONLY with JSON: { "regime": "..." }`
     else if (emotionScore < 45 && !engagementHigh) sentimentRegime = "Apathy"
     else sentimentRegime = bullishCount > bearishCount ? "Complacency" : "Apathy"
 
-    // Compute regression risk levels — use trend_score mapped to 0-1 decimal
-    // Use end-of-week (Friday) data from weekTrendScores, NOT latestSignals (which is today's data)
     const SNAPSHOT_ASSETS = ["BTC", "ETH", "SOL"]
     const assetRisks = SNAPSHOT_ASSETS.map((symbol) => {
       const weekEntries = (weekTrendScores ?? []).filter((s: { asset: string }) => s.asset === symbol)
       const weekScores = weekEntries.map((s: { trend_score: number }) => s.trend_score ?? 50)
-
-      // Use the last entry in the week (Friday or latest available day) for the "current" score
       const fridayEntry = weekEntries.length > 0 ? weekEntries[weekEntries.length - 1] : null
-      // trend_score is 0-100: higher = more bullish = lower risk
       const currentScore = fridayEntry?.trend_score ?? 50
-      // Map to 0-1 risk: 100 → ~0.0, 0 → ~1.0
       const riskLevel = Math.max(0, Math.min(1, 1 - (currentScore / 100)))
 
-      // 7-day average risk
       let weekAverage: number | null = null
       if (weekScores.length >= 2) {
         const avgScore = weekScores.reduce((a: number, b: number) => a + b, 0) / weekScores.length
         weekAverage = Math.round(Math.max(0, Math.min(1, 1 - (avgScore / 100))) * 1000) / 1000
       }
 
-      // Signal from end-of-week positioning
       const signal = fridayEntry?.signal ?? "neutral"
 
-      // Approximate days at level by counting consecutive days with same risk label
       let daysAtLevel: number | null = null
       if (weekEntries.length >= 2) {
-        // Count from end of week how many days had similar risk
         let count = 0
         for (let i = weekEntries.length - 1; i >= 0; i--) {
           const score = weekEntries[i].trend_score ?? 50
@@ -1412,7 +1488,7 @@ Respond ONLY with JSON: { "regime": "..." }`
 
       return {
         symbol,
-        risk_level: Math.round(riskLevel * 1000) / 1000, // 3 decimal places
+        risk_level: Math.round(riskLevel * 1000) / 1000,
         week_average: weekAverage,
         risk_label: riskLabel,
         signal,
@@ -1420,9 +1496,37 @@ Respond ONLY with JSON: { "regime": "..." }`
       }
     })
 
-    // Compute weekly average F&G from all days in the week
     const fgValues = (fgWeekData ?? []).map((r: { value: number }) => r.value).filter((v: number) => v != null)
     const fearGreedAvg = fgValues.length > 0 ? Math.round(fgValues.reduce((a: number, b: number) => a + b, 0) / fgValues.length) : fearGreedEnd
+
+    // Override with real log regression risk for all assets (matches iOS app)
+    if (fmpKey) {
+      const riskResults = await Promise.all(
+        RISK_CONFIGS.map(async (config) => {
+          try {
+            const result = await computeAssetRisk(fmpKey, config)
+            if (result) {
+              console.log(`${config.symbol} log regression risk: ${result.risk_level} (${result.category})`)
+            }
+            return { symbol: config.symbol, result }
+          } catch (e) {
+            console.error(`Failed to compute ${config.symbol} regression risk:`, e)
+            return { symbol: config.symbol, result: null }
+          }
+        })
+      )
+      for (const { symbol, result } of riskResults) {
+        if (!result) continue
+        const idx = assetRisks.findIndex((a: { symbol: string }) => a.symbol === symbol)
+        if (idx >= 0) {
+          assetRisks[idx] = {
+            ...assetRisks[idx],
+            risk_level: result.risk_level,
+            risk_label: result.category,
+          }
+        }
+      }
+    }
 
     slides.push({
       type: "snapshot",
@@ -1445,56 +1549,6 @@ Respond ONLY with JSON: { "regime": "..." }`
         },
       },
     })
-
-    // Economic Calendar slide — this week's results + next week's upcoming events
-    slides.push({
-      type: "economic",
-      title: "Economic Calendar",
-      data: {
-        type: "economic",
-        payload: {
-          this_week: (thisWeekEvents ?? []).map((e: Record<string, unknown>) => ({
-            title: e.title,
-            event_date: e.event_date,
-            actual: e.actual ?? null,
-            forecast: e.forecast ?? null,
-            impact: e.impact,
-          })),
-          next_week: (nextWeekEvents ?? []).map((e: Record<string, unknown>) => ({
-            title: e.title,
-            event_date: e.event_date,
-            forecast: e.forecast ?? null,
-            impact: e.impact,
-          })),
-        },
-      },
-    })
-
-    // ── Generate rundown narrative as the final slide ──────────────────
-    if (anthropicKey) {
-      const editorialContext = slides
-        .filter((s: SlidePayload) => s.type === "editorial")
-        .map((s: SlidePayload) => {
-          const bullets = (s.data?.payload?.bullets as Array<{ text: string }>) ?? []
-          return `${s.title}:\n${bullets.map((b) => `- ${b.text}`).join("\n")}`
-        })
-        .join("\n\n")
-
-      const narrative = await generateRundownNarrative(
-        anthropicKey,
-        briefings ?? [],
-        editorialContext,
-        monday,
-        friday,
-        adminInsights || undefined,
-      )
-
-      slides.push({
-        type: "rundown",
-        title: "Weekly Rundown",
-        data: { type: "rundown", payload: { narrative } },
-      })
-    }
 
     // ── Upsert deck ───────────────────────────────────────────────────────
     const { data: deck, error: upsertError } = await supabase

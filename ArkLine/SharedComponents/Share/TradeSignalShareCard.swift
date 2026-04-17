@@ -611,10 +611,16 @@ struct TradeSignalShareSheet: View {
         lines.append("$\(signal.stopLoss.asSignalPrice) (\(String(format: "%.1f%%", signal.stopLossPct)))")
         lines.append("")
 
-        if let rationale = signal.briefingText ?? signal.shortRationale, !rationale.isEmpty {
+        if let analysis = signal.cardAnalysis {
+            lines.append(analysis.narrative)
+            lines.append("")
+        } else if let rationale = signal.briefingText ?? signal.shortRationale, !rationale.isEmpty {
             lines.append(rationale)
             lines.append("")
         }
+
+        lines.append("This is not financial advice. These are pattern observations for educational purposes. Always DYOR before making trading or investing related decisions.")
+        lines.append("")
 
         lines.append("Manage risk appropriately.")
         lines.append("")
@@ -622,9 +628,7 @@ struct TradeSignalShareSheet: View {
         lines.append("Risk / Reward: \(String(format: "%.1f", signal.riskRewardRatio))R")
         lines.append("")
 
-        lines.append("This is educational material, not financial advice. DYOR.")
-        lines.append("")
-        lines.append("Created with ArkLine")
+        lines.append("Created & analyzed by ArkLine")
         lines.append("Full analysis at arkline.io")
 
         UIPasteboard.general.string = lines.joined(separator: "\n")

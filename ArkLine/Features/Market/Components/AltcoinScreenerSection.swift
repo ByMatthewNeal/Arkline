@@ -68,6 +68,7 @@ private let curatedCoins: [ScreenerCoin] = [
 // MARK: - Altcoin Screener Section
 
 struct AltcoinScreenerSection: View {
+    var refreshId: UUID = UUID()
     @Environment(\.colorScheme) var colorScheme
     @State private var screenData: [CoinScreenerData] = []
     @State private var isLoading = true
@@ -157,7 +158,7 @@ struct AltcoinScreenerSection: View {
                 }
             }
         }
-        .task {
+        .task(id: refreshId) {
             await loadIfNeeded()
         }
         .fullScreenCover(isPresented: $showFullscreen) {

@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Verify shared secret (custom header to avoid conflict with Supabase JWT auth)
-  const secret = req.headers.get("X-Trends-Secret") ?? ""
-  const expectedSecret = Deno.env.get("COLLECT_TRENDS_SECRET") ?? ""
+  // Verify cron secret (consistent with other edge functions)
+  const secret = req.headers.get("x-cron-secret") ?? req.headers.get("X-Trends-Secret") ?? ""
+  const expectedSecret = Deno.env.get("CRON_SECRET") ?? Deno.env.get("COLLECT_TRENDS_SECRET") ?? ""
 
   if (!expectedSecret || secret !== expectedSecret) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {

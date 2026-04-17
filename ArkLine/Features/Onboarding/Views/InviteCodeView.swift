@@ -127,6 +127,14 @@ struct InviteCodeView: View {
                             .foregroundColor(AppColors.textSecondary)
                     }
                     .padding(.top, ArkSpacing.xxs)
+
+                    #if DEBUG
+                    Button(action: { viewModel.nextStep() }) {
+                        Text("Skip (Dev Only)")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                    }
+                    #endif
                 }
                 .padding(.horizontal, ArkSpacing.xl)
                 .padding(.bottom, ArkSpacing.xxl)

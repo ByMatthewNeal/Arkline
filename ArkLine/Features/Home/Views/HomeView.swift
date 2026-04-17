@@ -6,6 +6,8 @@ struct HomeView: View {
     @State private var showCustomizeSheet = false
     @State private var showNotificationsSheet = false
     @State private var showTelegramExportSheet = false
+    @State private var showAddPositionSheet = false
+    @State private var addPositionViewModel = PortfolioViewModel()
     @State private var navigationPath = NavigationPath()
     @EnvironmentObject var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
@@ -59,6 +61,12 @@ struct HomeView: View {
                                 appState.selectedTab = .portfolio
                                 appState.shouldShowPortfolioCreation = true
                             },
+                            onAddPosition: !viewModel.portfolios.isEmpty ? {
+                                if let portfolio = viewModel.selectedPortfolio {
+                                    addPositionViewModel.selectPortfolio(portfolio)
+                                }
+                                showAddPositionSheet = true
+                            } : nil,
                             selectedTimePeriod: Binding(
                                 get: { viewModel.selectedTimePeriod },
                                 set: { viewModel.selectedTimePeriod = $0 }
@@ -132,7 +140,7 @@ struct HomeView: View {
                         hasNotification: hasNotifications,
                         unreadCount: viewModel.unreadNotificationCount,
                         onCustomizeTap: { showCustomizeSheet = true },
-                        onExportTap: { showTelegramExportSheet = true },
+                        onExportTap: appState.currentUser?.isAdmin == true ? { showTelegramExportSheet = true } : nil,
                         onNotificationsTap: { showNotificationsSheet = true }
                     )
                     .padding(.horizontal, 20)
@@ -219,6 +227,13 @@ struct HomeView: View {
             .sheet(isPresented: $showTelegramExportSheet) {
                 DailyMarketUpdateShareSheet(briefingSummary: viewModel.marketSummary?.summary)
             }
+            .sheet(isPresented: $showAddPositionSheet, onDismiss: {
+                Task { await viewModel.loadPortfolios(forceRefresh: true) }
+            }) {
+                NavigationStack {
+                    AddTransactionView(viewModel: addPositionViewModel)
+                }
+            }
             .task {
                 viewModel.startAutoRefresh()
                 async let portfolios: () = viewModel.loadPortfolios()
@@ -230,6 +245,9 @@ struct HomeView: View {
                 if !viewModel.hasLoadedPortfolios || (viewModel.portfolioValue == 0 && SupabaseAuthManager.shared.isAuthenticated) {
                     Task { await viewModel.loadPortfolios(forceRefresh: true) }
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.portfolioUpdated)) { _ in
+                Task { await viewModel.loadPortfolios(forceRefresh: true) }
             }
             .onReceive(NotificationCenter.default.publisher(for: Constants.Notifications.marketDeckPublished)) { notification in
                 if let deck = notification.object as? MarketUpdateDeck {
@@ -248,19 +266,23 @@ struct HomeView: View {
             .onChange(of: scenePhase) { _, newPhase in
                 guard newPhase == .active, appState.selectedTab == .home else { return }
 
-                // Full refresh if data is older than 5 minutes
-                if let last = viewModel.lastRefreshed,
-                   Date().timeIntervalSince(last) > 300,
-                   !viewModel.isLoading {
-                    // Also clear briefing cache if it's stale (cron generates at 10am and 5pm ET)
-                    if let generated = viewModel.marketSummary?.generatedAt,
-                       Date().timeIntervalSince(generated) > 1800 {
+                let staleness = viewModel.lastRefreshed.map { Date().timeIntervalSince($0) }
+
+                if let staleness, staleness > 300, !viewModel.isLoading {
+                    // Clear briefing cache if data is more than 30 min old
+                    // so we fetch the latest briefing (cron generates at 10am and 5pm ET)
+                    if staleness > 1800 {
                         MarketSummaryService.shared.clearLocalCache()
                     }
-                    Task { await viewModel.refresh(forceRefresh: true) }
+                    Task {
+                        await viewModel.refresh(forceRefresh: true)
+                        await viewModel.loadPortfolios(forceRefresh: true)
+                    }
                 } else if viewModel.lastRefreshed == nil {
-                    // First launch / no data yet
-                    Task { await viewModel.refresh(forceRefresh: true) }
+                    Task {
+                        await viewModel.refresh(forceRefresh: true)
+                        await viewModel.loadPortfolios(forceRefresh: true)
+                    }
                 }
             }
             .onChange(of: appState.selectedTab) { _, newTab in

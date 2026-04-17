@@ -49,6 +49,13 @@ struct QPSDetailView: View {
                 .padding(20)
             }
         }
+        .refreshable {
+            do {
+                history = try await service.fetchSignalHistory(asset: asset, days: 30)
+            } catch {
+                logWarning("QPS history refresh failed: \(error.localizedDescription)", category: .network)
+            }
+        }
         .background(colorScheme == .dark ? Color(hex: "141414") : Color(hex: "F5F5F7"))
         .navigationTitle("\(asset) Positioning")
         #if os(iOS)

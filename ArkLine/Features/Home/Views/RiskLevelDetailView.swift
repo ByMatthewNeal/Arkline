@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Risk Level Chart View (Full Screen Detail)
 struct RiskLevelChartView: View {
@@ -278,32 +279,18 @@ struct RiskLevelChartView: View {
     }
 
     private var coinDropdown: some View {
-        Menu {
-            ForEach(availableCoins, id: \.self) { coin in
-                Button(action: { selectedCoin = coin }) {
-                    HStack {
-                        Text(coin.displayName)
-                        Text("(\(coin.rawValue))")
-                            .foregroundColor(.secondary)
-                        if selectedCoin == coin {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
-            if !appState.isPro {
-                Divider()
-                Button(action: { showPaywall = true }) {
-                    Label("Unlock All Coins", systemImage: "crown.fill")
-                }
-            }
-        } label: {
+        Button(action: { showCoinPicker = true }) {
             HStack(spacing: ArkSpacing.sm) {
-                Text(selectedCoin.ticker)
-                    .font(.system(size: selectedCoin.ticker.count > 4 ? 8 : 12, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
+                KFImage(selectedCoin.iconURL)
+                    .resizable()
+                    .placeholder {
+                        Text(selectedCoin.ticker.prefix(1))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .fade(duration: 0.2)
+                    .scaledToFit()
                     .frame(width: 32, height: 32)
-                    .background(AppColors.accent)
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -332,6 +319,16 @@ struct RiskLevelChartView: View {
             }
             .padding(ArkSpacing.md)
             .glassCard(cornerRadius: ArkSpacing.Radius.md)
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showCoinPicker) {
+            RiskCoinPickerSheet(
+                availableCoins: availableCoins,
+                selectedCoin: $selectedCoin,
+                isPro: appState.isPro,
+                onUpgrade: { showPaywall = true }
+            )
+            .presentationDetents([.medium])
         }
     }
 
@@ -811,6 +808,84 @@ private struct TimeElapsedView: View {
             .font(.system(size: 11, design: .monospaced))
             .foregroundColor(AppColors.textSecondary.opacity(0.5))
             .onReceive(timer) { _ in elapsed += 1 }
+    }
+}
+
+// MARK: - Risk Coin Picker Sheet
+
+private struct RiskCoinPickerSheet: View {
+    let availableCoins: [RiskCoin]
+    @Binding var selectedCoin: RiskCoin
+    let isPro: Bool
+    var onUpgrade: () -> Void = {}
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(availableCoins, id: \.self) { coin in
+                    Button {
+                        selectedCoin = coin
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 12) {
+                            KFImage(coin.iconURL)
+                                .resizable()
+                                .placeholder {
+                                    Text(String(coin.rawValue.prefix(2)))
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Circle().fill(AppColors.accent.opacity(0.6)))
+                                }
+                                .fade(duration: 0.2)
+                                .scaledToFit()
+                                .frame(width: 32, height: 32)
+                                .clipShape(Circle())
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(coin.displayName)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                                Text(coin.rawValue)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+
+                            Spacer()
+
+                            if selectedCoin == coin {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if !isPro {
+                    Button(action: {
+                        dismiss()
+                        onUpgrade()
+                    }) {
+                        Label("Unlock All Coins", systemImage: "crown.fill")
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .navigationTitle("Select Asset")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 }
 

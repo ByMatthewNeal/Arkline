@@ -157,12 +157,38 @@ Deno.serve(async (req) => {
         : 0
       console.log(`FRED: ${fredNetLiquidity.length} net liquidity observations, latest: $${stats.fred.netLiquidity.toFixed(3)}T`)
     } catch (err) {
-      const msg = `FRED: ${err}`
+      const msg = `FRED net liquidity fetch failed: ${err}`
       console.error(msg)
       stats.errors.push(msg)
     }
   } else {
     stats.errors.push("FRED: No API key configured")
+  }
+
+  // Fallback: if FRED failed, carry forward last known US values from previous cache
+  if (fredNetLiquidity.length === 0) {
+    try {
+      const { data: prev } = await supabase
+        .from("market_data_cache")
+        .select("data")
+        .eq("key", "global_liquidity_index")
+        .maybeSingle()
+      if (prev?.data) {
+        const prevData = typeof prev.data === "string" ? JSON.parse(prev.data) : prev.data
+        if (prevData.us_net_liquidity_t > 0) {
+          fredNetLiquidity.push({
+            date: "carried-forward",
+            fedAssets: prevData.fed_assets_t ?? 0,
+            tga: prevData.tga_t ?? 0,
+            rrp: prevData.rrp_t ?? 0,
+            netLiquidity: prevData.us_net_liquidity_t,
+          })
+          console.log(`FRED fallback: carried forward US net liquidity $${prevData.us_net_liquidity_t.toFixed(3)}T from previous cache`)
+        }
+      }
+    } catch (fallbackErr) {
+      console.error(`FRED fallback failed: ${fallbackErr}`)
+    }
   }
 
   // ─── 3. Compute Composite Global Liquidity ──────────────────────────────────

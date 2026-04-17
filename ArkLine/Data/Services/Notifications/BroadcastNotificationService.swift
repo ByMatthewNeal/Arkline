@@ -388,7 +388,27 @@ class BroadcastNotificationService: ObservableObject {
             options: []
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory, qpsCategory])
+        let viewPortfolioAction = UNNotificationAction(
+            identifier: "VIEW_PORTFOLIO",
+            title: "View Portfolio",
+            options: [.foreground]
+        )
+
+        let modelPortfolioCategory = UNNotificationCategory(
+            identifier: "MODEL_PORTFOLIO",
+            actions: [viewPortfolioAction, dismissAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        let sentimentRegimeCategory = UNNotificationCategory(
+            identifier: "SENTIMENT_REGIME_SHIFT",
+            actions: [],
+            intentIdentifiers: [],
+            options: []
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory, qpsCategory, modelPortfolioCategory, sentimentRegimeCategory])
     }
 }
 
@@ -421,6 +441,11 @@ extension BroadcastNotificationService {
         case "dca_reminder":
             let reminderId = userInfo["reminder_id"] as? String ?? ""
             result = (type: "dca_reminder", id: reminderId)
+        case "model_portfolio":
+            let strategy = userInfo["strategy"] as? String ?? ""
+            result = (type: "model_portfolio", id: strategy)
+        case "sentiment_regime":
+            result = (type: "sentiment_regime", id: "")
         default:
             break
         }

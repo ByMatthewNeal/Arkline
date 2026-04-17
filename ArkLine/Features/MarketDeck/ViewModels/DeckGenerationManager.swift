@@ -116,6 +116,10 @@ final class DeckGenerationManager {
                 self.errorMessage = error.localizedDescription
                 self.isRegenerating = false
                 self.generationStep = nil
+                await self.sendNotification(
+                    title: "Narrative Regeneration Failed",
+                    body: error.localizedDescription
+                )
             }
         }
     }

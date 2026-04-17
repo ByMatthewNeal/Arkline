@@ -4,6 +4,7 @@ import SwiftUI
 /// Displays the 65-month liquidity cycle clock with momentum index,
 /// cycle phase, yield curve regime, and crypto-specific guidance.
 struct LiquidityCycleSection: View {
+    var refreshId: UUID = UUID()
     @Environment(\.colorScheme) var colorScheme
     @State private var liquidityIndex: GlobalLiquidityIndex?
     @State private var isLoading = true
@@ -163,7 +164,7 @@ struct LiquidityCycleSection: View {
             }
         }
         .padding(.horizontal)
-        .task {
+        .task(id: refreshId) {
             await loadData()
         }
         .sheet(isPresented: $showInfo) {

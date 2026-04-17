@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Google News RSS Service
 /// Fetches and parses Google News RSS feeds for crypto and geopolitical news
-final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
+final class GoogleNewsRSSService {
 
     // MARK: - RSS Feed URLs
     private enum FeedURL {
@@ -50,16 +50,6 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
             return components.string ?? ""
         }
     }
-
-    // MARK: - Parser State
-    private var currentElement = ""
-    private var currentTitle = ""
-    private var currentLink = ""
-    private var currentPubDate = ""
-    private var currentSource = ""
-    private var currentDescription = ""
-    private var newsItems: [GoogleNewsRSSItem] = []
-    private var isInItem = false
 
     // MARK: - Public Methods
 
@@ -209,21 +199,11 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
     }
 
     private func parseRSS(data: Data) -> [GoogleNewsRSSItem] {
-        // Reset state
-        newsItems = []
-        currentElement = ""
-        currentTitle = ""
-        currentLink = ""
-        currentPubDate = ""
-        currentSource = ""
-        currentDescription = ""
-        isInItem = false
-
+        let delegate = RSSParserDelegate()
         let parser = XMLParser(data: data)
-        parser.delegate = self
+        parser.delegate = delegate
         parser.parse()
-
-        return newsItems
+        return delegate.newsItems
     }
 
     private func cleanTitle(_ title: String) -> String {
@@ -271,7 +251,19 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
         return nil
     }
 
-    // MARK: - XMLParserDelegate
+}
+
+// MARK: - RSS Parser Delegate (isolated per-parse instance — thread safe)
+
+private class RSSParserDelegate: NSObject, XMLParserDelegate {
+    var newsItems: [GoogleNewsRSSItem] = []
+    private var currentElement = ""
+    private var currentTitle = ""
+    private var currentLink = ""
+    private var currentPubDate = ""
+    private var currentSource = ""
+    private var currentDescription = ""
+    private var isInItem = false
 
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         currentElement = elementName
@@ -309,10 +301,8 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
         if elementName == "item" {
             isInItem = false
 
-            // Extract source from title if not in source element
             var source = currentSource.trimmingCharacters(in: .whitespacesAndNewlines)
             if source.isEmpty {
-                // Google News format: "Title - Source Name"
                 if let dashRange = currentTitle.range(of: " - ", options: .backwards) {
                     source = String(currentTitle[dashRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
                 }
@@ -326,7 +316,6 @@ final class GoogleNewsRSSService: NSObject, XMLParserDelegate {
                 description: currentDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             )
 
-            // Only add if we have a title and link
             if !item.title.isEmpty && !item.link.isEmpty {
                 newsItems.append(item)
             }

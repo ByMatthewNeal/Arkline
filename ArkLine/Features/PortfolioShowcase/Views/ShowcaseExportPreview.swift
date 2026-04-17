@@ -10,6 +10,7 @@ struct ShowcaseExportPreview: View {
     @Bindable var viewModel: PortfolioShowcaseViewModel
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appState: AppState
 
     @State private var isExporting = false
     @State private var showError = false
@@ -44,18 +45,20 @@ struct ShowcaseExportPreview: View {
                             .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         VStack(spacing: 0) {
-                            Toggle(isOn: $viewModel.configuration.showBranding) {
-                                HStack {
-                                    Image(systemName: "star.circle")
-                                        .foregroundColor(AppColors.accent)
-                                    Text("Show ArkLine Branding")
-                                        .font(ArkFonts.body)
+                            if appState.currentUser?.isAdmin == true {
+                                Toggle(isOn: $viewModel.configuration.showBranding) {
+                                    HStack {
+                                        Image(systemName: "star.circle")
+                                            .foregroundColor(AppColors.accent)
+                                        Text("Show ArkLine Branding")
+                                            .font(ArkFonts.body)
+                                    }
                                 }
-                            }
-                            .tint(AppColors.accent)
-                            .padding(ArkSpacing.md)
+                                .tint(AppColors.accent)
+                                .padding(ArkSpacing.md)
 
-                            Divider()
+                                Divider()
+                            }
 
                             Toggle(isOn: $viewModel.configuration.showTimestamp) {
                                 HStack {

@@ -7,6 +7,8 @@ struct MarketOverviewView: View {
     @State private var allocationInitialized = false
     @State private var navigationPath = NavigationPath()
     @State private var pendingSignalId: UUID?
+    @State private var showSentimentRegime = false
+    @State private var widgetRefreshId = UUID()
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
@@ -42,7 +44,8 @@ struct MarketOverviewView: View {
                             viewModel: viewModel,
                             sentimentViewModel: sentimentViewModel,
                             allocationViewModel: allocationViewModel,
-                            appState: appState
+                            appState: appState,
+                            widgetRefreshId: widgetRefreshId
                         )
                         .padding(.top, 16)
 
@@ -56,6 +59,7 @@ struct MarketOverviewView: View {
                     } // else
                 }
                 .refreshable {
+                    widgetRefreshId = UUID()
                     async let market: () = viewModel.refresh(forceRefresh: true)
                     async let sentiment: () = sentimentViewModel.refresh(forceRefresh: true)
                     async let allocation: () = allocationViewModel?.refresh() ?? ()
@@ -95,6 +99,9 @@ struct MarketOverviewView: View {
             .navigationDestination(for: UUID.self) { signalId in
                 SignalDetailView(signalId: signalId)
             }
+            .navigationDestination(isPresented: $showSentimentRegime) {
+                SentimentRegimeDetailView(viewModel: sentimentViewModel)
+            }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SwingSignalNotificationTapped"))) { notification in
                 guard let signalIdString = notification.userInfo?["id"] as? String,
                       let signalId = UUID(uuidString: signalIdString) else { return }
@@ -105,11 +112,31 @@ struct MarketOverviewView: View {
                     appState.selectedTab = .market
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SentimentRegimeNotificationTapped"))) { _ in
+                if appState.selectedTab == .market {
+                    Task {
+                        await sentimentViewModel.fetchSentimentRegime()
+                        showSentimentRegime = true
+                    }
+                } else {
+                    appState.pendingSentimentRegime = true
+                    appState.selectedTab = .market
+                }
+            }
             .onChange(of: appState.selectedTab) { _, newTab in
                 if newTab == .market, let signalId = pendingSignalId {
                     pendingSignalId = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         navigationPath.append(signalId)
+                    }
+                }
+                if newTab == .market, appState.pendingSentimentRegime {
+                    appState.pendingSentimentRegime = false
+                    Task {
+                        await sentimentViewModel.fetchSentimentRegime()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showSentimentRegime = true
+                        }
                     }
                 }
             }
@@ -126,6 +153,17 @@ struct MarketOverviewView: View {
                     } else {
                         pendingSignalId = signalId
                         appState.selectedTab = .market
+                    }
+                }
+                // Handle cold-start sentiment regime deep link
+                if let pending = BroadcastNotificationService.shared.pendingNotificationResult,
+                   pending.type == "sentiment_regime" {
+                    BroadcastNotificationService.shared.pendingNotificationResult = nil
+                    Task {
+                        await sentimentViewModel.fetchSentimentRegime()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showSentimentRegime = true
+                        }
                     }
                 }
             }

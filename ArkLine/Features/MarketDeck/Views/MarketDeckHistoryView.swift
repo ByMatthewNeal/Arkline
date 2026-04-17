@@ -38,6 +38,7 @@ struct MarketDeckHistoryView: View {
                 }
             }
         }
+        .refreshable { await loadHistory() }
         .navigationTitle("Past Updates")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)

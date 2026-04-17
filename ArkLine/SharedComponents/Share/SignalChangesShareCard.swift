@@ -47,7 +47,9 @@ struct SignalChangesShareCardContent: View {
                         Text(signal.asset)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(textPrimary)
-                            .frame(width: 60, alignment: .leading)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .frame(width: 80, alignment: .leading)
 
                         if let prev = signal.prevSignal {
                             signalBadge(prev, dimmed: true)
@@ -86,20 +88,20 @@ struct SignalChangesShareCardContent: View {
     private func signalBadge(_ signal: String, dimmed: Bool) -> some View {
         let color: Color = {
             switch signal.lowercased() {
-            case "bullish": return AppColors.success
-            case "bearish": return AppColors.error
-            default: return AppColors.warning
+            case "bullish": return Color(hex: "22C55E")
+            case "bearish": return Color(hex: "DC2626")
+            default: return Color(hex: "F59E0B")
             }
         }()
 
         return Text(signal.capitalized)
             .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(dimmed ? color.opacity(0.6) : .white)
+            .foregroundColor(.white)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(dimmed ? color.opacity(0.15) : color)
+                    .fill(color)
             )
     }
 }

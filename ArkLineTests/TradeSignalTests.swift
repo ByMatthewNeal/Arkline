@@ -62,6 +62,7 @@ final class TradeSignalTests: XCTestCase {
             outcome: outcome,
             outcomePct: outcomePct,
             durationHours: durationHours,
+            resolutionSource: nil,
             generatedAt: generatedAt,
             triggeredAt: triggeredAt,
             t1HitAt: t1HitAt,

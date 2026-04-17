@@ -98,27 +98,61 @@ final class YahooFinanceService {
     ]
 
     /// Fetch current US index futures (ES, YM, NQ)
+    /// On weekends, fetches 5-day range to compute actual Friday session change
     func fetchFutures() async throws -> [USFuturesQuote] {
-        try await withThrowingTaskGroup(of: USFuturesQuote?.self) { group in
+        let isWeekend = !USMarketSession.current.futuresActive
+        return try await withThrowingTaskGroup(of: USFuturesQuote?.self) { group in
             for future in Self.futuresSymbols {
                 group.addTask {
                     do {
-                        let data = try await self.fetchQuote(symbol: future.symbol)
-                        guard let result = data.chart.result?.first,
-                              let meta = result.meta else { return nil }
+                        if isWeekend {
+                            // Fetch 5d daily bars to get actual Friday vs Thursday change
+                            let data = try await self.fetchQuote(symbol: future.symbol, range: "5d", interval: "1d")
+                            guard let result = data.chart.result?.first,
+                                  let meta = result.meta,
+                                  let timestamps = result.timestamp,
+                                  let quote = result.indicators.quote.first,
+                                  let closes = quote.close else { return nil }
 
-                        let price = meta.regularMarketPrice
-                        let prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price
+                            // Get last two valid daily closes (Thursday & Friday)
+                            let validBars: [(date: Date, close: Double)] = timestamps.enumerated().compactMap { i, ts in
+                                guard let close = closes[safe: i] ?? nil, close > 0 else { return nil }
+                                return (Date(timeIntervalSince1970: TimeInterval(ts)), close)
+                            }
 
-                        return USFuturesQuote(
-                            symbol: future.symbol,
-                            name: future.name,
-                            shortName: future.shortName,
-                            price: price,
-                            previousClose: prevClose,
-                            change: price - prevClose,
-                            changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
-                        )
+                            let price = meta.regularMarketPrice
+                            guard validBars.count >= 2 else {
+                                return USFuturesQuote(
+                                    symbol: future.symbol, name: future.name, shortName: future.shortName,
+                                    price: price, previousClose: price, change: 0, changePercent: 0
+                                )
+                            }
+
+                            let fridayClose = validBars[validBars.count - 1].close
+                            let thursdayClose = validBars[validBars.count - 2].close
+                            let change = fridayClose - thursdayClose
+                            let changePct = thursdayClose > 0 ? (change / thursdayClose) * 100 : 0
+
+                            return USFuturesQuote(
+                                symbol: future.symbol, name: future.name, shortName: future.shortName,
+                                price: price, previousClose: thursdayClose,
+                                change: change, changePercent: changePct
+                            )
+                        } else {
+                            let data = try await self.fetchQuote(symbol: future.symbol)
+                            guard let result = data.chart.result?.first,
+                                  let meta = result.meta else { return nil }
+
+                            let price = meta.regularMarketPrice
+                            let prevClose = meta.chartPreviousClose ?? meta.previousClose ?? price
+
+                            return USFuturesQuote(
+                                symbol: future.symbol, name: future.name, shortName: future.shortName,
+                                price: price, previousClose: prevClose,
+                                change: price - prevClose,
+                                changePercent: prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
+                            )
+                        }
                     } catch {
                         logWarning("Failed to fetch futures \(future.symbol): \(error.localizedDescription)", category: .network)
                         return nil
@@ -523,7 +557,8 @@ struct USFuturesQuote: Identifiable {
     let change: Double
     let changePercent: Double
 
-    var isPositive: Bool { change >= 0 }
+    var isPositive: Bool { change > 0 }
+    var isFlat: Bool { abs(change) < 0.01 }
 }
 
 private extension Array {

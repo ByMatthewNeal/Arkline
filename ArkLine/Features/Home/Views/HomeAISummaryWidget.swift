@@ -124,6 +124,23 @@ struct HomeAISummaryWidget: View {
                 nextUpdateLabel(for: summary)
             }
 
+            // Past briefings link — only when expanded
+            if isExpanded, summary != nil {
+                NavigationLink {
+                    BriefingArchiveView()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 11))
+                        Text("Past Briefings")
+                            .font(AppFonts.caption12Medium)
+                    }
+                    .foregroundColor(AppColors.accent)
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+            }
+
             // Admin feedback row — only when expanded
             if isAdmin, summary != nil, isExpanded {
                 feedbackRow
@@ -655,44 +672,37 @@ struct HomeAISummaryWidget: View {
         var estCal = Calendar(identifier: .gregorian)
         estCal.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
         let weekday = estCal.component(.weekday, from: now) // 1=Sun, 7=Sat
-
-        // Use current day to determine the next update, not just the slot
-        // (the slot may be stale from a previous day's briefing)
-        let isWeekend = weekday == 1 || weekday == 7 // Sun or Sat
         let estHour = estCal.component(.hour, from: now)
 
-        if isWeekend {
-            if weekday == 7 { // Saturday
-                if estHour < 12 {
-                    return "Next update at 12:00 PM ET"
-                } else {
-                    return "Next update Sunday 12:00 PM ET"
-                }
-            } else { // Sunday
-                if estHour < 12 {
-                    return "Next update at 12:00 PM ET"
-                } else {
-                    return "Next update Monday 10:00 AM ET"
-                }
+        // Determine next update purely from current time, not the (possibly stale) slot
+        switch weekday {
+        case 7: // Saturday
+            if estHour < 12 {
+                return "Next update at 12:00 PM ET"
+            } else {
+                return "Next update Sunday 12:00 PM ET"
             }
-        } else { // Weekday
-            switch slot {
-            case "morning":
+        case 1: // Sunday
+            if estHour < 12 {
+                return "Next update at 12:00 PM ET"
+            } else {
+                return "Next update Monday 10:00 AM ET"
+            }
+        case 6: // Friday
+            if estHour < 10 {
+                return "Next update at 10:00 AM ET"
+            } else if estHour < 17 {
                 return "Next update at 5:00 PM ET"
-            case "evening":
-                if weekday == 6 { // Friday evening
-                    return "Next update Saturday 12:00 PM ET"
-                } else {
-                    return "Next update at 10:00 AM ET"
-                }
-            default:
-                if estHour < 10 {
-                    return "Next update at 10:00 AM ET"
-                } else if estHour < 17 {
-                    return "Next update at 5:00 PM ET"
-                } else {
-                    return "Next update at 10:00 AM ET"
-                }
+            } else {
+                return "Next update Saturday 12:00 PM ET"
+            }
+        default: // Mon-Thu
+            if estHour < 10 {
+                return "Next update at 10:00 AM ET"
+            } else if estHour < 17 {
+                return "Next update at 5:00 PM ET"
+            } else {
+                return "Next update at 10:00 AM ET"
             }
         }
     }

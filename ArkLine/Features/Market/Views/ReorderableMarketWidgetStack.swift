@@ -6,6 +6,7 @@ struct ReorderableMarketWidgetStack: View {
     @Bindable var sentimentViewModel: SentimentViewModel
     var allocationViewModel: AllocationViewModel?
     @ObservedObject var appState: AppState
+    var widgetRefreshId: UUID = UUID()
     @State private var isEditMode: Bool = false
     @State private var draggingWidget: MarketWidgetType?
     @State private var draggedOverWidget: MarketWidgetType?
@@ -90,7 +91,7 @@ struct ReorderableMarketWidgetStack: View {
     private func widgetView(for type: MarketWidgetType) -> some View {
         switch type {
         case .usFutures:
-            USFuturesSection()
+            USFuturesSection(refreshId: widgetRefreshId)
 
         case .dailyNews:
             DailyNewsSection(news: viewModel.newsItems)
@@ -119,16 +120,16 @@ struct ReorderableMarketWidgetStack: View {
             )
 
         case .altcoinScreener:
-            AltcoinScreenerSection()
+            AltcoinScreenerSection(refreshId: widgetRefreshId)
 
         case .swingSetups:
-            SwingSetupsSummarySection(isPro: appState.isPro)
+            SwingSetupsSummarySection(isPro: appState.isPro, refreshId: widgetRefreshId)
 
         case .globalLiquidity:
-            GlobalLiquiditySection()
+            GlobalLiquiditySection(refreshId: widgetRefreshId)
 
         case .liquidityCycle:
-            LiquidityCycleSection()
+            LiquidityCycleSection(refreshId: widgetRefreshId)
 
         case .qpsGrid:
             QPSGridSection(

@@ -387,24 +387,32 @@ class MarketDeckViewModel {
     // MARK: - Per-Slide Feedback
 
     func loadSlideFeedback() async {
-        guard let deckId = deck?.id else { return }
+        guard let deckId = deck?.id, let slides = deck?.slides else { return }
         do {
             let feedback = try await service.fetchSlideFeedback(deckId: deckId)
-            slideFeedback = Dictionary(uniqueKeysWithValues: feedback.map { ($0.slideType, $0) })
+            // Map DB feedback (keyed by slideType) to slide IDs
+            var mapped: [String: SlideFeedback] = [:]
+            for fb in feedback {
+                // Find the first matching slide by type and map to its ID
+                if let slide = slides.first(where: { $0.type.rawValue == fb.slideType }) {
+                    mapped[slide.id] = fb
+                }
+            }
+            slideFeedback = mapped
         } catch {
             logWarning("Failed to load slide feedback: \(error)", category: .data)
         }
     }
 
-    func rateSlideFeedback(for slideType: DeckSlide.SlideType) -> SlideFeedback? {
-        slideFeedback[slideType.rawValue]
+    func rateSlideFeedback(for slideId: String) -> SlideFeedback? {
+        slideFeedback[slideId]
     }
 
-    func submitSlideFeedback(slideType: DeckSlide.SlideType, rating: Bool, feedback: String?) async {
+    func submitSlideFeedback(slideId: String, slideType: DeckSlide.SlideType, rating: Bool, feedback: String?) async {
         guard let deckId = deck?.id else { return }
 
-        // Optimistic update
-        slideFeedback[slideType.rawValue] = SlideFeedback(
+        // Optimistic update keyed by slide ID
+        slideFeedback[slideId] = SlideFeedback(
             deckId: deckId,
             slideType: slideType.rawValue,
             rating: rating,
@@ -424,11 +432,11 @@ class MarketDeckViewModel {
         }
     }
 
-    func removeSlideFeedback(slideType: DeckSlide.SlideType) async {
+    func removeSlideFeedback(slideId: String, slideType: DeckSlide.SlideType) async {
         guard let deckId = deck?.id else { return }
 
         // Optimistic removal
-        slideFeedback.removeValue(forKey: slideType.rawValue)
+        slideFeedback.removeValue(forKey: slideId)
 
         do {
             try await service.deleteSlideFeedback(deckId: deckId, slideType: slideType.rawValue)

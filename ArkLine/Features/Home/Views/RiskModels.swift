@@ -117,6 +117,13 @@ enum RiskCoin: String, CaseIterable {
     case ondo = "ONDO"
     case render = "RENDER"
     case tao = "TAO"
+    case zec = "ZEC"
+    case xrp = "XRP"
+    case ltc = "LTC"
+    case aave = "AAVE"
+    case ena = "ENA"
+    case jup = "JUP"
+    case syrup = "SYRUP"
 
     var displayName: String {
         AssetRiskConfig.forCoin(rawValue)?.displayName ?? rawValue
@@ -133,6 +140,39 @@ enum RiskCoin: String, CaseIterable {
         case .ondo: return "o.circle.fill"
         case .render: return "r.circle.fill"
         case .tao: return "t.circle.fill"
+        case .zec: return "z.circle.fill"
+        case .xrp: return "x.circle.fill"
+        case .ltc: return "l.circle.fill"
+        case .aave: return "a.circle.fill"
+        case .ena: return "e.circle.fill"
+        case .jup: return "j.circle.fill"
+        case .syrup: return "s.circle.fill"
+        }
+    }
+
+    var coinGeckoId: String {
+        AssetRiskConfig.forCoin(rawValue)?.geckoId ?? rawValue.lowercased()
+    }
+
+    /// CoinGecko thumbnail URL — these are stable CDN paths
+    var iconURL: URL? {
+        switch self {
+        case .btc: return URL(string: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png")
+        case .eth: return URL(string: "https://assets.coingecko.com/coins/images/279/small/ethereum.png")
+        case .sol: return URL(string: "https://assets.coingecko.com/coins/images/4128/small/solana.png")
+        case .bnb: return URL(string: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png")
+        case .sui: return URL(string: "https://assets.coingecko.com/coins/images/26375/small/sui-ocean-square.png")
+        case .uni: return URL(string: "https://assets.coingecko.com/coins/images/12504/small/uni.jpg")
+        case .ondo: return URL(string: "https://assets.coingecko.com/coins/images/26580/small/ONDO.png")
+        case .render: return URL(string: "https://assets.coingecko.com/coins/images/11636/small/rndr.png")
+        case .tao: return URL(string: "https://assets.coingecko.com/coins/images/28452/small/ARUsPeNQ_400x400.jpeg")
+        case .zec: return URL(string: "https://assets.coingecko.com/coins/images/486/small/circle-zcash-color.png")
+        case .xrp: return URL(string: "https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png")
+        case .ltc: return URL(string: "https://assets.coingecko.com/coins/images/2/small/litecoin.png")
+        case .aave: return URL(string: "https://assets.coingecko.com/coins/images/12645/small/aave-token-round.png")
+        case .ena: return URL(string: "https://assets.coingecko.com/coins/images/36530/small/ethena.png")
+        case .jup: return URL(string: "https://assets.coingecko.com/coins/images/34188/small/jup.png")
+        case .syrup: return URL(string: "https://assets.coingecko.com/coins/images/14097/small/photo_2021-05-03_14.20.41.jpeg")
         }
     }
 

@@ -43,6 +43,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "AVAX",   displayName: "Avalanche",     source: "coinbase", symbol: "AVAX-USD",   category: "crypto" },
   { ticker: "DOGE",   displayName: "Dogecoin",      source: "coinbase", symbol: "DOGE-USD",   category: "crypto" },
   { ticker: "BCH",    displayName: "Bitcoin Cash",   source: "coinbase", symbol: "BCH-USD",    category: "crypto" },
+  { ticker: "AAVE",   displayName: "Aave",           source: "coinbase", symbol: "AAVE-USD",   category: "crypto" },
 
   // ── Alt/BTC Pairs (relative strength vs Bitcoin) ──
   { ticker: "ETH/BTC",    displayName: "ETH/BTC",    source: "coinbase",      symbol: "ETH-BTC",    category: "alt_btc" },
@@ -60,6 +61,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "SUI/BTC",    displayName: "SUI/BTC",    source: "synthetic_btc", symbol: "SUI-USD",    category: "alt_btc" },
   { ticker: "ONDO/BTC",   displayName: "ONDO/BTC",   source: "synthetic_btc", symbol: "ONDO-USD",   category: "alt_btc" },
   { ticker: "RENDER/BTC", displayName: "RENDER/BTC", source: "synthetic_btc", symbol: "RENDER-USD", category: "alt_btc" },
+  { ticker: "AAVE/BTC",   displayName: "AAVE/BTC",   source: "coinbase",      symbol: "AAVE-BTC",   category: "alt_btc" },
 
   // ── Indices (FMP — ETF proxies) ──
   { ticker: "SPY",    displayName: "S&P 500",       source: "fmp", symbol: "SPY",   category: "index" },
@@ -242,10 +244,11 @@ function computeRSI(closes: number[], period = 14): number | null {
 
 // ─── Trend Score Computation ────────────────────────────────────────────────
 //
-// Scoring weights (v3 — SMA position framework 2026-03-18):
+// Scoring weights (v4 — 200 SMA penalty 2026-03-29):
 //
 // PRIMARY: Daily close relative to key SMAs (user's framework)
 //   Above 200 SMA:   +18  (strongest bullish signal — long-term trend intact)
+//   Below 200 SMA:   -8   (bearish pressure — below institutional trend line)
 //   Above 50 SMA:    +8   (intermediate support holding)
 //   Above 21 SMA:    +8   (short-term trend positive)
 //   Below 21 SMA:    -10  (short-term trend broken — bearish)
@@ -295,8 +298,12 @@ function computeTrendScore(candles: Candle[]): {
   let score = 50
 
   // ── PRIMARY: SMA position (key framework) ──
-  // Above 200 SMA = strongest bullish signal
-  if (above200SMA) score += 18
+  // 200 SMA = bull/bear dividing line (symmetric weighting)
+  if (above200SMA) {
+    score += 18
+  } else if (!isNaN(latestSma200)) {
+    score -= 8   // Below 200 SMA = bearish pressure
+  }
 
   // Above 50 SMA = intermediate support holding
   if (aboveSma50) score += 8
