@@ -35,20 +35,18 @@ struct InviteCodeView: View {
                             )
                             .frame(width: 240, height: 240)
 
-                        Rectangle()
-                            .fill(
+                        Image("ArkLineLogo")
+                            .resizable()
+                            .renderingMode(.template)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 100, height: 100)
+                            .foregroundStyle(
                                 LinearGradient(
                                     colors: [AppColors.fillPrimary, AppColors.accentLight],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
                             )
-                            .mask(
-                                Image("ArkLineLogo")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                            )
-                            .frame(width: 120, height: 120)
                     }
 
                     VStack(spacing: ArkSpacing.sm) {
