@@ -21,6 +21,7 @@ struct InviteCodeView: View {
                 // Icon with glow
                 VStack(spacing: ArkSpacing.xl) {
                     ZStack {
+                        // Outer glow
                         Circle()
                             .fill(
                                 RadialGradient(
@@ -35,11 +36,22 @@ struct InviteCodeView: View {
                             )
                             .frame(width: 240, height: 240)
 
+                        // Solid circle background
+                        Circle()
+                            .fill(AppColors.fillPrimary.opacity(colorScheme == .dark ? 0.12 : 0.08))
+                            .frame(width: 120, height: 120)
+
+                        // Circle border
+                        Circle()
+                            .stroke(AppColors.fillPrimary.opacity(0.2), lineWidth: 1)
+                            .frame(width: 120, height: 120)
+
+                        // Logo
                         Image("ArkLineLogo")
                             .resizable()
                             .renderingMode(.template)
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 100, height: 100)
+                            .frame(width: 60, height: 60)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [AppColors.fillPrimary, AppColors.accentLight],
