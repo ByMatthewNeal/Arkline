@@ -26,32 +26,33 @@ struct InviteCodeView: View {
                             .fill(
                                 RadialGradient(
                                     colors: [
-                                        AppColors.fillPrimary.opacity(0.2),
+                                        AppColors.fillPrimary.opacity(0.15),
                                         AppColors.fillPrimary.opacity(0)
                                     ],
                                     center: .center,
-                                    startRadius: 30,
-                                    endRadius: 90
+                                    startRadius: 60,
+                                    endRadius: 120
                                 )
                             )
                             .frame(width: 240, height: 240)
 
-                        // Solid circle background
+                        // Frosted glass circle
                         Circle()
-                            .fill(AppColors.fillPrimary.opacity(colorScheme == .dark ? 0.12 : 0.08))
-                            .frame(width: 120, height: 120)
+                            .fill(Color.white.opacity(colorScheme == .dark ? 0.06 : 0.3))
+                            .frame(width: 160, height: 160)
 
                         // Circle border
                         Circle()
-                            .stroke(AppColors.fillPrimary.opacity(0.2), lineWidth: 1)
-                            .frame(width: 120, height: 120)
+                            .stroke(Color.white.opacity(colorScheme == .dark ? 0.15 : 0.4), lineWidth: 1)
+                            .frame(width: 160, height: 160)
 
-                        // Logo
+                        // Logo (clipped to circle to hide corner marks in asset)
                         Image("ArkLineLogo")
                             .resizable()
                             .renderingMode(.template)
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 60, height: 60)
+                            .frame(width: 80, height: 80)
+                            .clipShape(Circle())
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [AppColors.fillPrimary, AppColors.accentLight],
