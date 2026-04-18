@@ -12,6 +12,7 @@ struct SignalChangeHistoryView: View {
     @State private var lookupChanges: [DailyPositioningSignal]?
     @State private var isLoadingLookup = false
     @State private var showDatePicker = false
+    @State private var expandedSignalId: UUID?
 
     private let service = PositioningSignalService()
 
@@ -259,69 +260,99 @@ struct SignalChangeHistoryView: View {
     // MARK: - Change Row
 
     private func changeRow(_ signal: DailyPositioningSignal) -> some View {
-        HStack(spacing: 12) {
-            // Asset name
-            VStack(alignment: .leading, spacing: 2) {
-                Text(signal.asset)
-                    .font(AppFonts.body14Bold)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+        let isExpanded = expandedSignalId == signal.id
 
-                if let created = signal.createdAt {
-                    Text(timeFormatter.string(from: created) + " ET")
-                        .font(.system(size: 11))
-                        .foregroundColor(AppColors.textSecondary)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                expandedSignalId = isExpanded ? nil : signal.id
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 12) {
+                    // Asset name
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(signal.asset)
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        if let created = signal.createdAt {
+                            Text(timeFormatter.string(from: created) + " ET")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+                    .frame(width: 80, alignment: .leading)
+
+                    // Signal change badges
+                    if let prev = signal.prevPositioningSignal {
+                        HStack(spacing: 6) {
+                            Text(prev.label.uppercased())
+                                .font(.system(size: 9, weight: .heavy))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(prev.color)
+                                .cornerRadius(4)
+
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(AppColors.textSecondary)
+
+                            Text(signal.positioningSignal.label.uppercased())
+                                .font(.system(size: 9, weight: .heavy))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(signal.positioningSignal.color)
+                                .cornerRadius(4)
+                        }
+                    }
+
+                    Spacer()
+
+                    // Category pill + chevron
+                    if let cat = signal.assetCategory as QPSAssetCategory? {
+                        Text(cat.displayName)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                Capsule().fill(AppColors.textSecondary.opacity(0.1))
+                            )
+                    }
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+
+                // Expandable hint
+                if isExpanded, let prev = signal.prevPositioningSignal {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.system(size: 9))
+                            .foregroundColor(signal.positioningSignal.color.opacity(0.6))
+                        Text(signal.positioningSignal.changeHint(from: prev))
+                            .font(.system(size: 11))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.top, 8)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
-            .frame(width: 80, alignment: .leading)
-
-            // Signal change badges
-            if let prev = signal.prevPositioningSignal {
-                HStack(spacing: 6) {
-                    Text(prev.label.uppercased())
-                        .font(.system(size: 9, weight: .heavy))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(prev.color)
-                        .cornerRadius(4)
-
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(AppColors.textSecondary)
-
-                    Text(signal.positioningSignal.label.uppercased())
-                        .font(.system(size: 9, weight: .heavy))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(signal.positioningSignal.color)
-                        .cornerRadius(4)
-                }
-            }
-
-            Spacer()
-
-            // Category pill
-            if let cat = signal.assetCategory as QPSAssetCategory? {
-                Text(cat.displayName)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(AppColors.textSecondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule().fill(AppColors.textSecondary.opacity(0.1))
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(changeDirectionColor(signal).opacity(0.3), lineWidth: 1)
                     )
-            }
+            )
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(changeDirectionColor(signal).opacity(0.3), lineWidth: 1)
-                )
-        )
+        .buttonStyle(.plain)
         .padding(.horizontal)
     }
 

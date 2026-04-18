@@ -141,6 +141,13 @@ struct ReorderableWidgetStack: View {
             return true
         case .marketDeck:
             return viewModel.latestDeck != nil
+        case .modelPortfolioUpdate:
+            guard let trade = viewModel.latestPortfolioTrade else { return false }
+            // Show for 3 days so users don't miss it
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let tradeDate = formatter.date(from: trade.tradeDate) else { return true }
+            return Date().timeIntervalSince(tradeDate) < 3 * 24 * 3600
         }
     }
 
@@ -296,6 +303,11 @@ struct ReorderableWidgetStack: View {
         case .marketDeck:
             if let deck = viewModel.latestDeck {
                 MarketDeckCard(deck: deck)
+            }
+
+        case .modelPortfolioUpdate:
+            if let trade = viewModel.latestPortfolioTrade, let name = viewModel.followedPortfolioName {
+                ModelPortfolioUpdateCard(trade: trade, portfolioName: name)
             }
         }
     }

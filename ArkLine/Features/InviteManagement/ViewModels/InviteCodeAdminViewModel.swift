@@ -34,9 +34,11 @@ class InviteCodeAdminViewModel {
 
     // MARK: - Service
     private let service: InviteCodeServiceProtocol
+    private static let cacheKey = "arkline_cached_invite_codes"
 
     init(service: InviteCodeServiceProtocol = InviteCodeService()) {
         self.service = service
+        loadFromLocalCache()
     }
 
     // MARK: - Filtered Codes
@@ -66,7 +68,12 @@ class InviteCodeAdminViewModel {
 
         do {
             codes = try await service.fetchAllCodes()
+            saveToLocalCache()
         } catch {
+            // If fetch fails and we have no codes, keep the cached ones
+            if codes.isEmpty {
+                loadFromLocalCache()
+            }
             errorMessage = AppError.from(error).userMessage
         }
     }
@@ -89,6 +96,7 @@ class InviteCodeAdminViewModel {
             )
             codes.insert(newCode, at: 0)
             lastCreatedCode = newCode
+            saveToLocalCache()
             recipientName = ""
             recipientEmail = ""
             note = ""
@@ -121,6 +129,7 @@ class InviteCodeAdminViewModel {
             try await service.revokeCode(id: code.id)
             if let index = codes.firstIndex(where: { $0.id == code.id }) {
                 codes[index].isRevoked = true
+                saveToLocalCache()
             }
         } catch {
             errorMessage = AppError.from(error).userMessage
@@ -133,8 +142,28 @@ class InviteCodeAdminViewModel {
         do {
             try await service.deleteCode(id: code.id)
             codes.removeAll { $0.id == code.id }
+            saveToLocalCache()
         } catch {
             errorMessage = AppError.from(error).userMessage
+        }
+    }
+
+    // MARK: - Local Cache
+
+    private func saveToLocalCache() {
+        do {
+            let data = try JSONEncoder().encode(codes)
+            UserDefaults.standard.set(data, forKey: Self.cacheKey)
+        } catch {
+            logWarning("Failed to cache invite codes: \(error.localizedDescription)", category: .data)
+        }
+    }
+
+    private func loadFromLocalCache() {
+        guard let data = UserDefaults.standard.data(forKey: Self.cacheKey),
+              let cached = try? JSONDecoder().decode([InviteCode].self, from: data) else { return }
+        if codes.isEmpty {
+            codes = cached
         }
     }
 }

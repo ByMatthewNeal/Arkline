@@ -51,6 +51,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case qpsSignals = "qps_signals"
     case marketDeck = "market_deck"
     case stockRiskLevel = "stock_risk_level"
+    case modelPortfolioUpdate = "model_portfolio_update"
 
     var id: String { rawValue }
 
@@ -76,6 +77,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .qpsSignals: return "Signal Changes"
         case .marketDeck: return "Weekly Update"
         case .stockRiskLevel: return "Stock Risk Levels"
+        case .modelPortfolioUpdate: return "Model Portfolio Updates"
         }
     }
 
@@ -101,6 +103,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .qpsSignals: return "Daily positioning signal changes across 8 assets"
         case .marketDeck: return "Weekly market update slide deck"
         case .stockRiskLevel: return "Regression risk levels for select stocks"
+        case .modelPortfolioUpdate: return "Latest rebalance from your followed strategy"
         }
     }
 
@@ -126,6 +129,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .qpsSignals: return "waveform.path.ecg"
         case .marketDeck: return "doc.richtext"
         case .stockRiskLevel: return "chart.line.uptrend.xyaxis"
+        case .modelPortfolioUpdate: return "arrow.triangle.2.circlepath"
         }
     }
 
@@ -137,7 +141,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel:
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals:
             return true
@@ -146,12 +150,12 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.marketDeck, .upcomingEvents, .flashIntel, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .stockRiskLevel, .dcaReminders])
+        Set([.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .flashIntel, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .stockRiskLevel, .dcaReminders])
     }
 }
 

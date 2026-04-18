@@ -21,6 +21,7 @@ struct HomeAISummaryWidget: View {
     @State private var isExpanded = true
     @State private var hasBeenExpandedThisSession = false
     @State private var showUnavailable = false
+    @State private var showPostureExplainer = false
     @Environment(\.colorScheme) var colorScheme
 
     private var textPrimary: Color {
@@ -86,7 +87,13 @@ struct HomeAISummaryWidget: View {
 
             // Sentiment pill — prefer live regime over stale briefing text
             if let posture = livePosture ?? parsedPosture {
-                sentimentPill(posture)
+                Button { showPostureExplainer = true } label: {
+                    sentimentPill(posture)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showPostureExplainer) {
+                    postureExplainerSheet(posture)
+                }
             }
 
             // Body
@@ -532,6 +539,113 @@ struct HomeAISummaryWidget: View {
         .padding(.vertical, 5)
         .background(posture.color.opacity(0.12))
         .clipShape(Capsule())
+    }
+
+    // MARK: - Posture Explainer
+
+    private func postureExplainerSheet(_ posture: MarketPosture) -> some View {
+        let matchedQuadrant = MacroRegimeQuadrant.allCases.first {
+            $0.rawValue.lowercased() == posture.label.lowercased()
+        }
+
+        return NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Current regime
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(posture.color.opacity(0.15))
+                                .frame(width: 64, height: 64)
+                            Image(systemName: posture.icon)
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundColor(posture.color)
+                        }
+
+                        Text(posture.label)
+                            .font(AppFonts.title20)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        if let q = matchedQuadrant {
+                            Text(q.description)
+                                .font(AppFonts.body14)
+                                .foregroundColor(AppColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
+                    }
+                    .padding(.top, 8)
+
+                    Divider().padding(.horizontal, 20)
+
+                    // All four quadrants
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Market Regime Quadrants")
+                            .font(AppFonts.title16)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .padding(.horizontal, 20)
+
+                        ForEach(MacroRegimeQuadrant.allCases, id: \.rawValue) { q in
+                            let isCurrent = q.rawValue.lowercased() == posture.label.lowercased()
+                            HStack(alignment: .top, spacing: 12) {
+                                Circle()
+                                    .fill(q.color)
+                                    .frame(width: 10, height: 10)
+                                    .padding(.top, 5)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Text(q.rawValue)
+                                            .font(AppFonts.body14Bold)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                                        if isCurrent {
+                                            Text("CURRENT")
+                                                .font(.system(size: 9, weight: .bold))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(q.color)
+                                                .clipShape(Capsule())
+                                        }
+                                    }
+                                    Text(q.description)
+                                        .font(AppFonts.caption12)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(isCurrent ? q.color.opacity(0.06) : Color.clear)
+                            .cornerRadius(8)
+                        }
+                    }
+
+                    // How it's calculated
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("How It's Calculated")
+                            .font(AppFonts.title16)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                        Text("The regime is determined by two axes: a growth score (VIX, equity trends, crypto momentum) and an inflation score (DXY, M2 money supply, WTI crude oil). These combine to place the market in one of four quadrants, updated daily.")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.horizontal, 20)
+
+                    Spacer(minLength: 40)
+                }
+            }
+            .background(AppColors.background(colorScheme))
+            .navigationTitle("Market Posture")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { showPostureExplainer = false }
+                }
+            }
+        }
     }
 
     // MARK: - Structured Summary

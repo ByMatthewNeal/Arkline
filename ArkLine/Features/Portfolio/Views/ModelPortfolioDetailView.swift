@@ -483,6 +483,7 @@ struct ModelPortfolioDetailView: View {
     // MARK: - Trade Log
 
     @State private var showFullTradeHistory = false
+    @State private var expandedTradeId: UUID?
 
     private var recentTrades: [ModelPortfolioTrade] {
         trades.filter { $0.tradeDate >= "2026-01-01" }
@@ -781,18 +782,35 @@ struct ModelPortfolioDetailView: View {
     @ViewBuilder
     private func tradeRow(_ trade: ModelPortfolioTrade) -> some View {
         let changes = tradeChanges(from: trade)
+        let isExpanded = expandedTradeId == trade.id
+        let hasContext = trade.marketContext != nil && !(trade.marketContext?.isEmpty ?? true)
 
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(formatNavDate(trade.tradeDate))
-                    .font(AppFonts.caption12Medium)
-                    .foregroundColor(AppColors.textSecondary)
-                Spacer()
-                Text(trade.trigger)
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textTertiary)
-                    .lineLimit(1)
+            Button {
+                if hasContext {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        expandedTradeId = isExpanded ? nil : trade.id
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(formatNavDate(trade.tradeDate))
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(AppColors.textSecondary)
+                    Spacer()
+                    Text(trade.trigger)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textTertiary)
+                        .lineLimit(1)
+                    if hasContext {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                    }
+                }
             }
+            .buttonStyle(.plain)
 
             ForEach(changes) { change in
                 HStack(spacing: 6) {
@@ -817,6 +835,53 @@ struct ModelPortfolioDetailView: View {
                             .foregroundColor(AppColors.textSecondary)
                     }
                 }
+            }
+
+            // Expandable market context
+            if isExpanded, let context = trade.marketContext {
+                VStack(alignment: .leading, spacing: 8) {
+                    if let events = context.events, !events.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "calendar.badge.exclamationmark")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(AppColors.warning)
+                                Text("ECONOMIC EVENTS")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .tracking(0.5)
+                            }
+                            ForEach(events, id: \.self) { event in
+                                Text("• \(event)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                    }
+
+                    if let headlines = context.headlines, !headlines.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "newspaper")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(AppColors.accent)
+                                Text("HEADLINES")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .tracking(0.5)
+                            }
+                            ForEach(headlines, id: \.self) { headline in
+                                Text("• \(headline)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .lineLimit(2)
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 6)
+                .padding(.leading, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }

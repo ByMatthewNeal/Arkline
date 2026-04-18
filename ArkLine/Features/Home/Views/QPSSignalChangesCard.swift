@@ -73,38 +73,47 @@ struct QPSSignalChangesCard: View {
     }
 
     private func signalChangeRow(_ signal: DailyPositioningSignal) -> some View {
-        HStack(spacing: 12) {
-            Text(signal.asset)
-                .font(AppFonts.body14Bold)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-                .lineLimit(1)
-                .frame(width: 70, alignment: .leading)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Text(signal.asset)
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(1)
+                    .frame(width: 70, alignment: .leading)
 
-            if let prev = signal.prevPositioningSignal {
-                HStack(spacing: 6) {
-                    Text(prev.label)
-                        .font(.system(size: 10, weight: .heavy))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(prev.color)
-                        .cornerRadius(4)
+                if let prev = signal.prevPositioningSignal {
+                    HStack(spacing: 6) {
+                        Text(prev.label)
+                            .font(.system(size: 10, weight: .heavy))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(prev.color)
+                            .cornerRadius(4)
 
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(AppColors.textSecondary)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(AppColors.textSecondary)
 
-                    Text(signal.positioningSignal.label)
-                        .font(.system(size: 10, weight: .heavy))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(signal.positioningSignal.color)
-                        .cornerRadius(4)
+                        Text(signal.positioningSignal.label)
+                            .font(.system(size: 10, weight: .heavy))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(signal.positioningSignal.color)
+                            .cornerRadius(4)
+                    }
                 }
+
+                Spacer()
             }
 
-            Spacer()
+            // Action hint
+            if let prev = signal.prevPositioningSignal {
+                Text(signal.positioningSignal.changeHint(from: prev))
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary)
+            }
         }
         .padding(12)
         .background(

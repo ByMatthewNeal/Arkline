@@ -460,6 +460,66 @@ function computeNav(
   return { nav: currentNav, positions: updated }
 }
 
+// ─── Market Context ─────────────────────────────────────────────────────────
+
+async function fetchMarketContext(
+  supabase: ReturnType<typeof createClient>,
+  today: string,
+): Promise<{ headlines: string[]; events: string[] }> {
+  const context: { headlines: string[]; events: string[] } = { headlines: [], events: [] }
+
+  try {
+    // 1. Economic events for today (high impact only)
+    const { data: events } = await supabase
+      .from("economic_events")
+      .select("event, actual, forecast, previous, impact")
+      .eq("date", today)
+      .eq("impact", "High")
+      .limit(5)
+
+    if (events && events.length > 0) {
+      for (const e of events) {
+        let line = e.event
+        if (e.actual != null) line += ` (actual: ${e.actual}`
+        if (e.forecast != null) line += `, forecast: ${e.forecast}`
+        if (e.actual != null) line += ")"
+        context.events.push(line)
+      }
+    }
+
+    // 2. Top headlines from Google News RSS (crypto + market)
+    const queries = ["crypto+market", "stock+market+today"]
+    for (const q of queries) {
+      try {
+        const rssUrl = `https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`
+        const resp = await fetch(rssUrl)
+        if (resp.ok) {
+          const xml = await resp.text()
+          // Extract titles from RSS XML
+          const titleMatches = xml.matchAll(/<item>[\s\S]*?<title>([\s\S]*?)<\/title>/g)
+          let count = 0
+          for (const match of titleMatches) {
+            if (count >= 3) break
+            const title = match[1]
+              .replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "")
+              .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+              .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+              .trim()
+            if (title && !context.headlines.includes(title)) {
+              context.headlines.push(title)
+              count++
+            }
+          }
+        }
+      } catch { /* skip */ }
+    }
+  } catch (err) {
+    console.error("Failed to fetch market context:", err)
+  }
+
+  return context
+}
+
 // ─── Main ───────────────────────────────────────────────────────────────────
 
 function jsonResponse(body: unknown, status = 200) {
@@ -549,7 +609,10 @@ Deno.serve(async (req) => {
       }, { onConflict: "asset,risk_date" })
     }
 
-    // 5. Get yesterday's NAV + positions for each portfolio
+    // 5. Pre-fetch market context (headlines + events) for trade log
+    let marketContext: { headlines: string[]; events: string[] } | null = null
+
+    // 6. Get yesterday's NAV + positions for each portfolio
     const rebalancedStrategies: { strategy: string; triggers: string[] }[] = []
 
     for (const strategy of ["core", "edge", "alpha"]) {
@@ -666,12 +729,19 @@ Deno.serve(async (req) => {
         const toAlloc: Record<string, number> = {}
         for (const [k, v] of Object.entries(allocJson)) toAlloc[k] = v.pct
 
+        // Lazy-fetch market context on first rebalance of the day
+        if (!marketContext) {
+          marketContext = await fetchMarketContext(supabase, today)
+          console.log(`  Market context: ${marketContext.headlines.length} headlines, ${marketContext.events.length} events`)
+        }
+
         await supabase.from("model_portfolio_trades").insert({
           portfolio_id: portfolioId,
           trade_date: today,
           trigger: triggers.length > 0 ? triggers.join("; ") : "Rebalance",
           from_allocation: fromAlloc,
           to_allocation: toAlloc,
+          market_context: (marketContext.headlines.length > 0 || marketContext.events.length > 0) ? marketContext : null,
         })
 
         rebalancedStrategies.push({ strategy, triggers })

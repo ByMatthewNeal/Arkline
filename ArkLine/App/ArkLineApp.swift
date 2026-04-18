@@ -10,6 +10,7 @@ struct ArkLineApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @State private var showPrivacyOverlay = false
+    @State private var privacyOverlayTask: Task<Void, Never>?
 
     var body: some Scene {
         WindowGroup {
@@ -59,12 +60,22 @@ struct ArkLineApp: App {
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background || newPhase == .inactive {
+            if newPhase == .background {
+                // Background = definitely left the app, show immediately
+                privacyOverlayTask?.cancel()
                 showPrivacyOverlay = true
-                if newPhase == .background {
-                    Task { await AnalyticsService.shared.flush() }
+                Task { await AnalyticsService.shared.flush() }
+            } else if newPhase == .inactive {
+                // Inactive = might be notification center, control center, or app switcher
+                // Wait 400ms before showing — if we go active again quickly, cancel
+                privacyOverlayTask?.cancel()
+                privacyOverlayTask = Task {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    guard !Task.isCancelled else { return }
+                    showPrivacyOverlay = true
                 }
             } else if newPhase == .active {
+                privacyOverlayTask?.cancel()
                 showPrivacyOverlay = false
                 appState.refreshUserProfileCancellable()
                 Task { await IncrementalPriceStore.shared.resetCooldowns() }

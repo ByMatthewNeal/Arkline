@@ -756,6 +756,7 @@ struct SignalDetailView: View {
                             .foregroundColor(textPrimary)
                             .keyboardType(.decimalPad)
                             .focused($isTextFieldFocused)
+                            .transaction { $0.animation = nil }
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
@@ -767,6 +768,7 @@ struct SignalDetailView: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(customEntry != nil ? AppColors.accent.opacity(0.4) : Color.clear, lineWidth: 1)
                     )
+                    .transaction { $0.animation = nil }
 
                     if let entry = customEntry, let sl = adjustedSL {
                         VStack(spacing: 8) {
@@ -846,6 +848,7 @@ struct SignalDetailView: View {
                         }
                     }
                 }
+                .transaction { $0.animation = nil }
             }
         }
         .padding()

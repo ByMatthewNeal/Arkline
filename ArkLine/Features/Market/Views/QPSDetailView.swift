@@ -93,6 +93,24 @@ struct QPSDetailView: View {
                 Spacer()
             }
 
+            // Action guidance
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(signal.positioningSignal.color.opacity(0.7))
+
+                if signal.hasChanged, let prev = signal.prevPositioningSignal {
+                    Text(signal.positioningSignal.changeHint(from: prev))
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textSecondary)
+                } else {
+                    Text(signal.positioningSignal.actionGuidance)
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             Text("$\(String(format: "%.2f", signal.price))")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)

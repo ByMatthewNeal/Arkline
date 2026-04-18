@@ -148,6 +148,11 @@ class HomeViewModel {
     var latestDeck: MarketUpdateDeck?
     private let marketDeckService: MarketUpdateDeckServiceProtocol = ServiceContainer.shared.marketDeckService
 
+    // Model Portfolio Updates
+    var latestPortfolioTrade: ModelPortfolioTrade?
+    var followedPortfolioName: String?
+    private let modelPortfolioService: ModelPortfolioServiceProtocol = ServiceContainer.shared.modelPortfolioService
+
     // Market Summary
     var btcPrice: Double = 0
     var ethPrice: Double = 0
@@ -1089,6 +1094,41 @@ class HomeViewModel {
                 await MainActor.run { self.latestDeck = deck }
             } catch {
                 logWarning("Market deck fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
+        // Fetch latest model portfolio trade (followed strategy, or most recent from any)
+        Task {
+            do {
+                let portfolios = try await self.modelPortfolioService.fetchPortfolios()
+                guard !portfolios.isEmpty else { return }
+
+                let followed = UserDefaults.standard.string(forKey: Constants.UserDefaults.followedModelPortfolio)
+
+                // If following a specific strategy, show that one; otherwise show most recent from any
+                let targetPortfolios = followed != nil
+                    ? portfolios.filter { $0.strategy == followed }
+                    : portfolios
+
+                // Find the most recent trade across target portfolios
+                var latestTrade: ModelPortfolioTrade?
+                var latestName: String?
+                for portfolio in targetPortfolios {
+                    let trades = try await self.modelPortfolioService.fetchTrades(portfolioId: portfolio.id, limit: 1)
+                    if let trade = trades.first {
+                        if latestTrade == nil || trade.tradeDate > (latestTrade?.tradeDate ?? "") {
+                            latestTrade = trade
+                            latestName = portfolio.name
+                        }
+                    }
+                }
+
+                await MainActor.run {
+                    self.latestPortfolioTrade = latestTrade
+                    self.followedPortfolioName = latestName
+                }
+            } catch {
+                logWarning("Model portfolio trade fetch failed: \(error.localizedDescription)", category: .network)
             }
         }
 

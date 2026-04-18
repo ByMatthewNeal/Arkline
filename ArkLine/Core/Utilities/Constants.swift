@@ -7,6 +7,7 @@ enum Constants {
     // Essential keys (Supabase, RevenueCat) are XOR-obfuscated in ObfuscatedSecrets.swift.
     // Paid API keys are ONLY available server-side via the api-proxy edge function.
     // In DEBUG builds, Secrets.plist is loaded for local development convenience.
+    // In Release builds, a Run Script phase strips Secrets.plist from the .app bundle.
 
     #if DEBUG
     private static let secrets: [String: Any] = {

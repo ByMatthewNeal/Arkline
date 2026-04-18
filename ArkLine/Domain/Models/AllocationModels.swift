@@ -26,6 +26,27 @@ enum PositioningSignal: String, CaseIterable {
     }
 
     var label: String { rawValue }
+
+    var actionGuidance: String {
+        switch self {
+        case .bullish: return "Trend intact. Favorable conditions for holding or adding exposure."
+        case .neutral: return "Trend transitioning. Consider reducing size or waiting for confirmation."
+        case .bearish: return "Trend broken. Risk management priority — reduce exposure or stay flat."
+        }
+    }
+
+    /// Short action hint for signal change context
+    func changeHint(from prev: PositioningSignal) -> String {
+        switch (prev, self) {
+        case (.bearish, .neutral): return "Downtrend pressure easing. Watch for bullish confirmation."
+        case (.bearish, .bullish): return "Trend reversal. Conditions turning favorable for exposure."
+        case (.neutral, .bullish): return "Trend strengthening. Favorable to add or hold positions."
+        case (.neutral, .bearish): return "Trend weakening. Consider reducing exposure."
+        case (.bullish, .neutral): return "Momentum fading. Consider tightening stops or trimming."
+        case (.bullish, .bearish): return "Trend breakdown. Prioritize capital preservation."
+        default: return actionGuidance
+        }
+    }
 }
 
 // MARK: - Macro Regime Quadrant

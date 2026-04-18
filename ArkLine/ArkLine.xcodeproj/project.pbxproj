@@ -254,7 +254,9 @@
 		A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */; };
 		A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */; };
 		A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */; };
+		M0DELP0RTF0L10UPDT0B1 /* ModelPortfolioUpdateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */; };
 		A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */; };
+		QPSMETH0D0L0GY00000B1 /* QPSMethodologySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = QPSMETH0D0L0GY00000A1 /* QPSMethodologySheet.swift */; };
 		A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */; };
 		A1B2C3D4E5F6SCH00001B1 /* SignalChangeHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6SCH00001A1 /* SignalChangeHistoryView.swift */; };
 		A206DCEB00A900E4EA7FA1F3 /* CoinglassData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E70C3A32B3F5F2E11EF35E /* CoinglassData.swift */; };
@@ -337,6 +339,7 @@
 		BDF8D9BCC56B4057930F72C5 /* SwingSetupsSummarySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1952CB3C02234FC9885208EB /* SwingSetupsSummarySection.swift */; };
 		BE518BD133BCA4B82F9178E4 /* SupplyInProfitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2104B8ED3CB173FE9114AC /* SupplyInProfitWidget.swift */; };
 		BE89C92611163C89B015EF91 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CBCD28DAB9835627BA87F5 /* VIXData.swift */; };
+		BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */ = {isa = PBXBuildFile; fileRef = SECLPGQFYONBRGJIEXSUROCD /* Secrets.plist */; };
 		C01NP1CK3RV13W0000002 /* CoinPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01NP1CK3RV13W0000001 /* CoinPickerView.swift */; };
 		C04B4FC3C23778233ABA6322 /* PositioningSignalCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECA6B164AD3765E2BDD5E4A9 /* PositioningSignalCalculator.swift */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
@@ -784,7 +787,9 @@
 		A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositioningSignalService.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00003A3 /* QPSViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSViewModel.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSSignalChangesCard.swift; sourceTree = "<group>"; };
+		M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPortfolioUpdateCard.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSGridSection.swift; sourceTree = "<group>"; };
+		QPSMETH0D0L0GY00000A1 /* QPSMethodologySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSMethodologySheet.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6QPS00006A6 /* QPSDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSDetailView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6SCH00001A1 /* SignalChangeHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalChangeHistoryView.swift; sourceTree = "<group>"; };
 		A1C0D1E2F3B4A5C6D7E8F901 /* AltcoinScreenerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AltcoinScreenerSection.swift; sourceTree = "<group>"; };
@@ -1786,6 +1791,7 @@
 				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
 				C831006104AE4F24A0E28C46 /* FlashIntelCard.swift */,
 				A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */,
+				M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */,
 				A1B2C3D4E5F6SCH00001A1 /* SignalChangeHistoryView.swift */,
 				6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */,
 				72867E4A3022A0BACCF4974A /* FavoritesWidget.swift */,
@@ -1962,6 +1968,7 @@
 				BB1122334455667788990011 /* PreciousMetalsSection.swift */,
 				CC0A1B2C3D4E5F6071829303 /* TopCoinsSection.swift */,
 				A1B2C3D4E5F6QPS00005A5 /* QPSGridSection.swift */,
+				QPSMETH0D0L0GY00000A1 /* QPSMethodologySheet.swift */,
 				C1C9947884BDE4102F110274 /* NewsCard.swift */,
 				9997D8052D5270DC5237E5E6 /* SentimentCard.swift */,
 				5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */,
@@ -2367,6 +2374,7 @@
 				DC3F720D512FB69043D8DDEA /* Sources */,
 				RESKWUXBAVXSCPHVQKACGCQR /* Resources */,
 				7E32FCAEE24573A438B1FB8D /* Frameworks */,
+				STR1PSECR3TSPLIST00001 /* Strip Secrets.plist (Release) */,
 			);
 			buildRules = (
 			);
@@ -2440,6 +2448,27 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		STR1PSECR3TSPLIST00001 /* Strip Secrets.plist (Release) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Secrets.plist (Release)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  rm -f \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Secrets.plist\"\n  echo \"Stripped Secrets.plist from release build\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXResourcesBuildPhase section */
 		AAB915C2D1EB1A272FF736D1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -2452,6 +2481,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BLDYPJZIDNTARJYVKNZHCDJT /* Secrets.plist in Resources */,
 				ASSETSCATALOGBUILD00000001 /* Resources/Assets.xcassets in Resources */,
 				C2C3EA3D9F185775264FEC14 /* PrivacyInfo.xcprivacy in Resources */,
 				SPLASHCHIME0BUILDFIL0001 /* splash_chime.mp3 in Resources */,
@@ -2497,7 +2527,9 @@
 				A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */,
 				08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */,
 				A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */,
+				QPSMETH0D0L0GY00000B1 /* QPSMethodologySheet.swift in Sources */,
 				A1B2C3D4E5F6QPS00004B4 /* QPSSignalChangesCard.swift in Sources */,
+				M0DELP0RTF0L10UPDT0B1 /* ModelPortfolioUpdateCard.swift in Sources */,
 				A1B2C3D4E5F6SCH00001B1 /* SignalChangeHistoryView.swift in Sources */,
 				A1B2C3D4E5F6QPS00003B3 /* QPSViewModel.swift in Sources */,
 				A1B2C3D4E5F6QPS00002B2 /* PositioningSignalService.swift in Sources */,

@@ -631,7 +631,8 @@ Deno.serve(async (req) => {
       ? `This is the FRIDAY EVENING briefing — the weekly wrap-up. Review how today AND the full week played out. Use the WEEKLY PERFORMANCE data to give a clear picture of how markets moved Monday through Friday. Highlight the week's biggest winners, losers, and key turning points. Summarize what changed in positioning, macro regime, or sentiment over the week. End with what to watch over the weekend and heading into next week.`
       : `This is the ${dayName.toUpperCase()} EVENING briefing. Focus specifically on how TODAY played out: what moved and why, how economic data releases landed (beats/misses), and what changed from this morning. Be specific to today's price action — don't recap yesterday or generalize. End with what to watch heading into tomorrow.`
 
-    const weekendInstructions = `This is the WEEKEND briefing. Traditional markets are closed — focus entirely on crypto. Cover weekend price action, funding rates, weekend momentum patterns, and any macro news that dropped. Keep it shorter and more casual than weekday briefings. If there are notable moves, highlight them. Frame the end with a brief look ahead to Monday's open.`
+    const weekendDayName = now.toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" })
+    const weekendInstructions = `This is the ${weekendDayName.toUpperCase()} briefing. Traditional markets are closed — focus entirely on crypto. Cover today's crypto price action, funding rates, momentum patterns, and any macro news that dropped. Keep it shorter and more casual than weekday briefings. If there are notable moves, highlight them. ${weekendDayName === "Saturday" ? "Frame the end with what to watch tomorrow and heading into Monday." : "Frame the end with a brief look ahead to Monday's open."} IMPORTANT: Say "today" when referring to the current day, not "over the weekend" — the weekend is still in progress.`
     const slotInstructions = slot === "weekend" ? weekendInstructions : slot === "morning" ? morningInstructions : eveningInstructions
 
     const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
@@ -655,7 +656,7 @@ Write a structured briefing using exactly these section headers on their own lin
 One sentence with the weekend crypto stance. If a "Macro Regime" or "Crypto Positioning" value is present, align with it.
 
 ## Weekend Pulse
-3-4 sentences on crypto weekend action. Cover BTC, ETH, SOL price movement and momentum. Note any notable weekend moves, funding rate shifts, or liquidation events. Mention Fear & Greed if available. Traditional markets are closed — don't discuss equities.
+3-4 sentences on today's crypto action. Cover BTC, ETH, SOL price movement and momentum. Note any notable moves, funding rate shifts, or liquidation events. Mention Fear & Greed if available. Traditional markets are closed — don't discuss equities. Say "today" not "over the weekend" — the weekend is still happening.
 
 ## Technical
 2-3 sentences on BTC's technical picture if BTC TECHNICAL ANALYSIS data is available. Focus on key levels, trend, and derivatives. If KEY LEVELS data is present, mention the nearest Fibonacci confluence support and resistance for BTC (and ETH/SOL if notable). NEVER include strength numbers, scores, or any numbers in parentheses like "(strength 20)" — just state the price levels naturally. Skip this section entirely if no TA data is present.
@@ -664,8 +665,9 @@ One sentence with the weekend crypto stance. If a "Macro Regime" or "Crypto Posi
 1-2 sentences previewing Monday. Mention any known economic events coming up, or note what levels to watch for the Monday open.
 
 Rules:
-- This is a weekend check-in, keep it casual and brief
+- This is a casual check-in, keep it brief
 - Focus on crypto — traditional markets are closed
+- Say "today" when referring to the current day — never "over the weekend" or "this weekend" since the weekend is still in progress
 - Never give investment advice or say "buy" / "sell"
 - Keep total length under 200 words
 - Never start any section with "Today" or "The market"

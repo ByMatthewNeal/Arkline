@@ -83,6 +83,15 @@ struct ModelPortfolioNav: Codable, Identifiable, Hashable {
 
 // MARK: - Trade Log
 
+struct MarketContext: Codable, Hashable {
+    let headlines: [String]?
+    let events: [String]?
+
+    var isEmpty: Bool {
+        (headlines ?? []).isEmpty && (events ?? []).isEmpty
+    }
+}
+
 struct ModelPortfolioTrade: Codable, Identifiable, Hashable {
     let id: UUID
     let portfolioId: UUID
@@ -90,6 +99,7 @@ struct ModelPortfolioTrade: Codable, Identifiable, Hashable {
     let trigger: String
     let fromAllocation: [String: Double]
     let toAllocation: [String: Double]
+    let marketContext: MarketContext?
     let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
@@ -98,6 +108,7 @@ struct ModelPortfolioTrade: Codable, Identifiable, Hashable {
         case tradeDate = "trade_date"
         case fromAllocation = "from_allocation"
         case toAllocation = "to_allocation"
+        case marketContext = "market_context"
         case createdAt = "created_at"
     }
 }

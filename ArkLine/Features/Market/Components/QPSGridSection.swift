@@ -6,6 +6,7 @@ struct QPSGridSection: View {
     let signals: [DailyPositioningSignal]
     let isPro: Bool
     @Environment(\.colorScheme) var colorScheme
+    @State private var showMethodology = false
 
     private var bullishCount: Int { signals.filter { $0.positioningSignal == .bullish }.count }
     private var neutralCount: Int { signals.filter { $0.positioningSignal == .neutral }.count }
@@ -32,8 +33,18 @@ struct QPSGridSection: View {
                 }
 
                 Spacer()
+
+                Button { showMethodology = true } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal)
+            .sheet(isPresented: $showMethodology) {
+                QPSMethodologySheet()
+            }
 
             if isPro {
                 NavigationLink {
