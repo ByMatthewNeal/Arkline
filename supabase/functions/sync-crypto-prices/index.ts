@@ -16,6 +16,22 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const COINGECKO_PRO_BASE = "https://pro-api.coingecko.com/api/v3"
 const COINGECKO_FREE_BASE = "https://api.coingecko.com/api/v3"
+const FMP_BASE = "https://financialmodelingprep.com/stable"
+
+// Map FMP symbols to CoinGecko-style IDs for the top coins
+const FMP_SYMBOL_TO_CG_ID: Record<string, string> = {
+  BTCUSD: "bitcoin", ETHUSD: "ethereum", BNBUSD: "binancecoin", SOLUSD: "solana",
+  XRPUSD: "ripple", ADAUSD: "cardano", DOGEUSD: "dogecoin", TRXUSD: "tron",
+  TONUSD: "the-open-network", LINKUSD: "chainlink", AVAXUSD: "avalanche-2",
+  XLMUSD: "stellar", SUIUSD: "sui", DOTUSD: "polkadot", BCHUSD: "bitcoin-cash",
+  HBARUSD: "hedera-hashgraph", LTCUSD: "litecoin", UNIUSD: "uniswap",
+  NEARUSD: "near", APTUSD: "aptos", AABORUSD: "arbitrum", RENDERUSD: "render-token",
+  PEPE1USD: "pepe", ATOMUSD: "cosmos", FILUSD: "filecoin", IMXUSD: "immutable-x",
+  INJUSD: "injective-protocol", ONDOUSD: "ondo-finance", TAOUSD: "bittensor",
+  MATICUSD: "matic-network", TIAUSD: "celestia", OPUSD: "optimism",
+  FTMUSD: "fantom", AAVEUSD: "aave", ENAUSD: "ethena", FETUSD: "fetch-ai",
+  ARBUSD: "arbitrum", MKRUSD: "maker", FLOWUSD: "flow", ALGOUSD: "algorand",
+}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
@@ -31,6 +47,7 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   const cgKey = Deno.env.get("COINGECKO_API_KEY") ?? ""
+  const fmpKey = Deno.env.get("FMP_API_KEY") ?? ""
 
   const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -46,7 +63,7 @@ Deno.serve(async (req) => {
     headers["x-cg-pro-api-key"] = cgKey
   }
 
-  const stats = { markets: false, global: false, trending: false, errors: [] as string[] }
+  const stats = { markets: false, global: false, trending: false, fmpFallback: false, errors: [] as string[] }
 
   // 1. Fetch top 100 coins with sparkline
   try {
@@ -66,6 +83,23 @@ Deno.serve(async (req) => {
     const msg = `markets: ${err}`
     console.error(msg)
     stats.errors.push(msg)
+
+    // FMP fallback for top coins
+    if (fmpKey) {
+      try {
+        console.log("CoinGecko failed, trying FMP fallback for crypto quotes...")
+        const fmpData = await fetchFMPCryptoFallback(fmpKey)
+        if (fmpData.length > 0) {
+          await writeCache(supabase, "crypto_assets_1_100", fmpData, 300)
+          stats.fmpFallback = true
+          console.log(`FMP fallback: cached ${fmpData.length} coins`)
+        }
+      } catch (fmpErr) {
+        const fmpMsg = `fmp fallback: ${fmpErr}`
+        console.error(fmpMsg)
+        stats.errors.push(fmpMsg)
+      }
+    }
   }
 
   // Small delay to avoid rate limiting
@@ -130,6 +164,79 @@ Deno.serve(async (req) => {
   console.log(`Crypto price sync: ${JSON.stringify(stats)}`)
   return json(stats)
 })
+
+// ─── FMP Fallback ─────────────────────────────────────────────────────────────
+
+interface FMPCryptoQuote {
+  symbol: string
+  name: string
+  price: number
+  changePercentage: number
+  change: number
+  volume: number
+  dayLow: number
+  dayHigh: number
+  yearHigh: number
+  yearLow: number
+  marketCap: number | null
+  exchange: string
+  timestamp: number
+}
+
+/**
+ * Fetch crypto quotes from FMP and transform to CoinGecko-compatible format.
+ * FMP returns all crypto quotes from /cryptocurrency-quotes, which we filter
+ * and sort by market cap to match the CoinGecko top-100 shape.
+ */
+async function fetchFMPCryptoFallback(apiKey: string): Promise<unknown[]> {
+  const url = `${FMP_BASE}/cryptocurrency-quotes?apikey=${apiKey}`
+  const resp = await fetch(url)
+  if (!resp.ok) {
+    throw new Error(`FMP ${resp.status}: ${await resp.text()}`)
+  }
+
+  const quotes: FMPCryptoQuote[] = await resp.json()
+  if (!Array.isArray(quotes)) throw new Error("FMP returned non-array")
+
+  // Filter to USD pairs, sort by market cap, take top 100
+  const usdQuotes = quotes
+    .filter((q) => q.symbol.endsWith("USD") && q.exchange === "CRYPTO" && q.price > 0)
+    .sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
+    .slice(0, 100)
+
+  // Transform to CoinGecko coins/markets shape so iOS CryptoAsset model can decode it
+  return usdQuotes.map((q, i) => {
+    const ticker = q.symbol.replace(/USD$/, "").toLowerCase()
+    const cgId = FMP_SYMBOL_TO_CG_ID[q.symbol] ?? ticker
+
+    return {
+      id: cgId,
+      symbol: ticker,
+      name: q.name.replace(/ USD$/, ""),
+      current_price: q.price,
+      price_change_24h: q.change,
+      price_change_percentage_24h: q.changePercentage,
+      image: `https://assets.coingecko.com/coins/images/1/large/${ticker}.png`, // may 404 for some
+      market_cap: q.marketCap ?? 0,
+      market_cap_rank: i + 1,
+      fully_diluted_valuation: null,
+      total_volume: q.volume,
+      high_24h: q.dayHigh,
+      low_24h: q.dayLow,
+      circulating_supply: null,
+      total_supply: null,
+      max_supply: null,
+      ath: q.yearHigh,
+      ath_change_percentage: q.yearHigh > 0 ? ((q.price - q.yearHigh) / q.yearHigh) * 100 : null,
+      ath_date: null,
+      atl: q.yearLow,
+      atl_change_percentage: q.yearLow > 0 ? ((q.price - q.yearLow) / q.yearLow) * 100 : null,
+      atl_date: null,
+      sparkline_in_7d: null, // FMP doesn't provide sparkline
+      last_updated: new Date(q.timestamp * 1000).toISOString(),
+    }
+  })
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
