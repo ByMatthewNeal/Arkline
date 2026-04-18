@@ -143,6 +143,11 @@ Deno.serve(async (req) => {
   // Build market data context
   const sections: string[] = []
 
+  // Guard: if no BTC price, tell Claude explicitly so it doesn't hallucinate prices
+  if (!payload.btcPrice) {
+    sections.push("⚠️ WARNING: Live BTC price data is unavailable. Do NOT fabricate or guess prices. Use only the positioning signal data below and clearly state that live prices were unavailable.")
+  }
+
   // --- Markets ---
   const marketLines: string[] = []
   if (payload.sp500Price) {
@@ -796,7 +801,7 @@ async function enrichPayloadFromServer(
     // 1. Crypto prices from server cache (synced every 5 min)
     supabase
       .from("market_data_cache")
-      .select("data")
+      .select("data, updated_at")
       .eq("key", "crypto_assets_1_100")
       .maybeSingle(),
 
@@ -823,28 +828,38 @@ async function enrichPayloadFromServer(
   ])
 
   // --- Parse crypto prices ---
+  let cryptoParsed = false
   if (cryptoData.status === "fulfilled" && cryptoData.value.data?.data) {
     try {
+      // Check staleness — warn if cache is older than 30 minutes
+      const updatedAt = cryptoData.value.data.updated_at
+      if (updatedAt) {
+        const ageMinutes = (Date.now() - new Date(updatedAt).getTime()) / 60000
+        if (ageMinutes > 30) {
+          console.warn(`⚠️ Crypto cache is ${Math.round(ageMinutes)} minutes old — data may be stale`)
+        }
+      }
+
       const assets = JSON.parse(cryptoData.value.data.data)
       if (Array.isArray(assets)) {
         const btc = assets.find((a: any) => a.id === "bitcoin" || a.symbol === "btc")
         const eth = assets.find((a: any) => a.id === "ethereum" || a.symbol === "eth")
         const sol = assets.find((a: any) => a.id === "solana" || a.symbol === "sol")
 
-        if (btc) {
+        if (btc?.current_price) {
           payload.btcPrice = btc.current_price
           payload.btcChange24h = btc.price_change_percentage_24h
+          cryptoParsed = true
         }
-        if (eth) {
+        if (eth?.current_price) {
           payload.ethPrice = eth.current_price
           payload.ethChange24h = eth.price_change_percentage_24h
         }
-        if (sol) {
+        if (sol?.current_price) {
           payload.solPrice = sol.current_price
           payload.solChange24h = sol.price_change_percentage_24h
         }
 
-        // BTC dominance from global market data
         const topGainer = assets
           .filter((a: any) => a.price_change_percentage_24h > 0)
           .sort((a: any, b: any) => b.price_change_percentage_24h - a.price_change_percentage_24h)[0]
@@ -855,6 +870,42 @@ async function enrichPayloadFromServer(
     } catch (e) {
       console.error("Failed to parse crypto cache:", e)
     }
+  }
+
+  // FMP fallback for crypto prices if cache missed or had no BTC price
+  if (!cryptoParsed && fmpKey) {
+    console.warn("⚠️ No BTC price from cache — falling back to FMP crypto quotes")
+    try {
+      const fmpCryptoResp = await fetch(
+        `https://financialmodelingprep.com/stable/quote?symbol=BTCUSD,ETHUSD,SOLUSD&apikey=${fmpKey}`
+      )
+      if (fmpCryptoResp.ok) {
+        const fmpCrypto = await fmpCryptoResp.json()
+        if (Array.isArray(fmpCrypto)) {
+          for (const q of fmpCrypto) {
+            if (q.symbol === "BTCUSD" && q.price) {
+              payload.btcPrice = q.price
+              payload.btcChange24h = q.changePercentage
+              cryptoParsed = true
+            } else if (q.symbol === "ETHUSD" && q.price) {
+              payload.ethPrice = q.price
+              payload.ethChange24h = q.changePercentage
+            } else if (q.symbol === "SOLUSD" && q.price) {
+              payload.solPrice = q.price
+              payload.solChange24h = q.changePercentage
+            }
+          }
+          if (cryptoParsed) console.log("✅ FMP crypto fallback succeeded")
+        }
+      }
+    } catch (e) {
+      console.error("FMP crypto fallback failed:", e)
+    }
+  }
+
+  // Abort gate — refuse to generate if we still have no BTC price
+  if (!cryptoParsed) {
+    console.error("🚨 CRITICAL: No BTC price from any source — briefing will be inaccurate")
   }
 
   // --- Parse FMP quotes ---
