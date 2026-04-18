@@ -797,7 +797,7 @@ async function enrichPayloadFromServer(
     supabase
       .from("market_data_cache")
       .select("data")
-      .eq("cache_key", "crypto_assets_1_100")
+      .eq("key", "crypto_assets_1_100")
       .maybeSingle(),
 
     // 2. Stock indices + VIX + DXY + Gold + Futures from FMP
