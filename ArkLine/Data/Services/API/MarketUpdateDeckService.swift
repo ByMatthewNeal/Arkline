@@ -24,15 +24,17 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
     }
 
     func regenerateNarrative(deckId: UUID, insights: String) async throws -> MarketUpdateDeck {
-        try await invokeEdgeFunction(params: [
-            "manual": "true",
-            "regenerate_narrative": "true",
-            "deck_id": deckId.uuidString,
-            "admin_insights": insights
-        ])
+        try await invokeEdgeFunction(
+            params: [
+                "manual": "true",
+                "regenerate_narrative": "true",
+                "deck_id": deckId.uuidString,
+            ],
+            body: ["admin_insights": insights]
+        )
     }
 
-    private func invokeEdgeFunction(params: [String: String]) async throws -> MarketUpdateDeck {
+    private func invokeEdgeFunction(params: [String: String], body: [String: String]? = nil) async throws -> MarketUpdateDeck {
         guard supabase.isConfigured else {
             throw AppError.supabaseNotConfigured
         }
@@ -54,7 +56,11 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
         let token = try? await supabase.auth.session.accessToken
         request.setValue("Bearer \(token ?? Constants.API.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        if let body {
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        }
+
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let body = String(data: data, encoding: .utf8) ?? "Unknown error"

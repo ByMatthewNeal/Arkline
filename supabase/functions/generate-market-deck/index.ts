@@ -587,7 +587,16 @@ Deno.serve(async (req) => {
   const isManual = url.searchParams.get("manual") === "true"
   const isRegenerateNarrative = url.searchParams.get("regenerate_narrative") === "true"
   const deckId = url.searchParams.get("deck_id") ?? ""
-  const adminInsights = url.searchParams.get("admin_insights") ?? ""
+  // Read admin insights from POST body (supports long transcripts) or query param (backward compat)
+  let adminInsights = url.searchParams.get("admin_insights") ?? ""
+  if (!adminInsights) {
+    try {
+      const body = await req.clone().json()
+      if (body?.admin_insights) {
+        adminInsights = String(body.admin_insights).substring(0, 40000) // Cap at 40K chars
+      }
+    } catch { /* no body or not JSON */ }
+  }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!

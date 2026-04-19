@@ -403,6 +403,7 @@ final class PortfolioViewModel {
                     self.portfolioId = first.id
                 }
             }
+            NotificationCenter.default.post(name: Constants.Notifications.portfolioUpdated, object: nil)
         }
 
         // Reload data for newly selected portfolio

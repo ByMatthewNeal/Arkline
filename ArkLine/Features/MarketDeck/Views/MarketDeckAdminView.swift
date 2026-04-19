@@ -185,11 +185,11 @@ struct MarketDeckAdminView: View {
                     .foregroundColor(AppColors.textPrimary(colorScheme))
             }
 
-            Text("Add external context, data, or observations here. This will be woven into the narrative when you regenerate.")
+            Text("Paste transcripts, external context, data, or observations. This will be woven into the narrative when you regenerate.")
                 .font(AppFonts.footnote10)
                 .foregroundColor(AppColors.textSecondary)
 
-            TextField("Share additional market context, external data, screenshots insights...",
+            TextField("Paste transcript or share market context...",
                       text: Binding(
                         get: { viewModel.adminInsights },
                         set: { viewModel.updateInsights($0) }
@@ -197,12 +197,27 @@ struct MarketDeckAdminView: View {
                       axis: .vertical)
                 .font(AppFonts.body14)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
-                .lineLimit(4...12)
+                .lineLimit(4...50)
                 .padding(ArkSpacing.sm)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(AppColors.textPrimary(colorScheme).opacity(0.05))
                 )
+
+            // Character count + limit warning
+            HStack {
+                let charCount = viewModel.adminInsights.count
+                let limit = 40000
+                Text("\(charCount.formatted()) characters")
+                    .font(.system(size: 10))
+                    .foregroundColor(charCount > limit ? AppColors.error : AppColors.textSecondary)
+                if charCount > limit {
+                    Text("— will be truncated to \(limit.formatted())")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.warning)
+                }
+                Spacer()
+            }
 
             // Attachments
             attachmentsBar
