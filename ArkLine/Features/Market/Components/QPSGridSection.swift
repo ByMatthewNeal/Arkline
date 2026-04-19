@@ -13,6 +13,50 @@ struct QPSGridSection: View {
     private var bearishCount: Int { signals.filter { $0.positioningSignal == .bearish }.count }
     private var changedCount: Int { signals.filter { $0.hasChanged }.count }
 
+    private var total: Int { max(signals.count, 1) }
+    private var bullishPct: Double { Double(bullishCount) / Double(total) * 100 }
+    private var neutralPct: Double { Double(neutralCount) / Double(total) * 100 }
+    private var bearishPct: Double { Double(bearishCount) / Double(total) * 100 }
+
+    /// Risk Appetite: 0-100, weighted by signal distribution + category importance
+    private var riskAppetite: Double {
+        guard !signals.isEmpty else { return 50 }
+        // Weight crypto signals more heavily (core focus of the app)
+        var weightedBullish = 0.0
+        var weightedTotal = 0.0
+        for signal in signals {
+            let weight: Double = switch signal.assetCategory {
+            case .crypto, .altBtc: 1.5
+            case .index: 1.2
+            case .stock: 1.0
+            case .commodity, .macro: 0.8
+            }
+            if signal.positioningSignal == .bullish {
+                weightedBullish += weight
+            } else if signal.positioningSignal == .neutral {
+                weightedBullish += weight * 0.4  // Neutral contributes partially
+            }
+            weightedTotal += weight
+        }
+        return weightedTotal > 0 ? (weightedBullish / weightedTotal) * 100 : 50
+    }
+
+    private var riskLabel: String {
+        if riskAppetite >= 70 { return "Risk-On" }
+        if riskAppetite >= 55 { return "Leaning Risk-On" }
+        if riskAppetite >= 45 { return "Mixed" }
+        if riskAppetite >= 30 { return "Leaning Risk-Off" }
+        return "Risk-Off"
+    }
+
+    private var riskColor: Color {
+        if riskAppetite >= 70 { return AppColors.success }
+        if riskAppetite >= 55 { return AppColors.success.opacity(0.7) }
+        if riskAppetite >= 45 { return AppColors.warning }
+        if riskAppetite >= 30 { return AppColors.error.opacity(0.7) }
+        return AppColors.error
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
@@ -66,13 +110,46 @@ struct QPSGridSection: View {
             if signals.isEmpty {
                 emptyState
             } else {
-                // Signal counts
+                // Risk Appetite bar
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Risk Appetite")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        Text(riskLabel)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(riskColor)
+                        Text(String(format: "%.0f%%", riskAppetite))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(riskColor)
+                    }
+
+                    // Distribution bar
+                    GeometryReader { geo in
+                        HStack(spacing: 1) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(AppColors.success)
+                                .frame(width: max(geo.size.width * bullishPct / 100, 2))
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(AppColors.warning)
+                                .frame(width: max(geo.size.width * neutralPct / 100, 2))
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(AppColors.error)
+                                .frame(width: max(geo.size.width * bearishPct / 100, 2))
+                        }
+                    }
+                    .frame(height: 6)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+
+                // Signal counts with percentages
                 HStack(spacing: 0) {
-                    signalCount(count: bullishCount, signal: .bullish)
+                    signalCountWithPct(count: bullishCount, pct: bullishPct, signal: .bullish)
                     Divider().frame(height: 32).opacity(0.15)
-                    signalCount(count: neutralCount, signal: .neutral)
+                    signalCountWithPct(count: neutralCount, pct: neutralPct, signal: .neutral)
                     Divider().frame(height: 32).opacity(0.15)
-                    signalCount(count: bearishCount, signal: .bearish)
+                    signalCountWithPct(count: bearishCount, pct: bearishPct, signal: .bearish)
                 }
 
                 // Changes today
@@ -110,6 +187,23 @@ struct QPSGridSection: View {
     }
 
     // MARK: - Signal Count
+
+    private func signalCountWithPct(count: Int, pct: Double, signal: PositioningSignal) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Text("\(count)")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .foregroundColor(signal.color)
+                Text(String(format: "%.0f%%", pct))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(signal.color.opacity(0.7))
+            }
+            Text(signal.label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
 
     private func signalCount(count: Int, signal: PositioningSignal) -> some View {
         VStack(spacing: 4) {

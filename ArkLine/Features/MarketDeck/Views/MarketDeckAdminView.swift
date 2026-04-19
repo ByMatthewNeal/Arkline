@@ -506,6 +506,21 @@ struct MarketDeckAdminView: View {
 
     // MARK: - Custom Week Helpers
 
+    /// Snaps a weekend date to the nearest weekday.
+    /// Start dates snap to Monday (next weekday), End dates snap to Friday (previous weekday).
+    private func snapToWeekday(_ date: Date, preferEarlier: Bool) -> Date {
+        let cal = Calendar.current
+        let weekday = cal.component(.weekday, from: date)  // 1=Sun, 7=Sat
+        if weekday == 1 {
+            // Sunday → Friday (back 2) or Monday (forward 1)
+            return cal.date(byAdding: .day, value: preferEarlier ? -2 : 1, to: date) ?? date
+        } else if weekday == 7 {
+            // Saturday → Friday (back 1) or Monday (forward 2)
+            return cal.date(byAdding: .day, value: preferEarlier ? -1 : 2, to: date) ?? date
+        }
+        return date
+    }
+
     private var customWeekRange: (start: String, end: String) {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
@@ -602,6 +617,9 @@ struct MarketDeckAdminView: View {
                 .datePickerStyle(.compact)
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
+                .onChange(of: customStart) { _, newValue in
+                    customStart = snapToWeekday(newValue, preferEarlier: true)
+                }
 
                 DatePicker(
                     "End",
@@ -612,6 +630,9 @@ struct MarketDeckAdminView: View {
                 .datePickerStyle(.compact)
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
+                .onChange(of: customEnd) { _, newValue in
+                    customEnd = snapToWeekday(newValue, preferEarlier: false)
+                }
 
                 let displayFmt: DateFormatter = {
                     let f = DateFormatter()
