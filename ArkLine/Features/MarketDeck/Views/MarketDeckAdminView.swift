@@ -9,7 +9,7 @@ struct MarketDeckAdminView: View {
     @State private var showPDFImporter = false
     @State private var urlInput = ""
     @State private var showURLInput = false
-    @State private var customWeekStart: Date = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date())!
+    @State private var customWeekStart: Date = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date()
     @State private var useCustomWeek = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) private var dismiss

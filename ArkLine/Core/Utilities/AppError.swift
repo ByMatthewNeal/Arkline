@@ -251,7 +251,9 @@ func withTimeout<T: Sendable>(seconds: Double, operation: @escaping @Sendable ()
             throw AppError.timeout
         }
         // Return whichever finishes first
-        let result = try await group.next()!
+        guard let result = try await group.next() else {
+            throw AppError.timeout
+        }
         group.cancelAll()
         return result
     }

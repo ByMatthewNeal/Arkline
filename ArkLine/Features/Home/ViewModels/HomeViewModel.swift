@@ -1326,7 +1326,8 @@ class HomeViewModel {
     private func fetchAllRiskLevels(coins: [String]) async -> [(String, ITCRiskLevel?, [ITCRiskLevel])] {
         await withTaskGroup(of: (String, ITCRiskLevel?, [ITCRiskLevel]).self) { group in
             for coin in coins {
-                group.addTask { [self] in
+                group.addTask { [weak self] in
+                    guard let self else { return (coin, nil, []) }
                     let level = await self.fetchITCRiskLevelSafe(coin: coin)
                     let history = await self.fetchITCRiskHistorySafe(coin: coin)
                     return (coin, level, history)
