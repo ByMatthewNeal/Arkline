@@ -1309,7 +1309,7 @@ class HomeViewModel {
         do {
             return try await itcRiskService.fetchLatestRiskLevel(coin: coin)
         } catch {
-            logError("Risk level fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+            logDebug("Risk level fetch failed for \(coin): \(error.localizedDescription)", category: .network)
             return nil
         }
     }

@@ -26,29 +26,30 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
-  // Top 20 — selected by 365-day backtest profit factor (2026-04-10)
-  // Original 10
-  { cbPair: "BTC-USD",    ticker: "BTC" },    // 4.35 PF, 79.5% WR
-  { cbPair: "ETH-USD",    ticker: "ETH" },    // 4.87 PF, 81.0% WR
-  { cbPair: "SOL-USD",    ticker: "SOL" },    // 3.53 PF, 76.0% WR
-  { cbPair: "SUI-USD",    ticker: "SUI" },    // 4.95 PF, 80.6% WR
-  { cbPair: "LINK-USD",   ticker: "LINK" },   // 4.19 PF, 78.5% WR
-  { cbPair: "ADA-USD",    ticker: "ADA" },    // 4.96 PF, 80.7% WR
-  { cbPair: "AVAX-USD",   ticker: "AVAX" },   // 3.46 PF, 73.9% WR
-  { cbPair: "APT-USD",    ticker: "APT" },    // 3.24 PF, 72.5% WR
-  { cbPair: "XRP-USD",    ticker: "XRP" },    // 4.47 PF, 77.7% WR
-  { cbPair: "ATOM-USD",   ticker: "ATOM" },   // 5.15 PF, 80.6% WR
-  // Expansion — top 10 new by PF from 365d backtest
-  { cbPair: "ONDO-USD",   ticker: "ONDO" },   // 5.62 PF, 82.7% WR
-  { cbPair: "BNB-USD",    ticker: "BNB" },    // 5.13 PF, 78.0% WR
-  { cbPair: "ALGO-USD",   ticker: "ALGO" },   // 4.91 PF, 81.0% WR
-  { cbPair: "TIA-USD",    ticker: "TIA" },    // 4.66 PF, 79.7% WR
-  { cbPair: "FIL-USD",    ticker: "FIL" },    // 4.53 PF, 77.9% WR
-  { cbPair: "AAVE-USD",   ticker: "AAVE" },   // 4.45 PF, 79.6% WR
-  { cbPair: "INJ-USD",    ticker: "INJ" },    // 4.39 PF, 77.6% WR
-  { cbPair: "POL-USD",    ticker: "POL" },    // 4.20 PF, 75.5% WR
-  { cbPair: "ZEC-USD",    ticker: "ZEC" },    // 4.12 PF, 77.7% WR
-  { cbPair: "VET-USD",    ticker: "VET" },    // 4.05 PF, 78.2% WR
+  // Focus 5 — only assets with positive live PnL over 30 days (2026-04-18)
+  // Combined: 85.7% WR, +12.70% cumulative, all profitable
+  { cbPair: "BTC-USD",    ticker: "BTC" },    // 3/3 (100%), +1.53% avg
+  { cbPair: "ETH-USD",    ticker: "ETH" },    // 4/4 (100%), +0.65% avg
+  { cbPair: "SOL-USD",    ticker: "SOL" },    // 4/5 (80%), -0.41% avg (tight stops)
+  { cbPair: "SUI-USD",    ticker: "SUI" },    // 3/4 (75%), +1.24% avg, PF 3.23
+  { cbPair: "ADA-USD",    ticker: "ADA" },    // 4/5 (80%), +0.52% avg, PF 1.97
+
+  // Bench — paused until live PF > 1.0 over 30 signals
+  // { cbPair: "LINK-USD",   ticker: "LINK" },   // 1/3 (33%), PF 0.30
+  // { cbPair: "AVAX-USD",   ticker: "AVAX" },   // 1/5 (20%), PF 0.25 — paused by adaptive
+  // { cbPair: "APT-USD",    ticker: "APT" },    // 5/6 (83%), PF 0.84 — paused by adaptive
+  // { cbPair: "XRP-USD",    ticker: "XRP" },    // 2/5 (40%), PF -0.08 — paused by adaptive
+  // { cbPair: "ATOM-USD",   ticker: "ATOM" },   // 1/2 (50%), PF 0.77
+  // { cbPair: "ONDO-USD",   ticker: "ONDO" },   // 1/1 (100%), PF 0.00
+  // { cbPair: "BNB-USD",    ticker: "BNB" },
+  // { cbPair: "ALGO-USD",   ticker: "ALGO" },   // 2/2 (100%), PF 0.00
+  // { cbPair: "TIA-USD",    ticker: "TIA" },
+  // { cbPair: "FIL-USD",    ticker: "FIL" },    // 1/1 (100%), PF 99.0
+  // { cbPair: "AAVE-USD",   ticker: "AAVE" },   // 0/2 (0%), PF 0.00
+  // { cbPair: "INJ-USD",    ticker: "INJ" },    // 1/1 (100%), PF 0.00
+  // { cbPair: "POL-USD",    ticker: "POL" },    // 0/1 (0%), PF 0.00
+  // { cbPair: "ZEC-USD",    ticker: "ZEC" },    // 0/1 (0%), PF 0.00
+  // { cbPair: "VET-USD",    ticker: "VET" },
 ]
 
 // Binance symbol mapping for dual-source verification during signal resolution
@@ -81,7 +82,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.0
+const MIN_RR_RATIO = 1.5
 const STRONG_MIN_RR_RATIO = 2.0
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
@@ -1433,7 +1434,7 @@ function computeTargetsAndStop(
   if (isBuy) {
     const levelsBelow = sorted.filter((p) => p < zone.low)
     const nextDown = levelsBelow.length > 0 ? levelsBelow[levelsBelow.length - 1] : null
-    const stopLoss = nextDown ? nextDown * 0.997 : zoneMid * 0.985
+    const stopLoss = nextDown ? nextDown * 0.995 : zoneMid * 0.985
 
     const levelsAbove = sorted.filter((p) => p > zone.high)
     const target1 = levelsAbove.length > 0 ? levelsAbove[0] : zoneMid * 1.03
@@ -1445,7 +1446,7 @@ function computeTargetsAndStop(
   } else {
     const levelsAbove = sorted.filter((p) => p > zone.high)
     const nextUp = levelsAbove.length > 0 ? levelsAbove[0] : null
-    const stopLoss = nextUp ? nextUp * 1.003 : zoneMid * 1.015
+    const stopLoss = nextUp ? nextUp * 1.005 : zoneMid * 1.015
 
     const levelsBelow = sorted.filter((p) => p < zone.low).reverse()
     const target1 = levelsBelow.length > 0 ? levelsBelow[0] : zoneMid * 0.97

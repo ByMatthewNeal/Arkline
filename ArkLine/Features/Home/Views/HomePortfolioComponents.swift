@@ -1,6 +1,22 @@
 import SwiftUI
 import Kingfisher
 
+// MARK: - Stock Risk Factors
+
+struct StockRiskFactors {
+    let sma200Deviation: Double?    // % deviation from 200 SMA
+    let sma200Risk: Double?         // 0-1 normalized
+    let sma200Value: Double?        // 200 SMA price
+    let rsi: Double?                // RSI(14) raw value
+    let rsiRisk: Double?            // 0-1 normalized
+    let yearHigh: Double            // 52-week high
+    let yearLow: Double             // 52-week low
+    let yearRangePosition: Double   // 0-1 where price sits in range
+    let sma50Slope: Double          // % slope of 50 SMA
+    let trendRisk: Double           // 0-1 normalized
+    let compositeRisk: Double       // weighted composite
+}
+
 // MARK: - Portfolio Hero Card
 struct PortfolioHeroCard: View {
     let totalValue: Double
@@ -702,7 +718,7 @@ struct StockRiskLevelSection: View {
                         .font(size == .compact ? .subheadline : .title3)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text("Regression from IPO")
+                    Text("Trend & Momentum Risk")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textSecondary.opacity(0.7))
                 }
@@ -893,10 +909,8 @@ private struct StockRiskDetailSheet: View {
     @State private var selectedTimeRange: RiskTimeRange = .oneYear
     @State private var showChart = true
     @State private var selectedDate: Date?
-    @State private var multiFactorRisk: MultiFactorRiskPoint?
-    @State private var isLoadingMultiFactor = false
     @State private var showFactorBreakdown = true
-    @State private var multiFactorElapsed = 0
+    @State private var stockFactors: StockRiskFactors?
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var config: AssetRiskConfig? { AssetRiskConfig.forStock(symbol) }
@@ -947,10 +961,7 @@ private struct StockRiskDetailSheet: View {
                         // Chart
                         chartSection
 
-                        // Multi-factor risk value (matches crypto latestValueSection)
-                        multiFactorSection
-
-                        // Factor breakdown (matches crypto factorBreakdownSection)
+                        // Factor breakdown
                         factorBreakdownSection
 
                         // Risk legend
@@ -971,10 +982,8 @@ private struct StockRiskDetailSheet: View {
             }
         }
         .task {
-            // Run chart/risk data and multi-factor in parallel
-            async let dataTask: () = loadData()
-            async let mfTask: () = loadMultiFactor()
-            _ = await (dataTask, mfTask)
+            await loadData()
+            loadStockFactors()
         }
         .onChange(of: selectedTimeRange) { _, newRange in
             Task { await loadData(days: daysForFetch(newRange)) }
@@ -1003,167 +1012,69 @@ private struct StockRiskDetailSheet: View {
         isLoading = false
     }
 
-    private func loadMultiFactor() async {
-        guard let service = ServiceContainer.shared.itcRiskService as? APIITCRiskService else { return }
-        isLoadingMultiFactor = true
-        multiFactorElapsed = 0
+    private func loadStockFactors() {
+        guard let risk = riskLevel else { return }
+        let priceHistory = riskHistory.map(\.price)
+        guard priceHistory.count >= 50 else { return }
 
-        // Timer for elapsed display
-        let timerTask = Task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-                await MainActor.run { multiFactorElapsed += 1 }
+        let closes = priceHistory
+        let currentPrice = risk.price
+
+        // 200-SMA deviation
+        let sma200: Double? = closes.count >= 200 ? closes.suffix(200).reduce(0, +) / 200.0 : nil
+        let smaDevPct = sma200.map { (currentPrice - $0) / $0 * 100 }
+        let smaRisk = sma200.map { dev -> Double in
+            let d = (currentPrice - dev) / dev
+            return min(1.0, max(0.0, (d + 0.20) / 0.40))
+        }
+
+        // RSI(14)
+        var rsiValue: Double? = nil
+        if closes.count >= 15 {
+            var avgGain = 0.0, avgLoss = 0.0
+            let start = closes.count - 15
+            for i in start..<(closes.count - 1) {
+                let change = closes[i + 1] - closes[i]
+                avgGain += max(0, change)
+                avgLoss += max(0, -change)
             }
+            avgGain /= 14; avgLoss /= 14
+            rsiValue = avgLoss > 0 ? 100 - (100 / (1 + avgGain / avgLoss)) : 100
         }
 
-        do {
-            let risk = try await service.calculateStockMultiFactorRisk(symbol: symbol)
-            multiFactorRisk = risk
-        } catch {
-            logWarning("Stock multi-factor failed for \(symbol): \(error.localizedDescription)", category: .network)
-        }
+        // 52-week range
+        let yearSlice = Array(closes.suffix(252))
+        let yearHigh = yearSlice.max() ?? currentPrice
+        let yearLow = yearSlice.min() ?? currentPrice
+        let yearRange = yearHigh - yearLow
+        let yearPos = yearRange > 0 ? (currentPrice - yearLow) / yearRange : 0.5
 
-        timerTask.cancel()
-        isLoadingMultiFactor = false
+        // 50-SMA trend
+        let sma50 = closes.suffix(50).reduce(0, +) / Double(min(closes.count, 50))
+        let sma50Prev: Double = {
+            let offset = min(closes.count, 60)
+            let slice = Array(closes.suffix(offset).prefix(50))
+            return slice.isEmpty ? sma50 : slice.reduce(0, +) / Double(slice.count)
+        }()
+        let smaSlope = sma50 > 0 ? (sma50 - sma50Prev) / sma50 * 100 : 0
+
+        stockFactors = StockRiskFactors(
+            sma200Deviation: smaDevPct,
+            sma200Risk: smaRisk,
+            sma200Value: sma200,
+            rsi: rsiValue,
+            rsiRisk: rsiValue.map { min(1.0, max(0.0, $0 / 100.0)) },
+            yearHigh: yearHigh,
+            yearLow: yearLow,
+            yearRangePosition: yearPos,
+            sma50Slope: smaSlope,
+            trendRisk: min(1.0, max(0.0, (smaSlope / 100 + 0.02) / 0.04)),
+            compositeRisk: risk.riskLevel
+        )
     }
 
-    // MARK: - Multi-Factor Section
 
-    // MARK: - Multi-Factor Section (matches crypto latestValueSection)
-
-    private var multiFactorSection: some View {
-        VStack(spacing: ArkSpacing.md) {
-            HStack(spacing: 6) {
-                Text(multiFactorRisk != nil
-                     ? "Multi-Factor \(symbol) Risk"
-                     : "Regression \(symbol) Risk")
-                    .font(.callout)
-                    .foregroundColor(AppColors.textSecondary.opacity(0.85))
-
-                if isLoadingMultiFactor {
-                    ProgressView()
-                        .scaleEffect(0.5)
-                        .frame(width: 14, height: 14)
-                }
-            }
-
-            if let mfRisk = multiFactorRisk {
-                VStack(spacing: ArkSpacing.xs) {
-                    // Large colored value
-                    Text(String(format: "%.3f", mfRisk.riskLevel))
-                        .font(.system(size: 56, weight: .bold))
-                        .foregroundColor(RiskColors.color(for: mfRisk.riskLevel))
-
-                    // Category with dot
-                    HStack(spacing: ArkSpacing.xs) {
-                        Circle()
-                            .fill(RiskColors.color(for: mfRisk.riskLevel))
-                            .frame(width: 12, height: 12)
-                        Text(RiskColors.category(for: mfRisk.riskLevel))
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(RiskColors.color(for: mfRisk.riskLevel))
-                    }
-
-                    // Date
-                    let dateFmt = DateFormatter()
-                    let _ = dateFmt.dateFormat = "MMMM d, yyyy"
-                    Text("As of \(dateFmt.string(from: Date()))")
-                        .font(.footnote)
-                        .foregroundColor(AppColors.textSecondary.opacity(0.85))
-
-                    // Regression vs composite comparison
-                    if let regRisk = riskLevel {
-                        stockRegressionComparison(
-                            regressionValue: regRisk.riskLevel,
-                            compositeValue: mfRisk.riskLevel,
-                            factorCount: mfRisk.availableFactorCount
-                        )
-                    }
-                }
-            } else if let risk = riskLevel {
-                // Fallback: show regression-only risk if multi-factor not loaded yet
-                VStack(spacing: ArkSpacing.xs) {
-                    Text(String(format: "%.3f", risk.riskLevel))
-                        .font(.system(size: 56, weight: .bold))
-                        .foregroundColor(RiskColors.color(for: risk.riskLevel))
-
-                    HStack(spacing: ArkSpacing.xs) {
-                        Circle()
-                            .fill(RiskColors.color(for: risk.riskLevel))
-                            .frame(width: 12, height: 12)
-                        Text(RiskColors.category(for: risk.riskLevel))
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundColor(RiskColors.color(for: risk.riskLevel))
-                    }
-
-                    let dateFmt = DateFormatter()
-                    let _ = dateFmt.dateFormat = "MMMM d, yyyy"
-                    Text("As of \(dateFmt.string(from: Date()))")
-                        .font(.footnote)
-                        .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                }
-            } else {
-                Text("--")
-                    .font(.system(size: 56, weight: .bold))
-                    .foregroundColor(textPrimary.opacity(0.3))
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(ArkSpacing.xl)
-        .glassCard(cornerRadius: ArkSpacing.Radius.lg)
-    }
-
-    private func stockRegressionComparison(regressionValue: Double, compositeValue: Double, factorCount: Int) -> some View {
-        VStack(spacing: ArkSpacing.sm) {
-            Rectangle()
-                .fill(AppColors.textSecondary.opacity(0.15))
-                .frame(height: 1)
-                .padding(.horizontal, ArkSpacing.lg)
-                .padding(.top, ArkSpacing.sm)
-
-            HStack(spacing: ArkSpacing.md) {
-                VStack(spacing: 4) {
-                    Text("Regression Only")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                    Text(String(format: "%.3f", regressionValue))
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(RiskColors.color(for: regressionValue))
-                    Text(RiskColors.category(for: regressionValue))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(RiskColors.color(for: regressionValue))
-                }
-                .frame(maxWidth: .infinity)
-
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
-
-                VStack(spacing: 4) {
-                    Text("\(factorCount)-Factor Composite")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                    Text(String(format: "%.3f", compositeValue))
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(RiskColors.color(for: compositeValue))
-                    Text(RiskColors.category(for: compositeValue))
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(RiskColors.color(for: compositeValue))
-                }
-                .frame(maxWidth: .infinity)
-            }
-
-            Text("The home page shows regression risk (1 factor). This view combines \(factorCount) indicators for a broader assessment.")
-                .font(.system(size: 13))
-                .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, ArkSpacing.sm)
-        }
-    }
-
-    // MARK: - Factor Breakdown Section (matches crypto)
+    // MARK: - Stock Factor Breakdown Section
 
     @ViewBuilder
     private var factorBreakdownSection: some View {
@@ -1174,65 +1085,81 @@ private struct StockRiskDetailSheet: View {
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.accent)
 
-                    Text("Multi-Factor Analysis")
+                    Text("Risk Factor Breakdown")
                         .font(.headline)
                         .foregroundColor(textPrimary)
 
                     Spacer()
 
-                    if isLoadingMultiFactor {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                    } else if let risk = multiFactorRisk {
-                        HStack(spacing: 4) {
-                            Text("\(risk.availableFactorCount)/\(RiskFactorType.allCases.count)")
-                                .font(.footnote)
-                                .foregroundColor(AppColors.textSecondary.opacity(0.85))
+                    Text("4 factors")
+                        .font(.footnote)
+                        .foregroundColor(AppColors.textSecondary.opacity(0.85))
 
-                            Image(systemName: showFactorBreakdown ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 13))
-                                .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                        }
-                    }
+                    Image(systemName: showFactorBreakdown ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.85))
                 }
             }
             .buttonStyle(PlainButtonStyle())
 
             if showFactorBreakdown {
-                if isLoadingMultiFactor {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: ArkSpacing.sm) {
-                            ProgressView()
-                            Text("Running multi-factor analysis...")
-                                .font(.footnote)
-                                .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                            Text("\(multiFactorElapsed)s elapsed")
-                                .font(.system(size: 11))
-                                .foregroundColor(AppColors.textSecondary.opacity(0.5))
-                                .monospacedDigit()
-                        }
-                        Spacer()
-                    }
-                    .padding(.vertical, ArkSpacing.lg)
-                } else if let risk = multiFactorRisk {
-                    RiskFactorBreakdownView(multiFactorRisk: risk)
-                } else {
+                if let factors = stockFactors {
                     VStack(spacing: ArkSpacing.sm) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.title2)
-                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
-                        Text("Unable to load factor data")
-                            .font(.footnote)
-                            .foregroundColor(AppColors.textSecondary.opacity(0.85))
-                        Button("Retry") {
-                            Task { await loadMultiFactor() }
+                        stockFactorRow(
+                            name: "200-SMA Deviation",
+                            icon: "chart.line.uptrend.xyaxis",
+                            weight: "40%",
+                            risk: factors.sma200Risk,
+                            detail: factors.sma200Deviation.map { String(format: "%+.1f%% from SMA", $0) } ?? "Insufficient data"
+                        )
+                        stockFactorRow(
+                            name: "RSI (14)",
+                            icon: "waveform.path.ecg",
+                            weight: "25%",
+                            risk: factors.rsiRisk,
+                            detail: factors.rsi.map { String(format: "%.1f", $0) } ?? "N/A"
+                        )
+                        stockFactorRow(
+                            name: "52-Week Range",
+                            icon: "arrow.up.and.down",
+                            weight: "20%",
+                            risk: factors.yearRangePosition,
+                            detail: "$\(String(format: "%.0f", factors.yearLow)) — $\(String(format: "%.0f", factors.yearHigh))"
+                        )
+                        stockFactorRow(
+                            name: "50-SMA Trend",
+                            icon: "arrow.up.right",
+                            weight: "15%",
+                            risk: factors.trendRisk,
+                            detail: String(format: "%+.2f%% slope", factors.sma50Slope)
+                        )
+
+                        Divider().opacity(0.2).padding(.vertical, 4)
+
+                        HStack {
+                            Text("Composite Risk")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(textPrimary)
+                            Spacer()
+                            Text(String(format: "%.3f", factors.compositeRisk))
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(RiskColors.color(for: factors.compositeRisk))
+                            Text(RiskColors.category(for: factors.compositeRisk))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(RiskColors.color(for: factors.compositeRisk))
                         }
-                        .font(.caption)
-                        .foregroundColor(AppColors.accent)
+
+                        Text("Weighted average of 4 price-derived factors. Higher = more extended, lower = more discounted.")
+                            .font(.system(size: 11))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                            .padding(.top, 4)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, ArkSpacing.lg)
+                } else {
+                    Text("Loading factors...")
+                        .font(.footnote)
+                        .foregroundColor(AppColors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, ArkSpacing.lg)
                 }
             }
         }
@@ -1420,6 +1347,51 @@ private struct StockRiskDetailSheet: View {
             }
         }
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+    }
+
+    // MARK: - Stock Factor Row
+
+    private func stockFactorRow(name: String, icon: String, weight: String, risk: Double?, detail: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.accent)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(name)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(textPrimary)
+                    Spacer()
+                    Text(weight)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                    if let r = risk {
+                        Text(String(format: "%.0f%%", r * 100))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(RiskColors.color(for: r))
+                    }
+                }
+
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(AppColors.textSecondary.opacity(0.1))
+                            .frame(height: 4)
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(RiskColors.color(for: risk ?? 0.5))
+                            .frame(width: geo.size.width * (risk ?? 0.5), height: 4)
+                    }
+                }
+                .frame(height: 4)
+
+                Text(detail)
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.7))
+            }
+        }
     }
 
     // MARK: - Risk Legend

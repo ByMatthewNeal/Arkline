@@ -20,10 +20,16 @@ struct ModelPortfolioUpdateCard: View {
     private var tradeAge: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
         guard let date = formatter.date(from: trade.tradeDate) else { return trade.tradeDate }
-        let relative = RelativeDateTimeFormatter()
-        relative.unitsStyle = .short
-        return relative.localizedString(for: date, relativeTo: Date())
+
+        let calendar = Calendar.current
+        let now = Date()
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day ?? 0
+
+        if days == 0 { return "Today" }
+        if days == 1 { return "Yesterday" }
+        return "\(days) days ago"
     }
 
     var body: some View {

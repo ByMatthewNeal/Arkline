@@ -377,6 +377,14 @@ extension TradeSignal {
         "VET":    AssetProfile(confidence: .high, directionBias: .balanced, longWinRate: 73.3, shortWinRate: 80.7, profitFactor: 4.05),
     ]
 
+    /// Assets currently active in the signal pipeline
+    static let activeAssets: Set<String> = ["BTC", "ETH", "SOL", "SUI", "ADA"]
+
+    /// Whether this signal's asset is currently paused from the pipeline
+    var isAssetPaused: Bool {
+        !Self.activeAssets.contains(asset)
+    }
+
     var assetProfile: AssetProfile {
         Self.assetProfiles[asset] ?? AssetProfile(
             confidence: .medium, directionBias: .balanced,

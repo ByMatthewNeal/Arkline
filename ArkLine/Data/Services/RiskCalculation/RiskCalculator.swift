@@ -167,6 +167,168 @@ final class RiskCalculator {
         return sampled
     }
 
+    // MARK: - Stock Risk Calculation (Multi-Factor, No Regression)
+
+    /// Calculate stock risk using price-derived factors instead of log regression.
+    /// Factors: 200-SMA deviation (40%), RSI (25%), relative 52-week position (20%), 50-SMA trend (15%)
+    /// All computed from price history alone — no external API needed.
+    func calculateStockRisk(
+        priceHistory: [(date: Date, price: Double)],
+        config: AssetRiskConfig
+    ) -> RiskHistoryPoint? {
+        guard priceHistory.count >= 200 else {
+            // Need at least 200 days for SMA200
+            guard priceHistory.count >= 50 else { return nil }
+            // Fallback: use what we have
+            return calculateStockRiskPartial(priceHistory: priceHistory, config: config)
+        }
+
+        let closes = priceHistory.map(\.price)
+        let currentPrice = closes.last ?? 0
+        guard currentPrice > 0 else { return nil }
+
+        // Factor 1: Price vs 200-SMA deviation (40%)
+        // >20% above = high risk, at SMA = neutral, >20% below = low risk
+        let sma200 = closes.suffix(200).reduce(0, +) / 200.0
+        let smaDeviation = (currentPrice - sma200) / sma200  // e.g., 0.15 = 15% above
+        let smaRisk = min(1.0, max(0.0, (smaDeviation + 0.20) / 0.40))  // -20% → 0, +20% → 1
+
+        // Factor 2: RSI(14) (25%)
+        let rsiRisk: Double
+        if closes.count >= 15 {
+            let rsi = computeRSI(closes: closes)
+            rsiRisk = min(1.0, max(0.0, rsi / 100.0))  // 0-100 → 0-1
+        } else {
+            rsiRisk = 0.5  // neutral fallback
+        }
+
+        // Factor 3: 52-week range position (20%)
+        // Near yearly high = high risk, near yearly low = low risk
+        let yearSlice = closes.suffix(252)  // ~252 trading days in a year
+        let yearHigh = yearSlice.max() ?? currentPrice
+        let yearLow = yearSlice.min() ?? currentPrice
+        let yearRange = yearHigh - yearLow
+        let yearRisk = yearRange > 0 ? (currentPrice - yearLow) / yearRange : 0.5
+
+        // Factor 4: 50-SMA trend direction (15%)
+        // SMA slope: rising = higher risk (extended), falling = lower risk (discounted)
+        let sma50 = closes.suffix(50).reduce(0, +) / 50.0
+        let sma50_10dAgo: Double = {
+            let offset = min(closes.count, 60)
+            let slice = closes.suffix(offset).prefix(50)
+            return slice.isEmpty ? sma50 : slice.reduce(0, +) / Double(slice.count)
+        }()
+        let smaSlope = sma50 > 0 ? (sma50 - sma50_10dAgo) / sma50 : 0
+        // Map slope: -2% → 0, +2% → 1
+        let trendRisk = min(1.0, max(0.0, (smaSlope + 0.02) / 0.04))
+
+        // Weighted composite
+        let riskLevel = smaRisk * 0.40 + rsiRisk * 0.25 + yearRisk * 0.20 + trendRisk * 0.15
+
+        return RiskHistoryPoint(
+            date: Date(),
+            riskLevel: min(1.0, max(0.0, riskLevel)),
+            price: currentPrice,
+            fairValue: sma200,  // Use 200-SMA as "fair value" proxy
+            deviation: smaDeviation
+        )
+    }
+
+    /// Partial calculation when <200 days of data available
+    private func calculateStockRiskPartial(
+        priceHistory: [(date: Date, price: Double)],
+        config: AssetRiskConfig
+    ) -> RiskHistoryPoint? {
+        let closes = priceHistory.map(\.price)
+        let currentPrice = closes.last ?? 0
+        guard currentPrice > 0 else { return nil }
+
+        let sma50 = closes.suffix(50).reduce(0, +) / Double(min(closes.count, 50))
+        let deviation = sma50 > 0 ? (currentPrice - sma50) / sma50 : 0
+
+        let rsiRisk: Double = closes.count >= 15 ? computeRSI(closes: closes) / 100.0 : 0.5
+        let smaRisk = min(1.0, max(0.0, (deviation + 0.15) / 0.30))
+
+        let riskLevel = smaRisk * 0.55 + rsiRisk * 0.45
+
+        return RiskHistoryPoint(
+            date: Date(),
+            riskLevel: min(1.0, max(0.0, riskLevel)),
+            price: currentPrice,
+            fairValue: sma50,
+            deviation: deviation
+        )
+    }
+
+    /// Compute RSI(14) from an array of closing prices
+    private func computeRSI(closes: [Double], period: Int = 14) -> Double {
+        guard closes.count > period else { return 50 }
+
+        var gains: [Double] = []
+        var losses: [Double] = []
+        for i in (closes.count - period - 1)..<(closes.count - 1) {
+            let change = closes[i + 1] - closes[i]
+            gains.append(max(0, change))
+            losses.append(max(0, -change))
+        }
+
+        let avgGain = gains.reduce(0, +) / Double(period)
+        let avgLoss = losses.reduce(0, +) / Double(period)
+
+        guard avgLoss > 0 else { return 100 }
+        let rs = avgGain / avgLoss
+        return 100 - (100 / (1 + rs))
+    }
+
+    /// Calculate stock risk history for charting
+    func calculateStockRiskHistory(
+        priceHistory: [(date: Date, price: Double)]
+    ) -> [RiskHistoryPoint] {
+        guard priceHistory.count >= 200 else { return [] }
+
+        let closes = priceHistory.map(\.price)
+        var results: [RiskHistoryPoint] = []
+
+        // Calculate for each day starting from day 200
+        for i in 200..<closes.count {
+            let slice = Array(closes[0...i])
+            let currentPrice = slice.last ?? 0
+            guard currentPrice > 0 else { continue }
+
+            let sma200 = slice.suffix(200).reduce(0, +) / 200.0
+            let smaDeviation = (currentPrice - sma200) / sma200
+            let smaRisk = min(1.0, max(0.0, (smaDeviation + 0.20) / 0.40))
+
+            let rsi = computeRSI(closes: Array(slice))
+            let rsiRisk = min(1.0, max(0.0, rsi / 100.0))
+
+            let yearSlice = slice.suffix(252)
+            let yearHigh = yearSlice.max() ?? currentPrice
+            let yearLow = yearSlice.min() ?? currentPrice
+            let yearRange = yearHigh - yearLow
+            let yearRisk = yearRange > 0 ? (currentPrice - yearLow) / yearRange : 0.5
+
+            let sma50 = slice.suffix(50).reduce(0, +) / 50.0
+            let offset = min(slice.count, 60)
+            let sma50_prev = Array(slice.suffix(offset).prefix(50))
+            let sma50_10dAgo = sma50_prev.isEmpty ? sma50 : sma50_prev.reduce(0, +) / Double(sma50_prev.count)
+            let smaSlope = sma50 > 0 ? (sma50 - sma50_10dAgo) / sma50 : 0
+            let trendRisk = min(1.0, max(0.0, (smaSlope + 0.02) / 0.04))
+
+            let riskLevel = smaRisk * 0.40 + rsiRisk * 0.25 + yearRisk * 0.20 + trendRisk * 0.15
+
+            results.append(RiskHistoryPoint(
+                date: priceHistory[i].date,
+                riskLevel: min(1.0, max(0.0, riskLevel)),
+                price: currentPrice,
+                fairValue: sma200,
+                deviation: smaDeviation
+            ))
+        }
+
+        return results
+    }
+
     // MARK: - Multi-Factor Risk Calculation
 
     /// Calculate multi-factor risk for a single price point.

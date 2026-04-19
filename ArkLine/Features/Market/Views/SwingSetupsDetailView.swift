@@ -512,11 +512,23 @@ struct SwingSetupsDetailView: View {
                 .tracking(1)
 
             ForEach(assets) { asset in
+                let isPaused = !TradeSignal.activeAssets.contains(asset.asset)
                 HStack {
-                    Text(asset.asset)
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(textPrimary)
-                        .frame(width: 60, alignment: .leading)
+                    HStack(spacing: 4) {
+                        Text(asset.asset)
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(isPaused ? AppColors.textSecondary : textPrimary)
+                        if isPaused {
+                            Text("P")
+                                .font(.system(size: 7, weight: .heavy))
+                                .foregroundColor(AppColors.textSecondary)
+                                .padding(.horizontal, 3)
+                                .padding(.vertical, 1)
+                                .background(AppColors.textSecondary.opacity(0.15))
+                                .cornerRadius(2)
+                        }
+                    }
+                    .frame(width: 60, alignment: .leading)
 
                     // Win/loss bar
                     GeometryReader { geo in
@@ -1312,6 +1324,16 @@ struct SignalCard: View {
                         .padding(.vertical, 1)
                         .background((signal.isScalp ? AppColors.accent : AppColors.textSecondary).opacity(0.15))
                         .cornerRadius(3)
+
+                    if signal.isAssetPaused {
+                        Text("PAUSED")
+                            .font(.system(size: 8, weight: .heavy))
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(AppColors.textSecondary.opacity(0.15))
+                            .cornerRadius(3)
+                    }
 
                     Spacer()
 

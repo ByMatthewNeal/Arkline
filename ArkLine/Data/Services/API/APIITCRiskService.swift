@@ -196,7 +196,12 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
             throw RiskCalculationError.insufficientData(key)
         }
 
-        var fullRiskHistory = riskCalculator.calculateRiskHistory(prices: priceHistory, config: config)
+        // Use stock-specific multi-factor model instead of log regression
+        var fullRiskHistory = riskCalculator.calculateStockRiskHistory(priceHistory: priceHistory)
+        if fullRiskHistory.isEmpty {
+            // Fallback to regression if multi-factor fails (shouldn't happen)
+            fullRiskHistory = riskCalculator.calculateRiskHistory(prices: priceHistory, config: config)
+        }
         guard !fullRiskHistory.isEmpty else {
             throw RiskCalculationError.insufficientData(key)
         }
@@ -243,25 +248,19 @@ final class APIITCRiskService: ITCRiskServiceProtocol {
             throw RiskCalculationError.insufficientData(key)
         }
 
-        // Use the most recent price from history as current price
-        guard let latestPrice = priceHistory.last?.price else {
-            throw RiskCalculationError.noDataAvailable(key)
-        }
-
-        guard let result = riskCalculator.calculateRiskWithRegression(
-            price: latestPrice,
-            date: Date(),
-            config: config,
-            priceHistory: priceHistory
+        // Use multi-factor stock risk model (SMA deviation + RSI + 52W range + trend)
+        guard let risk = riskCalculator.calculateStockRisk(
+            priceHistory: priceHistory,
+            config: config
         ) else {
             throw RiskCalculationError.insufficientData(key)
         }
 
         cacheQueue.sync {
-            currentRiskCache[key] = (risk: result.risk, calculatedAt: Date())
+            currentRiskCache[key] = (risk: risk, calculatedAt: Date())
         }
 
-        return result.risk
+        return risk
     }
 
     // MARK: - Embedded Data Access
