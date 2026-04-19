@@ -302,6 +302,7 @@ Deno.serve(async (req) => {
       : event_type === "briefing" ? "briefing"
       : event_type === "qps_change" ? "qps_change"
       : event_type === "dca_reminder" ? "dca_reminder"
+      : event_type === "market_deck" ? "market_deck"
       : "broadcast"
 
     const payload: Record<string, unknown> = {

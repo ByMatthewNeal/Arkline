@@ -553,8 +553,8 @@ class MarketDeckViewModel {
             let created = try await broadcastService.createBroadcast(broadcast)
             logInfo("Created broadcast from deck: \(created.id)", category: .data)
 
-            // Send push notification
-            await notificationService.sendBroadcastNotification(for: created, audience: .all)
+            // Send push notification with market_deck event type for deep link routing
+            await notificationService.sendBroadcastNotification(for: created, audience: .all, eventType: "market_deck")
         } catch {
             logWarning("Failed to create broadcast from deck: \(error)", category: .data)
         }

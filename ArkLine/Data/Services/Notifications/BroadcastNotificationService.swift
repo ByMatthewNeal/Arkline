@@ -201,7 +201,7 @@ class BroadcastNotificationService: ObservableObject {
 
     /// Send notification to specific audience.
     /// Tries the server-side edge function first; falls back to local notification on failure.
-    func sendBroadcastNotification(for broadcast: Broadcast, audience: TargetAudience) async {
+    func sendBroadcastNotification(for broadcast: Broadcast, audience: TargetAudience, eventType: String? = nil) async {
         guard SupabaseManager.shared.isConfigured else {
             await sendBroadcastNotification(for: broadcast)
             return
@@ -210,9 +210,13 @@ class BroadcastNotificationService: ObservableObject {
         // Build request body matching the edge function schema
         var body: [String: Any] = [
             "broadcast_id": broadcast.id.uuidString,
-            "title": "New Insight",
+            "title": eventType == "market_deck" ? "Weekly Market Update" : "New Insight",
             "body": broadcast.title
         ]
+
+        if let eventType {
+            body["event_type"] = eventType
+        }
 
         switch audience {
         case .all:

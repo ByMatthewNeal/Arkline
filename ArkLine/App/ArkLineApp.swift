@@ -58,6 +58,10 @@ struct ArkLineApp: App {
                     appState.selectedTab = .market
                     appState.pendingSentimentRegime = true
                 }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MarketDeckNotificationTapped"))) { notification in
+                    appState.selectedTab = .home
+                    appState.pendingMarketDeckId = notification.userInfo?["id"] as? String ?? "latest"
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -270,6 +274,7 @@ class AppState: ObservableObject {
     @Published var pendingQPSAsset: String?
     @Published var pendingDCAReminderId: String?
     @Published var pendingModelPortfolioStrategy: String?
+    @Published var pendingMarketDeckId: String?
     @Published var shouldExpandBriefing = false
     @Published var pendingSentimentRegime = false
 
@@ -691,6 +696,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 notificationName = Notification.Name("ModelPortfolioNotificationTapped")
             case "sentiment_regime":
                 notificationName = Notification.Name("SentimentRegimeNotificationTapped")
+            case "market_deck":
+                notificationName = Notification.Name("MarketDeckNotificationTapped")
             default:
                 notificationName = Notification.Name("BroadcastNotificationTapped")
             }

@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var showAddPositionSheet = false
     @State private var addPositionViewModel = PortfolioViewModel()
     @State private var navigationPath = NavigationPath()
+    @State private var showDeckFromNotification = false
     @EnvironmentObject var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
 
@@ -257,6 +258,20 @@ struct HomeView: View {
                         let deck = try? await ServiceContainer.shared.marketDeckService.fetchLatestPublished()
                         viewModel.latestDeck = deck
                     }
+                }
+            }
+            .onChange(of: appState.pendingMarketDeckId) { _, newValue in
+                if newValue != nil {
+                    showDeckFromNotification = true
+                    appState.pendingMarketDeckId = nil
+                }
+            }
+            .fullScreenCover(isPresented: $showDeckFromNotification) {
+                if let deck = viewModel.latestDeck {
+                    MarketDeckViewer(
+                        viewModel: MarketDeckViewModel(deck: deck),
+                        isAdmin: false
+                    )
                 }
             }
             .onAppear {
