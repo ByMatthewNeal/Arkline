@@ -9,7 +9,8 @@ struct MarketDeckAdminView: View {
     @State private var showPDFImporter = false
     @State private var urlInput = ""
     @State private var showURLInput = false
-    @State private var customWeekStart: Date = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date()) ?? Date()
+    @State private var customStart: Date = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @State private var customEnd: Date = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     @State private var useCustomWeek = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) private var dismiss
@@ -506,14 +507,9 @@ struct MarketDeckAdminView: View {
     // MARK: - Custom Week Helpers
 
     private var customWeekRange: (start: String, end: String) {
-        let cal = Calendar(identifier: .gregorian)
-        let weekday = cal.component(.weekday, from: customWeekStart)
-        let daysToMonday = (weekday == 1) ? -6 : (2 - weekday)
-        let monday = cal.date(byAdding: .day, value: daysToMonday, to: customWeekStart) ?? Date()
-        let friday = cal.date(byAdding: .day, value: 4, to: monday) ?? Date()
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        return (fmt.string(from: monday), fmt.string(from: friday))
+        return (fmt.string(from: customStart), fmt.string(from: customEnd))
     }
 
     private func generateWithParams() {
@@ -589,7 +585,7 @@ struct MarketDeckAdminView: View {
                 HStack(spacing: ArkSpacing.xs) {
                     Image(systemName: "calendar.badge.clock")
                         .font(.system(size: 14))
-                    Text("Custom Week")
+                    Text("Custom Range")
                         .font(AppFonts.body14Medium)
                 }
                 .foregroundColor(AppColors.textPrimary(colorScheme))
@@ -598,8 +594,18 @@ struct MarketDeckAdminView: View {
 
             if useCustomWeek {
                 DatePicker(
-                    "Week of",
-                    selection: $customWeekStart,
+                    "Start",
+                    selection: $customStart,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.compact)
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+
+                DatePicker(
+                    "End",
+                    selection: $customEnd,
                     in: ...Date(),
                     displayedComponents: .date
                 )
@@ -608,7 +614,7 @@ struct MarketDeckAdminView: View {
                 .foregroundColor(AppColors.textSecondary)
 
                 let range = customWeekRange
-                Text("Mon \(range.start) — Fri \(range.end)")
+                Text("\(range.start) — \(range.end)")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.accent)
             }
