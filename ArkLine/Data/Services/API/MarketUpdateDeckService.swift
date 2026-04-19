@@ -51,7 +51,7 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.timeoutInterval = 180  // Edge function needs time for web research + AI generation
+        request.timeoutInterval = 300  // Edge function needs time for web research + AI generation
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let token = try? await supabase.auth.session.accessToken
         request.setValue("Bearer \(token ?? Constants.API.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
