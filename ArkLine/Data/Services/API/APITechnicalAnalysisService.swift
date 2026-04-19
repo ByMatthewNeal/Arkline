@@ -167,7 +167,7 @@ final class APITechnicalAnalysisService: TechnicalAnalysisServiceProtocol {
 
             // Fetch 25 weekly candles (need 21 for EMA calculation)
             guard let url = URL(string: "https://api.coinbase.com/api/v3/brokerage/market/products/\(cbPair)/candles?granularity=ONE_WEEK&limit=25") else {
-                return nil
+                return BullMarketSupportBands(sma20w: 0, ema21w: 0, currentPrice: currentPrice, percentFromSMA: 0)
             }
             let (data, _) = try await PinnedURLSession.shared.data(from: url)
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
