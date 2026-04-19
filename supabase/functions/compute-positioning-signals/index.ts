@@ -23,6 +23,7 @@ interface AssetConfig {
   source: AssetSource
   symbol: string        // Coinbase pair, FMP symbol, or ALT-USD pair for synthetic
   category: AssetCategory
+  displaySymbol?: string // If set, fetch real price from this symbol for display (overrides ETF proxy price)
 }
 
 const ASSETS: AssetConfig[] = [
@@ -71,14 +72,14 @@ const ASSETS: AssetConfig[] = [
 
   // ── Macro ──
   { ticker: "VIX",    displayName: "Volatility Index", source: "fmp", symbol: "^VIX", category: "macro" },
-  { ticker: "DXY",    displayName: "US Dollar Index",  source: "fmp", symbol: "UUP",  category: "macro" },
+  { ticker: "DXY",    displayName: "US Dollar Index",  source: "fmp", symbol: "UUP",  category: "macro", displaySymbol: "DX-Y.NYB" },
   { ticker: "TLT",    displayName: "20Y Treasuries",   source: "fmp", symbol: "TLT",  category: "macro" },
 
   // ── Commodities ──
   { ticker: "GOLD",   displayName: "Gold",            source: "fmp", symbol: "GCUSD", category: "commodity" },
   { ticker: "SILVER", displayName: "Silver",          source: "fmp", symbol: "SIUSD", category: "commodity" },
-  { ticker: "OIL",    displayName: "Oil",             source: "fmp", symbol: "USO",   category: "commodity" },
-  { ticker: "COPPER", displayName: "Copper",          source: "fmp", symbol: "CPER",  category: "commodity" },
+  { ticker: "OIL",    displayName: "Oil",             source: "fmp", symbol: "USO",   category: "commodity", displaySymbol: "CL=F" },
+  { ticker: "COPPER", displayName: "Copper",          source: "fmp", symbol: "CPER",  category: "commodity", displaySymbol: "HG=F" },
   { ticker: "URA",    displayName: "Uranium",         source: "fmp", symbol: "URA",   category: "commodity" },
   { ticker: "DBA",    displayName: "Agriculture",     source: "fmp", symbol: "DBA",   category: "commodity" },
   { ticker: "DBB",    displayName: "Industrial Metals", source: "fmp", symbol: "DBB", category: "commodity" },
@@ -445,6 +446,27 @@ Deno.serve(async (req) => {
       // Derive signal
       const signal = deriveSignal(trendScore, above200SMA, has200SMA, aboveSma21, aboveSma50)
 
+      // For ETF-proxied assets, fetch the real commodity/index price for display
+      // Uses Yahoo Finance (free, no API key) since FMP Starter doesn't support futures
+      let displayPrice = price
+      if (asset.displaySymbol) {
+        try {
+          const yahooSymbol = encodeURIComponent(asset.displaySymbol)
+          const dpResp = await fetch(
+            `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=1d&interval=1d`,
+            { headers: { "User-Agent": "Mozilla/5.0" } }
+          )
+          if (dpResp.ok) {
+            const dpData = await dpResp.json()
+            const meta = dpData?.chart?.result?.[0]?.meta
+            if (meta?.regularMarketPrice > 0) {
+              displayPrice = meta.regularMarketPrice
+              console.log(`  ${asset.ticker}: display price ${asset.symbol} $${price.toFixed(2)} → ${asset.displaySymbol} $${displayPrice.toFixed(2)}`)
+            }
+          }
+        } catch { /* keep ETF price as fallback */ }
+      }
+
       // Fetch yesterday's signal for change detection
       const { data: prevRow } = await supabase
         .from("positioning_signals")
@@ -462,7 +484,7 @@ Deno.serve(async (req) => {
         prev_signal: prevSignal,
         trend_score: Math.round(trendScore * 10) / 10,
         rsi: rsi !== null ? Math.round(rsi * 10) / 10 : null,
-        price: Math.round(price * 100) / 100,
+        price: Math.round(displayPrice * 100) / 100,
         above_200_sma: above200SMA,
         _aboveSma21: aboveSma21,
         _aboveSma50: aboveSma50,

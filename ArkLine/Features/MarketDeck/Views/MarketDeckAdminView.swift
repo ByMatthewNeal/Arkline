@@ -548,10 +548,10 @@ struct MarketDeckAdminView: View {
                     }
                 }
                 .font(AppFonts.body14Medium)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, ArkSpacing.sm)
-                .background(RoundedRectangle(cornerRadius: 10).fill(AppColors.cardBackground(colorScheme)))
+                .padding(.vertical, ArkSpacing.md)
+                .background(RoundedRectangle(cornerRadius: 12).fill(AppColors.accent))
                 .animation(.easeInOut, value: viewModel.generationStep?.rawValue)
             }
             .disabled(viewModel.isGenerating)
@@ -613,8 +613,12 @@ struct MarketDeckAdminView: View {
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 
-                let range = customWeekRange
-                Text("\(range.start) — \(range.end)")
+                let displayFmt: DateFormatter = {
+                    let f = DateFormatter()
+                    f.dateFormat = "MMM d, yyyy"
+                    return f
+                }()
+                Text("\(displayFmt.string(from: customStart)) — \(displayFmt.string(from: customEnd))")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.accent)
             }
