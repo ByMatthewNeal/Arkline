@@ -42,18 +42,18 @@ struct DeckPipelineRun: Codable, Identifiable {
 
     // MARK: - Computed Properties
 
-    var isGatherComplete: Bool { stepGatherData == "done" }
-    var isResearchComplete: Bool { stepWebResearch == "done" }
-    var isContextComplete: Bool { stepAddContext == "done" }
-    var isGenerateComplete: Bool { stepGenerateSlides == "done" }
+    var isGatherComplete: Bool { stepGatherData == "completed" }
+    var isResearchComplete: Bool { stepWebResearch == "completed" }
+    var isContextComplete: Bool { stepAddContext == "completed" }
+    var isGenerateComplete: Bool { stepGenerateSlides == "completed" }
 
     /// The current pipeline step based on status progression.
     var currentStep: PipelineStep {
-        if stepGatherData != "done" { return .gatherData }
-        if stepWebResearch != "done" { return .webResearch }
-        if stepAddContext != "done" { return .addContext }
-        if stepGenerateSlides != "done" { return .generateSlides }
-        if stepReview != "done" { return .review }
+        if stepGatherData != "completed" { return .gatherData }
+        if stepWebResearch != "completed" { return .webResearch }
+        if stepAddContext != "completed" { return .addContext }
+        if stepGenerateSlides != "completed" { return .generateSlides }
+        if stepReview != "completed" { return .review }
         return .publish
     }
 
@@ -64,8 +64,8 @@ struct DeckPipelineRun: Codable, Identifiable {
         if isResearchComplete { completed += 1 }
         if isContextComplete { completed += 1 }
         if isGenerateComplete { completed += 1 }
-        if stepReview == "done" { completed += 1 }
-        if stepPublish == "done" { completed += 1 }
+        if stepReview == "completed" { completed += 1 }
+        if stepPublish == "completed" { completed += 1 }
         return completed / 6.0
     }
 

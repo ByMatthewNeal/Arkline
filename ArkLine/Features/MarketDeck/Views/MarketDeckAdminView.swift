@@ -279,7 +279,7 @@ struct MarketDeckAdminView: View {
                 Spacer()
 
                 // Action buttons based on status
-                if status == "error", let _ = error {
+                if status == "failed", let _ = error {
                     Button(action: { generationManager.retryStep(step) }) {
                         Text("Retry")
                             .font(AppFonts.caption12Medium)
@@ -293,7 +293,7 @@ struct MarketDeckAdminView: View {
                     }
                 }
 
-                if step == .addContext && status != "done" && run.isResearchComplete {
+                if step == .addContext && status != "completed" && run.isResearchComplete {
                     Button(action: { withAnimation { showContextEditor.toggle() } }) {
                         Text("Edit")
                             .font(AppFonts.caption12Medium)
@@ -324,7 +324,7 @@ struct MarketDeckAdminView: View {
             }
 
             // Error detail
-            if let error, status == "error" {
+            if let error, status == "failed" {
                 Text(error)
                     .font(AppFonts.footnote10)
                     .foregroundColor(AppColors.error)
@@ -351,11 +351,11 @@ struct MarketDeckAdminView: View {
                 .frame(width: 18, height: 18)
         } else {
             switch status {
-            case "done":
+            case "completed":
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 16))
                     .foregroundColor(AppColors.success)
-            case "error":
+            case "failed":
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 16))
                     .foregroundColor(AppColors.error)

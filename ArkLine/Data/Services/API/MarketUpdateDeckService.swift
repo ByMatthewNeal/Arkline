@@ -414,7 +414,7 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
         guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
 
         let payload = PipelineContextUpdate(
-            stepAddContext: "done",
+            stepAddContext: "completed",
             outputContext: insights
         )
 
