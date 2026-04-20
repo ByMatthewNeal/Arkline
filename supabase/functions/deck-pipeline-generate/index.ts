@@ -77,7 +77,7 @@ IMPORTANT:
 - Use specific numbers (e.g. "CPI rose 0.2% MoM to 2.8% YoY" not "inflation rose slightly")
 - Always close the loop: data point → market impact → what it means for risk assets/crypto/stocks
 
-${adminInsights ? `\n=== ADMIN INSIGHTS (CRITICAL — integrate these) ===\n${adminInsights}\nThe admin has provided additional context from external sources. Naturally weave this into the relevant sections.\n` : ""}
+${adminInsights ? `\n=== ADMIN INSIGHTS (CRITICAL — synthesize, do NOT copy) ===\n${adminInsights}\n\nIMPORTANT: The above is raw context from the admin (may include transcripts, notes, or external analysis). You MUST:\n- Extract the KEY IDEAS and DATA POINTS only\n- Completely REPHRASE everything in your own words and Arkline's voice\n- NEVER use the same titles, headings, or phrasing from the source\n- NEVER quote or closely paraphrase — fully rewrite with original analysis\n- Treat this as background research, not copy to reproduce\n` : ""}
 ${feedbackHistory ? `\n=== PAST ADMIN FEEDBACK (learn from these — avoid repeating flagged issues) ===\n${feedbackHistory}\nApply these lessons to improve the quality of your output. If the admin previously flagged issues like being too vague, lacking numbers, or not connecting to risk assets — make sure to address those patterns.\n` : ""}
 === WEB RESEARCH FROM THIS WEEK ===
 ${researchText}

@@ -155,7 +155,7 @@ IMPORTANT:
 - Use specific numbers (e.g. "CPI rose 0.2% MoM to 2.8% YoY" not "inflation rose slightly")
 - Always close the loop: data point → market impact → what it means for risk assets/crypto/stocks
 
-${adminInsights ? `\n=== ADMIN INSIGHTS (CRITICAL — integrate these) ===\n${adminInsights}\nThe admin has provided additional context from external sources. Naturally weave this into the relevant sections.\n` : ""}
+${adminInsights ? `\n=== ADMIN INSIGHTS (CRITICAL — synthesize, do NOT copy) ===\n${adminInsights}\n\nIMPORTANT: The above is raw context from the admin (may include transcripts, notes, or external analysis). You MUST:\n- Extract the KEY IDEAS and DATA POINTS only\n- Completely REPHRASE everything in your own words and Arkline's voice\n- NEVER use the same titles, headings, or phrasing from the source\n- NEVER quote or closely paraphrase — fully rewrite with original analysis\n- Treat this as background research, not copy to reproduce\n` : ""}
 ${feedbackHistory ? `\n=== PAST ADMIN FEEDBACK (learn from these — avoid repeating flagged issues) ===\n${feedbackHistory}\nApply these lessons to improve the quality of your output. If the admin previously flagged issues like being too vague, lacking numbers, or not connecting to risk assets — make sure to address those patterns.\n` : ""}
 === WEB RESEARCH FROM THIS WEEK ===
 ${researchText}
@@ -452,7 +452,7 @@ Write with authority and specificity. Use exact numbers. No hedging or filler.
 
 TONE: Confident but accessible. A reader with 1-2 years of investing experience should understand every sentence, while a veteran should find it substantive. When mentioning macro data or policy moves, always connect the dots to what it means for risk assets and markets. Don't just report — explain the "so what" so readers walk away with clarity on how the week's events shape their positioning.
 
-${adminInsights ? `\n=== ADMIN INSIGHTS & ATTACHMENT CONTEXT (weave naturally into narrative) ===\n${adminInsights}\n` : ""}
+${adminInsights ? `\n=== ADMIN INSIGHTS & ATTACHMENT CONTEXT (synthesize — do NOT copy phrasing) ===\n${adminInsights}\nExtract key ideas only. Fully rephrase in Arkline's voice. Never reproduce titles, headings, or quotes from the source.\n` : ""}
 ${imageUrls?.length ? `\nThe admin has also attached ${imageUrls.length} image(s) with charts/data. Analyze them and incorporate relevant findings into the narrative.\n` : ""}
 
 === DAILY BRIEFINGS ===
