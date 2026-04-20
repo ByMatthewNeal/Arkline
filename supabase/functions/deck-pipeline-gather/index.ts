@@ -156,42 +156,43 @@ Deno.serve(async (req) => {
 
   // ── Parse params ────────────────────────────────────────────────────
   const url = new URL(req.url)
+  const pipelineRunIdParam = url.searchParams.get("pipeline_run_id")
   const customWeekStart = url.searchParams.get("week_start")
   const customWeekEnd = url.searchParams.get("week_end")
   const fmpKey = Deno.env.get("FMP_API_KEY") ?? ""
 
   let monday: string, friday: string, nextMonday: string, nextFriday: string
 
-  if (customWeekStart && customWeekEnd) {
-    monday = customWeekStart
-    friday = customWeekEnd
-    const customFri = new Date(customWeekEnd + "T00:00:00Z")
-    const nMon = new Date(customFri)
-    nMon.setUTCDate(customFri.getUTCDate() + 3)
-    const nFri = new Date(nMon)
-    nFri.setUTCDate(nMon.getUTCDate() + 4)
-    nextMonday = nMon.toISOString().split("T")[0]
-    nextFriday = nFri.toISOString().split("T")[0]
-  } else {
-    ({ monday, friday, nextMonday, nextFriday } = getWeekRange())
-  }
-
-  console.log(`[gather] Starting data gather for ${monday} to ${friday}`)
+  // If pipeline_run_id provided, load the run and get dates from it
+  let pipelineRunId: string
 
   try {
-    // ── Create or find pipeline run ─────────────────────────────────
-    const { data: existingRun } = await supabase
-      .from("deck_pipeline_runs")
-      .select("*")
-      .eq("week_start", monday)
-      .eq("week_end", friday)
-      .single()
+    if (pipelineRunIdParam) {
+      // Load existing pipeline run created by iOS
+      const { data: existingRun, error: fetchErr } = await supabase
+        .from("deck_pipeline_runs")
+        .select("*")
+        .eq("id", pipelineRunIdParam)
+        .single()
 
-    let pipelineRunId: string
+      if (fetchErr || !existingRun) {
+        return jsonResponse({ error: `Pipeline run not found: ${pipelineRunIdParam}` }, 404)
+      }
 
-    if (existingRun) {
       pipelineRunId = existingRun.id
-      // Reset gather step
+      monday = existingRun.week_start
+      friday = existingRun.week_end
+
+      // Compute next week from friday
+      const customFri = new Date(friday + "T00:00:00Z")
+      const nMon = new Date(customFri)
+      nMon.setUTCDate(customFri.getUTCDate() + 3)
+      const nFri = new Date(nMon)
+      nFri.setUTCDate(nMon.getUTCDate() + 4)
+      nextMonday = nMon.toISOString().split("T")[0]
+      nextFriday = nFri.toISOString().split("T")[0]
+
+      // Mark as running
       await supabase
         .from("deck_pipeline_runs")
         .update({
@@ -201,24 +202,63 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq("id", pipelineRunId)
-      console.log(`[gather] Reusing pipeline run ${pipelineRunId}`)
+
+      console.log(`[gather] Using existing pipeline run ${pipelineRunId} (${monday} to ${friday})`)
+    } else if (customWeekStart && customWeekEnd) {
+      monday = customWeekStart
+      friday = customWeekEnd
+      const customFri = new Date(customWeekEnd + "T00:00:00Z")
+      const nMon = new Date(customFri)
+      nMon.setUTCDate(customFri.getUTCDate() + 3)
+      const nFri = new Date(nMon)
+      nFri.setUTCDate(nMon.getUTCDate() + 4)
+      nextMonday = nMon.toISOString().split("T")[0]
+      nextFriday = nFri.toISOString().split("T")[0]
     } else {
-      const { data: newRun, error: insertErr } = await supabase
+      ({ monday, friday, nextMonday, nextFriday } = getWeekRange())
+    }
+
+    console.log(`[gather] Starting data gather for ${monday} to ${friday}`)
+
+    // If no pipeline run from param, find or create one by dates
+    if (!pipelineRunIdParam) {
+      const { data: existingRun } = await supabase
         .from("deck_pipeline_runs")
-        .insert({
-          week_start: monday,
-          week_end: friday,
-          step_gather_data: "running",
-          started_at: new Date().toISOString(),
-        })
-        .select()
+        .select("*")
+        .eq("week_start", monday)
+        .eq("week_end", friday)
         .single()
 
-      if (insertErr || !newRun) {
-        return jsonResponse({ error: `Failed to create pipeline run: ${insertErr?.message}` }, 500)
+      if (existingRun) {
+        pipelineRunId = existingRun.id
+        await supabase
+          .from("deck_pipeline_runs")
+          .update({
+            step_gather_data: "running",
+            error_gather_data: null,
+            started_at: existingRun.started_at ?? new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", pipelineRunId)
+        console.log(`[gather] Reusing pipeline run ${pipelineRunId}`)
+      } else {
+        const { data: newRun, error: insertErr } = await supabase
+          .from("deck_pipeline_runs")
+          .insert({
+            week_start: monday,
+            week_end: friday,
+            step_gather_data: "running",
+            started_at: new Date().toISOString(),
+          })
+          .select()
+          .single()
+
+        if (insertErr || !newRun) {
+          return jsonResponse({ error: `Failed to create pipeline run: ${insertErr?.message}` }, 500)
+        }
+        pipelineRunId = newRun.id
+        console.log(`[gather] Created pipeline run ${pipelineRunId}`)
       }
-      pipelineRunId = newRun.id
-      console.log(`[gather] Created pipeline run ${pipelineRunId}`)
     }
 
     // ── Step 1: Gather ALL data from Supabase in parallel ─────────────
