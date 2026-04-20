@@ -285,6 +285,39 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
     func createPipelineRun(weekStart: String, weekEnd: String) async throws -> DeckPipelineRun {
         guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
 
+        // Check if a run already exists for this week — reuse it
+        let existing: [DeckPipelineRun] = try await supabase.database
+            .from(pipelineTable)
+            .select()
+            .eq("week_start", value: weekStart)
+            .eq("week_end", value: weekEnd)
+            .limit(1)
+            .execute()
+            .value
+
+        if let run = existing.first {
+            // Reset all steps for a fresh run
+            try await supabase.database
+                .from(pipelineTable)
+                .update([
+                    "step_gather_data": "pending",
+                    "step_web_research": "pending",
+                    "step_add_context": "pending",
+                    "step_generate_slides": "pending",
+                    "step_review": "pending",
+                    "step_publish": "pending",
+                    "error_gather_data": nil as String?,
+                    "error_web_research": nil as String?,
+                    "error_add_context": nil as String?,
+                    "error_generate_slides": nil as String?,
+                ] as [String: String?])
+                .eq("id", value: run.id.uuidString)
+                .execute()
+
+            logInfo("Reset existing pipeline run: \(run.id)", category: .data)
+            return try await fetchPipelineRun(id: run.id)
+        }
+
         let payload: [String: String] = [
             "week_start": weekStart,
             "week_end": weekEnd,
