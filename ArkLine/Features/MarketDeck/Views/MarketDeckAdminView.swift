@@ -468,6 +468,14 @@ struct MarketDeckAdminView: View {
                         .fill(AppColors.textPrimary(colorScheme).opacity(0.05))
                 )
 
+            // Attachments (same buttons as legacy insights section)
+            attachmentsBar
+
+            // Attached items list
+            if !viewModel.attachments.isEmpty {
+                attachmentsList
+            }
+
             HStack {
                 let charCount = pipelineInsights.count
                 Text("\(charCount.formatted()) characters")
@@ -478,7 +486,20 @@ struct MarketDeckAdminView: View {
 
                 Button(action: {
                     Task {
-                        await generationManager.savePipelineContext(insights: pipelineInsights)
+                        // Combine text insights with attachment descriptions
+                        var fullContext = pipelineInsights
+                        if !viewModel.attachments.isEmpty {
+                            let attachmentDescs = viewModel.attachments.map { att in
+                                switch att.type {
+                                case .image: return "[Image: \(att.name)]"
+                                case .pdf: return "[PDF: \(att.name)]"
+                                case .url: return "[URL: \(att.url ?? att.name)]"
+                                }
+                            }.joined(separator: "\n")
+                            if !fullContext.isEmpty { fullContext += "\n\n" }
+                            fullContext += "Attachments:\n\(attachmentDescs)"
+                        }
+                        await generationManager.savePipelineContext(insights: fullContext)
                         withAnimation { showContextEditor = false }
                     }
                 }) {
@@ -493,7 +514,7 @@ struct MarketDeckAdminView: View {
                     .padding(.vertical, ArkSpacing.xs)
                     .background(Capsule().fill(AppColors.accent))
                 }
-                .disabled(pipelineInsights.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(pipelineInsights.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && viewModel.attachments.isEmpty)
             }
         }
     }
