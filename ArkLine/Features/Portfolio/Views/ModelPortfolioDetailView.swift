@@ -6,6 +6,8 @@ struct ModelPortfolioDetailView: View {
     let portfolio: ModelPortfolio
     @Bindable var viewModel: ModelPortfolioViewModel
     @State private var showUnfollowConfirmation = false
+    @State private var qpsSignals: [DailyPositioningSignal] = []
+    private let qpsService = PositioningSignalService()
 
     private var navHistory: [ModelPortfolioNav] {
         if portfolio.isCore { return viewModel.coreNav }
@@ -52,7 +54,12 @@ struct ModelPortfolioDetailView: View {
                     allocationSection(alloc)
                 }
 
-                // Strategy Status
+                // Market Sentiment Context
+                if !qpsSignals.isEmpty {
+                    marketSentimentContext
+                }
+
+                // Strategy Signals
                 strategyStatus
 
                 // Trade Log
@@ -106,6 +113,9 @@ struct ModelPortfolioDetailView: View {
         }
         .task {
             await viewModel.loadDetail(for: portfolio)
+            if let signals = try? await qpsService.fetchLatestSignals() {
+                qpsSignals = signals
+            }
         }
     }
 
@@ -423,6 +433,145 @@ struct ModelPortfolioDetailView: View {
                     }
                 }
             }
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.cardBorder(colorScheme), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Market Sentiment Context
+
+    private var qpsRiskAppetite: Double {
+        guard !qpsSignals.isEmpty else { return 50 }
+        var weightedBullish = 0.0
+        var weightedTotal = 0.0
+        for signal in qpsSignals {
+            let weight: Double = switch signal.assetCategory {
+            case .crypto, .alt_btc: 1.5
+            case .index: 1.2
+            case .stock: 1.0
+            case .commodity, .macro: 0.8
+            }
+            if signal.positioningSignal == .bullish {
+                weightedBullish += weight
+            } else if signal.positioningSignal == .neutral {
+                weightedBullish += weight * 0.4
+            }
+            weightedTotal += weight
+        }
+        return weightedTotal > 0 ? (weightedBullish / weightedTotal) * 100 : 50
+    }
+
+    private var qpsRiskLabel: String {
+        if qpsRiskAppetite >= 70 { return "Risk-On" }
+        if qpsRiskAppetite >= 55 { return "Leaning Risk-On" }
+        if qpsRiskAppetite >= 45 { return "Mixed" }
+        if qpsRiskAppetite >= 30 { return "Leaning Risk-Off" }
+        return "Risk-Off"
+    }
+
+    private var qpsRiskColor: Color {
+        if qpsRiskAppetite >= 70 { return AppColors.success }
+        if qpsRiskAppetite >= 55 { return AppColors.success.opacity(0.7) }
+        if qpsRiskAppetite >= 45 { return AppColors.warning }
+        if qpsRiskAppetite >= 30 { return AppColors.error.opacity(0.7) }
+        return AppColors.error
+    }
+
+    private var sentimentExplanation: String {
+        let btcRisk = latestNav?.btcRiskCategory ?? ""
+        let appetite = qpsRiskLabel
+
+        // Check for divergence between broad sentiment and portfolio positioning
+        let sentimentBullish = qpsRiskAppetite >= 55
+        let portfolioDefensive = btcRisk.contains("Elevated") || btcRisk.contains("High") || btcRisk.contains("Extreme")
+        let sentimentBearish = qpsRiskAppetite < 45
+        let portfolioAggressive = btcRisk.contains("Very Low") || btcRisk.contains("Low")
+
+        if sentimentBullish && portfolioDefensive {
+            return "Broad market sentiment is \(appetite.lowercased()), but BTC cycle risk is \(btcRisk.lowercased()) — the portfolio stays defensive until cycle risk eases."
+        }
+        if sentimentBearish && portfolioAggressive {
+            return "Broad market sentiment is \(appetite.lowercased()), but BTC cycle risk is \(btcRisk.lowercased()) — the portfolio favors exposure because long-term positioning is still early-cycle."
+        }
+        if qpsRiskAppetite >= 70 {
+            return "Broad strength across assets. Conditions align with adding or holding positions."
+        }
+        if qpsRiskAppetite >= 55 {
+            return "More signals tilting bullish. Conditions lean toward selective exposure."
+        }
+        if qpsRiskAppetite >= 45 {
+            return "Signals are split across assets. The portfolio relies on BTC cycle risk to navigate mixed conditions."
+        }
+        if qpsRiskAppetite >= 30 {
+            return "Bearish signals outweigh bullish. The portfolio may hold higher cash to manage downside."
+        }
+        return "Broad weakness across assets. The portfolio prioritizes capital preservation."
+    }
+
+    @ViewBuilder
+    private var marketSentimentContext: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            Text("Market Sentiment")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            HStack(spacing: 10) {
+                // Risk appetite pill
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(qpsRiskColor)
+                        .frame(width: 8, height: 8)
+                    Text(qpsRiskLabel)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(qpsRiskColor)
+                    Text(String(format: "%.0f%%", qpsRiskAppetite))
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(qpsRiskColor)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(qpsRiskColor.opacity(0.1))
+                )
+
+                Spacer()
+
+                Text("\(qpsSignals.count) assets")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textTertiary)
+            }
+
+            // Distribution bar
+            GeometryReader { geo in
+                let total = max(qpsSignals.count, 1)
+                let bPct = Double(qpsSignals.filter { $0.positioningSignal == .bullish }.count) / Double(total)
+                let nPct = Double(qpsSignals.filter { $0.positioningSignal == .neutral }.count) / Double(total)
+                let bearPct = Double(qpsSignals.filter { $0.positioningSignal == .bearish }.count) / Double(total)
+                HStack(spacing: 1) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(AppColors.success)
+                        .frame(width: max(geo.size.width * bPct, 2))
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(AppColors.warning)
+                        .frame(width: max(geo.size.width * nPct, 2))
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(AppColors.error)
+                        .frame(width: max(geo.size.width * bearPct, 2))
+                }
+            }
+            .frame(height: 6)
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+
+            Text(sentimentExplanation)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(ArkSpacing.md)
         .background(AppColors.cardBackground(colorScheme))

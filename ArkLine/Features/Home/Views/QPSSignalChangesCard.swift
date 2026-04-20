@@ -225,40 +225,63 @@ struct QPSSignalChangesCard: View {
         return AppColors.error
     }
 
+    private var riskGuidance: String {
+        if riskAppetite >= 70 {
+            return "Broad strength across assets. Favor adding or holding positions."
+        }
+        if riskAppetite >= 55 {
+            return "More signals tilting bullish. Conditions lean toward selective exposure."
+        }
+        if riskAppetite >= 45 {
+            return "Signals are split. Stay nimble — wait for clearer direction before sizing up."
+        }
+        if riskAppetite >= 30 {
+            return "Bearish signals outweigh bullish. Consider tightening stops or reducing size."
+        }
+        return "Broad weakness across assets. Prioritize capital preservation."
+    }
+
     private var riskAppetiteBar: some View {
-        HStack(spacing: 8) {
-            Text("Risk Appetite")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(AppColors.textSecondary)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text("Risk Appetite")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
 
-            // Mini distribution bar
-            GeometryReader { geo in
-                let total = max(signals.count, 1)
-                let bPct = Double(signals.filter { $0.positioningSignal == .bullish }.count) / Double(total)
-                let nPct = Double(signals.filter { $0.positioningSignal == .neutral }.count) / Double(total)
-                let bearPct = Double(signals.filter { $0.positioningSignal == .bearish }.count) / Double(total)
-                HStack(spacing: 1) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(AppColors.success)
-                        .frame(width: max(geo.size.width * bPct, 2))
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(AppColors.warning)
-                        .frame(width: max(geo.size.width * nPct, 2))
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(AppColors.error)
-                        .frame(width: max(geo.size.width * bearPct, 2))
+                // Mini distribution bar
+                GeometryReader { geo in
+                    let total = max(signals.count, 1)
+                    let bPct = Double(signals.filter { $0.positioningSignal == .bullish }.count) / Double(total)
+                    let nPct = Double(signals.filter { $0.positioningSignal == .neutral }.count) / Double(total)
+                    let bearPct = Double(signals.filter { $0.positioningSignal == .bearish }.count) / Double(total)
+                    HStack(spacing: 1) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(AppColors.success)
+                            .frame(width: max(geo.size.width * bPct, 2))
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(AppColors.warning)
+                            .frame(width: max(geo.size.width * nPct, 2))
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(AppColors.error)
+                            .frame(width: max(geo.size.width * bearPct, 2))
+                    }
                 }
+                .frame(height: 5)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+
+                Text(riskLabel)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(riskColor)
+
+                Text(String(format: "%.0f%%", riskAppetite))
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(riskColor)
             }
-            .frame(height: 5)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
 
-            Text(riskLabel)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(riskColor)
-
-            Text(String(format: "%.0f%%", riskAppetite))
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(riskColor)
+            Text(riskGuidance)
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(10)
         .background(

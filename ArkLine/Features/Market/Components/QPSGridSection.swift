@@ -57,6 +57,22 @@ struct QPSGridSection: View {
         return AppColors.error
     }
 
+    private var riskGuidance: String {
+        if riskAppetite >= 70 {
+            return "Broad strength across assets. Favor adding or holding positions."
+        }
+        if riskAppetite >= 55 {
+            return "More signals tilting bullish. Conditions lean toward selective exposure."
+        }
+        if riskAppetite >= 45 {
+            return "Signals are split. Stay nimble — wait for clearer direction before sizing up."
+        }
+        if riskAppetite >= 30 {
+            return "Bearish signals outweigh bullish. Consider tightening stops or reducing size."
+        }
+        return "Broad weakness across assets. Prioritize capital preservation."
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
@@ -141,6 +157,11 @@ struct QPSGridSection: View {
                     }
                     .frame(height: 6)
                     .clipShape(RoundedRectangle(cornerRadius: 3))
+
+                    Text(riskGuidance)
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 // Signal counts with percentages
