@@ -20,6 +20,8 @@ struct DeckPipelineRun: Codable, Identifiable {
     var errorAddContext: String?
     var errorGenerateSlides: String?
 
+    var outputWebResearch: WebResearchOutput?
+
     let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
@@ -37,6 +39,7 @@ struct DeckPipelineRun: Codable, Identifiable {
         case errorWebResearch = "error_web_research"
         case errorAddContext = "error_add_context"
         case errorGenerateSlides = "error_generate_slides"
+        case outputWebResearch = "output_web_research"
         case createdAt = "created_at"
     }
 
@@ -90,6 +93,33 @@ struct DeckPipelineRun: Codable, Identifiable {
         case .generateSlides: return errorGenerateSlides
         case .review, .publish: return nil
         }
+    }
+}
+
+// MARK: - Web Research Output
+
+struct WebResearchOutput: Codable {
+    let macro: [String]?
+    let global: [String]?
+    let crypto: [String]?
+
+    var allHeadlines: [String] {
+        let all = (macro ?? []) + (global ?? []) + (crypto ?? [])
+        // Extract first sentence of each as a headline
+        return all.compactMap { text in
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return nil }
+            // Take first ~120 chars or first sentence
+            if let dotRange = trimmed.range(of: ". ") {
+                let first = String(trimmed[trimmed.startIndex..<dotRange.upperBound])
+                return first.count > 150 ? String(first.prefix(147)) + "..." : first
+            }
+            return trimmed.count > 150 ? String(trimmed.prefix(147)) + "..." : trimmed
+        }
+    }
+
+    var totalCount: Int {
+        (macro?.count ?? 0) + (global?.count ?? 0) + (crypto?.count ?? 0)
     }
 }
 

@@ -332,6 +332,14 @@ struct MarketDeckAdminView: View {
                     .lineLimit(2)
             }
 
+            // Research results preview (step 2)
+            if step == .webResearch && run.isResearchComplete {
+                if let research = run.outputWebResearch, research.totalCount > 0 {
+                    researchPreview(research)
+                        .padding(.leading, 36)
+                }
+            }
+
             // Context editor (step 3)
             if step == .addContext && showContextEditor && run.isResearchComplete {
                 pipelineContextEditor
@@ -368,6 +376,76 @@ struct MarketDeckAdminView: View {
                 Image(systemName: "circle")
                     .font(.system(size: 16))
                     .foregroundColor(AppColors.textSecondary.opacity(0.4))
+            }
+        }
+    }
+
+    @State private var showResearchDetail = false
+
+    private func researchPreview(_ research: WebResearchOutput) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button { withAnimation { showResearchDetail.toggle() } } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "newspaper")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                    Text("\(research.totalCount) articles found")
+                        .font(AppFonts.caption12Medium)
+                        .foregroundColor(AppColors.accent)
+                    Image(systemName: showResearchDetail ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                }
+            }
+            .buttonStyle(.plain)
+
+            if showResearchDetail {
+                VStack(alignment: .leading, spacing: 8) {
+                    if let macro = research.macro, !macro.isEmpty {
+                        researchCategory("Macro & Policy", items: macro)
+                    }
+                    if let global = research.global, !global.isEmpty {
+                        researchCategory("Global & Liquidity", items: global)
+                    }
+                    if let crypto = research.crypto, !crypto.isEmpty {
+                        researchCategory("Crypto", items: crypto)
+                    }
+                }
+                .padding(ArkSpacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(AppColors.textPrimary(colorScheme).opacity(0.03))
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                Text("Missing something? Add it in Admin Context below.")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textSecondary)
+                    .italic()
+            }
+        }
+    }
+
+    private func researchCategory(_ title: String, items: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.uppercased())
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(AppColors.textSecondary)
+                .tracking(0.5)
+
+            ForEach(Array(items.prefix(3).enumerated()), id: \.offset) { _, item in
+                let headline = item.trimmingCharacters(in: .whitespacesAndNewlines)
+                let preview = headline.count > 120 ? String(headline.prefix(117)) + "..." : headline
+                Text("• \(preview)")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(2)
+            }
+
+            if items.count > 3 {
+                Text("+\(items.count - 3) more")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
     }
