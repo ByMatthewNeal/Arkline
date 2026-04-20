@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       .from("deck_pipeline_runs")
       .update({
         step_web_research: "completed",
-        output_web_research: { webResearch },
+        output_web_research: webResearch,
         error_web_research: null,
         updated_at: new Date().toISOString(),
       })
