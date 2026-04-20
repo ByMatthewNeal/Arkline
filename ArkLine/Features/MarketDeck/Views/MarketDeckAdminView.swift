@@ -491,9 +491,9 @@ struct MarketDeckAdminView: View {
                         if !viewModel.attachments.isEmpty {
                             let attachmentDescs = viewModel.attachments.map { att in
                                 switch att.type {
-                                case .image: return "[Image: \(att.name)]"
-                                case .pdf: return "[PDF: \(att.name)]"
-                                case .url: return "[URL: \(att.url ?? att.name)]"
+                                case .image: return "[Image: \(att.label ?? "image")]"
+                                case .pdf: return "[PDF: \(att.label ?? "document")]"
+                                case .url: return "[URL: \(att.url ?? att.label ?? "link")]"
                                 }
                             }.joined(separator: "\n")
                             if !fullContext.isEmpty { fullContext += "\n\n" }
