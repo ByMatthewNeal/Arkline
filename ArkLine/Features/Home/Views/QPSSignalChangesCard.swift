@@ -194,7 +194,7 @@ struct QPSSignalChangesCard: View {
         var weightedTotal = 0.0
         for signal in signals {
             let weight: Double = switch signal.assetCategory {
-            case .crypto, .altBtc: 1.5
+            case .crypto, .alt_btc: 1.5
             case .index: 1.2
             case .stock: 1.0
             case .commodity, .macro: 0.8

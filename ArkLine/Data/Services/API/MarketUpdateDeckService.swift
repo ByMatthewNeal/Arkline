@@ -277,4 +277,120 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
             "slide_feedback": feedback
         ])
     }
+
+    // MARK: - Pipeline
+
+    private let pipelineTable = "deck_pipeline_runs"
+
+    func createPipelineRun(weekStart: String, weekEnd: String) async throws -> DeckPipelineRun {
+        guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
+
+        let payload: [String: String] = [
+            "week_start": weekStart,
+            "week_end": weekEnd,
+            "step_gather_data": "pending",
+            "step_web_research": "pending",
+            "step_add_context": "pending",
+            "step_generate_slides": "pending",
+            "step_review": "pending",
+            "step_publish": "pending"
+        ]
+
+        let run: DeckPipelineRun = try await supabase.database
+            .from(pipelineTable)
+            .insert(payload)
+            .select()
+            .single()
+            .execute()
+            .value
+
+        logInfo("Created pipeline run: \(run.id)", category: .data)
+        return run
+    }
+
+    func fetchPipelineRun(id: UUID) async throws -> DeckPipelineRun {
+        guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
+
+        return try await supabase.database
+            .from(pipelineTable)
+            .select()
+            .eq("id", value: id.uuidString)
+            .single()
+            .execute()
+            .value
+    }
+
+    func fetchLatestPipelineRun() async throws -> DeckPipelineRun? {
+        guard supabase.isConfigured else { return nil }
+
+        let runs: [DeckPipelineRun] = try await supabase.database
+            .from(pipelineTable)
+            .select()
+            .order("created_at", ascending: false)
+            .limit(1)
+            .execute()
+            .value
+
+        return runs.first
+    }
+
+    func runPipelineStep(_ step: PipelineStep, runId: UUID) async throws {
+        guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
+
+        let functionName: String
+        switch step {
+        case .gatherData:
+            functionName = "deck-pipeline-gather"
+        case .webResearch:
+            functionName = "deck-pipeline-research"
+        case .generateSlides:
+            functionName = "deck-pipeline-generate"
+        case .addContext, .review, .publish:
+            // These are not edge-function steps
+            return
+        }
+
+        let baseUrl = Constants.API.supabaseURL
+        guard var components = URLComponents(string: "\(baseUrl)/functions/v1/\(functionName)") else {
+            throw AppError.custom(message: "Invalid Supabase URL")
+        }
+        components.queryItems = [URLQueryItem(name: "pipeline_run_id", value: runId.uuidString)]
+
+        guard let url = components.url else {
+            throw AppError.custom(message: "Invalid Supabase URL")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 120
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let token = try? await supabase.auth.session.accessToken
+        request.setValue("Bearer \(token ?? Constants.API.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await PinnedURLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw AppError.custom(message: "Pipeline step \(step.displayName) failed: \(body)")
+        }
+
+        logInfo("Pipeline step \(step.displayName) completed for run \(runId)", category: .data)
+    }
+
+    func updatePipelineContext(runId: UUID, insights: String) async throws {
+        guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
+
+        let payload = PipelineContextUpdate(
+            stepAddContext: "done",
+            outputContext: insights
+        )
+
+        try await supabase.database
+            .from(pipelineTable)
+            .update(payload)
+            .eq("id", value: runId.uuidString)
+            .execute()
+
+        logInfo("Pipeline context updated for run \(runId)", category: .data)
+    }
 }

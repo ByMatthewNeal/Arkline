@@ -18,6 +18,13 @@ final class DeckGenerationManager {
     var completedDeck: MarketUpdateDeck?
     var errorMessage: String?
 
+    // MARK: - Pipeline State
+
+    var pipelineRun: DeckPipelineRun?
+    var isPipelineRunning = false
+    var pipelineStepInProgress: PipelineStep?
+    var pipelineError: String?
+
     enum GenerationStep: String {
         case fetchingData = "Fetching market data..."
         case researching = "Researching this week's news..."
@@ -129,6 +136,138 @@ final class DeckGenerationManager {
         let deck = completedDeck
         completedDeck = nil
         return deck
+    }
+
+    // MARK: - Pipeline
+
+    /// Start a full pipeline run: creates the run, then executes gather -> research -> generate sequentially.
+    /// Step 3 (add context) is skipped here — the admin fills it in via the UI before step 4 runs.
+    func runPipeline(weekStart: String, weekEnd: String) {
+        guard !isPipelineRunning else { return }
+        isPipelineRunning = true
+        pipelineError = nil
+
+        Task { @MainActor in
+            do {
+                // Create the pipeline run
+                let run = try await service.createPipelineRun(weekStart: weekStart, weekEnd: weekEnd)
+                self.pipelineRun = run
+
+                // Step 1: Gather Data
+                self.pipelineStepInProgress = .gatherData
+                try await service.runPipelineStep(.gatherData, runId: run.id)
+                self.pipelineRun = try await service.fetchPipelineRun(id: run.id)
+
+                // Step 2: Web Research
+                self.pipelineStepInProgress = .webResearch
+                try await service.runPipelineStep(.webResearch, runId: run.id)
+                self.pipelineRun = try await service.fetchPipelineRun(id: run.id)
+
+                // Pause here — wait for admin to add context (step 3)
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+
+                await self.sendNotification(
+                    title: "Pipeline Ready for Context",
+                    body: "Data gathered and research complete. Add your insights to continue."
+                )
+            } catch {
+                self.pipelineError = error.localizedDescription
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+                // Refresh run state on error
+                if let runId = self.pipelineRun?.id {
+                    self.pipelineRun = try? await service.fetchPipelineRun(id: runId)
+                }
+                await self.sendNotification(
+                    title: "Pipeline Step Failed",
+                    body: error.localizedDescription
+                )
+            }
+        }
+    }
+
+    /// Continue the pipeline after admin context has been added — runs step 4 (generate slides).
+    func continuePipelineGeneration() {
+        guard let run = pipelineRun, !isPipelineRunning else { return }
+        isPipelineRunning = true
+        pipelineError = nil
+
+        Task { @MainActor in
+            do {
+                self.pipelineStepInProgress = .generateSlides
+                try await service.runPipelineStep(.generateSlides, runId: run.id)
+                self.pipelineRun = try await service.fetchPipelineRun(id: run.id)
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+
+                await self.sendNotification(
+                    title: "Slides Generated",
+                    body: "Pipeline complete. Review and publish your deck."
+                )
+            } catch {
+                self.pipelineError = error.localizedDescription
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+                if let runId = self.pipelineRun?.id {
+                    self.pipelineRun = try? await service.fetchPipelineRun(id: runId)
+                }
+                await self.sendNotification(
+                    title: "Slide Generation Failed",
+                    body: error.localizedDescription
+                )
+            }
+        }
+    }
+
+    /// Retry a single failed pipeline step.
+    func retryStep(_ step: PipelineStep) {
+        guard let run = pipelineRun, !isPipelineRunning else { return }
+
+        if step == .addContext {
+            // Context step is manual — nothing to retry
+            return
+        }
+
+        isPipelineRunning = true
+        pipelineError = nil
+
+        Task { @MainActor in
+            do {
+                self.pipelineStepInProgress = step
+                try await service.runPipelineStep(step, runId: run.id)
+                self.pipelineRun = try await service.fetchPipelineRun(id: run.id)
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+            } catch {
+                self.pipelineError = error.localizedDescription
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+                if let runId = self.pipelineRun?.id {
+                    self.pipelineRun = try? await service.fetchPipelineRun(id: runId)
+                }
+            }
+        }
+    }
+
+    /// Save admin context to the pipeline run (step 3).
+    func savePipelineContext(insights: String) async {
+        guard let run = pipelineRun else { return }
+        do {
+            try await service.updatePipelineContext(runId: run.id, insights: insights)
+            pipelineRun = try await service.fetchPipelineRun(id: run.id)
+        } catch {
+            pipelineError = error.localizedDescription
+        }
+    }
+
+    /// Load the latest pipeline run from the server.
+    func loadLatestPipelineRun() async {
+        do {
+            pipelineRun = try await service.fetchLatestPipelineRun()
+        } catch {
+            logWarning("Failed to load pipeline run: \(error)", category: .data)
+        }
     }
 
     // MARK: - Local Notification

@@ -43,4 +43,21 @@ protocol MarketUpdateDeckServiceProtocol {
 
     /// Admin: Regenerate a single slide based on feedback
     func regenerateSlide(deckId: UUID, slideType: String, feedback: String) async throws -> MarketUpdateDeck
+
+    // MARK: - Pipeline
+
+    /// Create a new pipeline run for the given week range
+    func createPipelineRun(weekStart: String, weekEnd: String) async throws -> DeckPipelineRun
+
+    /// Fetch a specific pipeline run by ID
+    func fetchPipelineRun(id: UUID) async throws -> DeckPipelineRun
+
+    /// Fetch the most recent pipeline run (any status)
+    func fetchLatestPipelineRun() async throws -> DeckPipelineRun?
+
+    /// Run a specific pipeline step via edge function
+    func runPipelineStep(_ step: PipelineStep, runId: UUID) async throws
+
+    /// Update the admin context for a pipeline run (step 3)
+    func updatePipelineContext(runId: UUID, insights: String) async throws
 }
