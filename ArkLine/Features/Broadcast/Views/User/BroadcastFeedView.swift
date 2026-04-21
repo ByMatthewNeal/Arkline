@@ -36,6 +36,7 @@ struct BroadcastFeedView: View {
     @State private var selectedDateFilter: BroadcastDateFilter = .all
     @State private var selectedTags: Set<String> = []
     @State private var navigationPath = NavigationPath()
+    @State private var showDictionary = false
 
     // MARK: - Filtered Broadcasts
 
@@ -142,6 +143,9 @@ struct BroadcastFeedView: View {
                     } else if viewModel.published.isEmpty {
                         emptyStateView
                     } else {
+                        // Dictionary quick access
+                        dictionaryCard
+
                         // Filter bar
                         filterBar
 
@@ -472,6 +476,49 @@ struct BroadcastFeedView: View {
     }
 
     // MARK: - Empty State
+
+    // MARK: - Dictionary Card
+
+    private var dictionaryCard: some View {
+        Button { showDictionary = true } label: {
+            HStack(spacing: ArkSpacing.sm) {
+                Image(systemName: "character.book.closed.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.purple)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Arkline Dictionary")
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    Text("Look up investing terms and crypto vocabulary")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+            }
+            .padding(ArkSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(AppColors.cardBackground(colorScheme))
+            )
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showDictionary) {
+            NavigationStack {
+                DictionaryView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { showDictionary = false }
+                        }
+                    }
+            }
+        }
+    }
 
     private var emptyStateView: some View {
         EmptyStateView(

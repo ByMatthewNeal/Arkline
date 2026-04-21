@@ -11,6 +11,7 @@
 		D1C7100000000000000002 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000012 /* DictionaryService.swift */; };
 		D1C7100000000000000003 /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000013 /* DictionaryView.swift */; };
 		D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000014 /* AdminDictionaryView.swift */; };
+		D1CTL1NK00000000000B1 /* DictionaryTermLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1CTL1NK00000000000A1 /* DictionaryTermLink.swift */; };
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
 		OBFSC4T3DBLD00000000001 /* ObfuscatedSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBFSC4T3DSECR3TS0000001 /* ObfuscatedSecrets.swift */; };
 		0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD3282515B7877788D18601 /* TrendChannelChart.swift */; };
@@ -545,6 +546,7 @@
 		D1C7100000000000000012 /* DictionaryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
 		D1C7100000000000000013 /* DictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
 		D1C7100000000000000014 /* AdminDictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdminDictionaryView.swift; sourceTree = "<group>"; };
+		D1CTL1NK00000000000A1 /* DictionaryTermLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryTermLink.swift; sourceTree = "<group>"; };
 		00484C79E00F1632FE689F24 /* ModelPortfolioCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPortfolioCard.swift; sourceTree = "<group>"; };
 		0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDSetupView.swift; sourceTree = "<group>"; };
 		0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilServiceProtocol.swift; sourceTree = "<group>"; };
@@ -1337,6 +1339,7 @@
 			children = (
 				D1C7100000000000000013 /* DictionaryView.swift */,
 				D1C7100000000000000014 /* AdminDictionaryView.swift */,
+				D1CTL1NK00000000000A1 /* DictionaryTermLink.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2580,6 +2583,7 @@
 				D1C7100000000000000002 /* DictionaryService.swift in Sources */,
 				D1C7100000000000000003 /* DictionaryView.swift in Sources */,
 				D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */,
+				D1CTL1NK00000000000B1 /* DictionaryTermLink.swift in Sources */,
 				40AE6A8D52151D66ACFB7CF9 /* DeckPipelineRun.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFA /* DCAPlan.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFB /* DCATrackerService.swift in Sources */,

@@ -3,6 +3,8 @@ import SwiftUI
 // MARK: - Dictionary View
 
 struct DictionaryView: View {
+    var initialSearch: String? = nil
+
     @Environment(\.colorScheme) var colorScheme
     @State private var terms: [DictionaryTerm] = []
     @State private var searchText = ""
@@ -94,7 +96,16 @@ struct DictionaryView: View {
         .navigationBarTitleDisplayMode(.large)
         #endif
         .searchable(text: $searchText, prompt: "Search terms...")
-        .task { await loadTerms() }
+        .task {
+            await loadTerms()
+            if let initial = initialSearch, !initial.isEmpty {
+                searchText = initial
+                // Auto-expand the matching term
+                if let match = terms.first(where: { $0.term.localizedCaseInsensitiveContains(initial) }) {
+                    expandedTermId = match.id
+                }
+            }
+        }
         .refreshable { await loadTerms() }
     }
 

@@ -105,6 +105,7 @@ struct BollingerBandsCard: View {
             Text("Bollinger Bands")
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
+                .dictionaryLink("Bollinger Bands")
 
             Divider()
                 .background(AppColors.divider(colorScheme))
@@ -375,6 +376,7 @@ struct KeyLevelsCard: View {
                         .font(.caption)
                     Text(sma.goldenCross ? "Golden Cross" : "Death Cross")
                         .font(.caption.bold())
+                        .dictionaryLink(sma.goldenCross ? "Golden Cross" : "Death Cross")
                 }
                 .foregroundColor(sma.goldenCross ? AppColors.success : AppColors.error)
                 .padding(.top, 4)
