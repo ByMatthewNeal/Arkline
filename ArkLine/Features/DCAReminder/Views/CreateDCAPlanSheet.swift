@@ -540,20 +540,9 @@ struct CreateDCAPlanSheet: View {
     // MARK: - Available Assets
 
     private var availableAssets: [(symbol: String, name: String)] {
-        [
-            ("BTC", "Bitcoin"),
-            ("ETH", "Ethereum"),
-            ("SOL", "Solana"),
-            ("SUI", "Sui"),
-            ("LINK", "Chainlink"),
-            ("AVAX", "Avalanche"),
-            ("RENDER", "Render"),
-            ("ADA", "Cardano"),
-            ("DOT", "Polkadot"),
-            ("ONDO", "Ondo"),
-            ("UNI", "Uniswap"),
-            ("APT", "Aptos"),
-        ]
+        let crypto = CoinOption.cryptoCoins.map { ($0.symbol, $0.name) }
+        let stocks = CoinOption.stockCoins.map { ($0.symbol, $0.name) }
+        return crypto + stocks
     }
 }
 
