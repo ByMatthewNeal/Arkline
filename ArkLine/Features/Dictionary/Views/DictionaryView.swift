@@ -256,7 +256,7 @@ struct DictionaryView: View {
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppColors.textSecondary)
 
-                            FlowLayout(spacing: ArkSpacing.xxs) {
+                            DictionaryFlowLayout(spacing: ArkSpacing.xxs) {
                                 ForEach(related, id: \.self) { relatedTerm in
                                     Button {
                                         scrollToTerm(relatedTerm)
@@ -323,7 +323,7 @@ struct DictionaryView: View {
 // MARK: - Flow Layout
 
 /// Simple flow layout for wrapping related term chips.
-private struct FlowLayout: Layout {
+private struct DictionaryFlowLayout: Layout {
     var spacing: CGFloat = 4
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
