@@ -27,6 +27,12 @@ struct MarketPulseSlideView: View {
                     assetTile(asset)
                 }
             }
+
+            Text("Prices and changes reflect Monday open → Friday close for the week.")
+                .font(.system(size: 10))
+                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
         }
     }
 

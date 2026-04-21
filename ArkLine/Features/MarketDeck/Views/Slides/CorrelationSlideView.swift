@@ -20,6 +20,14 @@ struct CorrelationSlideView: View {
             ForEach(data.groups) { group in
                 groupSection(group)
             }
+
+            // Data context note
+            Text("Prices reflect Friday close. Weekly change is Monday open → Friday close.")
+                .font(.system(size: 10))
+                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.top, ArkSpacing.xs)
         }
     }
 

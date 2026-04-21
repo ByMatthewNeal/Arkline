@@ -76,6 +76,10 @@ struct CoverSlideView: View {
                             .font(AppFonts.number20)
                             .foregroundColor(btcChange >= 0 ? AppColors.success : AppColors.error)
                     }
+
+                    Text("Week closing price")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
                 }
             }
 

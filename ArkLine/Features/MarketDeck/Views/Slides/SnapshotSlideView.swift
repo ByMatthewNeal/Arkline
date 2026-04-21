@@ -149,6 +149,12 @@ struct SnapshotSlideView: View {
                     .cornerRadius(ArkSpacing.Radius.md)
                 }
             }
+
+            Text("Data reflects end-of-week values. Risk levels and signals update daily.")
+                .font(.system(size: 10))
+                .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
         }
     }
 
