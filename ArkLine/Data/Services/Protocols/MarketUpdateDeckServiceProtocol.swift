@@ -59,5 +59,5 @@ protocol MarketUpdateDeckServiceProtocol {
     func runPipelineStep(_ step: PipelineStep, runId: UUID) async throws
 
     /// Update the admin context for a pipeline run (step 3)
-    func updatePipelineContext(runId: UUID, insights: String) async throws
+    func updatePipelineContext(runId: UUID, insights: String, attachments: [InsightAttachment]) async throws
 }
