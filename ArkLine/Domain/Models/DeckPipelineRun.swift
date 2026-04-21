@@ -179,9 +179,34 @@ enum PipelineStep: String, CaseIterable, Identifiable {
 
 // MARK: - Pipeline Update Payloads
 
+struct PipelineContextPayload: Codable {
+    let adminInsights: String
+    let attachments: [PipelineAttachment]?
+
+    enum CodingKeys: String, CodingKey {
+        case adminInsights = "admin_insights"
+        case attachments
+    }
+}
+
+struct PipelineAttachment: Codable {
+    let type: String        // "image", "pdf", "url"
+    let storagePath: String?
+    let url: String?
+    let label: String?
+    let extractedText: String?
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case storagePath = "storage_path"
+        case url, label
+        case extractedText = "extracted_text"
+    }
+}
+
 struct PipelineContextUpdate: Encodable {
     let stepAddContext: String
-    let outputContext: String
+    let outputContext: PipelineContextPayload
 
     enum CodingKeys: String, CodingKey {
         case stepAddContext = "step_add_context"

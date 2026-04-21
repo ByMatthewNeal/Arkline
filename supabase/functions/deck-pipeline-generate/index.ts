@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
     const briefings = gatherData.briefings ?? []
 
     // Web research (may be null if step was skipped)
-    const webResearch: Record<string, string[]> = researchData?.webResearch ?? {}
+    const webResearch: Record<string, string[]> = researchData ?? {}
 
     // Admin context (may be null if step was skipped)
     const adminInsights = contextData?.admin_insights ?? ""

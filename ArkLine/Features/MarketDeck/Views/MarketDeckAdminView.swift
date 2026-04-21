@@ -594,7 +594,7 @@ struct MarketDeckAdminView: View {
                             if !fullContext.isEmpty { fullContext += "\n\n" }
                             fullContext += "Attachments:\n\(attachmentDescs)"
                         }
-                        await generationManager.savePipelineContext(insights: fullContext)
+                        await generationManager.savePipelineContext(insights: pipelineInsights, attachments: viewModel.attachments)
                         withAnimation { showContextEditor = false }
                     }
                 }) {

@@ -251,10 +251,10 @@ final class DeckGenerationManager {
     }
 
     /// Save admin context to the pipeline run (step 3).
-    func savePipelineContext(insights: String) async {
+    func savePipelineContext(insights: String, attachments: [InsightAttachment] = []) async {
         guard let run = pipelineRun else { return }
         do {
-            try await service.updatePipelineContext(runId: run.id, insights: insights)
+            try await service.updatePipelineContext(runId: run.id, insights: insights, attachments: attachments)
             pipelineRun = try await service.fetchPipelineRun(id: run.id)
         } catch {
             pipelineError = error.localizedDescription

@@ -410,12 +410,25 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
         logInfo("Pipeline step \(step.displayName) completed for run \(runId)", category: .data)
     }
 
-    func updatePipelineContext(runId: UUID, insights: String) async throws {
+    func updatePipelineContext(runId: UUID, insights: String, attachments: [InsightAttachment] = []) async throws {
         guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
+
+        let pipelineAttachments = attachments.map { att in
+            PipelineAttachment(
+                type: att.type.rawValue,
+                storagePath: att.storagePath,
+                url: att.url,
+                label: att.label,
+                extractedText: att.extractedText
+            )
+        }
 
         let payload = PipelineContextUpdate(
             stepAddContext: "completed",
-            outputContext: insights
+            outputContext: PipelineContextPayload(
+                adminInsights: insights,
+                attachments: pipelineAttachments.isEmpty ? nil : pipelineAttachments
+            )
         )
 
         try await supabase.database
