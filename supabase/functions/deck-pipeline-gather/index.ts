@@ -343,14 +343,22 @@ Deno.serve(async (req) => {
     })
 
     // Process Macro data
+    function safeWeeklyChange(monPrice: number | null, friPrice: number | null): number | null {
+      if (monPrice == null || friPrice == null || monPrice <= 0) return null
+      const rawChange = ((friPrice - monPrice) / monPrice) * 100
+      // Skip if >50% — likely ETF→real price mismatch from transition period
+      if (Math.abs(rawChange) > 50) return null
+      return Math.round(rawChange * 100) / 100
+    }
+
     const macroData: Record<string, { value: number | null; change: number | null }> = {
       VIX: {
         value: vixFri?.[0]?.price ?? null,
-        change: vixMon?.[0]?.price != null && vixFri?.[0]?.price != null ? Math.round(((vixFri[0].price - vixMon[0].price) / vixMon[0].price) * 10000) / 100 : null,
+        change: safeWeeklyChange(vixMon?.[0]?.price ?? null, vixFri?.[0]?.price ?? null),
       },
       DXY: {
         value: dxyFri?.[0]?.price ?? null,
-        change: dxyMon?.[0]?.price != null && dxyFri?.[0]?.price != null ? Math.round(((dxyFri[0].price - dxyMon[0].price) / dxyMon[0].price) * 10000) / 100 : null,
+        change: safeWeeklyChange(dxyMon?.[0]?.price ?? null, dxyFri?.[0]?.price ?? null),
       },
     }
 
@@ -422,7 +430,19 @@ Deno.serve(async (req) => {
       const monPrice = crossMondayMap.get(symbol) ?? null
       const latest = crossLatestMap.get(symbol)
       const latPrice = latest?.price ?? null
-      const change = monPrice != null && latPrice != null ? Math.round(((latPrice - monPrice) / monPrice) * 10000) / 100 : null
+
+      let change: number | null = null
+      if (monPrice != null && latPrice != null && monPrice > 0) {
+        const rawChange = ((latPrice - monPrice) / monPrice) * 100
+        // Sanity check: if change exceeds ±50%, it's likely an ETF→real price mismatch
+        // (e.g., USO $116 → WTI $83, UUP $27 → DXY $98). Skip the change in that case.
+        if (Math.abs(rawChange) <= 50) {
+          change = Math.round(rawChange * 100) / 100
+        } else {
+          console.warn(`[gather] ${symbol}: skipping weekly change (${rawChange.toFixed(1)}%) — likely ETF/real price mismatch`)
+        }
+      }
+
       return { symbol, week_change: change, signal: latest?.signal ?? null, price: latPrice }
     }
 
