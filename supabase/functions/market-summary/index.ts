@@ -625,7 +625,7 @@ Deno.serve(async (req) => {
 
     const morningInstructions = isFriday
       ? `This is the FRIDAY MORNING briefing. Frame it as the final trading day of the week: what happened overnight, what futures signal for today's open, and what needs to happen today to close the week strong or weak. Reference this being the last session before the weekend.`
-      : `This is the ${dayName.toUpperCase()} MORNING briefing. Focus specifically on TODAY: what happened overnight in Asia and Europe (any major moves or themes), what US futures are signaling for today's open, key events to watch today, and how to think about positioning for this specific session. Be concrete about today's setup — not vague generalizations. Include overnight/pre-market context from global markets.`
+      : `This is the ${dayName.toUpperCase()} MORNING briefing (delivered 30 minutes after the US open). You have early session data — compare how overnight/pre-market action in Asia and Europe set the stage vs how the US open is actually playing out. Are US markets confirming or diverging from overnight moves? Cover what happened overnight, how the US opened, any early session momentum or reversals, and key events still ahead today. Be concrete about what's happening right now — not vague generalizations.`
 
     const eveningInstructions = isFriday
       ? `This is the FRIDAY EVENING briefing — the weekly wrap-up. Review how today AND the full week played out. Use the WEEKLY PERFORMANCE data to give a clear picture of how markets moved Monday through Friday. Highlight the week's biggest winners, losers, and key turning points. Summarize what changed in positioning, macro regime, or sentiment over the week. End with what to watch over the weekend and heading into next week.`
