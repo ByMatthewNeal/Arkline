@@ -38,7 +38,6 @@ struct MarketDeckAdminView: View {
                             pipelineStepsView
                         }
 
-                        insightsSection
                         actionsSection(deck)
                     }
                     .padding(.horizontal, ArkSpacing.md)
@@ -86,6 +85,26 @@ struct MarketDeckAdminView: View {
         .onChange(of: generationManager.isRegenerating) { _, isRegenerating in
             if !isRegenerating {
                 viewModel.checkForCompletedGeneration()
+            }
+        }
+        .onChange(of: selectedPhotos) { _, newItems in
+            guard !newItems.isEmpty else { return }
+            Task {
+                for item in newItems {
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        await viewModel.addImage(data)
+                    }
+                }
+                selectedPhotos = []
+            }
+        }
+        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf], allowsMultipleSelection: true) { result in
+            if case .success(let urls) = result {
+                Task {
+                    for url in urls {
+                        await viewModel.addPDF(from: url)
+                    }
+                }
             }
         }
         .fullScreenCover(isPresented: $showViewer) {
@@ -532,106 +551,7 @@ struct MarketDeckAdminView: View {
         }
     }
 
-    // MARK: - Admin Insights
-
-    private var insightsSection: some View {
-        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-            HStack {
-                Image(systemName: "brain.head.profile")
-                    .foregroundColor(AppColors.accent)
-                Text("Admin Insights")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-            }
-
-            Text("Paste transcripts, external context, data, or observations. This will be woven into the narrative when you regenerate.")
-                .font(AppFonts.footnote10)
-                .foregroundColor(AppColors.textSecondary)
-
-            TextField("Paste transcript or share market context...",
-                      text: Binding(
-                        get: { viewModel.adminInsights },
-                        set: { viewModel.updateInsights($0) }
-                      ),
-                      axis: .vertical)
-                .font(AppFonts.body14)
-                .foregroundColor(AppColors.textPrimary(colorScheme))
-                .lineLimit(4...50)
-                .padding(ArkSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(AppColors.textPrimary(colorScheme).opacity(0.05))
-                )
-
-            // Character count + limit warning
-            HStack {
-                let charCount = viewModel.adminInsights.count
-                let limit = 40000
-                Text("\(charCount.formatted()) characters")
-                    .font(.system(size: 10))
-                    .foregroundColor(charCount > limit ? AppColors.error : AppColors.textSecondary)
-                if charCount > limit {
-                    Text("— will be truncated to \(limit.formatted())")
-                        .font(.system(size: 10))
-                        .foregroundColor(AppColors.warning)
-                }
-                Spacer()
-            }
-
-            // Attachments
-            attachmentsBar
-
-            // Attached items list
-            if !viewModel.attachments.isEmpty {
-                attachmentsList
-            }
-
-            Button(action: {
-                Task { await viewModel.regenerateNarrative() }
-            }) {
-                HStack(spacing: ArkSpacing.xs) {
-                    if viewModel.isRegenerating {
-                        ProgressView()
-                            .tint(.white)
-                            .controlSize(.small)
-                    } else {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                    }
-                    Text(viewModel.isRegenerating ? "Regenerating..." : "Regenerate Narrative with Insights")
-                }
-                .font(AppFonts.body14Medium)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ArkSpacing.sm)
-                .background(RoundedRectangle(cornerRadius: 10).fill(
-                    (viewModel.adminInsights.isEmpty && viewModel.attachments.isEmpty) ? Color.gray.opacity(0.3) : AppColors.accent.opacity(0.8)
-                ))
-            }
-            .disabled(viewModel.isRegenerating || (viewModel.adminInsights.isEmpty && viewModel.attachments.isEmpty))
-        }
-        .padding(ArkSpacing.md)
-        .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.cardBackground(colorScheme)))
-        .onChange(of: selectedPhotos) { _, newItems in
-            guard !newItems.isEmpty else { return }
-            Task {
-                for item in newItems {
-                    if let data = try? await item.loadTransferable(type: Data.self) {
-                        await viewModel.addImage(data)
-                    }
-                }
-                selectedPhotos = []
-            }
-        }
-        .fileImporter(isPresented: $showPDFImporter, allowedContentTypes: [.pdf], allowsMultipleSelection: true) { result in
-            if case .success(let urls) = result {
-                Task {
-                    for url in urls {
-                        await viewModel.addPDF(from: url)
-                    }
-                }
-            }
-        }
-    }
+    // Admin Insights section removed — pipeline context editor (step 3) replaces it
 
     // MARK: - Attachments
 
