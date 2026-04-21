@@ -224,7 +224,10 @@ struct MarketDeckAdminView: View {
                 Spacer()
 
                 Button {
-                    Task { await generationManager.resetPipeline() }
+                    Task {
+                        await generationManager.resetPipeline()
+                        viewModel.deck = nil
+                    }
                 } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.counterclockwise")
