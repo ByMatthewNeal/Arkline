@@ -109,6 +109,12 @@
 		40A81608DAEB3AA5D63F5E75 /* MockSantimentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51911C535784ED78B6640ECB /* MockSantimentService.swift */; };
 		40AE6A8D52151D66ACFB7CF8 /* MarketUpdateDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BB7 /* MarketUpdateDeck.swift */; };
 		40AE6A8D52151D66ACFB7CF9 /* DeckPipelineRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BB8 /* DeckPipelineRun.swift */; };
+		40AE6A8D52151D66ACFB7CFA /* DCAPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BB9 /* DCAPlan.swift */; };
+		40AE6A8D52151D66ACFB7CFB /* DCATrackerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */; };
+		40AE6A8D52151D66ACFB7CFC /* DCATrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBC /* DCATrackerViewModel.swift */; };
+		40AE6A8D52151D66ACFB7CFD /* DCATrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBD /* DCATrackerView.swift */; };
+		40AE6A8D52151D66ACFB7CFE /* LogDCAEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBE /* LogDCAEntrySheet.swift */; };
+		40AE6A8D52151D66ACFB7CFF /* CreateDCAPlanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBF /* CreateDCAPlanSheet.swift */; };
 		43A46C7A8D6ED6366495D642 /* ArkLineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872F085E24F150BFF85D1495 /* ArkLineApp.swift */; };
 		4433FD00AA4FB79D6C649E7E /* MarketDeckAdminView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF0B7F23910213A2F39DE931 /* MarketDeckAdminView.swift */; };
 		443B89F3386009063C6E7535 /* DCACalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B8B3B915F6DCA0B6875473B /* DCACalculatorTests.swift */; };
@@ -919,6 +925,12 @@
 		CE653C2A2305A887530EDE39 /* MemberDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberDetailView.swift; sourceTree = "<group>"; };
 		CEF5A53F64277F0C17066BB7 /* MarketUpdateDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketUpdateDeck.swift; sourceTree = "<group>"; };
 		CEF5A53F64277F0C17066BB8 /* DeckPipelineRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckPipelineRun.swift; sourceTree = "<group>"; };
+		CEF5A53F64277F0C17066BB9 /* DCAPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAPlan.swift; sourceTree = "<group>"; };
+		CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCATrackerService.swift; sourceTree = "<group>"; };
+		CEF5A53F64277F0C17066BBC /* DCATrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCATrackerViewModel.swift; sourceTree = "<group>"; };
+		CEF5A53F64277F0C17066BBD /* DCATrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCATrackerView.swift; sourceTree = "<group>"; };
+		CEF5A53F64277F0C17066BBE /* LogDCAEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogDCAEntrySheet.swift; sourceTree = "<group>"; };
+		CEF5A53F64277F0C17066BBF /* CreateDCAPlanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateDCAPlanSheet.swift; sourceTree = "<group>"; };
 		CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
 		CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		CF8C52768AD67E7DEDCACB74 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
@@ -1288,6 +1300,7 @@
 				A1B2C3D4E5F6QPS00002A2 /* PositioningSignalService.swift */,
 				D3D169743CDD2699BA2588B9 /* MarketUpdateDeckService.swift */,
 				8724E2D3E93BA6FCE5A837E4 /* APIModelPortfolioService.swift */,
+				CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1469,6 +1482,7 @@
 				CEF5A53F64277F0C17066BB7 /* MarketUpdateDeck.swift */,
 				CEF5A53F64277F0C17066BB8 /* DeckPipelineRun.swift */,
 				E2CC71D62DC2BA6B7FCBF05B /* ModelPortfolio.swift */,
+				CEF5A53F64277F0C17066BB9 /* DCAPlan.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -1610,12 +1624,15 @@
 			isa = PBXGroup;
 			children = (
 				C01NP1CK3RV13W0000001 /* CoinPickerView.swift */,
+				CEF5A53F64277F0C17066BBF /* CreateDCAPlanSheet.swift */,
 				CR3AT3DCA5H33TV13W001 /* CreateDCASheetView.swift */,
 				DCA0C0MP0N3NT5SW1FT0001 /* DCAComponents.swift */,
 				43F759895BAB16CAE9827A96 /* DCAListView.swift */,
+				CEF5A53F64277F0C17066BBD /* DCATrackerView.swift */,
 				DCATYP35SW1FT00000001 /* DCATypes.swift */,
 				3D1TDCA5H33TV13W00001 /* EditDCASheetView.swift */,
 				1NV35TH15T0RY5H33T001 /* InvestmentHistorySheetView.swift */,
+				CEF5A53F64277F0C17066BBE /* LogDCAEntrySheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2027,6 +2044,7 @@
 			isa = PBXGroup;
 			children = (
 				3C17169C2A394081F66E2FF3 /* DCAViewModel.swift */,
+				CEF5A53F64277F0C17066BBC /* DCATrackerViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -2528,6 +2546,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				40AE6A8D52151D66ACFB7CF9 /* DeckPipelineRun.swift in Sources */,
+				40AE6A8D52151D66ACFB7CFA /* DCAPlan.swift in Sources */,
+				40AE6A8D52151D66ACFB7CFB /* DCATrackerService.swift in Sources */,
+				40AE6A8D52151D66ACFB7CFC /* DCATrackerViewModel.swift in Sources */,
+				40AE6A8D52151D66ACFB7CFD /* DCATrackerView.swift in Sources */,
+				40AE6A8D52151D66ACFB7CFE /* LogDCAEntrySheet.swift in Sources */,
+				40AE6A8D52151D66ACFB7CFF /* CreateDCAPlanSheet.swift in Sources */,
 				A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */,
 				08AE2BAAE53E456BB1EE4C1C /* QPSFullGridView.swift in Sources */,
 				A1B2C3D4E5F6QPS00005B5 /* QPSGridSection.swift in Sources */,

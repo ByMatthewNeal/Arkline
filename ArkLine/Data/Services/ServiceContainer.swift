@@ -76,6 +76,9 @@ final class ServiceContainer {
     // MARK: - Lazy Services - Model Portfolios
     private lazy var _modelPortfolioService = APIModelPortfolioService()
 
+    // MARK: - Lazy Services - DCA Tracker
+    private lazy var _dcaTrackerService = DCATrackerService()
+
     // MARK: - Service Accessors
 
     /// Market service uses real CoinGecko API for live crypto prices
@@ -185,6 +188,11 @@ final class ServiceContainer {
         _modelPortfolioService
     }
 
+    /// DCA tracker service - structured DCA plans with entries and streak tracking
+    var dcaTrackerService: DCATrackerService {
+        _dcaTrackerService
+    }
+
     // MARK: - Initialization
     private init() {}
 
@@ -224,5 +232,6 @@ final class ServiceContainer {
         _broadcastService = BroadcastService()
         _marketDeckService = MarketUpdateDeckService()
         _modelPortfolioService = APIModelPortfolioService()
+        _dcaTrackerService = DCATrackerService()
     }
 }

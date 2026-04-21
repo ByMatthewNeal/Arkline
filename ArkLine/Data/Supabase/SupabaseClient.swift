@@ -119,6 +119,8 @@ enum SupabaseTable: String {
     case modelPortfolioTrades = "model_portfolio_trades"
     case benchmarkNav = "benchmark_nav"
     case modelPortfolioRiskHistory = "model_portfolio_risk_history"
+    case dcaPlans = "dca_plans"
+    case dcaEntries = "dca_entries"
 }
 
 // MARK: - Storage Buckets
