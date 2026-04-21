@@ -297,6 +297,11 @@ class SentimentViewModel {
         isLoading = true
         errorMessage = nil
 
+        // Wait briefly for auth session if not ready (needed for SharedCacheService L2 reads)
+        if SupabaseAuthManager.shared.accessToken == nil {
+            try? await Task.sleep(for: .seconds(2))
+        }
+
         // Trigger Wikipedia pageview collection (fire-and-forget, rate limited to 1x/hour)
         if enableSideEffects {
             Task { await sentimentService.refreshTrendsData() }

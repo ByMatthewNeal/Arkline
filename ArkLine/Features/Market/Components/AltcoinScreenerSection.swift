@@ -490,8 +490,19 @@ struct AltcoinScreenerSection: View {
         isLoading = true
         errorMessage = nil
 
+        // Wait briefly for auth session to establish (needed for API proxy)
+        if SupabaseAuthManager.shared.accessToken == nil {
+            try? await Task.sleep(for: .seconds(2))
+        }
+
         do {
-            let chartResults = try await fetchChartsThrottled(for: curatedCoins, days: timeRange.days)
+            var chartResults = try await fetchChartsThrottled(for: curatedCoins, days: timeRange.days)
+
+            // Retry once after a delay if empty (auth may not have been ready)
+            if chartResults.isEmpty {
+                try? await Task.sleep(for: .seconds(3))
+                chartResults = try await fetchChartsThrottled(for: curatedCoins, days: timeRange.days)
+            }
 
             guard !chartResults.isEmpty else {
                 errorMessage = "No coin data available"
