@@ -48,6 +48,23 @@ struct MarketDeckAdminView: View {
                 ScrollView {
                     VStack(spacing: ArkSpacing.md) {
                         pipelineStepsView
+
+                        // Show Start Pipeline button when all steps are pending (after reset)
+                        if generationManager.pipelineRun?.progress == 0 && !generationManager.isPipelineRunning {
+                            customWeekPicker
+
+                            Button(action: { startPipelineWithParams() }) {
+                                HStack(spacing: ArkSpacing.xs) {
+                                    Image(systemName: "wand.and.stars")
+                                    Text("Start Pipeline")
+                                }
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, ArkSpacing.md)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(AppColors.accent))
+                            }
+                        }
                     }
                     .padding(.horizontal, ArkSpacing.md)
                     .padding(.bottom, 120)
