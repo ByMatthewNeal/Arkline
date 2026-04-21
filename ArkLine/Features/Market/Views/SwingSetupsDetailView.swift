@@ -472,6 +472,138 @@ struct SwingSetupsDetailView: View {
 
     // MARK: - Stats Card
 
+    // MARK: - Simulated P&L Card
+
+    private var simulatedPnLCard: some View {
+        let closed = periodFilteredSignals
+        guard !closed.isEmpty else {
+            return AnyView(EmptyView())
+        }
+
+        // Simulate $1,000 starting balance
+        let startingBalance = 1000.0
+        var balance = startingBalance
+
+        // Grade breakdown
+        var gradeStats: [String: (wins: Int, total: Int, pnl: Double)] = [:]
+
+        // Walk through signals chronologically
+        let sorted = closed.sorted { ($0.closedAt ?? .distantPast) < ($1.closedAt ?? .distantPast) }
+        for signal in sorted {
+            let pct = signal.outcomePct ?? 0
+            balance *= (1 + pct / 100)
+
+            let grade = signal.scoreGrade ?? "Ungraded"
+            var entry = gradeStats[grade] ?? (wins: 0, total: 0, pnl: 0)
+            entry.total += 1
+            entry.pnl += pct
+            if signal.outcome == .win || signal.outcome == .partial {
+                entry.wins += 1
+            }
+            gradeStats[grade] = entry
+        }
+
+        let totalReturn = ((balance - startingBalance) / startingBalance) * 100
+        let isPositive = totalReturn >= 0
+
+        return AnyView(
+            VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+                HStack {
+                    Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.accent)
+                    Text("Signal ROI")
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    Spacer()
+                    Text("\(closed.count) signals")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                // Hero numbers
+                HStack(alignment: .firstTextBaseline, spacing: ArkSpacing.lg) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("$\(String(format: "%.2f", startingBalance))")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("→")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("$\(String(format: "%.2f", balance))")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(isPositive ? AppColors.success : AppColors.error)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(String(format: "%+.1f%%", totalReturn))
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(isPositive ? AppColors.success : AppColors.error)
+                        Text("return")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                Divider().opacity(0.2)
+
+                // Grade breakdown
+                Text("BY SIGNAL GRADE")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(AppColors.textSecondary)
+                    .tracking(0.5)
+
+                let gradeOrder = ["A+", "A", "B+", "B", "Ungraded"]
+                ForEach(gradeOrder.filter { gradeStats[$0] != nil }, id: \.self) { grade in
+                    let stats = gradeStats[grade]!
+                    HStack(spacing: ArkSpacing.sm) {
+                        Text(grade)
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(grade.hasPrefix("A") ? AppColors.success : AppColors.accent)
+                            .frame(width: 30, alignment: .leading)
+
+                        // Win/loss bar
+                        GeometryReader { geo in
+                            let winPct = stats.total > 0 ? CGFloat(stats.wins) / CGFloat(stats.total) : 0
+                            HStack(spacing: 1) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(AppColors.success)
+                                    .frame(width: max(geo.size.width * winPct, 2))
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(AppColors.error)
+                            }
+                            .cornerRadius(2)
+                        }
+                        .frame(height: 6)
+
+                        Text("\(stats.wins)/\(stats.total)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                            .frame(width: 35, alignment: .trailing)
+
+                        Text(String(format: "%+.1f%%", stats.pnl))
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(stats.pnl >= 0 ? AppColors.success : AppColors.error)
+                            .frame(width: 50, alignment: .trailing)
+                    }
+                }
+
+                Text("Simulated return on $1,000 following every signal at equal size. Not financial advice.")
+                    .font(.system(size: 9))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    .padding(.top, 4)
+            }
+            .padding(ArkSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(AppColors.cardBackground(colorScheme))
+            )
+            .padding(.horizontal)
+        )
+    }
+
     private func statsCard(_ stats: SignalStats) -> some View {
         VStack(spacing: 14) {
             // Top: Win rate gauge + primary counts
@@ -604,6 +736,9 @@ struct SwingSetupsDetailView: View {
 
     private func performanceDashboard(_ stats: SignalStats) -> some View {
         VStack(spacing: 16) {
+            // Simulated P&L card
+            simulatedPnLCard
+
             // Expanded stats card
             statsCard(stats)
 
