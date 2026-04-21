@@ -625,7 +625,7 @@ Deno.serve(async (req) => {
 
     const morningInstructions = isFriday
       ? `This is the FRIDAY MORNING briefing. Frame it as the final trading day of the week: what happened overnight, what futures signal for today's open, and what needs to happen today to close the week strong or weak. Reference this being the last session before the weekend.`
-      : `This is the ${dayName.toUpperCase()} MORNING briefing. Focus specifically on TODAY: what happened overnight, what futures are signaling for today's open, key events to watch today, and how to think about positioning for this specific session. Be concrete about today's setup — not vague generalizations.`
+      : `This is the ${dayName.toUpperCase()} MORNING briefing. Focus specifically on TODAY: what happened overnight in Asia and Europe (any major moves or themes), what US futures are signaling for today's open, key events to watch today, and how to think about positioning for this specific session. Be concrete about today's setup — not vague generalizations. Include overnight/pre-market context from global markets.`
 
     const eveningInstructions = isFriday
       ? `This is the FRIDAY EVENING briefing — the weekly wrap-up. Review how today AND the full week played out. Use the WEEKLY PERFORMANCE data to give a clear picture of how markets moved Monday through Friday. Highlight the week's biggest winners, losers, and key turning points. Summarize what changed in positioning, macro regime, or sentiment over the week. End with what to watch over the weekend and heading into next week.`
@@ -644,7 +644,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: slot === "weekend" ? 800 : (isFriday && slot === "evening") ? 2000 : 1500,
+        max_tokens: slot === "weekend" ? 800 : (isFriday && slot === "evening") ? 2500 : 1800,
         system: slot === "weekend"
           ? `You are writing a short weekend crypto update for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual weekend check-in — clear, conversational, no jargon.
 
@@ -692,6 +692,12 @@ One sentence with the overall market stance and crypto positioning. If the MACRO
 
 ## Technical
 3-4 sentences on BTC's technical picture using data from BTC TECHNICAL ANALYSIS, DERIVATIVES, and KEY LEVELS. Cover the key points: current trend direction (uptrend/downtrend/sideways), RSI level and what it means (overbought/oversold/neutral), where price sits relative to key SMAs (21/50/200), and Bull Market Support Band status (above/testing/below support). If there's a Golden Cross or Death Cross, mention it. If Bollinger Bands show an extreme reading (overbought or oversold), note it. Weave in derivatives data: funding rate sentiment (bullish/bearish/neutral), liquidation imbalance (which side is getting squeezed), and any notable open interest changes. If KEY LEVELS data is present, call out the nearest Fibonacci confluence support and resistance for BTC, ETH, and SOL — these are the levels to watch. Do NOT include raw strength numbers or scores in parentheses — just mention the price levels naturally. Explain in plain language what the technicals and derivatives suggest about momentum and positioning. If no BTC TA data is available, skip this section entirely.
+
+## Credit & Risk Appetite
+1-2 sentences on credit market conditions if any data is available. If high yield spreads are widening while equities rally, flag that divergence — it's a warning sign. If spreads are tightening, that confirms the risk-on move. Label the credit picture as risk-on or risk-off. If no credit data is available, skip this section entirely.
+
+## Bottom Line
+2-3 sentences synthesizing everything above into one clear thesis. This is the most important section — it's the "so what" for the user's day. What's the dominant theme? What should they be paying attention to? Is the market confirming or diverging across asset classes? End with a concrete observation, not a vague platitude. Think of it as the one paragraph you'd text a friend who asked "what's happening in markets today?"
 
 ${isFriday && slot === "evening" ? `## Week in Review
 4-6 sentences wrapping up the full trading week. Use the WEEKLY PERFORMANCE data to paint a clear picture: how did BTC, ETH, SOL, S&P 500, and Nasdaq move from Monday to Friday? Identify the week's biggest winners and losers. Highlight the key turning point or narrative that defined the week (e.g. "CPI miss on Tuesday set the tone for a risk-on rally that carried through Friday"). Note any shifts in macro regime, positioning, or sentiment over the week. If model portfolio NAV changes are in the weekly data, mention how they performed. End with what to watch over the weekend and heading into next week — upcoming economic events, key levels, or open questions the market left unanswered.` : `## Signals
