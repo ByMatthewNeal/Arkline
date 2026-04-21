@@ -13,6 +13,7 @@ struct MarketDeckAdminView: View {
     @State private var customEnd: Date = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
     @State private var useCustomWeek = false
     @State private var pipelineInsights: String = ""
+    @State private var hasInitiallyLoaded = false
     @State private var showContextEditor = false
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) private var dismiss
@@ -112,8 +113,11 @@ struct MarketDeckAdminView: View {
                     .padding(.horizontal, ArkSpacing.md)
                     .padding(.bottom, 120)
                 }
-            } else {
+            } else if hasInitiallyLoaded {
                 emptyState
+            } else {
+                ProgressView()
+                    .tint(AppColors.accent)
             }
         }
         .navigationTitle("Weekly Market Deck")
@@ -133,6 +137,7 @@ struct MarketDeckAdminView: View {
             viewModel.checkForCompletedGeneration()
             await generationManager.loadLatestPipelineRun()
             await viewModel.loadMostRecentDeck()
+            hasInitiallyLoaded = true
         }
         .onAppear {
             viewModel.checkForCompletedGeneration()
