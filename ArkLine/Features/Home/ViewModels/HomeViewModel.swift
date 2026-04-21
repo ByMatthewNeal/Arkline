@@ -342,11 +342,13 @@ class HomeViewModel {
 
     // Get all risk levels for user's selected coins (with consecutive days + weekly avg)
     var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?)] {
-        userRiskCoins.map { coin in
-            let level = riskLevels[coin]
-            let history = riskHistories[coin] ?? []
-            return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level), weeklyAverageRiskLevel(for: coin))
-        }
+        userRiskCoins
+            .filter { AssetRiskConfig.forCoin($0) != nil }  // Crypto only — stocks have their own widget
+            .map { coin in
+                let level = riskLevels[coin]
+                let history = riskHistories[coin] ?? []
+                return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level), weeklyAverageRiskLevel(for: coin))
+            }
     }
 
     // MARK: - Stock Risk Levels
