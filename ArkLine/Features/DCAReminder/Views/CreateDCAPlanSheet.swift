@@ -1,11 +1,5 @@
 import SwiftUI
 
-// MARK: - DCA Strategy Type
-enum DCAStrategyType: String, CaseIterable {
-    case timeBased = "time_based"
-    case riskBased = "risk_based"
-}
-
 // MARK: - Create DCA Plan Sheet (Wizard)
 struct CreateDCAPlanSheet: View {
     @Environment(\.colorScheme) var colorScheme
