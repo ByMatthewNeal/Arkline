@@ -395,7 +395,7 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.timeoutInterval = 120
+        request.timeoutInterval = step == .generateSlides ? 240 : 120
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let token = try? await supabase.auth.session.accessToken
         request.setValue("Bearer \(token ?? Constants.API.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
