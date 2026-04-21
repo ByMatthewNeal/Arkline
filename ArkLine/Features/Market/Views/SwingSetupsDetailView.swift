@@ -9,6 +9,7 @@ struct SwingSetupsDetailView: View {
     @State private var selectedConfidence: SignalConfidence? = nil
     @State private var selectedTimeframe: TimeframeFilter = .all
     @State private var sortByScore = false
+    @State private var showActiveAssetsOnly = true
     @State private var showGuide = false
     @State private var signalToShare: TradeSignal? = nil
     @State private var performancePeriod: PerformancePeriod = .all
@@ -61,6 +62,9 @@ struct SwingSetupsDetailView: View {
 
     private var filteredSignals: [TradeSignal] {
         var signals = baseSignals
+        if showActiveAssetsOnly {
+            signals = signals.filter { TradeSignal.activeAssets.contains($0.asset) }
+        }
         if let asset = selectedAsset {
             signals = signals.filter { $0.asset == asset }
         }
@@ -80,7 +84,10 @@ struct SwingSetupsDetailView: View {
 
     /// Closed signals filtered by the selected performance period
     private var periodFilteredSignals: [TradeSignal] {
-        let closed = viewModel.recentSignals.filter { !$0.status.isLive && $0.outcomePct != nil }
+        var closed = viewModel.recentSignals.filter { !$0.status.isLive && $0.outcomePct != nil }
+        if showActiveAssetsOnly {
+            closed = closed.filter { TradeSignal.activeAssets.contains($0.asset) }
+        }
         guard let cutoff = performancePeriod.cutoffDate else { return closed }
         return closed.filter { ($0.closedAt ?? .distantPast) >= cutoff }
     }
@@ -151,7 +158,10 @@ struct SwingSetupsDetailView: View {
 
     private var availableAssets: [String] {
         let signals = selectedFilter == .active ? viewModel.activeSignals : viewModel.recentSignals.filter { !$0.status.isLive }
-        let assets = Set(signals.map(\.asset))
+        var assets = Set(signals.map(\.asset))
+        if showActiveAssetsOnly {
+            assets = assets.filter { TradeSignal.activeAssets.contains($0) }
+        }
         return assets.sorted()
     }
 
@@ -177,6 +187,31 @@ struct SwingSetupsDetailView: View {
                 if selectedFilter != .performance {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
+                            // Active assets toggle
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showActiveAssetsOnly.toggle()
+                                    selectedAsset = nil
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: showActiveAssetsOnly ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                        .font(.system(size: 10))
+                                    Text(showActiveAssetsOnly ? "Active" : "All Assets")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(showActiveAssetsOnly ? .white : AppColors.textSecondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(showActiveAssetsOnly ? AppColors.accent : AppColors.textSecondary.opacity(0.15))
+                                .cornerRadius(14)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Rectangle()
+                                .fill(AppColors.textSecondary.opacity(0.2))
+                                .frame(width: 1, height: 20)
+
                             // Asset filters
                             if availableAssets.count > 1 {
                                 assetChip("All", isActive: selectedAsset == nil && selectedConfidence == nil) {
