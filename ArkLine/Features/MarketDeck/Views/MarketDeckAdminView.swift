@@ -49,6 +49,49 @@ struct MarketDeckAdminView: View {
                     VStack(spacing: ArkSpacing.md) {
                         pipelineStepsView
 
+                        // Review Deck button when generate is complete
+                        if generationManager.pipelineRun?.isGenerateComplete == true {
+                            Button(action: {
+                                Task {
+                                    await viewModel.loadMostRecentDeck()
+                                    if viewModel.deck != nil {
+                                        showViewer = true
+                                    }
+                                }
+                            }) {
+                                HStack(spacing: ArkSpacing.xs) {
+                                    Image(systemName: "eye")
+                                    Text("Review Deck")
+                                }
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, ArkSpacing.md)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(AppColors.accent))
+                            }
+
+                            if let authorId = appState.currentUser?.id {
+                                Button(action: {
+                                    Task {
+                                        if viewModel.deck == nil {
+                                            await viewModel.loadMostRecentDeck()
+                                        }
+                                        await viewModel.publish(authorId: authorId)
+                                    }
+                                }) {
+                                    HStack(spacing: ArkSpacing.xs) {
+                                        Image(systemName: "paperplane.fill")
+                                        Text("Publish to All Users")
+                                    }
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, ArkSpacing.md)
+                                    .background(RoundedRectangle(cornerRadius: 12).fill(AppColors.success))
+                                }
+                            }
+                        }
+
                         // Show Start Pipeline button when all steps are pending (after reset)
                         if generationManager.pipelineRun?.progress == 0 && !generationManager.isPipelineRunning {
                             customWeekPicker
