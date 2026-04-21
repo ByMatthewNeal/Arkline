@@ -94,9 +94,11 @@ class MarketDeckViewModel {
         isLoading = true
         defer { isLoading = false }
         do {
-            async let draftTask = service.fetchDraft()
-            async let publishedTask = service.fetchLatestPublished()
-            let (draft, published) = try await (draftTask, publishedTask)
+            let (draft, published) = try await withTimeout(seconds: 15) {
+                async let draftTask = self.service.fetchDraft()
+                async let publishedTask = self.service.fetchLatestPublished()
+                return try await (draftTask, publishedTask)
+            }
 
             if let draft, let published {
                 // Show whichever covers the more recent week
