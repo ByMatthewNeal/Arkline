@@ -25,7 +25,7 @@ struct MarketDeckAdminView: View {
 
             if viewModel.isGenerating && viewModel.deck == nil, let step = viewModel.generationStep {
                 generationProgressView(step: step)
-            } else if viewModel.isLoading && viewModel.deck == nil {
+            } else if viewModel.isLoading && viewModel.deck == nil && generationManager.pipelineRun == nil {
                 ProgressView("Loading deck...")
                     .tint(AppColors.accent)
             } else if let deck = viewModel.deck {
