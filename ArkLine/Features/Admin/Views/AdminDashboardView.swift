@@ -93,6 +93,15 @@ struct AdminDashboardView: View {
                             subtitle: "Generate & publish weekly updates"
                         )
                     }
+
+                    NavigationLink(destination: AdminDictionaryView()) {
+                        AdminDashboardRow(
+                            icon: "character.book.closed",
+                            iconColor: .purple,
+                            title: "Dictionary",
+                            subtitle: "Manage glossary terms"
+                        )
+                    }
                 } header: {
                     Text("Management")
                 }

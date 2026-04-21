@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D1C7100000000000000001 /* DictionaryTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000011 /* DictionaryTerm.swift */; };
+		D1C7100000000000000002 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000012 /* DictionaryService.swift */; };
+		D1C7100000000000000003 /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000013 /* DictionaryView.swift */; };
+		D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000014 /* AdminDictionaryView.swift */; };
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
 		OBFSC4T3DBLD00000000001 /* ObfuscatedSecrets.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBFSC4T3DSECR3TS0000001 /* ObfuscatedSecrets.swift */; };
 		0114E7A49673D7EF642E393E /* TrendChannelChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD3282515B7877788D18601 /* TrendChannelChart.swift */; };
@@ -537,6 +541,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D1C7100000000000000011 /* DictionaryTerm.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryTerm.swift; sourceTree = "<group>"; };
+		D1C7100000000000000012 /* DictionaryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
+		D1C7100000000000000013 /* DictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
+		D1C7100000000000000014 /* AdminDictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdminDictionaryView.swift; sourceTree = "<group>"; };
 		00484C79E00F1632FE689F24 /* ModelPortfolioCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPortfolioCard.swift; sourceTree = "<group>"; };
 		0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIDSetupView.swift; sourceTree = "<group>"; };
 		0096609655CBC32C9B3C6341 /* CrudeOilServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilServiceProtocol.swift; sourceTree = "<group>"; };
@@ -1105,6 +1113,7 @@
 				1E1806C79CB8964C6DCB8500 /* InviteManagement */,
 				8149664442AACBCF88A4AD23 /* Admin */,
 				FBF9E9ED8AE0102B51AC1CC6 /* MarketDeck */,
+				D1C7100000000000000020 /* Dictionary */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -1303,6 +1312,7 @@
 				D3D169743CDD2699BA2588B9 /* MarketUpdateDeckService.swift */,
 				8724E2D3E93BA6FCE5A837E4 /* APIModelPortfolioService.swift */,
 				CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */,
+				D1C7100000000000000012 /* DictionaryService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1312,6 +1322,23 @@
 			children = (
 			);
 			path = Admin;
+			sourceTree = "<group>";
+		};
+		D1C7100000000000000020 /* Dictionary */ = {
+			isa = PBXGroup;
+			children = (
+				D1C7100000000000000021 /* Views */,
+			);
+			path = Dictionary;
+			sourceTree = "<group>";
+		};
+		D1C7100000000000000021 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				D1C7100000000000000013 /* DictionaryView.swift */,
+				D1C7100000000000000014 /* AdminDictionaryView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		27E0ED5C3FDE9603C46034A6 /* Authentication */ = {
@@ -1485,6 +1512,7 @@
 				CEF5A53F64277F0C17066BB8 /* DeckPipelineRun.swift */,
 				E2CC71D62DC2BA6B7FCBF05B /* ModelPortfolio.swift */,
 				CEF5A53F64277F0C17066BB9 /* DCAPlan.swift */,
+				D1C7100000000000000011 /* DictionaryTerm.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -2548,6 +2576,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D1C7100000000000000001 /* DictionaryTerm.swift in Sources */,
+				D1C7100000000000000002 /* DictionaryService.swift in Sources */,
+				D1C7100000000000000003 /* DictionaryView.swift in Sources */,
+				D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */,
 				40AE6A8D52151D66ACFB7CF9 /* DeckPipelineRun.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFA /* DCAPlan.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFB /* DCATrackerService.swift in Sources */,

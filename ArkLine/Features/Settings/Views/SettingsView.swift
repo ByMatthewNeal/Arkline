@@ -216,6 +216,14 @@ struct SettingsView: View {
 
                 // Support Section
                 Section {
+                    NavigationLink(destination: DictionaryView()) {
+                        SettingsRow(
+                            icon: "character.book.closed",
+                            iconColor: .purple,
+                            title: "Dictionary"
+                        )
+                    }
+
                     NavigationLink(destination: FAQView()) {
                         SettingsRow(
                             icon: "questionmark.circle.fill",
