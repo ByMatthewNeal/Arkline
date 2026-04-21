@@ -21,10 +21,42 @@ struct DCAPortfolioTabView: View {
                 // Has plans but none selected — show plan list
                 planListView
             } else {
-                // No plans — show old calculator with option to create a plan
-                VStack(spacing: 0) {
-                    createPlanBanner
-                    DCACalculatorView(viewModel: portfolioViewModel)
+                // No plans — show create plan prompt
+                ScrollView {
+                    VStack(spacing: ArkSpacing.xl) {
+                        Spacer().frame(height: ArkSpacing.xxxl)
+
+                        Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
+                            .font(.system(size: 56))
+                            .foregroundColor(AppColors.accent.opacity(0.3))
+
+                        VStack(spacing: ArkSpacing.sm) {
+                            Text("Start a DCA Plan")
+                                .font(AppFonts.title20)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                            Text("Set a target allocation, track your buys, monitor P&L, and build a streak — all in one place.")
+                                .font(AppFonts.body14)
+                                .foregroundColor(AppColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
+
+                        Button { showCreatePlan = true } label: {
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("Create DCA Plan")
+                            }
+                            .font(AppFonts.body14Bold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, ArkSpacing.md)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(AppColors.accent))
+                        }
+                        .padding(.horizontal, 20)
+
+                        Spacer()
+                    }
                 }
             }
         }
