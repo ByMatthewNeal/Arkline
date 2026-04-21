@@ -113,6 +113,7 @@
 		40AE6A8D52151D66ACFB7CFB /* DCATrackerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */; };
 		40AE6A8D52151D66ACFB7CFC /* DCATrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBC /* DCATrackerViewModel.swift */; };
 		40AE6A8D52151D66ACFB7CFD /* DCATrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBD /* DCATrackerView.swift */; };
+		DCAP0RTF0L10TAB00000B1 /* DCAPortfolioTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCAP0RTF0L10TAB00000A1 /* DCAPortfolioTabView.swift */; };
 		40AE6A8D52151D66ACFB7CFE /* LogDCAEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBE /* LogDCAEntrySheet.swift */; };
 		40AE6A8D52151D66ACFB7CFF /* CreateDCAPlanSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF5A53F64277F0C17066BBF /* CreateDCAPlanSheet.swift */; };
 		43A46C7A8D6ED6366495D642 /* ArkLineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872F085E24F150BFF85D1495 /* ArkLineApp.swift */; };
@@ -929,6 +930,7 @@
 		CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCATrackerService.swift; sourceTree = "<group>"; };
 		CEF5A53F64277F0C17066BBC /* DCATrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCATrackerViewModel.swift; sourceTree = "<group>"; };
 		CEF5A53F64277F0C17066BBD /* DCATrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCATrackerView.swift; sourceTree = "<group>"; };
+		DCAP0RTF0L10TAB00000A1 /* DCAPortfolioTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAPortfolioTabView.swift; sourceTree = "<group>"; };
 		CEF5A53F64277F0C17066BBE /* LogDCAEntrySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogDCAEntrySheet.swift; sourceTree = "<group>"; };
 		CEF5A53F64277F0C17066BBF /* CreateDCAPlanSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateDCAPlanSheet.swift; sourceTree = "<group>"; };
 		CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
@@ -1629,6 +1631,7 @@
 				DCA0C0MP0N3NT5SW1FT0001 /* DCAComponents.swift */,
 				43F759895BAB16CAE9827A96 /* DCAListView.swift */,
 				CEF5A53F64277F0C17066BBD /* DCATrackerView.swift */,
+				DCAP0RTF0L10TAB00000A1 /* DCAPortfolioTabView.swift */,
 				DCATYP35SW1FT00000001 /* DCATypes.swift */,
 				3D1TDCA5H33TV13W00001 /* EditDCASheetView.swift */,
 				1NV35TH15T0RY5H33T001 /* InvestmentHistorySheetView.swift */,
@@ -2550,6 +2553,7 @@
 				40AE6A8D52151D66ACFB7CFB /* DCATrackerService.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFC /* DCATrackerViewModel.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFD /* DCATrackerView.swift in Sources */,
+				DCAP0RTF0L10TAB00000B1 /* DCAPortfolioTabView.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFE /* LogDCAEntrySheet.swift in Sources */,
 				40AE6A8D52151D66ACFB7CFF /* CreateDCAPlanSheet.swift in Sources */,
 				A1B2C3D4E5F6QPS00006B6 /* QPSDetailView.swift in Sources */,

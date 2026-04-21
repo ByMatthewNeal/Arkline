@@ -85,7 +85,7 @@ struct PortfolioView: View {
                         case .allocation:
                             PortfolioAllocationContent(viewModel: viewModel)
                         case .dcaCalculator:
-                            DCACalculatorView(viewModel: viewModel)
+                            DCAPortfolioTabView(portfolioViewModel: viewModel)
                         case .performance:
                             PerformanceView(viewModel: viewModel)
                         case .transactions:
