@@ -1,5 +1,11 @@
 import SwiftUI
 
+// MARK: - DCA Strategy Type
+enum DCAStrategyType: String, CaseIterable {
+    case timeBased = "time_based"
+    case riskBased = "risk_based"
+}
+
 // MARK: - Create DCA Plan Sheet (Wizard)
 struct CreateDCAPlanSheet: View {
     @Environment(\.colorScheme) var colorScheme
@@ -7,23 +13,27 @@ struct CreateDCAPlanSheet: View {
     @Bindable var viewModel: DCATrackerViewModel
 
     @State private var currentStep = 1
-    private let totalSteps = 5
+    private let totalSteps = 6
 
     // Step 1: Asset
     @State private var selectedAssetSymbol = "BTC"
     @State private var selectedAssetName = "Bitcoin"
 
-    // Step 2: Capital
+    // Step 2: Strategy Type
+    @State private var strategyType: DCAStrategyType = .timeBased
+
+    // Step 3: Capital
     @State private var capitalString = ""
     @State private var existingQtyString = ""
     @State private var existingAvgCostString = ""
 
-    // Step 3: Target allocation
+    // Step 4: Target allocation
     @State private var targetPct: Double = 80
 
-    // Step 4: Schedule
+    // Step 5: Schedule
     @State private var frequency = "weekly"
     @State private var durationWeeks: Int = 26
+    @State private var riskBand: String = "low"  // for risk-based: very_low, low, neutral
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBg: Color { AppColors.cardBackground(colorScheme) }
@@ -87,10 +97,11 @@ struct CreateDCAPlanSheet: View {
     private var currentStepView: some View {
         switch currentStep {
         case 1: assetSelectionStep
-        case 2: capitalStep
-        case 3: allocationStep
-        case 4: scheduleStep
-        case 5: reviewStep
+        case 2: strategyTypeStep
+        case 3: capitalStep
+        case 4: allocationStep
+        case 5: scheduleStep
+        case 6: reviewStep
         default: EmptyView()
         }
     }
@@ -303,71 +314,187 @@ struct CreateDCAPlanSheet: View {
         .padding(.horizontal, ArkSpacing.lg)
     }
 
-    // MARK: - Step 4: Schedule
+    // MARK: - Step 2: Strategy Type
 
-    private var scheduleStep: some View {
+    private var strategyTypeStep: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.lg) {
-            Text("Schedule")
+            Text("How do you want to DCA?")
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(textPrimary)
 
-            // Frequency
-            VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                Text("Purchase Frequency")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(textPrimary.opacity(0.7))
+            Text("Choose your approach to dollar-cost averaging.")
+                .font(AppFonts.body14)
+                .foregroundColor(AppColors.textSecondary)
 
-                HStack(spacing: ArkSpacing.xs) {
-                    ForEach(["weekly", "biweekly"], id: \.self) { freq in
-                        Button {
-                            frequency = freq
-                        } label: {
-                            Text(freq.capitalized)
-                                .font(AppFonts.body14Medium)
-                                .foregroundColor(frequency == freq ? .white : textPrimary)
+            VStack(spacing: ArkSpacing.sm) {
+                strategyCard(
+                    type: .timeBased,
+                    icon: "calendar.badge.clock",
+                    title: "Time-Based",
+                    description: "Fixed schedule — buy the same amount every week or two weeks regardless of price. Simple and consistent."
+                )
+
+                strategyCard(
+                    type: .riskBased,
+                    icon: "gauge.with.dots.needle.33percent",
+                    title: "Risk-Based",
+                    description: "Buy more when risk is low, less when risk is high. Uses Arkline's risk model to suggest optimal buy amounts."
+                )
+            }
+        }
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
+    private func strategyCard(type: DCAStrategyType, icon: String, title: String, description: String) -> some View {
+        let isSelected = strategyType == type
+        return Button { strategyType = type } label: {
+            HStack(alignment: .top, spacing: ArkSpacing.sm) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(isSelected ? .white : AppColors.accent)
+                    .frame(width: 36)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(AppFonts.body14Bold)
+                        .foregroundColor(isSelected ? .white : textPrimary)
+                    Text(description)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(isSelected ? .white.opacity(0.8) : AppColors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(ArkSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(isSelected ? AppColors.accent : AppColors.textSecondary.opacity(0.12), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Step 5: Schedule
+
+    private var scheduleStep: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.lg) {
+            Text(strategyType == .riskBased ? "Risk Settings" : "Schedule")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            if strategyType == .riskBased {
+                // Risk-based: buy trigger level
+                VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                    Text("Buy When Risk Reaches")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary.opacity(0.7))
+
+                    Text("The app will notify you to buy when the asset's risk level drops to this band.")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    VStack(spacing: ArkSpacing.xs) {
+                        riskBandOption(band: "very_low", label: "Very Low Risk", range: "0.00 – 0.20", description: "Deep value — historically best entries", color: AppColors.success)
+                        riskBandOption(band: "low", label: "Low Risk", range: "0.20 – 0.40", description: "Favorable — good accumulation zone", color: AppColors.success.opacity(0.7))
+                        riskBandOption(band: "neutral", label: "Neutral", range: "0.40 – 0.55", description: "Fair value — standard DCA", color: AppColors.warning)
+                    }
+                }
+
+                // Still show duration for risk-based
+                VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                    Text("Plan Duration")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary.opacity(0.7))
+
+                    HStack(spacing: ArkSpacing.xs) {
+                        ForEach([26, 52, 104], id: \.self) { weeks in
+                            Button {
+                                durationWeeks = weeks
+                            } label: {
+                                VStack(spacing: 2) {
+                                    Text(weeks == 104 ? "2yr" : (weeks == 52 ? "1yr" : "6mo"))
+                                        .font(AppFonts.body14Medium)
+                                        .foregroundColor(durationWeeks == weeks ? .white : textPrimary)
+                                }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, ArkSpacing.sm)
                                 .background(
                                     RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
-                                        .fill(frequency == freq ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                                        .fill(durationWeeks == weeks ? AppColors.accent : AppColors.fillSecondary(colorScheme))
                                 )
-                        }
-                    }
-                }
-            }
-
-            // Duration
-            VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                Text("Duration (weeks)")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(textPrimary.opacity(0.7))
-
-                HStack(spacing: ArkSpacing.xs) {
-                    ForEach([12, 26, 52], id: \.self) { weeks in
-                        Button {
-                            durationWeeks = weeks
-                        } label: {
-                            VStack(spacing: 2) {
-                                Text("\(weeks)")
-                                    .font(AppFonts.number20)
-                                    .foregroundColor(durationWeeks == weeks ? .white : textPrimary)
-                                Text(weeks == 12 ? "3 mo" : (weeks == 26 ? "6 mo" : "1 yr"))
-                                    .font(AppFonts.caption12)
-                                    .foregroundColor(durationWeeks == weeks ? .white.opacity(0.7) : textPrimary.opacity(0.5))
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, ArkSpacing.sm)
-                            .background(
-                                RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
-                                    .fill(durationWeeks == weeks ? AppColors.accent : AppColors.fillSecondary(colorScheme))
-                            )
+                        }
+                    }
+                }
+            } else {
+                // Time-based: frequency + duration
+                VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                    Text("Purchase Frequency")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary.opacity(0.7))
+
+                    HStack(spacing: ArkSpacing.xs) {
+                        ForEach(["weekly", "biweekly"], id: \.self) { freq in
+                            Button {
+                                frequency = freq
+                            } label: {
+                                Text(freq.capitalized)
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(frequency == freq ? .white : textPrimary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, ArkSpacing.sm)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                                            .fill(frequency == freq ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                                    )
+                            }
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                    Text("Duration (weeks)")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary.opacity(0.7))
+
+                    HStack(spacing: ArkSpacing.xs) {
+                        ForEach([12, 26, 52], id: \.self) { weeks in
+                            Button {
+                                durationWeeks = weeks
+                            } label: {
+                                VStack(spacing: 2) {
+                                    Text("\(weeks)")
+                                        .font(AppFonts.number20)
+                                        .foregroundColor(durationWeeks == weeks ? .white : textPrimary)
+                                    Text(weeks == 12 ? "3 mo" : (weeks == 26 ? "6 mo" : "1 yr"))
+                                        .font(AppFonts.caption12)
+                                        .foregroundColor(durationWeeks == weeks ? .white.opacity(0.7) : textPrimary.opacity(0.5))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, ArkSpacing.sm)
+                                .background(
+                                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                                        .fill(durationWeeks == weeks ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Estimated weekly DCA
-            if capital > 0 {
+            // Estimated weekly DCA (time-based only)
+            if strategyType == .timeBased && capital > 0 {
                 let weeklyAmount = capital * targetPct / 100 / Double(durationWeeks)
                 VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
                     Text("Estimated Weekly Buy")
@@ -386,6 +513,38 @@ struct CreateDCAPlanSheet: View {
             }
         }
         .padding(.horizontal, ArkSpacing.lg)
+    }
+
+    private func riskBandOption(band: String, label: String, range: String, description: String, color: Color) -> some View {
+        let isSelected = riskBand == band
+        return Button { riskBand = band } label: {
+            HStack(spacing: ArkSpacing.sm) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 10, height: 10)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(label)
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(isSelected ? .white : textPrimary)
+                        Spacer()
+                        Text(range)
+                            .font(AppFonts.caption12)
+                            .foregroundColor(isSelected ? .white.opacity(0.7) : AppColors.textSecondary)
+                    }
+                    Text(description)
+                        .font(AppFonts.caption12)
+                        .foregroundColor(isSelected ? .white.opacity(0.7) : AppColors.textSecondary)
+                }
+            }
+            .padding(ArkSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Step 5: Review
@@ -517,6 +676,7 @@ struct CreateDCAPlanSheet: View {
 
     private func createPlan() {
         Task {
+            let freq = strategyType == .riskBased ? "risk_\(riskBand)" : frequency
             await viewModel.createPlan(
                 assetSymbol: selectedAssetSymbol,
                 assetName: selectedAssetName,
@@ -524,7 +684,7 @@ struct CreateDCAPlanSheet: View {
                 startingCapital: capital,
                 startingQty: existingQty,
                 preDcaAvgCost: existingAvgCost,
-                frequency: frequency,
+                frequency: freq,
                 totalWeeks: durationWeeks
             )
             dismiss()
