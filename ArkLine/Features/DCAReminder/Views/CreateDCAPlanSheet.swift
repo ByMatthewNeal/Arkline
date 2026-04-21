@@ -646,10 +646,11 @@ struct CreateDCAPlanSheet: View {
     private var canProceed: Bool {
         switch currentStep {
         case 1: return !selectedAssetSymbol.isEmpty
-        case 2: return capital > 0
-        case 3: return targetPct >= 10
-        case 4: return durationWeeks > 0
-        case 5: return true
+        case 2: return true  // Strategy type always has a selection
+        case 3: return capital > 0
+        case 4: return targetPct >= 10
+        case 5: return durationWeeks > 0
+        case 6: return true
         default: return false
         }
     }
