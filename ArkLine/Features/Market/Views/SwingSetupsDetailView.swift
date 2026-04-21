@@ -590,10 +590,15 @@ struct SwingSetupsDetailView: View {
                     }
                 }
 
-                Text("Simulated return on $1,000 following every signal at equal size. Not financial advice.")
-                    .font(.system(size: 9))
-                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
-                    .padding(.top, 4)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Spot (1x) simulated return on $1,000 following every signal at equal size.")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                    Text("Leverage amplifies both gains and losses. Use the Leverage Calculator on each signal to assess your risk before trading. This is not financial advice — always do your own research.")
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                }
+                .padding(.top, 4)
             }
             .padding(ArkSpacing.md)
             .background(
