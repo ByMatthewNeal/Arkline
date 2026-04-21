@@ -236,7 +236,18 @@ struct AdminDictionaryView: View {
         }
     }
 
-    private func updateTerm(id: UUID, request: UpdateTermRequest) async {
+    private func updateTerm(id: UUID, request: CreateTermRequest) async {
+        let updateRequest = UpdateTermRequest(
+            term: request.term,
+            definition: request.definition,
+            category: request.category,
+            example: request.example,
+            relatedTerms: request.relatedTerms
+        )
+        await updateTermWithRequest(id: id, request: updateRequest)
+    }
+
+    private func updateTermWithRequest(id: UUID, request: UpdateTermRequest) async {
         do {
             try await service.update(id: id, term: request)
             if let index = terms.firstIndex(where: { $0.id == id }) {
