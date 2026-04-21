@@ -270,6 +270,22 @@ final class DeckGenerationManager {
         }
     }
 
+    func resetPipeline() async {
+        guard let run = pipelineRun else { return }
+        do {
+            // Reuse createPipelineRun which resets all steps for the same week
+            let reset = try await service.createPipelineRun(weekStart: run.weekStart, weekEnd: run.weekEnd)
+            await MainActor.run {
+                self.pipelineRun = reset
+                self.pipelineError = nil
+                self.pipelineStepInProgress = nil
+                self.isPipelineRunning = false
+            }
+        } catch {
+            logWarning("Failed to reset pipeline: \(error)", category: .data)
+        }
+    }
+
     // MARK: - Local Notification
 
     private func sendNotification(title: String, body: String) async {

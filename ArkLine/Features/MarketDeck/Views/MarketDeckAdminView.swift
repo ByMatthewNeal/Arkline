@@ -204,6 +204,19 @@ struct MarketDeckAdminView: View {
 
                 Spacer()
 
+                Button {
+                    Task { await generationManager.resetPipeline() }
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 10))
+                        Text("Reset")
+                            .font(AppFonts.caption12Medium)
+                    }
+                    .foregroundColor(AppColors.textSecondary)
+                }
+                .buttonStyle(.plain)
+
                 if let run = generationManager.pipelineRun {
                     Text("\(Int(run.progress * 100))%")
                         .font(AppFonts.caption12Medium)
