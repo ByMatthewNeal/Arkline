@@ -230,6 +230,23 @@ async function processAttachments(
       textParts.push(`=== PDF: ${att.label ?? "Document"} ===\n${att.extracted_text}`)
     } else if (att.type === "url" && att.url) {
       try {
+        // SSRF protection: reject private IPs and non-HTTPS URLs
+        const urlObj = new URL(att.url)
+        const hostname = urlObj.hostname.toLowerCase()
+        if (
+          hostname === "localhost" ||
+          hostname.startsWith("127.") ||
+          hostname.startsWith("10.") ||
+          hostname.startsWith("172.") ||
+          hostname.startsWith("192.168.") ||
+          hostname === "0.0.0.0" ||
+          hostname.endsWith(".internal") ||
+          hostname.includes("metadata") ||
+          urlObj.protocol !== "https:"
+        ) {
+          console.warn(`[generate] Blocked SSRF attempt: ${att.url}`)
+          continue
+        }
         const resp = await fetch(att.url, {
           headers: { "User-Agent": "Arkline-Bot/1.0" },
           signal: AbortSignal.timeout(10000),

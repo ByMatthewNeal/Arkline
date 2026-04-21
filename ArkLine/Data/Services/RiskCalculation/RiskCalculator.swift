@@ -260,6 +260,40 @@ final class RiskCalculator {
         )
     }
 
+    /// Compute rolling RSI(14) for all indices — O(n) instead of O(n²)
+    private func computeRollingRSI(closes: [Double], period: Int = 14) -> [Double] {
+        var result = [Double](repeating: 50, count: closes.count)
+        guard closes.count > period else { return result }
+
+        var avgGain = 0.0
+        var avgLoss = 0.0
+        for i in 1...period {
+            let change = closes[i] - closes[i - 1]
+            avgGain += max(0, change)
+            avgLoss += max(0, -change)
+        }
+        avgGain /= Double(period)
+        avgLoss /= Double(period)
+
+        if avgLoss > 0 {
+            result[period] = 100 - (100 / (1 + avgGain / avgLoss))
+        } else {
+            result[period] = 100
+        }
+
+        for i in (period + 1)..<closes.count {
+            let change = closes[i] - closes[i - 1]
+            avgGain = (avgGain * Double(period - 1) + max(0, change)) / Double(period)
+            avgLoss = (avgLoss * Double(period - 1) + max(0, -change)) / Double(period)
+            if avgLoss > 0 {
+                result[i] = 100 - (100 / (1 + avgGain / avgLoss))
+            } else {
+                result[i] = 100
+            }
+        }
+        return result
+    }
+
     /// Compute RSI(14) from an array of closing prices
     private func computeRSI(closes: [Double], period: Int = 14) -> Double {
         guard closes.count > period else { return 50 }
@@ -289,29 +323,50 @@ final class RiskCalculator {
         let closes = priceHistory.map(\.price)
         var results: [RiskHistoryPoint] = []
 
-        // Calculate for each day starting from day 200
+        // Precompute rolling RSI to avoid O(n²) array copies
+        let allRsi = computeRollingRSI(closes: closes)
+
+        // Calculate for each day starting from day 200 — use ArraySlice, no copies
         for i in 200..<closes.count {
-            let slice = Array(closes[0...i])
-            let currentPrice = slice.last ?? 0
+            let currentPrice = closes[i]
             guard currentPrice > 0 else { continue }
 
-            let sma200 = slice.suffix(200).reduce(0, +) / 200.0
+            // SMA 200 — use slice arithmetic, no array copy
+            let sma200Start = i - 199
+            var sma200Sum = 0.0
+            for j in sma200Start...i { sma200Sum += closes[j] }
+            let sma200 = sma200Sum / 200.0
             let smaDeviation = (currentPrice - sma200) / sma200
             let smaRisk = min(1.0, max(0.0, (smaDeviation + 0.20) / 0.40))
 
-            let rsi = computeRSI(closes: Array(slice))
+            // RSI from precomputed array
+            let rsi = i < allRsi.count ? allRsi[i] : 50.0
             let rsiRisk = min(1.0, max(0.0, rsi / 100.0))
 
-            let yearSlice = slice.suffix(252)
-            let yearHigh = yearSlice.max() ?? currentPrice
-            let yearLow = yearSlice.min() ?? currentPrice
+            // 52-week range — scan without copying
+            let yearStart = max(0, i - 251)
+            var yearHigh = closes[yearStart]
+            var yearLow = closes[yearStart]
+            for j in yearStart...i {
+                if closes[j] > yearHigh { yearHigh = closes[j] }
+                if closes[j] < yearLow { yearLow = closes[j] }
+            }
             let yearRange = yearHigh - yearLow
             let yearRisk = yearRange > 0 ? (currentPrice - yearLow) / yearRange : 0.5
 
-            let sma50 = slice.suffix(50).reduce(0, +) / 50.0
-            let offset = min(slice.count, 60)
-            let sma50_prev = Array(slice.suffix(offset).prefix(50))
-            let sma50_10dAgo = sma50_prev.isEmpty ? sma50 : sma50_prev.reduce(0, +) / Double(sma50_prev.count)
+            // SMA 50 current
+            let sma50Start = max(0, i - 49)
+            var sma50Sum = 0.0
+            for j in sma50Start...i { sma50Sum += closes[j] }
+            let sma50 = sma50Sum / Double(i - sma50Start + 1)
+
+            // SMA 50 from 10 days ago
+            let prevI = max(49, i - 10)
+            let prev50Start = max(0, prevI - 49)
+            var prev50Sum = 0.0
+            for j in prev50Start...prevI { prev50Sum += closes[j] }
+            let sma50_10dAgo = prev50Sum / Double(prevI - prev50Start + 1)
+
             let smaSlope = sma50 > 0 ? (sma50 - sma50_10dAgo) / sma50 : 0
             let trendRisk = min(1.0, max(0.0, (smaSlope + 0.02) / 0.04))
 
