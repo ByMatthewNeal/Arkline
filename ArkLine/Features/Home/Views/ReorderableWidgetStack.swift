@@ -296,7 +296,8 @@ struct ReorderableWidgetStack: View {
             QPSSignalChangesCard(
                 signals: viewModel.qpsSignals,
                 isPro: appState.isPro,
-                size: appState.widgetSize(.qpsSignals)
+                size: appState.widgetSize(.qpsSignals),
+                macroQuadrant: viewModel.currentRegimeResult?.quadrant
             )
             .id("widget_qpsSignals")
 

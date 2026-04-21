@@ -5,6 +5,7 @@ import SwiftUI
 struct QPSGridSection: View {
     let signals: [DailyPositioningSignal]
     let isPro: Bool
+    var macroQuadrant: MacroRegimeQuadrant? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showMethodology = false
 
@@ -57,7 +58,18 @@ struct QPSGridSection: View {
         return AppColors.error
     }
 
+    private var macroBullish: Bool {
+        guard let q = macroQuadrant else { return false }
+        return q == .riskOnDisinflation || q == .riskOnInflation
+    }
+
     private var riskGuidance: String {
+        if let q = macroQuadrant, macroBullish && riskAppetite < 45 {
+            return "Macro backdrop is \(q.rawValue.lowercased()), but asset trends are weakening. Watch for follow-through before adding exposure."
+        }
+        if let q = macroQuadrant, !macroBullish && riskAppetite >= 55 {
+            return "Asset trends are tilting bullish despite a \(q.rawValue.lowercased()) macro backdrop. Momentum may lead, but stay cautious on sizing."
+        }
         if riskAppetite >= 70 {
             return "Broad strength across assets. Favor adding or holding positions."
         }

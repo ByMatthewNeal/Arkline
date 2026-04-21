@@ -7,6 +7,7 @@ struct QPSSignalChangesCard: View {
     let signals: [DailyPositioningSignal]
     let isPro: Bool
     var size: WidgetSize = .standard
+    var macroQuadrant: MacroRegimeQuadrant? = nil
     @State private var showPaywall = false
     @State private var showShareSheet = false
     @Environment(\.colorScheme) var colorScheme
@@ -225,7 +226,20 @@ struct QPSSignalChangesCard: View {
         return AppColors.error
     }
 
+    private var macroBullish: Bool {
+        guard let q = macroQuadrant else { return false }
+        return q == .riskOnDisinflation || q == .riskOnInflation
+    }
+
     private var riskGuidance: String {
+        // Divergence: macro is risk-on but assets are trending down
+        if let q = macroQuadrant, macroBullish && riskAppetite < 45 {
+            return "Macro backdrop is \(q.rawValue.lowercased()), but asset trends are weakening. Watch for follow-through before adding exposure."
+        }
+        // Divergence: macro is risk-off but assets are trending up
+        if let q = macroQuadrant, !macroBullish && riskAppetite >= 55 {
+            return "Asset trends are tilting bullish despite a \(q.rawValue.lowercased()) macro backdrop. Momentum may lead, but stay cautious on sizing."
+        }
         if riskAppetite >= 70 {
             return "Broad strength across assets. Favor adding or holding positions."
         }
