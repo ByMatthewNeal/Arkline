@@ -532,7 +532,7 @@ struct MultiCoinRiskSection: View {
 
             // Horizontal scrolling risk cards
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: ArkSpacing.sm) {
+                HStack(alignment: .top, spacing: ArkSpacing.sm) {
                     ForEach(riskLevels, id: \.coin) { item in
                         CompactRiskCard(
                             riskLevel: item.riskLevel,
@@ -545,7 +545,6 @@ struct MultiCoinRiskSection: View {
                 }
                 .padding(.horizontal, ArkSpacing.xs)
             }
-            .clipped()
         }
     }
 }
@@ -677,7 +676,7 @@ struct CompactRiskCard: View {
                 }
             }
             .padding(ArkSpacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(cardBackground)
@@ -733,7 +732,7 @@ struct StockRiskLevelSection: View {
 
             // Horizontal scrolling cards (stocks will always be 3+)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: ArkSpacing.sm) {
+                HStack(alignment: .top, spacing: ArkSpacing.sm) {
                     ForEach(riskLevels, id: \.coin) { item in
                         StockCompactRiskCard(
                             riskLevel: item.riskLevel,
@@ -746,7 +745,6 @@ struct StockRiskLevelSection: View {
                 }
                 .padding(.horizontal, ArkSpacing.xs)
             }
-            .clipped()
         }
     }
 }
@@ -874,7 +872,7 @@ private struct StockCompactRiskCard: View {
             }
         }
         .padding(ArkSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(cardBackground)

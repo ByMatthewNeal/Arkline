@@ -428,6 +428,11 @@ class HomeViewModel {
     private func loadStockRiskLevels() async {
         guard let riskService = ServiceContainer.shared.itcRiskService as? APIITCRiskService else { return }
 
+        // Wait for auth session if not ready (needed for FMP API proxy)
+        if SupabaseAuthManager.shared.accessToken == nil {
+            try? await Task.sleep(for: .seconds(2))
+        }
+
         // Process in batches of 4 to avoid overwhelming the network
         let batchSize = 4
         for batchStart in stride(from: 0, to: stockRiskSymbols.count, by: batchSize) {
@@ -449,6 +454,34 @@ class HomeViewModel {
                 for await (symbol, level) in group {
                     if let level {
                         stockRiskLevels[symbol] = level
+                    }
+                }
+            }
+        }
+
+        // Retry once if no data loaded (auth may not have been ready)
+        if stockRiskLevels.isEmpty {
+            try? await Task.sleep(for: .seconds(3))
+            for batchStart in stride(from: 0, to: stockRiskSymbols.count, by: batchSize) {
+                let batchEnd = min(batchStart + batchSize, stockRiskSymbols.count)
+                let batch = Array(stockRiskSymbols[batchStart..<batchEnd])
+
+                await withTaskGroup(of: (String, ITCRiskLevel?).self) { group in
+                    for symbol in batch {
+                        group.addTask {
+                            do {
+                                let risk = try await riskService.calculateStockCurrentRisk(symbol: symbol)
+                                return (symbol, ITCRiskLevel(from: risk))
+                            } catch {
+                                return (symbol, nil)
+                            }
+                        }
+                    }
+
+                    for await (symbol, level) in group {
+                        if let level {
+                            stockRiskLevels[symbol] = level
+                        }
                     }
                 }
             }
@@ -831,6 +864,19 @@ class HomeViewModel {
             self.globalLiquidityIndex = globalLiq
             self.supplyInProfitData = supplyProfit
             self.fedWatchMeetings = fedMeetings ?? []
+
+            // Retry FRED-based data if it failed (auth session may not have been ready for proxy)
+            if netLiq == nil || liquidity == nil {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(3))
+                    if self.netLiquidityData == nil {
+                        self.netLiquidityData = await self.fetchNetLiquiditySafe()
+                    }
+                    if self.globalLiquidityChanges == nil {
+                        self.globalLiquidityChanges = await self.fetchGlobalLiquiditySafe()
+                    }
+                }
+            }
 
             // Archive macro indicators (fire-and-forget)
             if enableSideEffects {
