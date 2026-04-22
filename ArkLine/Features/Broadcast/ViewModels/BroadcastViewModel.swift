@@ -14,6 +14,8 @@ class BroadcastViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var unreadCount: Int = 0
     @Published var analyticsSummary: BroadcastAnalyticsSummary?
+    @Published var readBroadcastIds: Set<UUID> = []
+    @Published var userHeartedBroadcastIds: Set<UUID> = []
 
     // MARK: - Dependencies
 
@@ -117,9 +119,18 @@ class BroadcastViewModel: ObservableObject {
         logInfo("Deleted broadcast: \(broadcast.id)", category: .data)
     }
 
-    /// Publish a broadcast
+    /// Publish a broadcast (captures BTC price at publish time)
     func publishBroadcast(_ broadcast: Broadcast) async throws {
-        let published = try await broadcastService.publishBroadcast(id: broadcast.id)
+        // Capture BTC price at publish time
+        var btcPrice: Double?
+        do {
+            let candles = try await CoinbaseCandle.fetch(pair: "BTC-USD", granularity: "ONE_HOUR", limit: 1)
+            btcPrice = candles.last?.close
+        } catch {
+            logWarning("Failed to fetch BTC price at publish: \(error)", category: .network)
+        }
+
+        let published = try await broadcastService.publishBroadcast(id: broadcast.id, btcPrice: btcPrice)
 
         if let index = broadcasts.firstIndex(where: { $0.id == broadcast.id }) {
             broadcasts[index] = published
@@ -128,7 +139,7 @@ class BroadcastViewModel: ObservableObject {
         // Send push notification to target audience
         await notificationService.sendBroadcastNotification(for: published, audience: published.targetAudience)
 
-        logInfo("Published broadcast: \(published.id)", category: .data)
+        logInfo("Published broadcast: \(published.id), BTC: \(btcPrice.map { String(format: "$%.0f", $0) } ?? "n/a")", category: .data)
     }
 
     /// Archive a broadcast
@@ -256,5 +267,79 @@ class BroadcastViewModel: ObservableObject {
     /// Fetch reaction summary for a broadcast
     func fetchReactionSummary(for broadcastId: UUID, userId: UUID) async throws -> [ReactionSummary] {
         return try await broadcastService.fetchReactionSummary(for: broadcastId, userId: userId)
+    }
+
+    // MARK: - Read Status
+
+    /// Check if a broadcast has been read
+    func isRead(_ broadcastId: UUID) -> Bool {
+        readBroadcastIds.contains(broadcastId)
+    }
+
+    /// Load which broadcasts the user has read
+    func loadReadStatus(userId: UUID) async {
+        do {
+            readBroadcastIds = try await broadcastService.fetchReadBroadcastIds(userId: userId)
+        } catch {
+            logError("Failed to load read status: \(error)", category: .data)
+        }
+    }
+
+    // MARK: - Quick React
+
+    /// Load which broadcasts the user has hearted
+    func loadUserHearts(userId: UUID) async {
+        do {
+            userHeartedBroadcastIds = try await broadcastService.fetchUserReactedBroadcastIds(userId: userId, emoji: "❤️")
+        } catch {
+            logError("Failed to load user hearts: \(error)", category: .data)
+        }
+    }
+
+    /// Quick toggle heart from the card (optimistic UI)
+    func quickToggleHeart(broadcastId: UUID, userId: UUID) async {
+        let wasHearted = userHeartedBroadcastIds.contains(broadcastId)
+
+        // Optimistic update
+        if wasHearted {
+            userHeartedBroadcastIds.remove(broadcastId)
+            if let idx = broadcasts.firstIndex(where: { $0.id == broadcastId }) {
+                broadcasts[idx].reactionCount = max(0, (broadcasts[idx].reactionCount ?? 1) - 1)
+            }
+        } else {
+            userHeartedBroadcastIds.insert(broadcastId)
+            if let idx = broadcasts.firstIndex(where: { $0.id == broadcastId }) {
+                broadcasts[idx].reactionCount = (broadcasts[idx].reactionCount ?? 0) + 1
+            }
+        }
+
+        do {
+            try await toggleReaction(broadcastId: broadcastId, userId: userId, emoji: "❤️")
+        } catch {
+            // Revert on failure
+            if wasHearted {
+                userHeartedBroadcastIds.insert(broadcastId)
+            } else {
+                userHeartedBroadcastIds.remove(broadcastId)
+            }
+            logError("Failed to toggle heart: \(error)", category: .data)
+        }
+    }
+
+    // MARK: - Pinning
+
+    /// Toggle pin on a broadcast (admin only)
+    func togglePin(_ broadcast: Broadcast) async throws {
+        let newPinned = !broadcast.isPinned
+        try await broadcastService.setPinned(broadcastId: broadcast.id, isPinned: newPinned)
+
+        // Update local state
+        for i in broadcasts.indices {
+            if broadcasts[i].id == broadcast.id {
+                broadcasts[i].isPinned = newPinned
+            } else if newPinned {
+                broadcasts[i].isPinned = false
+            }
+        }
     }
 }

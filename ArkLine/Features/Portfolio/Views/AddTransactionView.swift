@@ -46,6 +46,8 @@ struct AddTransactionView: View {
     @State private var searchTask: Task<Void, Never>?
     @State private var priceWasAutoFetched = false
     @State private var didSelectResult = false
+    @State private var isFetchingHistoricalPrice = false
+    @State private var selectedCoinId = ""  // CoinGecko ID for crypto search results
 
     /// Parse a string that may contain commas as a Double
     private func parseNumber(_ string: String) -> Double {
@@ -262,19 +264,36 @@ struct AddTransactionView: View {
                             HStack {
                                 Text("Price per Unit")
                                 Spacer()
-                                TextField("$0.00", text: $pricePerUnit)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
+                                if isFetchingHistoricalPrice {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                } else {
+                                    TextField("$0.00", text: $pricePerUnit)
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.trailing)
+                                }
                             }
 
                             if priceWasAutoFetched {
-                                Text("Live price")
-                                    .font(AppFonts.caption12)
-                                    .foregroundColor(AppColors.accent)
+                                HStack(spacing: 4) {
+                                    if isDateToday(transactionDate) {
+                                        Text("Live price")
+                                            .font(AppFonts.caption12)
+                                            .foregroundColor(AppColors.accent)
+                                    } else {
+                                        Text("Price on \(transactionDate.formatted(date: .abbreviated, time: .shortened))")
+                                            .font(AppFonts.caption12)
+                                            .foregroundColor(AppColors.accent)
+                                    }
+                                }
                             }
                         }
 
                         DatePicker("Date", selection: $transactionDate, displayedComponents: [.date, .hourAndMinute])
+                            .onChange(of: transactionDate) { _, newDate in
+                                guard !symbol.isEmpty else { return }
+                                fetchPriceForDate(newDate)
+                            }
                     }
                 }
 
@@ -593,16 +612,23 @@ struct AddTransactionView: View {
         didSelectResult = true
         symbol = result.symbol.uppercased()
         name = result.name
+        selectedCoinId = result.id
         searchResults = []
         searchTask?.cancel()
         isSearching = false
 
         if entryMode != .holding {
-            if let price = result.currentPrice, price > 0 {
-                pricePerUnit = String(format: "%.2f", price)
-                priceWasAutoFetched = true
-            } else if assetType == .stock {
-                fetchStockPrice(symbol: result.symbol)
+            if isDateToday(transactionDate) {
+                // Use live price for today
+                if let price = result.currentPrice, price > 0 {
+                    pricePerUnit = String(format: "%.2f", price)
+                    priceWasAutoFetched = true
+                } else if assetType == .stock {
+                    fetchStockPrice(symbol: result.symbol)
+                }
+            } else {
+                // Fetch historical price for the selected date
+                fetchPriceForDate(transactionDate)
             }
         }
 
@@ -623,6 +649,136 @@ struct AddTransactionView: View {
             } catch {
                 // Silent - user can enter price manually
             }
+        }
+    }
+
+    // MARK: - Historical Price Fetch
+
+    private func isDateToday(_ date: Date) -> Bool {
+        Calendar.current.isDateInToday(date)
+    }
+
+    private func fetchPriceForDate(_ date: Date) {
+        guard !symbol.isEmpty else { return }
+
+        // If date is today, fetch live price instead
+        if isDateToday(date) {
+            fetchLivePrice()
+            return
+        }
+
+        isFetchingHistoricalPrice = true
+        priceWasAutoFetched = false
+
+        Task {
+            var price: Double?
+
+            switch assetType {
+            case .crypto:
+                price = await fetchCryptoHistoricalPrice(symbol: symbol, date: date)
+            case .stock:
+                price = await fetchStockHistoricalPrice(symbol: symbol, date: date)
+            case .metal:
+                price = await fetchStockHistoricalPrice(symbol: symbol, date: date)
+            case .realEstate:
+                break
+            }
+
+            await MainActor.run {
+                isFetchingHistoricalPrice = false
+                if let price, price > 0 {
+                    pricePerUnit = String(format: "%.2f", price)
+                    priceWasAutoFetched = true
+                }
+            }
+        }
+    }
+
+    private func fetchLivePrice() {
+        Task {
+            switch assetType {
+            case .crypto:
+                let marketService = ServiceContainer.shared.marketService
+                if let cryptos = try? await marketService.searchCrypto(query: symbol),
+                   let match = cryptos.first(where: { $0.symbol.uppercased() == symbol.uppercased() }),
+                   match.currentPrice > 0 {
+                    await MainActor.run {
+                        pricePerUnit = String(format: "%.2f", match.currentPrice)
+                        priceWasAutoFetched = true
+                    }
+                }
+            case .stock, .metal:
+                fetchStockPrice(symbol: symbol)
+            case .realEstate:
+                break
+            }
+        }
+    }
+
+    /// Fetch crypto price at a specific date/time using Coinbase hourly candles
+    private func fetchCryptoHistoricalPrice(symbol: String, date: Date) async -> Double? {
+        let pair = "\(symbol.uppercased())-USD"
+        let targetTimestamp = Int64(date.timeIntervalSince1970)
+
+        // Fetch a small window around the target time (3 hours before to 3 hours after)
+        let startTs = targetTimestamp - 3 * 3600
+        let endTs = targetTimestamp + 3 * 3600
+
+        do {
+            let candles = try await CoinbaseCandle.fetch(
+                pair: pair,
+                granularity: "ONE_HOUR",
+                start: startTs,
+                end: endTs,
+                limit: 10
+            )
+
+            guard !candles.isEmpty else { return nil }
+
+            // Find the candle closest to the target time
+            let closest = candles.min(by: { abs($0.start - targetTimestamp) < abs($1.start - targetTimestamp) })
+            return closest?.close
+        } catch {
+            // Fallback: try daily candle
+            do {
+                let dayStart = Int64(Calendar.current.startOfDay(for: date).timeIntervalSince1970)
+                let dayEnd = dayStart + 86400
+                let candles = try await CoinbaseCandle.fetch(
+                    pair: pair,
+                    granularity: "ONE_DAY",
+                    start: dayStart,
+                    end: dayEnd,
+                    limit: 1
+                )
+                return candles.first?.close
+            } catch {
+                return nil
+            }
+        }
+    }
+
+    /// Fetch stock/metal price at a specific date using FMP historical data
+    private func fetchStockHistoricalPrice(symbol: String, date: Date) async -> Double? {
+        do {
+            let prices = try await FMPService.shared.fetchHistoricalPrices(symbol: symbol, limit: 5000)
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let targetDateStr = dateFormatter.string(from: date)
+
+            // Find exact date or closest prior date
+            if let exact = prices.first(where: { $0.date == targetDateStr }) {
+                return exact.close
+            }
+
+            // Find the closest date before the target
+            let sorted = prices.sorted { $0.date > $1.date }
+            if let closest = sorted.first(where: { $0.date <= targetDateStr }) {
+                return closest.close
+            }
+
+            return prices.first?.close
+        } catch {
+            return nil
         }
     }
 }

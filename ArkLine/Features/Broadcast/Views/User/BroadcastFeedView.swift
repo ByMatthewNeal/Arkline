@@ -82,6 +82,16 @@ struct BroadcastFeedView: View {
         return result
     }
 
+    /// Pinned broadcast (shown above everything)
+    private var pinnedBroadcast: Broadcast? {
+        viewModel.published.first(where: { $0.isPinned })
+    }
+
+    /// Non-pinned filtered broadcasts
+    private var unpinnedFilteredBroadcasts: [Broadcast] {
+        filteredBroadcasts.filter { !$0.isPinned }
+    }
+
     /// All unique tags from published broadcasts
     private var availableTags: [String] {
         let allTags = viewModel.published.flatMap { $0.tags }
@@ -93,7 +103,7 @@ struct BroadcastFeedView: View {
         let calendar = Calendar.current
         let now = Date()
 
-        let grouped = Dictionary(grouping: filteredBroadcasts) { broadcast -> DateSectionKey in
+        let grouped = Dictionary(grouping: unpinnedFilteredBroadcasts) { broadcast -> DateSectionKey in
             let date = broadcast.publishedAt ?? broadcast.createdAt
             if calendar.isDateInToday(date) {
                 return DateSectionKey(order: 0, label: "Today")
@@ -149,8 +159,13 @@ struct BroadcastFeedView: View {
                         // Filter bar
                         filterBar
 
+                        // Pinned post (always at top)
+                        if let pinned = pinnedBroadcast {
+                            pinnedSection(pinned)
+                        }
+
                         // Broadcast list (grouped)
-                        if filteredBroadcasts.isEmpty {
+                        if unpinnedFilteredBroadcasts.isEmpty && pinnedBroadcast == nil {
                             noResultsView
                         } else {
                             groupedBroadcastList
@@ -174,8 +189,8 @@ struct BroadcastFeedView: View {
             .task {
                 if let userId = appState.currentUser?.id {
                     await viewModel.loadPublishedBroadcasts(for: userId)
-                    await viewModel.markAllAsRead(userId: userId)
-                    appState.insightsUnreadCount = 0
+                    await viewModel.loadReadStatus(userId: userId)
+                    await viewModel.loadUserHearts(userId: userId)
                 }
                 await checkNotificationStatus()
             }
@@ -214,9 +229,9 @@ struct BroadcastFeedView: View {
             }
             .onChange(of: appState.selectedTab) { _, newTab in
                 if newTab == .insights {
-                    appState.insightsUnreadCount = 0
+                    // Refresh read status when returning to tab
                     if let userId = appState.currentUser?.id {
-                        Task { await viewModel.markAllAsRead(userId: userId) }
+                        Task { await viewModel.loadReadStatus(userId: userId) }
                     }
                 }
             }
@@ -257,9 +272,10 @@ struct BroadcastFeedView: View {
             .background(AppColors.cardBackground(colorScheme))
             .cornerRadius(ArkSpacing.sm)
 
-            // Date filter chips
+            // Combined filter row: date filters + tag pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.xs) {
+                    // Date filter chips
                     ForEach(BroadcastDateFilter.allCases, id: \.self) { filter in
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -276,28 +292,16 @@ struct BroadcastFeedView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                }
-            }
 
-            // Tag pills with "All" reset chip
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: ArkSpacing.xs) {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTags.removeAll()
-                        }
-                    } label: {
-                        Text("All")
-                            .font(ArkFonts.caption)
-                            .fontWeight(selectedTags.isEmpty ? .semibold : .regular)
-                            .foregroundColor(selectedTags.isEmpty ? .white : AppColors.textSecondary)
-                            .padding(.horizontal, ArkSpacing.sm)
-                            .padding(.vertical, ArkSpacing.xxs)
-                            .background(selectedTags.isEmpty ? AppColors.accent : AppColors.cardBackground(colorScheme))
-                            .cornerRadius(ArkSpacing.xs)
+                    // Divider between date and tag filters
+                    if !availableTags.isEmpty {
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(AppColors.textSecondary.opacity(0.2))
+                            .frame(width: 1, height: 20)
+                            .padding(.horizontal, 2)
                     }
-                    .buttonStyle(.plain)
 
+                    // Tag pills
                     ForEach(availableTags, id: \.self) { tag in
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -313,9 +317,9 @@ struct BroadcastFeedView: View {
                                 .font(ArkFonts.caption)
                                 .foregroundColor(selectedTags.contains(tag) ? .white : color)
                                 .padding(.horizontal, ArkSpacing.sm)
-                                .padding(.vertical, ArkSpacing.xxs)
+                                .padding(.vertical, ArkSpacing.xs)
                                 .background(selectedTags.contains(tag) ? color : color.opacity(0.1))
-                                .cornerRadius(ArkSpacing.xs)
+                                .cornerRadius(ArkSpacing.sm)
                         }
                         .buttonStyle(.plain)
                     }
@@ -331,12 +335,7 @@ struct BroadcastFeedView: View {
             ForEach(groupedBroadcasts, id: \.key) { section in
                 Section {
                     ForEach(section.broadcasts) { broadcast in
-                        BroadcastCardView(
-                            broadcast: broadcast,
-                            isAdmin: appState.currentUser?.isAdmin == true
-                        ) {
-                            selectedBroadcast = broadcast
-                        }
+                        broadcastCard(broadcast)
                     }
                 } header: {
                     HStack {
@@ -351,6 +350,55 @@ struct BroadcastFeedView: View {
             }
         }
         .padding(.top, ArkSpacing.xs)
+    }
+
+    // MARK: - Pinned Section
+
+    private func pinnedSection(_ broadcast: Broadcast) -> some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            HStack(spacing: ArkSpacing.xxs) {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.accent)
+                Text("Pinned")
+                    .font(ArkFonts.caption)
+                    .foregroundColor(AppColors.accent)
+                    .fontWeight(.semibold)
+            }
+
+            broadcastCard(broadcast)
+        }
+    }
+
+    // MARK: - Broadcast Card Helper
+
+    private func broadcastCard(_ broadcast: Broadcast) -> some View {
+        BroadcastCardView(
+            broadcast: broadcast,
+            isAdmin: appState.currentUser?.isAdmin == true,
+            isUnread: !viewModel.isRead(broadcast.id),
+            hasReacted: viewModel.userHeartedBroadcastIds.contains(broadcast.id),
+            onQuickReact: {
+                guard let userId = appState.currentUser?.id else { return }
+                Task { await viewModel.quickToggleHeart(broadcastId: broadcast.id, userId: userId) }
+            }
+        ) {
+            selectedBroadcast = broadcast
+            // Mark as read when opened
+            if let userId = appState.currentUser?.id {
+                viewModel.readBroadcastIds.insert(broadcast.id)
+                Task { try? await viewModel.markAsRead(broadcastId: broadcast.id, userId: userId) }
+            }
+        }
+        .contextMenu {
+            if appState.currentUser?.isAdmin == true {
+                Button {
+                    Task { try? await viewModel.togglePin(broadcast) }
+                } label: {
+                    Label(broadcast.isPinned ? "Unpin" : "Pin to Top", systemImage: broadcast.isPinned ? "pin.slash" : "pin")
+                }
+            }
+        }
     }
 
     // MARK: - No Results View

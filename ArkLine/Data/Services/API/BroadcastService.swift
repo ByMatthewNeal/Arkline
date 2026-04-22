@@ -46,6 +46,7 @@ final class BroadcastService: BroadcastServiceProtocol {
             .from(SupabaseTable.broadcasts.rawValue)
             .select()
             .eq("status", value: BroadcastStatus.published.rawValue)
+            .order("is_pinned", ascending: false)
             .order("published_at", ascending: false)
             .range(from: offset, to: offset + limit - 1)
             .execute()
@@ -161,6 +162,10 @@ final class BroadcastService: BroadcastServiceProtocol {
     }
 
     func publishBroadcast(id: UUID) async throws -> Broadcast {
+        return try await publishBroadcast(id: id, btcPrice: nil)
+    }
+
+    func publishBroadcast(id: UUID, btcPrice: Double?) async throws -> Broadcast {
         guard supabase.isConfigured else {
             throw AppError.supabaseNotConfigured
         }
@@ -168,7 +173,7 @@ final class BroadcastService: BroadcastServiceProtocol {
         // Atomic update — no fetch-modify-update race
         let updated: Broadcast = try await supabase.database
             .from(SupabaseTable.broadcasts.rawValue)
-            .update(PublishUpdate(status: BroadcastStatus.published.rawValue, publishedAt: Date()))
+            .update(PublishUpdate(status: BroadcastStatus.published.rawValue, publishedAt: Date(), btcPriceAtPublish: btcPrice))
             .eq("id", value: id.uuidString)
             .select()
             .single()
@@ -491,6 +496,73 @@ final class BroadcastService: BroadcastServiceProtocol {
 
         return summaries
     }
+
+    // MARK: - Pinning
+
+    func setPinned(broadcastId: UUID, isPinned: Bool) async throws {
+        guard supabase.isConfigured else { throw AppError.supabaseNotConfigured }
+
+        // Unpin all others first (only one pinned at a time)
+        if isPinned {
+            try await supabase.database
+                .from(SupabaseTable.broadcasts.rawValue)
+                .update(["is_pinned": false])
+                .eq("is_pinned", value: true)
+                .execute()
+        }
+
+        // Set pinned status on target
+        try await supabase.database
+            .from(SupabaseTable.broadcasts.rawValue)
+            .update(["is_pinned": isPinned])
+            .eq("id", value: broadcastId.uuidString)
+            .execute()
+    }
+
+    // MARK: - Read Status
+
+    func fetchReadBroadcastIds(userId: UUID) async throws -> Set<UUID> {
+        guard supabase.isConfigured else { return [] }
+
+        struct ReadRow: Decodable {
+            let broadcastId: UUID
+            enum CodingKeys: String, CodingKey {
+                case broadcastId = "broadcast_id"
+            }
+        }
+
+        let rows: [ReadRow] = try await supabase.database
+            .from("broadcast_reads")
+            .select("broadcast_id")
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+
+        return Set(rows.map(\.broadcastId))
+    }
+
+    // MARK: - User Reactions
+
+    func fetchUserReactedBroadcastIds(userId: UUID, emoji: String) async throws -> Set<UUID> {
+        guard supabase.isConfigured else { return [] }
+
+        struct ReactionRow: Decodable {
+            let broadcastId: UUID
+            enum CodingKeys: String, CodingKey {
+                case broadcastId = "broadcast_id"
+            }
+        }
+
+        let rows: [ReactionRow] = try await supabase.database
+            .from("broadcast_reactions")
+            .select("broadcast_id")
+            .eq("user_id", value: userId.uuidString)
+            .eq("emoji", value: emoji)
+            .execute()
+            .value
+
+        return Set(rows.map(\.broadcastId))
+    }
 }
 
 // MARK: - Atomic Update Structs
@@ -529,9 +601,11 @@ private struct BroadcastUpdate: Encodable {
 private struct PublishUpdate: Encodable {
     let status: String
     let publishedAt: Date
+    let btcPriceAtPublish: Double?
     enum CodingKeys: String, CodingKey {
         case status
         case publishedAt = "published_at"
+        case btcPriceAtPublish = "btc_price_at_publish"
     }
 }
 

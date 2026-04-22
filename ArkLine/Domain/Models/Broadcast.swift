@@ -27,6 +27,10 @@ struct Broadcast: Codable, Identifiable, Equatable {
     var viewCount: Int?
     var reactionCount: Int?
 
+    // Engagement features
+    var isPinned: Bool
+    var btcPriceAtPublish: Double?
+
     enum CodingKeys: String, CodingKey {
         case id
         case title
@@ -47,6 +51,8 @@ struct Broadcast: Codable, Identifiable, Equatable {
         case authorId = "author_id"
         case viewCount = "view_count"
         case reactionCount = "reaction_count"
+        case isPinned = "is_pinned"
+        case btcPriceAtPublish = "btc_price_at_publish"
     }
 
     init(
@@ -68,7 +74,9 @@ struct Broadcast: Codable, Identifiable, Equatable {
         tags: [String] = [],
         authorId: UUID,
         viewCount: Int? = nil,
-        reactionCount: Int? = nil
+        reactionCount: Int? = nil,
+        isPinned: Bool = false,
+        btcPriceAtPublish: Double? = nil
     ) {
         self.id = id
         self.title = title
@@ -89,6 +97,8 @@ struct Broadcast: Codable, Identifiable, Equatable {
         self.authorId = authorId
         self.viewCount = viewCount
         self.reactionCount = reactionCount
+        self.isPinned = isPinned
+        self.btcPriceAtPublish = btcPriceAtPublish
     }
 
     func encode(to encoder: Encoder) throws {
@@ -110,6 +120,8 @@ struct Broadcast: Codable, Identifiable, Equatable {
         try container.encodeIfPresent(templateId, forKey: .templateId)
         try container.encode(tags, forKey: .tags)
         try container.encode(authorId, forKey: .authorId)
+        try container.encode(isPinned, forKey: .isPinned)
+        try container.encodeIfPresent(btcPriceAtPublish, forKey: .btcPriceAtPublish)
         // Note: viewCount, reactionCount are read-only server fields — not encoded
     }
 
@@ -139,6 +151,16 @@ struct Broadcast: Codable, Identifiable, Equatable {
         authorId = try container.decode(UUID.self, forKey: .authorId)
         viewCount = try container.decodeIfPresent(Int.self, forKey: .viewCount)
         reactionCount = try container.decodeIfPresent(Int.self, forKey: .reactionCount)
+        isPinned = (try? container.decodeIfPresent(Bool.self, forKey: .isPinned)) ?? false
+        btcPriceAtPublish = try? container.decodeIfPresent(Double.self, forKey: .btcPriceAtPublish)
+    }
+
+    /// Top reaction emojis for display on cards (derived from reaction_breakdown if available)
+    var topReactionEmojis: [String]? {
+        // Will be populated when we add reaction_breakdown to the broadcasts query
+        // For now, show a generic heart if there are any reactions
+        guard let count = reactionCount, count > 0 else { return nil }
+        return ["❤️"]
     }
 }
 

@@ -6,6 +6,9 @@ import Kingfisher
 struct BroadcastCardView: View {
     let broadcast: Broadcast
     var isAdmin: Bool = false
+    var isUnread: Bool = false
+    var hasReacted: Bool = false
+    var onQuickReact: (() -> Void)?
     let onTap: () -> Void
     @Environment(\.colorScheme) var colorScheme
 
@@ -14,6 +17,20 @@ struct BroadcastCardView: View {
             VStack(alignment: .leading, spacing: ArkSpacing.sm) {
                 // Header
                 HStack {
+                    // Unread dot
+                    if isUnread {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 8, height: 8)
+                    }
+
+                    // Pinned indicator
+                    if broadcast.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.accent)
+                    }
+
                     Image(systemName: "antenna.radiowaves.left.and.right")
                         .foregroundColor(AppColors.accent)
 
@@ -107,32 +124,54 @@ struct BroadcastCardView: View {
                     }
                 }
 
-                // Engagement stats footer
-                if (broadcast.reactionCount ?? 0) > 0 || (isAdmin && (broadcast.viewCount ?? 0) > 0) {
-                    HStack(spacing: ArkSpacing.md) {
-                        if let reactions = broadcast.reactionCount, reactions > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "heart.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(AppColors.error)
+                // Engagement footer: quick-react + stats + BTC price
+                HStack(spacing: ArkSpacing.sm) {
+                    // Quick-react heart button
+                    Button {
+                        Haptics.selection()
+                        onQuickReact?()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: hasReacted ? "heart.fill" : "heart")
+                                .font(.system(size: 12))
+                                .foregroundColor(hasReacted ? AppColors.error : AppColors.textSecondary)
+
+                            if let reactions = broadcast.reactionCount, reactions > 0 {
                                 Text("\(reactions)")
                                     .font(ArkFonts.caption)
                                     .foregroundColor(AppColors.textSecondary)
                             }
                         }
+                        .padding(.horizontal, ArkSpacing.xs)
+                        .padding(.vertical, ArkSpacing.xxxs)
+                        .background(hasReacted ? AppColors.error.opacity(0.1) : Color.clear)
+                        .cornerRadius(ArkSpacing.Radius.full)
+                    }
+                    .buttonStyle(.plain)
 
-                        if isAdmin, let views = broadcast.viewCount, views > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "eye.fill")
-                                    .font(.caption2)
-                                    .foregroundColor(AppColors.success)
-                                Text("\(views)")
-                                    .font(ArkFonts.caption)
-                                    .foregroundColor(AppColors.textSecondary)
-                            }
+                    if isAdmin, let views = broadcast.viewCount, views > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "eye.fill")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.success)
+                            Text("\(views)")
+                                .font(ArkFonts.caption)
+                                .foregroundColor(AppColors.textSecondary)
                         }
+                    }
 
-                        Spacer()
+                    Spacer()
+
+                    // BTC price at publish time
+                    if let btcPrice = broadcast.btcPriceAtPublish, btcPrice > 0 {
+                        HStack(spacing: 3) {
+                            Text("₿")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(Color(hex: "F7931A"))
+                            Text(btcPrice.asCurrencyWhole)
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
                     }
                 }
             }

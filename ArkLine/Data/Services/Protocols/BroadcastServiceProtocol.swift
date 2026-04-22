@@ -49,6 +49,7 @@ protocol BroadcastServiceProtocol {
     /// - Parameter id: The broadcast ID to publish
     /// - Returns: The published Broadcast with updated status
     func publishBroadcast(id: UUID) async throws -> Broadcast
+    func publishBroadcast(id: UUID, btcPrice: Double?) async throws -> Broadcast
 
     /// Archives a broadcast
     /// - Parameter id: The broadcast ID to archive
@@ -138,4 +139,19 @@ protocol BroadcastServiceProtocol {
     ///   - userId: Current user's ID to check if they reacted
     /// - Returns: Array of ReactionSummary objects
     func fetchReactionSummary(for broadcastId: UUID, userId: UUID) async throws -> [ReactionSummary]
+
+    // MARK: - Pinning
+
+    /// Sets pinned status on a broadcast (unpins all others first)
+    func setPinned(broadcastId: UUID, isPinned: Bool) async throws
+
+    // MARK: - Read Status
+
+    /// Fetches the set of broadcast IDs that a user has read
+    func fetchReadBroadcastIds(userId: UUID) async throws -> Set<UUID>
+
+    // MARK: - User Reactions
+
+    /// Fetches broadcast IDs where user has reacted with a specific emoji
+    func fetchUserReactedBroadcastIds(userId: UUID, emoji: String) async throws -> Set<UUID>
 }
