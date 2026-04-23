@@ -42,17 +42,22 @@ final class BroadcastService: BroadcastServiceProtocol {
 
         // Fetch published broadcasts
         // RLS policies handle audience filtering on the server
-        let broadcasts: [Broadcast] = try await supabase.database
-            .from(SupabaseTable.broadcasts.rawValue)
-            .select()
-            .eq("status", value: BroadcastStatus.published.rawValue)
-            .order("is_pinned", ascending: false)
-            .order("published_at", ascending: false)
-            .range(from: offset, to: offset + limit - 1)
-            .execute()
-            .value
+        do {
+            let broadcasts: [Broadcast] = try await supabase.database
+                .from(SupabaseTable.broadcasts.rawValue)
+                .select()
+                .eq("status", value: BroadcastStatus.published.rawValue)
+                .order("is_pinned", ascending: false)
+                .order("published_at", ascending: false)
+                .range(from: offset, to: offset + limit - 1)
+                .execute()
+                .value
 
-        return broadcasts
+            return broadcasts
+        } catch {
+            print("🚨 FETCH PUBLISHED ERROR: \(error)")
+            throw error
+        }
     }
 
     func fetchBroadcast(id: UUID) async throws -> Broadcast {
@@ -100,16 +105,21 @@ final class BroadcastService: BroadcastServiceProtocol {
             throw AppError.supabaseNotConfigured
         }
 
-        let created: Broadcast = try await supabase.database
-            .from(SupabaseTable.broadcasts.rawValue)
-            .insert(broadcast)
-            .select()
-            .single()
-            .execute()
-            .value
+        do {
+            let created: Broadcast = try await supabase.database
+                .from(SupabaseTable.broadcasts.rawValue)
+                .insert(broadcast)
+                .select()
+                .single()
+                .execute()
+                .value
 
-        logInfo("Created broadcast: \(created.id)", category: .data)
-        return created
+            logInfo("Created broadcast: \(created.id)", category: .data)
+            return created
+        } catch {
+            print("🚨 SERVICE CREATE ERROR: \(error)")
+            throw error
+        }
     }
 
     func updateBroadcast(_ broadcast: Broadcast) async throws -> Broadcast {
@@ -134,17 +144,22 @@ final class BroadcastService: BroadcastServiceProtocol {
             tags: broadcast.tags
         )
 
-        let updated: Broadcast = try await supabase.database
-            .from(SupabaseTable.broadcasts.rawValue)
-            .update(payload)
-            .eq("id", value: broadcast.id.uuidString)
-            .select()
-            .single()
-            .execute()
-            .value
+        do {
+            let updated: Broadcast = try await supabase.database
+                .from(SupabaseTable.broadcasts.rawValue)
+                .update(payload)
+                .eq("id", value: broadcast.id.uuidString)
+                .select()
+                .single()
+                .execute()
+                .value
 
-        logInfo("Updated broadcast: \(updated.id)", category: .data)
-        return updated
+            logInfo("Updated broadcast: \(updated.id)", category: .data)
+            return updated
+        } catch {
+            print("🚨 SERVICE UPDATE ERROR: \(error)")
+            throw error
+        }
     }
 
     func deleteBroadcast(id: UUID) async throws {

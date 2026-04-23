@@ -468,6 +468,19 @@ struct BroadcastRowView: View {
                             .font(.caption)
                             .foregroundColor(AppColors.textTertiary)
                     }
+
+                    // Delete button
+                    Button(role: .destructive) {
+                        onDelete?()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.error.opacity(0.6))
+                            .padding(6)
+                            .background(AppColors.error.opacity(0.08))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(ArkSpacing.md)

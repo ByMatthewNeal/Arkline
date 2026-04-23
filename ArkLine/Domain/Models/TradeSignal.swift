@@ -378,7 +378,7 @@ extension TradeSignal {
     ]
 
     /// Assets currently active in the signal pipeline
-    static let activeAssets: Set<String> = ["BTC", "ETH", "SOL", "SUI", "ADA"]
+    static let activeAssets: Set<String> = ["ETH", "SOL", "SUI", "ADA"]
 
     /// Whether this signal's asset is currently paused from the pipeline
     var isAssetPaused: Bool {

@@ -26,13 +26,13 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
-  // Focus 5 — only assets with positive live PnL over 30 days (2026-04-18)
-  // Combined: 85.7% WR, +12.70% cumulative, all profitable
-  { cbPair: "BTC-USD",    ticker: "BTC" },    // 3/3 (100%), +1.53% avg
-  { cbPair: "ETH-USD",    ticker: "ETH" },    // 4/4 (100%), +0.65% avg
-  { cbPair: "SOL-USD",    ticker: "SOL" },    // 4/5 (80%), -0.41% avg (tight stops)
-  { cbPair: "SUI-USD",    ticker: "SUI" },    // 3/4 (75%), +1.24% avg, PF 3.23
-  { cbPair: "ADA-USD",    ticker: "ADA" },    // 4/5 (80%), +0.52% avg, PF 1.97
+  // Focus 4 — BTC removed (drag on PnL across all backtests)
+  // 0.3R TP / 0.8R SL + EMA slope regime filter (2026-04-22 backtest)
+  // 7-month result: $1,000 → $1,163 (+16.3%), 71.7% WR, 1.32 PF, 12% max DD
+  { cbPair: "ETH-USD",    ticker: "ETH" },    // 72.7% WR, PF 1.36
+  { cbPair: "SOL-USD",    ticker: "SOL" },    // 65.7% WR, PF 1.03
+  { cbPair: "SUI-USD",    ticker: "SUI" },    // 61.3% WR, PF 0.77 — weakest but kept for diversity
+  { cbPair: "ADA-USD",    ticker: "ADA" },    // 71.4% WR, PF 1.29
 
   // Bench — paused until live PF > 1.0 over 30 signals
   // { cbPair: "LINK-USD",   ticker: "LINK" },   // 1/3 (33%), PF 0.30
@@ -82,8 +82,18 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.5
+const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
+
+// ─── Partial TP / Tightened SL ─────────────────────────────────────────────
+// Take profit at 30% of T1 distance, stop loss at 80% of original SL distance
+const TP_FRACTION = 0.3    // 0.3R take profit
+const SL_FRACTION = 0.8    // 0.8R stop loss
+
+// ─── EMA Slope Regime Filter ───────────────────────────────────────────────
+// Block signals when the 50 EMA slope is flat (no clear trend)
+const REGIME_SLOPE_LOOKBACK = 12  // 12 x 4H = 2 days
+const REGIME_SLOPE_MIN_PCT = 0.5  // require 0.5% slope magnitude
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
 
@@ -936,6 +946,51 @@ function detectMarketRegime(candles4h: Candle[]): MarketRegime {
   regime.isChoppy = tightSpread && (frequentCrossovers || frequentWhipsaws)
 
   return regime
+}
+
+/**
+ * EMA Slope Regime Filter — blocks signals when the 50 EMA has no clear directional slope.
+ * Returns { allowed: boolean, slope: number } where slope is the % change over lookback.
+ * For longs: slope must be positive. For shorts: slope must be negative.
+ */
+function checkEMASlopeRegime(candles4h: Candle[], isBuy: boolean): { allowed: boolean; slopePct: number } {
+  if (candles4h.length < EMA_SLOW_PERIOD + REGIME_SLOPE_LOOKBACK) {
+    return { allowed: true, slopePct: 0 }  // Not enough data — allow
+  }
+
+  const closes = candles4h.map(c => c.close)
+
+  // Compute current EMA50
+  const mult = 2 / (EMA_SLOW_PERIOD + 1)
+  let ema = 0
+  for (let i = 0; i < EMA_SLOW_PERIOD; i++) ema += closes[i]
+  ema /= EMA_SLOW_PERIOD
+  for (let i = EMA_SLOW_PERIOD; i < closes.length; i++) {
+    ema = (closes[i] - ema) * mult + ema
+  }
+  const emaNow = ema
+
+  // Compute EMA50 at lookback candles ago
+  let emaPast = 0
+  for (let i = 0; i < EMA_SLOW_PERIOD; i++) emaPast += closes[i]
+  emaPast /= EMA_SLOW_PERIOD
+  const pastEnd = closes.length - REGIME_SLOPE_LOOKBACK
+  for (let i = EMA_SLOW_PERIOD; i < pastEnd; i++) {
+    emaPast = (closes[i] - emaPast) * mult + emaPast
+  }
+
+  const slopePct = ((emaNow - emaPast) / emaPast) * 100
+
+  // Slope must have minimum magnitude
+  if (Math.abs(slopePct) < REGIME_SLOPE_MIN_PCT) {
+    return { allowed: false, slopePct }
+  }
+
+  // Slope direction must match trade direction
+  if (isBuy && slopePct < 0) return { allowed: false, slopePct }
+  if (!isBuy && slopePct > 0) return { allowed: false, slopePct }
+
+  return { allowed: true, slopePct }
 }
 
 // ─── Range Compression Detection ────────────────────────────────────────────
@@ -2150,6 +2205,15 @@ async function evaluateSignals(
       }
     }
 
+    // EMA Slope Regime Filter — block signals in trendless markets
+    const slopeRegime = checkEMASlopeRegime(candles4h, isBuy)
+    if (!slopeRegime.allowed) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): regime filter — flat 50 EMA slope (${slopeRegime.slopePct.toFixed(2)}%) [${tier.tierName}]`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: flat EMA slope (${slopeRegime.slopePct.toFixed(2)}%)`)
+      stats.skipped++
+      continue
+    }
+
     // Targets and stop
     const targets = computeTargetsAndStop(zone, allFibPrices, isBuy)
     if (!targets) continue
@@ -2247,6 +2311,14 @@ async function evaluateSignals(
       else macroRegime = "Neutral"
     }
 
+    // Apply partial TP (0.3R) and tightened SL (0.8R)
+    const partialTP = isBuy
+      ? entryMid + TP_FRACTION * rewardDist
+      : entryMid - TP_FRACTION * rewardDist
+    const tightenedSL = isBuy
+      ? entryMid - SL_FRACTION * riskDist
+      : entryMid + SL_FRACTION * riskDist
+
     const signalRow = {
       asset: ticker,
       signal_type: signalType,
@@ -2256,13 +2328,13 @@ async function evaluateSignals(
       entry_zone_high: zone.high,
       entry_price_mid: entryMid,
       confluence_zone_id: confluenceZoneId,
-      target_1: targets.target1,
+      target_1: partialTP,
       target_2: targets.target2,
-      stop_loss: targets.stopLoss,
-      risk_reward_ratio: Math.round(rrRatio * 100) / 100,
-      risk_1r: riskDist,
+      stop_loss: tightenedSL,
+      risk_reward_ratio: Math.round(TP_FRACTION / SL_FRACTION * 100) / 100,
+      risk_1r: SL_FRACTION * riskDist,
       best_price: entryMid,
-      runner_stop: targets.stopLoss,
+      runner_stop: tightenedSL,
       ema_trend_aligned: true,
       bounce_confirmed: true,
       confirmation_details: {

@@ -96,20 +96,30 @@ class BroadcastViewModel: ObservableObject {
 
     /// Create a new broadcast
     func createBroadcast(_ broadcast: Broadcast) async throws {
-        let created = try await broadcastService.createBroadcast(broadcast)
-        broadcasts.insert(created, at: 0)
-        logInfo("Created broadcast: \(created.id)", category: .data)
+        do {
+            let created = try await broadcastService.createBroadcast(broadcast)
+            broadcasts.insert(created, at: 0)
+            logInfo("Created broadcast: \(created.id)", category: .data)
+        } catch {
+            print("🚨 VM CREATE ERROR: \(error)")
+            throw error
+        }
     }
 
     /// Update an existing broadcast
     func updateBroadcast(_ broadcast: Broadcast) async throws {
-        let updated = try await broadcastService.updateBroadcast(broadcast)
+        do {
+            let updated = try await broadcastService.updateBroadcast(broadcast)
 
-        if let index = broadcasts.firstIndex(where: { $0.id == broadcast.id }) {
-            broadcasts[index] = updated
+            if let index = broadcasts.firstIndex(where: { $0.id == broadcast.id }) {
+                broadcasts[index] = updated
+            }
+
+            logInfo("Updated broadcast: \(updated.id)", category: .data)
+        } catch {
+            print("🚨 VM UPDATE ERROR: \(error)")
+            throw error
         }
-
-        logInfo("Updated broadcast: \(updated.id)", category: .data)
     }
 
     /// Delete a broadcast
@@ -130,7 +140,13 @@ class BroadcastViewModel: ObservableObject {
             logWarning("Failed to fetch BTC price at publish: \(error)", category: .network)
         }
 
-        let published = try await broadcastService.publishBroadcast(id: broadcast.id, btcPrice: btcPrice)
+        let published: Broadcast
+        do {
+            published = try await broadcastService.publishBroadcast(id: broadcast.id, btcPrice: btcPrice)
+        } catch {
+            print("🚨 VM PUBLISH SERVICE ERROR: \(error)")
+            throw error
+        }
 
         if let index = broadcasts.firstIndex(where: { $0.id == broadcast.id }) {
             broadcasts[index] = published

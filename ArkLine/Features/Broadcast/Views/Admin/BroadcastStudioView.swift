@@ -199,12 +199,22 @@ struct BroadcastStudioView: View {
                     },
                     onPublish: broadcast.status == .draft || broadcast.status == .scheduled ? {
                         Task {
-                            try? await viewModel.publishBroadcast(broadcast)
+                            do {
+                                try await viewModel.publishBroadcast(broadcast)
+                            } catch {
+                                print("🚨 STUDIO PUBLISH ERROR: \(error)")
+                                logError("Studio publish failed: \(error)", category: .data)
+                            }
                         }
                     } : nil,
                     onDelete: {
                         Task {
-                            try? await viewModel.deleteBroadcast(broadcast)
+                            do {
+                                try await viewModel.deleteBroadcast(broadcast)
+                            } catch {
+                                print("🚨 STUDIO DELETE ERROR: \(error)")
+                                logError("Studio delete failed: \(error)", category: .data)
+                            }
                         }
                     }
                 )

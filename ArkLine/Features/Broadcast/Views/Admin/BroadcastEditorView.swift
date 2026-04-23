@@ -130,12 +130,6 @@ struct BroadcastEditorView: View {
                     // Video Recording Section
                     videoLinkSection
 
-                    // App References Section
-                    appReferencesSection
-
-                    // Portfolio Showcase Section
-                    portfolioShowcaseSection
-
                     // Images Section
                     imagesSection
 
@@ -1160,6 +1154,8 @@ struct BroadcastEditorView: View {
                 isSaving = false
                 errorMessage = AppError.from(error).userMessage
                 showingError = true
+                print("🚨 BROADCAST SAVE ERROR: \(error)")
+                print("🚨 BROADCAST SAVE ERROR (localized): \(error.localizedDescription)")
                 logError("Failed to save broadcast: \(error)", category: .data)
             }
         }
