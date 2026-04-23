@@ -101,11 +101,16 @@ struct SwingSetupsSummarySection: View {
 
     private var emptyState: some View {
         VStack(spacing: 6) {
-            Text("No active setups")
-                .font(AppFonts.body14Medium)
-                .foregroundColor(textPrimary)
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.shield.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.success)
+                Text("Standing By")
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(textPrimary)
+            }
 
-            Text("Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.")
+            Text("No high-conviction setups right now. The system only fires when price, trend, and momentum align — sitting out is part of the strategy.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)

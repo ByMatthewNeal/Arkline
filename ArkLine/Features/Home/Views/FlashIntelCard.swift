@@ -310,14 +310,14 @@ struct FlashIntelSection: View {
 
     private var emptyStateCard: some View {
         let conditions = marketConditions
-        let headline = conditions?.headline ?? "No active setups"
-        let detail = conditions?.detail ?? "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions."
+        let headline = conditions?.headline ?? "Standing By"
+        let detail = conditions?.detail ?? "No high-conviction setups right now. The system only fires when price, trend, and momentum align — sitting out is part of the strategy."
 
         return VStack(spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: conditions?.status == "quiet" ? "waveform.path" : "scope")
+                Image(systemName: conditions?.status == "quiet" ? "checkmark.shield.fill" : "scope")
                     .font(.system(size: 14))
-                    .foregroundColor(AppColors.accent)
+                    .foregroundColor(conditions?.status == "quiet" ? AppColors.success : AppColors.accent)
 
                 Text(headline)
                     .font(AppFonts.body14Medium)
