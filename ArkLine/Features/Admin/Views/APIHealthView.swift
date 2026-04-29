@@ -57,7 +57,7 @@ struct APIHealthView: View {
                 .padding(.horizontal, ArkSpacing.md)
             }
         }
-        .navigationTitle("API Health")
+        .navigationTitle("System Health")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

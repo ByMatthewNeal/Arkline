@@ -17,15 +17,18 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     // API key injected server-side by api-proxy Edge Function
 
     // MARK: - Global M2 Reference Data
-    // Base values sourced from central bank publications as of Jan 2025.
+    // Base values sourced from central bank publications as of Jan 2026.
     // Growth rates are approximate annual rates used for extrapolation.
+    // NOTE: FRED's international M2 series are discontinued (2017-2019),
+    // so non-US M2 uses calibrated base values. The server-side edge function
+    // (sync-global-liquidity) fetches real BIS central bank data instead.
 
     private enum M2Base {
         // M2 in local currency (actual values)
-        static let china: Double  = 313_530_000_000_000    // ¥313.53T CNY (PBoC, Jan 2025)
-        static let eurozone: Double = 16_200_000_000_000   // €16.2T EUR (ECB, Jan 2025)
-        static let japan: Double  = 1_240_000_000_000_000  // ¥1,240T JPY (BOJ, Jan 2025)
-        static let uk: Double     = 3_100_000_000_000      // £3.1T GBP (BOE, Jan 2025)
+        static let china: Double  = 335_480_000_000_000    // ¥335.48T CNY (PBoC, Jan 2026)
+        static let eurozone: Double = 16_610_000_000_000   // €16.61T EUR (ECB, Jan 2026)
+        static let japan: Double  = 1_264_800_000_000_000  // ¥1,264.8T JPY (BOJ, Jan 2026)
+        static let uk: Double     = 3_209_000_000_000      // £3.209T GBP (BOE, Jan 2026)
 
         // Approximate annual M2 growth rates
         static let chinaGrowth: Double    = 0.07   // ~7%
@@ -34,13 +37,13 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
         static let ukGrowth: Double       = 0.035  // ~3.5%
 
         // Reference date for base values
-        static let referenceDateStr = "2025-01-01"
+        static let referenceDateStr = "2026-01-01"
 
         // Default FX rates (fallback if FRED FX series fail)
         static let defaultCNYUSD: Double = 0.137   // USD per 1 CNY
-        static let defaultEURUSD: Double = 1.04    // USD per 1 EUR
-        static let defaultJPYUSD: Double = 0.0064  // USD per 1 JPY
-        static let defaultGBPUSD: Double = 1.25    // USD per 1 GBP
+        static let defaultEURUSD: Double = 1.08    // USD per 1 EUR
+        static let defaultJPYUSD: Double = 0.0066  // USD per 1 JPY
+        static let defaultGBPUSD: Double = 1.26    // USD per 1 GBP
     }
 
     // FRED daily FX rate series
@@ -65,6 +68,13 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     // MARK: - Public Methods
 
     func fetchLiquidityChanges() async throws -> GlobalLiquidityChanges {
+        // Prefer server-side BIS+FRED composite (real data, updated daily by edge function)
+        if let gli = try? await fetchGlobalLiquidityIndex() {
+            return gli.asGlobalLiquidityChanges
+        }
+
+        // Fallback: client-side M2 estimation from FRED + growth rates
+        logInfo("GlobalLiquidityIndex cache empty, falling back to client-side M2 estimation", category: .data)
         let history = try await fetchLiquidityHistory(days: 400)
 
         guard !history.isEmpty else {
@@ -125,6 +135,11 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     }
 
     func fetchLatestM2() async throws -> Double {
+        // Prefer server-side composite
+        if let gli = try? await fetchGlobalLiquidityIndex() {
+            return gli.compositeLiquidityT * 1_000_000_000_000
+        }
+
         let history = try await fetchLiquidityHistory(days: 7)
         guard let latest = history.last else {
             throw LiquidityError.noData
@@ -148,6 +163,13 @@ final class APIGlobalLiquidityService: GlobalLiquidityServiceProtocol {
     // MARK: - US Net Liquidity
 
     func fetchNetLiquidityChanges() async throws -> NetLiquidityChanges {
+        // Prefer server-side data (real FRED values, updated daily by edge function)
+        if let gli = try? await fetchGlobalLiquidityIndex() {
+            return gli.asNetLiquidityChanges
+        }
+
+        // Fallback: fetch directly from FRED
+        logInfo("GlobalLiquidityIndex cache empty, falling back to direct FRED fetch for net liquidity", category: .data)
         let history = try await fetchNetLiquidity(days: 400)
 
         guard !history.isEmpty else {

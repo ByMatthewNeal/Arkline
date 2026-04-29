@@ -1,7 +1,7 @@
 import Foundation
 
-// MARK: - API Health Service
-/// Pings all external APIs and reports their status for the admin dashboard.
+// MARK: - System Health Service
+/// Checks external APIs, data freshness, and cron job status for the admin dashboard.
 
 struct APIHealthResult: Identifiable {
     let id = UUID()
@@ -17,6 +17,8 @@ struct APIHealthResult: Identifiable {
         case sentiment = "Sentiment & On-Chain"
         case news = "News Feeds"
         case backend = "Backend & Infrastructure"
+        case dataFreshness = "Data Freshness"
+        case cronJobs = "Cron Jobs"
     }
 
     enum APIStatus: String {
@@ -60,7 +62,22 @@ actor APIHealthService {
         let validateResponse: (Data, HTTPURLResponse) -> (Bool, String?)
     }
 
-    private var checks: [HealthCheck] {
+    // MARK: - Freshness Check Definitions
+
+    private struct FreshnessCheck {
+        let name: String
+        let table: String
+        let query: FreshnessQuery
+        let maxAgeMinutes: Int      // Healthy threshold
+        let degradedAgeMinutes: Int // Degraded threshold (beyond = down)
+    }
+
+    private enum FreshnessQuery {
+        case cacheKey(String)                    // Check market_data_cache by key
+        case latestRow(dateColumn: String, orderDesc: Bool, extraFilters: [(String, String, String)])
+    }
+
+    private var apiChecks: [HealthCheck] {
         [
             // Pricing & Market Data
             HealthCheck(
@@ -214,13 +231,102 @@ actor APIHealthService {
         ]
     }
 
+    // MARK: - Freshness Checks (Supabase queries)
+
+    private var freshnessChecks: [FreshnessCheck] {
+        [
+            // Data Freshness: Cache entries populated by edge functions
+            FreshnessCheck(
+                name: "Crypto Prices",
+                table: "market_data_cache",
+                query: .cacheKey("crypto_assets_1_100"),
+                maxAgeMinutes: 15,
+                degradedAgeMinutes: 30
+            ),
+            FreshnessCheck(
+                name: "Global Market Data",
+                table: "market_data_cache",
+                query: .cacheKey("global_market_data"),
+                maxAgeMinutes: 15,
+                degradedAgeMinutes: 30
+            ),
+            FreshnessCheck(
+                name: "Global Liquidity Index",
+                table: "market_data_cache",
+                query: .cacheKey("global_liquidity_index"),
+                maxAgeMinutes: 60 * 26,   // Daily sync at 08:00 UTC — 26hr = missed one run
+                degradedAgeMinutes: 60 * 50 // 50hr = missed two runs
+            ),
+            FreshnessCheck(
+                name: "Signal Analytics",
+                table: "market_data_cache",
+                query: .cacheKey("signal_analytics"),
+                maxAgeMinutes: 60 * 26,
+                degradedAgeMinutes: 60 * 50
+            ),
+
+            // Data Freshness: Table-based checks
+            FreshnessCheck(
+                name: "Positioning Signals",
+                table: "positioning_signals",
+                query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 60 * 26,   // Daily at 00:15 UTC
+                degradedAgeMinutes: 60 * 50
+            ),
+            FreshnessCheck(
+                name: "Economic Events",
+                table: "economic_events",
+                query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 60,        // Every 30 min
+                degradedAgeMinutes: 120
+            ),
+            FreshnessCheck(
+                name: "Model Portfolio NAV",
+                table: "model_portfolio_nav",
+                query: .latestRow(dateColumn: "date", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 60 * 26,   // Daily at 00:30 UTC
+                degradedAgeMinutes: 60 * 50
+            ),
+            FreshnessCheck(
+                name: "Daily Briefing",
+                table: "market_summaries",
+                query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 60 * 14,   // 3 slots/day — 14hr max gap (evening to next morning)
+                degradedAgeMinutes: 60 * 26
+            ),
+            FreshnessCheck(
+                name: "OHLC Candles",
+                table: "ohlc_candles",
+                query: .latestRow(dateColumn: "open_time", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 120,       // Pipeline runs every 30 min
+                degradedAgeMinutes: 240
+            ),
+            FreshnessCheck(
+                name: "Trade Signals",
+                table: "trade_signals",
+                query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 60 * 24,   // Signals may not generate every day
+                degradedAgeMinutes: 60 * 72  // 3 days without any signal is concerning
+            ),
+        ]
+    }
+
     // MARK: - Run All Checks
 
     func runAllChecks() async -> [APIHealthResult] {
+        async let apiResults = runAPIChecks()
+        async let freshnessResults = runFreshnessChecks()
+        let (api, freshness) = await (apiResults, freshnessResults)
+        return (api + freshness).sorted { $0.category.rawValue < $1.category.rawValue }
+    }
+
+    // MARK: - API Checks
+
+    private func runAPIChecks() async -> [APIHealthResult] {
         await withTaskGroup(of: APIHealthResult.self) { group in
-            for check in checks {
+            for check in apiChecks {
                 group.addTask {
-                    await self.runCheck(check)
+                    await self.runAPICheck(check)
                 }
             }
 
@@ -228,13 +334,11 @@ actor APIHealthService {
             for await result in group {
                 results.append(result)
             }
-            return results.sorted { $0.category.rawValue < $1.category.rawValue }
+            return results
         }
     }
 
-    // MARK: - Single Check
-
-    private func runCheck(_ check: HealthCheck) async -> APIHealthResult {
+    private func runAPICheck(_ check: HealthCheck) async -> APIHealthResult {
         guard let url = URL(string: check.url) else {
             return APIHealthResult(name: check.name, category: check.category, status: .down, latencyMs: nil, detail: "Invalid URL")
         }
@@ -282,5 +386,167 @@ actor APIHealthService {
             }
             return APIHealthResult(name: check.name, category: check.category, status: .down, latencyMs: latency, detail: detail)
         }
+    }
+
+    // MARK: - Freshness Checks (Supabase)
+
+    private func runFreshnessChecks() async -> [APIHealthResult] {
+        guard SupabaseManager.shared.isConfigured else {
+            return freshnessChecks.map {
+                APIHealthResult(name: $0.name, category: .dataFreshness, status: .down, latencyMs: nil, detail: "Supabase not configured")
+            }
+        }
+
+        return await withTaskGroup(of: APIHealthResult.self) { group in
+            for check in freshnessChecks {
+                group.addTask {
+                    await self.runFreshnessCheck(check)
+                }
+            }
+
+            var results: [APIHealthResult] = []
+            for await result in group {
+                results.append(result)
+            }
+            return results
+        }
+    }
+
+    private func runFreshnessCheck(_ check: FreshnessCheck) async -> APIHealthResult {
+        let start = Date()
+
+        do {
+            let lastUpdated: Date? = try await {
+                switch check.query {
+                case .cacheKey(let key):
+                    return try await fetchCacheTimestamp(key: key)
+                case .latestRow(let dateColumn, let orderDesc, let extraFilters):
+                    return try await fetchLatestTimestamp(
+                        table: check.table,
+                        dateColumn: dateColumn,
+                        orderDesc: orderDesc,
+                        extraFilters: extraFilters
+                    )
+                }
+            }()
+
+            let latency = Int(Date().timeIntervalSince(start) * 1000)
+
+            guard let updated = lastUpdated else {
+                return APIHealthResult(
+                    name: check.name,
+                    category: .dataFreshness,
+                    status: .down,
+                    latencyMs: latency,
+                    detail: "No data found"
+                )
+            }
+
+            let ageMinutes = Int(Date().timeIntervalSince(updated) / 60)
+            let ageString = formatAge(minutes: ageMinutes)
+
+            let status: APIHealthResult.APIStatus
+            if ageMinutes <= check.maxAgeMinutes {
+                status = .healthy
+            } else if ageMinutes <= check.degradedAgeMinutes {
+                status = .degraded
+            } else {
+                status = .down
+            }
+
+            return APIHealthResult(
+                name: check.name,
+                category: .dataFreshness,
+                status: status,
+                latencyMs: latency,
+                detail: "Updated \(ageString) ago"
+            )
+        } catch {
+            let latency = Int(Date().timeIntervalSince(start) * 1000)
+            return APIHealthResult(
+                name: check.name,
+                category: .dataFreshness,
+                status: .down,
+                latencyMs: latency,
+                detail: "Query failed"
+            )
+        }
+    }
+
+    // MARK: - Supabase Queries
+
+    private func fetchCacheTimestamp(key: String) async throws -> Date? {
+        let rows: [[String: String]] = try await SupabaseManager.shared.client
+            .from("market_data_cache")
+            .select("updated_at")
+            .eq("key", value: key)
+            .limit(1)
+            .execute()
+            .value
+
+        guard let row = rows.first, let value = row["updated_at"] else {
+            return nil
+        }
+        return parseTimestamp(value)
+    }
+
+    private func fetchLatestTimestamp(
+        table: String,
+        dateColumn: String,
+        orderDesc: Bool,
+        extraFilters: [(String, String, String)]
+    ) async throws -> Date? {
+        var query = SupabaseManager.shared.client
+            .from(table)
+            .select(dateColumn)
+
+        for (col, op, val) in extraFilters {
+            switch op {
+            case "eq": query = query.eq(col, value: val)
+            default: break
+            }
+        }
+
+        let rows: [[String: String]] = try await query
+            .order(dateColumn, ascending: !orderDesc)
+            .limit(1)
+            .execute()
+            .value
+
+        guard let row = rows.first, let value = row[dateColumn] else {
+            return nil
+        }
+        return parseTimestamp(value)
+    }
+
+    private func parseTimestamp(_ value: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: value) { return date }
+
+        iso.formatOptions = [.withInternetDateTime]
+        if let date = iso.date(from: value) { return date }
+
+        // Date-only (e.g., "2026-04-29" for model_portfolio_nav)
+        let dateOnly = DateFormatter()
+        dateOnly.dateFormat = "yyyy-MM-dd"
+        dateOnly.locale = Locale(identifier: "en_US_POSIX")
+        dateOnly.timeZone = TimeZone(identifier: "UTC")
+        return dateOnly.date(from: value)
+    }
+
+    // MARK: - Helpers
+
+    private func formatAge(minutes: Int) -> String {
+        if minutes < 1 { return "<1m" }
+        if minutes < 60 { return "\(minutes)m" }
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+        if hours < 24 {
+            return remainingMinutes > 0 ? "\(hours)h \(remainingMinutes)m" : "\(hours)h"
+        }
+        let days = hours / 24
+        let remainingHours = hours % 24
+        return remainingHours > 0 ? "\(days)d \(remainingHours)h" : "\(days)d"
     }
 }

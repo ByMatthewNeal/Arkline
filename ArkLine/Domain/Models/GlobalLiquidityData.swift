@@ -288,6 +288,75 @@ struct GlobalLiquidityIndex: Codable {
             .map { (code: $0.key, name: $0.value.name, valueB: $0.value.valueB) }
             .sorted { $0.valueB > $1.valueB }
     }
+
+    // MARK: - Bridge to Legacy Types
+    // Allows callers that expect GlobalLiquidityChanges / NetLiquidityChanges
+    // to consume server-side BIS+FRED data without code changes.
+
+    /// Convert server-side composite data to client-side GlobalLiquidityChanges format
+    var asGlobalLiquidityChanges: GlobalLiquidityChanges {
+        // Composite is in trillions, GlobalLiquidityChanges.current expects raw USD
+        let currentUSD = compositeLiquidityT * 1_000_000_000_000
+
+        // Build history from server-side monthly periods
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        var historyPoints: [GlobalLiquidityData] = []
+        var previousValue: Double = 0
+        for period in history {
+            let value = period.compositeT * 1_000_000_000_000
+            if let date = dateFormatter.date(from: period.period) {
+                historyPoints.append(GlobalLiquidityData(
+                    date: date,
+                    value: value,
+                    previousValue: previousValue > 0 ? previousValue : value
+                ))
+                previousValue = value
+            }
+        }
+
+        return GlobalLiquidityChanges(
+            current: currentUSD,
+            dailyChange: nil,
+            weeklyChange: changes.monthly ?? 0, // Best available (monthly data)
+            monthlyChange: changes.monthly ?? 0,
+            yearlyChange: changes.annual ?? 0,
+            history: historyPoints
+        )
+    }
+
+    /// Convert server-side US net liquidity data to client-side NetLiquidityChanges format
+    var asNetLiquidityChanges: NetLiquidityChanges {
+        let currentUSD = usNetLiquidityT * 1_000_000_000_000
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+
+        var historyPoints: [GlobalLiquidityData] = []
+        var previousValue: Double = 0
+        for period in history {
+            let value = period.usNetLiquidityT * 1_000_000_000_000
+            if let date = dateFormatter.date(from: period.period) {
+                historyPoints.append(GlobalLiquidityData(
+                    date: date,
+                    value: value,
+                    previousValue: previousValue > 0 ? previousValue : value
+                ))
+                previousValue = value
+            }
+        }
+
+        return NetLiquidityChanges(
+            current: currentUSD,
+            weeklyChange: changes.monthly ?? 0,
+            monthlyChange: changes.monthly ?? 0,
+            yearlyChange: changes.annual ?? 0,
+            history: historyPoints
+        )
+    }
 }
 
 // MARK: - Liquidity Cycle Data

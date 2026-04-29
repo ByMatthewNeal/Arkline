@@ -44,8 +44,8 @@ struct AdminDashboardView: View {
                         AdminDashboardRow(
                             icon: "antenna.radiowaves.left.and.right",
                             iconColor: AppColors.success,
-                            title: "API Health",
-                            subtitle: "Monitor all external services"
+                            title: "System Health",
+                            subtitle: "APIs, data freshness & cron jobs"
                         )
                     }
                 } header: {
