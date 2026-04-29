@@ -15,6 +15,10 @@ struct DailyNewsSection: View {
         news.filter { $0.sourceType == .googleNews }
     }
 
+    private var bloombergNews: [NewsItem] {
+        news.filter { $0.sourceType == .bloomberg }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -41,6 +45,7 @@ struct DailyNewsSection: View {
             HStack(spacing: 12) {
                 NewsSourceBadge(sourceType: .twitter, count: twitterNews.count)
                 NewsSourceBadge(sourceType: .googleNews, count: googleNews.count)
+                NewsSourceBadge(sourceType: .bloomberg, count: bloombergNews.count)
             }
             .padding(.horizontal, 20)
 

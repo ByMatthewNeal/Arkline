@@ -9,9 +9,10 @@ final class APINewsService: NewsServiceProtocol {
     private let finnhubService = FinnhubEconomicCalendarService()
     private let calendarScraper = EconomicCalendarScraper()
     private let fedWatchScraper = CMEFedWatchScraper()
-    /// Creates a fresh instance per call — GoogleNewsRSSService holds mutable XML parser
-    /// state and is not safe to reuse across concurrent calls.
+    /// Creates a fresh instance per call — RSS services hold mutable XML parser
+    /// state and are not safe to reuse across concurrent calls.
     private func makeRSSService() -> GoogleNewsRSSService { GoogleNewsRSSService() }
+    private func makeBloombergService() -> BloombergRSSService { BloombergRSSService() }
 
     // MARK: - NewsServiceProtocol
 
@@ -99,21 +100,26 @@ final class APINewsService: NewsServiceProtocol {
     ) async throws -> [NewsItem] {
         var allNews: [NewsItem] = []
 
+        // Fetch Google News and Bloomberg in parallel
+        let googleLimit = (limit * 2) / 3  // ~2/3 from Google
+        let bloombergLimit = limit / 3      // ~1/3 from Bloomberg
+
+        async let bloombergNews = makeBloombergService().fetchNews(for: topics, limit: bloombergLimit)
+
         // Fetch Google News based on user preferences
         if includeGoogleNews {
-            // If user has selected specific topics, use those
             if let topics = topics, !topics.isEmpty {
                 let personalizedNews = try await makeRSSService().fetchPersonalizedNews(
                     topics: topics,
                     customKeywords: customKeywords ?? [],
-                    limit: limit
+                    limit: googleLimit
                 )
                 allNews.append(contentsOf: personalizedNews)
                 logDebug("Fetched \(personalizedNews.count) personalized news items", category: .network)
             } else {
                 // Default behavior: crypto + geopolitical
-                async let cryptoNews = fetchCryptoNews(limit: limit / 2)
-                async let geoNews = fetchGeopoliticalNews(limit: limit / 2)
+                async let cryptoNews = fetchCryptoNews(limit: googleLimit / 2)
+                async let geoNews = fetchGeopoliticalNews(limit: googleLimit / 2)
 
                 do {
                     let (crypto, geo) = try await (cryptoNews, geoNews)
@@ -125,6 +131,11 @@ final class APINewsService: NewsServiceProtocol {
                 }
             }
         }
+
+        // Collect Bloomberg results (non-throwing — returns empty on failure)
+        let bloomberg = await bloombergNews
+        allNews.append(contentsOf: bloomberg)
+        logDebug("Fetched \(bloomberg.count) Bloomberg news items", category: .network)
 
         // Sort by date (newest first) and limit
         allNews.sort { $0.publishedAt > $1.publishedAt }

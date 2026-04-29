@@ -19,6 +19,9 @@ struct NewsTopicsSettingsView: View {
 
             ScrollView {
                 VStack(spacing: ArkSpacing.xl) {
+                    // Quick Presets
+                    presetsSection
+
                     // Pre-defined Topics Section
                     predefinedTopicsSection
 
@@ -38,6 +41,60 @@ struct NewsTopicsSettingsView: View {
         #endif
     }
 
+    // MARK: - Quick Presets
+    private var presetsSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            Text("Quick Setup")
+                .font(AppFonts.body14Bold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+            Text("Not sure where to start? Pick a preset.")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+
+            VStack(spacing: ArkSpacing.xs) {
+                ForEach(NewsPreset.allCases, id: \.self) { preset in
+                    Button {
+                        viewModel.applyPreset(preset)
+                    } label: {
+                        HStack(spacing: ArkSpacing.sm) {
+                            Image(systemName: preset.icon)
+                                .font(.system(size: 16))
+                                .frame(width: 24)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(preset.title)
+                                    .font(AppFonts.body14Medium)
+                                Text(preset.subtitle)
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+
+                            Spacer()
+
+                            if viewModel.selectedNewsTopics == preset.topics {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(AppColors.accent)
+                            }
+                        }
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .padding(ArkSpacing.sm)
+                        .background(
+                            viewModel.selectedNewsTopics == preset.topics
+                                ? AppColors.accent.opacity(0.1)
+                                : AppColors.fillSecondary(colorScheme)
+                        )
+                        .cornerRadius(ArkSpacing.Radius.input)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(ArkSpacing.Radius.card)
+    }
+
     // MARK: - Pre-defined Topics
     private var predefinedTopicsSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
@@ -45,7 +102,7 @@ struct NewsTopicsSettingsView: View {
                 .font(AppFonts.body14Bold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            Text("Select topics to include in your news feed")
+            Text("Or pick your own topics")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 
@@ -53,7 +110,7 @@ struct NewsTopicsSettingsView: View {
                 columns: [GridItem(.flexible()), GridItem(.flexible())],
                 spacing: ArkSpacing.sm
             ) {
-                ForEach(Constants.NewsTopic.allCases, id: \.self) { topic in
+                ForEach(Constants.NewsTopic.allCases.filter { $0 != .nfts }, id: \.self) { topic in
                     NewsTopicChip(
                         topic: topic,
                         isSelected: viewModel.selectedNewsTopics.contains(topic),
@@ -222,6 +279,48 @@ private struct NewsFlowLayout: Layout {
             }
 
             height = y + rowHeight
+        }
+    }
+}
+
+// MARK: - News Presets
+enum NewsPreset: String, CaseIterable {
+    case recommended
+    case cryptoFocused
+    case macroTrader
+
+    var title: String {
+        switch self {
+        case .recommended: return "Recommended"
+        case .cryptoFocused: return "Crypto Focused"
+        case .macroTrader: return "Macro Trader"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .recommended: return "Best for most investors — broad market coverage"
+        case .cryptoFocused: return "Crypto, DeFi, and regulation news"
+        case .macroTrader: return "Economy, geopolitics, and stocks"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .recommended: return "star.fill"
+        case .cryptoFocused: return "bitcoinsign.circle"
+        case .macroTrader: return "globe"
+        }
+    }
+
+    var topics: Set<Constants.NewsTopic> {
+        switch self {
+        case .recommended:
+            return [.crypto, .macroEconomy, .geopolitics, .stocks]
+        case .cryptoFocused:
+            return [.crypto, .defi, .regulation]
+        case .macroTrader:
+            return [.macroEconomy, .geopolitics, .stocks, .techAI]
         }
     }
 }

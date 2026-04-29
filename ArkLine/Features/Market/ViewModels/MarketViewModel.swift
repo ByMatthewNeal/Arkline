@@ -314,10 +314,12 @@ struct NewsItem: Identifiable {
 enum NewsSourceType: String, CaseIterable {
     case twitter = "Twitter"
     case googleNews = "Google News"
+    case bloomberg = "Bloomberg"
     var icon: String {
         switch self {
         case .twitter: return "bird" // X logo approximation
         case .googleNews: return "g.circle.fill"
+        case .bloomberg: return "chart.line.uptrend.xyaxis"
         }
     }
 
@@ -325,6 +327,7 @@ enum NewsSourceType: String, CaseIterable {
         switch self {
         case .twitter: return "#1DA1F2" // Twitter blue
         case .googleNews: return "#4285F4" // Google blue
+        case .bloomberg: return "#FF6600" // Bloomberg orange
         }
     }
 
@@ -332,6 +335,7 @@ enum NewsSourceType: String, CaseIterable {
         switch self {
         case .twitter: return "X"
         case .googleNews: return "Google"
+        case .bloomberg: return "Bloomberg"
         }
     }
 }

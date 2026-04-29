@@ -77,6 +77,13 @@ struct AllNewsView: View {
                                 isSelected: selectedFilter == .googleNews,
                                 action: { selectedFilter = .googleNews }
                             )
+                            NewsFilterChip(
+                                title: "Bloomberg",
+                                icon: "chart.line.uptrend.xyaxis",
+                                count: news.filter { $0.sourceType == .bloomberg }.count,
+                                isSelected: selectedFilter == .bloomberg,
+                                action: { selectedFilter = .bloomberg }
+                            )
                         }
                         .padding(.horizontal, 20)
                     }

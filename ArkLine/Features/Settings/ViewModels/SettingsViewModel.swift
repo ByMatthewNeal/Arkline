@@ -15,7 +15,7 @@ final class SettingsViewModel {
     var riskCoins: [String] = ["BTC", "ETH"]
 
     // MARK: - News Topics
-    var selectedNewsTopics: Set<Constants.NewsTopic> = [.crypto, .geopolitics]
+    var selectedNewsTopics: Set<Constants.NewsTopic> = [.crypto, .macroEconomy, .geopolitics, .stocks]
     var customNewsTopics: [String] = []
 
     // MARK: - State
@@ -82,6 +82,11 @@ final class SettingsViewModel {
         } else {
             logInfo(" No custom keywords found")
         }
+    }
+
+    func applyPreset(_ preset: NewsPreset) {
+        selectedNewsTopics = preset.topics
+        saveNewsTopics()
     }
 
     func toggleNewsTopic(_ topic: Constants.NewsTopic) {

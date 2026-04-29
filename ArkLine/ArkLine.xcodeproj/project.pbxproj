@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		946C384C7E164C54B4FE7311 /* BloombergRSSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7ECD98101164FC99C4A1CA0 /* BloombergRSSService.swift */; };
 		D1C7100000000000000001 /* DictionaryTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000011 /* DictionaryTerm.swift */; };
 		D1C7100000000000000002 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000012 /* DictionaryService.swift */; };
 		D1C7100000000000000003 /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000013 /* DictionaryView.swift */; };
@@ -839,6 +840,7 @@
 		AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinnhubEconomicCalendarService.swift; sourceTree = "<group>"; };
 		AA1B2C3D03 /* InvestingComScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvestingComScraper.swift; sourceTree = "<group>"; };
 		AA1B2C3D05 /* GoogleNewsRSSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleNewsRSSService.swift; sourceTree = "<group>"; };
+		C7ECD98101164FC99C4A1CA0 /* BloombergRSSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloombergRSSService.swift; sourceTree = "<group>"; };
 		AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldDetailView.swift; sourceTree = "<group>"; };
 		AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EconomicEvent.swift; sourceTree = "<group>"; };
 		AB0UTV13W000000000001 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
@@ -1277,6 +1279,7 @@
 				83DD4D44D13A4395CA4331B4 /* SharedCacheService.swift */,
 				3734A6788EEBE7830A322555 /* APINewsService.swift */,
 				AA1B2C3D05 /* GoogleNewsRSSService.swift */,
+				C7ECD98101164FC99C4A1CA0 /* BloombergRSSService.swift */,
 				AA1B2C3D03 /* InvestingComScraper.swift */,
 				AA1B2C3D01 /* FinnhubEconomicCalendarService.swift */,
 				09632E6060BBE9A1576A3022 /* APIPortfolioService.swift */,
@@ -2580,6 +2583,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D1C7100000000000000001 /* DictionaryTerm.swift in Sources */,
+					946C384C7E164C54B4FE7311 /* BloombergRSSService.swift in Sources */,
 				D1C7100000000000000002 /* DictionaryService.swift in Sources */,
 				D1C7100000000000000003 /* DictionaryView.swift in Sources */,
 				D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */,
