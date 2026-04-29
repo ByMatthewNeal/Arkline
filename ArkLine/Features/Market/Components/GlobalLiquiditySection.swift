@@ -99,7 +99,7 @@ struct GlobalLiquiditySection: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text("Period: \(gli.period)")
+                Text("BIS data thru \(gli.formattedPeriod)")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)
 

@@ -260,6 +260,16 @@ struct GlobalLiquidityIndex: Codable {
         String(format: "$%.1fT", compositeLiquidityT)
     }
 
+    /// Formats "2026-02" → "Feb 2026"
+    var formattedPeriod: String {
+        let parts = period.split(separator: "-")
+        guard parts.count == 2,
+              let month = Int(parts[1]),
+              month >= 1 && month <= 12 else { return period }
+        let symbols = Calendar.current.shortMonthSymbols
+        return "\(symbols[month - 1]) \(parts[0])"
+    }
+
     var formattedUSNetLiquidity: String {
         String(format: "$%.2fT", usNetLiquidityT)
     }
