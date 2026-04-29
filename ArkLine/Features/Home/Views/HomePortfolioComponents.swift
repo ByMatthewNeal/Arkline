@@ -901,6 +901,7 @@ private struct StockRiskDetailSheet: View {
     let symbol: String
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
+    @State private var selectedSymbol: String = ""
     @State private var riskLevel: RiskHistoryPoint?
     @State private var riskHistory: [RiskHistoryPoint] = []
     @State private var isLoading = true
@@ -909,9 +910,10 @@ private struct StockRiskDetailSheet: View {
     @State private var selectedDate: Date?
     @State private var showFactorBreakdown = true
     @State private var stockFactors: StockRiskFactors?
+    @State private var showStockPicker = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
-    private var config: AssetRiskConfig? { AssetRiskConfig.forStock(symbol) }
+    private var config: AssetRiskConfig? { AssetRiskConfig.forStock(selectedSymbol) }
 
     private var detailIconFallback: some View {
         ZStack {
@@ -970,7 +972,7 @@ private struct StockRiskDetailSheet: View {
                     .padding(.horizontal, ArkSpacing.lg)
                 }
             }
-            .navigationTitle("\(symbol) Risk Level")
+            .navigationTitle("\(selectedSymbol) Risk Level")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -978,8 +980,16 @@ private struct StockRiskDetailSheet: View {
                         .foregroundColor(AppColors.accent)
                 }
             }
+            .sheet(isPresented: $showStockPicker) {
+                StockRiskPickerSheet(
+                    availableStocks: AssetRiskConfig.stockConfigs,
+                    selectedSymbol: $selectedSymbol
+                )
+                .presentationDetents([.medium])
+            }
         }
-        .task {
+        .onAppear { if selectedSymbol.isEmpty { selectedSymbol = symbol } }
+        .task(id: selectedSymbol) {
             await loadData()
             loadStockFactors()
         }
@@ -998,14 +1008,15 @@ private struct StockRiskDetailSheet: View {
             isLoading = false
             return
         }
+        isLoading = true
         do {
-            async let risk = service.calculateStockCurrentRisk(symbol: symbol)
-            async let history = service.fetchStockRiskHistory(symbol: symbol, days: days)
+            async let risk = service.calculateStockCurrentRisk(symbol: selectedSymbol)
+            async let history = service.fetchStockRiskHistory(symbol: selectedSymbol, days: days)
             let (r, h) = try await (risk, history)
             riskLevel = r
             riskHistory = h
         } catch {
-            logWarning("Stock risk detail failed for \(symbol): \(error.localizedDescription)", category: .network)
+            logWarning("Stock risk detail failed for \(selectedSymbol): \(error.localizedDescription)", category: .network)
         }
         isLoading = false
     }
@@ -1168,43 +1179,46 @@ private struct StockRiskDetailSheet: View {
     // MARK: - Stock Header
 
     private var stockHeader: some View {
-        HStack(spacing: 12) {
-            // Stock logo
-            if let logoURL = config?.logoURL {
-                KFImage(logoURL)
-                    .resizable()
-                    .placeholder {
-                        detailIconFallback
-                    }
-                    .fade(duration: 0.2)
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 44, height: 44)
-                    .clipShape(Circle())
-            } else {
-                detailIconFallback
-            }
+        Button(action: { showStockPicker = true }) {
+            HStack(spacing: 12) {
+                // Stock logo
+                if let logoURL = config?.logoURL {
+                    KFImage(logoURL)
+                        .resizable()
+                        .placeholder {
+                            detailIconFallback
+                        }
+                        .fade(duration: 0.2)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 44, height: 44)
+                        .clipShape(Circle())
+                } else {
+                    detailIconFallback
+                }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(config?.displayName ?? symbol)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(textPrimary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(config?.displayName ?? selectedSymbol)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(textPrimary)
 
-                Text("Tap to change asset")
-                    .font(.system(size: 11))
+                    Text(isLoading ? "Loading data..." : "Tap to change asset")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12))
                     .foregroundColor(AppColors.textSecondary)
             }
-
-            Spacer()
-
-            Image(systemName: "chevron.down")
-                .font(.system(size: 12))
-                .foregroundColor(AppColors.textSecondary)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(AppColors.textSecondary.opacity(colorScheme == .dark ? 0.08 : 0.05))
+            )
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(AppColors.textSecondary.opacity(colorScheme == .dark ? 0.08 : 0.05))
-        )
+        .buttonStyle(.plain)
     }
 
     // MARK: - Time Range Picker
@@ -1441,5 +1455,83 @@ private struct StockRiskDetailSheet: View {
         }
         .padding(ArkSpacing.md)
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+    }
+}
+
+// MARK: - Stock Risk Picker Sheet
+
+private struct StockRiskPickerSheet: View {
+    let availableStocks: [AssetRiskConfig]
+    @Binding var selectedSymbol: String
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        NavigationStack {
+            List(availableStocks, id: \.assetId) { stock in
+                Button {
+                    selectedSymbol = stock.assetId
+                    dismiss()
+                } label: {
+                    HStack(spacing: 12) {
+                        if let logoURL = stock.logoURL {
+                            KFImage(logoURL)
+                                .resizable()
+                                .placeholder {
+                                    stockFallbackIcon(stock)
+                                }
+                                .fade(duration: 0.2)
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 36, height: 36)
+                                .clipShape(Circle())
+                        } else {
+                            stockFallbackIcon(stock)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(stock.displayName)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                            Text(stock.assetId)
+                                .font(.system(size: 12))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+
+                        Spacer()
+
+                        if stock.assetId == selectedSymbol {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(AppColors.accent)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .navigationTitle("Select Asset")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .foregroundColor(AppColors.accent)
+                }
+            }
+        }
+    }
+
+    private func stockFallbackIcon(_ stock: AssetRiskConfig) -> some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "3B82F6"), Color(hex: "1D4ED8")],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 36, height: 36)
+            Text(stock.assetId.prefix(2))
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
+        }
     }
 }

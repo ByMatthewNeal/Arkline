@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AHLTH00000000000000011 /* APIHealthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AHLTH00000000000000001 /* APIHealthService.swift */; };
+		AHLTH00000000000000022 /* APIHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AHLTH00000000000000002 /* APIHealthView.swift */; };
 		946C384C7E164C54B4FE7311 /* BloombergRSSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7ECD98101164FC99C4A1CA0 /* BloombergRSSService.swift */; };
 		D1C7100000000000000001 /* DictionaryTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000011 /* DictionaryTerm.swift */; };
 		D1C7100000000000000002 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000012 /* DictionaryService.swift */; };
@@ -543,6 +545,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		AHLTH00000000000000001 /* APIHealthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIHealthService.swift; sourceTree = "<group>"; };
+		AHLTH00000000000000002 /* APIHealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIHealthView.swift; sourceTree = "<group>"; };
 		D1C7100000000000000011 /* DictionaryTerm.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryTerm.swift; sourceTree = "<group>"; };
 		D1C7100000000000000012 /* DictionaryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
 		D1C7100000000000000013 /* DictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
@@ -1536,6 +1540,8 @@
 			children = (
 				B8216B6A08DC50CE519BE7C5 /* AdminQuickShareView.swift */,
 				08F1D4288443D12FDAF0F0F8 /* AdminDashboardView.swift */,
+				AHLTH00000000000000001 /* APIHealthService.swift */,
+				AHLTH00000000000000002 /* APIHealthView.swift */,
 				BF9CF943459728D7B2AF136F /* MetricCard.swift */,
 				9A7B78682470516CE6512242 /* MemberRow.swift */,
 				0C22DD319B73C871D34DC38B /* MemberManagementView.swift */,
@@ -2350,7 +2356,6 @@
 				4C7163E8A84CD6F7F613F75C /* AppError.swift */,
 				3C61F540DDA869CAAFC93657 /* Constants.swift */,
 				A2B3C4D5E6F7A8B9C0D1E2F4 /* BriefingNotificationScheduler.swift */,
-				A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */,
 				0BDE46E33F8FE41A2AB2DF81 /* DCACalculatorService.swift */,
 				6255AB6F7B59E4D62A8B30C5 /* FavoritesStore.swift */,
 				0C87B26ECA9F229FAF9659FA /* ReadArticlesStore.swift */,
@@ -2358,6 +2363,7 @@
 				A7F8B9C0D1E2F3A4B5C6D7E8 /* SplashSoundPlayer.swift */,
 				BE050D8EFED993B3FAF5D178 /* LogarithmicRegression.swift */,
 				2EEF32D24CEC66662543D000 /* Logger.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F3 /* DCANotificationScheduler.swift */,
 				OBFSC4T3DSECR3TS0000001 /* ObfuscatedSecrets.swift */,
 				E0A39D57C9729E609A4A34C4 /* PasscodeManager.swift */,
 				22BFE18532B42396BDE06325 /* KeychainManager.swift */,
@@ -2583,6 +2589,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D1C7100000000000000001 /* DictionaryTerm.swift in Sources */,
+					AHLTH00000000000000011 /* APIHealthService.swift in Sources */,
+					AHLTH00000000000000022 /* APIHealthView.swift in Sources */,
 					946C384C7E164C54B4FE7311 /* BloombergRSSService.swift in Sources */,
 				D1C7100000000000000002 /* DictionaryService.swift in Sources */,
 				D1C7100000000000000003 /* DictionaryView.swift in Sources */,

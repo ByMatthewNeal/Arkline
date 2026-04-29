@@ -38,6 +38,21 @@ struct AdminDashboardView: View {
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
+                // Monitoring
+                Section {
+                    NavigationLink(destination: APIHealthView()) {
+                        AdminDashboardRow(
+                            icon: "antenna.radiowaves.left.and.right",
+                            iconColor: AppColors.success,
+                            title: "API Health",
+                            subtitle: "Monitor all external services"
+                        )
+                    }
+                } header: {
+                    Text("Monitoring")
+                }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+
                 // Management
                 Section {
                     NavigationLink(destination: InviteCodeManagementView()) {
