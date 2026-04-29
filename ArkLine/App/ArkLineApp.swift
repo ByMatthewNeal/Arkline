@@ -672,6 +672,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) {
         // Show notification even when app is in foreground
         completionHandler([.banner, .badge, .sound])
+
+        // Tell the Insights feed to refresh if a broadcast arrived while viewing the app
+        let userInfo = notification.request.content.userInfo
+        if let type = userInfo["type"] as? String, type == "broadcast" {
+            NotificationCenter.default.post(name: Notification.Name("BroadcastReceived"), object: nil)
+        }
     }
 
     /// Handle notification tap

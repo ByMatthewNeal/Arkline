@@ -280,6 +280,7 @@ final class SwingSetupService {
             .from(SupabaseTable.tradeSignals.rawValue)
             .select()
             .in("status", values: ["target_hit", "invalidated", "expired"])
+            .in("asset", values: Array(TradeSignal.activeAssets))
             .order("closed_at", ascending: false)
             .limit(100)
             .execute()

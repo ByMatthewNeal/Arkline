@@ -26,6 +26,7 @@ private struct DateSectionKey: Hashable, Comparable {
 struct BroadcastFeedView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = BroadcastViewModel()
     @ObservedObject private var notificationService = BroadcastNotificationService.shared
 
@@ -35,6 +36,7 @@ struct BroadcastFeedView: View {
     @State private var searchText = ""
     @State private var selectedDateFilter: BroadcastDateFilter = .all
     @State private var selectedTags: Set<String> = []
+    @State private var showSavedOnly = false
     @State private var navigationPath = NavigationPath()
     @State private var showDictionary = false
 
@@ -42,6 +44,11 @@ struct BroadcastFeedView: View {
 
     private var filteredBroadcasts: [Broadcast] {
         var result = viewModel.published
+
+        // Saved filter
+        if showSavedOnly {
+            result = result.filter { viewModel.isBookmarked($0.id) }
+        }
 
         // Date filter
         if selectedDateFilter != .all {
@@ -191,6 +198,7 @@ struct BroadcastFeedView: View {
                     await viewModel.loadPublishedBroadcasts(for: userId)
                     await viewModel.loadReadStatus(userId: userId)
                     await viewModel.loadUserHearts(userId: userId)
+                    await viewModel.loadBookmarks(userId: userId)
                 }
                 await checkNotificationStatus()
             }
@@ -203,10 +211,20 @@ struct BroadcastFeedView: View {
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BroadcastNotificationTapped"))) { notification in
                 if let id = notification.userInfo?["id"] as? String {
                     appState.selectedTab = .insights
-                    if let broadcast = viewModel.published.first(where: { $0.id.uuidString == id }) {
-                        selectedBroadcast = broadcast
-                    } else {
-                        appState.pendingBroadcastId = id
+                    appState.pendingBroadcastId = id
+                    // Reload feed so the new broadcast is available, then open it
+                    Task {
+                        if let userId = appState.currentUser?.id {
+                            await viewModel.loadPublishedBroadcasts(for: userId)
+                        }
+                    }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BroadcastReceived"))) { _ in
+                // New broadcast arrived while app is in foreground — refresh feed
+                Task {
+                    if let userId = appState.currentUser?.id {
+                        await viewModel.loadPublishedBroadcasts(for: userId)
                     }
                 }
             }
@@ -232,6 +250,16 @@ struct BroadcastFeedView: View {
                     // Refresh read status when returning to tab
                     if let userId = appState.currentUser?.id {
                         Task { await viewModel.loadReadStatus(userId: userId) }
+                    }
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    // Refresh feed when returning from background (may have missed a notification)
+                    Task {
+                        if let userId = appState.currentUser?.id {
+                            await viewModel.loadPublishedBroadcasts(for: userId)
+                        }
                     }
                 }
             }
@@ -275,6 +303,32 @@ struct BroadcastFeedView: View {
             // Combined filter row: date filters + tag pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ArkSpacing.xs) {
+                    // Saved filter chip
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showSavedOnly.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: showSavedOnly ? "bookmark.fill" : "bookmark")
+                                .font(.system(size: 10))
+                            Text("Saved")
+                                .font(ArkFonts.caption)
+                        }
+                        .foregroundColor(showSavedOnly ? .white : AppColors.textSecondary)
+                        .padding(.horizontal, ArkSpacing.sm)
+                        .padding(.vertical, ArkSpacing.xs)
+                        .background(showSavedOnly ? AppColors.accent : AppColors.cardBackground(colorScheme))
+                        .cornerRadius(ArkSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Divider
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(AppColors.textSecondary.opacity(0.2))
+                        .frame(width: 1, height: 20)
+                        .padding(.horizontal, 2)
+
                     // Date filter chips
                     ForEach(BroadcastDateFilter.allCases, id: \.self) { filter in
                         Button {
@@ -378,6 +432,7 @@ struct BroadcastFeedView: View {
             isAdmin: appState.currentUser?.isAdmin == true,
             isUnread: !viewModel.isRead(broadcast.id),
             hasReacted: viewModel.userHeartedBroadcastIds.contains(broadcast.id),
+            isBookmarked: viewModel.isBookmarked(broadcast.id),
             onQuickReact: {
                 guard let userId = appState.currentUser?.id else { return }
                 Task { await viewModel.quickToggleHeart(broadcastId: broadcast.id, userId: userId) }
@@ -391,6 +446,19 @@ struct BroadcastFeedView: View {
             }
         }
         .contextMenu {
+            // Bookmark / save
+            if let userId = appState.currentUser?.id {
+                Button {
+                    Task { await viewModel.toggleBookmark(broadcastId: broadcast.id, userId: userId) }
+                } label: {
+                    Label(
+                        viewModel.isBookmarked(broadcast.id) ? "Remove from Saved" : "Save",
+                        systemImage: viewModel.isBookmarked(broadcast.id) ? "bookmark.slash" : "bookmark"
+                    )
+                }
+            }
+
+            // Admin-only pin
             if appState.currentUser?.isAdmin == true {
                 Button {
                     Task { try? await viewModel.togglePin(broadcast) }

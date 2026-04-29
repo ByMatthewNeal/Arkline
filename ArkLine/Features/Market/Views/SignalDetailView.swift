@@ -372,6 +372,24 @@ struct SignalDetailView: View {
                             .background(AppColors.warning.opacity(0.12))
                             .cornerRadius(4)
                     }
+                    if signal.isLowConviction {
+                        Text("Low Conviction")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.warning)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(AppColors.warning.opacity(0.12))
+                            .cornerRadius(4)
+                    }
+                    if let volLabel = signal.volatilityRegimeLabel {
+                        Text(volLabel)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(AppColors.error)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(AppColors.error.opacity(0.12))
+                            .cornerRadius(4)
+                    }
                     if signal.hasVolumeConfluence {
                         Text("Vol Shelf")
                             .font(.system(size: 9, weight: .medium))

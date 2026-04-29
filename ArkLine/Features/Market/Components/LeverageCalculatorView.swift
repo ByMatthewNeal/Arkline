@@ -24,6 +24,15 @@ struct LeverageCalculatorView: View {
     private var cardBg: Color { colorScheme == .dark ? Color(hex: "1F1F1F") : .white }
     private var subtleBg: Color { colorScheme == .dark ? Color(hex: "2A2A2E") : Color(hex: "F5F5F7") }
 
+    private var riskScaleReason: String {
+        if signal.volatilityRegime == "extreme" { return "Extreme volatility — auto-scaled to 0.25R" }
+        if signal.volatilityRegime == "elevated" { return "Elevated volatility — auto-scaled to 0.5R" }
+        if signal.isLowConviction { return "Low conviction (flat trend) — auto-scaled to 0.5R" }
+        if signal.isCounterTrend { return "Counter-trend signal — auto-scaled to 0.5R" }
+        if signal.isScalp { return "Scalp signal — auto-scaled to 0.5R" }
+        return "Risk auto-scaled based on signal conditions"
+    }
+
     private var walletAmount: Double {
         walletText.asLocalizedDouble ?? 0
     }
@@ -134,9 +143,14 @@ struct LeverageCalculatorView: View {
         )
         .onAppear {
             isExpanded = startExpanded
-            // Auto-scale down to 0.5R for counter-trend or scalp signals
-            if signal.isCounterTrend || signal.isScalp {
+            // Auto-scale risk based on volatility regime and signal conditions
+            if signal.volatilityRegime == "extreme" {
+                riskSize = .quarterR
+            } else if signal.volatilityRegime == "elevated" {
                 riskSize = .halfR
+            }
+            if signal.isCounterTrend || signal.isLowConviction || signal.isScalp {
+                if riskSize == .oneR { riskSize = .halfR }
             }
             // Restore saved risk tolerance
             if let savedTolerance = UserDefaults.standard.string(forKey: Constants.UserDefaults.leverageRiskTolerance),
@@ -291,12 +305,12 @@ struct LeverageCalculatorView: View {
                     .cornerRadius(14)
                 }
 
-                if signal.isCounterTrend && riskSize == .halfR {
+                if riskSize != .oneR {
                     HStack(spacing: 4) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.warning)
-                        Text("Counter-trend signal — auto-scaled to 0.5R")
+                        Text(riskScaleReason)
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.warning)
                     }

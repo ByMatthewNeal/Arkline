@@ -37,6 +37,9 @@ struct TradeSignal: Codable, Identifiable, Equatable {
     let counterTrend: Bool?
     let rangeCompressed: Bool?
     let compressionScore: Int?
+    let lowConviction: Bool?
+    let volatilityRegime: String?
+    let suggestedRiskPct: Double?
 
     // Runner tracking (split exit: 50% at T1, trail runner)
     let bestPrice: Double?
@@ -90,6 +93,9 @@ struct TradeSignal: Codable, Identifiable, Equatable {
         case counterTrend = "counter_trend"
         case rangeCompressed = "range_compressed"
         case compressionScore = "compression_score"
+        case lowConviction = "low_conviction"
+        case volatilityRegime = "volatility_regime"
+        case suggestedRiskPct = "suggested_risk_pct"
         case bestPrice = "best_price"
         case runnerStop = "runner_stop"
         case runnerExitPrice = "runner_exit_price"
@@ -378,7 +384,7 @@ extension TradeSignal {
     ]
 
     /// Assets currently active in the signal pipeline
-    static let activeAssets: Set<String> = ["ETH", "SOL", "SUI", "ADA"]
+    static let activeAssets: Set<String> = ["BTC", "ETH", "SOL", "SUI", "ADA"]
 
     /// Whether this signal's asset is currently paused from the pipeline
     var isAssetPaused: Bool {
@@ -400,6 +406,12 @@ extension TradeSignal {
     /// True when signal goes against the Bull Market Support Band macro regime.
     var isCounterTrend: Bool { counterTrend == true }
     var isRangeCompressed: Bool { rangeCompressed == true }
+    var isLowConviction: Bool { lowConviction == true }
+
+    var volatilityRegimeLabel: String? {
+        guard let regime = volatilityRegime, regime != "normal" else { return nil }
+        return regime == "elevated" ? "Elevated Vol" : "Extreme Vol"
+    }
 
     /// All assets with backtest data are eligible for Flash Intel.
     var isFlashIntelWorthy: Bool { true }

@@ -16,6 +16,7 @@ class BroadcastViewModel: ObservableObject {
     @Published var analyticsSummary: BroadcastAnalyticsSummary?
     @Published var readBroadcastIds: Set<UUID> = []
     @Published var userHeartedBroadcastIds: Set<UUID> = []
+    @Published var bookmarkedBroadcastIds: Set<UUID> = []
 
     // MARK: - Dependencies
 
@@ -339,6 +340,50 @@ class BroadcastViewModel: ObservableObject {
                 userHeartedBroadcastIds.remove(broadcastId)
             }
             logError("Failed to toggle heart: \(error)", category: .data)
+        }
+    }
+
+    // MARK: - Bookmarks
+
+    /// Load bookmarked broadcast IDs for current user
+    func loadBookmarks(userId: UUID) async {
+        do {
+            bookmarkedBroadcastIds = try await broadcastService.fetchBookmarkedBroadcastIds(userId: userId)
+        } catch {
+            logError("Failed to load bookmarks: \(error)", category: .data)
+        }
+    }
+
+    /// Check if a broadcast is bookmarked
+    func isBookmarked(_ broadcastId: UUID) -> Bool {
+        bookmarkedBroadcastIds.contains(broadcastId)
+    }
+
+    /// Toggle bookmark with optimistic UI
+    func toggleBookmark(broadcastId: UUID, userId: UUID) async {
+        let wasBookmarked = bookmarkedBroadcastIds.contains(broadcastId)
+
+        // Optimistic update
+        if wasBookmarked {
+            bookmarkedBroadcastIds.remove(broadcastId)
+        } else {
+            bookmarkedBroadcastIds.insert(broadcastId)
+        }
+
+        do {
+            if wasBookmarked {
+                try await broadcastService.removeBookmark(broadcastId: broadcastId, userId: userId)
+            } else {
+                try await broadcastService.addBookmark(broadcastId: broadcastId, userId: userId)
+            }
+        } catch {
+            // Revert on failure
+            if wasBookmarked {
+                bookmarkedBroadcastIds.insert(broadcastId)
+            } else {
+                bookmarkedBroadcastIds.remove(broadcastId)
+            }
+            logError("Failed to toggle bookmark: \(error)", category: .data)
         }
     }
 

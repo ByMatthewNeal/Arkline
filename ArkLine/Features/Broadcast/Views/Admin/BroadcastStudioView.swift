@@ -12,6 +12,7 @@ struct BroadcastStudioView: View {
 
     @State private var showingEditor = false
     @State private var showingAnalytics = false
+    @State private var showingUserPreview = false
     @State private var selectedBroadcast: Broadcast?
     @State private var detailBroadcast: Broadcast?
 
@@ -67,11 +68,20 @@ struct BroadcastStudioView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showingAnalytics = true
-                    } label: {
-                        Image(systemName: "chart.bar.fill")
-                            .foregroundColor(AppColors.accent)
+                    HStack(spacing: ArkSpacing.sm) {
+                        Button {
+                            showingAnalytics = true
+                        } label: {
+                            Image(systemName: "chart.bar.fill")
+                                .foregroundColor(AppColors.accent)
+                        }
+
+                        Button {
+                            showingUserPreview = true
+                        } label: {
+                            Image(systemName: "eye")
+                                .foregroundColor(AppColors.accent)
+                        }
                     }
                 }
 
@@ -101,6 +111,36 @@ struct BroadcastStudioView: View {
             }
             .sheet(isPresented: $showingAnalytics) {
                 BroadcastAnalyticsView(viewModel: viewModel)
+            }
+            .fullScreenCover(isPresented: $showingUserPreview) {
+                NavigationStack {
+                    BroadcastFeedView()
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button {
+                                    showingUserPreview = false
+                                } label: {
+                                    Text("Done")
+                                        .font(ArkFonts.bodySemibold)
+                                        .foregroundColor(AppColors.accent)
+                                }
+                            }
+                        }
+                        .safeAreaInset(edge: .top) {
+                            HStack(spacing: ArkSpacing.xs) {
+                                Image(systemName: "eye")
+                                    .font(.caption)
+                                Text("User Preview")
+                                    .font(ArkFonts.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, ArkSpacing.md)
+                            .padding(.vertical, ArkSpacing.xs)
+                            .frame(maxWidth: .infinity)
+                            .background(AppColors.accent)
+                        }
+                }
             }
             .task {
                 await viewModel.loadBroadcasts()
@@ -198,7 +238,7 @@ struct BroadcastStudioView: View {
                         showingEditor = true
                     },
                     onPublish: broadcast.status == .draft || broadcast.status == .scheduled ? {
-                        Task {
+                        Task<Void, Never> {
                             do {
                                 try await viewModel.publishBroadcast(broadcast)
                             } catch {
@@ -207,8 +247,11 @@ struct BroadcastStudioView: View {
                             }
                         }
                     } : nil,
+                    onPin: broadcast.status == .published ? {
+                        Task<Void, Never> { try? await viewModel.togglePin(broadcast) }
+                    } : nil,
                     onDelete: {
-                        Task {
+                        Task<Void, Never> {
                             do {
                                 try await viewModel.deleteBroadcast(broadcast)
                             } catch {

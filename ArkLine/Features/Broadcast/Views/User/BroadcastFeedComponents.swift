@@ -8,6 +8,7 @@ struct BroadcastCardView: View {
     var isAdmin: Bool = false
     var isUnread: Bool = false
     var hasReacted: Bool = false
+    var isBookmarked: Bool = false
     var onQuickReact: (() -> Void)?
     let onTap: () -> Void
     @Environment(\.colorScheme) var colorScheme
@@ -70,6 +71,12 @@ struct BroadcastCardView: View {
                             Image(systemName: "play.rectangle.fill")
                                 .font(.caption)
                                 .foregroundColor(Color(hex: "8B5CF6"))
+                        }
+
+                        if isBookmarked {
+                            Image(systemName: "bookmark.fill")
+                                .font(.caption)
+                                .foregroundColor(AppColors.accent)
                         }
                     }
                 }
@@ -164,14 +171,18 @@ struct BroadcastCardView: View {
 
                     // BTC price at publish time
                     if let btcPrice = broadcast.btcPriceAtPublish, btcPrice > 0 {
-                        HStack(spacing: 3) {
+                        HStack(spacing: 4) {
                             Text("₿")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(Color(hex: "F7931A"))
                             Text(btcPrice.asCurrencyWhole)
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundColor(AppColors.textSecondary)
                         }
+                        .padding(.horizontal, ArkSpacing.xs)
+                        .padding(.vertical, 2)
+                        .background(Color(hex: "F7931A").opacity(0.08))
+                        .cornerRadius(ArkSpacing.xxs)
                     }
                 }
             }
@@ -208,6 +219,21 @@ struct BroadcastDetailView: View {
                             Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
                                 .font(ArkFonts.caption)
                                 .foregroundColor(AppColors.textSecondary)
+
+                            if let btcPrice = broadcast.btcPriceAtPublish, btcPrice > 0 {
+                                HStack(spacing: 4) {
+                                    Text("₿")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(Color(hex: "F7931A"))
+                                    Text(btcPrice.asCurrencyWhole)
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                .padding(.horizontal, ArkSpacing.xs)
+                                .padding(.vertical, 2)
+                                .background(Color(hex: "F7931A").opacity(0.08))
+                                .cornerRadius(ArkSpacing.xxs)
+                            }
 
                             Spacer()
 

@@ -154,4 +154,15 @@ protocol BroadcastServiceProtocol {
 
     /// Fetches broadcast IDs where user has reacted with a specific emoji
     func fetchUserReactedBroadcastIds(userId: UUID, emoji: String) async throws -> Set<UUID>
+
+    // MARK: - Bookmarks
+
+    /// Adds a bookmark for a broadcast
+    func addBookmark(broadcastId: UUID, userId: UUID) async throws
+
+    /// Removes a bookmark for a broadcast
+    func removeBookmark(broadcastId: UUID, userId: UUID) async throws
+
+    /// Fetches the set of broadcast IDs that a user has bookmarked
+    func fetchBookmarkedBroadcastIds(userId: UUID) async throws -> Set<UUID>
 }

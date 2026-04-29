@@ -17,6 +17,7 @@ struct AdminBroadcastDetailView: View {
     @State private var reactionSummary: [ReactionSummary] = []
     @State private var showingImageViewer = false
     @State private var selectedImageIndex = 0
+    @State private var isPinned: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -27,9 +28,26 @@ struct AdminBroadcastDetailView: View {
 
                     // Header
                     VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
-                            .font(ArkFonts.caption)
-                            .foregroundColor(AppColors.textSecondary)
+                        HStack {
+                            Text(formattedBroadcastDate(broadcast.publishedAt ?? broadcast.createdAt))
+                                .font(ArkFonts.caption)
+                                .foregroundColor(AppColors.textSecondary)
+
+                            if let btcPrice = broadcast.btcPriceAtPublish, btcPrice > 0 {
+                                HStack(spacing: 4) {
+                                    Text("₿")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(Color(hex: "F7931A"))
+                                    Text(btcPrice.asCurrencyWhole)
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                .padding(.horizontal, ArkSpacing.xs)
+                                .padding(.vertical, 2)
+                                .background(Color(hex: "F7931A").opacity(0.08))
+                                .cornerRadius(ArkSpacing.xxs)
+                            }
+                        }
 
                         Text(broadcast.title)
                             .font(ArkFonts.title2)
@@ -160,18 +178,33 @@ struct AdminBroadcastDetailView: View {
                 }
 
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        dismiss()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            onEdit()
+                    HStack(spacing: ArkSpacing.md) {
+                        if broadcast.status == .published {
+                            Button {
+                                Task {
+                                    try? await viewModel.togglePin(broadcast)
+                                    isPinned.toggle()
+                                }
+                            } label: {
+                                Image(systemName: isPinned ? "pin.slash" : "pin")
+                                    .foregroundColor(isPinned ? AppColors.warning : AppColors.textSecondary)
+                            }
                         }
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                            .foregroundColor(AppColors.accent)
+
+                        Button {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                onEdit()
+                            }
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                                .foregroundColor(AppColors.accent)
+                        }
                     }
                 }
             }
             .task {
+                isPinned = broadcast.isPinned
                 await loadReactions()
             }
         }
@@ -344,6 +377,7 @@ struct BroadcastRowView: View {
     let onTap: () -> Void
     var onEdit: (() -> Void)?
     var onPublish: (() -> Void)?
+    var onPin: (() -> Void)?
     var onDelete: (() -> Void)?
     @Environment(\.colorScheme) var colorScheme
 
@@ -356,10 +390,17 @@ struct BroadcastRowView: View {
                     .frame(width: 8, height: 8)
 
                 VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
-                    Text(broadcast.title.isEmpty ? "Untitled" : broadcast.title)
-                        .font(ArkFonts.body)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                        .lineLimit(1)
+                    HStack(spacing: ArkSpacing.xxs) {
+                        if broadcast.isPinned {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(AppColors.accent)
+                        }
+                        Text(broadcast.title.isEmpty ? "Untitled" : broadcast.title)
+                            .font(ArkFonts.body)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .lineLimit(1)
+                    }
 
                     HStack(spacing: ArkSpacing.xs) {
                         if broadcast.status == .published, let publishedAt = broadcast.publishedAt {
@@ -502,6 +543,14 @@ struct BroadcastRowView: View {
                     onPublish()
                 } label: {
                     Label("Publish", systemImage: "paperplane.fill")
+                }
+            }
+
+            if broadcast.status == .published, let onPin = onPin {
+                Button {
+                    onPin()
+                } label: {
+                    Label(broadcast.isPinned ? "Unpin" : "Pin to Top", systemImage: broadcast.isPinned ? "pin.slash" : "pin")
                 }
             }
 

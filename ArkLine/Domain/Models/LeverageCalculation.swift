@@ -268,6 +268,7 @@ enum MarginMode: String, CaseIterable {
 enum RiskSize: String, CaseIterable {
     case oneR = "1R"
     case halfR = "0.5R"
+    case quarterR = "0.25R"
 
     var label: String { rawValue }
 
@@ -275,6 +276,7 @@ enum RiskSize: String, CaseIterable {
         switch self {
         case .oneR: return 1.0
         case .halfR: return 0.5
+        case .quarterR: return 0.25
         }
     }
 }

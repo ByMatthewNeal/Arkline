@@ -578,6 +578,57 @@ final class BroadcastService: BroadcastServiceProtocol {
 
         return Set(rows.map(\.broadcastId))
     }
+
+    // MARK: - Bookmarks
+
+    func addBookmark(broadcastId: UUID, userId: UUID) async throws {
+        guard supabase.isConfigured else { return }
+
+        struct BookmarkInsert: Encodable {
+            let broadcastId: UUID
+            let userId: UUID
+            enum CodingKeys: String, CodingKey {
+                case broadcastId = "broadcast_id"
+                case userId = "user_id"
+            }
+        }
+
+        try await supabase.database
+            .from(SupabaseTable.broadcastBookmarks.rawValue)
+            .upsert(BookmarkInsert(broadcastId: broadcastId, userId: userId), onConflict: "broadcast_id,user_id")
+            .execute()
+    }
+
+    func removeBookmark(broadcastId: UUID, userId: UUID) async throws {
+        guard supabase.isConfigured else { return }
+
+        try await supabase.database
+            .from(SupabaseTable.broadcastBookmarks.rawValue)
+            .delete()
+            .eq("broadcast_id", value: broadcastId.uuidString)
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+    }
+
+    func fetchBookmarkedBroadcastIds(userId: UUID) async throws -> Set<UUID> {
+        guard supabase.isConfigured else { return [] }
+
+        struct BookmarkRow: Decodable {
+            let broadcastId: UUID
+            enum CodingKeys: String, CodingKey {
+                case broadcastId = "broadcast_id"
+            }
+        }
+
+        let rows: [BookmarkRow] = try await supabase.database
+            .from(SupabaseTable.broadcastBookmarks.rawValue)
+            .select("broadcast_id")
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+            .value
+
+        return Set(rows.map(\.broadcastId))
+    }
 }
 
 // MARK: - Atomic Update Structs

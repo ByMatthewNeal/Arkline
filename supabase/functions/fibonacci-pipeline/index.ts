@@ -26,13 +26,14 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
-  // Focus 4 — BTC removed (drag on PnL across all backtests)
-  // 0.3R TP / 0.8R SL + EMA slope regime filter (2026-04-22 backtest)
-  // 7-month result: $1,000 → $1,163 (+16.3%), 71.7% WR, 1.32 PF, 12% max DD
-  { cbPair: "ETH-USD",    ticker: "ETH" },    // 72.7% WR, PF 1.36
-  { cbPair: "SOL-USD",    ticker: "SOL" },    // 65.7% WR, PF 1.03
-  { cbPair: "SUI-USD",    ticker: "SUI" },    // 61.3% WR, PF 0.77 — weakest but kept for diversity
-  { cbPair: "ADA-USD",    ticker: "ADA" },    // 71.4% WR, PF 1.29
+  // Focus 5 — 0.3R TP / 0.8R SL, MIN_RR 1.5, no hard regime filter (2026-04-29 backtest)
+  // 90-day result: $1,000 → $1,022 (+2.2%), 61.2% WR, 1.07 PF, 14% max DD
+  // Protection: soft regime badge, volatility-adjusted sizing, concurrent signal cap
+  { cbPair: "BTC-USD",    ticker: "BTC" },    // 65.0% WR, PF 1.24 (strongest at RR≥1.5)
+  { cbPair: "ETH-USD",    ticker: "ETH" },
+  { cbPair: "SOL-USD",    ticker: "SOL" },
+  { cbPair: "SUI-USD",    ticker: "SUI" },
+  { cbPair: "ADA-USD",    ticker: "ADA" },
 
   // Bench — paused until live PF > 1.0 over 30 signals
   // { cbPair: "LINK-USD",   ticker: "LINK" },   // 1/3 (33%), PF 0.30
@@ -82,7 +83,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.0
+const MIN_RR_RATIO = 1.5
 const STRONG_MIN_RR_RATIO = 2.0
 
 // ─── Partial TP / Tightened SL ─────────────────────────────────────────────
@@ -90,12 +91,19 @@ const STRONG_MIN_RR_RATIO = 2.0
 const TP_FRACTION = 0.3    // 0.3R take profit
 const SL_FRACTION = 0.8    // 0.8R stop loss
 
-// ─── EMA Slope Regime Filter ───────────────────────────────────────────────
-// Block signals when the 50 EMA slope is flat (no clear trend)
+// ─── EMA Slope Regime Filter (soft — badges, not blocks) ──────────────────
 const REGIME_SLOPE_LOOKBACK = 12  // 12 x 4H = 2 days
-const REGIME_SLOPE_MIN_PCT = 0.5  // require 0.5% slope magnitude
+const REGIME_SLOPE_MIN_PCT = 0.5  // slope below this → "Low Conviction" badge
 const STRONG_MIN_CONFLUENCE = 2
 const SIGNAL_EXPIRY_HOURS = 72       // 3 days
+
+// ─── Volatility Regime (BTC ATR-based) ────────────────────────────────────
+const VOL_REGIME_ELEVATED_THRESHOLD = 1.3  // current ATR / avg ATR > 1.3x
+const VOL_REGIME_EXTREME_THRESHOLD  = 1.8  // current ATR / avg ATR > 1.8x
+
+// ─── Concurrent Signal Cap ────────────────────────────────────────────────
+const MAX_SIGNALS_PER_ASSET = 3
+const MAX_SIGNALS_TOTAL = 8
 
 // ─── Tier Configuration ─────────────────────────────────────────────────────
 
@@ -285,6 +293,34 @@ Deno.serve(async (req) => {
     console.log("No adaptive params available — using defaults")
   }
 
+  // ─── Pre-loop: BTC volatility regime (computed once, shared across all assets) ───
+  let btcVolRegime: VolatilityRegime = { regime: "normal", suggestedRiskPct: 2.0, atrRatio: 1.0 }
+  try {
+    const btcUrl = "https://api.coinbase.com/api/v3/brokerage/market/products/BTC-USD/candles?granularity=FOUR_HOUR&limit=100"
+    const btcResp = await fetch(btcUrl, { headers: { Accept: "application/json" } })
+    if (btcResp.ok) {
+      const btcData = await btcResp.json()
+      const btcCandles4h: Candle[] = (btcData.candles ?? [])
+        .map((c: Record<string, string>) => ({
+          start: Number(c.start), open: Number(c.open), high: Number(c.high),
+          low: Number(c.low), close: Number(c.close), volume: Number(c.volume),
+        }))
+        .sort((a: Candle, b: Candle) => a.start - b.start)
+      btcVolRegime = computeVolatilityRegime(btcCandles4h)
+      console.log(`BTC Volatility Regime: ${btcVolRegime.regime} (ATR ratio=${btcVolRegime.atrRatio.toFixed(2)}, suggested risk=${btcVolRegime.suggestedRiskPct}%)`)
+    }
+  } catch (err) {
+    console.error(`BTC volatility regime fetch failed: ${err}`)
+  }
+
+  // ─── Pre-loop: total open signals count (for concurrent cap) ───
+  const { count: totalOpenCount } = await supabase
+    .from("trade_signals")
+    .select("*", { count: "exact", head: true })
+    .in("status", ["active", "triggered"])
+  const openSignalCounter = { total: totalOpenCount ?? 0 }
+  console.log(`Open signals: ${openSignalCounter.total} / ${MAX_SIGNALS_TOTAL} cap`)
+
   try {
     // Process assets in parallel batches of 3 to stay within compute limits
     for (let batchStart = 0; batchStart < assetsToProcess.length; batchStart += 3) {
@@ -336,7 +372,7 @@ Deno.serve(async (req) => {
           await storeZones(supabase, asset.ticker, zonesSwing, currentPrice)
           assetResults.zones = zonesSwing.length
 
-          const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING, adaptiveParams)
+          const swingSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesSwing, fibsSwing, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsSwing, TIER_SWING, adaptiveParams, btcVolRegime, openSignalCounter)
           assetResults.newSignals = swingSignals
         }
 
@@ -346,7 +382,7 @@ Deno.serve(async (req) => {
           const fibsScalp = computeAllFibs(swingsScalp)
           const zonesScalp = clusterLevels(fibsScalp, currentPrice, TIER_SCALP.confluenceTolerancePct)
 
-          const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP, adaptiveParams)
+          const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP, adaptiveParams, btcVolRegime, openSignalCounter)
           assetResults.scalpSignals = scalpSignals
         }
 
@@ -1049,6 +1085,51 @@ function detectRangeCompression(candles4h: Candle[]): RangeCompression {
   result.isCompressed = result.rangeRatio < 0.4 || (result.rangeRatio < 0.55 && result.volumeRatio < 0.5)
 
   return result
+}
+
+// ─── Volatility Regime Detection ────────────────────────────────────────────
+
+interface VolatilityRegime {
+  regime: "normal" | "elevated" | "extreme"
+  suggestedRiskPct: number
+  atrRatio: number
+}
+
+function computeVolatilityRegime(candles4h: Candle[]): VolatilityRegime {
+  if (candles4h.length < 84) return { regime: "normal", suggestedRiskPct: 2.0, atrRatio: 1.0 }
+
+  // Current ATR: last 6 candles (24h)
+  const recent = candles4h.slice(-6)
+  let currentTR = 0
+  for (let i = 1; i < recent.length; i++) {
+    currentTR += Math.max(
+      recent[i].high - recent[i].low,
+      Math.abs(recent[i].high - recent[i - 1].close),
+      Math.abs(recent[i].low - recent[i - 1].close)
+    )
+  }
+  const currentATR = currentTR / (recent.length - 1)
+
+  // Average ATR: last 84 candles (14 days)
+  const last84 = candles4h.slice(-84)
+  let avgTR = 0
+  for (let i = 1; i < last84.length; i++) {
+    avgTR += Math.max(
+      last84[i].high - last84[i].low,
+      Math.abs(last84[i].high - last84[i - 1].close),
+      Math.abs(last84[i].low - last84[i - 1].close)
+    )
+  }
+  const avgATR = avgTR / (last84.length - 1)
+  const atrRatio = avgATR > 0 ? currentATR / avgATR : 1.0
+
+  if (atrRatio >= VOL_REGIME_EXTREME_THRESHOLD) {
+    return { regime: "extreme", suggestedRiskPct: 0.5, atrRatio }
+  }
+  if (atrRatio >= VOL_REGIME_ELEVATED_THRESHOLD) {
+    return { regime: "elevated", suggestedRiskPct: 1.0, atrRatio }
+  }
+  return { regime: "normal", suggestedRiskPct: 2.0, atrRatio }
 }
 
 // ─── Momentum Filter ─────────────────────────────────────────────────────────
@@ -2041,6 +2122,8 @@ async function evaluateSignals(
     state: string
     state_label: string
   } | null,
+  btcVolRegime: VolatilityRegime = { regime: "normal", suggestedRiskPct: 2.0, atrRatio: 1.0 },
+  openSignalCounter: { total: number } = { total: 0 },
 ): Promise<{ generated: number; skipped: number; skipReasons: string[] }> {
   const stats = { generated: 0, skipped: 0, skipReasons: [] as string[] }
   const trendCandles = candles[tier.trendTimeframe]
@@ -2084,6 +2167,19 @@ async function evaluateSignals(
 
   if (recentSignals && recentSignals.length > 0) {
     stats.skipReasons.push(`24h cooldown: signal already generated for ${ticker}`)
+    stats.skipped++
+    return stats
+  }
+
+  // Per-asset concurrent signal cap
+  const { count: assetOpenCount } = await supabase
+    .from("trade_signals")
+    .select("*", { count: "exact", head: true })
+    .eq("asset", ticker)
+    .in("status", ["active", "triggered"])
+  if ((assetOpenCount ?? 0) >= MAX_SIGNALS_PER_ASSET) {
+    console.log(`[${ticker}] Max ${MAX_SIGNALS_PER_ASSET} open signals — skipping [${tier.tierName}]`)
+    stats.skipReasons.push(`Max ${MAX_SIGNALS_PER_ASSET} open signals for ${ticker}`)
     stats.skipped++
     return stats
   }
@@ -2205,13 +2301,11 @@ async function evaluateSignals(
       }
     }
 
-    // EMA Slope Regime Filter — block signals in trendless markets
+    // EMA Slope Regime Filter — soft badge (Low Conviction), not a hard block
     const slopeRegime = checkEMASlopeRegime(candles4h, isBuy)
-    if (!slopeRegime.allowed) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): regime filter — flat 50 EMA slope (${slopeRegime.slopePct.toFixed(2)}%) [${tier.tierName}]`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: flat EMA slope (${slopeRegime.slopePct.toFixed(2)}%)`)
-      stats.skipped++
-      continue
+    const lowConviction = !slopeRegime.allowed
+    if (lowConviction) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): LOW CONVICTION — flat 50 EMA slope (${slopeRegime.slopePct.toFixed(2)}%) [${tier.tierName}]`)
     }
 
     // Targets and stop
@@ -2353,8 +2447,21 @@ async function evaluateSignals(
       chart_pattern: chartPattern ?? null,
       range_compressed: compression.isCompressed,
       compression_score: compression.isCompressed ? Math.round(compression.rangeRatio * 100) : null,
+      low_conviction: lowConviction,
+      volatility_regime: btcVolRegime.regime,
+      suggested_risk_pct: lowConviction
+        ? Math.min(1.0, btcVolRegime.suggestedRiskPct)
+        : btcVolRegime.suggestedRiskPct,
       triggered_at: new Date().toISOString(),
       expires_at: expiresAt,
+    }
+
+    // Global concurrent signal cap
+    if (openSignalCounter.total >= MAX_SIGNALS_TOTAL) {
+      console.log(`[${ticker}] Global cap reached (${MAX_SIGNALS_TOTAL} open) — skipping signal at ${zone.mid.toFixed(2)} [${tier.tierName}]`)
+      stats.skipReasons.push(`Global cap ${MAX_SIGNALS_TOTAL} open signals`)
+      stats.skipped++
+      continue
     }
 
     const { data: inserted, error } = await supabase
@@ -2367,6 +2474,7 @@ async function evaluateSignals(
       console.error(`[${ticker}] Zone ${zone.mid.toFixed(2)}: DB insert error: ${error.message}`)
     }
     if (!error && inserted) {
+      openSignalCounter.total++
       stats.generated++
 
       // Send push notification
