@@ -416,19 +416,28 @@ actor APIHealthService {
         let start = Date()
 
         do {
-            let lastUpdated: Date? = try await {
-                switch check.query {
-                case .cacheKey(let key):
-                    return try await fetchCacheTimestamp(key: key)
-                case .latestRow(let dateColumn, let orderDesc, let extraFilters):
-                    return try await fetchLatestTimestamp(
-                        table: check.table,
-                        dateColumn: dateColumn,
-                        orderDesc: orderDesc,
-                        extraFilters: extraFilters
-                    )
+            let lastUpdated: Date? = try await withThrowingTaskGroup(of: Date?.self) { group in
+                group.addTask {
+                    switch check.query {
+                    case .cacheKey(let key):
+                        return try await self.fetchCacheTimestamp(key: key)
+                    case .latestRow(let dateColumn, let orderDesc, let extraFilters):
+                        return try await self.fetchLatestTimestamp(
+                            table: check.table,
+                            dateColumn: dateColumn,
+                            orderDesc: orderDesc,
+                            extraFilters: extraFilters
+                        )
+                    }
                 }
-            }()
+                group.addTask {
+                    try await Task.sleep(for: .seconds(10))
+                    throw CancellationError()
+                }
+                let result = try await group.next()!
+                group.cancelAll()
+                return result
+            }
 
             let latency = Int(Date().timeIntervalSince(start) * 1000)
 
