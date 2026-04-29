@@ -7,6 +7,7 @@ struct APIHealthView: View {
     @State private var results: [APIHealthResult] = []
     @State private var isLoading = false
     @State private var lastChecked: Date?
+    @State private var showShareSheet = false
 
     private var healthyCount: Int { results.filter { $0.status == .healthy }.count }
     private var degradedCount: Int { results.filter { $0.status == .degraded }.count }
@@ -62,6 +63,14 @@ struct APIHealthView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if !results.isEmpty {
+                    ShareLink(item: exportReport()) {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     Task { await runChecks() }
@@ -219,6 +228,43 @@ struct APIHealthView: View {
         results = await APIHealthService.shared.runAllChecks()
         lastChecked = Date()
         isLoading = false
+    }
+
+    private func exportReport() -> String {
+        var lines: [String] = []
+        lines.append("Arkline System Health Report")
+        if let lastChecked {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
+            formatter.timeZone = TimeZone(identifier: "America/New_York")
+            lines.append("Checked: \(formatter.string(from: lastChecked))")
+        }
+        lines.append("Status: \(healthyCount) healthy, \(degradedCount) degraded, \(downCount) down out of \(results.count) checks")
+        lines.append("")
+
+        for group in resultsByCategory {
+            lines.append("## \(group.category.rawValue)")
+            for result in group.items {
+                let icon: String
+                switch result.status {
+                case .healthy: icon = "[OK]"
+                case .degraded: icon = "[DEGRADED]"
+                case .down: icon = "[DOWN]"
+                case .checking: icon = "[...]"
+                }
+                var line = "\(icon) \(result.name)"
+                if let detail = result.detail {
+                    line += " — \(detail)"
+                }
+                if let latency = result.latencyMs {
+                    line += " (\(latency)ms)"
+                }
+                lines.append(line)
+            }
+            lines.append("")
+        }
+
+        return lines.joined(separator: "\n")
     }
 }
 
