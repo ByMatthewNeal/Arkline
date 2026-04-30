@@ -165,7 +165,6 @@ struct RiskLevelSelectView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: SettingsViewModel
-    @State private var showPaywall = false
 
     let availableCoins = AssetRiskConfig.allConfigs.map(\.assetId)
 
@@ -180,37 +179,8 @@ struct RiskLevelSelectView: View {
             List {
             Section {
                 ForEach(availableCoins, id: \.self) { coin in
-                    if coin == "BTC" {
-                        // BTC always available
-                        Button(action: { toggleCoin(coin) }) {
-                            riskCoinRow(coin: coin, isSelected: viewModel.riskCoins.contains(coin))
-                        }
-                    } else if appState.isPro {
-                        // Pro users can toggle any coin
-                        Button(action: { toggleCoin(coin) }) {
-                            riskCoinRow(coin: coin, isSelected: viewModel.riskCoins.contains(coin))
-                        }
-                    } else {
-                        // Free users see locked coins
-                        Button(action: { showPaywall = true }) {
-                            HStack {
-                                CoinIconView(symbol: coin, size: 36, iconUrl: RiskCoin(rawValue: coin)?.iconURL?.absoluteString ?? AssetRiskConfig.forSymbol(coin)?.logoURL?.absoluteString)
-                                    .opacity(0.4)
-
-                                Text(coin)
-                                    .font(AppFonts.body14Medium)
-                                    .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.4))
-
-                                Spacer()
-
-                                Text("PRO")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(Capsule().fill(Color(hex: "F59E0B")))
-                            }
-                        }
+                    Button(action: { toggleCoin(coin) }) {
+                        riskCoinRow(coin: coin, isSelected: viewModel.riskCoins.contains(coin))
                     }
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
@@ -232,9 +202,6 @@ struct RiskLevelSelectView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(feature: .allCoinRisk)
-        }
     }
 
     private func riskCoinRow(coin: String, isSelected: Bool) -> some View {

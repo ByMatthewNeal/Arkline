@@ -20,34 +20,19 @@ struct SwingSetupsSummarySection: View {
                     .font(.headline)
                     .foregroundColor(textPrimary)
 
-                if !isPro {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(.white)
-                        .padding(4)
-                        .background(AppColors.accent.opacity(0.15))
-                        .clipShape(Circle())
-                }
-
                 Spacer()
             }
             .padding(.horizontal)
 
-            if isPro {
-                NavigationLink {
-                    SwingSetupsDetailView()
-                } label: {
-                    contentCard
-                }
-                .buttonStyle(PlainButtonStyle())
-            } else {
-                lockedCard
+            NavigationLink {
+                SwingSetupsDetailView()
+            } label: {
+                contentCard
             }
+            .buttonStyle(PlainButtonStyle())
         }
         .task(id: refreshId) {
-            if isPro {
-                await viewModel.loadActiveSignals()
-            }
+            await viewModel.loadActiveSignals()
         }
     }
 
@@ -119,28 +104,6 @@ struct SwingSetupsSummarySection: View {
         .padding(.vertical, 8)
     }
 
-    // MARK: - Locked Card (for free users)
-
-    private var lockedCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "scope")
-                .font(.title2)
-                .foregroundColor(AppColors.accent.opacity(0.5))
-
-            Text("Unlock multi-timeframe Fibonacci trade signals with Arkline Premium.")
-                .font(AppFonts.caption12)
-                .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
-        )
-        .opacity(0.6)
-        .padding(.horizontal)
-    }
 }
 
 // MARK: - Signal Summary Row

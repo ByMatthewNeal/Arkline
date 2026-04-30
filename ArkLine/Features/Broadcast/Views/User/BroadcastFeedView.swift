@@ -137,11 +137,7 @@ struct BroadcastFeedView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            if appState.isPro {
-                broadcastContent
-            } else {
-                PremiumFeatureGate(feature: .broadcasts) {}
-            }
+            broadcastContent
         }
     }
 

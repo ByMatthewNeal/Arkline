@@ -8,7 +8,6 @@ struct QPSSignalChangesCard: View {
     let isPro: Bool
     var size: WidgetSize = .standard
     var macroQuadrant: MacroRegimeQuadrant? = nil
-    @State private var showPaywall = false
     @State private var showShareSheet = false
     @Environment(\.colorScheme) var colorScheme
 
@@ -62,13 +61,7 @@ struct QPSSignalChangesCard: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .buttonStyle(.plain)
-            } else {
-                Button { showPaywall = true } label: { lockedCard }
-                    .buttonStyle(PlainButtonStyle())
             }
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(feature: .swingSetups)
         }
         .sheet(isPresented: $showShareSheet) {
             SignalChangesShareSheet(
@@ -152,31 +145,6 @@ struct QPSSignalChangesCard: View {
             Text("No signal changes today")
                 .font(AppFonts.body14Medium)
                 .foregroundColor(AppColors.textSecondary)
-
-            Spacer()
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
-        )
-    }
-
-    private var lockedCard: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 14))
-                .foregroundColor(AppColors.textSecondary)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Daily positioning signals")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                Text("Upgrade to Pro for signal change alerts")
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
-            }
 
             Spacer()
         }

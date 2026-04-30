@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - App Constants
 enum Constants {
     // MARK: - API Keys
-    // Essential keys (Supabase, RevenueCat) are XOR-obfuscated in ObfuscatedSecrets.swift.
+    // Essential keys (Supabase) are XOR-obfuscated in ObfuscatedSecrets.swift.
     // Paid API keys are ONLY available server-side via the api-proxy edge function.
     // In DEBUG builds, Secrets.plist is loaded for local development convenience.
     // In Release builds, a Run Script phase strips Secrets.plist from the .app bundle.
@@ -23,7 +23,6 @@ enum Constants {
     enum API {
         static let supabaseURL = ObfuscatedSecrets.supabaseURL
         static let supabaseAnonKey = ObfuscatedSecrets.supabaseAnonKey
-        static let revenueCatAPIKey = ObfuscatedSecrets.revenueCatAPIKey
 
         // Paid API keys — only available in DEBUG via Secrets.plist for local development.
         // In release builds these are nil, forcing all calls through the api-proxy.

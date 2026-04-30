@@ -54,26 +54,16 @@ struct CustomizeHomeView: View {
 
                         VStack(spacing: 0) {
                             ForEach(Array(CoreAsset.allCases.enumerated()), id: \.element.id) { index, asset in
-                                if asset == .btc || appState.isPro {
-                                    CoreAssetToggleRow(
-                                        asset: asset,
-                                        isEnabled: appState.isCoreAssetEnabled(asset),
-                                        isLast: index == CoreAsset.allCases.count - 1,
-                                        onToggle: {
-                                            withAnimation(.spring(response: 0.3)) {
-                                                appState.toggleCoreAsset(asset)
-                                            }
+                                CoreAssetToggleRow(
+                                    asset: asset,
+                                    isEnabled: appState.isCoreAssetEnabled(asset),
+                                    isLast: index == CoreAsset.allCases.count - 1,
+                                    onToggle: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            appState.toggleCoreAsset(asset)
                                         }
-                                    )
-                                } else {
-                                    CoreAssetToggleRow(
-                                        asset: asset,
-                                        isEnabled: false,
-                                        isLast: index == CoreAsset.allCases.count - 1,
-                                        onToggle: {}
-                                    )
-                                    .premiumRequired(.allCoinRisk)
-                                }
+                                    }
+                                )
                             }
                         }
                         .background(
@@ -90,17 +80,6 @@ struct CustomizeHomeView: View {
                             // (they're redundant — the dashboard already shows all three)
                             if isRedundantMacroWidget(widget) {
                                 // Skip — don't show in the list at all
-                            } else if widget.isPremium && !appState.isPro {
-                                WidgetConfigRow(
-                                    widget: widget,
-                                    isEnabled: false,
-                                    currentSize: .standard,
-                                    isExpanded: false,
-                                    onToggle: {},
-                                    onExpand: {},
-                                    onSizeChange: { _ in }
-                                )
-                                .premiumRequired(.premiumWidgets)
                             } else {
                                 WidgetConfigRow(
                                     widget: widget,

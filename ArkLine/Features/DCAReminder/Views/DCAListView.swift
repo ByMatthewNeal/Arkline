@@ -7,7 +7,6 @@ struct DCAListView: View {
     @State private var viewModel = DCAViewModel()
     @State private var trackerViewModel = DCATrackerViewModel()
     @State private var showCreateSheet = false
-    @State private var showPaywall = false
     @State private var showCompleted = false
     @State private var selectedTab: DCATab = .reminders
 
@@ -77,11 +76,7 @@ struct DCAListView: View {
                     if selectedTab == .plans {
                         trackerViewModel.showCreatePlan = true
                     } else {
-                        if !appState.isPro && viewModel.reminders.count >= 3 {
-                            showPaywall = true
-                        } else {
-                            showCreateSheet = true
-                        }
+                        showCreateSheet = true
                     }
                 }) {
                     ZStack {
@@ -97,9 +92,6 @@ struct DCAListView: View {
             }
         }
         #endif
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(feature: .unlimitedDCA)
-        }
         .sheet(isPresented: $showCreateSheet) {
             CreateDCASheetView(viewModel: viewModel)
         }

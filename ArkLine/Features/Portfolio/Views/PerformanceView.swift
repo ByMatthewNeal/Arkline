@@ -131,7 +131,6 @@ struct PerformanceView: View {
             if !filteredHistoryPoints.isEmpty {
                 EquityCurveCard(historyPoints: filteredHistoryPoints)
                     .padding(.horizontal, 20)
-                    .premiumRequired(.advancedPortfolio)
             }
 
             // Per-Asset Performance
@@ -140,7 +139,6 @@ struct PerformanceView: View {
                 totalValue: viewModel.performanceMetrics.currentValue
             )
             .padding(.horizontal, 20)
-            .premiumRequired(.advancedPortfolio)
 
             // Investment Activity
             InvestmentActivityCard(monthlyInvestments: viewModel.performanceMetrics.monthlyInvestments)
@@ -162,7 +160,6 @@ struct PerformanceView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
-            .premiumRequired(.exportData)
 
             Spacer(minLength: 100)
         }

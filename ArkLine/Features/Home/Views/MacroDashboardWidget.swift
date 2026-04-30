@@ -20,7 +20,6 @@ struct MacroDashboardWidget: View {
     @ObservedObject private var regimeManager = RegimeChangeManager.shared
     @ObservedObject private var alertManager = ExtremeMoveAlertManager.shared
     @State private var showingDetail = false
-    @State private var showPaywall = false
     @State private var isPulsing = false
     @Environment(\.scenePhase) private var scenePhase
 
@@ -397,23 +396,19 @@ struct MacroDashboardWidget: View {
         .accessibilityLabel("Macro Dashboard, \(quadrant?.rawValue ?? regime.rawValue), \(quadrant?.description ?? regime.description)")
         .accessibilityAddTraits(.isButton)
         .sheet(isPresented: $showingDetail) {
-            if appState.isPro {
-                MacroDashboardDetailView(
-                    vixData: vixData,
-                    dxyData: dxyData,
-                    liquidityData: liquidityData,
-                    netLiquidityData: netLiquidityData,
-                    globalLiquidityIndex: globalLiquidityIndex,
-                    regime: regime,
-                    quadrant: quadrant,
-                    vixCorrelation: vixCorrelation,
-                    dxyCorrelation: dxyCorrelation,
-                    m2Correlation: m2Correlation,
-                    macroZScores: macroZScores
-                )
-            } else {
-                PaywallView(feature: .macroDetail)
-            }
+            MacroDashboardDetailView(
+                vixData: vixData,
+                dxyData: dxyData,
+                liquidityData: liquidityData,
+                netLiquidityData: netLiquidityData,
+                globalLiquidityIndex: globalLiquidityIndex,
+                regime: regime,
+                quadrant: quadrant,
+                vixCorrelation: vixCorrelation,
+                dxyCorrelation: dxyCorrelation,
+                m2Correlation: m2Correlation,
+                macroZScores: macroZScores
+            )
         }
         .alert("Market Regime Changed", isPresented: $regimeManager.showRegimeChangeAlert) {
             Button("View Details") {

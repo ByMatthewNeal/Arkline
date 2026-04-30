@@ -160,7 +160,6 @@ struct FlashIntelSection: View {
     var highImpactEvents: [EconomicEvent] = []
     var marketConditions: SignalMarketConditions? = nil
     @State private var showMethodology = false
-    @State private var showPaywall = false
     @Environment(\.colorScheme) var colorScheme
 
     private var maxSignals: Int {
@@ -228,16 +227,10 @@ struct FlashIntelSection: View {
                 if let stats, stats.totalSignals > 0 {
                     signalStatsStrip(stats)
                 }
-            } else {
-                Button { showPaywall = true } label: { lockedCard }
-                    .buttonStyle(PlainButtonStyle())
             }
         }
         .sheet(isPresented: $showMethodology) {
             SignalMethodologySheet()
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(feature: .swingSetups)
         }
     }
 
@@ -365,31 +358,6 @@ struct FlashIntelSection: View {
                         .foregroundColor(AppColors.accent)
                 }
             }
-        }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
-        )
-    }
-
-    private var lockedCard: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 14))
-                .foregroundColor(AppColors.textSecondary)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Fibonacci trade signal detection")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                Text("Upgrade to Pro for trade signal analysis")
-                    .font(AppFonts.caption12)
-                    .foregroundColor(AppColors.textSecondary)
-            }
-
-            Spacer()
         }
         .padding(14)
         .background(

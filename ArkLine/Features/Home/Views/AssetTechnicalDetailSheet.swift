@@ -30,14 +30,10 @@ struct AssetTechnicalDetailSheet: View {
     var body: some View {
         NavigationStack {
             Group {
-                if appState.isPro || asset.symbol.uppercased() == "BTC" {
-                    ScrollView {
-                        shareableContent
-                    }
-                    .background(AppColors.background(colorScheme).ignoresSafeArea())
-                } else {
-                    PremiumFeatureGate(feature: .technicalAnalysis) {}
+                ScrollView {
+                    shareableContent
                 }
+                .background(AppColors.background(colorScheme).ignoresSafeArea())
             }
             .navigationTitle(asset.symbol.uppercased())
             .navigationBarTitleDisplayMode(.inline)

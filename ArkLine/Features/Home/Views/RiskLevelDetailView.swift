@@ -28,7 +28,6 @@ struct RiskLevelChartView: View {
     @State private var showInfoSheet = false
     @State private var showChart = true
     @State private var showFullscreenChart = false
-    @State private var showPaywall = false
     @State private var showShareCard = false
     @State private var adaptiveConfidence: Int?
 
@@ -235,9 +234,6 @@ struct RiskLevelChartView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView(feature: .allCoinRisk)
-            }
             .fullScreenCover(isPresented: $showFullscreenChart) {
                 RiskChartFullscreenView(
                     history: riskHistory,
@@ -324,9 +320,7 @@ struct RiskLevelChartView: View {
         .sheet(isPresented: $showCoinPicker) {
             RiskCoinPickerSheet(
                 availableCoins: availableCoins,
-                selectedCoin: $selectedCoin,
-                isPro: appState.isPro,
-                onUpgrade: { showPaywall = true }
+                selectedCoin: $selectedCoin
             )
             .presentationDetents([.medium])
         }
@@ -816,8 +810,6 @@ private struct TimeElapsedView: View {
 private struct RiskCoinPickerSheet: View {
     let availableCoins: [RiskCoin]
     @Binding var selectedCoin: RiskCoin
-    let isPro: Bool
-    var onUpgrade: () -> Void = {}
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -865,16 +857,6 @@ private struct RiskCoinPickerSheet: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                }
-
-                if !isPro {
-                    Button(action: {
-                        dismiss()
-                        onUpgrade()
-                    }) {
-                        Label("Unlock All Coins", systemImage: "crown.fill")
-                            .foregroundColor(AppColors.accent)
-                    }
                 }
             }
             .listStyle(.plain)

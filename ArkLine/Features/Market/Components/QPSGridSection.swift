@@ -95,15 +95,6 @@ struct QPSGridSection: View {
                     .font(.headline)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                if !isPro {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(.white)
-                        .padding(4)
-                        .background(AppColors.accent.opacity(0.15))
-                        .clipShape(Circle())
-                }
-
                 Spacer()
 
                 Button { showMethodology = true } label: {
@@ -118,16 +109,12 @@ struct QPSGridSection: View {
                 QPSMethodologySheet()
             }
 
-            if isPro {
-                NavigationLink {
-                    QPSFullGridView(signals: signals)
-                } label: {
-                    summaryCard
-                }
-                .buttonStyle(PlainButtonStyle())
-            } else {
-                lockedCard
+            NavigationLink {
+                QPSFullGridView(signals: signals)
+            } label: {
+                summaryCard
             }
+            .buttonStyle(PlainButtonStyle())
         }
     }
 
@@ -265,23 +252,4 @@ struct QPSGridSection: View {
         .padding(.vertical, 8)
     }
 
-    private var lockedCard: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "waveform.path.ecg")
-                .font(.title2)
-                .foregroundColor(AppColors.accent.opacity(0.5))
-            Text("Unlock daily positioning signals across 54 assets with Arkline Premium.")
-                .font(AppFonts.caption12)
-                .foregroundColor(AppColors.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
-        )
-        .opacity(0.6)
-        .padding(.horizontal)
-    }
 }

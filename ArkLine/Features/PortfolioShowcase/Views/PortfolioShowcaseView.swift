@@ -15,11 +15,7 @@ struct PortfolioShowcaseView: View {
 
     var body: some View {
         NavigationStack {
-            if appState.isPro {
-                showcaseContent
-            } else {
-                PremiumFeatureGate(feature: .portfolioShowcase) {}
-            }
+            showcaseContent
         }
     }
 
