@@ -10,6 +10,7 @@ struct APIHealthResult: Identifiable {
     let status: APIStatus
     let latencyMs: Int?
     let detail: String?
+    var explanation: String? = nil  // Why it might be degraded/down (shown only when not healthy)
 
     enum APICategory: String, CaseIterable {
         case pricing = "Pricing & Market Data"
@@ -70,6 +71,7 @@ actor APIHealthService {
         let query: FreshnessQuery
         let maxAgeMinutes: Int      // Healthy threshold
         let degradedAgeMinutes: Int // Degraded threshold (beyond = down)
+        let explanation: String     // Context shown when degraded/down
     }
 
     private enum FreshnessQuery {
@@ -246,28 +248,32 @@ actor APIHealthService {
                 table: "market_data_cache",
                 query: .cacheKey("crypto_assets_1_100"),
                 maxAgeMinutes: 15,
-                degradedAgeMinutes: 30
+                degradedAgeMinutes: 30,
+                explanation: "sync-crypto-prices cron runs every 5 min via CoinGecko. If stale, check CoinGecko API status or cron logs."
             ),
             FreshnessCheck(
                 name: "Global Market Data",
                 table: "market_data_cache",
                 query: .cacheKey("global_market_data"),
                 maxAgeMinutes: 15,
-                degradedAgeMinutes: 30
+                degradedAgeMinutes: 30,
+                explanation: "Synced alongside crypto prices. Same cron, same root cause if stale."
             ),
             FreshnessCheck(
                 name: "Global Liquidity Index",
                 table: "market_data_cache",
                 query: .cacheKey("global_liquidity_index"),
-                maxAgeMinutes: 60 * 26,   // Daily sync at 08:00 UTC — 26hr = missed one run
-                degradedAgeMinutes: 60 * 50 // 50hr = missed two runs
+                maxAgeMinutes: 60 * 26,
+                degradedAgeMinutes: 60 * 50,
+                explanation: "sync-global-liquidity runs daily at 08:00 UTC. Pulls BIS + FRED data. BIS data itself lags ~2 months."
             ),
             FreshnessCheck(
                 name: "Signal Analytics",
                 table: "market_data_cache",
                 query: .cacheKey("signal_analytics"),
                 maxAgeMinutes: 60 * 26,
-                degradedAgeMinutes: 60 * 50
+                degradedAgeMinutes: 60 * 50,
+                explanation: "compute-signal-analytics runs daily at 01:00 UTC. Derives adaptive pipeline params from closed signals."
             ),
 
             // Data Freshness: Table-based checks
@@ -275,43 +281,49 @@ actor APIHealthService {
                 name: "Positioning Signals",
                 table: "positioning_signals",
                 query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60 * 26,   // Daily at 00:15 UTC
-                degradedAgeMinutes: 60 * 50
+                maxAgeMinutes: 60 * 26,
+                degradedAgeMinutes: 60 * 50,
+                explanation: "compute-positioning-signals runs daily at 00:15 UTC. Feeds model portfolios and daily briefings."
             ),
             FreshnessCheck(
                 name: "Economic Events",
                 table: "economic_events",
                 query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60,        // Every 30 min
-                degradedAgeMinutes: 120
+                maxAgeMinutes: 60,
+                degradedAgeMinutes: 120,
+                explanation: "sync-economic-events runs every 30 min via FMP. Brief gaps are normal outside market hours."
             ),
             FreshnessCheck(
                 name: "Model Portfolio NAV",
                 table: "model_portfolio_nav",
                 query: .latestRow(dateColumn: "nav_date", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60 * 26,   // Daily at 00:30 UTC
-                degradedAgeMinutes: 60 * 50
+                maxAgeMinutes: 60 * 26,
+                degradedAgeMinutes: 60 * 50,
+                explanation: "compute-model-portfolios runs daily at 00:30 UTC. Depends on positioning signals and FMP BTC history."
             ),
             FreshnessCheck(
                 name: "Daily Briefing",
                 table: "market_summaries",
                 query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60 * 14,   // 3 slots/day — 14hr max gap (evening to next morning)
-                degradedAgeMinutes: 60 * 26
+                maxAgeMinutes: 60 * 14,
+                degradedAgeMinutes: 60 * 26,
+                explanation: "market-summary runs 3x daily (10am, 5pm, 12pm weekends ET). Uses Claude API — may fail on rate limits."
             ),
             FreshnessCheck(
                 name: "OHLC Candles",
                 table: "ohlc_candles",
                 query: .latestRow(dateColumn: "open_time", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 120,       // Pipeline runs every 30 min
-                degradedAgeMinutes: 240
+                maxAgeMinutes: 120,
+                degradedAgeMinutes: 240,
+                explanation: "fibonacci-pipeline fetches from Coinbase every 30 min. If stale, pipeline cron may be down."
             ),
             FreshnessCheck(
                 name: "Trade Signals",
                 table: "trade_signals",
                 query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60 * 24 * 7,   // Regime filter may block signals for days/weeks in choppy markets
-                degradedAgeMinutes: 60 * 24 * 14
+                maxAgeMinutes: 60 * 24 * 7,
+                degradedAgeMinutes: 60 * 24 * 14,
+                explanation: "EMA regime filter blocks signals in choppy markets — days/weeks without a signal is normal. Check OHLC Candles to confirm the pipeline itself is running."
             ),
         ]
     }
@@ -452,7 +464,8 @@ actor APIHealthService {
                     category: .dataFreshness,
                     status: .down,
                     latencyMs: latency,
-                    detail: "No data found"
+                    detail: "No data found",
+                    explanation: check.explanation
                 )
             }
 
@@ -473,7 +486,8 @@ actor APIHealthService {
                 category: .dataFreshness,
                 status: status,
                 latencyMs: latency,
-                detail: "Updated \(ageString) ago"
+                detail: "Updated \(ageString) ago",
+                explanation: status != .healthy ? check.explanation : nil
             )
         } catch {
             let latency = Int(Date().timeIntervalSince(start) * 1000)
@@ -482,7 +496,8 @@ actor APIHealthService {
                 category: .dataFreshness,
                 status: .down,
                 latencyMs: latency,
-                detail: "Query failed"
+                detail: "Query failed",
+                explanation: check.explanation
             )
         }
     }

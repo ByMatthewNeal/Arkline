@@ -198,6 +198,13 @@ struct APIHealthView: View {
                         .font(.system(size: 11))
                         .foregroundColor(result.status == .down ? statusColor(.down) : AppColors.textSecondary)
                 }
+
+                if let explanation = result.explanation, result.status != .healthy {
+                    Text(explanation)
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                        .lineLimit(3)
+                }
             }
 
             Spacer()
@@ -260,6 +267,9 @@ struct APIHealthView: View {
                     line += " (\(latency)ms)"
                 }
                 lines.append(line)
+                if let explanation = result.explanation, result.status != .healthy {
+                    lines.append("  → \(explanation)")
+                }
             }
             lines.append("")
         }
