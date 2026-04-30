@@ -310,8 +310,8 @@ actor APIHealthService {
                 name: "Trade Signals",
                 table: "trade_signals",
                 query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60 * 24,   // Signals may not generate every day
-                degradedAgeMinutes: 60 * 72  // 3 days without any signal is concerning
+                maxAgeMinutes: 60 * 24 * 7,   // Regime filter may block signals for days/weeks in choppy markets
+                degradedAgeMinutes: 60 * 24 * 14
             ),
         ]
     }
