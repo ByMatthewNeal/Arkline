@@ -225,7 +225,7 @@ struct APIHealthView: View {
         switch status {
         case .healthy: return AppColors.success
         case .degraded: return AppColors.warning
-        case .down: return Color(hex: "EF4444")
+        case .down: return AppColors.error
         case .checking: return AppColors.textSecondary
         }
     }

@@ -451,7 +451,10 @@ actor APIHealthService {
                     try await Task.sleep(for: .seconds(10))
                     throw CancellationError()
                 }
-                let result = try await group.next()!
+                guard let result = try await group.next() else {
+                    group.cancelAll()
+                    return nil
+                }
                 group.cancelAll()
                 return result
             }

@@ -1048,7 +1048,7 @@ private struct StockRiskDetailSheet: View {
                 avgLoss += max(0, -change)
             }
             avgGain /= 14; avgLoss /= 14
-            rsiValue = avgLoss > 0 ? 100 - (100 / (1 + avgGain / avgLoss)) : 100
+            rsiValue = avgLoss > 0 ? 100 - (100 / (1 + avgGain / avgLoss)) : (avgGain > 0 ? 100 : 50)
         }
 
         // 52-week range
