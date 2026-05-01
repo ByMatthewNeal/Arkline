@@ -324,7 +324,7 @@ struct SettingsView: View {
 
     private func openSupportEmail() {
         #if canImport(UIKit)
-        if let url = URL(string: "mailto:support@arkline.app") {
+        if let url = URL(string: "mailto:support@arkline.io") {
             UIApplication.shared.open(url)
         }
         #endif

@@ -129,6 +129,9 @@ struct AdminDashboardView: View {
             .listStyle(.sidebar)
             #endif
             .scrollContentBackground(.hidden)
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 60)
+            }
         }
         .navigationTitle("Admin Panel")
         #if os(iOS)

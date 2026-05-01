@@ -284,6 +284,17 @@ struct AssetRiskConfig {
         binanceSymbol: "SYRUPUSDT"
     )
 
+    /// Tron
+    static let trx = AssetRiskConfig(
+        assetId: "TRX",
+        geckoId: "tron",
+        originDate: safeDate(year: 2017, month: 9, day: 13),
+        deviationBounds: (low: -0.65, high: 0.65),
+        confidenceLevel: 7,
+        displayName: "Tron",
+        binanceSymbol: "TRXUSDT"
+    )
+
     // MARK: - Stock Configs
 
     /// Apple
@@ -339,7 +350,7 @@ struct AssetRiskConfig {
     /// All supported crypto assets
     static let cryptoConfigs: [AssetRiskConfig] = [
         .btc, .eth, .sol, .bnb, .sui, .uni, .ondo, .render, .tao,
-        .zec, .xrp, .ltc, .aave, .ena, .jup, .syrup
+        .zec, .xrp, .ltc, .aave, .ena, .jup, .syrup, .trx
     ]
 
     /// All supported stock assets

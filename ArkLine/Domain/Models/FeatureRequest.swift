@@ -175,20 +175,22 @@ enum FeaturePriority: String, Codable, CaseIterable {
 enum FeatureCategory: String, Codable, CaseIterable {
     case portfolio = "portfolio"
     case market = "market"
-    case alerts = "alerts"
-    case social = "social"
+    case signals = "signals"
+    case insights = "insights"
+    case ai = "ai_briefings"
+    case risk = "risk_analysis"
     case ui = "ui_ux"
-    case performance = "performance"
     case other = "other"
 
     var displayName: String {
         switch self {
-        case .portfolio: return "Portfolio"
-        case .market: return "Market Data"
-        case .alerts: return "Alerts & Notifications"
-        case .social: return "Social Features"
-        case .ui: return "UI/UX"
-        case .performance: return "Performance"
+        case .portfolio: return "Portfolio & DCA"
+        case .market: return "Market Data & Charts"
+        case .signals: return "Signals & Alerts"
+        case .insights: return "Insights"
+        case .ai: return "AI & Briefings"
+        case .risk: return "Risk & Analysis"
+        case .ui: return "UI & Design"
         case .other: return "Other"
         }
     }
@@ -197,10 +199,11 @@ enum FeatureCategory: String, Codable, CaseIterable {
         switch self {
         case .portfolio: return "chart.pie.fill"
         case .market: return "chart.line.uptrend.xyaxis"
-        case .alerts: return "bell.fill"
-        case .social: return "person.2.fill"
+        case .signals: return "bell.badge.fill"
+        case .insights: return "text.bubble.fill"
+        case .ai: return "cpu.fill"
+        case .risk: return "gauge.with.needle.fill"
         case .ui: return "paintbrush.fill"
-        case .performance: return "gauge.with.needle.fill"
         case .other: return "ellipsis.circle.fill"
         }
     }

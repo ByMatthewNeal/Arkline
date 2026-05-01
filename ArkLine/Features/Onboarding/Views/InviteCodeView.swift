@@ -196,7 +196,7 @@ struct RequestAccessSheet: View {
                 SecondaryButton(
                     title: "Contact Us",
                     action: {
-                        if let url = URL(string: "mailto:access@arkline.app") {
+                        if let url = URL(string: "mailto:support@arkline.io") {
                             #if canImport(UIKit)
                             UIApplication.shared.open(url)
                             #endif

@@ -861,6 +861,10 @@ struct ModelPortfolioDetailView: View {
         case "BNB": return Color(hex: "F3BA2F")
         case "XRP": return Color(hex: "23292F")
         case "BCH": return Color(hex: "8DC351")
+        case "TRX": return Color(hex: "FF0013")
+        case "HYPE": return Color(hex: "84E89B")
+        case "TAO": return Color(hex: "FFFFFF")
+        case "ZEC": return Color(hex: "F4B728")
         default: return AppColors.accent
         }
     }
@@ -928,109 +932,166 @@ struct ModelPortfolioDetailView: View {
         }
     }
 
+    private func signalChangeSummary(from changes: [TradeChange]) -> String {
+        var parts: [String] = []
+        let added = changes.filter { $0.action == .bought }.map(\.asset)
+        let removed = changes.filter { $0.action == .sold }.map(\.asset)
+
+        for asset in added { parts.append("\(asset) added") }
+        for asset in removed { parts.append("\(asset) removed") }
+
+        if parts.isEmpty {
+            let scaled = changes.filter { $0.action == .scaledIn || $0.action == .scaledOut }
+            if scaled.isEmpty { return "No changes" }
+            return "Rebalanced allocations"
+        }
+        return parts.joined(separator: ", ")
+    }
+
     @ViewBuilder
     private func tradeRow(_ trade: ModelPortfolioTrade) -> some View {
         let changes = tradeChanges(from: trade)
         let isExpanded = expandedTradeId == trade.id
         let hasContext = trade.marketContext != nil && !(trade.marketContext?.isEmpty ?? true)
 
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
+            // Date + expand chevron
             Button {
-                if hasContext {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        expandedTradeId = isExpanded ? nil : trade.id
-                    }
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedTradeId = isExpanded ? nil : trade.id
                 }
             } label: {
-                HStack {
-                    Text(formatNavDate(trade.tradeDate))
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(AppColors.textSecondary)
-                    Spacer()
-                    Text(trade.trigger)
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textTertiary)
-                        .lineLimit(1)
-                    if hasContext {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 8, weight: .semibold))
-                            .foregroundColor(AppColors.textSecondary.opacity(0.4))
-                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(formatNavDate(trade.tradeDate))
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        if hasContext {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        }
                     }
+
+                    // Signal change summary (primary)
+                    Text(signalChangeSummary(from: changes))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                    // Allocation chips
+                    allocationChips(from: trade.toAllocation)
+
+                    // Trigger (secondary)
+                    Text(trade.trigger)
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textTertiary)
+                        .lineLimit(2)
                 }
             }
             .buttonStyle(.plain)
 
-            ForEach(changes) { change in
-                HStack(spacing: 6) {
-                    tradeActionIcon(change.action)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(tradeActionColor(change.action))
-                        .frame(width: 14)
-
-                    Text(change.displayName)
-                        .font(AppFonts.caption12Medium)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                    Text(tradeActionLabel(change))
-                        .font(AppFonts.caption12)
-                        .foregroundColor(tradeActionColor(change.action))
-
-                    Spacer()
-
-                    if change.action != .sold {
-                        Text("\(change.toPct, specifier: "%.0f")%")
-                            .font(AppFonts.caption12Medium)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
-                }
-            }
-
-            // Expandable market context
-            if isExpanded, let context = trade.marketContext {
+            // Expandable: detailed changes + market context
+            if isExpanded {
                 VStack(alignment: .leading, spacing: 8) {
-                    if let events = context.events, !events.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "calendar.badge.exclamationmark")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(AppColors.warning)
-                                Text("ECONOMIC EVENTS")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(AppColors.textSecondary)
-                                    .tracking(0.5)
-                            }
-                            ForEach(events, id: \.self) { event in
-                                Text("• \(event)")
-                                    .font(.system(size: 11))
+                    // Per-asset changes
+                    ForEach(changes) { change in
+                        HStack(spacing: 6) {
+                            tradeActionIcon(change.action)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(tradeActionColor(change.action))
+                                .frame(width: 14)
+
+                            Text(change.displayName)
+                                .font(AppFonts.caption12Medium)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                            Text(tradeActionLabel(change))
+                                .font(AppFonts.caption12)
+                                .foregroundColor(tradeActionColor(change.action))
+
+                            Spacer()
+
+                            if change.action != .sold {
+                                Text("\(change.toPct, specifier: "%.0f")%")
+                                    .font(AppFonts.caption12Medium)
                                     .foregroundColor(AppColors.textSecondary)
                             }
                         }
                     }
 
-                    if let headlines = context.headlines, !headlines.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "newspaper")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(AppColors.accent)
-                                Text("HEADLINES")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundColor(AppColors.textSecondary)
-                                    .tracking(0.5)
+                    // Market context
+                    if let context = trade.marketContext {
+                        if let events = context.events, !events.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "calendar.badge.exclamationmark")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(AppColors.warning)
+                                    Text("ECONOMIC EVENTS")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .tracking(0.5)
+                                }
+                                ForEach(events, id: \.self) { event in
+                                    Text("• \(event)")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
                             }
-                            ForEach(headlines, id: \.self) { headline in
-                                Text("• \(headline)")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(AppColors.textSecondary)
-                                    .lineLimit(2)
+                        }
+
+                        if let headlines = context.headlines, !headlines.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "newspaper")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(AppColors.accent)
+                                    Text("HEADLINES")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .tracking(0.5)
+                                }
+                                ForEach(headlines, id: \.self) { headline in
+                                    Text("• \(headline)")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .lineLimit(2)
+                                }
                             }
                         }
                     }
                 }
-                .padding(.top, 6)
+                .padding(.top, 2)
                 .padding(.leading, 4)
                 .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func allocationChips(from allocation: [String: Double]) -> some View {
+        let sorted = allocation
+            .filter { $0.value >= 1 }
+            .sorted { $0.value > $1.value }
+
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(sorted, id: \.key) { asset, pct in
+                    HStack(spacing: 3) {
+                        Circle()
+                            .fill(assetColor(asset))
+                            .frame(width: 6, height: 6)
+                        Text("\(asset):\(pct, specifier: "%.0f")%")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.8))
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(assetColor(asset).opacity(0.12))
+                    .cornerRadius(8)
+                }
             }
         }
     }

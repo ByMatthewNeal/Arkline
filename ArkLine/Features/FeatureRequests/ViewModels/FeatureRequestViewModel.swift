@@ -203,9 +203,10 @@ final class FeatureRequestViewModel {
         switch request.category {
         case .ui: return "minimal development effort"
         case .portfolio, .market: return "moderate backend changes"
-        case .alerts: return "notification system integration"
-        case .social: return "significant architectural changes"
-        case .performance: return "optimization work"
+        case .signals: return "notification system integration"
+        case .insights: return "moderate frontend work"
+        case .ai: return "prompt engineering + edge function work"
+        case .risk: return "data pipeline + calculation changes"
         case .other: return "further scoping needed"
         }
     }
@@ -213,10 +214,11 @@ final class FeatureRequestViewModel {
     private func assessAlignment(_ request: FeatureRequest) -> String {
         switch request.category {
         case .portfolio, .market: return "Core feature - high alignment with app goals"
-        case .alerts: return "User engagement feature - good alignment"
+        case .signals: return "User engagement feature - good alignment"
+        case .insights: return "Community feature - good alignment"
+        case .ai: return "AI/briefing feature - core differentiator"
+        case .risk: return "Risk analysis - core feature, high alignment"
         case .ui: return "UX improvement - enhances existing features"
-        case .social: return "Community feature - expansion opportunity"
-        case .performance: return "Technical improvement - foundation work"
         case .other: return "Needs evaluation for strategic fit"
         }
     }

@@ -16,6 +16,17 @@ const DAILY_STABLE_RATE = Math.pow(1 + STABLECOIN_APY, 1 / 365) - 1
 const BTC_ORIGIN_DATE = new Date("2009-01-03")
 const BTC_DEVIATION_BOUNDS: [number, number] = [-0.8, 0.8]
 
+// Per-asset max exposure caps (enforced after strategy allocation)
+const MAX_EXPOSURE: Record<string, number> = {
+  BTC: 1.00,
+  ETH: 0.20, SOL: 0.20,
+  // Mid-caps
+  LINK: 0.15, AVAX: 0.15, XRP: 0.15, BNB: 0.15, AAVE: 0.15, BCH: 0.15, TRX: 0.15,
+  // Defensive (uncapped)
+  PAXG: 1.00, USDC: 1.00,
+}
+const DEFAULT_MAX_EXPOSURE = 0.10 // Small-cap alts
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Portfolio {
@@ -59,6 +70,42 @@ function roundAlloc(alloc: Record<string, number>): Record<string, number> {
     r[k] = Math.round(v * 10000) / 10000
   }
   return r
+}
+
+function enforceExposureCaps(alloc: Record<string, number>): Record<string, number> {
+  const result = { ...alloc }
+  // Iterate until no position exceeds its cap (handles cascading)
+  for (let iter = 0; iter < 5; iter++) {
+    let excess = 0
+    let uncappedTotal = 0
+    const uncapped: string[] = []
+
+    for (const [asset, pct] of Object.entries(result)) {
+      if (pct <= 0) continue
+      const cap = MAX_EXPOSURE[asset] ?? DEFAULT_MAX_EXPOSURE
+      if (pct > cap) {
+        excess += pct - cap
+        result[asset] = cap
+      } else {
+        uncapped.push(asset)
+        uncappedTotal += pct
+      }
+    }
+
+    if (excess < 0.0001) break // No excess to redistribute
+
+    if (uncappedTotal > 0) {
+      // Redistribute proportionally to uncapped positions
+      for (const asset of uncapped) {
+        result[asset] += excess * (result[asset] / uncappedTotal)
+      }
+    } else {
+      // All at cap — overflow to USDC
+      result.USDC = (result.USDC || 0) + excess
+    }
+  }
+
+  return result
 }
 
 function allocsEqual(a: Record<string, number>, b: Record<string, number>): boolean {
@@ -389,7 +436,7 @@ async function fetchCurrentPrices(assets: string[]): Promise<Record<string, numb
     XRP: "XRP-USD", SUI: "SUI-USD", LINK: "LINK-USD", UNI: "UNI-USD",
     ONDO: "ONDO-USD", RENDER: "RENDER-USD", TAO: "TAO-USD",
     ZEC: "ZEC-USD", AVAX: "AVAX-USD", DOGE: "DOGE-USD", BCH: "BCH-USD",
-    PAXG: "PAXG-USD", HYPE: "HYPE-USD", AAVE: "AAVE-USD",
+    PAXG: "PAXG-USD", HYPE: "HYPE-USD", AAVE: "AAVE-USD", TRX: "TRX-USD",
   }
 
   for (const asset of assets) {
@@ -654,6 +701,9 @@ Deno.serve(async (req) => {
         newAlloc = result.alloc
         dominantAlt = result.dominantAlt
       }
+
+      // Enforce per-asset exposure caps
+      newAlloc = enforceExposureCaps(newAlloc)
 
       // Normalize
       const total = Object.values(newAlloc).reduce((a, b) => a + b, 0)

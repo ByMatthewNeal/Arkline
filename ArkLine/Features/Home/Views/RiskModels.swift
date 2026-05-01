@@ -124,6 +124,7 @@ enum RiskCoin: String, CaseIterable {
     case ena = "ENA"
     case jup = "JUP"
     case syrup = "SYRUP"
+    case trx = "TRX"
 
     var displayName: String {
         AssetRiskConfig.forCoin(rawValue)?.displayName ?? rawValue
@@ -147,6 +148,7 @@ enum RiskCoin: String, CaseIterable {
         case .ena: return "e.circle.fill"
         case .jup: return "j.circle.fill"
         case .syrup: return "s.circle.fill"
+        case .trx: return "t.circle.fill"
         }
     }
 
@@ -173,6 +175,7 @@ enum RiskCoin: String, CaseIterable {
         case .ena: return URL(string: "https://assets.coingecko.com/coins/images/36530/small/ethena.png")
         case .jup: return URL(string: "https://assets.coingecko.com/coins/images/34188/small/jup.png")
         case .syrup: return URL(string: "https://assets.coingecko.com/coins/images/14097/small/photo_2021-05-03_14.20.41.jpeg")
+        case .trx: return URL(string: "https://assets.coingecko.com/coins/images/1094/small/tron-logo.png")
         }
     }
 

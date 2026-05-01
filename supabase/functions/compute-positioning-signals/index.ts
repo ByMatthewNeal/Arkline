@@ -45,6 +45,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "DOGE",   displayName: "Dogecoin",      source: "coinbase", symbol: "DOGE-USD",   category: "crypto" },
   { ticker: "BCH",    displayName: "Bitcoin Cash",   source: "coinbase", symbol: "BCH-USD",    category: "crypto" },
   { ticker: "AAVE",   displayName: "Aave",           source: "coinbase", symbol: "AAVE-USD",   category: "crypto" },
+  { ticker: "TRX",    displayName: "Tron",           source: "coinbase", symbol: "TRX-USD",    category: "crypto" },
 
   // ── Alt/BTC Pairs (relative strength vs Bitcoin) ──
   { ticker: "ETH/BTC",    displayName: "ETH/BTC",    source: "coinbase",      symbol: "ETH-BTC",    category: "alt_btc" },
@@ -63,6 +64,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "ONDO/BTC",   displayName: "ONDO/BTC",   source: "synthetic_btc", symbol: "ONDO-USD",   category: "alt_btc" },
   { ticker: "RENDER/BTC", displayName: "RENDER/BTC", source: "synthetic_btc", symbol: "RENDER-USD", category: "alt_btc" },
   { ticker: "AAVE/BTC",   displayName: "AAVE/BTC",   source: "coinbase",      symbol: "AAVE-BTC",   category: "alt_btc" },
+  { ticker: "TRX/BTC",    displayName: "TRX/BTC",    source: "synthetic_btc", symbol: "TRX-USD",    category: "alt_btc" },
 
   // ── Indices (FMP — ETF proxies) ──
   { ticker: "SPY",    displayName: "S&P 500",       source: "fmp", symbol: "SPY",   category: "index" },
