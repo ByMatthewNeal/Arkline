@@ -9,6 +9,7 @@ struct GlobalLiquiditySection: View {
     @State private var liquidityIndex: GlobalLiquidityIndex?
     @State private var isLoading = true
     @State private var showInfo = false
+    @State private var lastLoaded: Date?
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color {
@@ -60,6 +61,14 @@ struct GlobalLiquiditySection: View {
 
                     // Changes
                     changesRow(gli)
+
+                    // Synced timestamp
+                    if let loaded = lastLoaded {
+                        Text("Synced \(loaded.formatted(.relative(presentation: .named))) · US data weekly, BIS monthly")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textTertiary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
                 .padding(16)
                 .background(
@@ -110,6 +119,10 @@ struct GlobalLiquiditySection: View {
                 Text("BIS data thru \(gli.formattedPeriod)")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)
+
+                Text("Next update ~\(gli.nextBISUpdate)")
+                    .font(.system(size: 9))
+                    .foregroundColor(AppColors.textTertiary)
 
                 if let annual = gli.changes.annual {
                     Text(String(format: "%+.1f%% YoY", annual))
@@ -269,6 +282,7 @@ struct GlobalLiquiditySection: View {
         do {
             let service: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService
             liquidityIndex = try await service.fetchGlobalLiquidityIndex()
+            lastLoaded = Date()
         } catch {
             logWarning("GlobalLiquiditySection: \(error.localizedDescription)", category: .network)
         }

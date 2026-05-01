@@ -274,6 +274,27 @@ struct GlobalLiquidityIndex: Codable {
         String(format: "$%.2fT", usNetLiquidityT)
     }
 
+    /// Estimates when the next BIS data period will be available.
+    /// BIS publishes ~10 business days after month-end, so data for month M
+    /// typically arrives around the 15th of month M+2.
+    var nextBISUpdate: String {
+        let parts = period.split(separator: "-")
+        guard parts.count == 2,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]) else { return "soon" }
+
+        // Next period = current period + 1 month
+        // Available ~mid of (period + 2 months)
+        var updateMonth = month + 2
+        var updateYear = year
+        if updateMonth > 12 {
+            updateMonth -= 12
+            updateYear += 1
+        }
+        let symbols = Calendar.current.shortMonthSymbols
+        return "mid-\(symbols[updateMonth - 1]) \(updateYear)"
+    }
+
     var overallSignal: MarketSignal {
         switch signal {
         case "expanding": return .bullish
