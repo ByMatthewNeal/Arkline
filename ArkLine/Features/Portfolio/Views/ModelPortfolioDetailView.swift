@@ -862,6 +862,7 @@ struct ModelPortfolioDetailView: View {
         case "XRP": return Color(hex: "23292F")
         case "BCH": return Color(hex: "8DC351")
         case "TRX": return Color(hex: "FF0013")
+        case "AERO": return Color(hex: "0052FF")
         case "HYPE": return Color(hex: "84E89B")
         case "TAO": return Color(hex: "FFFFFF")
         case "ZEC": return Color(hex: "F4B728")

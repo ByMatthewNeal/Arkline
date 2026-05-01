@@ -436,7 +436,7 @@ async function fetchCurrentPrices(assets: string[]): Promise<Record<string, numb
     XRP: "XRP-USD", SUI: "SUI-USD", LINK: "LINK-USD", UNI: "UNI-USD",
     ONDO: "ONDO-USD", RENDER: "RENDER-USD", TAO: "TAO-USD",
     ZEC: "ZEC-USD", AVAX: "AVAX-USD", DOGE: "DOGE-USD", BCH: "BCH-USD",
-    PAXG: "PAXG-USD", HYPE: "HYPE-USD", AAVE: "AAVE-USD", TRX: "TRX-USD",
+    PAXG: "PAXG-USD", HYPE: "HYPE-USD", AAVE: "AAVE-USD", TRX: "TRX-USD", AERO: "AERO-USD",
   }
 
   for (const asset of assets) {
