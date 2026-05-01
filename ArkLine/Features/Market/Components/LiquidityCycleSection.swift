@@ -158,9 +158,17 @@ struct LiquidityCycleSection: View {
                         .fill(cardBackground)
                 )
             } else {
-                Text("Unable to load cycle data")
-                    .font(.caption)
+                Button {
+                    Task { await loadData() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12))
+                        Text("Tap to retry")
+                            .font(.caption)
+                    }
                     .foregroundColor(AppColors.textSecondary)
+                }
             }
         }
         .padding(.horizontal)

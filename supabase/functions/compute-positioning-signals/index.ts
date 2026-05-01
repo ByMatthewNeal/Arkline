@@ -38,7 +38,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "UNI",    displayName: "Uniswap",       source: "coinbase", symbol: "UNI-USD",    category: "crypto" },
   { ticker: "ONDO",   displayName: "Ondo",          source: "coinbase", symbol: "ONDO-USD",   category: "crypto" },
   { ticker: "RENDER", displayName: "Render",        source: "coinbase", symbol: "RENDER-USD", category: "crypto" },
-  { ticker: "HYPE",   displayName: "Hyperliquid",   source: "fmp",      symbol: "HYPEUSD",    category: "crypto" },
+  { ticker: "HYPE",   displayName: "Hyperliquid",   source: "coinbase", symbol: "HYPE-USD",   category: "crypto" },
   { ticker: "TAO",    displayName: "Bittensor",     source: "coinbase", symbol: "TAO-USD",    category: "crypto" },
   { ticker: "ZEC",    displayName: "Zcash",         source: "coinbase", symbol: "ZEC-USD",    category: "crypto" },
   { ticker: "AVAX",   displayName: "Avalanche",     source: "coinbase", symbol: "AVAX-USD",   category: "crypto" },

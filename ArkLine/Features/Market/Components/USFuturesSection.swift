@@ -413,7 +413,7 @@ private struct FuturesQuoteRow: View {
                 Text(String(format: "%+.2f%%", quote.changePercent))
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(changeColor)
-                Text(String(format: "%+.2f", quote.change))
+                Text(formatChange(quote.change))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(changeColor.opacity(0.8))
             }
@@ -432,9 +432,19 @@ private struct FuturesQuoteRow: View {
     }
 
     private func formatPrice(_ price: Double) -> String {
-        if price >= 10000 {
-            return String(format: "%.2f", price)
-        }
-        return String(format: "%.2f", price)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: price)) ?? String(format: "%.2f", price)
+    }
+
+    private func formatChange(_ change: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        formatter.positivePrefix = "+"
+        return formatter.string(from: NSNumber(value: change)) ?? String(format: "%+.2f", change)
     }
 }

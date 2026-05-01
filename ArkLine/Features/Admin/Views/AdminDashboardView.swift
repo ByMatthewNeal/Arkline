@@ -3,6 +3,8 @@ import SwiftUI
 struct AdminDashboardView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    @State private var memberCount: Int?
+    @State private var healthSummary: String?
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -45,7 +47,7 @@ struct AdminDashboardView: View {
                             icon: "antenna.radiowaves.left.and.right",
                             iconColor: AppColors.success,
                             title: "System Health",
-                            subtitle: "APIs, data freshness & cron jobs"
+                            subtitle: healthSummary ?? "APIs, data freshness & cron jobs"
                         )
                     }
                 } header: {
@@ -87,7 +89,7 @@ struct AdminDashboardView: View {
                             icon: "person.2.fill",
                             iconColor: AppColors.info,
                             title: "Members",
-                            subtitle: "View & manage members"
+                            subtitle: memberCount.map { "\($0) member\($0 == 1 ? "" : "s")" } ?? "View & manage members"
                         )
                     }
 
@@ -137,6 +139,42 @@ struct AdminDashboardView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
+        .task {
+            await loadQuickStats()
+        }
+    }
+
+    private func loadQuickStats() async {
+        // Member count
+        if SupabaseManager.shared.isConfigured {
+            let count: [[String: Int]]? = try? await SupabaseManager.shared.client
+                .from("profiles")
+                .select("id", head: false, count: .exact)
+                .limit(0)
+                .execute()
+                .value
+            // Use the count header instead
+            if let rows: [[String: String]] = try? await SupabaseManager.shared.client
+                .from("profiles")
+                .select("id")
+                .execute()
+                .value {
+                await MainActor.run { memberCount = rows.count }
+            }
+        }
+
+        // Health summary (quick check)
+        let results = await APIHealthService.shared.runAllChecks()
+        let healthy = results.filter { $0.status == .healthy }.count
+        let total = results.count
+        let down = results.filter { $0.status == .down }.count
+        await MainActor.run {
+            if down > 0 {
+                healthSummary = "\(healthy)/\(total) healthy, \(down) down"
+            } else {
+                healthSummary = "\(healthy)/\(total) systems healthy"
+            }
+        }
     }
 }
 
