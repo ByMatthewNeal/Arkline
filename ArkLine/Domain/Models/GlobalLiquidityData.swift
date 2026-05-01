@@ -274,6 +274,23 @@ struct GlobalLiquidityIndex: Codable {
         String(format: "$%.2fT", usNetLiquidityT)
     }
 
+    /// How many months behind the current date the BIS data is
+    var bisLagDescription: String {
+        let parts = period.split(separator: "-")
+        guard parts.count == 2,
+              let year = Int(parts[0]),
+              let month = Int(parts[1]) else { return "" }
+
+        let cal = Calendar.current
+        let now = Date()
+        let currentYear = cal.component(.year, from: now)
+        let currentMonth = cal.component(.month, from: now)
+        let lagMonths = (currentYear - year) * 12 + (currentMonth - month)
+
+        if lagMonths <= 1 { return "Current" }
+        return "\(lagMonths)mo lag"
+    }
+
     /// Estimates when the next BIS data period will be available.
     /// BIS compiles from 10+ central banks — each reports on different schedules.
     /// Composite typically lags 2-3 months behind the current date.

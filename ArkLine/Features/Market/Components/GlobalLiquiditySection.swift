@@ -120,7 +120,7 @@ struct GlobalLiquiditySection: View {
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)
 
-                Text("Next update ~\(gli.nextBISUpdate)")
+                Text("\(gli.bisLagDescription) · Next ~\(gli.nextBISUpdate)")
                     .font(.system(size: 9))
                     .foregroundColor(AppColors.textTertiary)
 
