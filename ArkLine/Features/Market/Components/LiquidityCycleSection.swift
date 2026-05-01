@@ -9,6 +9,7 @@ struct LiquidityCycleSection: View {
     @State private var liquidityIndex: GlobalLiquidityIndex?
     @State private var isLoading = true
     @State private var showInfo = false
+    @State private var lastLoaded: Date?
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color {
@@ -151,6 +152,14 @@ struct LiquidityCycleSection: View {
                         }
                         momentumChip("Accel", cycle.acceleration)
                     }
+
+                    // Updated timestamp
+                    if let loaded = lastLoaded {
+                        Text("Synced \(loaded.formatted(.relative(presentation: .named)))")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textTertiary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
                 .padding(16)
                 .background(
@@ -237,6 +246,7 @@ struct LiquidityCycleSection: View {
         do {
             let service: GlobalLiquidityServiceProtocol = ServiceContainer.shared.globalLiquidityService
             liquidityIndex = try await service.fetchGlobalLiquidityIndex()
+            lastLoaded = Date()
         } catch {
             logWarning("LiquidityCycleSection: \(error.localizedDescription)", category: .network)
         }

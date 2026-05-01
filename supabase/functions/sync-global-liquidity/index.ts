@@ -470,8 +470,57 @@ Deno.serve(async (req) => {
       ),
     }
 
+    // Check previous cycle phase before writing new data
+    let previousPhase: string | null = null
+    try {
+      const { data: prev } = await supabase
+        .from("market_data_cache")
+        .select("data")
+        .eq("key", "global_liquidity_index")
+        .maybeSingle()
+      if (prev?.data) {
+        const prevData = typeof prev.data === "string" ? JSON.parse(prev.data) : prev.data
+        previousPhase = prevData?.liquidity_cycle?.cycle_phase ?? null
+      }
+    } catch (e) {
+      console.error(`Failed to read previous cycle phase: ${e}`)
+    }
+
     // Write to market_data_cache (same pattern as sync-crypto-prices)
     await writeCache(supabase, "global_liquidity_index", payload, 86400) // 24hr TTL
+
+    // Send push notification if cycle phase changed
+    if (previousPhase && previousPhase !== cyclePhase) {
+      const phaseNames: Record<string, string> = {
+        early_expansion: "Early Expansion",
+        late_expansion: "Late Expansion",
+        early_contraction: "Early Contraction",
+        late_contraction: "Late Contraction",
+      }
+      const fromName = phaseNames[previousPhase] ?? previousPhase
+      const toName = phaseNames[cyclePhase] ?? cyclePhase
+      console.log(`Cycle phase changed: ${fromName} → ${toName} — sending push notification`)
+
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`,
+            "x-cron-secret": cronSecret,
+          },
+          body: JSON.stringify({
+            broadcast_id: "liquidity_cycle_phase_change",
+            title: "Liquidity Cycle Phase Change",
+            body: `${fromName} → ${toName}. ${cryptoGuidance.split(".")[0]}.`,
+            event_type: "liquidity_cycle",
+            target_audience: { type: "all" },
+          }),
+        })
+      } catch (err) {
+        console.error(`Failed to send cycle phase notification: ${err}`)
+      }
+    }
 
     stats.composite.success = true
     stats.composite.totalLiquidity = latestComposite
