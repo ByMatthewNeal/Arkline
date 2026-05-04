@@ -38,6 +38,14 @@ struct DerivativesDataSection: View {
                     let cardWidth = max(160, geo.size.width * 0.48)
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
+                            if overview.btcPerpPremium != nil || overview.ethPerpPremium != nil {
+                                PerpetualPremiumCard(
+                                    btcPremium: overview.btcPerpPremium,
+                                    ethPremium: overview.ethPerpPremium,
+                                    cardWidth: cardWidth
+                                )
+                            }
+
                             OpenInterestCard(
                                 btcOI: overview.btcOpenInterest,
                                 ethOI: overview.ethOpenInterest,
@@ -440,6 +448,143 @@ struct LSRow: View {
     }
 }
 
+// MARK: - Perpetual Premium Card
+struct PerpetualPremiumCard: View {
+    @Environment(\.colorScheme) var colorScheme
+    let btcPremium: PerpetualPremiumData?
+    let ethPremium: PerpetualPremiumData?
+    var cardWidth: CGFloat = 180
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white
+    }
+
+    /// The primary asset to feature (BTC if available)
+    private var primary: PerpetualPremiumData? { btcPremium ?? ethPremium }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header
+            HStack {
+                Image(systemName: "gauge.with.dots.needle.33percent")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "8B5CF6"))
+                Text("Perp Premium")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            }
+
+            Divider()
+
+            if let primary {
+                // Directional score gauge
+                VStack(spacing: 6) {
+                    HStack {
+                        Text("Directional")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        Text(primary.sentiment.rawValue)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color(hex: primary.sentiment.color.replacingOccurrences(of: "#", with: "")))
+                    }
+
+                    // Score bar: -100 to +100
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            // Background track
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.gray.opacity(0.2))
+
+                            // Center line
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.4))
+                                .frame(width: 1)
+                                .offset(x: geo.size.width / 2)
+
+                            // Score fill
+                            let normalized = (primary.directionalScore + 100) / 200 // 0 to 1
+                            let barWidth = geo.size.width * abs(normalized - 0.5)
+                            let barOffset = normalized >= 0.5
+                                ? geo.size.width / 2
+                                : geo.size.width * normalized
+
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color(hex: primary.sentiment.color.replacingOccurrences(of: "#", with: "")))
+                                .frame(width: barWidth)
+                                .offset(x: barOffset)
+                        }
+                    }
+                    .frame(height: 8)
+
+                    HStack {
+                        Text("Short")
+                            .font(.system(size: 9))
+                            .foregroundColor(AppColors.error.opacity(0.6))
+                        Spacer()
+                        Text(primary.formattedScore)
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(hex: primary.sentiment.color.replacingOccurrences(of: "#", with: "")))
+                        Spacer()
+                        Text("Long")
+                            .font(.system(size: 9))
+                            .foregroundColor(AppColors.success.opacity(0.6))
+                    }
+                }
+
+                Divider()
+
+                // BTC & ETH premium spreads
+                HStack {
+                    if let btc = btcPremium {
+                        PremiumRow(symbol: "BTC", spread: btc.formattedSpread, score: btc.directionalScore)
+                    }
+                    if btcPremium != nil && ethPremium != nil {
+                        Spacer()
+                    }
+                    if let eth = ethPremium {
+                        PremiumRow(symbol: "ETH", spread: eth.formattedSpread, score: eth.directionalScore)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: cardWidth, height: 160)
+        .background(cardBackground)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.06), lineWidth: 1)
+        )
+    }
+}
+
+struct PremiumRow: View {
+    @Environment(\.colorScheme) var colorScheme
+    let symbol: String
+    let spread: String
+    let score: Double
+
+    private var spreadColor: Color {
+        score > 10 ? AppColors.success : score < -10 ? AppColors.error : AppColors.textSecondary
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(symbol)
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+            Text(spread)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(spreadColor)
+        }
+    }
+}
+
 // MARK: - Loading View
 struct DerivativesLoadingView: View {
     var body: some View {
@@ -551,6 +696,26 @@ struct DerivativesEmptyView: View {
                     topTraderShortRatio: 0.42,
                     timestamp: Date(),
                     exchangeRatios: nil
+                ),
+                btcPerpPremium: PerpetualPremiumData(
+                    symbol: "BTC",
+                    markPrice: 79_250,
+                    indexPrice: 79_200,
+                    premiumSpread: 0.063,
+                    fundingRate: 0.0001,
+                    annualizedFunding: 10.95,
+                    directionalScore: 28,
+                    timestamp: Date()
+                ),
+                ethPerpPremium: PerpetualPremiumData(
+                    symbol: "ETH",
+                    markPrice: 3_150,
+                    indexPrice: 3_148,
+                    premiumSpread: 0.064,
+                    fundingRate: 0.00015,
+                    annualizedFunding: 16.43,
+                    directionalScore: 35,
+                    timestamp: Date()
                 ),
                 lastUpdated: Date()
             ),

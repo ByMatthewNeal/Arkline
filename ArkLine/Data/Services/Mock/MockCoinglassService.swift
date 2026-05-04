@@ -120,6 +120,16 @@ final class MockCoinglassService: CoinglassServiceProtocol {
             ethFundingRate: generateMockFundingRate(symbol: "ETH"),
             btcLongShortRatio: generateMockLongShortRatio(symbol: "BTC"),
             ethLongShortRatio: generateMockLongShortRatio(symbol: "ETH"),
+            btcPerpPremium: PerpetualPremiumData(
+                symbol: "BTC", markPrice: 79_250, indexPrice: 79_200,
+                premiumSpread: 0.063, fundingRate: 0.0001,
+                annualizedFunding: 10.95, directionalScore: 28, timestamp: Date()
+            ),
+            ethPerpPremium: PerpetualPremiumData(
+                symbol: "ETH", markPrice: 3_150, indexPrice: 3_148,
+                premiumSpread: 0.064, fundingRate: 0.00015,
+                annualizedFunding: 16.43, directionalScore: 35, timestamp: Date()
+            ),
             lastUpdated: Date()
         )
     }

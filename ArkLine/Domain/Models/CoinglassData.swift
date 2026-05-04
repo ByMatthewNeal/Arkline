@@ -290,6 +290,109 @@ enum LongShortSentiment: String {
     }
 }
 
+// MARK: - Perpetual Premium Data
+/// Composite indicator measuring the directional bias of perpetual futures markets.
+/// Combines the mark-index price spread (how much perps trade above/below spot)
+/// with the funding rate (what traders pay to hold positions).
+struct PerpetualPremiumData: Codable {
+    let symbol: String
+    let markPrice: Double
+    let indexPrice: Double
+    let premiumSpread: Double          // (mark - index) / index * 100, in %
+    let fundingRate: Double            // Current funding rate (raw, e.g. 0.0001)
+    let annualizedFunding: Double      // Annualized as %
+    let directionalScore: Double       // -100 to +100 composite score
+    let timestamp: Date
+
+    /// Premium spread formatted as percentage
+    var formattedSpread: String {
+        String(format: "%+.3f%%", premiumSpread)
+    }
+
+    /// Directional score formatted
+    var formattedScore: String {
+        String(format: "%+.0f", directionalScore)
+    }
+
+    var sentiment: PerpetualPremiumSentiment {
+        switch directionalScore {
+        case 50...: return .strongLongBias
+        case 20..<50: return .longBias
+        case -20..<20: return .neutral
+        case -50..<(-20): return .shortBias
+        default: return .strongShortBias
+        }
+    }
+
+    /// Build from Binance premium index + Coinglass funding rate
+    static func compute(
+        symbol: String,
+        premiumIndex: BinancePremiumIndex,
+        fundingRate: CoinglassFundingRateData
+    ) -> PerpetualPremiumData {
+        let spread = premiumIndex.indexPrice > 0
+            ? ((premiumIndex.markPrice - premiumIndex.indexPrice) / premiumIndex.indexPrice) * 100
+            : 0
+
+        // Composite score: 60% funding rate signal + 40% premium spread signal
+        // Funding: scale so 0.01% ≈ 50 score, capped at ±100
+        let fundingSignal = min(max(fundingRate.fundingRate * 10000, -100), 100)
+        // Spread: scale so 0.05% ≈ 50 score, capped at ±100
+        let spreadSignal = min(max(spread * 2000, -100), 100)
+
+        let score = fundingSignal * 0.6 + spreadSignal * 0.4
+
+        return PerpetualPremiumData(
+            symbol: symbol,
+            markPrice: premiumIndex.markPrice,
+            indexPrice: premiumIndex.indexPrice,
+            premiumSpread: spread,
+            fundingRate: fundingRate.fundingRate,
+            annualizedFunding: fundingRate.annualizedRate,
+            directionalScore: min(max(score, -100), 100),
+            timestamp: Date()
+        )
+    }
+}
+
+enum PerpetualPremiumSentiment: String, Codable {
+    case strongLongBias = "Strong Long Bias"
+    case longBias = "Long Bias"
+    case neutral = "Neutral"
+    case shortBias = "Short Bias"
+    case strongShortBias = "Strong Short Bias"
+
+    var color: String {
+        switch self {
+        case .strongLongBias: return "#22C55E"
+        case .longBias: return "#4ADE80"
+        case .neutral: return "#A1A1AA"
+        case .shortBias: return "#F87171"
+        case .strongShortBias: return "#EF4444"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .strongLongBias: return "arrow.up.circle.fill"
+        case .longBias: return "arrow.up.right.circle"
+        case .neutral: return "minus.circle"
+        case .shortBias: return "arrow.down.right.circle"
+        case .strongShortBias: return "arrow.down.circle.fill"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .strongLongBias: return "Longs paying heavy premium — crowded, watch for squeeze"
+        case .longBias: return "Perps trading above spot — bullish positioning"
+        case .neutral: return "Balanced — no strong directional bias in derivatives"
+        case .shortBias: return "Perps trading below spot — bearish positioning"
+        case .strongShortBias: return "Shorts paying heavy premium — crowded, watch for squeeze"
+        }
+    }
+}
+
 // MARK: - Aggregated Derivatives Overview
 struct DerivativesOverview: Codable {
     let btcOpenInterest: OpenInterestData
@@ -300,6 +403,8 @@ struct DerivativesOverview: Codable {
     let ethFundingRate: CoinglassFundingRateData
     let btcLongShortRatio: LongShortRatioData
     let ethLongShortRatio: LongShortRatioData
+    let btcPerpPremium: PerpetualPremiumData?
+    let ethPerpPremium: PerpetualPremiumData?
     let lastUpdated: Date
 
     var formattedTotalOI: String {

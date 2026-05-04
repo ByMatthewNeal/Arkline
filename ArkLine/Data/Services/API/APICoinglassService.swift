@@ -251,7 +251,12 @@ final class APICoinglassService: CoinglassServiceProtocol {
         // Optional data - may fail on lower tiers
         async let totalLiqs = fetchTotalLiquidationsSafe()
 
+        // Premium index from Binance (for perpetual premium indicator)
+        async let btcPremIdx = fetchPremiumIndexSafe(symbol: "BTC")
+        async let ethPremIdx = fetchPremiumIndexSafe(symbol: "ETH")
+
         let (btcOpenInterest, ethOpenInterest, btcFundingRate, ethFundingRate, btcLongShort, ethLongShort, liquidations) = await (btcOI, ethOI, btcFunding, ethFunding, btcLS, ethLS, totalLiqs)
+        let (btcPremiumIndex, ethPremiumIndex) = await (btcPremIdx, ethPremIdx)
 
         // Check if we have any usable data
         let hasOI = btcOpenInterest != nil || ethOpenInterest != nil
@@ -313,6 +318,16 @@ final class APICoinglassService: CoinglassServiceProtocol {
             timestamp: Date()
         )
 
+        // Compute perpetual premium indicators
+        let btcPerpPremium: PerpetualPremiumData? = {
+            guard let idx = btcPremiumIndex, let fr = btcFundingRate else { return nil }
+            return PerpetualPremiumData.compute(symbol: "BTC", premiumIndex: idx, fundingRate: fr)
+        }()
+        let ethPerpPremium: PerpetualPremiumData? = {
+            guard let idx = ethPremiumIndex, let fr = ethFundingRate else { return nil }
+            return PerpetualPremiumData.compute(symbol: "ETH", premiumIndex: idx, fundingRate: fr)
+        }()
+
         return DerivativesOverview(
             btcOpenInterest: btcOpenInterest ?? defaultOI,
             ethOpenInterest: ethOpenInterest ?? defaultOI,
@@ -322,6 +337,8 @@ final class APICoinglassService: CoinglassServiceProtocol {
             ethFundingRate: ethFundingRate ?? defaultFunding,
             btcLongShortRatio: btcLongShort ?? defaultLS,
             ethLongShortRatio: ethLongShort ?? defaultLS,
+            btcPerpPremium: btcPerpPremium,
+            ethPerpPremium: ethPerpPremium,
             lastUpdated: Date()
         )
     }
@@ -360,6 +377,15 @@ final class APICoinglassService: CoinglassServiceProtocol {
             return try await fetchTotalLiquidations()
         } catch {
             logWarning("Coinglass Liquidations fetch failed (may require higher tier): \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+
+    private func fetchPremiumIndexSafe(symbol: String) async -> BinancePremiumIndex? {
+        do {
+            return try await APIBinanceFundingService().fetchPremiumIndex(symbol: symbol)
+        } catch {
+            logWarning("Binance premium index fetch failed for \(symbol): \(error.localizedDescription)", category: .network)
             return nil
         }
     }
