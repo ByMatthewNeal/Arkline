@@ -114,6 +114,10 @@ struct DailyMarketUpdateCardContent: View {
     let vixDirection: DailyMarketUpdateViewModel.TrendArrow
     let dxyValue: Double?
     let dxyDirection: DailyMarketUpdateViewModel.TrendArrow
+    let wtiValue: Double?
+    let wtiDirection: DailyMarketUpdateViewModel.TrendArrow
+    let brentValue: Double?
+    let brentDirection: DailyMarketUpdateViewModel.TrendArrow
     var isLight: Bool = true
     var cardSize: DailyMarketUpdateViewModel.CardSize = .long
     var assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
@@ -419,6 +423,24 @@ struct DailyMarketUpdateCardContent: View {
                         iconColor: dxyDirection.color
                     )
                 }
+
+                if let wti = wtiValue {
+                    indicatorRow(
+                        label: "WTI Crude",
+                        value: String(format: "$%.2f", wti),
+                        icon: wtiDirection.rawValue,
+                        iconColor: wtiDirection.color
+                    )
+                }
+
+                if let brent = brentValue {
+                    indicatorRow(
+                        label: "Brent Crude",
+                        value: String(format: "$%.2f", brent),
+                        icon: brentDirection.rawValue,
+                        iconColor: brentDirection.color
+                    )
+                }
             }
         }
     }
@@ -533,14 +555,14 @@ struct DailyMarketUpdateShareSheet: View {
     @EnvironmentObject var appState: AppState
 
     @State private var viewModel = DailyMarketUpdateViewModel()
-    @State private var showBranding = true
+    private let showBranding = true
     @State private var showTimestamp = true
     @State private var useLightTheme = true
     @State private var isExporting = false
     @State private var logoImage: UIImage?
     @State private var qrImage: UIImage?
-    @State private var cardSize: DailyMarketUpdateViewModel.CardSize = .medium
-    @State private var assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
+    private let cardSize: DailyMarketUpdateViewModel.CardSize = .medium
+    private let assetFilter: DailyMarketUpdateViewModel.AssetFilter = .btcEth
 
     private var briefingExcerpt: String? {
         buildBriefingExcerpt(from: briefingSummary, cardSize: cardSize)
@@ -555,13 +577,13 @@ struct DailyMarketUpdateShareSheet: View {
             // Compact: price + trends only, no sparkline/risk/market overview
             return hasETH ? 240 : 170
         case .medium:
-            // Full asset data + market overview + truncated briefing
-            var height: CGFloat = hasETH ? 760 : 520
+            // Full asset data + market overview (incl. WTI + Brent) + truncated briefing
+            var height: CGFloat = hasETH ? 820 : 580
             if hasExcerpt { height += 140 }
             return height
         case .long:
-            // Full asset data + market overview + full briefing
-            var height: CGFloat = hasETH ? 760 : 520
+            // Full asset data + market overview (incl. WTI + Brent) + full briefing
+            var height: CGFloat = hasETH ? 820 : 580
             if hasExcerpt { height += 260 }
             return height
         }
@@ -637,61 +659,6 @@ struct DailyMarketUpdateShareSheet: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             VStack(spacing: 0) {
-                // Card size picker
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "rectangle.expand.vertical")
-                            .foregroundColor(AppColors.accent)
-                        Text("Card Size")
-                            .font(AppFonts.body14)
-                    }
-
-                    Picker("Card Size", selection: $cardSize) {
-                        ForEach(DailyMarketUpdateViewModel.CardSize.allCases, id: \.self) { size in
-                            Text(size.rawValue).tag(size)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                .padding(14)
-
-                Divider()
-
-                // Asset filter picker
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "bitcoinsign.circle")
-                            .foregroundColor(AppColors.accent)
-                        Text("Assets")
-                            .font(AppFonts.body14)
-                    }
-
-                    Picker("Assets", selection: $assetFilter) {
-                        ForEach(DailyMarketUpdateViewModel.AssetFilter.allCases, id: \.self) { filter in
-                            Text(filter.rawValue).tag(filter)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                .padding(14)
-
-                if appState.currentUser?.isAdmin == true {
-                    Divider()
-
-                    Toggle(isOn: $showBranding) {
-                        HStack {
-                            Image(systemName: "star.circle")
-                                .foregroundColor(AppColors.accent)
-                            Text("Show ArkLine Branding")
-                                .font(AppFonts.body14)
-                        }
-                    }
-                    .tint(AppColors.accent)
-                    .padding(14)
-                }
-
-                Divider()
-
                 Toggle(isOn: $showTimestamp) {
                     HStack {
                         Image(systemName: "clock")
@@ -732,6 +699,10 @@ struct DailyMarketUpdateShareSheet: View {
             vixDirection: viewModel.vixDirection,
             dxyValue: viewModel.dxyValue,
             dxyDirection: viewModel.dxyDirection,
+            wtiValue: viewModel.wtiValue,
+            wtiDirection: viewModel.wtiDirection,
+            brentValue: viewModel.brentValue,
+            brentDirection: viewModel.brentDirection,
             isLight: useLightTheme,
             cardSize: cardSize,
             assetFilter: assetFilter,

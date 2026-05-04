@@ -14,6 +14,7 @@ struct BroadcastStudioView: View {
     @State private var showingAnalytics = false
     @State private var showingUserPreview = false
     @State private var selectedBroadcast: Broadcast?
+    @State private var editorBroadcast: Broadcast?
     @State private var detailBroadcast: Broadcast?
 
     var body: some View {
@@ -99,8 +100,13 @@ struct BroadcastStudioView: View {
             .refreshable {
                 await viewModel.loadBroadcasts()
             }
+            .onChange(of: showingEditor) { _, isShowing in
+                if isShowing {
+                    editorBroadcast = selectedBroadcast
+                }
+            }
             .sheet(isPresented: $showingEditor) {
-                BroadcastEditorView(broadcast: selectedBroadcast, viewModel: viewModel)
+                BroadcastEditorView(broadcast: editorBroadcast, viewModel: viewModel)
             }
             .sheet(item: $detailBroadcast) { broadcast in
                 AdminBroadcastDetailView(broadcast: broadcast, viewModel: viewModel) {

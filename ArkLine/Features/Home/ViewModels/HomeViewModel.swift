@@ -596,6 +596,7 @@ class HomeViewModel {
 
     // Notification Inbox
     var recentSignalsForInbox: [TradeSignal] = []
+    var recentBroadcasts: [Broadcast] = []
     var readNotificationIds: Set<String> = [] {
         didSet {
             guard !isLoadingReadIds else { return }
@@ -612,6 +613,7 @@ class HomeViewModel {
             marketSummary: marketSummary,
             extremeMoveHistory: ExtremeMoveAlertManager.shared.getAlertHistory(),
             qpsSignals: qpsSignals,
+            recentBroadcasts: recentBroadcasts,
             readIds: readNotificationIds
         )
     }
@@ -1112,6 +1114,19 @@ class HomeViewModel {
             }
         }
 
+        // Fetch recent broadcasts for notification inbox
+        Task {
+            do {
+                let broadcasts = try await ServiceContainer.shared.broadcastService.fetchBroadcasts(byStatus: .published)
+                let recent = broadcasts
+                    .sorted { ($0.publishedAt ?? .distantPast) > ($1.publishedAt ?? .distantPast) }
+                    .prefix(10)
+                await MainActor.run { self.recentBroadcasts = Array(recent) }
+            } catch {
+                logWarning("Inbox broadcast fetch failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
         // Fetch QPS (daily positioning signals)
         Task {
             do {
@@ -1500,6 +1515,13 @@ class HomeViewModel {
     /// Fetches combined news feed using the same logic as Market Overview,
     /// respecting user topic preferences and pulling from multiple sources.
     private func fetchNewsCombined() async throws -> [NewsItem] {
+        // Try curated news first (server-side filtered + enriched)
+        let curated = await CuratedNewsService.shared.fetchLatest(limit: 20)
+        if !curated.isEmpty {
+            return curated
+        }
+
+        // Fallback to direct RSS feeds
         var selectedTopics: Set<Constants.NewsTopic>? = nil
         var customKeywords: [String]? = nil
 

@@ -30,6 +30,7 @@ class DailyMarketUpdateViewModel {
     private let itcRiskService: ITCRiskServiceProtocol
     private let vixService: VIXServiceProtocol
     private let dxyService: DXYServiceProtocol
+    private let crudeOilService: CrudeOilServiceProtocol
 
     // MARK: - State
     var isLoading = false
@@ -45,6 +46,10 @@ class DailyMarketUpdateViewModel {
     var vixDirection: TrendArrow = .flat
     var dxyValue: Double?
     var dxyDirection: TrendArrow = .flat
+    var wtiValue: Double?
+    var wtiDirection: TrendArrow = .flat
+    var brentValue: Double?
+    var brentDirection: TrendArrow = .flat
 
     enum TrendArrow: String {
         case up = "arrow.up"
@@ -88,6 +93,7 @@ class DailyMarketUpdateViewModel {
         self.itcRiskService = container.itcRiskService
         self.vixService = container.vixService
         self.dxyService = container.dxyService
+        self.crudeOilService = container.crudeOilService
     }
 
     // MARK: - Load All Data
@@ -238,6 +244,37 @@ class DailyMarketUpdateViewModel {
             }
         } catch {
             logWarning("Failed to fetch DXY: \(error)", category: .network)
+        }
+
+        // WTI Crude Oil (CL=F)
+        do {
+            if let wti = try await crudeOilService.fetchLatestCrudeOil() {
+                let wtiHistory = try await crudeOilService.fetchCrudeOilHistory(days: 7)
+                self.wtiValue = wti.value
+                if let prev = wtiHistory.dropLast().last {
+                    self.wtiDirection = wti.value > prev.value ? .up : (wti.value < prev.value ? .down : .flat)
+                }
+            }
+        } catch {
+            logWarning("Failed to fetch WTI: \(error)", category: .network)
+        }
+
+        // Brent Crude Oil (BZ=F)
+        await loadBrentOil()
+    }
+
+    private func loadBrentOil() async {
+        do {
+            let yahoo = YahooFinanceService.shared
+            if let brent = try await yahoo.fetchBrentOil() {
+                let brentHistory = try await yahoo.fetchBrentOilHistory(days: 7)
+                self.brentValue = brent.value
+                if let prev = brentHistory.dropLast().last {
+                    self.brentDirection = brent.value > prev.value ? .up : (brent.value < prev.value ? .down : .flat)
+                }
+            }
+        } catch {
+            logWarning("Failed to fetch Brent: \(error)", category: .network)
         }
     }
 }

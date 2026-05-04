@@ -50,6 +50,15 @@ struct AdminDashboardView: View {
                             subtitle: healthSummary ?? "APIs, data freshness & cron jobs"
                         )
                     }
+
+                    NavigationLink(destination: OperatingCostsView()) {
+                        AdminDashboardRow(
+                            icon: "dollarsign.circle.fill",
+                            iconColor: AppColors.warning,
+                            title: "Operating Costs",
+                            subtitle: "Monthly & annual overhead"
+                        )
+                    }
                 } header: {
                     Text("Monitoring")
                 }
@@ -108,6 +117,15 @@ struct AdminDashboardView: View {
                             iconColor: AppColors.accent,
                             title: "Weekly Market Deck",
                             subtitle: "Generate & publish weekly updates"
+                        )
+                    }
+
+                    NavigationLink(destination: ReelScriptsView()) {
+                        AdminDashboardRow(
+                            icon: "video.fill",
+                            iconColor: Color(hex: "E1306C"),
+                            title: "Reel Scripts",
+                            subtitle: "Daily camera scripts"
                         )
                     }
 

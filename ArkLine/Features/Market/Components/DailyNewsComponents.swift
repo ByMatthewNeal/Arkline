@@ -423,8 +423,14 @@ private struct NewsArticlePage: View {
                     .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
 
-                    // Quick Summary card
-                    if !news.url.isEmpty {
+                    // Positioning Takeaways card (curated articles)
+                    if let takeaways = news.takeaways, !takeaways.isEmpty {
+                        takeawaysCard(takeaways)
+                    }
+
+                    // Quick Summary card (non-curated articles only)
+                    if news.takeaways == nil || news.takeaways?.isEmpty == true,
+                       !news.url.isEmpty {
                         summaryCard
                     }
 
@@ -499,6 +505,51 @@ private struct NewsArticlePage: View {
         }
     }
 
+    // MARK: - Takeaways Card
+
+    private func takeawaysCard(_ takeaways: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Positioning Takeaways")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            }
+
+            ForEach(Array(takeaways.enumerated()), id: \.offset) { _, takeaway in
+                HStack(alignment: .top, spacing: 10) {
+                    Circle()
+                        .fill(AppColors.accent)
+                        .frame(width: 6, height: 6)
+                        .padding(.top, 6)
+
+                    Text(takeaway)
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.9))
+                        .lineSpacing(4)
+                }
+            }
+
+            HStack(spacing: 4) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 10))
+                Text("AI-curated analysis")
+                    .font(.caption2)
+            }
+            .foregroundColor(AppColors.textSecondary.opacity(0.6))
+            .padding(.top, 4)
+        }
+        .padding(20)
+        .background(cardBackground)
+        .cornerRadius(ArkSpacing.Radius.card)
+        .arkShadow(ArkSpacing.Shadow.card)
+        .padding(.horizontal, 20)
+    }
+
     // MARK: - Summary Card
 
     private var summaryCard: some View {
@@ -563,6 +614,8 @@ private struct NewsArticlePage: View {
     // MARK: - Load Summary
 
     private func loadSummary() async {
+        // Curated articles already have positioning takeaways — skip AI summary
+        if let takeaways = news.takeaways, !takeaways.isEmpty { return }
         guard !news.url.isEmpty else { return }
 
         isSummaryLoading = true

@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="mt-2 text-sm text-ark-text-tertiary">
-            Effective March 5, 2026
+            Effective May 1, 2026
           </p>
         </FadeIn>
 
@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-lg font-semibold text-ark-text">1. Introduction</h2>
             <p className="mt-2">
-              Arkline (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) operates the Arkline mobile application and website. This Privacy Policy explains how we collect, use, and protect your information when you use our services.
+              Arkline Technologies LLC (&quot;Arkline&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) operates the Arkline mobile application and website. This Privacy Policy explains how we collect, use, and protect your information when you use our services.
             </p>
           </section>
 
@@ -84,7 +84,9 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-lg font-semibold text-ark-text">9. Contact Us</h2>
             <p className="mt-2">
               If you have questions about this Privacy Policy, please reach out via our{' '}
-              <a href="/contact" className="text-ark-primary hover:underline">contact page</a>.
+              <a href="/contact" className="text-ark-primary hover:underline">contact page</a>{' '}
+              or email us at{' '}
+              <a href="mailto:support@arkline.io" className="text-ark-primary hover:underline">support@arkline.io</a>.
             </p>
           </section>
         </FadeIn>

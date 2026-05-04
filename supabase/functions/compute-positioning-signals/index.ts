@@ -3,7 +3,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 /**
  * compute-positioning-signals Edge Function
  *
- * Runs daily at 00:15 UTC. For each asset:
+ * Dual-schedule positioning signals:
+ *   - Equities panel: 20:20 UTC (shortly after US market close at 4 PM ET)
+ *   - Crypto panel:   00:15 UTC (daily UTC candle close)
+ *
+ * Pass { "panel": "equities" } or { "panel": "crypto" } in the POST body.
+ * Omitting panel runs all assets (backward-compatible).
+ *
+ * For each asset:
  *   1. Fetches daily candles from Coinbase (crypto) or FMP (traditional)
  *   2. Computes SMA 21/50/200, RSI(14), Bull Market Support Bands
  *   3. Computes trendScore (0-100)
@@ -93,6 +100,17 @@ const ASSETS: AssetConfig[] = [
   { ticker: "AAPL",   displayName: "Apple",           source: "fmp", symbol: "AAPL",  category: "stock" },
   { ticker: "NVDA",   displayName: "NVIDIA",          source: "fmp", symbol: "NVDA",  category: "stock" },
   { ticker: "GOOGL",  displayName: "Google",          source: "fmp", symbol: "GOOGL", category: "stock" },
+  { ticker: "AMZN",   displayName: "Amazon",          source: "fmp", symbol: "AMZN",  category: "stock" },
+  { ticker: "META",   displayName: "Meta",            source: "fmp", symbol: "META",  category: "stock" },
+  { ticker: "MSFT",   displayName: "Microsoft",       source: "fmp", symbol: "MSFT",  category: "stock" },
+  { ticker: "TSLA",   displayName: "Tesla",           source: "fmp", symbol: "TSLA",  category: "stock" },
+  { ticker: "NFLX",   displayName: "Netflix",         source: "fmp", symbol: "NFLX",  category: "stock" },
+  { ticker: "ORCL",   displayName: "Oracle",          source: "fmp", symbol: "ORCL",  category: "stock" },
+  { ticker: "RKLB",   displayName: "Rocket Lab",      source: "fmp", symbol: "RKLB",  category: "stock" },
+  { ticker: "COHR",   displayName: "Coherent",        source: "fmp", symbol: "COHR",  category: "stock" },
+  { ticker: "CRCL",   displayName: "Circle",          source: "fmp", symbol: "CRCL",  category: "stock" },
+  { ticker: "LUNR",   displayName: "Intuitive Machines", source: "fmp", symbol: "LUNR", category: "stock" },
+  { ticker: "CIFR",   displayName: "Cipher Mining",   source: "fmp", symbol: "CIFR",  category: "stock" },
 
   // ── Crypto Stocks (FMP) ──
   { ticker: "COIN",   displayName: "Coinbase",        source: "fmp", symbol: "COIN",  category: "stock" },
@@ -402,13 +420,30 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   const supabase = createClient(supabaseUrl, supabaseKey)
 
+  // Parse optional panel filter from request body
+  let panel: string | null = null
+  try {
+    const body = await req.json()
+    panel = body?.panel ?? null
+  } catch { /* empty body = run all */ }
+
+  // Filter assets by panel
+  const EQUITY_CATEGORIES: Set<AssetCategory> = new Set(["stock", "index"])
+  const assetsToProcess = panel === "equities"
+    ? ASSETS.filter((a) => EQUITY_CATEGORIES.has(a.category))
+    : panel === "crypto"
+    ? ASSETS.filter((a) => !EQUITY_CATEGORIES.has(a.category))
+    : ASSETS
+
+  console.log(`Panel: ${panel ?? "all"} — processing ${assetsToProcess.length} assets`)
+
   const today = new Date().toISOString().split("T")[0]
   const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0]
 
   const results: PositioningResult[] = []
   const errors: string[] = []
 
-  for (const asset of ASSETS) {
+  for (const asset of assetsToProcess) {
     try {
       // Fetch candles from appropriate source
       let candles: Candle[]

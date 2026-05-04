@@ -19,6 +19,15 @@ struct DailyNewsSection: View {
         news.filter { $0.sourceType == .bloomberg }
     }
 
+    private var curatedNews: [NewsItem] {
+        news.filter { $0.sourceType == .curated }
+    }
+
+    /// True when all articles are curated (normal mode after pipeline is live)
+    private var isCuratedOnly: Bool {
+        !curatedNews.isEmpty && curatedNews.count == news.count
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -41,13 +50,18 @@ struct DailyNewsSection: View {
             }
             .padding(.horizontal, 20)
 
-            // Source Type Indicators
-            HStack(spacing: 12) {
-                NewsSourceBadge(sourceType: .twitter, count: twitterNews.count)
-                NewsSourceBadge(sourceType: .googleNews, count: googleNews.count)
-                NewsSourceBadge(sourceType: .bloomberg, count: bloombergNews.count)
+            // Source Type Indicators (hidden when all curated)
+            if !isCuratedOnly {
+                HStack(spacing: 12) {
+                    if !curatedNews.isEmpty {
+                        NewsSourceBadge(sourceType: .curated, count: curatedNews.count)
+                    }
+                    NewsSourceBadge(sourceType: .twitter, count: twitterNews.count)
+                    NewsSourceBadge(sourceType: .googleNews, count: googleNews.count)
+                    NewsSourceBadge(sourceType: .bloomberg, count: bloombergNews.count)
+                }
+                .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
 
             // Horizontal News Carousel
             if news.isEmpty {

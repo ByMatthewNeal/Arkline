@@ -125,10 +125,15 @@ class MarketViewModel {
         }
     }
 
-    /// Safely fetches news without throwing errors
-    /// Uses user's topic preferences from Settings if available
+    /// Fetches curated news from server, falling back to raw RSS if unavailable
     private func fetchNewsSafe() async -> [NewsItem] {
-        // Load user's news topic preferences from UserDefaults
+        // Try curated news first (server-side filtered + enriched)
+        let curated = await CuratedNewsService.shared.fetchLatest(limit: 20)
+        if !curated.isEmpty {
+            return curated
+        }
+
+        // Fallback to direct RSS feeds
         var selectedTopics: Set<Constants.NewsTopic>? = nil
         var customKeywords: [String]? = nil
 
@@ -143,7 +148,6 @@ class MarketViewModel {
             customKeywords = custom
         }
 
-        // Increase limit when user has custom keywords to ensure coverage
         let hasCustomization = selectedTopics != nil || customKeywords != nil
         let fetchLimit = hasCustomization ? 30 : 15
 
@@ -284,6 +288,7 @@ struct NewsItem: Identifiable {
     let twitterHandle: String? // For Twitter sources
     let isVerified: Bool // Twitter verified badge
     let description: String? // Full content/body of the news
+    let takeaways: [String]? // Positioning takeaway bullets (curated articles only)
 
     init(
         id: UUID,
@@ -295,7 +300,8 @@ struct NewsItem: Identifiable {
         sourceType: NewsSourceType = .googleNews,
         twitterHandle: String? = nil,
         isVerified: Bool = false,
-        description: String? = nil
+        description: String? = nil,
+        takeaways: [String]? = nil
     ) {
         self.id = id
         self.title = title
@@ -307,6 +313,7 @@ struct NewsItem: Identifiable {
         self.twitterHandle = twitterHandle
         self.isVerified = isVerified
         self.description = description
+        self.takeaways = takeaways
     }
 }
 
@@ -315,11 +322,14 @@ enum NewsSourceType: String, CaseIterable {
     case twitter = "Twitter"
     case googleNews = "Google News"
     case bloomberg = "Bloomberg"
+    case curated = "ArkLine"
+
     var icon: String {
         switch self {
         case .twitter: return "bird" // X logo approximation
         case .googleNews: return "g.circle.fill"
         case .bloomberg: return "chart.line.uptrend.xyaxis"
+        case .curated: return "sparkles"
         }
     }
 
@@ -328,6 +338,7 @@ enum NewsSourceType: String, CaseIterable {
         case .twitter: return "#1DA1F2" // Twitter blue
         case .googleNews: return "#4285F4" // Google blue
         case .bloomberg: return "#FF6600" // Bloomberg orange
+        case .curated: return "#3369FF" // ArkLine accent
         }
     }
 
@@ -336,6 +347,7 @@ enum NewsSourceType: String, CaseIterable {
         case .twitter: return "X"
         case .googleNews: return "Google"
         case .bloomberg: return "Bloomberg"
+        case .curated: return "ArkLine"
         }
     }
 }

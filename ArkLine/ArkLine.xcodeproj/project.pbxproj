@@ -9,9 +9,13 @@
 /* Begin PBXBuildFile section */
 		AHLTH00000000000000011 /* APIHealthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AHLTH00000000000000001 /* APIHealthService.swift */; };
 		AHLTH00000000000000022 /* APIHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AHLTH00000000000000002 /* APIHealthView.swift */; };
+		OPCST00000000000000022 /* OperatingCostsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = OPCST00000000000000002 /* OperatingCostsView.swift */; };
+		RSCPT00000000000000022 /* ReelScriptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RSCPT00000000000000002 /* ReelScriptsView.swift */; };
 		946C384C7E164C54B4FE7311 /* BloombergRSSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7ECD98101164FC99C4A1CA0 /* BloombergRSSService.swift */; };
 		D1C7100000000000000001 /* DictionaryTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000011 /* DictionaryTerm.swift */; };
 		D1C7100000000000000002 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000012 /* DictionaryService.swift */; };
+		OPCSS00000000000000022 /* OperatingCostsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = OPCSS00000000000000012 /* OperatingCostsService.swift */; };
+		OPCVM00000000000000022 /* OperatingCostsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = OPCVM00000000000000012 /* OperatingCostsViewModel.swift */; };
 		D1C7100000000000000003 /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000013 /* DictionaryView.swift */; };
 		D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1C7100000000000000014 /* AdminDictionaryView.swift */; };
 		D1CTL1NK00000000000B1 /* DictionaryTermLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1CTL1NK00000000000A1 /* DictionaryTermLink.swift */; };
@@ -415,6 +419,7 @@
 		D228AC880FFF603048A50D81 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */; };
 		D2B53B6567B582423307EC2E /* RainbowChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99708F513364A5D80BA69774 /* RainbowChartData.swift */; };
 		D3A4B5C6D7E8F9A0B1C2D3E5 /* ArticleSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2B3A4D5E6F7081920314A5C /* ArticleSummaryService.swift */; };
+		A1B2C3D4E5F60718293A4B5D /* CuratedNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D4C3B2A1F60718293A4B5C /* CuratedNewsService.swift */; };
 		D45CA1F56ADCB5F63AD04B62 /* GoogleTrendsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91682101CBACB8AFAFBF1334 /* GoogleTrendsDetailView.swift */; };
 		D48074A0B70C10A0236E24FA /* HomeMarketComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */; };
 		D4E5F6A7B8C90005EEFF5566 /* NotificationInboxBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B80004DDEE4455 /* NotificationInboxBuilder.swift */; };
@@ -539,8 +544,11 @@
 /* Begin PBXFileReference section */
 		AHLTH00000000000000001 /* APIHealthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIHealthService.swift; sourceTree = "<group>"; };
 		AHLTH00000000000000002 /* APIHealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIHealthView.swift; sourceTree = "<group>"; };
+		OPCST00000000000000002 /* OperatingCostsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatingCostsView.swift; sourceTree = "<group>"; };
+		RSCPT00000000000000002 /* ReelScriptsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelScriptsView.swift; sourceTree = "<group>"; };
 		D1C7100000000000000011 /* DictionaryTerm.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryTerm.swift; sourceTree = "<group>"; };
 		D1C7100000000000000012 /* DictionaryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
+		OPCSS00000000000000012 /* OperatingCostsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatingCostsService.swift; sourceTree = "<group>"; };
 		D1C7100000000000000013 /* DictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
 		D1C7100000000000000014 /* AdminDictionaryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdminDictionaryView.swift; sourceTree = "<group>"; };
 		D1CTL1NK00000000000A1 /* DictionaryTermLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryTermLink.swift; sourceTree = "<group>"; };
@@ -887,8 +895,10 @@
 		C0525EDAE18EC96DFEECAAB8 /* HomeMacroWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMacroWidgets.swift; sourceTree = "<group>"; };
 		C0AB0674B85B19C1FF6B6F05 /* FedWatchSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FedWatchSection.swift; sourceTree = "<group>"; };
 		C1B238D0F6B1FA66A8B02D04 /* MemberManagementViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MemberManagementViewModel.swift; sourceTree = "<group>"; };
+		OPCVM00000000000000012 /* OperatingCostsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperatingCostsViewModel.swift; sourceTree = "<group>"; };
 		C1C9947884BDE4102F110274 /* NewsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsCard.swift; sourceTree = "<group>"; };
 		C2B3A4D5E6F7081920314A5C /* ArticleSummaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleSummaryService.swift; sourceTree = "<group>"; };
+		E5D4C3B2A1F60718293A4B5C /* CuratedNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CuratedNewsService.swift; sourceTree = "<group>"; };
 		C363BE93C1AF81DE643E762B /* MarketSentiment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketSentiment.swift; sourceTree = "<group>"; };
 		C3871E2B3DABE8666344641E /* AllocationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationDetailView.swift; sourceTree = "<group>"; };
 		C3D4E5F6A7B80004DDEE4455 /* NotificationInboxBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationInboxBuilder.swift; sourceTree = "<group>"; };
@@ -1273,6 +1283,7 @@
 				B8C203E567F8D5722618D607 /* APIRainbowChartService.swift */,
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
 				C2B3A4D5E6F7081920314A5C /* ArticleSummaryService.swift */,
+				E5D4C3B2A1F60718293A4B5C /* CuratedNewsService.swift */,
 				7C4E2F8A1D6B3E9C5A0D7F2E /* BriefingAudioService.swift */,
 				9F6BACE34C9446559D45628B /* MarketSummaryService.swift */,
 				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
@@ -1305,6 +1316,7 @@
 				8724E2D3E93BA6FCE5A837E4 /* APIModelPortfolioService.swift */,
 				CEF5A53F64277F0C17066BBA /* DCATrackerService.swift */,
 				D1C7100000000000000012 /* DictionaryService.swift */,
+				OPCSS00000000000000012 /* OperatingCostsService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -1525,6 +1537,8 @@
 				08F1D4288443D12FDAF0F0F8 /* AdminDashboardView.swift */,
 				AHLTH00000000000000001 /* APIHealthService.swift */,
 				AHLTH00000000000000002 /* APIHealthView.swift */,
+				OPCST00000000000000002 /* OperatingCostsView.swift */,
+				RSCPT00000000000000002 /* ReelScriptsView.swift */,
 				BF9CF943459728D7B2AF136F /* MetricCard.swift */,
 				9A7B78682470516CE6512242 /* MemberRow.swift */,
 				0C22DD319B73C871D34DC38B /* MemberManagementView.swift */,
@@ -1749,6 +1763,7 @@
 			children = (
 				0DF054E82E4F2D3BBA256BD2 /* AdminQuickShareViewModel.swift */,
 				C1B238D0F6B1FA66A8B02D04 /* MemberManagementViewModel.swift */,
+				OPCVM00000000000000012 /* OperatingCostsViewModel.swift */,
 				380C4363FDF5D78A85D7FA46 /* SendInviteViewModel.swift */,
 			);
 			path = ViewModels;
@@ -2557,8 +2572,11 @@
 				D1C7100000000000000001 /* DictionaryTerm.swift in Sources */,
 					AHLTH00000000000000011 /* APIHealthService.swift in Sources */,
 					AHLTH00000000000000022 /* APIHealthView.swift in Sources */,
+					OPCST00000000000000022 /* OperatingCostsView.swift in Sources */,
+					RSCPT00000000000000022 /* ReelScriptsView.swift in Sources */,
 					946C384C7E164C54B4FE7311 /* BloombergRSSService.swift in Sources */,
 				D1C7100000000000000002 /* DictionaryService.swift in Sources */,
+				OPCSS00000000000000022 /* OperatingCostsService.swift in Sources */,
 				D1C7100000000000000003 /* DictionaryView.swift in Sources */,
 				D1C7100000000000000004 /* AdminDictionaryView.swift in Sources */,
 				D1CTL1NK00000000000B1 /* DictionaryTermLink.swift in Sources */,
@@ -2615,6 +2633,7 @@
 				4732DC10C2E52D8A1C1016DE /* APIRainbowChartService.swift in Sources */,
 				E5E132311F83B8E6BCB8A131 /* APISentimentService.swift in Sources */,
 				D3A4B5C6D7E8F9A0B1C2D3E5 /* ArticleSummaryService.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5D /* CuratedNewsService.swift in Sources */,
 				2468C41EA54E4F60BE5F4E6E /* MarketSummaryService.swift in Sources */,
 				3A7D1E9F5B8C4D2A6E0F1B3C /* BriefingAudioService.swift in Sources */,
 				A7B3C8D9E2F401568A3D7E02 /* AltcoinSeasonStore.swift in Sources */,
@@ -3007,6 +3026,7 @@
 				71267FC1966FBDC98EE41CD0 /* AdminDashboardView.swift in Sources */,
 				71383B9AE0D2387BA7C1019B /* AdminModels.swift in Sources */,
 				5C53D10B95A7F0D527415993 /* MemberManagementViewModel.swift in Sources */,
+				OPCVM00000000000000022 /* OperatingCostsViewModel.swift in Sources */,
 				DBBCBCAA3AB15D878338F084 /* MetricCard.swift in Sources */,
 				55F1848F4D9A6BD6520409F6 /* MemberRow.swift in Sources */,
 				BA851BEEBBC97AF27CC3ECB6 /* MemberManagementView.swift in Sources */,

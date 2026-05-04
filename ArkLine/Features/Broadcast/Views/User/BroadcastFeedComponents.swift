@@ -208,6 +208,9 @@ struct BroadcastDetailView: View {
     @Environment(\.openURL) private var openURL
     @State private var showingImageViewer = false
     @State private var selectedImageIndex = 0
+    @State private var showingDeckViewer = false
+    @State private var loadedDeck: MarketUpdateDeck?
+    @State private var isLoadingDeck = false
 
     var body: some View {
         NavigationStack {
@@ -251,7 +254,7 @@ struct BroadcastDetailView: View {
                         }
 
                         Text(broadcast.title)
-                            .font(ArkFonts.title2)
+                            .font(ArkFonts.title3)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
 
                         if !broadcast.tags.isEmpty {
@@ -346,6 +349,51 @@ struct BroadcastDetailView: View {
                     // Content
                     MarkdownContentView(content: broadcast.content)
 
+                    // View Deck button (for market update broadcasts)
+                    if broadcast.tags.contains("marketUpdate") || broadcast.tags.contains("weekly") {
+                        Button {
+                            guard !isLoadingDeck else { return }
+                            isLoadingDeck = true
+                            Task {
+                                let service = ServiceContainer.shared.marketDeckService
+                                if let deck = try? await service.fetchLatestPublished() {
+                                    loadedDeck = deck
+                                    showingDeckViewer = true
+                                }
+                                isLoadingDeck = false
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "doc.richtext")
+                                    .font(.system(size: 16))
+                                if isLoadingDeck {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                        .tint(.white)
+                                } else {
+                                    Text("View Weekly Market Deck")
+                                        .font(AppFonts.body14Medium)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.white)
+                            .padding(ArkSpacing.md)
+                            .background(AppColors.accent)
+                            .cornerRadius(ArkSpacing.Radius.md)
+                        }
+                        .buttonStyle(.plain)
+                        .fullScreenCover(isPresented: $showingDeckViewer) {
+                            if let deck = loadedDeck {
+                                MarketDeckViewer(
+                                    viewModel: MarketDeckViewModel(deck: deck),
+                                    isAdmin: false
+                                )
+                            }
+                        }
+                    }
+
                     // Portfolio Showcase
                     if let portfolioAttachment = broadcast.portfolioAttachment, portfolioAttachment.hasContent {
                         EmbeddedPortfolioWidget(attachment: portfolioAttachment)
@@ -382,12 +430,12 @@ struct BroadcastDetailView: View {
                 }
             }
             .task {
-                // Mark as read
-                if let userId = appState.currentUser?.id {
+                // Mark as read and count view (skip admin to keep analytics clean)
+                let isAdmin = appState.currentUser?.isAdmin == true
+                if let userId = appState.currentUser?.id, !isAdmin {
                     try? await viewModel.markAsRead(broadcastId: broadcast.id, userId: userId)
+                    viewModel.incrementViewCount(broadcastId: broadcast.id)
                 }
-                // Increment total view count
-                viewModel.incrementViewCount(broadcastId: broadcast.id)
                 // Track broadcast read
                 Task {
                     await AnalyticsService.shared.track("broadcast_read", properties: [

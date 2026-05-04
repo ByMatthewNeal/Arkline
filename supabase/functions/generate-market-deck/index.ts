@@ -1356,9 +1356,42 @@ Respond ONLY with JSON: { "regime": "..." }`
       }
     })
 
+    // Fetch futures prices from Yahoo Finance for the Futures group
+    const futuresContracts = [
+      { yahoo: "ES=F", label: "ES" },
+      { yahoo: "NQ=F", label: "NQ" },
+      { yahoo: "YM=F", label: "YM" },
+      { yahoo: "CL=F", label: "WTI" },
+      { yahoo: "BZ=F", label: "BRENT" },
+      { yahoo: "GC=F", label: "GOLD F" },
+    ]
+
+    const futuresAssets: { symbol: string; week_change: number | null; signal: string | null; price: number | null }[] = []
+    for (const fc of futuresContracts) {
+      try {
+        const encoded = encodeURIComponent(fc.yahoo)
+        const resp = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?range=5d&interval=1d`,
+          { headers: { "User-Agent": "Mozilla/5.0" } }
+        )
+        if (resp.ok) {
+          const json = await resp.json()
+          const result = json?.chart?.result?.[0]
+          const closes = result?.indicators?.quote?.[0]?.close?.filter((c: number | null) => c != null && c > 0) ?? []
+          if (closes.length >= 2) {
+            const monOpen = closes[0]
+            const friClose = closes[closes.length - 1]
+            const change = Math.round(((friClose - monOpen) / monOpen) * 10000) / 100
+            futuresAssets.push({ symbol: fc.label, week_change: change, signal: null, price: friClose })
+          }
+        }
+      } catch { /* skip failed futures */ }
+    }
+
     const correlationGroups = [
       { group: "Crypto", assets: cryptoCorrelation },
       { group: "Equities", assets: ["SPY", "QQQ", "DIA", "IWM"].map(buildCorrelationAsset) },
+      ...(futuresAssets.length > 0 ? [{ group: "Futures", assets: futuresAssets }] : []),
       { group: "Commodities", assets: ["GOLD", "SILVER", "OIL", "COPPER"].map(buildCorrelationAsset) },
       { group: "Macro", assets: ["VIX", "DXY", "TLT"].map(buildCorrelationAsset) },
     ]

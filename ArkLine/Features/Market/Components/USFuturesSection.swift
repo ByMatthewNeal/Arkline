@@ -189,8 +189,12 @@ struct USFuturesSection: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var futures: [USFuturesQuote] = []
     @State private var isLoading = true
+    @State private var loadFailed = false
     @State private var session = USMarketSession.current
     @State private var sessionTimer: Timer?
+
+    /// Cache last successful fetch so refreshes never show empty shimmers
+    private static var cachedFutures: [USFuturesQuote] = []
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private let yahoo = YahooFinanceService.shared
@@ -257,7 +261,7 @@ struct USFuturesSection: View {
                 }
             }
 
-            if isLoading {
+            if isLoading && futures.isEmpty {
                 ForEach(0..<3, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: 12)
                         .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "E8E8ED"))
@@ -316,28 +320,45 @@ struct USFuturesSection: View {
 
     private func loadFutures() async {
         session = USMarketSession.current
-        do {
-            let result = try await withTimeout(seconds: 8) { [yahoo] in
-                try await yahoo.fetchFutures()
-            }
-            if !result.isEmpty {
-                futures = result
-                isLoading = false
-                return
-            }
-        } catch {
-            logWarning("USFuturesSection Yahoo failed: \(error.localizedDescription), trying FMP...", category: .network)
+
+        // Show cached data immediately while refreshing
+        if futures.isEmpty && !Self.cachedFutures.isEmpty {
+            futures = Self.cachedFutures
+            isLoading = false
         }
 
-        // Fallback: fetch from FMP
-        do {
-            let fmpQuotes = try await fetchFuturesFromFMP()
-            if !fmpQuotes.isEmpty {
-                futures = fmpQuotes
+        // Try Yahoo and FMP concurrently
+        async let yahooTask: [USFuturesQuote] = {
+            do {
+                return try await withTimeout(seconds: 5) { [yahoo] in
+                    try await yahoo.fetchFutures()
+                }
+            } catch {
+                logWarning("USFuturesSection Yahoo failed: \(error.localizedDescription)", category: .network)
+                return []
             }
-        } catch {
-            logWarning("USFuturesSection FMP fallback also failed: \(error.localizedDescription)", category: .network)
+        }()
+
+        async let fmpTask: [USFuturesQuote] = {
+            do {
+                return try await fetchFuturesFromFMP()
+            } catch {
+                logWarning("USFuturesSection FMP failed: \(error.localizedDescription)", category: .network)
+                return []
+            }
+        }()
+
+        let (yahooResult, fmpResult) = await (yahooTask, fmpTask)
+
+        // Prefer Yahoo (actual futures), fall back to FMP (indices), then keep cached
+        if !yahooResult.isEmpty {
+            futures = yahooResult
+            Self.cachedFutures = yahooResult
+        } else if !fmpResult.isEmpty {
+            futures = fmpResult
+            Self.cachedFutures = fmpResult
         }
+        // If both failed and no cache, futures stays empty → shows error message
         isLoading = false
     }
 

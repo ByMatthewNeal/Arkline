@@ -14,6 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
  * 4. market_data_cache freshness (crypto_assets_1_100 < 30 min old)
  * 5. Today's briefing exists in market_summaries
  * 6. Cron jobs ran recently (fibonacci-pipeline, compute-positioning-signals)
+ * 7. Curated news freshness (curate-news cron, < 90 min old)
  */
 
 interface CheckResult {
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
   const checks: CheckResult[] = []
 
   // Run all checks in parallel
-  const [cgResult, claudeResult, fmpResult, cacheResult, briefingResult, signalsResult] =
+  const [cgResult, claudeResult, fmpResult, cacheResult, briefingResult, signalsResult, curatedNewsResult] =
     await Promise.allSettled([
       checkCoinGecko(),
       checkClaudeAPI(),
@@ -74,6 +75,7 @@ Deno.serve(async (req) => {
       checkCryptoCache(supabase),
       checkBriefing(supabase),
       checkSignalPipeline(supabase),
+      checkCuratedNews(supabase),
     ])
 
   pushResult(checks, "CoinGecko API", cgResult)
@@ -82,6 +84,7 @@ Deno.serve(async (req) => {
   pushResult(checks, "Crypto Cache", cacheResult)
   pushResult(checks, "Daily Briefing", briefingResult)
   pushResult(checks, "Signal Pipeline", signalsResult)
+  pushResult(checks, "Curated News", curatedNewsResult)
 
   const failures = checks.filter((c) => !c.ok)
   const allHealthy = failures.length === 0
@@ -232,11 +235,15 @@ async function checkBriefing(
 
   if (error) return { name: "Daily Briefing", ok: false, detail: error.message }
   if (!data || data.length === 0) {
-    // Only flag as failure if we're past the first scheduled slot (10 AM ET = after 14 UTC-ish)
-    if (estHour >= 11) {
+    // Weekdays: first slot at 10 AM ET, flag after 11 AM
+    // Weekends: only slot at 12 PM ET, flag after 1 PM
+    const dayOfWeek = new Date().getUTCDay()
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const alertAfter = isWeekend ? 13 : 11
+    if (estHour >= alertAfter) {
       return { name: "Daily Briefing", ok: false, detail: `No briefing generated for ${todayUTC}` }
     }
-    return { name: "Daily Briefing", ok: true, detail: "Not yet due today" }
+    return { name: "Daily Briefing", ok: true, detail: isWeekend ? "Weekend — due at 12pm ET" : "Not yet due today" }
   }
 
   const slots = data.map((d: { slot: string }) => d.slot).join(", ")
@@ -279,6 +286,33 @@ async function checkSignalPipeline(
   }
 
   return { name: "Signal Pipeline", ok: true, detail: `Candles fresh — ${Math.round(candleAge)} min old` }
+}
+
+// ─── Curated News Check ─────────────────────────────────────────────────────
+
+async function checkCuratedNews(
+  supabase: ReturnType<typeof createClient>
+): Promise<CheckResult> {
+  const { data, error } = await supabase
+    .from("curated_news")
+    .select("created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) return { name: "Curated News", ok: false, detail: error.message }
+  if (!data) return { name: "Curated News", ok: false, detail: "No curated news found" }
+
+  const ageMin = (Date.now() - new Date(data.created_at).getTime()) / 60000
+  if (ageMin > 90) {
+    return {
+      name: "Curated News",
+      ok: false,
+      detail: `Stale — last article ${Math.round(ageMin)} min ago (cron runs every 30 min)`,
+    }
+  }
+
+  return { name: "Curated News", ok: true, detail: `Fresh — ${Math.round(ageMin)} min old` }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

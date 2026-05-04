@@ -77,9 +77,9 @@ struct MarketUpdateDeck: Codable, Identifiable, Hashable {
         let sameMonth = startCal.component(.month, from: weekStart) == startCal.component(.month, from: weekEnd)
         formatter.dateFormat = "MMM d"
         let start = formatter.string(from: weekStart)
-        formatter.dateFormat = sameMonth ? "d, yyyy" : "MMM d, yyyy"
+        formatter.dateFormat = sameMonth ? "d" : "MMM d"
         let end = formatter.string(from: weekEnd)
-        return "\(start) – \(end)"
+        return "\(start)–\(end)"
     }
 }
 

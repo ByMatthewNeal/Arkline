@@ -72,7 +72,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-ark-divider pt-8 sm:flex-row">
           <p className="text-xs text-ark-text-tertiary">
-            &copy; {new Date().getFullYear()} Arkline. All rights reserved.
+            &copy; {new Date().getFullYear()} Arkline Technologies LLC. All rights reserved.
           </p>
           <p className="text-xs text-ark-text-tertiary">
             Market data aggregated from 12+ sources. Not financial advice.

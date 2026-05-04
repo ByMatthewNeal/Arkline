@@ -305,9 +305,9 @@ actor APIHealthService {
                 name: "Daily Briefing",
                 table: "market_summaries",
                 query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
-                maxAgeMinutes: 60 * 14,
-                degradedAgeMinutes: 60 * 26,
-                explanation: "market-summary runs 3x daily (10am, 5pm, 12pm weekends ET). Uses Claude API — may fail on rate limits."
+                maxAgeMinutes: 60 * 26,
+                degradedAgeMinutes: 60 * 30,
+                explanation: "market-summary runs 2x daily Mon–Fri (10am, 5pm ET) and 1x on Sat & Sun (12pm ET). Weekend gaps up to 24h are normal."
             ),
             FreshnessCheck(
                 name: "OHLC Candles",
@@ -316,6 +316,14 @@ actor APIHealthService {
                 maxAgeMinutes: 120,
                 degradedAgeMinutes: 240,
                 explanation: "fibonacci-pipeline fetches from Coinbase every 30 min. If stale, pipeline cron may be down."
+            ),
+            FreshnessCheck(
+                name: "Curated News",
+                table: "curated_news",
+                query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
+                maxAgeMinutes: 60,
+                degradedAgeMinutes: 120,
+                explanation: "curate-news runs every 30 min. Fetches Bloomberg + Google News RSS, filters with Claude Haiku, enriches with Sonnet. If stale, check Claude API key or RSS feed availability."
             ),
             FreshnessCheck(
                 name: "Trade Signals",

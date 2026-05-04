@@ -25,20 +25,19 @@ struct MarkdownTextEditor: UIViewRepresentable {
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
-        // Only update text if it actually changed to avoid resetting cursor
+        // Always sync text when the binding changes (handles toolbar formatting + paste)
         if textView.text != text {
+            // Programmatic update (e.g. formatting toolbar) — apply it
             textView.text = text
         }
 
-        // Only update selection if it differs and the text view isn't actively being edited
+        // Only update selection if it differs and we're not mid-keystroke
         let currentRange = textView.selectedRange
-        if currentRange != selectedRange && !context.coordinator.isEditing {
-            // Clamp range to valid bounds
+        if currentRange != selectedRange {
             let maxLocation = (textView.text as NSString).length
             let clampedLocation = min(selectedRange.location, maxLocation)
             let clampedLength = min(selectedRange.length, maxLocation - clampedLocation)
-            let clamped = NSRange(location: clampedLocation, length: clampedLength)
-            textView.selectedRange = clamped
+            textView.selectedRange = NSRange(location: clampedLocation, length: clampedLength)
         }
     }
 

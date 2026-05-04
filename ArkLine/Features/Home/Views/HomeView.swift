@@ -196,32 +196,7 @@ struct HomeView: View {
                         viewModel.markAllNotificationsRead()
                     },
                     onNavigate: { notification in
-                        switch notification.type {
-                        case .dailyBriefing:
-                            appState.shouldExpandBriefing = true
-                        case .signalGenerated, .signalT1Hit, .signalOutcome:
-                            // Extract signal UUID from notification ID (e.g. "signal_new_{uuid}")
-                            let parts = notification.id.components(separatedBy: "_")
-                            if let uuidString = parts.last, let _ = UUID(uuidString: uuidString) {
-                                NotificationCenter.default.post(
-                                    name: Notification.Name("SwingSignalNotificationTapped"),
-                                    object: nil,
-                                    userInfo: ["id": uuidString]
-                                )
-                            } else {
-                                appState.selectedTab = .market
-                            }
-                        case .dcaReminder:
-                            appState.selectedTab = .profile
-                            appState.pendingDCAReminderId = "open"
-                        case .extremeMacroMove, .marketRegimeChange:
-                            // Stay on home, macro dashboard is visible
-                            break
-                        case .sentimentRegimeShift:
-                            appState.selectedTab = .market
-                        case .qpsSignalChange:
-                            appState.pendingQPSAsset = "scroll"
-                        }
+                        handleNotificationNavigation(notification)
                     }
                 )
             }
@@ -307,6 +282,35 @@ struct HomeView: View {
                     viewModel.stopAutoRefresh()
                 }
             }
+        }
+    }
+
+    private func handleNotificationNavigation(_ notification: AppNotification) {
+        switch notification.type {
+        case .dailyBriefing:
+            appState.shouldExpandBriefing = true
+        case .signalGenerated, .signalT1Hit, .signalOutcome:
+            let parts = notification.id.components(separatedBy: "_")
+            if let uuidString = parts.last, let _ = UUID(uuidString: uuidString) {
+                NotificationCenter.default.post(
+                    name: Notification.Name("SwingSignalNotificationTapped"),
+                    object: nil,
+                    userInfo: ["id": uuidString]
+                )
+            } else {
+                appState.selectedTab = .market
+            }
+        case .dcaReminder:
+            appState.selectedTab = .profile
+            appState.pendingDCAReminderId = "open"
+        case .extremeMacroMove, .marketRegimeChange:
+            break
+        case .sentimentRegimeShift:
+            appState.selectedTab = .market
+        case .qpsSignalChange:
+            appState.pendingQPSAsset = "scroll"
+        case .broadcastInsight:
+            appState.selectedTab = .insights
         }
     }
 }

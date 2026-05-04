@@ -140,6 +140,7 @@ struct CorrelationSlideView: View {
         switch group.lowercased() {
         case "crypto": return "bitcoinsign.circle"
         case "equities": return "chart.line.uptrend.xyaxis"
+        case "futures": return "clock.arrow.2.circlepath"
         case "commodities": return "cube.fill"
         case "macro": return "gauge.with.dots.needle.50percent"
         default: return "circle"
@@ -150,6 +151,7 @@ struct CorrelationSlideView: View {
         switch group.lowercased() {
         case "crypto": return AppColors.accent
         case "equities": return Color(hex: "84CC16")
+        case "futures": return Color(hex: "06B6D4")
         case "commodities": return AppColors.warning
         case "macro": return AppColors.textSecondary
         default: return AppColors.accent

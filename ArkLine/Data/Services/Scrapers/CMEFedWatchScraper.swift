@@ -106,37 +106,37 @@ final class CMEFedWatchScraper {
     }
 
     private func generateProbabilitiesForMeeting(index: Int, totalMeetings: Int, currentRate: Double) -> [RateProbability] {
-        // Probabilities based on CME FedWatch data as of 2026-03-30
+        // Probabilities based on CME FedWatch data as of 2026-05-02
         // Current target rate: 350-375 bps (3.50-3.75%)
         var holdProb: Double
         var cutProb: Double
         var hikeProb: Double
 
         if index == 0 {
-            // Apr 29: 97.4% hold, 0% cut, 2.6% hike
-            holdProb = 0.974
-            cutProb = 0.0
-            hikeProb = 0.026
+            // Jun 17: 93.3% hold, 6.7% cut, 0% hike
+            holdProb = 0.933
+            cutProb = 0.067
+            hikeProb = 0.0
         } else if index == 1 {
-            // Jun 17: 94.8% hold, 2.7% cut, 2.5% hike
-            holdProb = 0.948
-            cutProb = 0.027
-            hikeProb = 0.025
+            // Jul 29: 89.3% hold, 10.7% cut, 0% hike
+            holdProb = 0.893
+            cutProb = 0.107
+            hikeProb = 0.0
         } else if index == 2 {
-            // Jul 29: 91.8% hold, 5.8% cut, 2.4% hike
-            holdProb = 0.918
-            cutProb = 0.058
-            hikeProb = 0.024
+            // Sep 16: 85.5% hold, 14.5% cut, 0% hike
+            holdProb = 0.855
+            cutProb = 0.145
+            hikeProb = 0.0
         } else if index == 3 {
-            // Sep 16: 90.0% hold, 5.7% cut, 4.4% hike
-            holdProb = 0.900
-            cutProb = 0.057
-            hikeProb = 0.044
+            // Oct 28: estimate
+            holdProb = 0.82
+            cutProb = 0.18
+            hikeProb = 0.0
         } else {
-            // Oct 28, Dec 9: estimate similar to Sep
-            holdProb = 0.88
-            cutProb = 0.07
-            hikeProb = 0.05
+            // Dec 9: estimate
+            holdProb = 0.78
+            cutProb = 0.22
+            hikeProb = 0.0
         }
 
         // Normalize to 100%

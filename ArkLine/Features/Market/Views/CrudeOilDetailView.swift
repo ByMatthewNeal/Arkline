@@ -11,6 +11,7 @@ struct CrudeOilDetailView: View {
     @State private var selectedDate: Date? = nil
     @State private var history: [CrudeOilData] = []
     @State private var isLoadingChart = false
+    @State private var brentData: CrudeOilData?
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -72,6 +73,55 @@ struct CrudeOilDetailView: View {
                     }
                     .padding(.top, 20)
 
+                    // Brent vs WTI comparison
+                    if let wti = crudeOilData?.value, let brent = brentData?.value {
+                        HStack(spacing: 16) {
+                            oilPriceCard(label: "WTI", price: wti, change: crudeOilData?.changePercent)
+                            oilPriceCard(label: "Brent", price: brent, change: brentData?.changePercent)
+
+                            VStack(spacing: 4) {
+                                Text("Spread")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .textCase(.uppercase)
+                                Text(String(format: "$%.2f", brent - wti))
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(textPrimary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.06)
+                                    : Color.black.opacity(0.04)
+                            )
+                            .cornerRadius(12)
+                        }
+                    } else if brentData == nil, crudeOilData != nil {
+                        // Brent still loading — show just the label
+                        HStack(spacing: 16) {
+                            oilPriceCard(label: "WTI", price: crudeOilData?.value ?? 0, change: crudeOilData?.changePercent)
+
+                            VStack(spacing: 4) {
+                                Text("Brent")
+                                    .font(.caption2)
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .textCase(.uppercase)
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.06)
+                                    : Color.black.opacity(0.04)
+                            )
+                            .cornerRadius(12)
+                        }
+                    }
+
                     MacroIndicatorChart(
                         data: chartData,
                         lineColor: levelColor,
@@ -97,8 +147,8 @@ struct CrudeOilDetailView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
 
-                    MacroInfoSection(title: "What is WTI Crude Oil?", content: """
-WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one of the most-watched commodity prices globally and a leading indicator of inflation expectations. Oil prices directly affect transportation, manufacturing, and energy costs across the economy.
+                    MacroInfoSection(title: "WTI vs Brent Crude", content: """
+WTI (West Texas Intermediate) is the US benchmark. Brent is the global benchmark, priced from North Sea oil. Brent typically trades at a premium to WTI. A widening spread signals tighter global supply relative to US supply, while a narrowing spread suggests US production constraints or strong domestic demand. Both are leading inflation indicators.
 """)
 
                     MacroInfoSection(title: "Impact on Crypto", content: """
@@ -119,7 +169,7 @@ WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one
                 .padding()
             }
             .background(AppColors.background(colorScheme))
-            .navigationTitle("WTI - Crude Oil")
+            .navigationTitle("Crude Oil")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -129,14 +179,47 @@ WTI (West Texas Intermediate) is the benchmark for US crude oil prices. It's one
             .task {
                 guard history.isEmpty else { return }
                 isLoadingChart = true
-                do {
-                    history = try await ServiceContainer.shared.crudeOilService.fetchCrudeOilHistory(days: 365)
-                } catch {
-                    // Silently fail — chart shows empty state
-                }
+                async let wtiHistory = ServiceContainer.shared.crudeOilService.fetchCrudeOilHistory(days: 365)
+                async let brentFetch = YahooFinanceService.shared.fetchBrentOil()
+
+                do { history = try await wtiHistory } catch {}
+                do { brentData = try await brentFetch } catch {}
                 isLoadingChart = false
             }
         }
+    }
+
+    // MARK: - Oil Price Card
+
+    private func oilPriceCard(label: String, price: Double, change: Double?) -> some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+                .textCase(.uppercase)
+            Text(price.asCurrency)
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundColor(textPrimary)
+            if let change {
+                HStack(spacing: 2) {
+                    Image(systemName: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 9))
+                    Text(String(format: "%+.2f%%", change))
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(change >= 0 ? AppColors.success : AppColors.error)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            colorScheme == .dark
+                ? Color.white.opacity(0.06)
+                : Color.black.opacity(0.04)
+        )
+        .cornerRadius(12)
     }
 }
 

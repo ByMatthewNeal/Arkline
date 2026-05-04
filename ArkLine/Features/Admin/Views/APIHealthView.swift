@@ -8,6 +8,8 @@ struct APIHealthView: View {
     @State private var isLoading = false
     @State private var lastChecked: Date?
     @State private var showShareSheet = false
+    @State private var checkProgress: Int = 0
+    @State private var scanTimer: Timer?
 
     private var healthyCount: Int { results.filter { $0.status == .healthy }.count }
     private var degradedCount: Int { results.filter { $0.status == .degraded }.count }
@@ -33,26 +35,31 @@ struct APIHealthView: View {
 
             ScrollView {
                 VStack(spacing: ArkSpacing.lg) {
-                    // Overall Status Card
-                    overallStatusCard
-                        .padding(.top, ArkSpacing.sm)
+                    if isLoading && results.isEmpty {
+                        scanningView
+                            .padding(.top, ArkSpacing.xl)
+                    } else {
+                        // Overall Status Card
+                        overallStatusCard
+                            .padding(.top, ArkSpacing.sm)
 
-                    // Summary Bar
-                    if !results.isEmpty {
-                        summaryBar
-                    }
+                        // Summary Bar
+                        if !results.isEmpty {
+                            summaryBar
+                        }
 
-                    // Results by Category
-                    ForEach(resultsByCategory, id: \.category) { group in
-                        categorySection(group.category, items: group.items)
-                    }
+                        // Results by Category
+                        ForEach(resultsByCategory, id: \.category) { group in
+                            categorySection(group.category, items: group.items)
+                        }
 
-                    // Last checked timestamp
-                    if let lastChecked {
-                        Text("Last checked: \(lastChecked.formatted(date: .omitted, time: .standard))")
-                            .font(.caption2)
-                            .foregroundColor(AppColors.textSecondary)
-                            .padding(.bottom, ArkSpacing.xl)
+                        // Last checked timestamp
+                        if let lastChecked {
+                            Text("Last checked: \(lastChecked.formatted(date: .omitted, time: .standard))")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary)
+                                .padding(.bottom, ArkSpacing.xl)
+                        }
                     }
                 }
                 .padding(.horizontal, ArkSpacing.md)
@@ -230,9 +237,102 @@ struct APIHealthView: View {
         }
     }
 
+    // MARK: - Scanning View
+
+    private let scanLabels = [
+        "Checking Coinbase...",
+        "Pinging CoinGecko...",
+        "Testing Claude API...",
+        "Verifying FMP connection...",
+        "Checking crypto cache freshness...",
+        "Inspecting signal pipeline...",
+        "Validating curated news...",
+        "Checking daily briefing...",
+        "Scanning economic events...",
+        "Verifying model portfolios...",
+        "Almost done...",
+    ]
+
+    private var scanningView: some View {
+        VStack(spacing: ArkSpacing.xl) {
+            // Animated radar icon
+            ZStack {
+                Circle()
+                    .stroke(AppColors.accent.opacity(0.1), lineWidth: 2)
+                    .frame(width: 100, height: 100)
+
+                Circle()
+                    .stroke(AppColors.accent.opacity(0.2), lineWidth: 2)
+                    .frame(width: 70, height: 70)
+
+                Circle()
+                    .stroke(AppColors.accent.opacity(0.3), lineWidth: 2)
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(AppColors.accent)
+                    .symbolEffect(.variableColor.iterative, isActive: isLoading)
+            }
+
+            VStack(spacing: ArkSpacing.sm) {
+                Text("Scanning Systems")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+
+                Text(scanLabels[checkProgress % scanLabels.count])
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.textSecondary)
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.3), value: checkProgress)
+            }
+
+            // Progress bar
+            VStack(spacing: ArkSpacing.xs) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(AppColors.accent.opacity(0.1))
+                            .frame(height: 6)
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(AppColors.accent)
+                            .frame(width: geo.size.width * min(CGFloat(checkProgress + 1) / CGFloat(scanLabels.count), 1.0), height: 6)
+                            .animation(.easeInOut(duration: 0.4), value: checkProgress)
+                    }
+                }
+                .frame(height: 6)
+
+                Text("\(min(checkProgress + 1, scanLabels.count))/\(scanLabels.count) checks")
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+            }
+            .padding(.horizontal, ArkSpacing.xl)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(ArkSpacing.xl)
+        .onAppear { startScanAnimation() }
+        .onDisappear { scanTimer?.invalidate() }
+    }
+
+    private func startScanAnimation() {
+        checkProgress = 0
+        scanTimer?.invalidate()
+        scanTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { _ in
+            Task { @MainActor in
+                if checkProgress < scanLabels.count - 1 {
+                    checkProgress += 1
+                }
+            }
+        }
+    }
+
     private func runChecks() async {
         isLoading = true
+        checkProgress = 0
+        startScanAnimation()
         results = await APIHealthService.shared.runAllChecks()
+        scanTimer?.invalidate()
         lastChecked = Date()
         isLoading = false
     }

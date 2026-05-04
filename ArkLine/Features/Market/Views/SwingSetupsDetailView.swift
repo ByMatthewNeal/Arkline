@@ -480,18 +480,15 @@ struct SwingSetupsDetailView: View {
             return AnyView(EmptyView())
         }
 
-        // Simulate $1,000 starting balance
-        let startingBalance = 1000.0
-        var balance = startingBalance
-
         // Grade breakdown
         var gradeStats: [String: (wins: Int, total: Int, pnl: Double)] = [:]
 
-        // Walk through signals chronologically
+        // Walk through signals chronologically — compound percentage returns
         let sorted = closed.sorted { ($0.closedAt ?? .distantPast) < ($1.closedAt ?? .distantPast) }
+        var compounded = 1.0
         for signal in sorted {
             let pct = signal.outcomePct ?? 0
-            balance *= (1 + pct / 100)
+            compounded *= (1 + pct / 100)
 
             let grade = signal.scoreGrade ?? "Ungraded"
             var entry = gradeStats[grade] ?? (wins: 0, total: 0, pnl: 0)
@@ -503,7 +500,7 @@ struct SwingSetupsDetailView: View {
             gradeStats[grade] = entry
         }
 
-        let totalReturn = ((balance - startingBalance) / startingBalance) * 100
+        let totalReturn = (compounded - 1) * 100
         let isPositive = totalReturn >= 0
 
         return AnyView(
@@ -521,30 +518,15 @@ struct SwingSetupsDetailView: View {
                         .foregroundColor(AppColors.textSecondary)
                 }
 
-                // Hero numbers
-                HStack(alignment: .firstTextBaseline, spacing: ArkSpacing.lg) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("$\(String(format: "%.2f", startingBalance))")
-                            .font(AppFonts.caption12)
-                            .foregroundColor(AppColors.textSecondary)
-                        Text("→")
-                            .font(AppFonts.caption12)
-                            .foregroundColor(AppColors.textSecondary)
-                        Text("$\(String(format: "%.2f", balance))")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(isPositive ? AppColors.success : AppColors.error)
-                    }
-
+                // Hero percentage
+                HStack(alignment: .firstTextBaseline) {
+                    Text(String(format: "%+.1f%%", totalReturn))
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(isPositive ? AppColors.success : AppColors.error)
+                    Text("compounded return")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
                     Spacer()
-
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(String(format: "%+.1f%%", totalReturn))
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(isPositive ? AppColors.success : AppColors.error)
-                        Text("return")
-                            .font(AppFonts.caption12)
-                            .foregroundColor(AppColors.textSecondary)
-                    }
                 }
 
                 Divider().opacity(0.2)
@@ -591,7 +573,7 @@ struct SwingSetupsDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Spot (1x) simulated return on $1,000 following every signal at equal size.")
+                    Text("Spot (1x) compounded return following every signal at equal size.")
                         .font(.system(size: 9))
                         .foregroundColor(AppColors.textSecondary.opacity(0.5))
                     Text("Leverage amplifies both gains and losses. Use the Leverage Calculator on each signal to assess your risk before trading. This is not financial advice — always do your own research.")

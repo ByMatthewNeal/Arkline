@@ -26,23 +26,23 @@ interface AssetConfig {
 }
 
 const ASSETS: AssetConfig[] = [
-  // Focus 5 — 0.3R TP / 0.8R SL, MIN_RR 1.5, no hard regime filter (2026-04-29 backtest)
-  // 90-day result: $1,000 → $1,022 (+2.2%), 61.2% WR, 1.07 PF, 14% max DD
-  // Protection: soft regime badge, volatility-adjusted sizing, concurrent signal cap
-  { cbPair: "BTC-USD",    ticker: "BTC" },    // 65.0% WR, PF 1.24 (strongest at RR≥1.5)
+  // Expanded pool — 10 assets for 1-2 signals/day target (2026-05-01)
+  // Core 5 (backtest-validated)
+  { cbPair: "BTC-USD",    ticker: "BTC" },
   { cbPair: "ETH-USD",    ticker: "ETH" },
   { cbPair: "SOL-USD",    ticker: "SOL" },
   { cbPair: "SUI-USD",    ticker: "SUI" },
   { cbPair: "ADA-USD",    ticker: "ADA" },
+  // Re-enabled — insufficient sample size, let adaptive feedback handle pausing
+  { cbPair: "LINK-USD",   ticker: "LINK" },
+  { cbPair: "AVAX-USD",   ticker: "AVAX" },
+  { cbPair: "APT-USD",    ticker: "APT" },
+  { cbPair: "ATOM-USD",   ticker: "ATOM" },
+  { cbPair: "BNB-USD",    ticker: "BNB" },
 
-  // Bench — paused until live PF > 1.0 over 30 signals
-  // { cbPair: "LINK-USD",   ticker: "LINK" },   // 1/3 (33%), PF 0.30
-  // { cbPair: "AVAX-USD",   ticker: "AVAX" },   // 1/5 (20%), PF 0.25 — paused by adaptive
-  // { cbPair: "APT-USD",    ticker: "APT" },    // 5/6 (83%), PF 0.84 — paused by adaptive
-  // { cbPair: "XRP-USD",    ticker: "XRP" },    // 2/5 (40%), PF -0.08 — paused by adaptive
-  // { cbPair: "ATOM-USD",   ticker: "ATOM" },   // 1/2 (50%), PF 0.77
+  // Bench — poor live stats or too thin volume
+  // { cbPair: "XRP-USD",    ticker: "XRP" },    // 2/5 (40%), PF -0.08
   // { cbPair: "ONDO-USD",   ticker: "ONDO" },   // 1/1 (100%), PF 0.00
-  // { cbPair: "BNB-USD",    ticker: "BNB" },
   // { cbPair: "ALGO-USD",   ticker: "ALGO" },   // 2/2 (100%), PF 0.00
   // { cbPair: "TIA-USD",    ticker: "TIA" },
   // { cbPair: "FIL-USD",    ticker: "FIL" },    // 1/1 (100%), PF 99.0
@@ -103,7 +103,7 @@ const VOL_REGIME_EXTREME_THRESHOLD  = 1.8  // current ATR / avg ATR > 1.8x
 
 // ─── Concurrent Signal Cap ────────────────────────────────────────────────
 const MAX_SIGNALS_PER_ASSET = 3
-const MAX_SIGNALS_TOTAL = 8
+const MAX_SIGNALS_TOTAL = 12
 
 // ─── Tier Configuration ─────────────────────────────────────────────────────
 
@@ -2146,8 +2146,8 @@ async function evaluateSignals(
   if (regime.isChoppy) {
     console.log(`[${ticker}] Choppy market detected (spread=${regime.emaSpreadPct.toFixed(2)}%, crossovers=${regime.crossoverCount}, whipsaws=${regime.priceWhipsaws})`)
   }
-  const choppyMinRR = regime.isChoppy ? 2.0 : MIN_RR_RATIO  // Require 2:1 R:R in choppy markets
-  const choppyBounceThreshold = regime.isChoppy ? 2 : 1       // Require 2 of 3 bounce signals in choppy markets
+  const choppyMinRR = MIN_RR_RATIO              // Same R:R in all markets — score filter handles quality
+  const choppyBounceThreshold = 1                 // Single bounce confirmation always sufficient
 
   // Detect range compression (tight range + low volume = low conviction)
   const compression = detectRangeCompression(candles4h)
@@ -2155,8 +2155,8 @@ async function evaluateSignals(
     console.log(`[${ticker}] Range compressed (rangeRatio=${compression.rangeRatio.toFixed(2)}, volRatio=${compression.volumeRatio.toFixed(2)}, 24hRange=${compression.range24h.toFixed(4)}, ATR=${compression.atr14d.toFixed(4)})`)
   }
 
-  // 24-hour cooldown per asset: skip if any signal was generated in the last 24h
-  const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  // 12-hour cooldown per asset: allow two setups per day per asset
+  const cooldownCutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
   const { data: recentSignals } = await supabase
     .from("trade_signals")
     .select("id")
@@ -2375,7 +2375,8 @@ async function evaluateSignals(
 
     // Only publish signals meeting adaptive score threshold (default 60 = B-grade)
     // Raise threshold by 5 in compressed markets — only strong setups pass
-    const effectiveMinScore = (adaptiveParams?.min_score ?? 60) + (compression.isCompressed ? 5 : 0)
+    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 60, 65) // cap at 65 — don't let adaptive choke volume
+    const effectiveMinScore = adaptiveScore + (compression.isCompressed ? 5 : 0)
     if (compositeScore < effectiveMinScore) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < ${effectiveMinScore}`)
       stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: score ${compositeScore} < ${effectiveMinScore}`)

@@ -4,6 +4,33 @@
 
 Arkline is an iOS financial app (iOS 17+/macOS 14+) built with SwiftUI and Swift 5.9. It provides cryptocurrency and traditional market tracking, portfolio management, DCA reminders, and AI-powered chat.
 
+## Business Model
+
+**TL;DR: Invite-only, web-paid, single-tier. The iOS app is a client to a paid service — it does NOT collect payments.**
+
+- **Access model:** Invite-only. Every user must enter a valid invite code (format: `ARK-XXXXXX`) during onboarding.
+- **Pricing:** Single subscription tier. Every paying user gets full access — no free tier, no premium tier, no feature gating.
+- **Payment processing:** Stripe (web only, never in-app).
+- **Signup flow:**
+  1. Prospective user receives an invite code + a unique Stripe checkout link
+  2. User completes payment on the web via Stripe
+  3. User downloads the iOS app
+  4. User enters invite code → email verification → profile setup → in
+- **No In-App Purchase (IAP):** The app contains zero StoreKit / IAP code. This is intentional — Apple's 30% commission is avoided by handling all payments off-platform.
+- **Compliance posture:** Architecture mirrors Spotify / Notion / 1Password ("reader app" / SaaS client model). Apple permits this so long as no in-app payment UI exists and no anti-steering language is shown.
+
+**Important architectural rules to preserve this model:**
+
+- **NEVER add StoreKit, SKProduct, Product.purchase, Transaction, or any IAP-related code** to the iOS app. It would void the entire model and require Apple's 30% cut.
+- **NEVER add a sign-up flow inside the iOS app** — sign-up is web-only via Stripe checkout. The app has sign-in only.
+- **NEVER add in-app pricing displays, "Upgrade" buttons, or links to external payment pages** — Apple's anti-steering rules still apply.
+- **`isPro` is hardcoded to `true` for all authenticated users.** Do not introduce tier-based feature gating without an explicit business decision (would require restructuring everything from User model onward).
+- **`User.role` includes `.premium` and `subscriptionStatus` has multiple states** — these exist for future flexibility but are NOT currently used to restrict features. Treat as forward-compatible scaffolding only.
+
+## Legal Entity
+
+The product is operated by **Arkline Technologies LLC** (Wyoming-formed single-member LLC, EIN issued May 2026, physically operated from New York, NY). Detailed entity / EIN / banking info is in `memory/business-info.md` (gitignored).
+
 ## Tech Stack
 
 - **UI:** SwiftUI with @Observable macro

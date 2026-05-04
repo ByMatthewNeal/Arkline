@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
             Terms of Service
           </h1>
           <p className="mt-2 text-sm text-ark-text-tertiary">
-            Effective March 5, 2026
+            Effective May 1, 2026
           </p>
         </FadeIn>
 
@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-ark-text">1. Acceptance of Terms</h2>
             <p className="mt-2">
-              By accessing or using Arkline (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.
+              By accessing or using the services provided by Arkline Technologies LLC (&quot;Arkline&quot;, &quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.
             </p>
           </section>
 
@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-ark-text">6. Intellectual Property</h2>
             <p className="mt-2">
-              All content, branding, design, and code comprising the Service are owned by Arkline and protected by applicable intellectual property laws. You retain ownership of the data you input into the Service.
+              All content, branding, design, and code comprising the Service are owned by Arkline Technologies LLC and protected by applicable intellectual property laws. You retain ownership of the data you input into the Service.
             </p>
           </section>
 
@@ -80,7 +80,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-ark-text">9. Limitation of Liability</h2>
             <p className="mt-2">
-              To the fullest extent permitted by law, Arkline shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or investment losses, arising from your use of the Service.
+              To the fullest extent permitted by law, Arkline Technologies LLC shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or investment losses, arising from your use of the Service.
             </p>
           </section>
 
@@ -109,7 +109,9 @@ export default function TermsOfServicePage() {
             <h2 className="text-lg font-semibold text-ark-text">13. Contact Us</h2>
             <p className="mt-2">
               If you have questions about these Terms, please reach out via our{' '}
-              <a href="/contact" className="text-ark-primary hover:underline">contact page</a>.
+              <a href="/contact" className="text-ark-primary hover:underline">contact page</a>{' '}
+              or email us at{' '}
+              <a href="mailto:support@arkline.io" className="text-ark-primary hover:underline">support@arkline.io</a>.
             </p>
           </section>
         </FadeIn>

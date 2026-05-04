@@ -13,6 +13,7 @@ struct NotificationInboxBuilder {
         marketSummary: MarketSummary?,
         extremeMoveHistory: [ExtremeMove],
         qpsSignals: [DailyPositioningSignal] = [],
+        recentBroadcasts: [Broadcast] = [],
         readIds: Set<String>
     ) -> [AppNotification] {
         let cutoff = Date().addingTimeInterval(-inboxWindow)
@@ -204,6 +205,26 @@ struct NotificationInboxBuilder {
                 title: "Sentiment Shift: \(regime.rawValue)",
                 subtitle: regime.description,
                 time: changeDate,
+                isRead: readIds.contains(id)
+            ))
+        }
+
+        // 10. Broadcast insights (published broadcasts)
+        for broadcast in recentBroadcasts {
+            guard let publishedAt = broadcast.publishedAt, publishedAt > cutoff else { continue }
+            guard broadcast.status == .published else { continue }
+
+            let id = "broadcast_\(broadcast.id.uuidString)"
+            let isMarketDeck = broadcast.tags.contains("marketUpdate") || broadcast.tags.contains("weekly")
+
+            notifications.append(AppNotification(
+                id: id,
+                type: .broadcastInsight,
+                icon: isMarketDeck ? "doc.richtext" : "megaphone.fill",
+                iconColor: isMarketDeck ? AppColors.accent : Color(hex: "8B5CF6"),
+                title: isMarketDeck ? "Weekly Market Deck" : "New Insight",
+                subtitle: broadcast.title,
+                time: publishedAt,
                 isRead: readIds.contains(id)
             ))
         }

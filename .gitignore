@@ -1,0 +1,11 @@
+# Sensitive business / legal documents — contains EIN, formation docs, etc.
+memory/
+legal/
+
+# API keys and secrets — never commit
+Secrets.plist
+**/Secrets.plist
+*.secrets.plist
+
+# macOS
+.DS_Store

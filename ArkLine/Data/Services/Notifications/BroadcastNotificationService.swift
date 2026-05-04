@@ -169,7 +169,8 @@ class BroadcastNotificationService: ObservableObject {
         }
 
         let content = UNMutableNotificationContent()
-        content.title = "New Insight"
+        let isMarketDeck = broadcast.tags.contains("marketUpdate") || broadcast.tags.contains("weekly")
+        content.title = isMarketDeck ? "Weekly Market Deck" : "New Insight"
         content.subtitle = broadcast.title
         content.body = broadcast.contentPreview
         content.sound = .default

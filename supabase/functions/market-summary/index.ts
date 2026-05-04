@@ -632,6 +632,7 @@ Deno.serve(async (req) => {
       : `This is the ${dayName.toUpperCase()} EVENING briefing. Focus specifically on how TODAY played out: what moved and why, how economic data releases landed (beats/misses), and what changed from this morning. Be specific to today's price action — don't recap yesterday or generalize. End with what to watch heading into tomorrow.`
 
     const weekendDayName = now.toLocaleDateString("en-US", { weekday: "long", timeZone: "America/New_York" })
+    const isSunday = estWeekday === 0
     const weekendInstructions = `This is the ${weekendDayName.toUpperCase()} briefing. Traditional markets are closed — focus entirely on crypto. Cover today's crypto price action, funding rates, momentum patterns, and any macro news that dropped. Keep it shorter and more casual than weekday briefings. If there are notable moves, highlight them. ${weekendDayName === "Saturday" ? "Frame the end with what to watch tomorrow and heading into Monday." : "Frame the end with a brief look ahead to Monday's open."} IMPORTANT: Say "today" when referring to the current day, not "over the weekend" — the weekend is still in progress.`
     const slotInstructions = slot === "weekend" ? weekendInstructions : slot === "morning" ? morningInstructions : eveningInstructions
 
@@ -644,7 +645,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: slot === "weekend" ? 800 : (isFriday && slot === "evening") ? 2500 : 1800,
+        max_tokens: slot === "weekend" ? (isSunday ? 1000 : 800) : (isFriday && slot === "evening") ? 2500 : 1800,
         system: slot === "weekend"
           ? `You are writing a short weekend crypto update for ArkLine, a crypto and macro tracking app used by everyday retail investors. Write like a knowledgeable friend giving a casual weekend check-in — clear, conversational, no jargon.
 
@@ -663,13 +664,16 @@ One sentence with the weekend crypto stance. If a "Macro Regime" or "Crypto Posi
 
 ## Week Ahead
 1-2 sentences previewing Monday. Mention any known economic events coming up, or note what levels to watch for the Monday open.
+${isSunday ? `
+## Mindset
+2-3 sentences speaking directly to the user about their investor mindset heading into the week. Use "you" and "your" — talk to them like a mentor who knows them personally. These are investors building long-term wealth, not day traders. This is about discipline, patience, emotional control, conviction, and process — not timing or predictions. Draw from timeless investing wisdom (Buffett, Munger, Dalio, Howard Marks, Naval, Stoic philosophy) but make it feel like advice from someone who's been in their shoes, not a textbook quote. Connect the mindset to the current market environment — if it's been choppy, talk about patience and sticking to your thesis; if there's been a big run, talk about greed and staying grounded; if fear is high, talk about conviction and buying when others panic; if things are quiet, talk about the power of doing nothing. Rotate themes weekly: long-term compounding, conviction vs stubbornness, avoiding FOMO, thinking in probabilities, protecting capital, journaling, detaching from daily P&L, knowing your edge, dollar-cost averaging through noise, trusting your process, tuning out the crowd. End with a relevant quote from an investor, philosopher, or thinker — attributed (e.g., "— Buffett"). Choose quotes that hit different: Buffett, Munger, Dalio, Howard Marks, Naval, Marcus Aurelius, Seneca, Epictetus, Nassim Taleb, Stanley Druckenmiller, Peter Lynch, Charlie Munger, Morgan Housel. Never use the same quote twice. The quote should feel earned by the context above it, not random.` : ""}
 
 Rules:
 - This is a casual check-in, keep it brief
 - Focus on crypto — traditional markets are closed
 - Say "today" when referring to the current day — never "over the weekend" or "this weekend" since the weekend is still in progress
 - Never give investment advice or say "buy" / "sell"
-- Keep total length under 200 words
+- Keep total length under ${isSunday ? "280" : "200"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`
 

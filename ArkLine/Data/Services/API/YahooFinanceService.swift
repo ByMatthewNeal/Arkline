@@ -14,6 +14,7 @@ final class YahooFinanceService {
     private let dxySymbol = "DX-Y.NYB"
     private let crudeOilSymbol = "CL=F"
     private let goldSymbol = "GC=F"
+    private let brentSymbol = "BZ=F"
 
     // MARK: - Base URL
     private let baseURL = "https://query1.finance.yahoo.com/v8/finance/chart"
@@ -364,6 +365,74 @@ final class YahooFinanceService {
                     low: low,
                     close: close,
                     previousClose: previousClose
+                ))
+                previousClose = close
+            }
+        }
+
+        return history.suffix(days).reversed()
+    }
+
+    // MARK: - Brent Crude Oil Methods
+
+    /// Fetch latest Brent Crude Oil price
+    func fetchBrentOil() async throws -> CrudeOilData? {
+        let data = try await fetchQuote(symbol: brentSymbol)
+        guard let result = data.chart.result?.first,
+              let quote = result.indicators.quote.first,
+              let meta = result.meta else {
+            return nil
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: Date())
+
+        return CrudeOilData(
+            date: dateString,
+            value: meta.regularMarketPrice,
+            open: quote.open?.last ?? meta.regularMarketPrice,
+            high: quote.high?.last ?? meta.regularMarketPrice,
+            low: quote.low?.last ?? meta.regularMarketPrice,
+            close: meta.regularMarketPrice,
+            previousClose: meta.chartPreviousClose ?? meta.previousClose
+        )
+    }
+
+    /// Fetch Brent Crude Oil history
+    func fetchBrentOilHistory(days: Int) async throws -> [CrudeOilData] {
+        let range = days <= 7 ? "7d" : (days <= 30 ? "1mo" : (days <= 90 ? "3mo" : "1y"))
+        let data = try await fetchQuote(symbol: brentSymbol, range: range)
+
+        guard let result = data.chart.result?.first,
+              let timestamps = result.timestamp,
+              let quote = result.indicators.quote.first else {
+            return []
+        }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        var history: [CrudeOilData] = []
+        var previousClose: Double = 0
+
+        for (index, timestamp) in timestamps.enumerated() {
+            let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+            let dateString = dateFormatter.string(from: date)
+            let close = quote.close?[safe: index] ?? 0
+            let open = quote.open?[safe: index] ?? close
+            let high = quote.high?[safe: index] ?? close
+            let low = quote.low?[safe: index] ?? close
+
+            if close > 0 {
+                history.append(CrudeOilData(
+                    date: dateString,
+                    value: close,
+                    open: open,
+                    high: high,
+                    low: low,
+                    close: close,
+                    previousClose: previousClose ?? 0
                 ))
                 previousClose = close
             }

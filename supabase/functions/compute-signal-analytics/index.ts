@@ -192,22 +192,22 @@ function deriveAdaptiveParams(
 ): AdaptiveParams {
   const reasons: string[] = []
 
-  // --- Asset Pause: 30d PF < 1.0 with >= 5 signals ---
+  // --- Asset Pause: 30d PF < 1.0 with >= 10 signals (need enough data before pausing) ---
   let pausedAssets: string[] = []
   const assetPFs: { asset: string; pf: number; count: number }[] = []
 
   for (const [asset, data] of Object.entries(assets)) {
     const s = data.rolling_30d
     assetPFs.push({ asset, pf: s.profit_factor, count: s.signal_count })
-    if (s.signal_count >= 5 && s.profit_factor < 1.0) {
+    if (s.signal_count >= 10 && s.profit_factor < 1.0) {
       pausedAssets.push(asset)
       reasons.push(`${asset} paused: 30d PF ${s.profit_factor} with ${s.signal_count} signals`)
     }
   }
 
-  // Safety rail: never pause more than total_assets - 3
+  // Safety rail: never pause more than total_assets - 5 (keep at least 5 active)
   const totalAssets = Object.keys(assets).length
-  const maxPaused = Math.max(totalAssets - 3, 0)
+  const maxPaused = Math.max(totalAssets - 5, 0)
   if (pausedAssets.length > maxPaused) {
     // Keep only the worst performers paused
     const sorted = pausedAssets
@@ -249,15 +249,12 @@ function deriveAdaptiveParams(
     }
   }
 
-  // --- System-wide score threshold ---
+  // --- System-wide score threshold (capped at 65 to maintain signal volume) ---
   let minScore = 60
   if (systemStats.signal_count >= 10) {
     if (systemStats.profit_factor < 1.0) {
-      minScore = 70
-      reasons.push(`Min score raised to 70: system PF ${systemStats.profit_factor} < 1.0`)
-    } else if (systemStats.profit_factor < 1.5) {
       minScore = 65
-      reasons.push(`Min score raised to 65: system PF ${systemStats.profit_factor} < 1.5`)
+      reasons.push(`Min score raised to 65: system PF ${systemStats.profit_factor} < 1.0`)
     } else if (systemStats.profit_factor >= 2.5) {
       minScore = 55
       reasons.push(`Min score lowered to 55: system PF ${systemStats.profit_factor} >= 2.5`)

@@ -144,6 +144,7 @@ struct AppNotification: Identifiable {
         case qpsSignalChange
         case sentimentRegimeShift
         case marketRegimeChange
+        case broadcastInsight
     }
 
     var timeFormatted: String {
