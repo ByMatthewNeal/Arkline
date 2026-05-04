@@ -161,6 +161,9 @@ export default function PricingPage() {
                 </span>
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
+              <p className="mt-1 text-xs text-ark-text-tertiary">
+                or <span className="font-medium text-ark-text-secondary">$650/year</span> — save over $69
+              </p>
 
               <ul className="mt-6 space-y-2.5">
                 {proFeatures.map((f) => (
