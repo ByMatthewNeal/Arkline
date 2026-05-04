@@ -15,7 +15,7 @@ const FOUNDING_PRICE_IDS = new Set([
   "price_1T7fMpIkKaS0zcmXlgr4orwA", // founding monthly
   "price_1T7fNgIkKaS0zcmXmhkZDBl0", // founding annual
 ])
-const FOUNDING_MEMBER_CAP = 50
+const FOUNDING_MEMBER_CAP = 150
 
 // Matches iOS InviteCode.generateCode()
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -255,9 +255,11 @@ function mapStripeStatus(stripeStatus: string): string {
 }
 
 async function upsertSubscription(subscription: Stripe.Subscription, email?: string) {
+  const priceId = subscription.items.data[0]?.price?.id ?? ""
   const plan = subscription.items.data[0]?.price?.recurring?.interval === "year"
     ? "annual"
     : "monthly"
+  const tier = FOUNDING_PRICE_IDS.has(priceId) ? "founding" : "standard"
   const status = mapStripeStatus(subscription.status)
 
   // Try to find user_id by email
@@ -285,6 +287,7 @@ async function upsertSubscription(subscription: Stripe.Subscription, email?: str
     stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
     plan,
+    tier,
     status,
     current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
     current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),

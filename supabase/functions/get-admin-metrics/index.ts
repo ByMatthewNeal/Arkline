@@ -5,8 +5,22 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 )
 
-const MONTHLY_PRICE_CENTS = parseInt(Deno.env.get("MONTHLY_PRICE_CENTS") ?? "1999")
-const ANNUAL_PRICE_CENTS = parseInt(Deno.env.get("ANNUAL_PRICE_CENTS") ?? "14999")
+// Subscription pricing in cents — keep in sync with Stripe Price IDs and
+// the published Terms of Service. Env-var overrides allow ops to adjust
+// without redeploying when promotional pricing is active.
+const PRICES = {
+  founding: {
+    monthly: parseInt(Deno.env.get("FOUNDING_MONTHLY_CENTS") ?? "3999"),  // $39.99
+    annual:  parseInt(Deno.env.get("FOUNDING_ANNUAL_CENTS")  ?? "40000"), // $400.00
+  },
+  standard: {
+    monthly: parseInt(Deno.env.get("STANDARD_MONTHLY_CENTS") ?? "5999"),  // $59.99
+    annual:  parseInt(Deno.env.get("STANDARD_ANNUAL_CENTS")  ?? "65000"), // $650.00
+  },
+} as const
+
+type Tier = keyof typeof PRICES
+type Plan = keyof typeof PRICES["founding"]
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://web.arkline.io",
@@ -38,6 +52,15 @@ async function verifyAdmin(req: Request) {
   return user
 }
 
+/**
+ * Convert a (tier, plan) pair to its monthly recurring revenue contribution
+ * in cents. Annual subscriptions are amortized over 12 months.
+ */
+function monthlyRevenueCents(tier: Tier, plan: Plan): number {
+  const priceCents = PRICES[tier][plan]
+  return plan === "annual" ? priceCents / 12 : priceCents
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -49,32 +72,58 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get all subscriptions
-    const { data: subscriptions } = await supabase
+    // Pull every subscription with the columns we need for revenue math.
+    const { data: subscriptions, error: subsError } = await supabase
       .from("subscriptions")
-      .select("plan, status")
+      .select("plan, tier, status, updated_at")
 
+    if (subsError) throw subsError
     const subs = subscriptions ?? []
 
-    const activeMonthlySubs = subs.filter(s => s.status === "active" && s.plan === "monthly").length
-    const activeAnnualSubs = subs.filter(s => s.status === "active" && s.plan === "annual").length
-    const trialingSubs = subs.filter(s => s.status === "trialing").length
-    const canceledSubs = subs.filter(s => s.status === "canceled").length
-    const pastDueSubs = subs.filter(s => s.status === "past_due").length
-    const pausedSubs = subs.filter(s => s.status === "paused").length
+    // ---- Active revenue computation ----
+    // MRR is the sum of monthly contribution from every subscription whose
+    // status is 'active' or 'trialing' (trialing customers will most likely
+    // convert; including them gives a more useful forward-looking number).
+    let mrrCents = 0
+    const breakdown = {
+      founding_monthly: 0,
+      founding_annual: 0,
+      standard_monthly: 0,
+      standard_annual: 0,
+    }
 
-    // MRR = monthly revenue + annual revenue / 12
-    const mrr = (activeMonthlySubs * MONTHLY_PRICE_CENTS / 100) +
-                (activeAnnualSubs * ANNUAL_PRICE_CENTS / 100 / 12)
+    for (const s of subs) {
+      if (s.status !== "active" && s.status !== "trialing") continue
+      const tier = (s.tier as Tier) ?? "standard"
+      const plan = (s.plan as Plan) ?? "monthly"
+      if (!(tier in PRICES) || !(plan in PRICES[tier])) continue
+
+      mrrCents += monthlyRevenueCents(tier, plan)
+      const key = `${tier}_${plan}` as keyof typeof breakdown
+      breakdown[key] += 1
+    }
+
+    const mrr = mrrCents / 100
     const arr = mrr * 12
 
-    // Total members (profiles with any subscription activity)
+    // ---- Status counts ----
+    const counts = {
+      active: subs.filter(s => s.status === "active").length,
+      trialing: subs.filter(s => s.status === "trialing").length,
+      past_due: subs.filter(s => s.status === "past_due").length,
+      canceled: subs.filter(s => s.status === "canceled").length,
+      incomplete: subs.filter(s => s.status === "incomplete").length,
+    }
+
+    // ---- Total members ever (any subscription activity) ----
     const { count: totalMembers } = await supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .neq("subscription_status", "none")
 
-    // Churn rate: canceled in last 30 days / total active at start of period
+    // ---- 30-day churn rate ----
+    // (canceled in last 30 days) / (active at start of period)
+    // We approximate "active at start" as currently-active + recently-canceled.
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
     const { count: recentlyCanceled } = await supabase
       .from("subscriptions")
@@ -82,29 +131,52 @@ Deno.serve(async (req) => {
       .eq("status", "canceled")
       .gte("updated_at", thirtyDaysAgo)
 
-    const activeTotal = activeMonthlySubs + activeAnnualSubs + trialingSubs
-    const churnRate = activeTotal > 0
-      ? ((recentlyCanceled ?? 0) / (activeTotal + (recentlyCanceled ?? 0))) * 100
+    const activeForChurn = counts.active + counts.trialing
+    const churnRate = activeForChurn > 0
+      ? ((recentlyCanceled ?? 0) / (activeForChurn + (recentlyCanceled ?? 0))) * 100
       : 0
 
-    // Founding members
-    const { count: foundingMembers } = await supabase
+    // ---- Founding-member counts (capped at 150 in webhook) ----
+    const { count: foundingClaimed } = await supabase
       .from("invite_codes")
       .select("id", { count: "exact", head: true })
       .eq("tier", "founding")
       .not("used_by", "is", null)
 
+    const { count: foundingPending } = await supabase
+      .from("invite_codes")
+      .select("id", { count: "exact", head: true })
+      .eq("tier", "founding")
+      .eq("payment_status", "pending_payment")
+
+    const FOUNDING_CAP = 150
+    const foundingRemaining = Math.max(
+      0,
+      FOUNDING_CAP - (foundingClaimed ?? 0) - (foundingPending ?? 0),
+    )
+
     return jsonResponse({
+      // Revenue
       mrr: Math.round(mrr * 100) / 100,
       arr: Math.round(arr * 100) / 100,
+      revenue_breakdown: breakdown,
+
+      // Member counts
       total_members: totalMembers ?? 0,
-      active_members: activeMonthlySubs + activeAnnualSubs,
-      trialing_members: trialingSubs,
-      canceled_members: canceledSubs,
-      past_due_members: pastDueSubs,
-      paused_members: pausedSubs,
+      active_members: counts.active,
+      trialing_members: counts.trialing,
+      past_due_members: counts.past_due,
+      canceled_members: counts.canceled,
+      incomplete_members: counts.incomplete,
+
+      // Health
       churn_rate: Math.round(churnRate * 100) / 100,
-      founding_members: foundingMembers ?? 0,
+
+      // Founding membership
+      founding_members: foundingClaimed ?? 0,
+      founding_pending: foundingPending ?? 0,
+      founding_remaining: foundingRemaining,
+      founding_cap: FOUNDING_CAP,
     })
   } catch (err) {
     console.error("get-admin-metrics error:", err)

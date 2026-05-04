@@ -86,9 +86,27 @@ struct AdminMetrics: Codable, Equatable {
     let trialingMembers: Int
     let canceledMembers: Int
     let pastDueMembers: Int
-    let pausedMembers: Int
+    let incompleteMembers: Int
     let churnRate: Double
     let foundingMembers: Int
+    let foundingPending: Int
+    let foundingRemaining: Int
+    let foundingCap: Int
+    let revenueBreakdown: RevenueBreakdown
+
+    struct RevenueBreakdown: Codable, Equatable {
+        let foundingMonthly: Int
+        let foundingAnnual: Int
+        let standardMonthly: Int
+        let standardAnnual: Int
+
+        enum CodingKeys: String, CodingKey {
+            case foundingMonthly = "founding_monthly"
+            case foundingAnnual = "founding_annual"
+            case standardMonthly = "standard_monthly"
+            case standardAnnual = "standard_annual"
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
         case mrr, arr
@@ -97,9 +115,13 @@ struct AdminMetrics: Codable, Equatable {
         case trialingMembers = "trialing_members"
         case canceledMembers = "canceled_members"
         case pastDueMembers = "past_due_members"
-        case pausedMembers = "paused_members"
+        case incompleteMembers = "incomplete_members"
         case churnRate = "churn_rate"
         case foundingMembers = "founding_members"
+        case foundingPending = "founding_pending"
+        case foundingRemaining = "founding_remaining"
+        case foundingCap = "founding_cap"
+        case revenueBreakdown = "revenue_breakdown"
     }
 }
 
