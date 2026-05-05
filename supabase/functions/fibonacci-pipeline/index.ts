@@ -83,7 +83,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.5
+const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 
 // ─── Partial TP / Tightened SL ─────────────────────────────────────────────

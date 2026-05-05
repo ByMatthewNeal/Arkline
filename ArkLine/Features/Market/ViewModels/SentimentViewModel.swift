@@ -30,6 +30,8 @@ class SentimentViewModel {
     var btcDominance: BTCDominance?
     var etfNetFlow: ETFNetFlow?
     var fundingRate: FundingRate?
+    var btcPerpPremium: PerpetualPremiumData?
+    var ethPerpPremium: PerpetualPremiumData?
     var liquidations: LiquidationData?
     var altcoinSeason: AltcoinSeasonIndex?
     var globalLiquidity: GlobalLiquidity?
@@ -347,6 +349,7 @@ class SentimentViewModel {
         // Derivatives (Coinglass)
         async let btcOITask = fetchBTCOpenInterestSafe()
 
+
         // Await all results (none will throw since they use safe wrappers)
         let (fg, btc, etf, funding, liq, alt, risk) = await (fgTask, btcTask, etfTask, fundingTask, liqTask, altTask, riskTask)
         let (appRankings, arkLineScore, trends) = await (appRankingsTask, arkLineScoreTask, googleTrendsTask)
@@ -360,7 +363,6 @@ class SentimentViewModel {
         let gei = await geiTask
         let zScores = await zScoresTask
         let btcOI = await btcOITask
-
         // Core indicators (set unconditionally so stale data clears on failure)
         self.fearGreedIndex = fg
         self.btcDominance = btc
@@ -375,6 +377,9 @@ class SentimentViewModel {
         }
         self.etfNetFlow = etf
         self.fundingRate = funding
+        let perpPremiums = computePerpPremium(from: funding)
+        self.btcPerpPremium = perpPremiums.btc
+        self.ethPerpPremium = perpPremiums.eth
         self.liquidations = liq
         self.altcoinSeason = alt
         self.riskLevel = risk
@@ -792,6 +797,43 @@ class SentimentViewModel {
             logError("Funding rate fetch failed: \(error)", category: .network)
             return nil
         }
+    }
+
+    /// Compute perp premium from the CoinGecko derivatives data we already fetch for funding rate.
+    /// This avoids extra API calls and works reliably (no geo-blocking or Coinglass dependency).
+    private func computePerpPremium(from fundingRate: FundingRate?) -> (btc: PerpetualPremiumData?, eth: PerpetualPremiumData?) {
+        guard let fr = fundingRate else { return (nil, nil) }
+
+        let btcExchange = fr.exchanges.first(where: { $0.exchange == "BTC" })
+        let ethExchange = fr.exchanges.first(where: { $0.exchange == "ETH" })
+
+        let btc: PerpetualPremiumData? = btcExchange.map { ex in
+            let cgFunding = CoinglassFundingRateData(
+                id: UUID(), symbol: "BTC", fundingRate: ex.rate,
+                predictedRate: nil, nextFundingTime: nil,
+                annualizedRate: ex.rate * 3 * 365 * 100,
+                timestamp: Date(), exchangeRates: nil
+            )
+            return PerpetualPremiumData.computeFromDerivatives(
+                symbol: "BTC", fundingRate: cgFunding,
+                longShortRatio: nil, openInterest: nil
+            )
+        }
+
+        let eth: PerpetualPremiumData? = ethExchange.map { ex in
+            let cgFunding = CoinglassFundingRateData(
+                id: UUID(), symbol: "ETH", fundingRate: ex.rate,
+                predictedRate: nil, nextFundingTime: nil,
+                annualizedRate: ex.rate * 3 * 365 * 100,
+                timestamp: Date(), exchangeRates: nil
+            )
+            return PerpetualPremiumData.computeFromDerivatives(
+                symbol: "ETH", fundingRate: cgFunding,
+                longShortRatio: nil, openInterest: nil
+            )
+        }
+
+        return (btc, eth)
     }
 
     private func fetchLiquidationsSafe() async -> LiquidationData? {

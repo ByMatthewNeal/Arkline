@@ -159,6 +159,14 @@ struct MarketSentimentSection: View {
                 icon: "building.columns.fill",
                 iconColor: AppColors.accent
             ) {
+                // Perpetual Premium
+                if viewModel.btcPerpPremium != nil || viewModel.ethPerpPremium != nil {
+                    PerpPremiumSentimentCard(
+                        btcPremium: viewModel.btcPerpPremium,
+                        ethPremium: viewModel.ethPerpPremium
+                    )
+                }
+
                 // Funding Rate
                 if let funding = viewModel.fundingRate {
                     FundingRateCard(fundingRate: funding)

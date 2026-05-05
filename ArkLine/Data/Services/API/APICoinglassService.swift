@@ -251,12 +251,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
         // Optional data - may fail on lower tiers
         async let totalLiqs = fetchTotalLiquidationsSafe()
 
-        // Premium index from Binance (for perpetual premium indicator)
-        async let btcPremIdx = fetchPremiumIndexSafe(symbol: "BTC")
-        async let ethPremIdx = fetchPremiumIndexSafe(symbol: "ETH")
-
         let (btcOpenInterest, ethOpenInterest, btcFundingRate, ethFundingRate, btcLongShort, ethLongShort, liquidations) = await (btcOI, ethOI, btcFunding, ethFunding, btcLS, ethLS, totalLiqs)
-        let (btcPremiumIndex, ethPremiumIndex) = await (btcPremIdx, ethPremIdx)
 
         // Check if we have any usable data
         let hasOI = btcOpenInterest != nil || ethOpenInterest != nil
@@ -318,15 +313,19 @@ final class APICoinglassService: CoinglassServiceProtocol {
             timestamp: Date()
         )
 
-        // Compute perpetual premium indicators
-        let btcPerpPremium: PerpetualPremiumData? = {
-            guard let idx = btcPremiumIndex, let fr = btcFundingRate else { return nil }
-            return PerpetualPremiumData.compute(symbol: "BTC", premiumIndex: idx, fundingRate: fr)
-        }()
-        let ethPerpPremium: PerpetualPremiumData? = {
-            guard let idx = ethPremiumIndex, let fr = ethFundingRate else { return nil }
-            return PerpetualPremiumData.compute(symbol: "ETH", premiumIndex: idx, fundingRate: fr)
-        }()
+        // Compute perpetual premium indicators from Coinglass data
+        let btcPerpPremium: PerpetualPremiumData? = btcFundingRate.map {
+            PerpetualPremiumData.computeFromDerivatives(
+                symbol: "BTC", fundingRate: $0,
+                longShortRatio: btcLongShort, openInterest: btcOpenInterest
+            )
+        }
+        let ethPerpPremium: PerpetualPremiumData? = ethFundingRate.map {
+            PerpetualPremiumData.computeFromDerivatives(
+                symbol: "ETH", fundingRate: $0,
+                longShortRatio: ethLongShort, openInterest: ethOpenInterest
+            )
+        }
 
         return DerivativesOverview(
             btcOpenInterest: btcOpenInterest ?? defaultOI,
@@ -381,14 +380,6 @@ final class APICoinglassService: CoinglassServiceProtocol {
         }
     }
 
-    private func fetchPremiumIndexSafe(symbol: String) async -> BinancePremiumIndex? {
-        do {
-            return try await APIBinanceFundingService().fetchPremiumIndex(symbol: symbol)
-        } catch {
-            logWarning("Binance premium index fetch failed for \(symbol): \(error.localizedDescription)", category: .network)
-            return nil
-        }
-    }
 
     // MARK: - Private Networking
 

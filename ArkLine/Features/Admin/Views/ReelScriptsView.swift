@@ -446,7 +446,7 @@ struct ReelScriptsView: View {
             }
         } catch {
             logError("Failed to generate script: \(error)", category: .network)
-            errorMessage = "Generation failed"
+            errorMessage = "\(error.localizedDescription)"
             #if canImport(UIKit)
             let generator = UINotificationFeedbackGenerator()
             generator.notificationOccurred(.error)

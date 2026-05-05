@@ -353,6 +353,47 @@ struct PerpetualPremiumData: Codable {
             timestamp: Date()
         )
     }
+
+    /// Build from Coinglass derivatives data only (no Binance premium index needed).
+    /// Uses funding rate (60%), long/short ratio bias (25%), and OI momentum (15%).
+    static func computeFromDerivatives(
+        symbol: String,
+        fundingRate: CoinglassFundingRateData,
+        longShortRatio: LongShortRatioData?,
+        openInterest: OpenInterestData?
+    ) -> PerpetualPremiumData {
+        // 1. Funding rate signal (60%): 0.01% funding ≈ 50 score
+        let fundingSignal = min(max(fundingRate.fundingRate * 10000, -100), 100)
+
+        // 2. Long/short ratio signal (25%): ratio of 1.0 = 0, 1.5 = 50, 2.0 = 100
+        let lsSignal: Double
+        if let ls = longShortRatio {
+            lsSignal = min(max((ls.longShortRatio - 1.0) * 100, -100), 100)
+        } else {
+            lsSignal = 0
+        }
+
+        // 3. OI momentum signal (15%): +5% OI change ≈ 50 score
+        let oiSignal: Double
+        if let oi = openInterest, oi.openInterestChangePercent24h != 0 {
+            oiSignal = min(max(oi.openInterestChangePercent24h * 10, -100), 100)
+        } else {
+            oiSignal = 0
+        }
+
+        let score = fundingSignal * 0.6 + lsSignal * 0.25 + oiSignal * 0.15
+
+        return PerpetualPremiumData(
+            symbol: symbol,
+            markPrice: 0,
+            indexPrice: 0,
+            premiumSpread: fundingRate.fundingRate * 100, // Use funding as proxy for spread
+            fundingRate: fundingRate.fundingRate,
+            annualizedFunding: fundingRate.annualizedRate,
+            directionalScore: min(max(score, -100), 100),
+            timestamp: Date()
+        )
+    }
 }
 
 enum PerpetualPremiumSentiment: String, Codable {
