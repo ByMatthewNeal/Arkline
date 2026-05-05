@@ -388,11 +388,12 @@ function deriveSignal(
   aboveSma50: boolean
 ): "bullish" | "neutral" | "bearish" {
   if (trendScore >= 70) {
-    // Below 200 SMA caps bullish → neutral (only if we have 200 SMA data)
-    if (has200SMA && !above200SMA) return "neutral"
     // Below both 21 AND 50 SMA caps bullish → neutral
-    // (short-term trend is broken, 200 SMA alone can't make it bullish)
+    // (short-term trend is broken — no bullish signal regardless of score)
     if (!aboveSma21 && !aboveSma50) return "neutral"
+    // Note: being below the 200 SMA still penalizes the score (-8 points)
+    // but no longer hard-caps to neutral. The score must overcome the penalty
+    // on its own merit (21/50 SMA, RSI, channel, BMSB all need to align).
     return "bullish"
   }
   if (trendScore >= 45) {
