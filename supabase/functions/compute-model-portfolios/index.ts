@@ -534,31 +534,21 @@ async function fetchMarketContext(
       }
     }
 
-    // 2. Top headlines from Google News RSS (crypto + market)
-    const queries = ["crypto+market", "stock+market+today"]
-    for (const q of queries) {
-      try {
-        const rssUrl = `https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`
-        const resp = await fetch(rssUrl)
-        if (resp.ok) {
-          const xml = await resp.text()
-          // Extract titles from RSS XML
-          const titleMatches = xml.matchAll(/<item>[\s\S]*?<title>([\s\S]*?)<\/title>/g)
-          let count = 0
-          for (const match of titleMatches) {
-            if (count >= 3) break
-            const title = match[1]
-              .replace(/<!\[CDATA\[/g, "").replace(/\]\]>/g, "")
-              .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-              .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
-              .trim()
-            if (title && !context.headlines.includes(title)) {
-              context.headlines.push(title)
-              count++
-            }
-          }
+    // 2. Top curated headlines (AI-filtered, relevant to crypto + macro)
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { data: newsRows } = await supabase
+      .from("curated_news")
+      .select("curated_title, category")
+      .gte("published_at", cutoff)
+      .order("relevance_score", { ascending: false })
+      .limit(4)
+
+    if (newsRows && newsRows.length > 0) {
+      for (const n of newsRows) {
+        if (n.curated_title && !context.headlines.includes(n.curated_title)) {
+          context.headlines.push(n.curated_title)
         }
-      } catch { /* skip */ }
+      }
     }
   } catch (err) {
     console.error("Failed to fetch market context:", err)

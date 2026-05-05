@@ -78,7 +78,7 @@ struct QPSFullGridView: View {
 
     private func signalRow(_ signal: DailyPositioningSignal, showChevron: Bool) -> some View {
         HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 4) {
                     Text(signal.displayName)
                         .font(AppFonts.body14Medium)
@@ -91,9 +91,24 @@ struct QPSFullGridView: View {
                     }
                 }
 
-                Text(signal.asset)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(AppColors.textSecondary)
+                // Trend score mini bar with threshold marker
+                HStack(spacing: 4) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.gray.opacity(0.12))
+
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(signal.positioningSignal.color.opacity(0.6))
+                                .frame(width: max(geo.size.width * min(signal.trendScore, 100) / 100, 0))
+                        }
+                    }
+                    .frame(width: 40, height: 4)
+
+                    Text("\(Int(signal.trendScore))")
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                }
             }
             .frame(minWidth: 90, alignment: .leading)
 

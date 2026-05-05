@@ -62,6 +62,9 @@ struct ModelPortfolioDetailView: View {
                 // Strategy Signals
                 strategyStatus
 
+                // Decision Logic (why the portfolio is positioned this way)
+                decisionLogicCard
+
                 // Trade Log
                 if !trades.isEmpty {
                     tradeLog
@@ -627,6 +630,169 @@ struct ModelPortfolioDetailView: View {
                 .foregroundColor(signalColor(value))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Decision Logic
+
+    @ViewBuilder
+    private var decisionLogicCard: some View {
+        let btcSignal = latestNav?.btcSignal ?? "neutral"
+        let btcRisk = latestNav?.btcRiskCategory ?? "—"
+        let macro = latestNav?.macroRegime ?? "—"
+
+        // Find BTC trend score from QPS
+        let btcQps = qpsSignals.first(where: { $0.asset == "BTC" })
+        let btcScore = btcQps?.trendScore ?? 0
+        let bullishThreshold: Double = 70
+
+        // Determine the key blocker
+        let blockers: [String] = {
+            var b: [String] = []
+            if btcSignal != "bullish" {
+                if btcScore < bullishThreshold {
+                    let gap = Int(bullishThreshold - btcScore)
+                    b.append("BTC trend score \(Int(btcScore))/\(Int(bullishThreshold)) — \(gap) points from bullish")
+                }
+                if let qps = btcQps, !qps.above200Sma {
+                    b.append("BTC below 200-day SMA (−8 penalty active)")
+                }
+            }
+            if macro.contains("Risk-Off") {
+                b.append("Macro regime is Risk-Off — exposure reduced")
+            }
+            if ["High Risk", "Extreme Risk"].contains(btcRisk) {
+                b.append("BTC risk level is \(btcRisk) — defensive mode")
+            }
+            return b
+        }()
+
+        // Determine deployment summary
+        let cryptoPct: Double = {
+            guard let alloc = latestNav?.allocations else { return 0 }
+            return alloc.filter { !["USDC", "PAXG"].contains($0.key) }
+                .values.reduce(0.0) { $0 + $1.pct }
+        }()
+        let defensivePct = 100 - cryptoPct
+
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            HStack {
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.accent)
+                Text("Decision Logic")
+                    .font(AppFonts.title18SemiBold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+            }
+
+            // Deployment bar
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Deployed")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("\(Int(cryptoPct))%")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(cryptoPct > 50 ? AppColors.success : cryptoPct > 20 ? AppColors.warning : AppColors.textSecondary)
+                }
+
+                GeometryReader { geo in
+                    HStack(spacing: 2) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(AppColors.accent)
+                            .frame(width: max(geo.size.width * cryptoPct / 100, 0))
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.gray.opacity(0.15))
+                    }
+                }
+                .frame(height: 8)
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Defensive")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("\(Int(defensivePct))%")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+
+            // BTC trend score progress
+            if let score = btcQps?.trendScore {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("BTC Trend Score")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                        Spacer()
+                        Text("\(Int(score)) / \(Int(bullishThreshold))")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(score >= bullishThreshold ? AppColors.success : AppColors.textPrimary(colorScheme))
+                    }
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.gray.opacity(0.15))
+
+                            // Threshold marker
+                            Rectangle()
+                                .fill(AppColors.success.opacity(0.4))
+                                .frame(width: 1.5)
+                                .offset(x: geo.size.width * bullishThreshold / 100)
+
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(score >= bullishThreshold ? AppColors.success : AppColors.accent)
+                                .frame(width: max(geo.size.width * min(score, 100) / 100, 0))
+                        }
+                    }
+                    .frame(height: 6)
+
+                    if score < bullishThreshold {
+                        let gap = Int(bullishThreshold - score)
+                        Text("\(gap) point\(gap == 1 ? "" : "s") from bullish — \(portfolio.isCore ? "full crypto deployment" : portfolio.isEdge ? "30% BTC + alts" : "20% BTC + 40% alts") activates")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textSecondary)
+                    } else {
+                        Text("Bullish — crypto deployment active")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.success)
+                    }
+                }
+            }
+
+            // Key blockers
+            if !blockers.isEmpty {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("WHY")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(AppColors.warning)
+                        .tracking(1)
+
+                    ForEach(blockers, id: \.self) { blocker in
+                        HStack(alignment: .top, spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppColors.warning)
+                                .padding(.top, 2)
+                            Text(blocker)
+                                .font(.system(size: 11))
+                                .foregroundColor(AppColors.textPrimary(colorScheme).opacity(0.8))
+                        }
+                    }
+                }
+            }
+        }
+        .padding(ArkSpacing.md)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.cardBorder(colorScheme), lineWidth: 1)
+        )
     }
 
     // MARK: - Trade Log

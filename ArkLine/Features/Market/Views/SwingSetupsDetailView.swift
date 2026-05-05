@@ -1291,6 +1291,26 @@ struct SwingSetupsDetailView: View {
         let conditions = viewModel.marketConditions
         let isActive = selectedFilter == .active
 
+        // Determine a user-friendly explanation from skip reasons
+        let contextMessage: String = {
+            guard isActive, let reasons = conditions?.topReasons else {
+                return "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions."
+            }
+            let combined = reasons.joined(separator: " ")
+            if combined.contains("no bounce confirmation") && combined.contains("R:R") {
+                return "Markets are trending without a pullback. Signals fire when price dips to a Fibonacci support level and bounces — this avoids chasing moves already in progress."
+            } else if combined.contains("no bounce confirmation") {
+                return "Price is near key levels but hasn't bounced yet. The system waits for confirmation to avoid false entries."
+            } else if combined.contains("R:R") {
+                return "Setups are too tight right now — the risk/reward isn't favorable. When price pulls back further from resistance, better entries will appear."
+            } else if combined.contains("EMA trend misaligned") {
+                return "The trend filter is blocking counter-trend signals. This protects against trading against momentum."
+            } else if combined.contains("choppy") {
+                return "The market is ranging with no clear direction. The system raises its quality bar in choppy conditions to avoid getting whipsawed."
+            }
+            return conditions?.detail ?? "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions."
+        }()
+
         return VStack(spacing: 12) {
             Image(systemName: isActive && conditions?.status == "quiet" ? "waveform.path" : "scope")
                 .font(.system(size: 40))
@@ -1301,13 +1321,13 @@ struct SwingSetupsDetailView: View {
                 .foregroundColor(textPrimary)
                 .multilineTextAlignment(.center)
 
-            Text(isActive ? (conditions?.detail ?? "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.") : "Signals fire when price approaches high-confluence Fibonacci zones with supporting risk conditions.")
+            Text(contextMessage)
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 32)
 
-            // Top skip reasons
+            // Top skip reasons (simplified labels)
             if isActive, let reasons = conditions?.topReasons, !reasons.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(reasons.prefix(3), id: \.self) { reason in
