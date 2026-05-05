@@ -650,8 +650,8 @@ struct ModelPortfolioDetailView: View {
             var b: [String] = []
             if btcSignal != "bullish" {
                 if btcScore < bullishThreshold {
-                    let gap = Int(bullishThreshold - btcScore)
-                    b.append("BTC trend score \(Int(btcScore))/\(Int(bullishThreshold)) — \(gap) points from bullish")
+                    let strength = btcScore >= 55 ? "building" : btcScore >= 45 ? "flat" : "weak"
+                    b.append("BTC trend is \(strength) — not strong enough for bullish yet")
                 }
                 if let qps = btcQps, !qps.above200Sma {
                     b.append("BTC below 200-day SMA (−8 penalty active)")
@@ -716,19 +716,31 @@ struct ModelPortfolioDetailView: View {
                 }
             }
 
-            // BTC trend score progress
+            // BTC trend strength
             if let score = btcQps?.trendScore {
                 Divider()
 
+                let strengthLabel: String = {
+                    switch score {
+                    case 80...: return "Very Strong"
+                    case 70..<80: return "Strong"
+                    case 55..<70: return "Building"
+                    case 45..<55: return "Flat"
+                    case 30..<45: return "Weakening"
+                    default: return "Weak"
+                    }
+                }()
+                let strengthColor: Color = score >= 70 ? AppColors.success : score >= 55 ? AppColors.warning : score >= 45 ? AppColors.textSecondary : AppColors.error
+
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("BTC Trend Score")
+                        Text("BTC Trend")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(AppColors.textSecondary)
                         Spacer()
-                        Text("\(Int(score)) / \(Int(bullishThreshold))")
+                        Text(strengthLabel)
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(score >= bullishThreshold ? AppColors.success : AppColors.textPrimary(colorScheme))
+                            .foregroundColor(strengthColor)
                     }
 
                     GeometryReader { geo in
@@ -736,22 +748,15 @@ struct ModelPortfolioDetailView: View {
                             RoundedRectangle(cornerRadius: 3)
                                 .fill(Color.gray.opacity(0.15))
 
-                            // Threshold marker
-                            Rectangle()
-                                .fill(AppColors.success.opacity(0.4))
-                                .frame(width: 1.5)
-                                .offset(x: geo.size.width * bullishThreshold / 100)
-
                             RoundedRectangle(cornerRadius: 3)
-                                .fill(score >= bullishThreshold ? AppColors.success : AppColors.accent)
+                                .fill(strengthColor)
                                 .frame(width: max(geo.size.width * min(score, 100) / 100, 0))
                         }
                     }
                     .frame(height: 6)
 
                     if score < bullishThreshold {
-                        let gap = Int(bullishThreshold - score)
-                        Text("\(gap) point\(gap == 1 ? "" : "s") from bullish — \(portfolio.isCore ? "full crypto deployment" : portfolio.isEdge ? "30% BTC + alts" : "20% BTC + 40% alts") activates")
+                        Text("Trend building — \(portfolio.isCore ? "full crypto deployment" : portfolio.isEdge ? "30% BTC + alts" : "20% BTC + 40% alts") activates when trend turns strong")
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.textSecondary)
                     } else {

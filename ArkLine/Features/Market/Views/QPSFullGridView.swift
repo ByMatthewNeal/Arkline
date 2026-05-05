@@ -91,24 +91,10 @@ struct QPSFullGridView: View {
                     }
                 }
 
-                // Trend score mini bar with threshold marker
-                HStack(spacing: 4) {
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.gray.opacity(0.12))
-
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(signal.positioningSignal.color.opacity(0.6))
-                                .frame(width: max(geo.size.width * min(signal.trendScore, 100) / 100, 0))
-                        }
-                    }
-                    .frame(width: 40, height: 4)
-
-                    Text("\(Int(signal.trendScore))")
-                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
-                }
+                // Trend strength label
+                Text(trendStrengthLabel(signal.trendScore))
+                    .font(.system(size: 10))
+                    .foregroundColor(trendStrengthColor(signal.trendScore))
             }
             .frame(minWidth: 90, alignment: .leading)
 
@@ -131,5 +117,25 @@ struct QPSFullGridView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+
+    private func trendStrengthLabel(_ score: Double) -> String {
+        switch score {
+        case 80...: return "Very Strong"
+        case 70..<80: return "Strong"
+        case 55..<70: return "Building"
+        case 45..<55: return "Flat"
+        case 30..<45: return "Weakening"
+        default: return "Weak"
+        }
+    }
+
+    private func trendStrengthColor(_ score: Double) -> Color {
+        switch score {
+        case 70...: return AppColors.success.opacity(0.7)
+        case 55..<70: return AppColors.warning.opacity(0.7)
+        case 45..<55: return AppColors.textSecondary.opacity(0.5)
+        default: return AppColors.error.opacity(0.7)
+        }
     }
 }
