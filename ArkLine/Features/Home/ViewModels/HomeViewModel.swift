@@ -47,6 +47,10 @@ class HomeViewModel {
     // Fear & Greed
     var fearGreedIndex: FearGreedIndex?
 
+    // Perp Premium
+    var btcPerpPremium: PerpetualPremiumData?
+    var ethPerpPremium: PerpetualPremiumData?
+
     // DCA Reminders
     var activeReminders: [DCAReminder] = []
     var todayReminders: [DCAReminder] = []
@@ -960,6 +964,20 @@ class HomeViewModel {
 
             if let fg = fg {
                 self.fearGreedIndex = fg
+            }
+
+            // Perp Premium (from CoinGecko funding rate)
+            if let fr = try? await sentimentService.fetchFundingRate() {
+                let btcEx = fr.exchanges.first(where: { $0.exchange == "BTC" })
+                let ethEx = fr.exchanges.first(where: { $0.exchange == "ETH" })
+                if let btc = btcEx {
+                    let cgFunding = CoinglassFundingRateData(id: UUID(), symbol: "BTC", fundingRate: btc.rate, predictedRate: nil, nextFundingTime: nil, annualizedRate: btc.rate * 3 * 365 * 100, timestamp: Date(), exchangeRates: nil)
+                    self.btcPerpPremium = PerpetualPremiumData.computeFromDerivatives(symbol: "BTC", fundingRate: cgFunding, longShortRatio: nil, openInterest: nil)
+                }
+                if let eth = ethEx {
+                    let cgFunding = CoinglassFundingRateData(id: UUID(), symbol: "ETH", fundingRate: eth.rate, predictedRate: nil, nextFundingTime: nil, annualizedRate: eth.rate * 3 * 365 * 100, timestamp: Date(), exchangeRates: nil)
+                    self.ethPerpPremium = PerpetualPremiumData.computeFromDerivatives(symbol: "ETH", fundingRate: cgFunding, longShortRatio: nil, openInterest: nil)
+                }
             }
             self.activeReminders = reminders.filter { $0.isActive }
             self.todayReminders = reminders.filter { $0.isDueToday }

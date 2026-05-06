@@ -139,6 +139,8 @@ struct ReorderableWidgetStack: View {
             return true
         case .qpsSignals:
             return true
+        case .perpPremium:
+            return viewModel.btcPerpPremium != nil || viewModel.ethPerpPremium != nil
         case .marketDeck:
             return viewModel.latestDeck != nil
         case .modelPortfolioUpdate:
@@ -300,6 +302,13 @@ struct ReorderableWidgetStack: View {
                 macroQuadrant: viewModel.currentRegimeResult?.quadrant
             )
             .id("widget_qpsSignals")
+
+        case .perpPremium:
+            PerpPremiumSentimentCard(
+                btcPremium: viewModel.btcPerpPremium,
+                ethPremium: viewModel.ethPerpPremium
+            )
+            .padding(.horizontal, 20)
 
         case .marketDeck:
             if let deck = viewModel.latestDeck {

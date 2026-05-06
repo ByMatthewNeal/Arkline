@@ -375,7 +375,22 @@ function computeTrendScore(candles: Candle[]): {
   // Clamp to 0-100
   score = Math.max(0, Math.min(100, score))
 
-  return { trendScore: score, rsi, above200SMA: above200SMA, price, aboveSma21, aboveSma50 }
+  // BMSB status for storage
+  let bmsbStatus = "unknown"
+  if (!isNaN(bmsbSma) && !isNaN(bmsbEma)) {
+    const bmsbTop = Math.max(bmsbSma, bmsbEma)
+    const bmsbBot = Math.min(bmsbSma, bmsbEma)
+    if (price > bmsbTop) bmsbStatus = "above"
+    else if (price >= bmsbBot) bmsbStatus = "within"
+    else bmsbStatus = "below"
+  }
+
+  // Channel position: where price sits between 21 SMA (bottom) and recent high (top), 0-1
+  const channelPosition = (!isNaN(latestSma21) && closes.length >= 21)
+    ? Math.max(0, Math.min(1, (price - latestSma21) / (Math.max(...closes.slice(-21)) - latestSma21 || 1)))
+    : null
+
+  return { trendScore: score, rsi, above200SMA, price, aboveSma21, aboveSma50, bmsbStatus, channelPosition }
 }
 
 // ─── Signal Derivation ──────────────────────────────────────────────────────
@@ -480,7 +495,7 @@ Deno.serve(async (req) => {
       }
 
       // Compute indicators
-      const { trendScore, rsi, above200SMA, price, aboveSma21, aboveSma50 } = computeTrendScore(candles)
+      const { trendScore, rsi, above200SMA, price, aboveSma21, aboveSma50, bmsbStatus, channelPosition } = computeTrendScore(candles)
       const has200SMA = candles.length >= 200
 
       // Derive signal
@@ -528,6 +543,8 @@ Deno.serve(async (req) => {
         above_200_sma: above200SMA,
         _aboveSma21: aboveSma21,
         _aboveSma50: aboveSma50,
+        _bmsbStatus: bmsbStatus,
+        _channelPosition: channelPosition,
       })
     } catch (err) {
       errors.push(`${asset.ticker}: ${(err as Error).message}`)
@@ -590,6 +607,10 @@ Deno.serve(async (req) => {
       rsi: r.rsi,
       price: r.price,
       above_200_sma: r.above_200_sma,
+      above_21_sma: r._aboveSma21 ?? null,
+      above_50_sma: r._aboveSma50 ?? null,
+      channel_position: r._channelPosition != null ? Math.round(r._channelPosition * 100) / 100 : null,
+      bmsb_status: r._bmsbStatus ?? null,
       category: r.category,
     }))
 
@@ -626,12 +647,92 @@ Deno.serve(async (req) => {
     console.error("Fear & Greed fetch failed (non-fatal):", e)
   }
 
+  // ── Store daily derivatives snapshots (BTC + ETH) ─────────────────────────
+  let derivativesStored = 0
+  try {
+    const cgKey = Deno.env.get("COINGLASS_API_KEY") ?? ""
+    if (cgKey) {
+      for (const sym of ["BTC", "ETH"]) {
+        try {
+          const headers: Record<string, string> = { "CG-API-KEY": cgKey }
+
+          // Funding rate
+          const frResp = await fetch(`https://open-api-v4.coinglass.com/api/futures/funding-rate/exchange-list?symbol=${sym}`, { headers })
+          let fundingRate: number | null = null
+          if (frResp.ok) {
+            const frData = await frResp.json()
+            if (frData?.data?.length > 0) {
+              fundingRate = frData.data.reduce((sum: number, e: any) => sum + (e.rate ?? 0), 0) / frData.data.length
+            }
+          }
+
+          // Open interest
+          const oiResp = await fetch(`https://open-api-v4.coinglass.com/api/futures/open-interest/coin-list`, { headers })
+          let oi: number | null = null
+          let oiChangePct: number | null = null
+          if (oiResp.ok) {
+            const oiData = await oiResp.json()
+            const coin = oiData?.data?.find((c: any) => c.symbol === sym)
+            if (coin) {
+              oi = coin.open_interest ?? coin.openInterest ?? null
+              oiChangePct = coin.h24_change_percent ?? coin.h24ChangePercent ?? null
+            }
+          }
+
+          // Long/Short ratio
+          const lsResp = await fetch(`https://open-api-v4.coinglass.com/api/futures/global-long-short-account-ratio/history?symbol=${sym}&interval=1h&limit=1`, { headers })
+          let longRatio: number | null = null
+          let shortRatio: number | null = null
+          let lsRatio: number | null = null
+          if (lsResp.ok) {
+            const lsData = await lsResp.json()
+            if (lsData?.data?.length > 0) {
+              longRatio = lsData.data[0].longRate ?? null
+              shortRatio = lsData.data[0].shortRate ?? null
+              lsRatio = lsData.data[0].longShortRatio ?? null
+            }
+          }
+
+          // Compute perp premium score
+          let premiumScore: number | null = null
+          if (fundingRate != null) {
+            const fundingSignal = Math.max(-100, Math.min(100, fundingRate * 10000))
+            const lsSignal = lsRatio != null ? Math.max(-100, Math.min(100, (lsRatio - 1.0) * 100)) : 0
+            const oiSignal = oiChangePct != null ? Math.max(-100, Math.min(100, oiChangePct * 10)) : 0
+            premiumScore = Math.max(-100, Math.min(100, fundingSignal * 0.6 + lsSignal * 0.25 + oiSignal * 0.15))
+          }
+
+          await supabase
+            .from("daily_derivatives_snapshots")
+            .upsert({
+              snapshot_date: today,
+              symbol: sym,
+              funding_rate: fundingRate,
+              open_interest: oi,
+              oi_change_pct_24h: oiChangePct,
+              long_ratio: longRatio,
+              short_ratio: shortRatio,
+              long_short_ratio: lsRatio,
+              perp_premium_score: premiumScore,
+            }, { onConflict: "snapshot_date,symbol" })
+
+          derivativesStored++
+        } catch (e) {
+          console.error(`Derivatives snapshot failed for ${sym}: ${e}`)
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Derivatives snapshots failed (non-fatal):", e)
+  }
+
   return jsonResponse({
     success: true,
     date: today,
     signals: results.length,
     changes: changes.length,
     fear_greed_stored: fearGreedStored,
+    derivatives_stored: derivativesStored,
     breakdown: {
       crypto: results.filter((r) => r.category === "crypto").length,
       alt_btc: results.filter((r) => r.category === "alt_btc").length,
