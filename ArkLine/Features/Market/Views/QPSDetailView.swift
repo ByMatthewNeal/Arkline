@@ -151,6 +151,10 @@ struct QPSDetailView: View {
 
                         Spacer()
 
+                        Text(formatPrice(signal.price))
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.7))
+
                         if signal.hasChanged {
                             Image(systemName: "waveform.path.ecg")
                                 .font(.system(size: 9, weight: .bold))
@@ -174,5 +178,17 @@ struct QPSDetailView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
+    }
+
+    private func formatPrice(_ price: Double) -> String {
+        if price >= 10_000 {
+            return "$\(Int(price).formatted())"
+        } else if price >= 100 {
+            return String(format: "$%.0f", price)
+        } else if price >= 1 {
+            return String(format: "$%.2f", price)
+        } else {
+            return String(format: "$%.4f", price)
+        }
     }
 }
