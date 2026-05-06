@@ -91,10 +91,20 @@ struct QPSFullGridView: View {
                     }
                 }
 
-                // Trend strength label
-                Text(trendStrengthLabel(signal.trendScore))
-                    .font(.system(size: 10))
-                    .foregroundColor(trendStrengthColor(signal.trendScore))
+                // Trend strength + price
+                HStack(spacing: 4) {
+                    Text(trendStrengthLabel(signal.trendScore))
+                        .font(.system(size: 10))
+                        .foregroundColor(trendStrengthColor(signal.trendScore))
+
+                    Text("·")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.3))
+
+                    Text(formatSignalPrice(signal.price))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                }
             }
             .frame(minWidth: 90, alignment: .leading)
 
@@ -117,6 +127,18 @@ struct QPSFullGridView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+
+    private func formatSignalPrice(_ price: Double) -> String {
+        if price >= 10_000 {
+            return "$\(Int(price).formatted())"
+        } else if price >= 100 {
+            return String(format: "$%.0f", price)
+        } else if price >= 1 {
+            return String(format: "$%.2f", price)
+        } else {
+            return String(format: "$%.4f", price)
+        }
     }
 
     private func trendStrengthLabel(_ score: Double) -> String {
