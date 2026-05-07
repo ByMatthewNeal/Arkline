@@ -498,12 +498,15 @@ struct HomeAISummaryWidget: View {
             }
         }
 
-        // Fallback: broad match — use neutral color since we don't know the specific quadrant.
-        // The live regime will replace this with the correct color once it loads.
+        // Fallback: broad match — use live regime for quadrant detail + color if available
         if body.contains("risk-on") || body.contains("risk on") {
-            return .riskOn(postureSection.body, "Risk-On", color: AppColors.success)
+            let label = liveRegime?.quadrant.rawValue ?? "Risk-On"
+            let color = liveRegime?.quadrant.color ?? AppColors.success
+            return .riskOn(postureSection.body, label, color: color)
         } else if body.contains("risk-off") || body.contains("risk off") {
-            return .riskOff(postureSection.body, "Risk-Off", color: AppColors.textSecondary)
+            let label = liveRegime?.quadrant.rawValue ?? "Risk-Off"
+            let color = liveRegime?.quadrant.color ?? AppColors.error
+            return .riskOff(postureSection.body, label, color: color)
         }
         return nil
     }
