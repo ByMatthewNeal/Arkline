@@ -498,15 +498,16 @@ struct HomeAISummaryWidget: View {
             }
         }
 
-        // Fallback: broad match — use live regime for quadrant detail + color if available
+        // Fallback: broad match — keep direction from briefing, borrow quadrant type from live
         if body.contains("risk-on") || body.contains("risk on") {
-            let label = liveRegime?.quadrant.rawValue ?? "Risk-On"
-            let color = liveRegime?.quadrant.color ?? AppColors.success
-            return .riskOn(postureSection.body, label, color: color)
+            // Find the disinflation/inflation suffix from live regime if available
+            let suffix = liveRegime?.quadrant.rawValue.replacingOccurrences(of: "Risk-On ", with: "").replacingOccurrences(of: "Risk-Off ", with: "") ?? ""
+            let label = suffix.isEmpty ? "Risk-On" : "Risk-On \(suffix)"
+            return .riskOn(postureSection.body, label, color: AppColors.success)
         } else if body.contains("risk-off") || body.contains("risk off") {
-            let label = liveRegime?.quadrant.rawValue ?? "Risk-Off"
-            let color = liveRegime?.quadrant.color ?? AppColors.error
-            return .riskOff(postureSection.body, label, color: color)
+            let suffix = liveRegime?.quadrant.rawValue.replacingOccurrences(of: "Risk-On ", with: "").replacingOccurrences(of: "Risk-Off ", with: "") ?? ""
+            let label = suffix.isEmpty ? "Risk-Off" : "Risk-Off \(suffix)"
+            return .riskOff(postureSection.body, label, color: AppColors.error)
         }
         return nil
     }
