@@ -98,22 +98,32 @@ Deno.serve(async (req) => {
   if (!allHealthy && isCron) {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const db = createClient(supabaseUrl, supabaseKey)
     const failNames = failures.map((f) => f.name).sort().join(",")
-    const today = new Date().toISOString().slice(0, 10)
-    const dedupeKey = `health_${today}_${failNames.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 50)}`
+    const todayET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }))
+      .toISOString().split("T")[0]
+    const dedupeKey = `health_alert_${todayET}`
 
-    // Check if we already alerted for this exact failure set today
-    const { data: existing } = await supabase
-      .from("broadcasts")
-      .select("id")
-      .eq("broadcast_id", dedupeKey)
+    // Use market_data_cache as a simple dedup store
+    const { data: existing } = await db
+      .from("market_data_cache")
+      .select("data")
+      .eq("key", dedupeKey)
       .maybeSingle()
 
-    if (!existing) {
+    const alreadySent = existing?.data?.sent === true
+
+    if (!alreadySent) {
       const body = failures.length === 1
         ? `${failures[0].name}: ${failures[0].detail}`
         : `${failures.length} checks failed: ${failNames}`
+
+      // Mark as sent BEFORE sending to prevent races
+      await db.from("market_data_cache").upsert({
+        key: dedupeKey,
+        data: { sent: true, failures: failNames, at: new Date().toISOString() },
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "key" })
 
       fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
         method: "POST",
@@ -122,14 +132,14 @@ Deno.serve(async (req) => {
           "x-cron-secret": cronSecret,
         },
         body: JSON.stringify({
-          broadcast_id: dedupeKey,
+          broadcast_id: `health_${todayET}`,
           title: "Health Check Failed",
           body: body.length > 100 ? body.substring(0, 97) + "..." : body,
           target_audience: { type: "premium" },
         }),
       }).catch((err) => console.error("Failed to send health alert:", err))
     } else {
-      console.log(`Health alert already sent today for: ${failNames}`)
+      console.log(`Health alert already sent today (${todayET}) — skipping`)
     }
   }
 
@@ -240,13 +250,15 @@ async function checkCryptoCache(
 async function checkBriefing(
   supabase: ReturnType<typeof createClient>
 ): Promise<CheckResult> {
-  const todayUTC = new Date().toISOString().split("T")[0]
+  // Use ET date so we don't check for tomorrow's briefing when UTC rolls over
+  const todayET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }))
+    .toISOString().split("T")[0]
   const estHour = getESTHour(new Date())
 
   const { data, error } = await supabase
     .from("market_summaries")
     .select("slot, generated_at")
-    .eq("summary_date", todayUTC)
+    .eq("summary_date", todayET)
     .order("generated_at", { ascending: false })
 
   if (error) return { name: "Daily Briefing", ok: false, detail: error.message }
