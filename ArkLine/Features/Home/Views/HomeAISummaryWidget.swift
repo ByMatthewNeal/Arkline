@@ -85,8 +85,8 @@ struct HomeAISummaryWidget: View {
                 .font(AppFonts.body14)
                 .foregroundColor(textPrimary.opacity(0.85))
 
-            // Sentiment pill — prefer live regime over stale briefing text
-            if let posture = livePosture ?? parsedPosture {
+            // Sentiment pill — prefer briefing regime so pill matches the text below it
+            if let posture = parsedPosture ?? livePosture {
                 Button { showPostureExplainer = true } label: {
                     sentimentPill(posture)
                 }
