@@ -94,27 +94,43 @@ Deno.serve(async (req) => {
     console.error("Failures:", failures.map((f) => `${f.name}: ${f.detail}`).join("; "))
   }
 
-  // Send admin push notification if anything failed
+  // Send admin push notification if anything failed (once per day per failure set)
   if (!allHealthy && isCron) {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-    const failNames = failures.map((f) => f.name).join(", ")
-    const body = failures.length === 1
-      ? `${failures[0].name}: ${failures[0].detail}`
-      : `${failures.length} checks failed: ${failNames}`
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const failNames = failures.map((f) => f.name).sort().join(",")
+    const today = new Date().toISOString().slice(0, 10)
+    const dedupeKey = `health_${today}_${failNames.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 50)}`
 
-    fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-cron-secret": cronSecret,
-      },
-      body: JSON.stringify({
-        broadcast_id: `health_${new Date().toISOString().slice(0, 13)}`, // dedup per hour
-        title: "Health Check Failed",
-        body: body.length > 100 ? body.substring(0, 97) + "..." : body,
-        target_audience: { type: "premium" }, // admin + premium = effectively admin-only for now
-      }),
-    }).catch((err) => console.error("Failed to send health alert:", err))
+    // Check if we already alerted for this exact failure set today
+    const { data: existing } = await supabase
+      .from("broadcasts")
+      .select("id")
+      .eq("broadcast_id", dedupeKey)
+      .maybeSingle()
+
+    if (!existing) {
+      const body = failures.length === 1
+        ? `${failures[0].name}: ${failures[0].detail}`
+        : `${failures.length} checks failed: ${failNames}`
+
+      fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-cron-secret": cronSecret,
+        },
+        body: JSON.stringify({
+          broadcast_id: dedupeKey,
+          title: "Health Check Failed",
+          body: body.length > 100 ? body.substring(0, 97) + "..." : body,
+          target_audience: { type: "premium" },
+        }),
+      }).catch((err) => console.error("Failed to send health alert:", err))
+    } else {
+      console.log(`Health alert already sent today for: ${failNames}`)
+    }
   }
 
   return json({

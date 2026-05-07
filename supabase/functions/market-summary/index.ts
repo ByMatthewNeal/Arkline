@@ -764,7 +764,28 @@ ${feedbackBlock}`,
     // --- Push notification + TTS pre-generation (fire-and-forget) ---
     const briefingKey = `${todayUTC}_${slot}`
     const postureMatch = summary.match(/##\s*Posture\s*\n+([^\n#]+)/)
-    const posture = (postureMatch?.[1]?.trim() ?? "").replace(/^#+\s*/, "")
+    let posture = (postureMatch?.[1]?.trim() ?? "").replace(/^#+\s*/, "")
+
+    // Validate posture against actual regime data to prevent contradictions
+    // Claude sometimes writes the wrong regime — override with ground truth
+    const actualRegime = payload.macroRegime ?? ""
+    if (actualRegime && posture) {
+      const isRiskOn = actualRegime.toLowerCase().includes("risk-on")
+      const isRiskOff = actualRegime.toLowerCase().includes("risk-off")
+      const postureHasRiskOn = posture.toLowerCase().includes("risk-on")
+      const postureHasRiskOff = posture.toLowerCase().includes("risk-off")
+
+      if (isRiskOn && postureHasRiskOff) {
+        // Claude wrote Risk-Off but data says Risk-On — fix it
+        posture = posture.replace(/risk-off/gi, "Risk-On")
+        console.log(`Posture correction: forced Risk-Off → Risk-On (actual regime: ${actualRegime})`)
+      } else if (isRiskOff && postureHasRiskOn) {
+        // Claude wrote Risk-On but data says Risk-Off — fix it
+        posture = posture.replace(/risk-on/gi, "Risk-Off")
+        console.log(`Posture correction: forced Risk-On → Risk-Off (actual regime: ${actualRegime})`)
+      }
+    }
+
     const slotLabel = slot === "weekend" ? "Weekend Pulse" : slot === "morning" ? "Morning Intel" : "Close & Context"
     const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
 
