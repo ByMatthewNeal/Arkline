@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ViewContentEvent } from '@/components/analytics/ViewContentEvent';
 import { Check, HelpCircle, Shield } from 'lucide-react';
 import { ArklineLogo, Button } from '@/components/ui';
 import { EmailCapture } from '@/components/marketing/email-capture';
@@ -70,6 +71,7 @@ const faqs = [
 export default function PricingPage() {
   return (
     <div className="overflow-hidden">
+      <ViewContentEvent contentName="pricing" />
       {/* Hero */}
       <section className="relative pt-32 pb-16 sm:pt-40 sm:pb-20">
         <AnimatedBackground />

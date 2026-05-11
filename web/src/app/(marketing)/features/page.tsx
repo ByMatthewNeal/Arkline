@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ViewContentEvent } from '@/components/analytics/ViewContentEvent';
 import {
   BarChart3,
   Shield,
@@ -54,6 +55,7 @@ function PhoneFrame({ src, alt, className = '' }: { src: string; alt: string; cl
 export default function FeaturesPage() {
   return (
     <div className="overflow-hidden">
+      <ViewContentEvent contentName="features" />
       {/* Hero */}
       <section className="relative pt-32 pb-16 sm:pt-40 sm:pb-20">
         <AnimatedBackground />
