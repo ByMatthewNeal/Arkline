@@ -24,6 +24,11 @@ export async function POST(req: Request) {
     const body = await req.json()
     const email = body.email?.trim().toLowerCase()
     const referral_code = body.referral_code || null
+    const utm_source = body.utm_source || null
+    const utm_medium = body.utm_medium || null
+    const utm_campaign = body.utm_campaign || null
+    const utm_content = body.utm_content || null
+    const utm_term = body.utm_term || null
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
@@ -35,7 +40,7 @@ export async function POST(req: Request) {
     // 1. Insert into Supabase
     const { error: dbError } = await supabaseAdmin
       .from('early_access_signups')
-      .insert({ email, referral_code })
+      .insert({ email, referral_code, utm_source, utm_medium, utm_campaign, utm_content, utm_term })
 
     if (dbError) {
       if (dbError.code === '23505') {

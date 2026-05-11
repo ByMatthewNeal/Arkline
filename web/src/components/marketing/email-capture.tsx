@@ -18,11 +18,18 @@ export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps)
   const [status, setStatus] = useState<Status>('idle');
   const [referralCode, setReferralCode] = useState<string | null>(null);
 
-  // Capture ?ref= query param on mount
+  // Capture ?ref= and UTM query params on mount
+  const [utmParams, setUtmParams] = useState<Record<string, string>>({});
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
     if (ref) setReferralCode(ref);
+    const utms: Record<string, string> = {};
+    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+      const val = params.get(key);
+      if (val) utms[key] = val;
+    }
+    if (Object.keys(utms).length > 0) setUtmParams(utms);
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -39,7 +46,7 @@ export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps)
     setStatus('loading');
     localStorage.setItem(RATE_LIMIT_KEY, String(Date.now()));
     try {
-      const insertData: Record<string, string> = { email: trimmed };
+      const insertData: Record<string, string> = { email: trimmed, ...utmParams };
       if (referralCode) insertData.referral_code = referralCode;
 
       const response = await fetch('/api/early-access', {
