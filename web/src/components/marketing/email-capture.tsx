@@ -2,7 +2,6 @@
 
 import { useState, useEffect, type FormEvent } from 'react';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 
 type Status = 'idle' | 'loading' | 'success' | 'duplicate' | 'error' | 'rate_limited';
 
@@ -40,13 +39,17 @@ export function EmailCapture({ size = 'lg', className = '' }: EmailCaptureProps)
     setStatus('loading');
     localStorage.setItem(RATE_LIMIT_KEY, String(Date.now()));
     try {
-      const supabase = createClient();
       const insertData: Record<string, string> = { email: trimmed };
       if (referralCode) insertData.referral_code = referralCode;
 
-      const { error } = await supabase
-        .from('early_access_signups')
-        .insert(insertData);
+      const response = await fetch('/api/early-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(insertData),
+      })
+
+      const result = await response.json()
+      const error = response.ok ? null : { message: result.error || 'Something went wrong.', code: response.status === 409 ? '23505' : '' };
 
       if (error) {
         // Unique constraint violation = duplicate
