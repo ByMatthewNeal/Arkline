@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Twitter, Apple } from 'lucide-react';
+import { Twitter, Instagram, Linkedin, Apple } from 'lucide-react';
 import { ArklineLogo } from '@/components/ui';
 
 const footerLinks = {
@@ -40,9 +40,28 @@ export function Footer() {
                 href="https://x.com/Arklineio"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="X (Twitter)"
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
               >
                 <Twitter className="h-4 w-4" />
+              </a>
+              <a
+                href="https://instagram.com/arkline.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
+              <a
+                href="https://www.linkedin.com/company/arkline-technologies"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
+              >
+                <Linkedin className="h-4 w-4" />
               </a>
             </div>
           </div>
