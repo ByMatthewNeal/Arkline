@@ -55,7 +55,7 @@ export function Footer() {
                 <Instagram className="h-4 w-4" />
               </a>
               <a
-                href="https://www.linkedin.com/company/arkline-technologies"
+                href="https://www.linkedin.com/company/arklineapp"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn"
