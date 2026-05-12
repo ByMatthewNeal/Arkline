@@ -39,6 +39,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@Arklineio',
+    creator: '@Arklineio',
     title: 'Arkline — Your Portfolio. Your Edge.',
     description:
       'Multi-factor risk scoring, macro dashboard, and AI briefings — all in one platform. Start free.',

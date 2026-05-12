@@ -37,7 +37,7 @@ export function Footer() {
             </div>
             <div className="mt-4 flex gap-3">
               <a
-                href="https://x.com/arkaboreal"
+                href="https://x.com/Arklineio"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
