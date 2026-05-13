@@ -2251,24 +2251,6 @@ async function evaluateSignals(
       continue
     }
 
-    // Daily trend guard — block counter-trend signals when daily trend is clearly directional
-    const dailyCandles = candles["1d"] ?? []
-    if (!checkDailyTrendGuard(dailyCandles, isBuy)) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): daily trend blocks ${isBuy ? "buy" : "sell"}`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: daily trend blocks ${isBuy ? "long" : "short"}`)
-      stats.skipped++
-      continue
-    }
-
-    // Momentum filter — block signals against strong short-term moves (bounce/selloff)
-    if (!checkMomentumFilter(dailyCandles, isBuy)) {
-      const dir = isBuy ? "long during selloff" : "short during bounce"
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): momentum blocks ${dir}`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: momentum blocks ${dir}`)
-      stats.skipped++
-      continue
-    }
-
     // Bounce confirmation — check preferred timeframes in order
     let bounce = { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false } }
     for (const btf of tier.bounceTimeframes) {
