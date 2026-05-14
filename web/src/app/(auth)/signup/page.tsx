@@ -65,7 +65,7 @@ export default function SignupPage() {
           Create your Arkline account
         </h1>
         <p className="mt-1.5 text-sm text-ark-text-secondary">
-          Start your 7-day free trial. Get instant access to portfolio tracking and market intelligence.
+          Start your 10-day free trial. Get instant access to portfolio tracking and market intelligence.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">

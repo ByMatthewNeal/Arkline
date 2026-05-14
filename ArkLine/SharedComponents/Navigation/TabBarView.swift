@@ -13,7 +13,7 @@ enum AppTab: String, CaseIterable {
         case .home: return "house.fill"
         case .market: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "chart.pie.fill"
-        case .insights: return "text.bubble.fill"
+        case .insights: return "lightbulb.fill"
         case .profile: return "person.fill"
         }
     }
@@ -23,7 +23,7 @@ enum AppTab: String, CaseIterable {
         case .home: return "house"
         case .market: return "chart.line.uptrend.xyaxis"
         case .portfolio: return "chart.pie"
-        case .insights: return "text.bubble"
+        case .insights: return "lightbulb"
         case .profile: return "person"
         }
     }

@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     q: 'Is there a free trial?',
-    a: 'Arkline Pro comes with a 7-day free trial. Add a card to start — you won\'t be charged until the trial ends.',
+    a: 'Arkline Pro comes with a 10-day free trial. Add a card to start — you won\'t be charged until the trial ends.',
   },
   {
     q: 'What payment methods do you accept?',

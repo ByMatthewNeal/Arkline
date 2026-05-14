@@ -214,7 +214,7 @@ export default function LandingPage() {
               Transparent Pricing, Real Value
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              Start with a 7-day free trial. Full access to everything — risk models, AI briefings, macro intelligence, and more.
+              Start with a 10-day free trial. Full access to everything — risk models, AI briefings, macro intelligence, and more.
             </p>
           </FadeIn>
 

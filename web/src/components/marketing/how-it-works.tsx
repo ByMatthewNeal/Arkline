@@ -7,7 +7,7 @@ const steps = [
   {
     icon: UserPlus,
     title: 'Start Your Free Trial',
-    description: 'Sign up in seconds. Add a card to start your 7-day free trial. Available on iOS.',
+    description: 'Sign up in seconds. Add a card to start your 10-day free trial. Available on iOS.',
     color: 'var(--ark-primary)',
   },
   {

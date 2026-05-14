@@ -279,7 +279,7 @@ export default function FeaturesPage() {
               See Arkline in action.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Start your free trial — full access to every feature for 7 days.
+              Start your free trial — full access to every feature for 10 days.
             </p>
             <div className="mt-8">
               <EmailCapture />
