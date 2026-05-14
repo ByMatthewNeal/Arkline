@@ -330,7 +330,7 @@ struct MacroDashboardDetailView: View {
             if zScore.isExtreme {
                 return zScore.zScore.zScore > 0
                     ? "Extreme fear (\(zScore.zScore.formatted)) - potential capitulation"
-                    : "Extreme complacency (\(zScore.zScore.formatted)) - caution advised"
+                    : "Extreme complacency (\(zScore.zScore.formatted)) - markets have historically been due for a shift"
             } else if zScore.isSignificant {
                 return zScore.zScore.zScore > 0
                     ? "Elevated uncertainty (\(zScore.zScore.formatted))"
@@ -647,12 +647,18 @@ private struct MacroInsightCard: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
 
+            // Compliance disclaimer — always visible, not behind a disclosure group
+            Text("For informational purposes only. Not investment advice. Always do your own research.")
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+
             DisclosureGroup("Understanding the Indicators", isExpanded: $showGuide) {
                 VStack(alignment: .leading, spacing: ArkSpacing.md) {
                     guideRow(title: "VIX (Volatility Index)", description: "Measures expected market volatility. Below 15 signals complacency and a risk-on environment. Above 25 indicates elevated fear, which often pressures crypto and risk assets. Spikes above 35 can signal capitulation and potential bottoming.")
                     guideRow(title: "DXY (US Dollar Index)", description: "Tracks the US dollar against a basket of major currencies. A weakening dollar (below ~100) is historically bullish for crypto and commodities, while a strengthening dollar (above ~105) creates headwinds for risk assets.")
                     guideRow(title: "US Net Liquidity", description: "Tracks the Federal Reserve's balance sheet minus money locked in the Treasury General Account and reverse repos. When Net Liquidity rises, more cash is available in financial markets. This is the #1 short-term driver of crypto and risk asset prices.")
-                    guideRow(title: "Market Regime", description: "Combines all four indicators into a single signal. Risk-On means favorable conditions across the board. Risk-Off means multiple headwinds. Mixed means conflicting signals — patience is warranted.")
+                    guideRow(title: "Market Regime", description: "Combines all four indicators into a single signal. Risk-On means favorable conditions across the board. Risk-Off means multiple headwinds. Mixed means conflicting signals.")
 
                     Text("This is not financial advice. Always do your own research.")
                         .font(.caption)
@@ -692,24 +698,24 @@ private struct MacroInsightCard: View {
             if let v = vix, v < 15 {
                 return "Macro conditions are strongly favorable — low volatility, a cooperative dollar, and expanding liquidity create a supportive backdrop for risk assets. Historically these periods align with sustained crypto rallies."
             }
-            return "Macro indicators are aligned to the upside. Low fear, a weakening or stable dollar, and growing liquidity favor accumulation of risk assets like BTC."
+            return "Macro indicators are aligned to the upside. Low fear, a weakening or stable dollar, and growing liquidity have historically supported risk assets like BTC."
         }
 
         // Risk-off with strong conviction
         if regime == .riskOff {
             if let v = vix, v > 35 {
-                return "Extreme fear across markets with a strong dollar and tightening liquidity. These conditions historically precede further drawdowns, but extreme readings can also mark capitulation. Caution is warranted."
+                return "Extreme fear across markets with a strong dollar and tightening liquidity. These conditions historically precede further drawdowns, but extreme readings can also mark capitulation."
             }
-            return "Multiple macro headwinds are present — elevated volatility, dollar strength, or contracting liquidity. Consider reducing risk exposure or waiting for conditions to stabilize before adding positions."
+            return "Multiple macro headwinds are present — elevated volatility, dollar strength, or contracting liquidity. Markets have often been choppy in setups like this, and investors have historically waited for things to settle."
         }
 
         // Mixed — try to identify the dominant factor
         if let v = vix, v > 25 {
-            return "Volatility is elevated while other indicators remain mixed. Fear-driven markets tend to be choppy — risk management and smaller position sizes are prudent until the VIX settles below 20."
+            return "Volatility is elevated while other indicators remain mixed. Fear-driven markets tend to be choppy until the VIX settles below 20."
         }
 
         if let change = dxyChange, change > 0.3 {
-            return "The dollar is strengthening while other conditions are neutral. Dollar headwinds can cap upside for crypto — monitor for a reversal in DXY before adding significant exposure."
+            return "The dollar is strengthening while other conditions are neutral. Dollar headwinds have historically capped upside for crypto until DXY reverses."
         }
 
         if let m2 = m2Change, m2 < -0.5 {

@@ -6,27 +6,76 @@ import Kingfisher
 struct QPSFullGridView: View {
     let signals: [DailyPositioningSignal]
     @Environment(\.colorScheme) var colorScheme
+    @State private var searchText = ""
+
+    private var filteredSignals: [DailyPositioningSignal] {
+        guard !searchText.isEmpty else { return signals }
+        let query = searchText.lowercased()
+        return signals.filter {
+            $0.asset.lowercased().contains(query) ||
+            $0.displayName.lowercased().contains(query)
+        }
+    }
 
     private var groupedSignals: [(QPSAssetCategory, [DailyPositioningSignal])] {
-        let grouped = Dictionary(grouping: signals) { $0.assetCategory }
+        let grouped = Dictionary(grouping: filteredSignals) { $0.assetCategory }
         return grouped.sorted { $0.key.sortOrder < $1.key.sortOrder }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Hint
-                HStack(spacing: 6) {
-                    Image(systemName: "hand.tap")
-                        .font(.system(size: 11))
-                    Text("Tap any asset to view its signal history")
-                        .font(.system(size: 12))
+                // Search bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary)
+                    TextField("Search assets...", text: $searchText)
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
                 }
-                .foregroundColor(AppColors.textSecondary.opacity(0.6))
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                )
+                .padding(.horizontal, 20)
 
-                ForEach(groupedSignals, id: \.0) { category, categorySignals in
-                    categorySection(category, signals: categorySignals)
+                if filteredSignals.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 28))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.4))
+                        Text("No assets matching \"\(searchText)\"")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 40)
+                } else {
+                    // Hint
+                    HStack(spacing: 6) {
+                        Image(systemName: "hand.tap")
+                            .font(.system(size: 11))
+                        Text("Tap any asset to view its signal history")
+                            .font(.system(size: 12))
+                    }
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                    .padding(.horizontal, 24)
+
+                    ForEach(groupedSignals, id: \.0) { category, categorySignals in
+                        categorySection(category, signals: categorySignals)
+                    }
                 }
             }
             .padding(.top, 8)

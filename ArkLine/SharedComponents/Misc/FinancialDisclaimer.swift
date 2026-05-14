@@ -5,7 +5,7 @@ struct FinancialDisclaimer: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        Text("This app does not provide financial or investment advice. Always do your own research and consult a licensed advisor before making crypto-related decisions")
+        Text("This app does not provide financial or investment advice. Always do your own research and consult a licensed advisor before making investment decisions.")
             .font(AppFonts.caption12)
             .foregroundColor(AppColors.textSecondary.opacity(0.7))
             .multilineTextAlignment(.center)

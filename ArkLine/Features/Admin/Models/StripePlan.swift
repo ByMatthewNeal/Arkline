@@ -39,8 +39,8 @@ enum StripePlan: String, CaseIterable, Identifiable {
         switch self {
         case .foundingMonthly: return "$39.99/mo"
         case .foundingAnnual: return "$400/yr"
-        case .standardMonthly: return "$59.99/mo"
-        case .standardAnnual: return "$650/yr"
+        case .standardMonthly: return "$69.99/mo"
+        case .standardAnnual: return "$700/yr"
         }
     }
 

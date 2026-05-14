@@ -48,11 +48,19 @@ struct LoginView: View {
                             .scaleEffect(isAnimating ? 1.1 : 1.0)
                             .opacity(isAnimating ? 1 : 0.6)
 
-                        if let logo = UIImage(named: "ArkLineLogo") {
-                            Image(uiImage: logo)
+                        if UIImage(named: "ArkLineLogo") != nil {
+                            Image("ArkLineLogo")
+                                .renderingMode(.template)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 80, height: 80)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [AppColors.fillPrimary, AppColors.accentLight],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         } else {
                             Image(systemName: "chart.line.uptrend.xyaxis.circle.fill")
                                 .resizable()

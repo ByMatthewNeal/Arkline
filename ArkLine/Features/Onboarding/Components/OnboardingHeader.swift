@@ -114,17 +114,27 @@ struct OnboardingContainer<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             // Progress bar (skip for gate steps)
-            if step != .welcome && step != .inviteCode {
+            if step != .welcome && step != .inviteCode && step != .signIn {
                 OnboardingProgressBar(progress: step.progress)
             }
 
             // Step indicator
-            if showStepIndicator && step != .welcome && step != .inviteCode {
+            if showStepIndicator && step != .welcome && step != .inviteCode && step != .signIn {
                 OnboardingStepIndicator(step: step)
             }
 
             // Content
             content()
+
+            // Compliance disclaimer — shown on profile/account steps, hidden on gate steps
+            if step != .welcome && step != .inviteCode && step != .signIn {
+                Text("Arkline provides informational content only. This is not investment advice.")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, ArkSpacing.xl)
+                    .padding(.bottom, ArkSpacing.sm)
+            }
         }
         .background(AppColors.background(colorScheme))
         .navigationBarBackButtonHidden()

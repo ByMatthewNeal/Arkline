@@ -23,7 +23,7 @@ You are a senior creative strategist with 12 years of experience at top-tier dig
 
 **Key differentiator:** App store ranking data (Coinbase iOS ranking via Apple RSS feeds) as a free, proprietary leading indicator for retail sentiment — nobody else is doing this.
 
-**Pricing:** Single paid tier, $59.99/month or $650/year, 7-day free trial.
+**Pricing:** Single paid tier, $69.99/month or $700/year, 10-day free trial.
 
 **Stage:** Pre-launch. Building toward TestFlight beta. No paid budget. Organic only.
 

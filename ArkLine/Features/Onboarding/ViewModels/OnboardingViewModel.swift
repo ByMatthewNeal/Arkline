@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Onboarding Step
 enum OnboardingStep: Int, CaseIterable {
     case welcome
+    case signIn
     case inviteCode
     case email
     case verification
@@ -17,7 +18,7 @@ enum OnboardingStep: Int, CaseIterable {
     case notifications
 
     /// Gate steps excluded from progress tracking
-    private static let gateSteps: Set<OnboardingStep> = [.welcome, .inviteCode]
+    private static let gateSteps: Set<OnboardingStep> = [.welcome, .signIn, .inviteCode]
 
     /// Progress excluding gate steps (0.0 to 1.0)
     var progress: Double {
@@ -43,6 +44,7 @@ enum OnboardingStep: Int, CaseIterable {
     var title: String {
         switch self {
         case .welcome: return "Welcome"
+        case .signIn: return "Sign In"
         case .inviteCode: return "Invite Code"
         case .email: return "Enter Email"
         case .verification: return "Verify Email"
@@ -71,7 +73,7 @@ enum OnboardingStep: Int, CaseIterable {
     /// Category for grouping steps in UI
     var category: StepCategory {
         switch self {
-        case .welcome, .inviteCode:
+        case .welcome, .signIn, .inviteCode:
             return .intro
         case .email, .verification:
             return .authentication
@@ -283,10 +285,25 @@ class OnboardingViewModel {
     }
 
     var isReturningUser = false
+    var password: String = ""
+
+    var isPasswordValid: Bool {
+        password.count >= 8
+    }
 
     func skipToLogin() {
         isMovingForward = true
         isReturningUser = true
+        currentStep = .signIn
+    }
+
+    func useEmailCodeFallback() {
+        // Clear any error state from the password sign-in attempt so it
+        // doesn't bleed into the OTP screen. Also wipe the password so
+        // the SignInView is clean if the user navigates back.
+        errorMessage = nil
+        password = ""
+        isMovingForward = true
         currentStep = .email
     }
 
@@ -374,6 +391,60 @@ class OnboardingViewModel {
             nextStep()
         } catch {
             errorMessage = AppError.from(error).userMessage
+        }
+
+        isLoading = false
+    }
+
+    // MARK: - Password Sign In
+
+    func signInWithPassword() async {
+        guard isEmailValid else {
+            errorMessage = "Please enter a valid email"
+            return
+        }
+        guard isPasswordValid else {
+            errorMessage = "Password must be at least 8 characters"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            _ = try await SupabaseAuthManager.shared.signIn(email: email, password: password)
+
+            guard let userId = SupabaseAuthManager.shared.currentUserId else {
+                throw AppError.authenticationRequired
+            }
+
+            guard let profile = try await SupabaseDatabase.shared.getProfile(userId: userId) else {
+                errorMessage = "Account found but profile is missing. Please contact support."
+                isLoading = false
+                return
+            }
+
+            var user = User(
+                id: userId,
+                username: profile.username ?? email.components(separatedBy: "@").first ?? "user",
+                email: email,
+                fullName: profile.fullName,
+                faceIdEnabled: false
+            )
+            if let role = profile.role {
+                user.role = UserRole(rawValue: role) ?? .user
+            }
+            if let subStatus = profile.subscriptionStatus {
+                user.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? .none
+            }
+            user.trialEnd = profile.trialEnd
+
+            createdUser = user
+            Haptics.success()
+            isOnboardingComplete = true
+        } catch {
+            errorMessage = AppError.from(error).userMessage
+            Haptics.error()
         }
 
         isLoading = false

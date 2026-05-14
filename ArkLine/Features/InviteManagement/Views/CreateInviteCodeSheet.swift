@@ -4,7 +4,7 @@ import SwiftUI
 
 enum TrialDuration: Int, CaseIterable, Identifiable {
     case none = 0
-    case sevenDays = 7
+    case tenDays = 10
     case oneMonth = 30
     case threeMonths = 90
     case sixMonths = 180
@@ -14,7 +14,7 @@ enum TrialDuration: Int, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .none: return "None"
-        case .sevenDays: return "7 days"
+        case .tenDays: return "10 days"
         case .oneMonth: return "1 month"
         case .threeMonths: return "3 months"
         case .sixMonths: return "6 months"

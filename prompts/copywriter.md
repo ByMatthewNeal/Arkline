@@ -41,7 +41,7 @@ Reads charts. Wants frameworks, not tips. Treats investing as a discipline, not 
 as a proprietary leading indicator for retail sentiment — free to implement, hard to
 replicate, nobody else is tracking it.
 
-**Pricing:** Single paid tier — $59.99/month or $650/year. 7-day free trial.
+**Pricing:** Single paid tier — $69.99/month or $700/year. 10-day free trial.
 
 **Stage:** Pre-launch. Building toward TestFlight beta then App Store submission.
 

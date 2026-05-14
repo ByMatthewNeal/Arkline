@@ -412,6 +412,11 @@ struct BroadcastDetailView: View {
                         appReferencesSection
                     }
 
+                    // Compliance disclaimer — broadcasts may contain commentary, opinions, or
+                    // references to the Arkline portfolio. This makes the informational framing
+                    // explicit on every broadcast for both users and admins.
+                    broadcastDisclaimer
+
                     // Reactions
                     reactionsSection
                 }
@@ -446,6 +451,28 @@ struct BroadcastDetailView: View {
                 await loadReactions()
             }
         }
+    }
+
+    // MARK: - Compliance Disclaimer
+
+    private var broadcastDisclaimer: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            Text("Informational only. Not investment advice.")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(AppColors.textSecondary)
+
+            Text("Broadcasts reflect the author's personal commentary and pattern analysis based on publicly available data. Market conditions change rapidly. Nothing in a broadcast — including references to the Arkline portfolio — should be the sole basis for any investment decision. You are solely responsible for your own research and any actions you take. Consult a licensed financial advisor before making investment decisions.")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(ArkSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                .fill(AppColors.textSecondary.opacity(0.06))
+        )
+        .padding(.top, ArkSpacing.sm)
     }
 
     // MARK: - Reactions Section

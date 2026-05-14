@@ -1424,7 +1424,7 @@ private struct StockRiskDetailSheet: View {
                 RiskLevelLegendRow(
                     range: "0.20 - 0.40",
                     category: "Low Risk",
-                    description: "Still favorable accumulation, attractive for multi-year investors",
+                    description: "Still favorable accumulation, historically suited for long-term holders",
                     color: RiskColors.lowRisk
                 )
                 RiskLevelLegendRow(
@@ -1452,6 +1452,12 @@ private struct StockRiskDetailSheet: View {
                     color: RiskColors.extremeRisk
                 )
             }
+
+            // Compliance disclaimer — informational, not advisory
+            Text("For informational purposes only. Not investment advice.")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                .padding(.top, ArkSpacing.xs)
         }
         .padding(ArkSpacing.md)
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)

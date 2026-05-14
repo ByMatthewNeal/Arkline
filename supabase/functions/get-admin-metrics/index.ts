@@ -14,8 +14,8 @@ const PRICES = {
     annual:  parseInt(Deno.env.get("FOUNDING_ANNUAL_CENTS")  ?? "40000"), // $400.00
   },
   standard: {
-    monthly: parseInt(Deno.env.get("STANDARD_MONTHLY_CENTS") ?? "5999"),  // $59.99
-    annual:  parseInt(Deno.env.get("STANDARD_ANNUAL_CENTS")  ?? "65000"), // $650.00
+    monthly: parseInt(Deno.env.get("STANDARD_MONTHLY_CENTS") ?? "6999"),  // $69.99
+    annual:  parseInt(Deno.env.get("STANDARD_ANNUAL_CENTS")  ?? "70000"), // $700.00
   },
 } as const
 

@@ -87,7 +87,7 @@ class SendInviteViewModel {
                     recipientName: recipientName.nilIfEmpty,
                     note: note.nilIfEmpty,
                     priceId: selectedPlan.priceId,
-                    trialDays: 7
+                    trialDays: 10
                 )
                 state = .successTrial(checkoutURL: response.checkoutUrl)
 

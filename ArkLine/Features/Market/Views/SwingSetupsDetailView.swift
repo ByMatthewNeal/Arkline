@@ -419,6 +419,14 @@ struct SwingSetupsDetailView: View {
                     if let stats = viewModel.stats, !stats.assetBreakdown.isEmpty, selectedFilter == .history {
                         assetBreakdownSection(stats.assetBreakdown)
                     }
+
+                    // Compliance footer — visible on Active and History list views
+                    Text("Trade signals are educational tools — not financial or investment advice. Always do your own research.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, ArkSpacing.xl)
+                        .padding(.top, ArkSpacing.md)
                 }
 
                 Spacer(minLength: 100)
@@ -1302,7 +1310,7 @@ struct SwingSetupsDetailView: View {
             } else if combined.contains("no bounce confirmation") {
                 return "Price is near key levels but hasn't bounced yet. The system waits for confirmation to avoid false entries."
             } else if combined.contains("R:R") {
-                return "Setups are too tight right now — the risk/reward isn't favorable. When price pulls back further from resistance, better entries will appear."
+                return "Setups are too tight right now — the risk/reward isn't favorable. When price pulls back further from resistance, the next setups may form."
             } else if combined.contains("EMA trend misaligned") {
                 return "The trend filter is blocking counter-trend signals. This protects against trading against momentum."
             } else if combined.contains("choppy") {

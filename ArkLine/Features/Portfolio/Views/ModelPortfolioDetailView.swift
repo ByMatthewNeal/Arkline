@@ -46,6 +46,9 @@ struct ModelPortfolioDetailView: View {
                 // NAV Header
                 navHeader
 
+                // Compliance disclaimer — persistent, visible by default
+                modelPortfolioDisclaimer
+
                 // Performance Chart
                 performanceChart
 
@@ -99,15 +102,15 @@ struct ModelPortfolioDetailView: View {
                     HStack(spacing: 4) {
                         Image(systemName: viewModel.isFollowing(portfolio) ? "checkmark.circle.fill" : "plus.circle")
                             .font(.system(size: 15))
-                        Text(viewModel.isFollowing(portfolio) ? "Following" : "Follow")
+                        Text(viewModel.isFollowing(portfolio) ? "Tracking" : "Track")
                             .font(AppFonts.caption12Medium)
                     }
                     .foregroundColor(viewModel.isFollowing(portfolio) ? AppColors.success : AppColors.accent)
                 }
             }
         }
-        .alert("Unfollow \(portfolio.name)?", isPresented: $showUnfollowConfirmation) {
-            Button("Unfollow", role: .destructive) {
+        .alert("Stop tracking \(portfolio.name)?", isPresented: $showUnfollowConfirmation) {
+            Button("Stop tracking", role: .destructive) {
                 viewModel.toggleFollow(portfolio)
             }
             Button("Cancel", role: .cancel) {}
@@ -246,6 +249,36 @@ struct ModelPortfolioDetailView: View {
         let data = filteredBenchmark
         guard let first = data.first?.nav, let last = data.last?.nav, first > 0 else { return 0 }
         return ((last / first) - 1) * 100
+    }
+
+    // MARK: - Compliance Disclaimer
+
+    private var modelPortfolioDisclaimer: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.warning)
+                Text("Hypothetical model portfolio — not investment advice")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Text("AI-generated systematic strategy for educational and informational purposes only. Performance shown is simulated, not actual. Past performance does not guarantee future results. Always do your own research and consult a licensed financial advisor before making investment decisions.")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(ArkSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                .fill(AppColors.warning.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                .stroke(AppColors.warning.opacity(0.2), lineWidth: 1)
+        )
     }
 
     @ViewBuilder
@@ -938,7 +971,7 @@ struct ModelPortfolioDetailView: View {
                     Text("Since Jan 1, 2026")
                         .font(AppFonts.body14Medium)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
-                    Text("If you started following this strategy in 2026")
+                    Text("Hypothetical performance since Jan 2026")
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textTertiary)
                 }

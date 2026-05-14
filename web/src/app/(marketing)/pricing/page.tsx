@@ -159,12 +159,12 @@ export default function PricingPage() {
 
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                  $59.99
+                  $69.99
                 </span>
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs text-ark-text-tertiary">
-                or <span className="font-medium text-ark-text-secondary">$650/year</span> — save over $69
+                or <span className="font-medium text-ark-text-secondary">$700/year</span> — save over $139
               </p>
 
               <ul className="mt-6 space-y-2.5">

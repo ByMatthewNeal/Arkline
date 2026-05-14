@@ -680,7 +680,7 @@ struct LeverageCalculatorView: View {
                 .foregroundColor(textPrimary.opacity(0.8))
 
             HStack {
-                Text("Max Safe Leverage:")
+                Text("Calculated leverage cap:")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(AppColors.textSecondary)
                 Text("\(calc.maxSafeLeverage)x")
@@ -714,7 +714,7 @@ struct LeverageCalculatorView: View {
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.accent)
-                Text("Max Safe Leverage for This Signal:")
+                Text("Calculated leverage cap for this signal:")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(AppColors.textSecondary)
                 Text("\(maxSafe)x")

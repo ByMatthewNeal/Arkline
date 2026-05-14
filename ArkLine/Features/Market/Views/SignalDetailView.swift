@@ -1348,7 +1348,7 @@ struct SignalDetailView: View {
     // MARK: - 7. Disclaimer
 
     private var disclaimerSection: some View {
-        Text("This is not financial advice. Always do your own research and consult a licensed advisor before making crypto-related decisions.")
+        Text("This is not financial advice. Always do your own research and consult a licensed advisor before making investment decisions.")
             .font(.system(size: 10))
             .foregroundColor(AppColors.textSecondary.opacity(0.6))
             .multilineTextAlignment(.center)
