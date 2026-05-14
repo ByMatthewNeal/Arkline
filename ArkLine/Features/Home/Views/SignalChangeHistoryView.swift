@@ -13,6 +13,7 @@ struct SignalChangeHistoryView: View {
     @State private var isLoadingLookup = false
     @State private var showDatePicker = false
     @State private var expandedSignalId: UUID?
+    @State private var searchText = ""
 
     private let service = PositioningSignalService()
 
@@ -44,9 +45,18 @@ struct SignalChangeHistoryView: View {
         return f
     }()
 
+    private var filteredChanges: [DailyPositioningSignal] {
+        guard !searchText.isEmpty else { return changes }
+        let query = searchText.lowercased()
+        return changes.filter {
+            $0.asset.lowercased().contains(query) ||
+            $0.displayName.lowercased().contains(query)
+        }
+    }
+
     /// Group changes by signal_date
     private var groupedChanges: [(date: Date, changes: [DailyPositioningSignal])] {
-        let grouped = Dictionary(grouping: changes) { signal in
+        let grouped = Dictionary(grouping: filteredChanges) { signal in
             Calendar.current.startOfDay(for: signal.signalDate)
         }
         return grouped.sorted { $0.key > $1.key }
@@ -56,6 +66,32 @@ struct SignalChangeHistoryView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
+                // Search bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppColors.textSecondary)
+                    TextField("Search assets...", text: $searchText)
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                )
+                .padding(.horizontal)
+
                 // Date lookup section
                 dateLookupSection
 
