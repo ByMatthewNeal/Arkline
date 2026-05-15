@@ -13,6 +13,8 @@ struct AdminQuickShareView: View {
     var body: some View {
         ZStack {
             MeshGradientBackground()
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
             ScrollView {
                 VStack(spacing: ArkSpacing.xl) {
