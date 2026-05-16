@@ -28,10 +28,10 @@ enum StripePlan: String, CaseIterable, Identifiable {
 
     var paymentURL: String {
         switch self {
-        case .foundingMonthly: return "https://buy.stripe.com/test_14AfZhfXpbzx8Ho8gu6Ri0j"
-        case .foundingAnnual: return "https://buy.stripe.com/test_14A28r26zfPN5vceES6Ri0i"
-        case .standardMonthly: return "https://buy.stripe.com/test_5kQ3cvbH91YX4r8bsG6Ri0h"
-        case .standardAnnual: return "https://buy.stripe.com/test_9B6cN5fXpeLJ9Ls54i6Ri0g"
+        case .foundingMonthly: return "https://buy.stripe.com/14A3cxeeE3063rP5341Fe03"
+        case .foundingAnnual: return "https://buy.stripe.com/00weVf1rSesKbYl8fg1Fe02"
+        case .standardMonthly: return "https://buy.stripe.com/aFa9AV0nOgAS9Qd7bc1Fe01"
+        case .standardAnnual: return "https://buy.stripe.com/3cI6oJ7QgbgyaUh2UW1Fe00"
         }
     }
 
@@ -50,10 +50,10 @@ enum StripePlan: String, CaseIterable, Identifiable {
 
     var priceId: String {
         switch self {
-        case .foundingMonthly: return "price_1T7fMpIkKaS0zcmXlgr4orwA"
-        case .foundingAnnual: return "price_1T7fNgIkKaS0zcmXmhkZDBl0"
-        case .standardMonthly: return "price_1T7fOAIkKaS0zcmX3ZwtcSZO"
-        case .standardAnnual: return "price_1T7fOlIkKaS0zcmXop5vY67x"
+        case .foundingMonthly: return "price_1TXCJyPHuageZ7zbIGTJCHPl"
+        case .foundingAnnual: return "price_1TXCOPPHuageZ7zb7d2HyeHc"
+        case .standardMonthly: return "price_1TXCPTPHuageZ7zbCrDoFlRO"
+        case .standardAnnual: return "price_1TXCQVPHuageZ7zbPW34YDHU"
         }
     }
 }

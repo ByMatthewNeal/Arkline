@@ -5,10 +5,10 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2024-12-18.acacia",
 })
 
-// Founding member price IDs
+// Founding member price IDs (live mode)
 const FOUNDING_PRICE_IDS = new Set([
-  "price_1T7fMpIkKaS0zcmXlgr4orwA", // founding monthly
-  "price_1T7fNgIkKaS0zcmXmhkZDBl0", // founding annual
+  "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
+  "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
 ])
 
 // Matches iOS InviteCode.generateCode()
@@ -147,9 +147,8 @@ Deno.serve(async (req) => {
   }
 
   // 3. Create Stripe Checkout Session
-  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
   const planLabel = FOUNDING_PRICE_IDS.has(body.price_id) ? "founding" : "standard"
-  const successUrl = `${supabaseUrl}/functions/v1/payment-success?plan=${planLabel}`
+  const successUrl = `https://arkline.io/payment-success?plan=${planLabel}`
 
   let session: Stripe.Checkout.Session
   try {
@@ -195,16 +194,131 @@ Deno.serve(async (req) => {
     })
     .eq("id", invite.id)
 
+  // 5. Email the checkout link to the recipient (best-effort, doesn't block response)
+  const emailSent = await sendCheckoutInviteEmail({
+    email: body.email,
+    recipientName: body.recipient_name,
+    note: body.note,
+    checkoutUrl: session.url ?? "",
+    trialDays: body.trial_days,
+  })
+
   const trialLabel = body.trial_days ? ` with ${body.trial_days}-day trial` : ""
-  console.log(`Created checkout session for ${body.email} (${tier}${trialLabel}), invite ${invite.id}, code ${code}`)
+  console.log(`Created checkout session for ${body.email} (${tier}${trialLabel}), invite ${invite.id}, code ${code}, email_sent=${emailSent}`)
 
   return new Response(JSON.stringify({
     success: true,
     checkout_url: session.url,
     invite_id: invite.id,
     code,
+    email_sent: emailSent,
   }), {
     status: 200,
     headers: corsHeaders,
   })
 })
+
+// --- Email Helper ---
+
+interface CheckoutEmailParams {
+  email: string
+  recipientName?: string
+  note?: string
+  checkoutUrl: string
+  trialDays?: number
+}
+
+async function sendCheckoutInviteEmail(params: CheckoutEmailParams): Promise<boolean> {
+  const resendKey = Deno.env.get("RESEND_API_KEY")
+  if (!resendKey) {
+    console.warn("RESEND_API_KEY not set — skipping checkout invite email")
+    return false
+  }
+  if (!params.checkoutUrl) {
+    console.warn("No checkout URL — skipping email")
+    return false
+  }
+
+  const isTrial = !!(params.trialDays && params.trialDays > 0)
+  const firstName = (params.recipientName ?? "").trim().split(/\s+/)[0] || ""
+  const greeting = firstName ? `Hi ${firstName},` : "Hi there,"
+
+  const subject = isTrial
+    ? `Your Arkline ${params.trialDays}-day free trial is ready`
+    : "Your Arkline membership is ready to activate"
+
+  const headline = isTrial
+    ? `Start your ${params.trialDays}-day free trial`
+    : "Activate your Arkline membership"
+
+  const subtitle = isTrial
+    ? `Tap below to start your trial. Your card won't be charged until day ${(params.trialDays ?? 10) + 1}.`
+    : "Tap below to complete checkout and get instant access."
+
+  const noteBlock = params.note && params.note.trim().length > 0
+    ? `<div style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 24px; font-size: 14px; color: #555;">
+         <p style="margin: 0;">${escapeHtml(params.note.trim())}</p>
+       </div>`
+    : ""
+
+  const footer = isTrial
+    ? "This invite link is unique to you and expires in 15 days. After your free trial, your membership will renew automatically unless you cancel."
+    : "This invite link is unique to you and expires in 15 days."
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendKey}`,
+      },
+      body: JSON.stringify({
+        from: "Arkline <onboarding@resend.dev>",
+        to: [params.email],
+        subject,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <h1 style="font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0;">${headline}</h1>
+              <p style="font-size: 16px; color: #666; margin-top: 8px;">${greeting}</p>
+              <p style="font-size: 16px; color: #666; margin-top: 8px;">${subtitle}</p>
+            </div>
+
+            ${noteBlock}
+
+            <div style="text-align: center; margin-bottom: 32px;">
+              <a href="${params.checkoutUrl}" style="display: inline-block; background: #3369FF; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Complete checkout</a>
+            </div>
+
+            <div style="border-top: 1px solid #eee; padding-top: 20px;">
+              <p style="font-size: 13px; color: #999; text-align: center; margin: 0;">
+                ${footer}
+              </p>
+            </div>
+          </div>
+        `,
+      }),
+    })
+
+    if (res.ok) {
+      console.log(`Checkout invite email sent to ${params.email} (trial: ${isTrial})`)
+      return true
+    }
+
+    const errText = await res.text()
+    console.error(`Failed to send checkout invite email: ${errText}`)
+    return false
+  } catch (err) {
+    console.error("Error sending checkout invite email:", err)
+    return false
+  }
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}

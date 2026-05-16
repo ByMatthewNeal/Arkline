@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   }
 
   const body: GenerateInviteRequest = await req.json()
-  const expirationDays = body.expiration_days ?? 7
+  const expirationDays = body.expiration_days ?? 15
 
   // Generate unique code with collision retry
   let code: string = ""

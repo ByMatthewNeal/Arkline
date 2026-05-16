@@ -123,8 +123,20 @@ class SendInviteViewModel {
 
         let name = recipientName.isEmpty ? "" : " \(recipientName)"
         let text = isTrial
-            ? "Hey\(name), try Arkline free for 7 days. Enter your card to start your trial \u{2014} you won't be charged until day 8: \(url)"
-            : "Hey\(name), here's your exclusive invite to Arkline. Complete your membership here: \(url)"
+            ? """
+            Hey\(name),
+
+            Try Arkline free for 10 days. Tap below to start your trial \u{2014} your card won't be charged until day 11:
+
+            \(url)
+            """
+            : """
+            Hey\(name),
+
+            Here's your exclusive invite to Arkline. Tap below to activate your membership:
+
+            \(url)
+            """
 
         #if canImport(UIKit)
         let activityVC = UIActivityViewController(
