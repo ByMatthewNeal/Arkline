@@ -386,6 +386,7 @@ struct ProfileDTO: Codable {
     let role: String?
     let subscriptionStatus: String?
     let trialEnd: Date?
+    let currentPeriodEnd: Date?
 
     enum CodingKeys: String, CodingKey {
         case id, username, email, role
@@ -393,6 +394,7 @@ struct ProfileDTO: Codable {
         case avatarUrl = "avatar_url"
         case subscriptionStatus = "subscription_status"
         case trialEnd = "trial_end"
+        case currentPeriodEnd = "current_period_end"
     }
 }
 

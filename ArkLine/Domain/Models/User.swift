@@ -59,6 +59,7 @@ struct User: Codable, Identifiable, Equatable {
     var role: UserRole
     var subscriptionStatus: SubscriptionStatus
     var trialEnd: Date?
+    var currentPeriodEnd: Date?
     var createdAt: Date
     var updatedAt: Date
 
@@ -83,6 +84,7 @@ struct User: Codable, Identifiable, Equatable {
         case role
         case subscriptionStatus = "subscription_status"
         case trialEnd = "trial_end"
+        case currentPeriodEnd = "current_period_end"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -110,6 +112,7 @@ struct User: Codable, Identifiable, Equatable {
         role = try container.decodeIfPresent(UserRole.self, forKey: .role) ?? .user
         subscriptionStatus = try container.decodeIfPresent(SubscriptionStatus.self, forKey: .subscriptionStatus) ?? .none
         trialEnd = try container.decodeIfPresent(Date.self, forKey: .trialEnd)
+        currentPeriodEnd = try container.decodeIfPresent(Date.self, forKey: .currentPeriodEnd)
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
     }
@@ -136,6 +139,7 @@ struct User: Codable, Identifiable, Equatable {
         try container.encode(role, forKey: .role)
         try container.encode(subscriptionStatus, forKey: .subscriptionStatus)
         try container.encodeIfPresent(trialEnd, forKey: .trialEnd)
+        try container.encodeIfPresent(currentPeriodEnd, forKey: .currentPeriodEnd)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }
@@ -161,6 +165,7 @@ struct User: Codable, Identifiable, Equatable {
         role: UserRole = .user,
         subscriptionStatus: SubscriptionStatus = .none,
         trialEnd: Date? = nil,
+        currentPeriodEnd: Date? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -183,6 +188,7 @@ struct User: Codable, Identifiable, Equatable {
         self.role = role
         self.subscriptionStatus = subscriptionStatus
         self.trialEnd = trialEnd
+        self.currentPeriodEnd = currentPeriodEnd
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -345,11 +351,15 @@ extension User {
         role == .premium || role == .admin
     }
 
-    /// Whether the user has active access (active subscription, trial, or admin)
+    /// Whether the user has active access (active subscription, trial, or admin).
+    /// Canceled/past-due users retain access until their paid period ends (Apple 3.1.2).
     var isAccessGranted: Bool {
-        role == .admin ||
-        subscriptionStatus == .active ||
-        subscriptionStatus == .trialing
+        if role == .admin { return true }
+        if subscriptionStatus == .active || subscriptionStatus == .trialing { return true }
+        if subscriptionStatus == .canceled || subscriptionStatus == .pastDue {
+            if let periodEnd = currentPeriodEnd, periodEnd > Date() { return true }
+        }
+        return false
     }
 
     /// Days remaining in trial, nil if not trialing

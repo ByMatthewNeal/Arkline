@@ -64,6 +64,7 @@
 		2468C41EA54E4F60BE5F4E6E /* MarketSummaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6BACE34C9446559D45628B /* MarketSummaryService.swift */; };
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
 		SIGNIN0000000000000022 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SIGNIN0000000000000002 /* SignInView.swift */; };
+		SUBEXP0000000000000022 /* SubscriptionExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBEXP0000000000000002 /* SubscriptionExpiredView.swift */; };
 		25C648A271174A9662409B17 /* GoldDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */; };
 		268029D9774A8903AB6452C0 /* MockVIXService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E32BE245697E8AAFD3E0A18 /* MockVIXService.swift */; };
 		27E763190A6B53BA4B5D8A6B /* MarketDeckViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF094603AEBA19EADB55425 /* MarketDeckViewModel.swift */; };
@@ -595,6 +596,7 @@
 		225593D759C7AC730D64DB0F /* TechnicalIndicatorCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TechnicalIndicatorCards.swift; sourceTree = "<group>"; };
 		226992D4574D4FB6A57D1757 /* EnterEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterEmailView.swift; sourceTree = "<group>"; };
 		SIGNIN0000000000000002 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		SUBEXP0000000000000002 /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
 		22BFE18532B42396BDE06325 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BroadcastServiceProtocol.swift; sourceTree = "<group>"; };
 		237DDB353BC4F1C6D6B5C132 /* MacroSlideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroSlideView.swift; sourceTree = "<group>"; };
@@ -2236,6 +2238,7 @@
 				6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */,
 				226992D4574D4FB6A57D1757 /* EnterEmailView.swift */,
 				SIGNIN0000000000000002 /* SignInView.swift */,
+				SUBEXP0000000000000002 /* SubscriptionExpiredView.swift */,
 				0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */,
 				A7B3C9D5E1F2A8B4C0D6E2F3 /* NotificationSetupView.swift */,
 				ABF01AA7F99FF1B71AD4E243 /* PersonalInfoView.swift */,
@@ -2747,6 +2750,7 @@
 				C3FBD16C521507EA40CFD953 /* EconomicEventsData.swift in Sources */,
 				248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */,
 				SIGNIN0000000000000022 /* SignInView.swift in Sources */,
+				SUBEXP0000000000000022 /* SubscriptionExpiredView.swift in Sources */,
 				386CF39874D6A2F1687A3828 /* EventRowView.swift in Sources */,
 				B5C77358455AF608051D2BC5 /* ExportService.swift in Sources */,
 				A3B4C5D6E7F8A9B0C1D2E3F4 /* SentimentRegimeAlertManager.swift in Sources */,

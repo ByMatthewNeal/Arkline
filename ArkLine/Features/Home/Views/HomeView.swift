@@ -40,12 +40,14 @@ struct HomeView: View {
                             .padding(.horizontal, 20)
                         }
 
-                        // Subscription status banner
-                        if let status = appState.currentUser?.subscriptionStatus,
-                           status != .active && status != .none {
+                        // Subscription status banner — never shown to admins
+                        // (admins have full access regardless of subscription state)
+                        if let user = appState.currentUser,
+                           user.role != .admin,
+                           user.subscriptionStatus != .active && user.subscriptionStatus != .none {
                             SubscriptionBannerView(
-                                status: status,
-                                trialDaysRemaining: appState.currentUser?.trialDaysRemaining
+                                status: user.subscriptionStatus,
+                                trialDaysRemaining: user.trialDaysRemaining
                             )
                             .padding(.horizontal, 20)
                         }

@@ -10,10 +10,10 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 )
 
-// Founding member price IDs
+// Founding member price IDs (live mode)
 const FOUNDING_PRICE_IDS = new Set([
-  "price_1T7fMpIkKaS0zcmXlgr4orwA", // founding monthly
-  "price_1T7fNgIkKaS0zcmXmhkZDBl0", // founding annual
+  "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
+  "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
 ])
 const FOUNDING_MEMBER_CAP = 150
 
@@ -316,7 +316,7 @@ async function updateSubscriptionStatus(stripeSubId: string, status: string) {
 async function syncProfileStatus(stripeSubId: string, status: string) {
   const { data } = await supabase
     .from("subscriptions")
-    .select("user_id, trial_end")
+    .select("user_id, trial_end, current_period_end")
     .eq("stripe_subscription_id", stripeSubId)
     .single()
 
@@ -325,9 +325,10 @@ async function syncProfileStatus(stripeSubId: string, status: string) {
     if (data.trial_end) {
       profileUpdate.trial_end = data.trial_end
     } else if (status !== "trialing") {
-      // Clear trial_end when no longer trialing
       profileUpdate.trial_end = null
     }
+    // Always sync current_period_end so iOS can enforce access after cancellation
+    profileUpdate.current_period_end = data.current_period_end ?? null
     await supabase
       .from("profiles")
       .update(profileUpdate)
@@ -351,15 +352,15 @@ async function sendInviteEmail(email: string, code: string, isTrial = false) {
     : "Your Arkline Invite Code"
 
   const headline = isTrial
-    ? "Your 7-Day Free Trial"
+    ? "Your 10-Day Free Trial"
     : "Welcome to Arkline"
 
   const subtitle = isTrial
-    ? "Your trial is active. Download the app and use the code below to get started. You won't be charged until day 8."
+    ? "Your trial is active. Download the app and use the code below to get started. You won't be charged until day 11."
     : "Your payment was successful. Here's your invite code."
 
   const footer = isTrial
-    ? "Your 7-day free trial has started. Your card will be charged automatically on day 8 unless you cancel."
+    ? "Your 10-day free trial has started. Your card will be charged automatically on day 11 unless you cancel."
     : "Enter this code in the Arkline app to activate your membership.<br>This code expires in 15 days."
 
   try {
