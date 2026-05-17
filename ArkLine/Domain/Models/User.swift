@@ -351,6 +351,12 @@ extension User {
         role == .premium || role == .admin
     }
 
+    /// True when the user is mid-account-setup — paid via Stripe, signed in,
+    /// but the webhook hasn't yet updated their subscription_status to active.
+    var isInAccountSetup: Bool {
+        role != .admin && subscriptionStatus == .none
+    }
+
     /// Whether the user has active access (active subscription, trial, or admin).
     /// Canceled/past-due users retain access until their paid period ends (Apple 3.1.2).
     var isAccessGranted: Bool {

@@ -65,6 +65,7 @@
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
 		CRKVM000000000000022 /* CryptoRiskLevelsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRKVM000000000000002 /* CryptoRiskLevelsViewModel.swift */; };
 		CRKSCRN0000000000022 /* CryptoRiskLevelsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRKSCRN0000000000002 /* CryptoRiskLevelsScreen.swift */; };
+		ACCTSETUP00000000022 /* AccountSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACCTSETUP00000000002 /* AccountSetupView.swift */; };
 		SIGNIN0000000000000022 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SIGNIN0000000000000002 /* SignInView.swift */; };
 		SUBEXP0000000000000022 /* SubscriptionExpiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBEXP0000000000000002 /* SubscriptionExpiredView.swift */; };
 		25C648A271174A9662409B17 /* GoldDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */; };
@@ -599,6 +600,7 @@
 		226992D4574D4FB6A57D1757 /* EnterEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterEmailView.swift; sourceTree = "<group>"; };
 		CRKVM000000000000002 /* CryptoRiskLevelsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRiskLevelsViewModel.swift; sourceTree = "<group>"; };
 		CRKSCRN0000000000002 /* CryptoRiskLevelsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRiskLevelsScreen.swift; sourceTree = "<group>"; };
+		ACCTSETUP00000000002 /* AccountSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSetupView.swift; sourceTree = "<group>"; };
 		SIGNIN0000000000000002 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		SUBEXP0000000000000002 /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
 		22BFE18532B42396BDE06325 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
@@ -2245,6 +2247,7 @@
 				226992D4574D4FB6A57D1757 /* EnterEmailView.swift */,
 				SIGNIN0000000000000002 /* SignInView.swift */,
 				SUBEXP0000000000000002 /* SubscriptionExpiredView.swift */,
+				ACCTSETUP00000000002 /* AccountSetupView.swift */,
 				0083E2B88DC038446FF5DE7B /* FaceIDSetupView.swift */,
 				A7B3C9D5E1F2A8B4C0D6E2F3 /* NotificationSetupView.swift */,
 				ABF01AA7F99FF1B71AD4E243 /* PersonalInfoView.swift */,
@@ -2757,6 +2760,7 @@
 				248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */,
 				CRKVM000000000000022 /* CryptoRiskLevelsViewModel.swift in Sources */,
 				CRKSCRN0000000000022 /* CryptoRiskLevelsScreen.swift in Sources */,
+				ACCTSETUP00000000022 /* AccountSetupView.swift in Sources */,
 				SIGNIN0000000000000022 /* SignInView.swift in Sources */,
 				SUBEXP0000000000000022 /* SubscriptionExpiredView.swift in Sources */,
 				386CF39874D6A2F1687A3828 /* EventRowView.swift in Sources */,
