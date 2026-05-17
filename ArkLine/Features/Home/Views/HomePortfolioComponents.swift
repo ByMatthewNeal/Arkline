@@ -524,9 +524,17 @@ struct MultiCoinRiskSection: View {
 
                 Spacer()
 
-                Text("\(riskLevels.count) selected")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
+                NavigationLink {
+                    CryptoRiskLevelsScreen()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("See all")
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(AppColors.accent)
+                }
             }
             .padding(.horizontal, ArkSpacing.xs)
 
