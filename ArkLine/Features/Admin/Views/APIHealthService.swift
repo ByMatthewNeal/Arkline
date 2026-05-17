@@ -378,7 +378,7 @@ actor APIHealthService {
         let start = Date()
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await PinnedURLSession.shared.data(for: request)
             let latency = Int(Date().timeIntervalSince(start) * 1000)
 
             guard let httpResponse = response as? HTTPURLResponse else {

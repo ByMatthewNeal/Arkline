@@ -266,7 +266,7 @@ struct SignalDetailView: View {
                 logDebug("Invalid URL for price fetch: \(pair)", category: .network)
                 return
             }
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let (data, _) = try await PinnedURLSession.shared.data(from: url)
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let candles = json["candles"] as? [[String: Any]],
                let latest = candles.first,

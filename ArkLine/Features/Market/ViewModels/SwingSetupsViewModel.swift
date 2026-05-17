@@ -124,7 +124,7 @@ class SwingSetupsViewModel {
             let pair = "\(asset)-USD"
             guard let url = URL(string: "https://api.coinbase.com/api/v3/brokerage/market/products/\(pair)/candles?granularity=ONE_HOUR&limit=1") else { continue }
             do {
-                let (data, _) = try await URLSession.shared.data(from: url)
+                let (data, _) = try await PinnedURLSession.shared.data(from: url)
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let candles = json["candles"] as? [[String: Any]],
                    let latest = candles.first,

@@ -595,7 +595,7 @@ struct CoinbaseCandle {
         if let limit { urlString += "&limit=\(limit)" }
 
         guard let url = URL(string: urlString) else { throw AppError.invalidData }
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await PinnedURLSession.shared.data(from: url)
 
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let candlesArray = json["candles"] as? [[String: Any]] else {
@@ -652,7 +652,7 @@ struct BinanceCandle {
         let urlString = "https://data-api.binance.vision/api/v3/klines?symbol=\(symbol)&interval=1d&startTime=\(startTime)&limit=\(limit)"
 
         guard let url = URL(string: urlString) else { throw AppError.invalidData }
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await PinnedURLSession.shared.data(from: url)
 
         guard let arr = try JSONSerialization.jsonObject(with: data) as? [[Any]] else {
             throw AppError.invalidData

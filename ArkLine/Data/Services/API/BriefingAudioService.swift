@@ -155,7 +155,7 @@ final class BriefingAudioService {
         }
 
         // Download MP3
-        let (downloadedURL, _) = try await URLSession.shared.download(from: audioURL)
+        let (downloadedURL, _) = try await PinnedURLSession.shared.download(from: audioURL)
 
         // Ensure cache directory exists
         let cacheDir = cachedURL.deletingLastPathComponent()
