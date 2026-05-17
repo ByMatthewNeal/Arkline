@@ -162,7 +162,8 @@ class DailyMarketUpdateViewModel {
 
     private func fetchAssetPrice(id: String) async -> CryptoAsset? {
         do {
-            let assets = try await marketService.fetchCryptoAssets(page: 1, perPage: 10)
+            // Use perPage: 100 to hit the server-cached key (crypto_assets_1_100)
+            let assets = try await marketService.fetchCryptoAssets(page: 1, perPage: 100)
             return assets.first { $0.id == id }
         } catch {
             logWarning("Failed to fetch \(id) price: \(error)", category: .network)
