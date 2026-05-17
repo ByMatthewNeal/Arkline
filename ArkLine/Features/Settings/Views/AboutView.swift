@@ -64,6 +64,33 @@ struct AboutView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)
                 }
+
+                VStack(spacing: 12) {
+                    Link(destination: URL(string: "https://arkline.io/privacy")!) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.shield")
+                                .font(.system(size: 14))
+                            Text("Privacy Policy")
+                                .font(AppFonts.body14)
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(AppColors.accent)
+                    }
+
+                    Link(destination: URL(string: "https://arkline.io/terms")!) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc.text")
+                                .font(.system(size: 14))
+                            Text("Terms of Service")
+                                .font(AppFonts.body14)
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(AppColors.accent)
+                    }
+                }
+                .padding(.top, 24)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
