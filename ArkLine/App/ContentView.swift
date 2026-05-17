@@ -5,6 +5,9 @@ struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @State private var showSplash = true
 
+    private let minSplashDuration: TimeInterval = 2.0
+    private let maxRefreshWait: TimeInterval = 5.0
+
     var body: some View {
         ZStack {
             if showSplash {
@@ -18,16 +21,41 @@ struct ContentView: View {
         }
         .toastContainer()
         .animation(.easeInOut(duration: 0.5), value: showSplash)
-        .onAppear {
-            // Pre-fetch critical market data while splash plays
-            DataPrefetcher.start()
+        .task {
+            await runStartupSequence()
+        }
+    }
 
-            // Show splash for minimum duration
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                withAnimation {
-                    showSplash = false
+    private func runStartupSequence() async {
+        DataPrefetcher.start()
+
+        let startTime = Date()
+
+        // If there's a cached authenticated session, refresh it BEFORE routing.
+        // This prevents a user with stale cached state (e.g. recently canceled
+        // subscription) from getting brief access on cold start.
+        if appState.isAuthenticated {
+            await withTaskGroup(of: Void.self) { group in
+                group.addTask { @MainActor in
+                    await appState.refreshUserProfile()
                 }
+                group.addTask {
+                    try? await Task.sleep(for: .seconds(maxRefreshWait))
+                }
+                // Return as soon as either completes
+                await group.next()
+                group.cancelAll()
             }
+        }
+
+        // Maintain minimum splash duration for UX continuity
+        let elapsed = Date().timeIntervalSince(startTime)
+        if elapsed < minSplashDuration {
+            try? await Task.sleep(for: .seconds(minSplashDuration - elapsed))
+        }
+
+        withAnimation {
+            showSplash = false
         }
     }
 

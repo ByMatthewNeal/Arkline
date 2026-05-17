@@ -29,7 +29,6 @@ struct ArkLineApp: App {
                     migrateNotificationKeys()
                     CrashReportingService.shared.register()
                     Task {
-                        await appState.refreshUserProfile()
                         await BroadcastNotificationService.shared.syncDeviceTokenIfNeeded()
                         await AnalyticsService.shared.trackAppOpen()
                     }
