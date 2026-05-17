@@ -27,6 +27,7 @@ struct ArkLineApp: App {
                     setupAppearance()
                     setupNotifications()
                     migrateNotificationKeys()
+                    CrashReportingService.shared.register()
                     Task {
                         await appState.refreshUserProfile()
                         await BroadcastNotificationService.shared.syncDeviceTokenIfNeeded()
