@@ -22,6 +22,10 @@ class AuthViewModel {
     var isAuthenticated: Bool = false
     var user: User?
 
+    // Password sign-in (different account)
+    var passwordSignInError: String?
+    var isPasswordSignInLoading: Bool = false
+
     private let passcodeManager: PasscodeVerifying
 
     // MARK: - Computed Properties from PasscodeManager
@@ -182,6 +186,66 @@ class AuthViewModel {
     private func loadUserSettings() {
         // Load Face ID preference from secure storage
         showFaceID = passcodeManager.isBiometricEnabled
+    }
+
+    // MARK: - Password Sign-In (Different Account)
+
+    func signInWithPassword(email: String, password: String) async {
+        guard !email.isEmpty, !password.isEmpty else { return }
+
+        passwordSignInError = nil
+        isPasswordSignInLoading = true
+        defer { isPasswordSignInLoading = false }
+
+        do {
+            let session = try await SupabaseAuthManager.shared.signIn(email: email, password: password)
+            let newUserId = session.user.id
+
+            clearCachedStateIfDifferentUser(newUserId: newUserId)
+
+            guard let profile = try await SupabaseDatabase.shared.getProfile(userId: newUserId) else {
+                passwordSignInError = "Account found but profile is missing. Contact support@arkline.io."
+                Haptics.error()
+                return
+            }
+
+            var newUser = User(
+                id: newUserId,
+                username: profile.username ?? email.components(separatedBy: "@").first ?? "user",
+                email: email,
+                fullName: profile.fullName,
+                faceIdEnabled: false
+            )
+            if let role = profile.role {
+                newUser.role = UserRole(rawValue: role) ?? .user
+            }
+            if let subStatus = profile.subscriptionStatus {
+                newUser.subscriptionStatus = SubscriptionStatus(rawValue: subStatus) ?? .none
+            }
+            newUser.trialEnd = profile.trialEnd
+            newUser.currentPeriodEnd = profile.currentPeriodEnd
+
+            self.user = newUser
+            self.authState = .authenticated
+            self.isAuthenticated = true
+            Haptics.success()
+        } catch {
+            passwordSignInError = AppError.from(error).userMessage
+            authState = .failed(passwordSignInError ?? "Sign in failed")
+            Haptics.error()
+        }
+    }
+
+    private func clearCachedStateIfDifferentUser(newUserId: UUID) {
+        let cachedData = UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser)
+        if let data = cachedData,
+           let cached = try? JSONDecoder().decode(User.self, from: data),
+           cached.id != newUserId {
+            UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
+            try? PasscodeManager.shared.clearPasscode()
+            UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.biometricEnabled)
+            logInfo("Cleared cached state from previous user before switching accounts", category: .auth)
+        }
     }
 }
 

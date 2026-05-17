@@ -79,6 +79,7 @@ struct AuthenticationCoordinator: View {
             if isAuthenticated {
                 // Keep existing cached user if viewModel.user is nil (passcode/biometric-only auth)
                 appState.setAuthenticated(true, user: viewModel.user ?? appState.currentUser)
+                appState.selectedTab = .home
                 Task { await appState.refreshUserProfile() }
             }
         }

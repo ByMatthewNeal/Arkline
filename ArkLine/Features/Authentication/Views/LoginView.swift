@@ -4,6 +4,7 @@ struct LoginView: View {
     @Bindable var viewModel: AuthViewModel
     @EnvironmentObject var appState: AppState
     @State private var showPasscodeEntry = false
+    @State private var showPasswordSignIn = false
     @State private var isAnimating = false
     @Environment(\.colorScheme) private var colorScheme
 
@@ -101,6 +102,15 @@ struct LoginView: View {
                     }
                 }
                 .padding(.horizontal, ArkSpacing.xl)
+
+                Button {
+                    showPasswordSignIn = true
+                } label: {
+                    Text("Sign in with a different account")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(AppColors.accent)
+                }
+                .padding(.top, ArkSpacing.lg)
                 .padding(.bottom, ArkSpacing.xxl)
             }
         }
@@ -113,6 +123,9 @@ struct LoginView: View {
             PasscodeEntryView(viewModel: viewModel)
         }
         #endif
+        .sheet(isPresented: $showPasswordSignIn) {
+            EmailPasswordSignInSheet(viewModel: viewModel)
+        }
         .onAppear {
             // Start glow animation
             withAnimation(
