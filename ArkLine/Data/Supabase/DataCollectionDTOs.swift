@@ -202,6 +202,9 @@ struct RiskSnapshotDTO: Codable {
     let tier: String
     let recommendation: String?
     let components: [RiskComponentDTO]?
+    let btcPrice: Double?
+    let sp500Price: Double?
+    let nasdaqPrice: Double?
     let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
@@ -211,10 +214,13 @@ struct RiskSnapshotDTO: Codable {
         case tier
         case recommendation
         case components
+        case btcPrice = "btc_price"
+        case sp500Price = "sp500_price"
+        case nasdaqPrice = "nasdaq_price"
         case createdAt = "created_at"
     }
 
-    init(from riskScore: ArkLineRiskScore, date: String) {
+    init(from riskScore: ArkLineRiskScore, date: String, btcPrice: Double? = nil, sp500Price: Double? = nil, nasdaqPrice: Double? = nil) {
         self.id = UUID()
         self.recordedDate = date
         self.compositeScore = riskScore.score
@@ -223,6 +229,9 @@ struct RiskSnapshotDTO: Codable {
         self.components = riskScore.components.map {
             RiskComponentDTO(name: $0.name, value: $0.value, weight: $0.weight, signal: $0.signal.rawValue)
         }
+        self.btcPrice = btcPrice
+        self.sp500Price = sp500Price
+        self.nasdaqPrice = nasdaqPrice
         self.createdAt = nil
     }
 }

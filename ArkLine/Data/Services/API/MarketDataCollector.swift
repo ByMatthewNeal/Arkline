@@ -112,14 +112,14 @@ actor MarketDataCollector {
 
     // MARK: - Record Risk Score
 
-    /// Archives the daily composite risk score with component breakdown
-    func recordRiskScore(_ riskScore: ArkLineRiskScore) async {
+    /// Archives the daily composite risk score with component breakdown and market prices
+    func recordRiskScore(_ riskScore: ArkLineRiskScore, btcPrice: Double? = nil, sp500Price: Double? = nil, nasdaqPrice: Double? = nil) async {
         guard SupabaseManager.shared.isConfigured else { return }
         let date = todayString
         let key = "risk_\(date)"
         guard !alreadySaved(key) else { return }
 
-        let dto = RiskSnapshotDTO(from: riskScore, date: date)
+        let dto = RiskSnapshotDTO(from: riskScore, date: date, btcPrice: btcPrice, sp500Price: sp500Price, nasdaqPrice: nasdaqPrice)
         do {
             try await SupabaseManager.shared.client
                 .from(SupabaseTable.riskSnapshots.rawValue)

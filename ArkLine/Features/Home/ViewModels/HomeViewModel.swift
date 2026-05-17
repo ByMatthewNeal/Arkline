@@ -1019,7 +1019,22 @@ class HomeViewModel {
                         )
                     }
                     if let riskScore = riskScore {
-                        await collector.recordRiskScore(riskScore)
+                        // Fetch S&P 500 and Nasdaq prices for historical correlation
+                        var sp500: Double?
+                        var nasdaq: Double?
+                        do {
+                            let quotes = try await FMPService.shared.fetchStockQuotes(symbols: ["^GSPC", "^IXIC"])
+                            sp500 = quotes.first(where: { $0.symbol == "^GSPC" })?.price
+                            nasdaq = quotes.first(where: { $0.symbol == "^IXIC" })?.price
+                        } catch {
+                            logError("Index quotes for risk snapshot failed: \(error.localizedDescription)", category: .network)
+                        }
+                        await collector.recordRiskScore(
+                            riskScore,
+                            btcPrice: self.btcPrice > 0 ? self.btcPrice : nil,
+                            sp500Price: sp500,
+                            nasdaqPrice: nasdaq
+                        )
                     }
                 }
             }

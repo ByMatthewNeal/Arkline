@@ -125,6 +125,22 @@ struct ArkLineScoreDetailView: View {
                                 .background(pointColor.opacity(0.12))
                                 .cornerRadius(6)
                         }
+
+                        // Market prices at time of score
+                        if point.btcPrice != nil || point.sp500Price != nil || point.nasdaqPrice != nil {
+                            HStack(spacing: 12) {
+                                if let btc = point.btcPrice {
+                                    priceLabel("BTC", price: btc)
+                                }
+                                if let sp = point.sp500Price {
+                                    priceLabel("S&P", price: sp)
+                                }
+                                if let nq = point.nasdaqPrice {
+                                    priceLabel("NDX", price: nq)
+                                }
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                     .padding(.horizontal, ArkSpacing.lg)
                     .transition(.opacity)
@@ -271,6 +287,17 @@ struct ArkLineScoreDetailView: View {
                 )
             }
             .frame(height: 160)
+        }
+    }
+
+    private func priceLabel(_ symbol: String, price: Double) -> some View {
+        HStack(spacing: 3) {
+            Text(symbol)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+            Text(price >= 1000 ? "$\(Int(price).formatted())" : String(format: "$%.2f", price))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
         }
     }
 
