@@ -14,7 +14,7 @@ struct CryptoRiskLevelsScreen: View {
                 } else {
                     // Subtitle + toggle row
                     HStack {
-                        Text("Regression model • \(viewModel.rows.count) assets bucketed")
+                        Text("Regression model • \(viewModel.totalAssetCount) assets bucketed")
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.textSecondary)
 
@@ -28,6 +28,11 @@ struct CryptoRiskLevelsScreen: View {
 
                     ForEach(viewModel.bucketed, id: \.band) { section in
                         bandSection(band: section.band, items: section.items)
+                    }
+
+                    // Failed coins section
+                    if !viewModel.failedCoins.isEmpty {
+                        failedSection
                     }
 
                     Spacer().frame(height: 100)
@@ -212,6 +217,69 @@ struct CryptoRiskLevelsScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 60)
+    }
+
+    private var failedSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(AppColors.textSecondary)
+                    .frame(width: 8, height: 8)
+                Text("Loading…")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, ArkSpacing.lg)
+
+            VStack(spacing: 0) {
+                ForEach(Array(viewModel.failedCoins.enumerated()), id: \.element.assetId) { index, config in
+                    HStack(spacing: 12) {
+                        if let logoURL = config.logoURL {
+                            KFImage(logoURL)
+                                .resizable()
+                                .placeholder { iconFallback(config.assetId) }
+                                .fade(duration: 0.2)
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 32, height: 32)
+                                .clipShape(Circle())
+                        } else {
+                            iconFallback(config.assetId)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(config.assetId)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                            Text(config.displayName)
+                                .font(.system(size: 12))
+                                .foregroundColor(AppColors.textSecondary)
+                                .lineLimit(1)
+                        }
+
+                        Spacer()
+
+                        Text("—")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .padding(.horizontal, ArkSpacing.md)
+                    .padding(.vertical, 10)
+
+                    if index < viewModel.failedCoins.count - 1 {
+                        Divider()
+                            .padding(.leading, 56)
+                            .padding(.horizontal, ArkSpacing.lg)
+                    }
+                }
+            }
+            .padding(.vertical, ArkSpacing.xs)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+            )
+            .padding(.horizontal, ArkSpacing.lg)
+        }
+        .padding(.top, ArkSpacing.lg)
     }
 }
 

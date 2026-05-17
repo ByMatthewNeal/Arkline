@@ -140,19 +140,21 @@ struct QPSFullGridView: View {
                     }
                 }
 
-                // Trend strength + price
+                // Trend strength + price (hide price for Alt/BTC pairs)
                 HStack(spacing: 4) {
                     Text(trendStrengthLabel(signal.trendScore))
                         .font(.system(size: 10))
                         .foregroundColor(trendStrengthColor(signal.trendScore))
 
-                    Text("·")
-                        .font(.system(size: 10))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.3))
+                    if signal.category != "alt_btc" {
+                        Text("·")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.3))
 
-                    Text(formatSignalPrice(signal.price))
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        Text(formatSignalPrice(signal.price))
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                    }
                 }
             }
             .frame(minWidth: 90, alignment: .leading)
