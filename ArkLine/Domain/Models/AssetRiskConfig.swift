@@ -78,6 +78,31 @@ struct AssetRiskConfig {
         "ethena": "36530/standard/ethena.png",
         "jupiter-exchange-solana": "34188/large/jup.png",
         "maple-finance": "14097/standard/photo_2021-09-08_03-20-50.jpg",
+        "tron": "1094/large/tron-logo.png",
+        "cardano": "975/large/cardano.png",
+        "polkadot": "12171/large/polkadot.jpg",
+        "near": "10365/large/near.jpg",
+        "avalanche-2": "12559/large/Avalanche_Circle_RedWhite_Trans.png",
+        "arbitrum": "16547/large/arb.jpg",
+        "optimism": "25244/large/Token.png",
+        "chainlink": "877/large/Chainlink_Logo_500.png",
+        "cosmos": "1481/large/cosmos_hub.png",
+        "injective-protocol": "12882/large/Other_200x200.png",
+        "sei-network": "28205/large/Sei_Logo_-_Transparent.png",
+        "celestia": "31967/large/tia.jpg",
+        "fetch-ai": "5681/large/ASI.png",
+        "ethereum-classic": "453/large/ethereum-classic-logo.png",
+        "bitcoin-cash": "780/large/bitcoin-cash-circle.png",
+        "filecoin": "12817/large/filecoin.png",
+        "immutable-x": "17233/large/immutableX-symbol-BLK-RGB.png",
+        "lido-dao": "13573/large/Lido_DAO.png",
+        "maker": "1364/large/Mark_Maker.png",
+        "pepe": "29850/large/pepe-token.jpeg",
+        "dogecoin": "5/large/dogecoin.png",
+        "shiba-inu": "11939/large/shiba.png",
+        "hedera-hashgraph": "3688/large/hbar.png",
+        "kaspa": "25751/large/kaspa-icon-exchanges.png",
+        "algorand": "4380/large/download.png",
     ]
 
     // MARK: - Crypto Initializer (backward compatible)
@@ -284,6 +309,270 @@ struct AssetRiskConfig {
         binanceSymbol: "SYRUPUSDT"
     )
 
+    /// Cardano — proof-of-stake L1
+    static let ada = AssetRiskConfig(
+        assetId: "ADA",
+        geckoId: "cardano",
+        originDate: safeDate(year: 2017, month: 10, day: 1),
+        deviationBounds: (low: -0.65, high: 0.65),
+        confidenceLevel: 7,
+        displayName: "Cardano",
+        binanceSymbol: "ADAUSDT"
+    )
+
+    /// Polkadot — interoperability L0/L1
+    static let dot = AssetRiskConfig(
+        assetId: "DOT",
+        geckoId: "polkadot",
+        originDate: safeDate(year: 2020, month: 8, day: 19),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 6,
+        displayName: "Polkadot",
+        binanceSymbol: "DOTUSDT"
+    )
+
+    /// NEAR Protocol — sharded L1
+    static let near = AssetRiskConfig(
+        assetId: "NEAR",
+        geckoId: "near",
+        originDate: safeDate(year: 2020, month: 10, day: 13),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 6,
+        displayName: "NEAR Protocol",
+        binanceSymbol: "NEARUSDT"
+    )
+
+    /// Avalanche — high-throughput L1
+    static let avax = AssetRiskConfig(
+        assetId: "AVAX",
+        geckoId: "avalanche-2",
+        originDate: safeDate(year: 2020, month: 9, day: 21),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 6,
+        displayName: "Avalanche",
+        binanceSymbol: "AVAXUSDT"
+    )
+
+    /// Arbitrum — Ethereum L2 rollup
+    static let arb = AssetRiskConfig(
+        assetId: "ARB",
+        geckoId: "arbitrum",
+        originDate: safeDate(year: 2023, month: 3, day: 23),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Arbitrum",
+        binanceSymbol: "ARBUSDT"
+    )
+
+    /// Optimism — Ethereum L2 rollup
+    static let op = AssetRiskConfig(
+        assetId: "OP",
+        geckoId: "optimism",
+        originDate: safeDate(year: 2022, month: 6, day: 1),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 5,
+        displayName: "Optimism",
+        binanceSymbol: "OPUSDT"
+    )
+
+    /// Chainlink — oracle network
+    static let link = AssetRiskConfig(
+        assetId: "LINK",
+        geckoId: "chainlink",
+        originDate: safeDate(year: 2017, month: 9, day: 20),
+        deviationBounds: (low: -0.70, high: 0.70),
+        confidenceLevel: 7,
+        displayName: "Chainlink",
+        binanceSymbol: "LINKUSDT"
+    )
+
+    /// Cosmos — interchain ecosystem
+    static let atom = AssetRiskConfig(
+        assetId: "ATOM",
+        geckoId: "cosmos",
+        originDate: safeDate(year: 2019, month: 3, day: 14),
+        deviationBounds: (low: -0.60, high: 0.60),
+        confidenceLevel: 6,
+        displayName: "Cosmos",
+        binanceSymbol: "ATOMUSDT"
+    )
+
+    /// Injective — DeFi-focused L1
+    static let inj = AssetRiskConfig(
+        assetId: "INJ",
+        geckoId: "injective-protocol",
+        originDate: safeDate(year: 2020, month: 10, day: 21),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 5,
+        displayName: "Injective",
+        binanceSymbol: "INJUSDT"
+    )
+
+    /// Sei — parallelized L1
+    static let sei = AssetRiskConfig(
+        assetId: "SEI",
+        geckoId: "sei-network",
+        originDate: safeDate(year: 2023, month: 8, day: 15),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Sei",
+        binanceSymbol: "SEIUSDT"
+    )
+
+    /// Celestia — modular data availability
+    static let tia = AssetRiskConfig(
+        assetId: "TIA",
+        geckoId: "celestia",
+        originDate: safeDate(year: 2023, month: 10, day: 31),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Celestia",
+        binanceSymbol: "TIAUSDT"
+    )
+
+    /// Fetch.ai — AI agent network
+    static let fet = AssetRiskConfig(
+        assetId: "FET",
+        geckoId: "fetch-ai",
+        originDate: safeDate(year: 2019, month: 2, day: 25),
+        deviationBounds: (low: -0.60, high: 0.60),
+        confidenceLevel: 6,
+        displayName: "Fetch.ai",
+        binanceSymbol: "FETUSDT"
+    )
+
+    /// Ethereum Classic — original Ethereum chain
+    static let etc = AssetRiskConfig(
+        assetId: "ETC",
+        geckoId: "ethereum-classic",
+        originDate: safeDate(year: 2016, month: 7, day: 24),
+        deviationBounds: (low: -0.70, high: 0.70),
+        confidenceLevel: 7,
+        displayName: "Ethereum Classic",
+        binanceSymbol: "ETCUSDT"
+    )
+
+    /// Bitcoin Cash — BTC fork
+    static let bch = AssetRiskConfig(
+        assetId: "BCH",
+        geckoId: "bitcoin-cash",
+        originDate: safeDate(year: 2017, month: 8, day: 1),
+        deviationBounds: (low: -0.70, high: 0.70),
+        confidenceLevel: 7,
+        displayName: "Bitcoin Cash",
+        binanceSymbol: "BCHUSDT"
+    )
+
+    /// Filecoin — decentralized storage
+    static let fil = AssetRiskConfig(
+        assetId: "FIL",
+        geckoId: "filecoin",
+        originDate: safeDate(year: 2020, month: 10, day: 15),
+        deviationBounds: (low: -0.55, high: 0.55),
+        confidenceLevel: 6,
+        displayName: "Filecoin",
+        binanceSymbol: "FILUSDT"
+    )
+
+    /// Immutable — gaming L2
+    static let imx = AssetRiskConfig(
+        assetId: "IMX",
+        geckoId: "immutable-x",
+        originDate: safeDate(year: 2021, month: 11, day: 12),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 5,
+        displayName: "Immutable",
+        binanceSymbol: "IMXUSDT"
+    )
+
+    /// Lido DAO — liquid staking
+    static let ldo = AssetRiskConfig(
+        assetId: "LDO",
+        geckoId: "lido-dao",
+        originDate: safeDate(year: 2021, month: 1, day: 5),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 5,
+        displayName: "Lido DAO",
+        binanceSymbol: "LDOUSDT"
+    )
+
+    /// Maker — DeFi lending governance
+    static let mkr = AssetRiskConfig(
+        assetId: "MKR",
+        geckoId: "maker",
+        originDate: safeDate(year: 2017, month: 1, day: 30),
+        deviationBounds: (low: -0.65, high: 0.65),
+        confidenceLevel: 7,
+        displayName: "Maker",
+        binanceSymbol: "MKRUSDT"
+    )
+
+    /// Pepe — meme coin
+    static let pepe = AssetRiskConfig(
+        assetId: "PEPE",
+        geckoId: "pepe",
+        originDate: safeDate(year: 2023, month: 4, day: 14),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Pepe",
+        binanceSymbol: "PEPEUSDT"
+    )
+
+    /// Dogecoin — original meme coin
+    static let doge = AssetRiskConfig(
+        assetId: "DOGE",
+        geckoId: "dogecoin",
+        originDate: safeDate(year: 2013, month: 12, day: 6),
+        deviationBounds: (low: -0.75, high: 0.75),
+        confidenceLevel: 7,
+        displayName: "Dogecoin",
+        binanceSymbol: "DOGEUSDT"
+    )
+
+    /// Shiba Inu — meme coin
+    static let shib = AssetRiskConfig(
+        assetId: "SHIB",
+        geckoId: "shiba-inu",
+        originDate: safeDate(year: 2020, month: 8, day: 1),
+        deviationBounds: (low: -0.75, high: 0.75),
+        confidenceLevel: 6,
+        displayName: "Shiba Inu",
+        binanceSymbol: "SHIBUSDT"
+    )
+
+    /// Hedera — enterprise-grade DLT
+    static let hbar = AssetRiskConfig(
+        assetId: "HBAR",
+        geckoId: "hedera-hashgraph",
+        originDate: safeDate(year: 2019, month: 9, day: 16),
+        deviationBounds: (low: -0.60, high: 0.60),
+        confidenceLevel: 6,
+        displayName: "Hedera",
+        binanceSymbol: "HBARUSDT"
+    )
+
+    /// Kaspa — blockDAG PoW
+    static let kas = AssetRiskConfig(
+        assetId: "KAS",
+        geckoId: "kaspa",
+        originDate: safeDate(year: 2022, month: 5, day: 7),
+        deviationBounds: (low: -0.50, high: 0.50),
+        confidenceLevel: 4,
+        displayName: "Kaspa",
+        binanceSymbol: "KASUSDT"
+    )
+
+    /// Algorand — pure proof-of-stake L1
+    static let algo = AssetRiskConfig(
+        assetId: "ALGO",
+        geckoId: "algorand",
+        originDate: safeDate(year: 2019, month: 6, day: 20),
+        deviationBounds: (low: -0.60, high: 0.60),
+        confidenceLevel: 6,
+        displayName: "Algorand",
+        binanceSymbol: "ALGOUSDT"
+    )
+
     /// Tron
     static let trx = AssetRiskConfig(
         assetId: "TRX",
@@ -349,8 +638,22 @@ struct AssetRiskConfig {
 
     /// All supported crypto assets
     static let cryptoConfigs: [AssetRiskConfig] = [
-        .btc, .eth, .sol, .bnb, .sui, .uni, .ondo, .render, .tao,
-        .zec, .xrp, .ltc, .aave, .ena, .jup, .syrup, .trx
+        // Majors
+        .btc, .eth, .sol,
+        // L1s
+        .bnb, .ada, .dot, .avax, .near, .atom, .sui, .tao, .hbar, .algo, .kas,
+        // L2s
+        .arb, .op, .imx,
+        // DeFi
+        .uni, .aave, .mkr, .ldo, .ena, .jup, .syrup,
+        // Infra / Oracles / AI
+        .link, .render, .fet,
+        // Payments / Legacy
+        .xrp, .ltc, .zec, .bch, .etc, .trx,
+        // RWA / Narratives
+        .ondo, .fil, .inj, .sei, .tia,
+        // Memes
+        .doge, .shib, .pepe,
     ]
 
     /// All supported stock assets
