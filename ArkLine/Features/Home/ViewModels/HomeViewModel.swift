@@ -331,6 +331,8 @@ class HomeViewModel {
 
     // Risk Level (powers ArkLine Risk Score card)
     var riskLevels: [String: ITCRiskLevel] = [:]
+    /// Composite (7-factor) risk per coin. Loaded in parallel with regression.
+    var multiFactorRiskLevels: [String: MultiFactorRiskPoint] = [:]
     var riskHistories: [String: [ITCRiskLevel]] = [:]
     var selectedRiskCoin: String = "BTC"
 
@@ -344,14 +346,14 @@ class HomeViewModel {
         riskLevels[selectedRiskCoin]
     }
 
-    // Get all risk levels for user's selected coins (with consecutive days + weekly avg)
-    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?)] {
+    // Get all risk levels for user's selected coins (with consecutive days + weekly avg + composite)
+    var userSelectedRiskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?, multiFactorRisk: MultiFactorRiskPoint?)] {
         userRiskCoins
             .filter { AssetRiskConfig.forCoin($0) != nil }  // Crypto only — stocks have their own widget
             .map { coin in
                 let level = riskLevels[coin]
                 let history = riskHistories[coin] ?? []
-                return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level), weeklyAverageRiskLevel(for: coin))
+                return (coin, level, consecutiveDaysAtCurrentLevel(history: history, current: level), weeklyAverageRiskLevel(for: coin), multiFactorRiskLevels[coin])
             }
     }
 
@@ -926,6 +928,17 @@ class HomeViewModel {
             for (coin, level, history) in riskResults {
                 self.riskLevels[coin] = level
                 self.riskHistories[coin] = history
+            }
+            // Fetch composite (7-factor) risk in parallel — non-blocking, silent on failure
+            for coin in riskCoins {
+                Task { @MainActor [itcRiskService] in
+                    do {
+                        let mf = try await itcRiskService.calculateMultiFactorRisk(coin: coin)
+                        self.multiFactorRiskLevels[coin] = mf
+                    } catch {
+                        logError("Multi-factor risk fetch failed for \(coin): \(error.localizedDescription)", category: .network)
+                    }
+                }
             }
         }
 

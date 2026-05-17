@@ -552,7 +552,7 @@ struct DailyMarketUpdateShareSheet: View {
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var appState: AppState
+
 
     @State private var viewModel = DailyMarketUpdateViewModel()
     private let showBranding = true

@@ -504,7 +504,7 @@ enum MacroTrendSignal: String {
 
 // MARK: - Multi-Coin Risk Section
 struct MultiCoinRiskSection: View {
-    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?)]
+    let riskLevels: [(coin: String, riskLevel: ITCRiskLevel?, daysAtLevel: Int?, weeklyAvgRisk: Double?, multiFactorRisk: MultiFactorRiskPoint?)]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
 
@@ -517,7 +517,7 @@ struct MultiCoinRiskSection: View {
                         .font(size == .compact ? .subheadline : .title3)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    Text("Regression from genesis")
+                    Text("Regression with 7-factor cross-check")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textSecondary.opacity(0.7))
                 }
@@ -538,7 +538,8 @@ struct MultiCoinRiskSection: View {
                             riskLevel: item.riskLevel,
                             coinSymbol: item.coin,
                             daysAtLevel: item.daysAtLevel,
-                            weeklyAvgRisk: item.weeklyAvgRisk
+                            weeklyAvgRisk: item.weeklyAvgRisk,
+                            multiFactorRisk: item.multiFactorRisk
                         )
                         .frame(width: 160)
                     }
@@ -555,6 +556,7 @@ struct CompactRiskCard: View {
     let coinSymbol: String
     var daysAtLevel: Int? = nil
     var weeklyAvgRisk: Double? = nil
+    var multiFactorRisk: MultiFactorRiskPoint? = nil
     @Environment(\.colorScheme) var colorScheme
     @State private var showingDetail = false
     @State private var hasTimedOut = false
@@ -565,6 +567,41 @@ struct CompactRiskCard: View {
 
     private var cardBackground: Color {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private enum DivergenceState {
+        case none
+        case moreCautious
+        case moreBullish
+    }
+
+    private var divergenceState: DivergenceState {
+        guard let regression = riskLevel?.riskLevel,
+              let composite = multiFactorRisk?.riskLevel else {
+            return .none
+        }
+        let gap = composite - regression
+        let sameCategory = RiskColors.category(for: regression) == RiskColors.category(for: composite)
+        guard !sameCategory, abs(gap) >= 0.05 else {
+            return .none
+        }
+        return gap > 0 ? .moreCautious : .moreBullish
+    }
+
+    private var divergenceCopy: String {
+        switch divergenceState {
+        case .none:         return ""
+        case .moreCautious: return "↑ More cautious"
+        case .moreBullish:  return "↓ More bullish"
+        }
+    }
+
+    private var divergenceTint: Color {
+        switch divergenceState {
+        case .none:         return .clear
+        case .moreCautious: return AppColors.warning
+        case .moreBullish:  return AppColors.info
+        }
     }
 
     private var cryptoIconFallback: some View {
@@ -629,6 +666,22 @@ struct CompactRiskCard: View {
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(RiskColors.color(for: risk.riskLevel))
                             .lineLimit(1)
+                    }
+
+                    // 7-factor divergence chip — only when models disagree meaningfully
+                    if divergenceState != .none {
+                        Text(divergenceCopy)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(divergenceTint)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(divergenceTint.opacity(0.10))
+                            )
+                            .fixedSize(horizontal: true, vertical: false)
                     }
 
                     // Days at level indicator
