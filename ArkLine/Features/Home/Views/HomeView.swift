@@ -204,6 +204,7 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showTelegramExportSheet) {
                 DailyMarketUpdateShareSheet(briefingSummary: viewModel.marketSummary?.summary)
+                    .environmentObject(appState)
             }
             .sheet(isPresented: $showAddPositionSheet, onDismiss: {
                 Task { await viewModel.loadPortfolios(forceRefresh: true) }
