@@ -11,7 +11,7 @@ export default function RenewPage() {
 
         {/* Heading */}
         <h1 className="font-[family-name:var(--font-urbanist)] text-[28px] font-bold tracking-tight">
-          Renew your Arkline membership
+          Renew your ArkLine membership
         </h1>
 
         {/* Body */}
@@ -25,7 +25,7 @@ export default function RenewPage() {
         {/* CTA */}
         <div className="mt-10">
           <a
-            href="mailto:support@arkline.io?subject=Renew%20my%20Arkline%20membership"
+            href="mailto:support@arkline.io?subject=Renew%20my%20ArkLine%20membership&body=Hi%20Arkline%20team%2C%0A%0AI'd%20like%20to%20renew%20my%20ArkLine%20membership.%20Please%20send%20me%20a%20new%20checkout%20link.%0A%0AThanks!"
             className="inline-block rounded-xl bg-[#3369FF] px-10 py-4 text-[17px] font-semibold text-white transition-colors hover:bg-[#2855D6]"
           >
             Email support@arkline.io
@@ -34,9 +34,16 @@ export default function RenewPage() {
 
         {/* Footer */}
         <p className="mt-12 text-[13px] text-white/30">
-          We typically respond within a few hours and will have you back up and
-          running the same day.
+          Most renewals are processed within a few hours, Mon&ndash;Fri.
         </p>
+
+        {/* Deep link */}
+        <a
+          href="arkline://invite"
+          className="mt-4 inline-block text-[13px] text-white/30 underline hover:text-white/60"
+        >
+          Already renewed? Open ArkLine &rarr;
+        </a>
       </div>
     </div>
   );
