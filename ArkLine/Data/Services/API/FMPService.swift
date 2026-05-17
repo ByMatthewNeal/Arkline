@@ -319,6 +319,8 @@ final class FMPService {
             return .notConfigured
         case .relayError:
             return .invalidResponse
+        case .proxyUnavailable:
+            return .invalidResponse
         }
     }
 }

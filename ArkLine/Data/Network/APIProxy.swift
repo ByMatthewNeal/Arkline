@@ -169,8 +169,13 @@ final class APIProxy {
             }
         }
 
-        // Fallback: direct HTTP with local API key
+        // Fallback: direct HTTP with local API key (DEBUG only — release builds
+        // route exclusively through the Supabase Edge Function proxy)
+        #if DEBUG
         return try await directGetRequest(service: service, path: path, method: method, queryItems: queryItems)
+        #else
+        throw APIProxyError.proxyUnavailable
+        #endif
     }
 
     /// Request data with a POST body. Tries proxy first, falls back to direct.
@@ -192,8 +197,13 @@ final class APIProxy {
             }
         }
 
-        // Fallback: direct HTTP with local API key
+        // Fallback: direct HTTP with local API key (DEBUG only — release builds
+        // route exclusively through the Supabase Edge Function proxy)
+        #if DEBUG
         return try await directPostRequest(service: service, path: path, queryItems: queryItems, body: body)
+        #else
+        throw APIProxyError.proxyUnavailable
+        #endif
     }
 
     // MARK: - Proxy GET Request
@@ -443,6 +453,7 @@ enum APIProxyError: Error, LocalizedError {
     case unauthorized
     case httpError(statusCode: Int, data: Data)
     case relayError
+    case proxyUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -454,6 +465,8 @@ enum APIProxyError: Error, LocalizedError {
             return "API proxy HTTP error: \(code)"
         case .relayError:
             return "Edge Function relay error"
+        case .proxyUnavailable:
+            return "Service temporarily unavailable"
         }
     }
 }
