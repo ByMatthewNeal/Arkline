@@ -75,25 +75,60 @@ struct SignInView: View {
                                 .foregroundColor(AppColors.accent)
                         }
                         .padding(.top, ArkSpacing.xs)
+
+                        // Forgot password link
+                        Button {
+                            Task { await viewModel.sendPasswordReset() }
+                        } label: {
+                            Text("Forgot password?")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(AppColors.accent)
+                        }
+                        .padding(.top, ArkSpacing.xs)
+
+                        if let error = viewModel.passwordResetError {
+                            Text(error)
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.error)
+                        }
                     }
                     .padding(.horizontal, ArkSpacing.xl)
+
+                    // Reset confirmation
+                    if viewModel.passwordResetSent {
+                        VStack(spacing: ArkSpacing.lg) {
+                            Image(systemName: "envelope.badge")
+                                .font(.system(size: 40))
+                                .foregroundColor(AppColors.accent)
+                            Text("Check your email")
+                                .font(AppFonts.title24)
+                                .foregroundColor(AppColors.textPrimary(colorScheme))
+                            Text("We sent a password reset link to \(viewModel.email). The link expires in 1 hour.")
+                                .font(AppFonts.body14)
+                                .foregroundColor(AppColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal, ArkSpacing.xl)
+                    }
 
                     Spacer(minLength: ArkSpacing.xxxl)
                 }
             }
 
             // Bottom actions
-            OnboardingBottomActions(
-                primaryTitle: "Sign In",
-                primaryAction: {
-                    Task {
-                        await viewModel.signInWithPassword()
-                    }
-                },
-                isLoading: viewModel.isLoading,
-                isDisabled: !viewModel.isEmailValid || !viewModel.isPasswordValid,
-                errorMessage: viewModel.errorMessage
-            )
+            if !viewModel.passwordResetSent {
+                OnboardingBottomActions(
+                    primaryTitle: "Sign In",
+                    primaryAction: {
+                        Task {
+                            await viewModel.signInWithPassword()
+                        }
+                    },
+                    isLoading: viewModel.isLoading,
+                    isDisabled: !viewModel.isEmailValid || !viewModel.isPasswordValid,
+                    errorMessage: viewModel.errorMessage
+                )
+            }
         }
         .onboardingBackButton { viewModel.previousStep() }
         .onAppear {

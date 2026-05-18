@@ -26,6 +26,11 @@ class AuthViewModel {
     var passwordSignInError: String?
     var isPasswordSignInLoading: Bool = false
 
+    // Password reset
+    var passwordResetSent: Bool = false
+    var passwordResetError: String?
+    var isPasswordResetLoading: Bool = false
+
     private let passcodeManager: PasscodeVerifying
 
     // MARK: - Computed Properties from PasscodeManager
@@ -245,6 +250,31 @@ class AuthViewModel {
             try? PasscodeManager.shared.clearPasscode()
             UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.biometricEnabled)
             logInfo("Cleared cached state from previous user before switching accounts", category: .auth)
+        }
+    }
+
+    // MARK: - Password Reset
+
+    func sendPasswordReset(email: String) async {
+        guard !email.isEmpty, email.contains("@") else {
+            passwordResetError = "Enter a valid email address."
+            return
+        }
+
+        passwordResetError = nil
+        isPasswordResetLoading = true
+        defer { isPasswordResetLoading = false }
+
+        do {
+            try await SupabaseAuthManager.shared.resetPassword(
+                email: email,
+                redirectTo: "https://arkline.io/reset-password"
+            )
+            passwordResetSent = true
+            Haptics.success()
+        } catch {
+            passwordResetError = AppError.from(error).userMessage
+            Haptics.error()
         }
     }
 }

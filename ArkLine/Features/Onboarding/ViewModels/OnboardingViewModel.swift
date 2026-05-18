@@ -287,6 +287,11 @@ class OnboardingViewModel {
     var isReturningUser = false
     var password: String = ""
 
+    // Password reset
+    var passwordResetSent: Bool = false
+    var passwordResetError: String?
+    var isPasswordResetLoading: Bool = false
+
     var isPasswordValid: Bool {
         password.count >= 8
     }
@@ -448,6 +453,29 @@ class OnboardingViewModel {
         }
 
         isLoading = false
+    }
+
+    func sendPasswordReset() async {
+        guard !email.isEmpty, email.contains("@") else {
+            passwordResetError = "Enter a valid email address."
+            return
+        }
+
+        passwordResetError = nil
+        isPasswordResetLoading = true
+        defer { isPasswordResetLoading = false }
+
+        do {
+            try await SupabaseAuthManager.shared.resetPassword(
+                email: email,
+                redirectTo: "https://arkline.io/reset-password"
+            )
+            passwordResetSent = true
+            Haptics.success()
+        } catch {
+            passwordResetError = AppError.from(error).userMessage
+            Haptics.error()
+        }
     }
 
     func saveName() {

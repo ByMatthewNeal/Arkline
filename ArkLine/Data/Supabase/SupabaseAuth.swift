@@ -121,12 +121,16 @@ final class SupabaseAuthManager {
     }
 
     // MARK: - Reset Password
-    func resetPassword(email: String) async throws {
+    func resetPassword(email: String, redirectTo: String? = nil) async throws {
         isLoading = true
         defer { isLoading = false }
 
         do {
-            try await auth.resetPasswordForEmail(email)
+            if let redirect = redirectTo, let url = URL(string: redirect) {
+                try await auth.resetPasswordForEmail(email, redirectTo: url)
+            } else {
+                try await auth.resetPasswordForEmail(email)
+            }
         } catch let error as AuthError {
             throw mapAuthError(error)
         }
