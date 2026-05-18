@@ -83,7 +83,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 0.5
+const MIN_RR_RATIO = 1.0
 const STRONG_MIN_RR_RATIO = 2.0
 
 // ─── Partial TP / Tightened SL ─────────────────────────────────────────────
@@ -2299,11 +2299,15 @@ async function evaluateSignals(
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
 
-    // R:R is informational — composite score is the quality gate.
-    // Log it but don't skip. Low R:R reduces the composite score via
-    // the scoring function, so bad setups still get filtered.
-    if (rrRatio < MIN_RR_RATIO) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)}: R:R ${rrRatio.toFixed(2)} (below ${MIN_RR_RATIO}, score will be penalized)`)
+    // R:R quality gate — don't surface bad risk/reward to users
+    const adaptiveMinRR = Math.min(adaptiveParams?.min_rr ?? MIN_RR_RATIO, MIN_RR_RATIO)
+    const effectiveMinRR = Math.max(regime.isChoppy ? choppyMinRR : adaptiveMinRR, adaptiveMinRR)
+    if (rrRatio < effectiveMinRR) {
+      const reason = `R:R ${rrRatio.toFixed(2)} < ${effectiveMinRR}`
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): ${reason}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: ${reason}`)
+      stats.skipped++
+      continue
     }
 
     const isStrong = rrRatio >= STRONG_MIN_RR_RATIO && zone.strength >= STRONG_MIN_CONFLUENCE
@@ -2355,9 +2359,8 @@ async function evaluateSignals(
     }
 
     // Only publish signals meeting adaptive score threshold (default 60 = B-grade)
-    // Compression already penalizes the score directly (-5 pts above);
-    // don't also raise the threshold — that double-penalizes.
-    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 50, 50)
+    // Score threshold — adaptive can raise but not above 65
+    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 60, 65)
     const effectiveMinScore = adaptiveScore
     if (compositeScore < effectiveMinScore) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < ${effectiveMinScore}`)
