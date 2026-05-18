@@ -83,7 +83,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.0
+const MIN_RR_RATIO = 0.5
 const STRONG_MIN_RR_RATIO = 2.0
 
 // ─── Partial TP / Tightened SL ─────────────────────────────────────────────
@@ -2243,12 +2243,11 @@ async function evaluateSignals(
       continue
     }
 
-    // EMA trend filter (always on trend timeframe)
-    if (!checkTrendAlignment(trendCandles, isBuy)) {
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): EMA misalign [${tier.tierName}]`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: EMA trend misaligned for ${isBuy ? "buy" : "sell"} [${tier.tierName}]`)
-      stats.skipped++
-      continue
+    // EMA trend filter — soft badge, not a hard block.
+    // Counter-trend signals still generate but are tagged for reduced sizing (0.5R).
+    const emaTrendAligned = checkTrendAlignment(trendCandles, isBuy)
+    if (!emaTrendAligned) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): EMA misalign → counter-trend [${tier.tierName}]`)
     }
 
     // Bounce confirmation — check preferred timeframes in order
@@ -2300,16 +2299,11 @@ async function evaluateSignals(
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
 
-    const adaptiveMinRR = adaptiveParams?.min_rr ?? MIN_RR_RATIO
-    const effectiveMinRR = Math.max(regime.isChoppy ? choppyMinRR : adaptiveMinRR, adaptiveMinRR)
-    if (rrRatio < effectiveMinRR) {
-      const reason = regime.isChoppy
-        ? `R:R ${rrRatio.toFixed(2)} < ${effectiveMinRR} (choppy market)`
-        : `R:R ${rrRatio.toFixed(2)} < ${effectiveMinRR}`
-      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): ${reason}`)
-      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: ${reason}`)
-      stats.skipped++
-      continue
+    // R:R is informational — composite score is the quality gate.
+    // Log it but don't skip. Low R:R reduces the composite score via
+    // the scoring function, so bad setups still get filtered.
+    if (rrRatio < MIN_RR_RATIO) {
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)}: R:R ${rrRatio.toFixed(2)} (below ${MIN_RR_RATIO}, score will be penalized)`)
     }
 
     const isStrong = rrRatio >= STRONG_MIN_RR_RATIO && zone.strength >= STRONG_MIN_CONFLUENCE
@@ -2317,8 +2311,8 @@ async function evaluateSignals(
       ? (isStrong ? "strong_buy" : "buy")
       : (isStrong ? "strong_sell" : "sell")
 
-    // Bull Market Support Band regime check (informational, not a filter)
-    const counterTrend = checkBMSB(candles["1d"] ?? [], currentPrice, isBuy)
+    // Counter-trend flag: EMA misalignment OR Bull Market Support Band regime
+    const counterTrend = !emaTrendAligned || checkBMSB(candles["1d"] ?? [], currentPrice, isBuy)
 
     // Volume confluence check
     const volConfluence = checkVolumeConfluence(zone, volumeNodes)
@@ -2350,15 +2344,21 @@ async function evaluateSignals(
       compositeScore = Math.max(0, Math.min(100, compositeScore + bonus))
     }
 
+    // Counter-trend penalty: mild score reduction when fighting the trend
+    if (!emaTrendAligned) {
+      compositeScore = Math.max(0, compositeScore - 3)
+    }
+
     // Range compression penalty: reduce score in low-conviction environments
     if (compression.isCompressed) {
-      compositeScore = Math.max(0, compositeScore - 8)
+      compositeScore = Math.max(0, compositeScore - 5)
     }
 
     // Only publish signals meeting adaptive score threshold (default 60 = B-grade)
-    // Raise threshold by 5 in compressed markets — only strong setups pass
-    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 60, 65) // cap at 65 — don't let adaptive choke volume
-    const effectiveMinScore = adaptiveScore + (compression.isCompressed ? 5 : 0)
+    // Compression already penalizes the score directly (-5 pts above);
+    // don't also raise the threshold — that double-penalizes.
+    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 50, 50)
+    const effectiveMinScore = adaptiveScore
     if (compositeScore < effectiveMinScore) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < ${effectiveMinScore}`)
       stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: score ${compositeScore} < ${effectiveMinScore}`)
