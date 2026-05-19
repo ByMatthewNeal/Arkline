@@ -237,7 +237,7 @@ export default function LandingPage() {
                   {/* Social links */}
                   <div className="mt-4 flex items-center justify-center gap-3 sm:justify-start">
                     <a
-                      href="https://linkedin.com/in/"
+                      href="https://www.linkedin.com/in/bymatthewneal/"
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Matt Neal on LinkedIn"

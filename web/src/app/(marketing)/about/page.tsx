@@ -122,7 +122,7 @@ export default function AboutPage() {
               matt@arkline.io
             </a>
             <a
-              href="https://linkedin.com/in/"
+              href="https://www.linkedin.com/in/bymatthewneal/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 text-base text-ark-text-secondary transition-colors hover:text-ark-text sm:text-lg"
