@@ -7,6 +7,7 @@ import { ArklineLogo, Button } from '@/components/ui';
 import { EmailCapture } from '@/components/marketing/email-capture';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { FadeIn } from '@/components/marketing/fade-in';
+import { SpotsCounter } from '@/components/marketing/spots-counter';
 
 const proFeatures = [
   'Full portfolio tracking across 20,000+ assets',
@@ -130,6 +131,7 @@ export default function PricingPage() {
               <p className="mt-1 text-xs text-ark-text-tertiary">
                 or <span className="font-medium text-ark-text-secondary">$400/year</span> — save over $79
               </p>
+              <SpotsCounter className="mt-2" />
 
               <ul className="mt-6 space-y-2.5">
                 {proFeatures.map((f) => (

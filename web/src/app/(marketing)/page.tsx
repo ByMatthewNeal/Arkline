@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ArklineLogo, Button } from '@/components/ui';
 import { EmailCapture } from '@/components/marketing/email-capture';
+import { SpotsCounter, WaitlistCount } from '@/components/marketing/spots-counter';
 import { HeroDashboard } from '@/components/marketing/hero-dashboard';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { AnimatedCounter } from '@/components/marketing/animated-counter';
@@ -50,11 +51,7 @@ export default function LandingPage() {
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           {/* Badge */}
           <FadeIn variant="scale" onMount className="mb-10 inline-flex items-center gap-2 rounded-full border border-ark-primary/20 bg-ark-primary/5 px-4 py-1.5 transition-colors hover:border-ark-primary/30 hover:bg-ark-primary/8">
-            <span className="relative flex h-1.5 w-1.5 shrink-0 self-center">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ark-primary opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-ark-primary" />
-            </span>
-            <span className="text-xs font-medium text-ark-primary">Launching June 2026</span>
+            <SpotsCounter />
           </FadeIn>
 
           <FadeIn onMount className="font-[family-name:var(--font-urbanist)] text-4xl font-semibold tracking-tight text-ark-text sm:text-5xl md:text-7xl" as="h1" delay={0.05}>
@@ -87,21 +84,24 @@ export default function LandingPage() {
           </FadeIn>
 
           {/* Trust strip */}
-          <FadeIn onMount delay={0.4} variant="none" className="mt-8 flex items-center justify-center gap-4 sm:gap-6">
-            <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
-              <Shield className="h-3 w-3" />
-              Join free
+          <FadeIn onMount delay={0.4} variant="none" className="mt-8 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
+                <Shield className="h-3 w-3" />
+                Join free
+              </div>
+              <div className="h-3 w-px bg-ark-divider" />
+              <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
+                <Shield className="h-3 w-3" />
+                No spam
+              </div>
+              <div className="hidden h-3 w-px bg-ark-divider sm:block" />
+              <div className="hidden items-center gap-1.5 text-xs text-ark-text-tertiary sm:flex">
+                <Clock className="h-3 w-3" />
+                Founding pricing for early members
+              </div>
             </div>
-            <div className="h-3 w-px bg-ark-divider" />
-            <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
-              <Shield className="h-3 w-3" />
-              No spam
-            </div>
-            <div className="hidden h-3 w-px bg-ark-divider sm:block" />
-            <div className="hidden items-center gap-1.5 text-xs text-ark-text-tertiary sm:flex">
-              <Clock className="h-3 w-3" />
-              Founding pricing for early members
-            </div>
+            <WaitlistCount />
           </FadeIn>
 
           {/* Dashboard preview */}
@@ -309,6 +309,7 @@ export default function LandingPage() {
                   <p className="mt-1 text-xs text-ark-text-tertiary">
                     or <span className="font-medium text-ark-text-secondary">$400/year</span> — save over $79
                   </p>
+                  <SpotsCounter className="mt-2" />
                 </div>
               </div>
 
@@ -360,9 +361,8 @@ export default function LandingPage() {
               <EmailCapture />
             </div>
 
-            {/* Platform availability */}
-            <div className="mt-10 flex items-center justify-center gap-1.5 text-xs text-ark-text-disabled">
-              Launching June 2026 on iOS
+            <div className="mt-6 flex justify-center">
+              <SpotsCounter />
             </div>
           </FadeIn>
         </div>
