@@ -48,18 +48,29 @@ export default function AboutPage() {
             </h2>
           </FadeIn>
           <FadeIn delay={0.1} className="mt-8 space-y-5 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
-            {/* FOUNDER_WHY_PARAGRAPHS */}
             <p>
-              I&apos;ve been investing in crypto and traditional markets for years. The tools I kept coming back to were either built for institutions (Bloomberg terminal — $24k/year) or built for day traders chasing 5-minute candles. Nothing sat in the middle: serious, data-driven, but designed for people with jobs and portfolios, not full-time chart watchers.
+              I&apos;ve been investing for years, through more cycles than I want to count. I&apos;ve had mentors. I&apos;ve tried day trading in 2019&ndash;2021 and I&apos;ve done both ends of it. I&apos;ve had years where the strategy worked and years where it didn&apos;t, and what stays with me from that period isn&apos;t the P&amp;L. It&apos;s the emotional roller coaster. Being tied to a screen. Checking charts on my phone at dinner. Trading through stretches of my life I should have been spending on something else.
             </p>
             <p>
-              What frustrated me most was how scattered the data was. Risk models on one site, macro data on another, sentiment on a third, positioning signals on a Telegram channel. I was spending more time aggregating information than acting on it.
+              The thing that actually changed my life wasn&apos;t a winning trade, it was switching to spot. Holding longer. Trading less. The moment I stopped trying to catch every move, my lifestyle came back. Less worry. More time. Less of my mood held hostage to a candle. And the strange thing is: my results got better, not worse.
             </p>
             <p>
-              ArkLine is the tool I wanted. One app that combines regression risk scoring, macro regime analysis, AI-generated briefings, and systematic trade signals — without the noise, the hype, or the $500/month price tag.
+              But the noise didn&apos;t stop. Crypto Twitter is a casino with a megaphone. YouTube is worse &mdash; algorithmic incentives that reward confidence, not accuracy. If you&apos;re a retail investor trying to figure out who to actually listen to, the honest answer is that most days, you can&apos;t. I&apos;ve been in this long enough to know which voices are signal and which ones are selling something.
             </p>
             <p>
-              I&apos;m building this as a solo founder because I think the best investment tools come from people who actually invest. Every feature in ArkLine exists because I needed it myself.
+              I went looking for help the same way most people do. I joined the Telegram groups. I joined the Discord servers. I paid tens of thousands of dollars to learn from people who said they knew. Some of it worked. A lot of it didn&apos;t. I got scammed more than once. I sat in rooms I&apos;d paid five figures to be in and walked out knowing less than when I arrived. I&apos;m not bitter about any of it &mdash; those were the lessons that taught me what to actually look for &mdash; but they were expensive lessons, and most retail investors can&apos;t afford to pay them twice.
+            </p>
+            <p>
+              What I figured out along the way is that the people who don&apos;t get caught in the noise aren&apos;t smarter. They have different tools. Institutions have risk models. Sentiment data. Macro regime detection. Positioning data. They invest systematically because they have the inputs to invest systematically. Retail has CoinGecko and a group chat. The tools that would let you make decisions the way professionals do exist, but they sit behind paywalls that start at hundreds of dollars a month and go up from there. Most people don&apos;t even know what to ask for, let alone how to pay for it.
+            </p>
+            <p>
+              ArkLine is my answer to that. The same systematic approach I had to learn the hard way &mdash; multi-factor risk scoring, macro regime detection, sentiment signals, AI briefings that pull it together &mdash; built for people with jobs and portfolios. Not for day traders. Not for institutions. For the version of me that spent years and tens of thousands of dollars figuring this out without a guide.
+            </p>
+            <p>
+              You don&apos;t have to be that person. You don&apos;t have to take the risk, because I&apos;ve taken it for you. I&apos;ve paid the tuition to the market for you. ArkLine is me giving that back &mdash; institutional-level data, in your pocket, for the price of a couple of takeout meals a month &mdash; so you can actually compete, and stop being driven by emotion and fear.
+            </p>
+            <p>
+              I&apos;m a solo founder, in New York. No outside funding. I read every email at matt@arkline.io. If any of this sounded like you, I&apos;d like to hear from you. &mdash; Matt
             </p>
           </FadeIn>
         </div>
