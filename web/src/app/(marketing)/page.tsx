@@ -226,7 +226,7 @@ export default function LandingPage() {
                   <p className="text-sm font-semibold text-ark-text">Matt Neal</p>
                   <p className="mt-0.5 text-xs text-ark-text-tertiary">
                     {/* FOUNDER_CREDIBILITY_LINE */}
-                    Investor &amp; engineer. Building ArkLine since 2025.
+                    Investor &amp; project leader. Building ArkLine since 2025.
                   </p>
                   <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
                     {/* FOUNDER_BIO */}

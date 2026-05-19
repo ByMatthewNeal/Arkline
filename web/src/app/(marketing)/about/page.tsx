@@ -77,7 +77,7 @@ export default function AboutPage() {
           <FadeIn delay={0.1} className="mt-8 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
             {/* FOUNDER_BACKGROUND_INTRO */}
             <p>
-              I&apos;m a software engineer and investor based in New York. I&apos;ve spent my career building products at the intersection of data and decision-making.
+              I&apos;m an investor and project leader based in New York. I&apos;ve spent my career driving complex initiatives across global teams — and investing in crypto and traditional markets since 2017.
             </p>
           </FadeIn>
           <FadeIn delay={0.15} className="mt-6">
@@ -85,7 +85,7 @@ export default function AboutPage() {
               {/* FOUNDER_BACKGROUND_BULLETS */}
               <li className="flex items-start gap-3">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary/60" />
-                <span>Full-stack engineer with experience across iOS, web, and backend systems</span>
+                <span>6 years as a global strategic project manager</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary/60" />
@@ -93,7 +93,7 @@ export default function AboutPage() {
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary/60" />
-                <span>Built ArkLine&apos;s risk models, signal pipeline, and AI briefing system from scratch</span>
+                <span>Helped sell a crypto launchpad to a hedge fund in 2023</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary/60" />
