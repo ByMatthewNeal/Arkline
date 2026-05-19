@@ -325,7 +325,7 @@ struct AssetRiskConfig {
         assetId: "DOT",
         geckoId: "polkadot",
         originDate: safeDate(year: 2020, month: 8, day: 19),
-        deviationBounds: (low: -0.55, high: 0.55),
+        deviationBounds: (low: -0.90, high: 0.90),
         confidenceLevel: 6,
         displayName: "Polkadot",
         binanceSymbol: "DOTUSDT"
@@ -336,7 +336,7 @@ struct AssetRiskConfig {
         assetId: "NEAR",
         geckoId: "near",
         originDate: safeDate(year: 2020, month: 10, day: 13),
-        deviationBounds: (low: -0.55, high: 0.55),
+        deviationBounds: (low: -0.80, high: 0.80),
         confidenceLevel: 6,
         displayName: "NEAR Protocol",
         binanceSymbol: "NEARUSDT"
@@ -347,7 +347,7 @@ struct AssetRiskConfig {
         assetId: "AVAX",
         geckoId: "avalanche-2",
         originDate: safeDate(year: 2020, month: 9, day: 21),
-        deviationBounds: (low: -0.55, high: 0.55),
+        deviationBounds: (low: -0.85, high: 0.85),
         confidenceLevel: 6,
         displayName: "Avalanche",
         binanceSymbol: "AVAXUSDT"
@@ -358,7 +358,7 @@ struct AssetRiskConfig {
         assetId: "ARB",
         geckoId: "arbitrum",
         originDate: safeDate(year: 2023, month: 3, day: 23),
-        deviationBounds: (low: -0.50, high: 0.50),
+        deviationBounds: (low: -0.80, high: 0.80),
         confidenceLevel: 4,
         displayName: "Arbitrum",
         binanceSymbol: "ARBUSDT"
@@ -369,7 +369,7 @@ struct AssetRiskConfig {
         assetId: "OP",
         geckoId: "optimism",
         originDate: safeDate(year: 2022, month: 6, day: 1),
-        deviationBounds: (low: -0.50, high: 0.50),
+        deviationBounds: (low: -0.85, high: 0.85),
         confidenceLevel: 5,
         displayName: "Optimism",
         binanceSymbol: "OPUSDT"
@@ -402,7 +402,7 @@ struct AssetRiskConfig {
         assetId: "INJ",
         geckoId: "injective-protocol",
         originDate: safeDate(year: 2020, month: 10, day: 21),
-        deviationBounds: (low: -0.55, high: 0.55),
+        deviationBounds: (low: -0.85, high: 0.85),
         confidenceLevel: 5,
         displayName: "Injective",
         binanceSymbol: "INJUSDT"
@@ -413,7 +413,7 @@ struct AssetRiskConfig {
         assetId: "SEI",
         geckoId: "sei-network",
         originDate: safeDate(year: 2023, month: 8, day: 15),
-        deviationBounds: (low: -0.50, high: 0.50),
+        deviationBounds: (low: -0.80, high: 0.80),
         confidenceLevel: 4,
         displayName: "Sei",
         binanceSymbol: "SEIUSDT"
@@ -424,7 +424,7 @@ struct AssetRiskConfig {
         assetId: "TIA",
         geckoId: "celestia",
         originDate: safeDate(year: 2023, month: 10, day: 31),
-        deviationBounds: (low: -0.50, high: 0.50),
+        deviationBounds: (low: -0.80, high: 0.80),
         confidenceLevel: 4,
         displayName: "Celestia",
         binanceSymbol: "TIAUSDT"
@@ -468,7 +468,7 @@ struct AssetRiskConfig {
         assetId: "FIL",
         geckoId: "filecoin",
         originDate: safeDate(year: 2020, month: 10, day: 15),
-        deviationBounds: (low: -0.55, high: 0.55),
+        deviationBounds: (low: -0.90, high: 0.90),
         confidenceLevel: 6,
         displayName: "Filecoin",
         binanceSymbol: "FILUSDT"
@@ -479,7 +479,7 @@ struct AssetRiskConfig {
         assetId: "IMX",
         geckoId: "immutable-x",
         originDate: safeDate(year: 2021, month: 11, day: 12),
-        deviationBounds: (low: -0.50, high: 0.50),
+        deviationBounds: (low: -0.90, high: 0.90),
         confidenceLevel: 5,
         displayName: "Immutable",
         binanceSymbol: "IMXUSDT"
