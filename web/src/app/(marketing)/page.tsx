@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Check,
   Shield,
@@ -12,6 +13,9 @@ import {
   Tag,
   MessageSquare,
   Clock,
+  Linkedin,
+  Twitter,
+  Mail,
 } from 'lucide-react';
 import { ArklineLogo, Button } from '@/components/ui';
 import { EmailCapture } from '@/components/marketing/email-capture';
@@ -200,8 +204,67 @@ export default function LandingPage() {
               Arkline was built to close that gap. Institutional-grade tools — risk scoring, macro intelligence, AI briefings — designed for everyday investors who are ready to stop guessing and start positioning with real data.
             </p>
           </FadeIn>
-          <FadeIn delay={0.2} as="p" className="mt-10 text-center text-sm italic text-ark-text-tertiary">
-            Built by an investor who spent years looking for this tool — then built it.
+          {/* Founder card */}
+          <FadeIn delay={0.2} className="mt-14">
+            <div className="mx-auto max-w-xl rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 sm:p-8">
+              <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
+                {/* Headshot */}
+                <div className="shrink-0">
+                  <div className="h-[72px] w-[72px] overflow-hidden rounded-full ring-2 ring-ark-primary/30 sm:h-24 sm:w-24">
+                    <Image
+                      src="/founder.jpg"
+                      alt="Matt Neal, founder of ArkLine"
+                      width={96}
+                      height={96}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className="text-center sm:text-left">
+                  <p className="text-sm font-semibold text-ark-text">Matt Neal</p>
+                  <p className="mt-0.5 text-xs text-ark-text-tertiary">
+                    {/* FOUNDER_CREDIBILITY_LINE */}
+                    Investor &amp; engineer. Building ArkLine since 2025.
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
+                    {/* FOUNDER_BIO */}
+                    I spent years looking for a tool that combined risk models, macro data, and positioning signals in one place — without the noise. It didn&apos;t exist, so I built it. ArkLine is the app I wanted as an investor.
+                    <span className="ml-1 text-ark-text-tertiary">&mdash; Matt</span>
+                  </p>
+
+                  {/* Social links */}
+                  <div className="mt-4 flex items-center justify-center gap-3 sm:justify-start">
+                    <a
+                      href="https://linkedin.com/in/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Matt Neal on LinkedIn"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
+                    >
+                      <Linkedin className="h-3.5 w-3.5" />
+                    </a>
+                    <a
+                      href="https://x.com/Arklineio"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="ArkLine on X"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
+                    >
+                      <Twitter className="h-3.5 w-3.5" />
+                    </a>
+                    <a
+                      href="mailto:matt@arkline.io"
+                      aria-label="Email Matt"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04] text-ark-text-tertiary transition-colors hover:bg-white/[0.08] hover:text-ark-text"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </FadeIn>
         </div>
       </section>
