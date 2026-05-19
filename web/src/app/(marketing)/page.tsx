@@ -50,7 +50,7 @@ export default function LandingPage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ark-primary opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-ark-primary" />
             </span>
-            <span className="text-xs font-medium text-ark-primary">Launching Spring 2026</span>
+            <span className="text-xs font-medium text-ark-primary">Launching June 2026</span>
           </FadeIn>
 
           <FadeIn onMount className="font-[family-name:var(--font-urbanist)] text-4xl font-semibold tracking-tight text-ark-text sm:text-5xl md:text-7xl" as="h1" delay={0.05}>
@@ -299,7 +299,7 @@ export default function LandingPage() {
 
             {/* Platform availability */}
             <div className="mt-10 flex items-center justify-center gap-1.5 text-xs text-ark-text-disabled">
-              Launching Spring 2026 on iOS
+              Launching June 2026 on iOS
             </div>
           </FadeIn>
         </div>

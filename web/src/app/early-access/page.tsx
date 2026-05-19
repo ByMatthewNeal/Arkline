@@ -117,7 +117,7 @@ export default function EarlyAccessPage() {
 
               <FadeIn onMount variant="up" delay={0.3}>
                 <p className="mt-4 text-sm text-ark-text-tertiary">
-                  150 founding spots · Launching Spring 2026 · No card required
+                  150 founding spots · Launching June 2026 · No card required
                 </p>
               </FadeIn>
             </div>
@@ -239,7 +239,7 @@ export default function EarlyAccessPage() {
                 I couldn&apos;t find one. So I built it.
               </p>
               <p>
-                Arkline launches in Spring 2026 with 150 founding members. They lock in $39.99/month — forever — as long as they stay subscribed. After that, standard pricing applies.
+                Arkline launches in June 2026 with 150 founding members. They lock in $39.99/month — forever — as long as they stay subscribed. After that, standard pricing applies.
               </p>
               <p>
                 If you&apos;re tired of investing on takes, get on the list.
@@ -254,7 +254,7 @@ export default function EarlyAccessPage() {
           <FadeIn delay={0.2}>
             <div className="mt-8 rounded-xl border border-ark-primary/20 bg-ark-primary/5 px-5 py-3">
               <p className="text-sm font-medium text-ark-primary">
-                150 founding spots · $39.99/month locked forever · Spring 2026 launch
+                150 founding spots · $39.99/month locked forever · June 2026 launch
               </p>
             </div>
           </FadeIn>
@@ -273,7 +273,7 @@ export default function EarlyAccessPage() {
 
           <FadeIn delay={0.1}>
             <p className="mt-4 text-lg text-ark-text-secondary">
-              150 founding members. Founding pricing locked forever. Spring 2026.
+              150 founding members. Founding pricing locked forever. June 2026.
             </p>
           </FadeIn>
 
