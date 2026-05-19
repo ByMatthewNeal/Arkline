@@ -29,6 +29,10 @@ class CryptoRiskLevelsViewModel {
     /// Ordered risk band names matching ITCRiskLevel.riskCategory
     static let bandOrder = ["Very Low Risk", "Low Risk", "Neutral", "Elevated Risk", "High Risk", "Extreme Risk"]
 
+    /// Max concurrent fetches — prevents hammering Binance/Coinbase when
+    /// many coins need their first-time price history download.
+    private static let maxConcurrency = 4
+
     init(itcRiskService: ITCRiskServiceProtocol = ServiceContainer.shared.itcRiskService) {
         self.itcRiskService = itcRiskService
     }
@@ -52,35 +56,40 @@ class CryptoRiskLevelsViewModel {
 
     func loadAll() async {
         isLoading = true
-        defer { isLoading = false }
 
         let configs = AssetRiskConfig.cryptoConfigs
+        var fetched: [CoinRiskRow] = []
+        var failed: [AssetRiskConfig] = []
 
-        await withTaskGroup(of: (AssetRiskConfig, CoinRiskRow?).self) { group in
-            for config in configs {
-                group.addTask { [itcRiskService] in
-                    if let row = await Self.fetchRow(config: config, service: itcRiskService) {
-                        return (config, row)
+        // Process in batches to avoid overwhelming price APIs
+        for batch in configs.chunked(into: Self.maxConcurrency) {
+            await withTaskGroup(of: (AssetRiskConfig, CoinRiskRow?).self) { group in
+                for config in batch {
+                    group.addTask { [itcRiskService] in
+                        if let row = await Self.fetchRow(config: config, service: itcRiskService) {
+                            return (config, row)
+                        }
+                        try? await Task.sleep(for: .milliseconds(500))
+                        let retryRow = await Self.fetchRow(config: config, service: itcRiskService)
+                        return (config, retryRow)
                     }
-                    // Single retry after 500ms
-                    try? await Task.sleep(for: .milliseconds(500))
-                    let retryRow = await Self.fetchRow(config: config, service: itcRiskService)
-                    return (config, retryRow)
+                }
+
+                for await (config, row) in group {
+                    if let row {
+                        fetched.append(row)
+                    } else {
+                        failed.append(config)
+                    }
                 }
             }
 
-            var fetched: [CoinRiskRow] = []
-            var failed: [AssetRiskConfig] = []
-            for await (config, row) in group {
-                if let row {
-                    fetched.append(row)
-                } else {
-                    failed.append(config)
-                }
-            }
+            // Update UI progressively after each batch
             rows = fetched
             failedCoins = failed
         }
+
+        isLoading = false
     }
 
     func refresh() async {
@@ -116,5 +125,15 @@ class CryptoRiskLevelsViewModel {
         let oldestDate = history.first?.date ?? Date()
         guard oldestDate <= cutoff else { return nil }
         return current - pastValue
+    }
+}
+
+// MARK: - Array Chunking
+
+private extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
     }
 }
