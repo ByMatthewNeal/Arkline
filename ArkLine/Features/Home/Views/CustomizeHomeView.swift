@@ -43,6 +43,9 @@ struct CustomizeHomeView: View {
                     }
                     .padding(.top, 10)
 
+                    // Dashboard Presets
+                    PresetPickerSection()
+
                     // Core Assets section
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Core Assets")
@@ -169,8 +172,7 @@ struct CustomizeHomeView: View {
 
     private func resetToDefaults() {
         withAnimation(.spring(response: 0.3)) {
-            appState.setWidgetConfiguration(WidgetConfiguration())
-            appState.setCoreAssets(CoreAsset.defaultEnabled)
+            appState.switchToPreset(id: nil)
             expandedWidget = nil
         }
     }

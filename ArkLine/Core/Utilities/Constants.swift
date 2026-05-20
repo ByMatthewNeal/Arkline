@@ -165,6 +165,8 @@ enum Constants {
         static let leverageWalletSize = "arkline_leverage_wallet_size"
         static let leverageRiskTolerance = "arkline_leverage_risk_tolerance"
         static let portfolioHidden = "arkline_portfolio_hidden"
+        static let dashboardPresets = "arkline_dashboard_presets"
+        static let activePresetId = "arkline_active_preset_id"
     }
 
     // MARK: - Notification Names

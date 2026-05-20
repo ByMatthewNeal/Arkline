@@ -785,9 +785,17 @@ struct StockRiskLevelSection: View {
 
                 Spacer()
 
-                Text("\(riskLevels.count) stocks")
-                    .font(ArkFonts.caption)
-                    .foregroundColor(AppColors.textSecondary)
+                NavigationLink {
+                    StockRiskLevelsScreen()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("See all")
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(AppColors.accent)
+                }
             }
             .padding(.horizontal, ArkSpacing.xs)
 
@@ -958,7 +966,7 @@ private struct StockCompactRiskCard: View {
 
 // MARK: - Stock Risk Detail Sheet
 
-private struct StockRiskDetailSheet: View {
+struct StockRiskDetailSheet: View {
     let symbol: String
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
@@ -1527,7 +1535,7 @@ private struct StockRiskDetailSheet: View {
 
 // MARK: - Stock Risk Picker Sheet
 
-private struct StockRiskPickerSheet: View {
+struct StockRiskPickerSheet: View {
     let availableStocks: [AssetRiskConfig]
     @Binding var selectedSymbol: String
     @Environment(\.dismiss) var dismiss

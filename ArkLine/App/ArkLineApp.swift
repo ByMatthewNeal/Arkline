@@ -252,6 +252,8 @@ class AppState: ObservableObject {
     @Published var widgetConfiguration: WidgetConfiguration = WidgetConfiguration()
     @Published var marketWidgetConfiguration: MarketWidgetConfiguration = MarketWidgetConfiguration()
     @Published var enabledCoreAssets: Set<CoreAsset> = CoreAsset.defaultEnabled
+    @Published var dashboardPresets: [DashboardPreset] = []
+    @Published var activePresetId: UUID? = nil
     @Published var didJustSignOut = false
 
     /// Tracks in-flight refresh so rapid foreground/background cycling
@@ -331,38 +333,25 @@ class AppState: ObservableObject {
         // Load widget configuration
         if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.widgetConfiguration),
            var config = try? JSONDecoder().decode(WidgetConfiguration.self, from: data) {
-            // Migration: Add any new widget types that aren't in the saved order
-            let savedWidgetSet = Set(config.widgetOrder)
-            for widgetType in HomeWidgetType.allCases {
-                if !savedWidgetSet.contains(widgetType) {
-                    // Insert new widgets after marketMovers (Core) if it exists, otherwise at position 4
-                    if let marketMoversIndex = config.widgetOrder.firstIndex(of: .marketMovers) {
-                        config.widgetOrder.insert(widgetType, at: marketMoversIndex + 1)
-                    } else {
-                        config.widgetOrder.insert(widgetType, at: min(4, config.widgetOrder.count))
-                    }
-                    // Enable new widgets by default if they're in the default enabled set
-                    if HomeWidgetType.defaultEnabled.contains(widgetType) {
-                        config.enabledWidgets.insert(widgetType)
-                    }
-                }
-            }
-
-            // Ensure upcomingEvents is always enabled and first (key feature)
-            config.enabledWidgets.insert(.upcomingEvents)
-            // Move to top of order
-            if let index = config.widgetOrder.firstIndex(of: .upcomingEvents) {
-                if index > 0 {
-                    config.widgetOrder.remove(at: index)
-                    config.widgetOrder.insert(.upcomingEvents, at: 0)
-                }
-            } else {
-                config.widgetOrder.insert(.upcomingEvents, at: 0)
-            }
-
+            migrateWidgetConfiguration(&config)
             widgetConfiguration = config
             // Save migrated config
             setWidgetConfiguration(config)
+        }
+
+        // Load dashboard presets
+        if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.dashboardPresets),
+           var presets = try? JSONDecoder().decode([DashboardPreset].self, from: data) {
+            // Migrate preset configs (add new widget types)
+            for i in presets.indices {
+                migrateWidgetConfiguration(&presets[i].configuration)
+            }
+            dashboardPresets = presets
+            persistPresets()
+        }
+        if let idString = UserDefaults.standard.string(forKey: Constants.UserDefaults.activePresetId),
+           let id = UUID(uuidString: idString) {
+            activePresetId = id
         }
 
         // Load market widget configuration
@@ -451,6 +440,7 @@ class AppState: ObservableObject {
                 UserDefaults.standard.set(data, forKey: key)
             }
         }
+        syncActivePreset()
     }
 
     func toggleWidget(_ widget: HomeWidgetType) {
@@ -532,6 +522,115 @@ class AppState: ObservableObject {
         enabledCoreAssets.contains(asset)
     }
 
+    // MARK: - Widget Configuration Migration
+
+    /// Adds any new widget types to a saved configuration (forward-compatibility).
+    private func migrateWidgetConfiguration(_ config: inout WidgetConfiguration) {
+        let savedWidgetSet = Set(config.widgetOrder)
+        for widgetType in HomeWidgetType.allCases {
+            if !savedWidgetSet.contains(widgetType) {
+                if let marketMoversIndex = config.widgetOrder.firstIndex(of: .marketMovers) {
+                    config.widgetOrder.insert(widgetType, at: marketMoversIndex + 1)
+                } else {
+                    config.widgetOrder.insert(widgetType, at: min(4, config.widgetOrder.count))
+                }
+                if HomeWidgetType.defaultEnabled.contains(widgetType) {
+                    config.enabledWidgets.insert(widgetType)
+                }
+            }
+        }
+        // Ensure upcomingEvents is always enabled and first
+        config.enabledWidgets.insert(.upcomingEvents)
+        if let index = config.widgetOrder.firstIndex(of: .upcomingEvents) {
+            if index > 0 {
+                config.widgetOrder.remove(at: index)
+                config.widgetOrder.insert(.upcomingEvents, at: 0)
+            }
+        } else {
+            config.widgetOrder.insert(.upcomingEvents, at: 0)
+        }
+    }
+
+    // MARK: - Dashboard Presets
+
+    func savePreset(name: String) {
+        guard dashboardPresets.count < DashboardPreset.maxPresets else { return }
+        let preset = DashboardPreset(
+            name: name,
+            configuration: widgetConfiguration,
+            coreAssets: enabledCoreAssets
+        )
+        dashboardPresets.append(preset)
+        activePresetId = preset.id
+        persistPresets()
+        persistActivePresetId()
+    }
+
+    func deletePreset(id: UUID) {
+        dashboardPresets.removeAll { $0.id == id }
+        if activePresetId == id {
+            activePresetId = nil
+            // Revert to system default
+            setWidgetConfiguration(WidgetConfiguration())
+            setCoreAssets(CoreAsset.defaultEnabled)
+        }
+        persistPresets()
+        persistActivePresetId()
+    }
+
+    func renamePreset(id: UUID, newName: String) {
+        guard let index = dashboardPresets.firstIndex(where: { $0.id == id }) else { return }
+        dashboardPresets[index].name = newName
+        persistPresets()
+    }
+
+    func switchToPreset(id: UUID?) {
+        activePresetId = id
+        if let id, let preset = dashboardPresets.first(where: { $0.id == id }) {
+            widgetConfiguration = preset.configuration
+            enabledCoreAssets = preset.coreAssets.isEmpty ? CoreAsset.defaultEnabled : preset.coreAssets
+            // Persist both so they load correctly on next launch
+            let widgetKey = Constants.UserDefaults.widgetConfiguration
+            let widgetConfig = widgetConfiguration
+            DispatchQueue.global(qos: .utility).async {
+                if let data = try? JSONEncoder().encode(widgetConfig) {
+                    UserDefaults.standard.set(data, forKey: widgetKey)
+                }
+            }
+            saveCoreAssets()
+        } else {
+            // System default
+            setWidgetConfiguration(WidgetConfiguration())
+            setCoreAssets(CoreAsset.defaultEnabled)
+        }
+        persistActivePresetId()
+    }
+
+    /// Syncs current widget/core-asset state back to the active preset.
+    func syncActivePreset() {
+        guard let activeId = activePresetId,
+              let index = dashboardPresets.firstIndex(where: { $0.id == activeId }) else { return }
+        dashboardPresets[index].configuration = widgetConfiguration
+        dashboardPresets[index].coreAssets = enabledCoreAssets
+        persistPresets()
+    }
+
+    private func persistPresets() {
+        let snapshot = dashboardPresets
+        DispatchQueue.global(qos: .utility).async {
+            if let data = try? JSONEncoder().encode(snapshot) {
+                UserDefaults.standard.set(data, forKey: Constants.UserDefaults.dashboardPresets)
+            }
+        }
+    }
+
+    private func persistActivePresetId() {
+        let idString = activePresetId?.uuidString
+        DispatchQueue.global(qos: .utility).async {
+            UserDefaults.standard.set(idString, forKey: Constants.UserDefaults.activePresetId)
+        }
+    }
+
     private func saveCoreAssets() {
         let snapshot = enabledCoreAssets
         DispatchQueue.global(qos: .utility).async {
@@ -539,6 +638,7 @@ class AppState: ObservableObject {
                 UserDefaults.standard.set(data, forKey: "enabledCoreAssets")
             }
         }
+        syncActivePreset()
     }
 
     func signOut() {

@@ -65,6 +65,8 @@
 		248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226992D4574D4FB6A57D1757 /* EnterEmailView.swift */; };
 		CRKVM000000000000022 /* CryptoRiskLevelsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRKVM000000000000002 /* CryptoRiskLevelsViewModel.swift */; };
 		CRKSCRN0000000000022 /* CryptoRiskLevelsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRKSCRN0000000000002 /* CryptoRiskLevelsScreen.swift */; };
+		STKRVM0000000000022 /* StockRiskLevelsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = STKRVM0000000000002 /* StockRiskLevelsViewModel.swift */; };
+		STKRSCRN000000000022 /* StockRiskLevelsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = STKRSCRN000000000002 /* StockRiskLevelsScreen.swift */; };
 		ACCTSETUP00000000022 /* AccountSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACCTSETUP00000000002 /* AccountSetupView.swift */; };
 		CRASHRPT00000000022 /* CrashReportingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRASHRPT00000000002 /* CrashReportingService.swift */; };
 		EMAILPW000000000022 /* EmailPasswordSignInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMAILPW000000000002 /* EmailPasswordSignInSheet.swift */; };
@@ -82,6 +84,8 @@
 		2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5323582A6D49F73210E861F /* CustomTextField.swift */; };
 		2EC5DA90B4B6556747D69F09 /* SentimentGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5467ADC12EB45FCB06EC213E /* SentimentGaugeView.swift */; };
 		2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */; };
+		PRST00000001A1B2C3D4E501 /* PresetPickerSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = PRST00000001A1B2C3D4E502 /* PresetPickerSection.swift */; };
+		DBPR00000001A1B2C3D4E501 /* DashboardPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBPR00000001A1B2C3D4E502 /* DashboardPreset.swift */; };
 		2FBE6DEE830180E1BC1A7EEC /* SantimentServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C54D797B805E0D51C2467C1 /* SantimentServiceProtocol.swift */; };
 		31E474080A77E1549EA84032 /* BroadcastServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */; };
 		320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */; };
@@ -601,7 +605,9 @@
 		225593D759C7AC730D64DB0F /* TechnicalIndicatorCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TechnicalIndicatorCards.swift; sourceTree = "<group>"; };
 		226992D4574D4FB6A57D1757 /* EnterEmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterEmailView.swift; sourceTree = "<group>"; };
 		CRKVM000000000000002 /* CryptoRiskLevelsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRiskLevelsViewModel.swift; sourceTree = "<group>"; };
+		STKRVM0000000000002 /* StockRiskLevelsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockRiskLevelsViewModel.swift; sourceTree = "<group>"; };
 		CRKSCRN0000000000002 /* CryptoRiskLevelsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoRiskLevelsScreen.swift; sourceTree = "<group>"; };
+		STKRSCRN000000000002 /* StockRiskLevelsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockRiskLevelsScreen.swift; sourceTree = "<group>"; };
 		ACCTSETUP00000000002 /* AccountSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSetupView.swift; sourceTree = "<group>"; };
 		CRASHRPT00000000002 /* CrashReportingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CrashReportingService.swift; path = Data/Services/Diagnostics/CrashReportingService.swift; sourceTree = "<group>"; };
 		EMAILPW000000000002 /* EmailPasswordSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EmailPasswordSignInSheet.swift; path = Features/Authentication/Views/EmailPasswordSignInSheet.swift; sourceTree = "<group>"; };
@@ -696,6 +702,8 @@
 		55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIGlobalLiquidityService.swift; sourceTree = "<group>"; };
 		55B3C7779A63C5B62E44CC9E /* MockCoinglassService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockCoinglassService.swift; sourceTree = "<group>"; };
 		56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomizeHomeView.swift; sourceTree = "<group>"; };
+		PRST00000001A1B2C3D4E502 /* PresetPickerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetPickerSection.swift; sourceTree = "<group>"; };
+		DBPR00000001A1B2C3D4E502 /* DashboardPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardPreset.swift; sourceTree = "<group>"; };
 		5690746804883DD3637B36A6 /* HomeNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNotifications.swift; sourceTree = "<group>"; };
 		5831D493E668A00494BC0398 /* SentimentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentViewModel.swift; sourceTree = "<group>"; };
 		58F9C3C06B9A6670869424CC /* EmbeddedWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedWidgetView.swift; sourceTree = "<group>"; };
@@ -1479,6 +1487,7 @@
 				5B6A3AE118E45271FE32F447 /* DXYData.swift */,
 				AB011CA4A70BB95E97BDE539 /* EconomicEvent.swift */,
 				F54AD0098DA817A84CC84959 /* GlobalLiquidityData.swift */,
+				DBPR00000001A1B2C3D4E502 /* DashboardPreset.swift */,
 				80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */,
 				FCDA5E5901705B77AA3B3676 /* MarketWidget.swift */,
 				715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */,
@@ -1844,6 +1853,7 @@
 				BB2C3D4E01 /* MacroDashboardComponents.swift */,
 				4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */,
 				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
+				PRST00000001A1B2C3D4E502 /* PresetPickerSection.swift */,
 				C831006104AE4F24A0E28C46 /* FlashIntelCard.swift */,
 				A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */,
 				M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */,
@@ -1858,6 +1868,7 @@
 				AC7551915A761FBD11F4A866 /* HomeRiskComponents.swift */,
 				1C39D88A8D207BF39F8B272E /* HomePortfolioComponents.swift */,
 				CRKSCRN0000000000002 /* CryptoRiskLevelsScreen.swift */,
+				STKRSCRN000000000002 /* StockRiskLevelsScreen.swift */,
 				161CBBAEE2E784B754BC07C0 /* HomeDCAComponents.swift */,
 				E316FDAB3D39679489D50D28 /* HomeMarketComponents.swift */,
 				5690746804883DD3637B36A6 /* HomeNotifications.swift */,
@@ -1964,6 +1975,7 @@
 				A1B2C3D4E5F60003CCDD3344 /* DailyMarketUpdateViewModel.swift */,
 				C3D4E5F6A7B80004DDEE4455 /* NotificationInboxBuilder.swift */,
 				CRKVM000000000000002 /* CryptoRiskLevelsViewModel.swift */,
+				STKRVM0000000000002 /* StockRiskLevelsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -2735,6 +2747,8 @@
 				76D05FD2A9D04E17CDA69F95 /* CryptoAsset.swift in Sources */,
 				2E2A4D6386A072FC6E5B474A /* CustomTextField.swift in Sources */,
 				2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */,
+				PRST00000001A1B2C3D4E501 /* PresetPickerSection.swift in Sources */,
+				DBPR00000001A1B2C3D4E501 /* DashboardPreset.swift in Sources */,
 				3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */,
 				56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */,
 				F3A1B2C3D4E5F6A7B8C9D0E2 /* DCANotificationScheduler.swift in Sources */,
@@ -2764,6 +2778,8 @@
 				248B2587EAFE0BA6822A9506 /* EnterEmailView.swift in Sources */,
 				CRKVM000000000000022 /* CryptoRiskLevelsViewModel.swift in Sources */,
 				CRKSCRN0000000000022 /* CryptoRiskLevelsScreen.swift in Sources */,
+				STKRVM0000000000022 /* StockRiskLevelsViewModel.swift in Sources */,
+				STKRSCRN000000000022 /* StockRiskLevelsScreen.swift in Sources */,
 				ACCTSETUP00000000022 /* AccountSetupView.swift in Sources */,
 				CRASHRPT00000000022 /* CrashReportingService.swift in Sources */,
 				EMAILPW000000000022 /* EmailPasswordSignInSheet.swift in Sources */,

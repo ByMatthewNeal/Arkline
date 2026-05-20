@@ -157,9 +157,14 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
-    /// Widgets enabled by default
+    /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize)
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .flashIntel, .aiMarketSummary, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .assetRiskLevel, .stockRiskLevel, .dcaReminders])
+        Set([.upcomingEvents, .aiMarketSummary, .marketMovers, .fearGreedIndex, .macroDashboard, .marketDeck, .assetRiskLevel, .dailyNews])
+    }
+
+    /// Default widget sizes (compact where appropriate to keep the home screen tight)
+    static var defaultSizes: [HomeWidgetType: WidgetSize] {
+        [.upcomingEvents: .compact, .dailyNews: .compact]
     }
 }
 
@@ -172,7 +177,7 @@ struct WidgetConfiguration: Codable, Equatable {
 
     init(enabledWidgets: Set<HomeWidgetType> = HomeWidgetType.defaultEnabled,
          widgetOrder: [HomeWidgetType] = HomeWidgetType.defaultOrder,
-         widgetSizes: [HomeWidgetType: WidgetSize] = [:]) {
+         widgetSizes: [HomeWidgetType: WidgetSize] = HomeWidgetType.defaultSizes) {
         self.enabledWidgets = enabledWidgets
         self.widgetOrder = widgetOrder
         self.widgetSizes = widgetSizes

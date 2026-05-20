@@ -634,6 +634,18 @@ struct AssetRiskConfig {
     /// Micron Technology
     static let mu = AssetRiskConfig(stock: "MU", originDate: safeDate(year: 1984, month: 6, day: 1), deviationBounds: (low: -0.6, high: 0.6), confidenceLevel: 9, displayName: "Micron")
 
+    /// ASML Holding
+    static let asml = AssetRiskConfig(stock: "ASML", originDate: safeDate(year: 1995, month: 3, day: 14), deviationBounds: (low: -0.55, high: 0.55), confidenceLevel: 9, displayName: "ASML")
+
+    /// Taiwan Semiconductor (ADR)
+    static let tsm = AssetRiskConfig(stock: "TSM", originDate: safeDate(year: 1997, month: 10, day: 8), deviationBounds: (low: -0.55, high: 0.55), confidenceLevel: 9, displayName: "TSMC")
+
+    /// MP Materials
+    static let mp = AssetRiskConfig(stock: "MP", originDate: safeDate(year: 2020, month: 11, day: 18), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 5, displayName: "MP Materials")
+
+    /// Cipher Mining
+    static let cifr = AssetRiskConfig(stock: "CIFR", originDate: safeDate(year: 2022, month: 8, day: 29), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Cipher Mining")
+
     /// Bitmine Immersion Technologies
     static let bmnr = AssetRiskConfig(stock: "BMNR", originDate: safeDate(year: 2021, month: 2, day: 16), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "Bitmine")
 
@@ -662,7 +674,7 @@ struct AssetRiskConfig {
     /// All supported stock assets
     static let stockConfigs: [AssetRiskConfig] = [
         .aapl, .nvda, .googl, .msft, .amzn, .tsla, .meta, .coin, .mstr, .spy, .qqq,
-        .orcl, .hood, .amd, .mu, .uber, .bmnr
+        .orcl, .hood, .amd, .mu, .uber, .asml, .tsm, .mp, .cifr, .bmnr
     ]
 
     /// All supported assets (crypto + stocks)
