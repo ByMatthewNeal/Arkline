@@ -7,6 +7,7 @@ struct RotationGaugeWidget: View {
     let topSectors: [SectorPerformance]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
+    @State private var selectedTimeframe: RotationTimeframe = .thirtyDay
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color { colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white }
@@ -134,14 +135,42 @@ struct RotationGaugeWidget: View {
         VStack(spacing: 14) {
             gaugeBar(signal)
 
+            // Timeframe picker
+            HStack(spacing: 4) {
+                ForEach(RotationTimeframe.allCases) { tf in
+                    Button {
+                        Haptics.light()
+                        selectedTimeframe = tf
+                    } label: {
+                        Text(tf.rawValue)
+                            .font(.system(size: 11, weight: .medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(
+                                selectedTimeframe == tf
+                                    ? AppColors.accent.opacity(0.12)
+                                    : Color.clear
+                            )
+                            .foregroundColor(
+                                selectedTimeframe == tf
+                                    ? AppColors.accent
+                                    : AppColors.textSecondary
+                            )
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+
             HStack(spacing: 0) {
-                returnPill(label: "BTC 30d", value: signal.btc30dReturn, isCrypto: true)
+                returnPill(label: "BTC \(selectedTimeframe.rawValue)", value: signal.btcReturn(for: selectedTimeframe), isCrypto: true)
                 Spacer()
                 Text("vs")
                     .font(.system(size: 11))
                     .foregroundColor(textPrimary.opacity(0.4))
                 Spacer()
-                returnPill(label: "SPY 30d", value: signal.spy30dReturn, isCrypto: false)
+                returnPill(label: "SPY \(selectedTimeframe.rawValue)", value: signal.spyReturn(for: selectedTimeframe), isCrypto: false)
             }
 
             if let narrative = signal.narrative {

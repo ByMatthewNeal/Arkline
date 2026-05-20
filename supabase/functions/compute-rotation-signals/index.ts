@@ -141,14 +141,14 @@ Deno.serve(async (req) => {
   let spyCandles: number[] = []
 
   try {
-    btcCandles = await fetchCoinbaseCloses("BTC-USD", 35)
+    btcCandles = await fetchCoinbaseCloses("BTC-USD", 200)
     console.log(`[rotation] BTC: ${btcCandles.length} candles`)
   } catch (e) {
     errors.push(`BTC fetch failed: ${e}`)
   }
 
   try {
-    spyCandles = await fetchFMPCloses("SPY", fmpKey, 35)
+    spyCandles = await fetchFMPCloses("SPY", fmpKey, 200)
     console.log(`[rotation] SPY: ${spyCandles.length} candles`)
   } catch (e) {
     errors.push(`SPY fetch failed: ${e}`)
@@ -158,8 +158,14 @@ Deno.serve(async (req) => {
     return json({ error: "Insufficient price data", errors })
   }
 
+  const btc7d = computeReturn(btcCandles, 7)
+  const spy7d = computeReturn(spyCandles, 7)
   const btc30d = computeReturn(btcCandles, 30)
   const spy30d = computeReturn(spyCandles, 30)
+  const btc90d = computeReturn(btcCandles, 90)
+  const spy90d = computeReturn(spyCandles, 90)
+  const btcYtd = computeYTDReturn(btcCandles)
+  const spyYtd = computeYTDReturn(spyCandles)
 
   // ── Step 2: Fetch auxiliary signals from existing tables ───────────────
 
@@ -230,8 +236,6 @@ Deno.serve(async (req) => {
     errors.push(`BTC dominance fetch failed: ${e}`)
   }
   // Approximate trend from price action — rising BTC dom = BTC outperforming alts
-  // Use btc 7d return vs a rough alt proxy (spy doesn't work, but direction suffices)
-  const btc7d = computeReturn(btcCandles, 7)
   btcDomTrend = btc7d > 3 ? "rising" : btc7d < -3 ? "falling" : "flat"
 
   // ── Step 3: Compute rotation score ────────────────────────────────────
@@ -359,8 +363,14 @@ Defensives rank: ${defensiveRank} of ${sectorResults.length}`
       rotation_score: rotationScore,
       regime,
       narrative,
+      btc_7d_return: btc7d,
+      spy_7d_return: spy7d,
       btc_30d_return: btc30d,
       spy_30d_return: spy30d,
+      btc_90d_return: btc90d,
+      spy_90d_return: spy90d,
+      btc_ytd_return: btcYtd,
+      spy_ytd_return: spyYtd,
       btc_risk_level: btcRisk,
       spy_risk_level: spyRisk,
       fear_greed_value: fearGreedValue,
@@ -524,6 +534,17 @@ function computeReturn(closes: number[], days: number): number {
   const recent = closes[closes.length - 1]
   const past = closes[closes.length - 1 - days]
   return past > 0 ? ((recent - past) / past) * 100 : 0
+}
+
+function computeYTDReturn(closes: number[]): number {
+  if (closes.length < 2) return 0
+  const now = new Date()
+  const jan1 = new Date(now.getFullYear(), 0, 1)
+  const daysSinceJan1 = Math.floor((now.getTime() - jan1.getTime()) / 86400000)
+  const idx = closes.length - 1 - Math.min(daysSinceJan1, closes.length - 1)
+  const recent = closes[closes.length - 1]
+  const start = closes[Math.max(0, idx)]
+  return start > 0 ? ((recent - start) / start) * 100 : 0
 }
 
 function clamp(value: number, min: number, max: number): number {

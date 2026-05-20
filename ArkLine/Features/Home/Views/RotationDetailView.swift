@@ -8,6 +8,7 @@ struct RotationDetailView: View {
     @State private var sectors: [SectorPerformance] = []
     @State private var isLoadingSectors = true
     @State private var expandedSectorId: String?
+    @State private var selectedTimeframe: RotationTimeframe = .thirtyDay
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -87,10 +88,36 @@ struct RotationDetailView: View {
                     .padding(.horizontal, ArkSpacing.md)
             }
 
+            // Timeframe picker
+            HStack(spacing: 6) {
+                ForEach(RotationTimeframe.allCases) { tf in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) { selectedTimeframe = tf }
+                    } label: {
+                        Text(tf.rawValue)
+                            .font(.system(size: 13, weight: selectedTimeframe == tf ? .semibold : .regular))
+                            .foregroundColor(selectedTimeframe == tf ? .white : AppColors.textSecondary)
+                            .padding(.vertical, 8)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                selectedTimeframe == tf
+                                    ? AnyView(Capsule().fill(AppColors.accent))
+                                    : AnyView(Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(4)
+            .background(
+                Capsule()
+                    .fill(AppColors.textSecondary.opacity(colorScheme == .dark ? 0.1 : 0.06))
+            )
+
             // Returns comparison
             HStack(spacing: 20) {
-                returnCard(label: "BTC 30d", value: signal.btc30dReturn, color: Color(hex: "F7931A"))
-                returnCard(label: "SPY 30d", value: signal.spy30dReturn, color: Color(hex: "3B82F6"))
+                returnCard(label: "BTC \(selectedTimeframe.rawValue)", value: signal.btcReturn(for: selectedTimeframe), color: Color(hex: "F7931A"))
+                returnCard(label: "SPY \(selectedTimeframe.rawValue)", value: signal.spyReturn(for: selectedTimeframe), color: Color(hex: "3B82F6"))
             }
         }
         .padding(ArkSpacing.lg)

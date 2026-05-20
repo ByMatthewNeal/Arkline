@@ -9,8 +9,14 @@ struct RotationSignal: Codable, Identifiable {
     let rotationScore: Int
     let regime: RotationRegime
     let narrative: String?
+    let btc7dReturn: Double?
+    let spy7dReturn: Double?
     let btc30dReturn: Double?
     let spy30dReturn: Double?
+    let btc90dReturn: Double?
+    let spy90dReturn: Double?
+    let btcYtdReturn: Double?
+    let spyYtdReturn: Double?
     let btcRiskLevel: String?
     let spyRiskLevel: String?
     let fearGreedValue: Int?
@@ -26,8 +32,14 @@ struct RotationSignal: Codable, Identifiable {
         case signalDate = "signal_date"
         case rotationScore = "rotation_score"
         case regime, narrative
+        case btc7dReturn = "btc_7d_return"
+        case spy7dReturn = "spy_7d_return"
         case btc30dReturn = "btc_30d_return"
         case spy30dReturn = "spy_30d_return"
+        case btc90dReturn = "btc_90d_return"
+        case spy90dReturn = "spy_90d_return"
+        case btcYtdReturn = "btc_ytd_return"
+        case spyYtdReturn = "spy_ytd_return"
         case btcRiskLevel = "btc_risk_level"
         case spyRiskLevel = "spy_risk_level"
         case fearGreedValue = "fear_greed_value"
@@ -37,6 +49,37 @@ struct RotationSignal: Codable, Identifiable {
         case vixLevel = "vix_level"
         case btcDominance = "btc_dominance"
         case btcDominanceTrend = "btc_dominance_trend"
+    }
+}
+
+// MARK: - Rotation Timeframe
+
+enum RotationTimeframe: String, CaseIterable, Identifiable {
+    case sevenDay = "7D"
+    case thirtyDay = "30D"
+    case ninetyDay = "90D"
+    case ytd = "YTD"
+
+    var id: String { rawValue }
+}
+
+extension RotationSignal {
+    func btcReturn(for timeframe: RotationTimeframe) -> Double? {
+        switch timeframe {
+        case .sevenDay: return btc7dReturn
+        case .thirtyDay: return btc30dReturn
+        case .ninetyDay: return btc90dReturn
+        case .ytd: return btcYtdReturn
+        }
+    }
+
+    func spyReturn(for timeframe: RotationTimeframe) -> Double? {
+        switch timeframe {
+        case .sevenDay: return spy7dReturn
+        case .thirtyDay: return spy30dReturn
+        case .ninetyDay: return spy90dReturn
+        case .ytd: return spyYtdReturn
+        }
     }
 }
 
