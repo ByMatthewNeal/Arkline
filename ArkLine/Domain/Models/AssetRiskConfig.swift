@@ -631,6 +631,9 @@ struct AssetRiskConfig {
     /// Uber
     static let uber = AssetRiskConfig(stock: "UBER", originDate: safeDate(year: 2019, month: 5, day: 10), deviationBounds: (low: -0.55, high: 0.55), confidenceLevel: 6, displayName: "Uber")
 
+    /// Micron Technology
+    static let mu = AssetRiskConfig(stock: "MU", originDate: safeDate(year: 1984, month: 6, day: 1), deviationBounds: (low: -0.6, high: 0.6), confidenceLevel: 9, displayName: "Micron")
+
     /// Bitmine Immersion Technologies
     static let bmnr = AssetRiskConfig(stock: "BMNR", originDate: safeDate(year: 2021, month: 2, day: 16), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "Bitmine")
 
@@ -659,7 +662,7 @@ struct AssetRiskConfig {
     /// All supported stock assets
     static let stockConfigs: [AssetRiskConfig] = [
         .aapl, .nvda, .googl, .msft, .amzn, .tsla, .meta, .coin, .mstr, .spy, .qqq,
-        .orcl, .hood, .amd, .uber, .bmnr
+        .orcl, .hood, .amd, .mu, .uber, .bmnr
     ]
 
     /// All supported assets (crypto + stocks)
