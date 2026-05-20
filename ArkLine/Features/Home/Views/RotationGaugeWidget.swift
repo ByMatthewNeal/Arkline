@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Rotation Gauge Widget
 
 struct RotationGaugeWidget: View {
-    let signal: RotationSignal
+    let signal: RotationSignal?
     let topSectors: [SectorPerformance]
     var size: WidgetSize = .standard
     @Environment(\.colorScheme) var colorScheme
@@ -12,6 +12,49 @@ struct RotationGaugeWidget: View {
     private var cardBackground: Color { colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white }
 
     var body: some View {
+        if let signal {
+            signalContent(signal)
+        } else {
+            loadingContent
+        }
+    }
+
+    // MARK: - Loading State
+
+    private var loadingContent: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.left.arrow.right.circle.fill")
+                    .font(.system(size: size == .compact ? 14 : 16))
+                    .foregroundColor(AppColors.accent)
+
+                Text("Rotation Signal")
+                    .font(size == .compact ? .subheadline : .headline)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+            }
+
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Loading rotation data...")
+                    .font(.system(size: 12))
+                    .foregroundColor(textPrimary.opacity(0.5))
+            }
+            .padding(.vertical, size == .compact ? 4 : 12)
+        }
+        .padding(size == .compact ? 14 : 18)
+        .background(
+            RoundedRectangle(cornerRadius: size == .compact ? 14 : 20)
+                .fill(cardBackground)
+        )
+        .arkShadow(ArkSpacing.Shadow.card)
+    }
+
+    // MARK: - Signal Content
+
+    private func signalContent(_ signal: RotationSignal) -> some View {
         NavigationLink {
             RotationDetailView(signal: signal)
         } label: {
@@ -21,7 +64,7 @@ struct RotationGaugeWidget: View {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.left.arrow.right.circle.fill")
                             .font(.system(size: size == .compact ? 14 : 16))
-                            .foregroundColor(regimeColor)
+                            .foregroundColor(regimeColor(signal))
 
                         Text("Rotation Signal")
                             .font(size == .compact ? .subheadline : .headline)
@@ -36,13 +79,13 @@ struct RotationGaugeWidget: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Capsule().fill(regimeColor))
+                        .background(Capsule().fill(regimeColor(signal)))
                 }
 
                 if size == .compact {
-                    compactBody
+                    compactBody(signal)
                 } else {
-                    standardBody
+                    standardBody(signal)
                 }
             }
             .padding(size == .compact ? 14 : 18)
@@ -58,20 +101,18 @@ struct RotationGaugeWidget: View {
 
     // MARK: - Compact Body
 
-    private var compactBody: some View {
+    private func compactBody(_ signal: RotationSignal) -> some View {
         HStack(spacing: 16) {
-            // Score
             VStack(spacing: 2) {
-                Text(scoreText)
+                Text(scoreText(signal))
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(regimeColor)
+                    .foregroundColor(regimeColor(signal))
 
-                Text(scoreSuffix)
+                Text(scoreSuffix(signal))
                     .font(.system(size: 10))
                     .foregroundColor(textPrimary.opacity(0.5))
             }
 
-            // Narrative
             if let narrative = signal.narrative {
                 Text(narrative)
                     .font(.system(size: 11))
@@ -89,12 +130,10 @@ struct RotationGaugeWidget: View {
 
     // MARK: - Standard Body
 
-    private var standardBody: some View {
+    private func standardBody(_ signal: RotationSignal) -> some View {
         VStack(spacing: 14) {
-            // Gauge bar
-            gaugeBar
+            gaugeBar(signal)
 
-            // Returns comparison
             HStack(spacing: 0) {
                 returnPill(label: "BTC 30d", value: signal.btc30dReturn, isCrypto: true)
                 Spacer()
@@ -105,7 +144,6 @@ struct RotationGaugeWidget: View {
                 returnPill(label: "SPY 30d", value: signal.spy30dReturn, isCrypto: false)
             }
 
-            // Narrative
             if let narrative = signal.narrative {
                 Text(narrative)
                     .font(.system(size: 12))
@@ -113,7 +151,6 @@ struct RotationGaugeWidget: View {
                     .lineSpacing(2)
             }
 
-            // Top sectors preview (standard/expanded)
             if !topSectors.isEmpty {
                 Divider().opacity(0.2)
 
@@ -135,32 +172,30 @@ struct RotationGaugeWidget: View {
 
     // MARK: - Gauge Bar
 
-    private var gaugeBar: some View {
+    private func gaugeBar(_ signal: RotationSignal) -> some View {
         VStack(spacing: 6) {
-            // Labels
             HStack {
                 Text("Crypto")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(Color(hex: "F7931A"))
                 Spacer()
-                Text(scoreText)
+                Text(scoreText(signal))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(regimeColor)
+                    .foregroundColor(regimeColor(signal))
                 Spacer()
                 Text("Equities")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(Color(hex: "3B82F6"))
             }
 
-            // Bar
             GeometryReader { geo in
                 let width = geo.size.width
                 let center = width / 2
                 let normalized = CGFloat(signal.rotationScore + 100) / 200.0
                 let needleX = width * normalized
+                let color = regimeColor(signal)
 
                 ZStack(alignment: .leading) {
-                    // Background track
                     RoundedRectangle(cornerRadius: 4)
                         .fill(
                             LinearGradient(
@@ -171,17 +206,15 @@ struct RotationGaugeWidget: View {
                         )
                         .frame(height: 8)
 
-                    // Center marker
                     Rectangle()
                         .fill(textPrimary.opacity(0.2))
                         .frame(width: 1, height: 12)
                         .position(x: center, y: 4)
 
-                    // Needle
                     Circle()
-                        .fill(regimeColor)
+                        .fill(color)
                         .frame(width: 14, height: 14)
-                        .shadow(color: regimeColor.opacity(0.4), radius: 4)
+                        .shadow(color: color.opacity(0.4), radius: 4)
                         .position(x: needleX, y: 4)
                 }
             }
@@ -238,7 +271,7 @@ struct RotationGaugeWidget: View {
         }
     }
 
-    private var regimeColor: Color {
+    private func regimeColor(_ signal: RotationSignal) -> Color {
         switch signal.regime {
         case .cryptoFavored: return Color(hex: "F7931A")
         case .equityFavored: return Color(hex: "3B82F6")
@@ -247,12 +280,12 @@ struct RotationGaugeWidget: View {
         }
     }
 
-    private var scoreText: String {
+    private func scoreText(_ signal: RotationSignal) -> String {
         let s = signal.rotationScore
         return s >= 0 ? "+\(s)" : "\(s)"
     }
 
-    private var scoreSuffix: String {
+    private func scoreSuffix(_ signal: RotationSignal) -> String {
         signal.rotationScore < 0 ? "→ Crypto" : signal.rotationScore > 0 ? "→ Equities" : "Neutral"
     }
 }

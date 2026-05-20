@@ -142,7 +142,7 @@ struct ReorderableWidgetStack: View {
         case .perpPremium:
             return viewModel.btcPerpPremium != nil || viewModel.ethPerpPremium != nil
         case .rotationGauge:
-            return viewModel.rotationSignal != nil
+            return true
         case .marketDeck:
             return viewModel.latestDeck != nil
         case .modelPortfolioUpdate:
@@ -323,13 +323,11 @@ struct ReorderableWidgetStack: View {
             }
 
         case .rotationGauge:
-            if let signal = viewModel.rotationSignal {
-                RotationGaugeWidget(
-                    signal: signal,
-                    topSectors: Array(viewModel.sectorPerformance.prefix(3)),
-                    size: appState.widgetSize(.rotationGauge)
-                )
-            }
+            RotationGaugeWidget(
+                signal: viewModel.rotationSignal,
+                topSectors: Array(viewModel.sectorPerformance.prefix(3)),
+                size: appState.widgetSize(.rotationGauge)
+            )
         }
     }
 }
