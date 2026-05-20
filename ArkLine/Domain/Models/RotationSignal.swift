@@ -93,10 +93,19 @@ enum RotationRegime: String, Codable {
 
     var displayName: String {
         switch self {
-        case .cryptoFavored: return "Crypto Favored"
-        case .equityFavored: return "Equities Favored"
+        case .cryptoFavored: return "Favor Crypto"
+        case .equityFavored: return "Favor Equities"
         case .neutral: return "Neutral"
         case .riskOff: return "Risk Off"
+        }
+    }
+
+    var actionLabel: String {
+        switch self {
+        case .cryptoFavored: return "Overweight Crypto"
+        case .equityFavored: return "Overweight Equities"
+        case .neutral: return "Balanced Allocation"
+        case .riskOff: return "Reduce Risk"
         }
     }
 
@@ -106,6 +115,57 @@ enum RotationRegime: String, Codable {
         case .equityFavored: return "chart.line.uptrend.xyaxis"
         case .neutral: return "equal.circle.fill"
         case .riskOff: return "exclamationmark.shield.fill"
+        }
+    }
+}
+
+// MARK: - Rotation Action Guidance
+
+extension RotationSignal {
+    /// Actionable guidance bullets based on current regime and inputs
+    var actionBullets: [String] {
+        switch regime {
+        case .equityFavored:
+            var bullets = ["Equities outperforming — consider overweighting stocks vs crypto"]
+            if let spy = spy30dReturn, spy > 5 {
+                bullets.append("SPY momentum is strong. Look at leading sectors for targeted exposure")
+            }
+            if let btc = btc30dReturn, btc < 0 {
+                bullets.append("Crypto is pulling back — trim or hold, don't add until momentum returns")
+            } else {
+                bullets.append("Crypto still positive but lagging — reduce relative allocation")
+            }
+            return bullets
+
+        case .cryptoFavored:
+            var bullets = ["Crypto leading — consider overweighting BTC and high-conviction alts"]
+            if let btc = btc30dReturn, btc > 10 {
+                bullets.append("BTC momentum is strong. Watch for altcoin rotation as dominance shifts")
+            }
+            bullets.append("Equities may underperform near-term — reduce equity overweight")
+            return bullets
+
+        case .neutral:
+            var bullets = ["Neither asset class has clear leadership — maintain balanced allocation"]
+            if let btc30 = btc30dReturn, let spy30 = spy30dReturn {
+                let delta = spy30 - btc30
+                if delta > 5 {
+                    bullets.append("Equities slightly leading — lean equities if momentum continues")
+                } else if delta < -5 {
+                    bullets.append("Crypto slightly leading — lean crypto if momentum continues")
+                } else {
+                    bullets.append("Performance is converging — wait for a clearer signal before rotating")
+                }
+            }
+            bullets.append("Focus on sector selection within equities and quality within crypto")
+            return bullets
+
+        case .riskOff:
+            return [
+                "Elevated volatility — reduce exposure across both crypto and equities",
+                "Defensive sectors (utilities, staples, healthcare) outperforming growth",
+                "Preserve capital. Raise cash or add hedges until VIX subsides"
+            ]
         }
     }
 }

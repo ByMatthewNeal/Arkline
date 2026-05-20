@@ -109,9 +109,9 @@ struct RotationGaugeWidget: View {
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(regimeColor(signal))
 
-                Text(scoreSuffix(signal))
-                    .font(.system(size: 10))
-                    .foregroundColor(textPrimary.opacity(0.5))
+                Text(signal.regime.actionLabel)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(regimeColor(signal).opacity(0.8))
             }
 
             if let narrative = signal.narrative {

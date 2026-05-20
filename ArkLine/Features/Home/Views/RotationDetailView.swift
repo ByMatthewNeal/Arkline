@@ -22,6 +22,9 @@ struct RotationDetailView: View {
                     gaugeSection
                         .padding(.top, ArkSpacing.md)
 
+                    // What to Do section
+                    actionGuidanceSection
+
                     // Input breakdown
                     inputBreakdownSection
 
@@ -178,6 +181,65 @@ struct RotationDetailView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(color.opacity(0.08))
         )
+    }
+
+    // MARK: - Action Guidance
+
+    private var actionGuidanceSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(regimeColor)
+
+                Text("What to Do")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                Text(signal.regime.actionLabel)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(regimeColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule().fill(regimeColor.opacity(0.12))
+                    )
+            }
+
+            ForEach(Array(signal.actionBullets.enumerated()), id: \.offset) { _, bullet in
+                HStack(alignment: .top, spacing: 10) {
+                    Circle()
+                        .fill(regimeColor)
+                        .frame(width: 6, height: 6)
+                        .padding(.top, 6)
+
+                    Text(bullet)
+                        .font(.system(size: 13))
+                        .foregroundColor(textPrimary.opacity(0.85))
+                        .lineSpacing(3)
+                }
+            }
+
+            // Top sectors callout when equity favored
+            if signal.regime == .equityFavored, !sectors.isEmpty {
+                let topNames = sectors.prefix(3).map(\.sectorName).joined(separator: ", ")
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.accent)
+                        .padding(.top, 4)
+
+                    Text("Leading sectors: \(topNames)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+                        .lineSpacing(3)
+                }
+            }
+        }
+        .padding(ArkSpacing.md)
+        .glassCard(cornerRadius: ArkSpacing.Radius.lg)
     }
 
     // MARK: - Input Breakdown
