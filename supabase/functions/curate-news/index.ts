@@ -57,11 +57,12 @@ For each article, produce:
    - Bullet 1: Positioning implication — what this means for portfolios right now
    - Bullet 2: What to watch — specific metric, event, level, or threshold to monitor
    - Bullet 3: Cross-asset connection — how this links to other markets (crypto↔macro↔FX↔commodities)
+3. A priority_reason (1 sentence): For articles with relevance_score >= 7, explain in one direct sentence why this article demands attention for positioning decisions right now. For articles with relevance_score < 7, return an empty string "".
 
 Write like a Bloomberg terminal note. No hedging ("could", "might"). Be direct.
 
 Return ONLY a valid JSON array:
-[{"index": 0, "headline": "...", "takeaway_1": "...", "takeaway_2": "...", "takeaway_3": "..."}]
+[{"index": 0, "headline": "...", "takeaway_1": "...", "takeaway_2": "...", "takeaway_3": "...", "priority_reason": "..."}]
 No markdown, no explanation.`
 
 // ─── Main Handler ────────────────────────────────────────────────────────────
@@ -198,7 +199,7 @@ Deno.serve(async (req) => {
     const batchInput = batch
       .map(
         (item, idx) =>
-          `[${idx}] Title: ${item.article.title}\nSource: ${item.article.source}\nDescription: ${item.article.description || "N/A"}`
+          `[${idx}] Title: ${item.article.title}\nSource: ${item.article.source}\nRelevance Score: ${item.score}\nDescription: ${item.article.description || "N/A"}`
       )
       .join("\n\n")
 
@@ -227,6 +228,7 @@ Deno.serve(async (req) => {
           relevance_score: item.score,
           category: item.category,
           url_hash: item.article.urlHash!,
+          priority_reason: result.priority_reason || "",
         })
       }
     } catch (err) {
@@ -439,6 +441,7 @@ interface EnrichResult {
   takeaway_1: string
   takeaway_2: string
   takeaway_3: string
+  priority_reason: string
 }
 
 interface EnrichedArticle {
@@ -453,6 +456,7 @@ interface EnrichedArticle {
   relevance_score: number
   category: string
   url_hash: string
+  priority_reason: string
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

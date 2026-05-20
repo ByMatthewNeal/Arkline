@@ -178,6 +178,18 @@ struct HomeDailyNewsWidget: View {
         }
     }
 
+    /// In compact mode, surface the highest-impact article from the last 24h
+    private var prioritizedNews: [NewsItem] {
+        guard size == .compact else { return news }
+        let cutoff = Date().addingTimeInterval(-86400)
+        let recent = news.filter { $0.publishedAt > cutoff }
+        if let best = recent.max(by: { ($0.relevanceScore ?? 0) < ($1.relevanceScore ?? 0) }),
+           (best.relevanceScore ?? 0) >= 7 {
+            return [best] + news.filter { $0.id != best.id }
+        }
+        return news
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: size == .compact ? 8 : 12) {
             // Header
@@ -224,8 +236,8 @@ struct HomeDailyNewsWidget: View {
                 )
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(news.prefix(maxItems).enumerated()), id: \.element.id) { index, item in
-                        NavigationLink(destination: NewsDetailView(allNews: Array(news.prefix(maxItems)), initialIndex: index)) {
+                    ForEach(Array(prioritizedNews.prefix(maxItems).enumerated()), id: \.element.id) { index, item in
+                        NavigationLink(destination: NewsDetailView(allNews: Array(prioritizedNews.prefix(maxItems)), initialIndex: index)) {
                             HomeNewsRow(item: item, isCompact: size == .compact)
                         }
                         .buttonStyle(.plain)
@@ -274,6 +286,16 @@ struct HomeNewsRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 6) {
+                if item.isPriority {
+                    HStack(spacing: 3) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 7))
+                        Text("High Impact")
+                            .font(.system(size: isCompact ? 8 : 9, weight: .bold))
+                    }
+                    .foregroundColor(Color(hex: "EF4444"))
+                }
+
                 Text(item.source)
                     .font(.system(size: isCompact ? 9 : 10))
                     .foregroundColor(textPrimary.opacity(0.5))

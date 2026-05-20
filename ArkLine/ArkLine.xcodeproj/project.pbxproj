@@ -86,6 +86,11 @@
 		2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */; };
 		PRST00000001A1B2C3D4E501 /* PresetPickerSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = PRST00000001A1B2C3D4E502 /* PresetPickerSection.swift */; };
 		DBPR00000001A1B2C3D4E501 /* DashboardPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBPR00000001A1B2C3D4E502 /* DashboardPreset.swift */; };
+		RTSN00000001A1B2C3D4E501 /* RotationSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = RTSN00000001A1B2C3D4E502 /* RotationSignal.swift */; };
+		SPRF00000001A1B2C3D4E501 /* SectorPerformance.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPRF00000001A1B2C3D4E502 /* SectorPerformance.swift */; };
+		RSVC00000001A1B2C3D4E501 /* RotationSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = RSVC00000001A1B2C3D4E502 /* RotationSignalService.swift */; };
+		RGWG00000001A1B2C3D4E501 /* RotationGaugeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = RGWG00000001A1B2C3D4E502 /* RotationGaugeWidget.swift */; };
+		RDVW00000001A1B2C3D4E501 /* RotationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RDVW00000001A1B2C3D4E502 /* RotationDetailView.swift */; };
 		2FBE6DEE830180E1BC1A7EEC /* SantimentServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C54D797B805E0D51C2467C1 /* SantimentServiceProtocol.swift */; };
 		31E474080A77E1549EA84032 /* BroadcastServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23726172A180D7C75671AEF0 /* BroadcastServiceProtocol.swift */; };
 		320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 508040EAE6C606BB92847F87 /* MarketAssetsSection.swift */; };
@@ -704,6 +709,11 @@
 		56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomizeHomeView.swift; sourceTree = "<group>"; };
 		PRST00000001A1B2C3D4E502 /* PresetPickerSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresetPickerSection.swift; sourceTree = "<group>"; };
 		DBPR00000001A1B2C3D4E502 /* DashboardPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardPreset.swift; sourceTree = "<group>"; };
+		RTSN00000001A1B2C3D4E502 /* RotationSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationSignal.swift; sourceTree = "<group>"; };
+		SPRF00000001A1B2C3D4E502 /* SectorPerformance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectorPerformance.swift; sourceTree = "<group>"; };
+		RSVC00000001A1B2C3D4E502 /* RotationSignalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationSignalService.swift; sourceTree = "<group>"; };
+		RGWG00000001A1B2C3D4E502 /* RotationGaugeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationGaugeWidget.swift; sourceTree = "<group>"; };
+		RDVW00000001A1B2C3D4E502 /* RotationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationDetailView.swift; sourceTree = "<group>"; };
 		5690746804883DD3637B36A6 /* HomeNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNotifications.swift; sourceTree = "<group>"; };
 		5831D493E668A00494BC0398 /* SentimentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentViewModel.swift; sourceTree = "<group>"; };
 		58F9C3C06B9A6670869424CC /* EmbeddedWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedWidgetView.swift; sourceTree = "<group>"; };
@@ -1306,6 +1316,7 @@
 				F0DA0D141D5387C2F592B4D2 /* APISentimentService.swift */,
 				C2B3A4D5E6F7081920314A5C /* ArticleSummaryService.swift */,
 				E5D4C3B2A1F60718293A4B5C /* CuratedNewsService.swift */,
+				RSVC00000001A1B2C3D4E502 /* RotationSignalService.swift */,
 				7C4E2F8A1D6B3E9C5A0D7F2E /* BriefingAudioService.swift */,
 				9F6BACE34C9446559D45628B /* MarketSummaryService.swift */,
 				1285524AE2D7FD1D4FBBE132 /* APITechnicalAnalysisService.swift */,
@@ -1489,6 +1500,8 @@
 				F54AD0098DA817A84CC84959 /* GlobalLiquidityData.swift */,
 				DBPR00000001A1B2C3D4E502 /* DashboardPreset.swift */,
 				80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */,
+				RTSN00000001A1B2C3D4E502 /* RotationSignal.swift */,
+				SPRF00000001A1B2C3D4E502 /* SectorPerformance.swift */,
 				FCDA5E5901705B77AA3B3676 /* MarketWidget.swift */,
 				715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */,
 				33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */,
@@ -1854,6 +1867,8 @@
 				4CE5C862FC91021414DDF389 /* AssetTechnicalDetailSheet.swift */,
 				56056EDA5DF62EE0F698596A /* CustomizeHomeView.swift */,
 				PRST00000001A1B2C3D4E502 /* PresetPickerSection.swift */,
+				RGWG00000001A1B2C3D4E502 /* RotationGaugeWidget.swift */,
+				RDVW00000001A1B2C3D4E502 /* RotationDetailView.swift */,
 				C831006104AE4F24A0E28C46 /* FlashIntelCard.swift */,
 				A1B2C3D4E5F6QPS00004A4 /* QPSSignalChangesCard.swift */,
 				M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */,
@@ -2749,6 +2764,11 @@
 				2EFCDB0D6C3DBAACCF76CEAE /* CustomizeHomeView.swift in Sources */,
 				PRST00000001A1B2C3D4E501 /* PresetPickerSection.swift in Sources */,
 				DBPR00000001A1B2C3D4E501 /* DashboardPreset.swift in Sources */,
+				RTSN00000001A1B2C3D4E501 /* RotationSignal.swift in Sources */,
+				SPRF00000001A1B2C3D4E501 /* SectorPerformance.swift in Sources */,
+				RSVC00000001A1B2C3D4E501 /* RotationSignalService.swift in Sources */,
+				RGWG00000001A1B2C3D4E501 /* RotationGaugeWidget.swift in Sources */,
+				RDVW00000001A1B2C3D4E501 /* RotationDetailView.swift in Sources */,
 				3E47C0261E91E876041DD459 /* DCACalculation.swift in Sources */,
 				56BB79AB25FAFE59BEF90B08 /* DCACalculatorService.swift in Sources */,
 				F3A1B2C3D4E5F6A7B8C9D0E2 /* DCANotificationScheduler.swift in Sources */,

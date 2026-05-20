@@ -163,6 +163,21 @@ struct DailyNewsCard: View {
             .cornerRadius(4)
             .padding(.bottom, 8)
 
+            // Priority badge
+            if news.isPriority {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 9, weight: .bold))
+                    Text("High Impact")
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Capsule().fill(Color(hex: "EF4444")))
+                .padding(.bottom, 4)
+            }
+
             // Time ago
             Text(news.timeAgo)
                 .font(.caption2)
@@ -356,6 +371,7 @@ enum DetectedNewsTopic: Hashable {
 // MARK: - News View Mode
 enum NewsViewMode: String, CaseIterable {
     case byTime = "Latest"
+    case byImpact = "By Impact"
     case byTopic = "Topics"
 }
 

@@ -95,6 +95,7 @@ private struct CuratedNewsDTO: Decodable {
     let takeaway3: String
     let relevanceScore: Int?
     let category: String?
+    let priorityReason: String?
 
     enum CodingKeys: String, CodingKey {
         case id, source, category
@@ -106,6 +107,7 @@ private struct CuratedNewsDTO: Decodable {
         case takeaway2 = "takeaway_2"
         case takeaway3 = "takeaway_3"
         case relevanceScore = "relevance_score"
+        case priorityReason = "priority_reason"
     }
 
     func toNewsItem() -> NewsItem {
@@ -118,7 +120,9 @@ private struct CuratedNewsDTO: Decodable {
             publishedAt: date,
             url: sourceUrl,
             sourceType: .curated,
-            takeaways: [takeaway1, takeaway2, takeaway3]
+            takeaways: [takeaway1, takeaway2, takeaway3],
+            relevanceScore: relevanceScore,
+            priorityReason: (priorityReason?.isEmpty == false) ? priorityReason : nil
         )
     }
 

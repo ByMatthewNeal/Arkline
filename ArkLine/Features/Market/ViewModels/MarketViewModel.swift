@@ -289,6 +289,11 @@ struct NewsItem: Identifiable {
     let isVerified: Bool // Twitter verified badge
     let description: String? // Full content/body of the news
     let takeaways: [String]? // Positioning takeaway bullets (curated articles only)
+    let relevanceScore: Int? // 0-10 from curated pipeline
+    let priorityReason: String? // Single sentence for high-impact articles (score >= 7)
+
+    /// Whether this article is high-impact (relevance score 8+)
+    var isPriority: Bool { (relevanceScore ?? 0) >= 8 }
 
     init(
         id: UUID,
@@ -301,7 +306,9 @@ struct NewsItem: Identifiable {
         twitterHandle: String? = nil,
         isVerified: Bool = false,
         description: String? = nil,
-        takeaways: [String]? = nil
+        takeaways: [String]? = nil,
+        relevanceScore: Int? = nil,
+        priorityReason: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -314,6 +321,8 @@ struct NewsItem: Identifiable {
         self.isVerified = isVerified
         self.description = description
         self.takeaways = takeaways
+        self.relevanceScore = relevanceScore
+        self.priorityReason = priorityReason
     }
 }
 

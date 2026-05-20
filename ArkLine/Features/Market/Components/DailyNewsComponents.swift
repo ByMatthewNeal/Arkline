@@ -109,7 +109,24 @@ struct AllNewsView: View {
                     .padding(.top, 4)
 
                     // News content based on view mode
-                    if viewMode == .byTopic {
+                    if viewMode == .byImpact {
+                        // Sorted by relevance score descending, then by date
+                        let impactSorted = filteredNews.sorted {
+                            let s0 = $0.relevanceScore ?? 0
+                            let s1 = $1.relevanceScore ?? 0
+                            if s0 != s1 { return s0 > s1 }
+                            return $0.publishedAt > $1.publishedAt
+                        }
+                        LazyVStack(spacing: 12) {
+                            ForEach(Array(impactSorted.enumerated()), id: \.element.id) { index, item in
+                                NavigationLink(destination: NewsDetailView(allNews: impactSorted, initialIndex: index)) {
+                                    NewsListRow(news: item)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    } else if viewMode == .byTopic {
                         // Grouped by topic with section headers
                         LazyVStack(alignment: .leading, spacing: 20) {
                             ForEach(newsByTopic, id: \.topic) { group in
@@ -251,6 +268,19 @@ struct NewsListRow: View {
                     }
                 }
 
+                if news.isPriority {
+                    HStack(spacing: 3) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 8))
+                        Text("High Impact")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color(hex: "EF4444")))
+                }
+
                 Spacer()
 
                 if isRead {
@@ -272,6 +302,15 @@ struct NewsListRow: View {
                 .opacity(isRead ? 0.6 : 1.0)
                 .lineLimit(3)
                 .multilineTextAlignment(.leading)
+
+            // Priority reason
+            if news.isPriority, let reason = news.priorityReason {
+                Text(reason)
+                    .font(.caption)
+                    .foregroundColor(AppColors.accent)
+                    .lineLimit(2)
+                    .padding(.top, 2)
+            }
 
             // Chevron indicator
             HStack {
@@ -422,6 +461,37 @@ private struct NewsArticlePage: View {
                     .cornerRadius(ArkSpacing.Radius.card)
                     .arkShadow(ArkSpacing.Shadow.card)
                     .padding(.horizontal, 20)
+
+                    // Priority reason callout (high-impact articles)
+                    if news.isPriority, let reason = news.priorityReason {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "EF4444"))
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Why This Matters")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color(hex: "EF4444"))
+
+                                Text(reason)
+                                    .font(.subheadline)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                                    .lineSpacing(3)
+                            }
+                        }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: ArkSpacing.Radius.card)
+                                .fill(Color(hex: "EF4444").opacity(0.08))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: ArkSpacing.Radius.card)
+                                .stroke(Color(hex: "EF4444").opacity(0.2), lineWidth: 1)
+                        )
+                        .padding(.horizontal, 20)
+                    }
 
                     // Positioning Takeaways card (curated articles)
                     if let takeaways = news.takeaways, !takeaways.isEmpty {

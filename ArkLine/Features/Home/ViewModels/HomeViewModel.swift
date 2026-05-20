@@ -148,6 +148,10 @@ class HomeViewModel {
     var qpsSignals: [DailyPositioningSignal] = []
     private let qpsService = PositioningSignalService()
 
+    // Rotation Signal (Crypto vs Equities)
+    var rotationSignal: RotationSignal?
+    var sectorPerformance: [SectorPerformance] = []
+
     // Weekly Market Deck
     var latestDeck: MarketUpdateDeck?
     private let marketDeckService: MarketUpdateDeckServiceProtocol = ServiceContainer.shared.marketDeckService
@@ -1246,6 +1250,17 @@ class HomeViewModel {
             Task {
                 let rainbow = await self.fetchRainbowChartSafe(btcPrice: self.btcPrice)
                 await MainActor.run { self.rainbowChartData = rainbow }
+            }
+        }
+
+        // Fetch Rotation Signal (Crypto vs Equities)
+        Task {
+            async let signal = RotationSignalService.shared.fetchLatestSignal()
+            async let sectors = RotationSignalService.shared.fetchLatestSectors()
+            let (s, sec) = await (signal, sectors)
+            await MainActor.run {
+                self.rotationSignal = s
+                self.sectorPerformance = sec
             }
         }
 

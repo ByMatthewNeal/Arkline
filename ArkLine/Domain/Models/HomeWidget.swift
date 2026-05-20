@@ -53,6 +53,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case stockRiskLevel = "stock_risk_level"
     case modelPortfolioUpdate = "model_portfolio_update"
     case perpPremium = "perp_premium"
+    case rotationGauge = "rotation_gauge"
 
     var id: String { rawValue }
 
@@ -80,6 +81,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .stockRiskLevel: return "Stock Risk Levels"
         case .modelPortfolioUpdate: return "Model Portfolio Updates"
         case .perpPremium: return "Perp Premium"
+        case .rotationGauge: return "Crypto/Equities Rotation"
         }
     }
 
@@ -107,6 +109,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .stockRiskLevel: return "Regression risk levels for select stocks"
         case .modelPortfolioUpdate: return "Latest rebalance from your followed strategy"
         case .perpPremium: return "Directional bias in perpetual futures markets"
+        case .rotationGauge: return "Daily signal showing when to favor crypto vs equities, with sector rankings"
         }
     }
 
@@ -134,6 +137,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .stockRiskLevel: return "chart.line.uptrend.xyaxis"
         case .modelPortfolioUpdate: return "arrow.triangle.2.circlepath"
         case .perpPremium: return "gauge.with.dots.needle.33percent"
+        case .rotationGauge: return "arrow.left.arrow.right.circle"
         }
     }
 
@@ -147,14 +151,14 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate:
             return false
-        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium:
+        case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium, .rotationGauge:
             return true
         }
     }
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize)
