@@ -293,10 +293,7 @@ export default function TermsOfServicePage() {
 
             <p className="mt-4"><strong className="text-ark-text">Binding arbitration</strong></p>
             <p className="mt-2">
-              [ARBITRATION CLAUSE — review with attorney before publishing. The following is a common template; your attorney may recommend modifications based on your state and risk profile:]
-            </p>
-            <p className="mt-2">
-              If we cannot resolve a dispute informally within 60 days, you and Arkline agree to resolve any dispute through binding individual arbitration administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules. The arbitration will take place in [CITY, STATE] or at another mutually agreed location, or by video conference.
+              If we cannot resolve a dispute informally within 60 days, you and Arkline agree to resolve any dispute through binding individual arbitration administered by the American Arbitration Association (AAA) under its Consumer Arbitration Rules. The arbitration will take place in Cheyenne, Wyoming or at another mutually agreed location, or by video conference.
             </p>
             <p className="mt-2">
               <strong className="text-ark-text">Class action waiver.</strong> You and Arkline agree that disputes will be resolved on an individual basis only. You waive any right to participate in a class action, class arbitration, or representative proceeding.
