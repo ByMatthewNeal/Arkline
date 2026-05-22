@@ -427,21 +427,39 @@ actor IncrementalPriceStore {
             let startSec = Int64(startDate.timeIntervalSince1970)
             let endSec = Int64(Date().timeIntervalSince1970)
 
-            let candles = try await CoinbaseCandle.fetch(
-                pair: config.coinbasePair,
-                granularity: "ONE_DAY",
-                start: startSec,
-                end: endSec,
-                limit: min(count + 1, 350)
-            )
+            // Try Coinbase first, fall back to Binance
+            var rawCandles: [(date: Date, close: Double)] = []
+
+            do {
+                let candles = try await CoinbaseCandle.fetch(
+                    pair: config.coinbasePair,
+                    granularity: "ONE_DAY",
+                    start: startSec,
+                    end: endSec,
+                    limit: min(count + 1, 350)
+                )
+                rawCandles = candles.map { (Date(timeIntervalSince1970: Double($0.start)), $0.close) }
+            } catch {
+                logDebug("IncrementalPriceStore: Coinbase incremental failed for \(coin), trying Binance", category: .network)
+            }
+
+            // Binance fallback for coins delisted from Coinbase
+            if rawCandles.isEmpty, let binanceSymbol = config.binanceSymbol {
+                let startMs = startSec * 1000
+                do {
+                    let candles = try await BinanceCandle.fetch(symbol: binanceSymbol, startTime: startMs)
+                    rawCandles = candles.map { (Date(timeIntervalSince1970: Double($0.startSeconds)), $0.close) }
+                } catch {
+                    logDebug("IncrementalPriceStore: Binance incremental also failed for \(coin)", category: .network)
+                }
+            }
 
             let calendar = Calendar.current
             let todayStart = calendar.startOfDay(for: Date())
             let baseEnd = baselineEndDate(for: coin)
 
             var newPoints: [PersistedPricePoint] = []
-            for candle in candles {
-                let candleDate = Date(timeIntervalSince1970: Double(candle.start))
+            for (candleDate, close) in rawCandles {
                 let candleDay = calendar.startOfDay(for: candleDate)
 
                 // Skip today's incomplete candle
@@ -458,7 +476,7 @@ actor IncrementalPriceStore {
                     continue
                 }
 
-                newPoints.append(PersistedPricePoint(date: dateStr, close: candle.close))
+                newPoints.append(PersistedPricePoint(date: dateStr, close: close))
             }
 
             guard !newPoints.isEmpty else {

@@ -656,7 +656,7 @@ struct AssetRiskConfig {
         // Majors
         .btc, .eth, .sol,
         // L1s
-        .bnb, .ada, .dot, .avax, .near, .atom, .sui, .tao, .hbar, .algo, .kas,
+        .bnb, .ada, .dot, .avax, .near, .atom, .sui, .tao, .hbar, .algo,
         // L2s
         .arb, .op, .imx,
         // DeFi
