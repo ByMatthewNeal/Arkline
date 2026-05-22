@@ -166,7 +166,11 @@ struct RiskLevelSelectView: View {
     @EnvironmentObject var appState: AppState
     @Bindable var viewModel: SettingsViewModel
 
-    let availableCoins = AssetRiskConfig.allConfigs.map(\.assetId)
+    private var availableCoins: [String] {
+        AssetRiskConfig.allConfigs
+            .map(\.assetId)
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||
@@ -185,7 +189,7 @@ struct RiskLevelSelectView: View {
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
             } header: {
-                Text("Select assets to track for risk analysis")
+                Text("\(viewModel.riskCoins.count) of \(availableCoins.count) selected")
             } footer: {
                 Text("Selected assets will be displayed as risk widgets on your Home Screen.")
                     .padding(.bottom, 80)
