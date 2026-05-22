@@ -820,10 +820,14 @@ private struct RiskCoinPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
+    private var sortedCoins: [RiskCoin] {
+        availableCoins.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                ForEach(availableCoins, id: \.self) { coin in
+                ForEach(sortedCoins, id: \.self) { coin in
                     Button {
                         selectedCoin = coin
                         dismiss()
