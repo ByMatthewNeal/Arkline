@@ -693,11 +693,14 @@ class SentimentViewModel {
     /// Fetches secondary data (history, trends, rotation, regime) that isn't needed
     /// for the initial macro indicator display or allocation calculations.
     func loadSupplementalData() async {
+        // Fear & Greed history must load before sentiment regime (which depends on it)
         async let h: () = fetchFearGreedHistory(days: 90)
         async let g: () = fetchGoogleTrendsHistory()
         async let c: () = fetchCapitalRotation()
-        async let s: () = fetchSentimentRegime()
-        _ = await (h, g, c, s)
+        _ = await (h, g, c)
+
+        // Now that Fear & Greed history is available, compute regime
+        await fetchSentimentRegime()
     }
 
     // MARK: - Individual Retry Methods
