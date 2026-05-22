@@ -291,7 +291,6 @@ struct USFuturesSection: View {
                 }
             }
         }
-        .padding(.horizontal, 20)
         .task(id: refreshId) {
             await loadFutures()
         }

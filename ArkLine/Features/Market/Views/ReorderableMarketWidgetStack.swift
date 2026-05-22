@@ -92,6 +92,7 @@ struct ReorderableMarketWidgetStack: View {
         switch type {
         case .usFutures:
             USFuturesSection(refreshId: widgetRefreshId)
+                .padding(.horizontal)
 
         case .dailyNews:
             DailyNewsSection(news: viewModel.newsItems)
