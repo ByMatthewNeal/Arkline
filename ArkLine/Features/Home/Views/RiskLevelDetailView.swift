@@ -586,7 +586,7 @@ struct RiskLevelChartView: View {
 
                 // Composite value
                 VStack(spacing: 4) {
-                    Text("7-Factor Composite")
+                    Text("8-Factor Composite")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(textSecondary.opacity(0.85))
 
