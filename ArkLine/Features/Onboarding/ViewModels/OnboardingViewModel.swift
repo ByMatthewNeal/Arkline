@@ -611,19 +611,21 @@ class OnboardingViewModel {
                         try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
                     }
 
+                    // Activate subscription for all onboarded users (single tier, no free plan)
+                    do {
+                        try await SupabaseManager.shared.database
+                            .from(SupabaseTable.profiles.rawValue)
+                            .update(["subscription_status": "active"])
+                            .eq("id", value: userId.uuidString)
+                            .execute()
+                    } catch {
+                        AppLogger.shared.error("Failed to activate subscription: \(error.localizedDescription)")
+                    }
+
                     // Redeem the invite code
                     if validatedInviteCode != nil {
                         do {
                             try await inviteCodeService.redeemCode(inviteCode, userId: userId)
-
-                            // If this was a paid invite (trial or full), link the Stripe subscription
-                            if validatedInviteCode?.paymentStatus == "paid" {
-                                do {
-                                    let _ = try await AdminService().activateSubscription(inviteCode: inviteCode)
-                                } catch {
-                                    AppLogger.shared.error("Failed to activate subscription: \(error.localizedDescription)")
-                                }
-                            }
                         } catch {
                             AppLogger.shared.error("Failed to redeem invite code: \(error.localizedDescription)")
                         }
