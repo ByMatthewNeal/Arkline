@@ -99,24 +99,18 @@ struct MarketSentimentSection: View {
                 }
             }
 
-            // SECTION: Asset Risk Levels (preview — top 6, link to full screen)
+            // SECTION: Asset Risk Levels (BTC, ETH, SOL only — full list on Crypto Risk Levels screen)
             if !viewModel.riskLevels.isEmpty {
                 SentimentCategorySection(
                     title: "Asset Risk Levels",
                     icon: "chart.line.uptrend.xyaxis",
                     iconColor: AppColors.accent
                 ) {
-                    let allCoins = viewModel.riskLevels.keys.sorted()
-                    // Show BTC, ETH, SOL first, then fill remaining slots with highest risk
-                    let priorityCoins = ["BTC", "ETH", "SOL"].filter { allCoins.contains($0) }
-                    let remaining = allCoins
-                        .filter { !priorityCoins.contains($0) }
-                        .sorted { (viewModel.riskLevels[$0]?.riskLevel ?? 0) > (viewModel.riskLevels[$1]?.riskLevel ?? 0) }
-                    let previewCoins = Array((priorityCoins + remaining).prefix(6))
+                    let majors = ["BTC", "ETH", "SOL"]
                     let daysCache = viewModel.consecutiveDays
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        ForEach(previewCoins, id: \.self) { coin in
+                        ForEach(majors, id: \.self) { coin in
                             if let riskLevel = viewModel.riskLevels[coin] {
                                 RiskCard(
                                     riskLevel: riskLevel,
@@ -127,22 +121,20 @@ struct MarketSentimentSection: View {
                         }
                     }
 
-                    if allCoins.count > 6 {
-                        NavigationLink(destination: CryptoRiskLevelsScreen()) {
-                            HStack {
-                                Spacer()
-                                Text("View All \(allCoins.count) Assets")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(AppColors.accent)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(AppColors.accent)
-                                Spacer()
-                            }
-                            .padding(.top, 4)
+                    NavigationLink(destination: CryptoRiskLevelsScreen()) {
+                        HStack {
+                            Spacer()
+                            Text("View All \(viewModel.riskLevels.count) Assets")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(AppColors.accent)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11))
+                                .foregroundColor(AppColors.accent)
+                            Spacer()
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .padding(.top, 4)
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
 
