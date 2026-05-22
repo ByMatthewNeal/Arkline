@@ -136,6 +136,9 @@ struct ReorderableMarketWidgetStack: View {
                 signals: viewModel.qpsSignals,
                 isPro: appState.isPro
             )
+
+        case .marketBreadth:
+            MarketBreadthSection(refreshId: widgetRefreshId)
         }
     }
 }

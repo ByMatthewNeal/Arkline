@@ -79,6 +79,9 @@ final class ServiceContainer {
     // MARK: - Lazy Services - DCA Tracker
     private lazy var _dcaTrackerService = DCATrackerService()
 
+    // MARK: - Lazy Services - Market Breadth
+    private lazy var _marketBreadthService = MarketBreadthService()
+
     // MARK: - Lazy Services - Dictionary
     private lazy var _dictionaryService = DictionaryService()
 
@@ -196,6 +199,11 @@ final class ServiceContainer {
         _dcaTrackerService
     }
 
+    /// Market breadth service - % of tokens in uptrend with EMA trend
+    var marketBreadthService: MarketBreadthService {
+        _marketBreadthService
+    }
+
     /// Dictionary service - glossary of investing and market terms
     var dictionaryService: DictionaryService {
         _dictionaryService
@@ -242,5 +250,6 @@ final class ServiceContainer {
         _modelPortfolioService = APIModelPortfolioService()
         _dcaTrackerService = DCATrackerService()
         _dictionaryService = DictionaryService()
+        _marketBreadthService = MarketBreadthService()
     }
 }

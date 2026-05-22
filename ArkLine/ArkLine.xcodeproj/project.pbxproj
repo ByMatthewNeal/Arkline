@@ -531,6 +531,10 @@
 		FF7A8B3002 /* PinnedURLSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7A8B3001 /* PinnedURLSession.swift */; };
 		H0LD1NGD3TA1LV13W000002 /* HoldingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H0LD1NGD3TA1LV13W000001 /* HoldingDetailView.swift */; };
 		H2M3R4T5U6V7W8X9Y0Z1A2B3 /* GlobalLiquiditySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = G1L2Q3S4T5U6V7W8X9Y0Z1A2 /* GlobalLiquiditySection.swift */; };
+		417A62C846B64A6B849B36B3 /* MarketBreadth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C18205DF25B4117BCE30F9E /* MarketBreadth.swift */; };
+		6A78F086A50C4FA0BB9078FF /* APIMarketBreadthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C805C21D764BA3B2A1B159 /* APIMarketBreadthService.swift */; };
+		108A4930A01F484D9A23AD29 /* MarketBreadthSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B27E214CF2704B7F8DA8EA4D /* MarketBreadthSection.swift */; };
+		0412042F2FCA4D5BBEF1DA21 /* MarketBreadthDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA4063C43134C78BB9D26EE /* MarketBreadthDetailView.swift */; };
 		J3K4L5M6N7O8P9Q0R1S2T3U4 /* LiquidityCycleSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = I2J3K4L5M6N7O8P9Q0R1S2T3 /* LiquidityCycleSection.swift */; };
 		M0DELP0RTF0L10UPDT0B1 /* ModelPortfolioUpdateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */; };
 		N0T1F1CAT10N5D3T002 /* NotificationsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = N0T1F1CAT10N5D3T001 /* NotificationsDetailView.swift */; };
@@ -1082,6 +1086,10 @@
 		FF7A8B2001 /* SSLPinningDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSLPinningDelegate.swift; sourceTree = "<group>"; };
 		FF7A8B3001 /* PinnedURLSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedURLSession.swift; sourceTree = "<group>"; };
 		G1L2Q3S4T5U6V7W8X9Y0Z1A2 /* GlobalLiquiditySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalLiquiditySection.swift; sourceTree = "<group>"; };
+		3C18205DF25B4117BCE30F9E /* MarketBreadth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketBreadth.swift; sourceTree = "<group>"; };
+		A0C805C21D764BA3B2A1B159 /* APIMarketBreadthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIMarketBreadthService.swift; sourceTree = "<group>"; };
+		B27E214CF2704B7F8DA8EA4D /* MarketBreadthSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketBreadthSection.swift; sourceTree = "<group>"; };
+		BDA4063C43134C78BB9D26EE /* MarketBreadthDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketBreadthDetailView.swift; sourceTree = "<group>"; };
 		H0LD1NGD3TA1LV13W000001 /* HoldingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HoldingDetailView.swift; sourceTree = "<group>"; };
 		I2J3K4L5M6N7O8P9Q0R1S2T3 /* LiquidityCycleSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidityCycleSection.swift; sourceTree = "<group>"; };
 		M0DELP0RTF0L10UPDT0A1 /* ModelPortfolioUpdateCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPortfolioUpdateCard.swift; sourceTree = "<group>"; };
@@ -1305,6 +1313,7 @@
 				55A7885E37770E7031DC00A2 /* APIGlobalLiquidityService.swift */,
 				7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */,
 				CC585A2EEF2EA9AA228510E6 /* APIMarketService.swift */,
+				A0C805C21D764BA3B2A1B159 /* APIMarketBreadthService.swift */,
 				83DD4D44D13A4395CA4331B4 /* SharedCacheService.swift */,
 				3734A6788EEBE7830A322555 /* APINewsService.swift */,
 				AA1B2C3D05 /* GoogleNewsRSSService.swift */,
@@ -1503,6 +1512,7 @@
 				RTSN00000001A1B2C3D4E502 /* RotationSignal.swift */,
 				SPRF00000001A1B2C3D4E502 /* SectorPerformance.swift */,
 				FCDA5E5901705B77AA3B3676 /* MarketWidget.swift */,
+				3C18205DF25B4117BCE30F9E /* MarketBreadth.swift */,
 				715DBA259A8B7227B5B0ADA1 /* ITCRiskLevel.swift */,
 				33C17D0BA3394A3A3177D9EA /* MacroZScoreData.swift */,
 				C363BE93C1AF81DE643E762B /* MarketSentiment.swift */,
@@ -1584,6 +1594,7 @@
 				69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */,
 				86AA2774D5757CF06C791EEC /* AssetDetailView.swift */,
 				8FCD088B0831263C159A5269 /* MarketOverviewView.swift */,
+				BDA4063C43134C78BB9D26EE /* MarketBreadthDetailView.swift */,
 				AA1122334455667788990022 /* MetalDetailView.swift */,
 				EFF01D326ECDA814F0344862 /* CrudeOilDetailView.swift */,
 				AAA65CBD7506B87AEEC3FF5C /* GoldDetailView.swift */,
@@ -2065,6 +2076,7 @@
 				8B1980459627755966F9BBBA /* TraditionalMarketsSection.swift */,
 				F1A2B3C4D5E6F7A8B9C0D1E2 /* USFuturesSection.swift */,
 				G1L2Q3S4T5U6V7W8X9Y0Z1A2 /* GlobalLiquiditySection.swift */,
+				B27E214CF2704B7F8DA8EA4D /* MarketBreadthSection.swift */,
 				I2J3K4L5M6N7O8P9Q0R1S2T3 /* LiquidityCycleSection.swift */,
 				1E307FB3F02361B0AAFCFE06 /* SentimentSummarySection.swift */,
 				1952CB3C02234FC9885208EB /* SwingSetupsSummarySection.swift */,
@@ -2878,6 +2890,10 @@
 				B2D1E3F4A5C6B7D8E9F0A102 /* AltcoinScreenerSection.swift in Sources */,
 				E2D1C0B9A8F7E6D5C4B3A2F1 /* USFuturesSection.swift in Sources */,
 				H2M3R4T5U6V7W8X9Y0Z1A2B3 /* GlobalLiquiditySection.swift in Sources */,
+				417A62C846B64A6B849B36B3 /* MarketBreadth.swift in Sources */,
+				6A78F086A50C4FA0BB9078FF /* APIMarketBreadthService.swift in Sources */,
+				108A4930A01F484D9A23AD29 /* MarketBreadthSection.swift in Sources */,
+				0412042F2FCA4D5BBEF1DA21 /* MarketBreadthDetailView.swift in Sources */,
 				J3K4L5M6N7O8P9Q0R1S2T3U4 /* LiquidityCycleSection.swift in Sources */,
 				320F4055DB057E9A01A5F70F /* MarketAssetsSection.swift in Sources */,
 				8770B85D4052B18A0EB8667F /* MarketMoversSection.swift in Sources */,

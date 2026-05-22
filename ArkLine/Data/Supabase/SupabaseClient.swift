@@ -128,6 +128,7 @@ enum SupabaseTable: String {
     case dictionary
     case rotationSignals = "rotation_signals"
     case sectorPerformance = "sector_performance"
+    case marketBreadth = "market_breadth"
 }
 
 // MARK: - Storage Buckets

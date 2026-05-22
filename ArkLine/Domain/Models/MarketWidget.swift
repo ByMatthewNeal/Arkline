@@ -15,6 +15,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     case globalLiquidity = "global_liquidity"
     case liquidityCycle = "liquidity_cycle"
     case qpsGrid = "qps_grid"
+    case marketBreadth = "market_breadth"
 
     var id: String { rawValue }
 
@@ -32,6 +33,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .globalLiquidity: return "Global Liquidity"
         case .liquidityCycle: return "Liquidity Cycle"
         case .qpsGrid: return "Daily Positioning"
+        case .marketBreadth: return "Market Breadth"
         }
     }
 
@@ -49,6 +51,7 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .globalLiquidity: return "Central bank liquidity across 10+ economies"
         case .liquidityCycle: return "65-month liquidity cycle with crypto positioning"
         case .qpsGrid: return "Daily bullish/neutral/bearish signals for 8 assets"
+        case .marketBreadth: return "% of tokens in uptrend with EMA trend analysis"
         }
     }
 
@@ -66,12 +69,13 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         case .globalLiquidity: return "banknote"
         case .liquidityCycle: return "clock.arrow.2.circlepath"
         case .qpsGrid: return "waveform.path.ecg"
+        case .marketBreadth: return "chart.bar.xaxis"
         }
     }
 
     /// Default order for Market widgets (matches original hardcoded layout)
     static var defaultOrder: [MarketWidgetType] {
-        [.usFutures, .qpsGrid, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .swingSetups, .altcoinScreener]
+        [.usFutures, .qpsGrid, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
     }
 
     /// All widgets enabled by default
