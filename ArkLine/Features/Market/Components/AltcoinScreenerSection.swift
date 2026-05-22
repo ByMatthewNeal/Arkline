@@ -189,6 +189,7 @@ struct AltcoinScreenerSection: View {
                 } label: {
                     Text(range.rawValue)
                         .font(.system(size: 10, weight: .semibold))
+                        .fixedSize()
                         .foregroundColor(timeRange == range ? .white : AppColors.textSecondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
