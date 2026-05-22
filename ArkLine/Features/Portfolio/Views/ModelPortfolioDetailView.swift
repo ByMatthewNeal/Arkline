@@ -864,11 +864,12 @@ struct ModelPortfolioDetailView: View {
                     .foregroundColor(AppColors.textTertiary)
             }
 
-            ForEach(displayedTrades.prefix(20)) { trade in
+            let visibleTrades = showFullTradeHistory ? Array(displayedTrades) : Array(displayedTrades.prefix(20))
+            ForEach(visibleTrades) { trade in
                 tradeRow(trade)
                     .padding(.vertical, 4)
 
-                if trade.id != displayedTrades.prefix(20).last?.id {
+                if trade.id != visibleTrades.last?.id {
                     Divider()
                         .background(AppColors.divider(colorScheme))
                 }
