@@ -660,7 +660,7 @@ struct AssetRiskConfig {
         // L2s
         .arb, .op, .imx,
         // DeFi
-        .uni, .aave, .mkr, .ldo, .ena, .jup, .syrup,
+        .uni, .aave, .ldo, .ena, .jup, .syrup,
         // Infra / Oracles / AI
         .link, .render, .fet,
         // Payments / Legacy
