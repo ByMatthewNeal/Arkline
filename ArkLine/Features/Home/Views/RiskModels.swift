@@ -142,12 +142,10 @@ enum RiskCoin: String, CaseIterable {
     case fil = "FIL"
     case imx = "IMX"
     case ldo = "LDO"
-    case mkr = "MKR"
     case pepe = "PEPE"
     case doge = "DOGE"
     case shib = "SHIB"
     case hbar = "HBAR"
-    case kas = "KAS"
     case algo = "ALGO"
 
     var displayName: String {

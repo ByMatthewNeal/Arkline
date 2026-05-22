@@ -12,22 +12,27 @@ struct CryptoRiskLevelsScreen: View {
                 if viewModel.isLoading && viewModel.rows.isEmpty {
                     loadingState
                 } else {
-                    // Subtitle + toggle row
+                    // Subtitle + toggles row
                     HStack {
-                        Text("Regression model • \(viewModel.totalAssetCount) assets bucketed")
+                        Text("Regression model • \(viewModel.totalAssetCount) assets")
                             .font(.system(size: 12))
                             .foregroundColor(AppColors.textSecondary)
 
                         Spacer()
 
+                        sortToggle
                         trendToggle
                     }
                     .padding(.horizontal, ArkSpacing.lg)
                     .padding(.top, ArkSpacing.sm)
                     .padding(.bottom, ArkSpacing.xs)
 
-                    ForEach(viewModel.bucketed, id: \.band) { section in
-                        bandSection(band: section.band, items: section.items)
+                    if viewModel.sortMode == .band {
+                        ForEach(viewModel.bucketed, id: \.band) { section in
+                            bandSection(band: section.band, items: section.items)
+                        }
+                    } else {
+                        alphabeticalList
                     }
 
                     // Failed coins section
@@ -50,6 +55,72 @@ struct CryptoRiskLevelsScreen: View {
         )) { item in
             RiskLevelChartView(initialCoin: item.coin)
         }
+    }
+
+    // MARK: - Sort Toggle
+
+    private var sortToggle: some View {
+        HStack(spacing: 4) {
+            ForEach(CryptoRiskLevelsViewModel.SortMode.allCases, id: \.self) { mode in
+                Button {
+                    Haptics.light()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.sortMode = mode
+                    }
+                } label: {
+                    Text(mode.rawValue)
+                        .font(.system(size: 12, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            viewModel.sortMode == mode
+                                ? AppColors.accent.opacity(0.12)
+                                : Color.clear
+                        )
+                        .foregroundColor(
+                            viewModel.sortMode == mode
+                                ? AppColors.accent
+                                : AppColors.textSecondary
+                        )
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Alphabetical List
+
+    private var alphabeticalList: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(viewModel.alphabetical.enumerated()), id: \.element.config.assetId) { index, row in
+                Button {
+                    Haptics.light()
+                    selectedCoin = row.config.assetId
+                } label: {
+                    coinRow(row: row)
+                }
+                .buttonStyle(.plain)
+
+                if index < viewModel.alphabetical.count - 1 {
+                    Divider()
+                        .padding(.leading, 56)
+                        .padding(.horizontal, ArkSpacing.lg)
+                }
+            }
+        }
+        .padding(.vertical, ArkSpacing.sm)
+        .padding(.horizontal, ArkSpacing.lg)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(AppColors.cardBackground(colorScheme))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.cardBorder(colorScheme), lineWidth: 1)
+        )
+        .padding(.horizontal, ArkSpacing.lg)
+        .padding(.top, ArkSpacing.sm)
     }
 
     // MARK: - Trend Toggle
@@ -232,7 +303,7 @@ struct CryptoRiskLevelsScreen: View {
             .padding(.horizontal, ArkSpacing.lg)
 
             VStack(spacing: 0) {
-                ForEach(Array(viewModel.failedCoins.enumerated()), id: \.element.assetId) { index, config in
+                ForEach(Array(viewModel.failedCoins.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }.enumerated()), id: \.element.assetId) { index, config in
                     HStack(spacing: 12) {
                         if let logoURL = config.logoURL {
                             KFImage(logoURL)

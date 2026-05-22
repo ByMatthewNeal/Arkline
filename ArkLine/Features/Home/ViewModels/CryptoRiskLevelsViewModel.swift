@@ -18,10 +18,16 @@ class CryptoRiskLevelsViewModel {
         case sevenDay, thirtyDay
     }
 
+    enum SortMode: String, CaseIterable {
+        case band = "By Band"
+        case alphabetical = "A–Z"
+    }
+
     var rows: [CoinRiskRow] = []
     var failedCoins: [AssetRiskConfig] = []
     var isLoading = false
     var selectedTrendWindow: TrendWindow = .sevenDay
+    var sortMode: SortMode = .band
 
     /// Total catalog size — always matches cryptoConfigs.count
     var totalAssetCount: Int { AssetRiskConfig.cryptoConfigs.count }
@@ -37,14 +43,19 @@ class CryptoRiskLevelsViewModel {
         self.itcRiskService = itcRiskService
     }
 
-    /// Bucketed rows sorted by band order, ascending risk within each band.
+    /// Bucketed rows sorted by band order, A-Z within each band.
     var bucketed: [(band: String, items: [CoinRiskRow])] {
         let grouped = Dictionary(grouping: rows) { $0.current.riskCategory }
         return Self.bandOrder.compactMap { band in
             guard let items = grouped[band], !items.isEmpty else { return nil }
-            let sorted = items.sorted { $0.current.riskLevel < $1.current.riskLevel }
+            let sorted = items.sorted { $0.config.displayName.localizedCaseInsensitiveCompare($1.config.displayName) == .orderedAscending }
             return (band, sorted)
         }
+    }
+
+    /// All rows sorted A-Z by display name (flat list, no band grouping).
+    var alphabetical: [CoinRiskRow] {
+        rows.sorted { $0.config.displayName.localizedCaseInsensitiveCompare($1.config.displayName) == .orderedAscending }
     }
 
     func delta(for row: CoinRiskRow) -> Double? {
