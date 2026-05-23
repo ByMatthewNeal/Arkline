@@ -95,7 +95,6 @@ struct RotationGaugeWidget: View {
                     .fill(cardBackground)
             )
             .arkShadow(ArkSpacing.Shadow.card)
-            .padding(.horizontal, 20)
         }
         .buttonStyle(.plain)
     }
