@@ -65,8 +65,6 @@ struct ContentView: View {
             OnboardingCoordinator()
         } else if !appState.isAuthenticated {
             AuthenticationCoordinator()
-        } else if let user = appState.currentUser, user.isInAccountSetup {
-            AccountSetupView()
         } else if let user = appState.currentUser, !user.isAccessGranted {
             SubscriptionExpiredView()
         } else {

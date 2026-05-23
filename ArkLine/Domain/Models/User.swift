@@ -357,11 +357,12 @@ extension User {
         role != .admin && subscriptionStatus == .none
     }
 
-    /// Whether the user has active access (active subscription, trial, or admin).
-    /// Canceled/past-due users retain access until their paid period ends (Apple 3.1.2).
+    /// Whether the user has active access.
+    /// Single-tier model: all onboarded users get full access. Only explicitly
+    /// expired canceled/past-due users are blocked.
     var isAccessGranted: Bool {
         if role == .admin { return true }
-        if subscriptionStatus == .active || subscriptionStatus == .trialing { return true }
+        if subscriptionStatus == .active || subscriptionStatus == .trialing || subscriptionStatus == .none { return true }
         if subscriptionStatus == .canceled || subscriptionStatus == .pastDue {
             if let periodEnd = currentPeriodEnd, periodEnd > Date() { return true }
         }
