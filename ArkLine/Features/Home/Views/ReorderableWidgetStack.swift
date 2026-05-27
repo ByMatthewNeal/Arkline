@@ -178,7 +178,10 @@ struct ReorderableWidgetStack: View {
 
         case .fearGreedIndex:
             if let fearGreed = viewModel.fearGreedIndex {
-                GlassFearGreedCard(index: fearGreed, size: appState.widgetSize(.fearGreedIndex))
+                NavigationLink(destination: FearGreedDetailView(index: fearGreed)) {
+                    GlassFearGreedCard(index: fearGreed, size: appState.widgetSize(.fearGreedIndex))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
 
         case .marketMovers:
