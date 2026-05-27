@@ -694,7 +694,10 @@ Write a structured briefing using exactly these section headers on their own lin
 One sentence. State the regime (e.g. "Risk-On Disinflation") and crypto positioning (e.g. "full exposure", "defensive"). Must align with the Macro Regime value if present.
 
 ## The Rundown
-2-3 sentences max. Lead with the day's story — what moved and why. Cover equities, crypto (BTC/ETH/SOL), and anything notable in dollar/gold. If economic data dropped, state the result and its market impact in one clause, not a paragraph. Use session breakdown data if available to show how the day unfolded. Don't list numbers without context, but don't over-explain obvious moves either.
+2-3 sentences max. Lead with the day's story — what moved and why. Cover equities and anything notable in dollar/gold. If economic data dropped, state the result and its market impact in one clause, not a paragraph. Don't list numbers without context, but don't over-explain obvious moves either.
+
+## Crypto
+3-5 bullet points. Cover BTC, ETH, SOL price action and why they moved. Note any notable alt moves (top gainers/losers, breakouts). Include positioning context — how many assets bullish vs bearish, any signal flips today. Mention Fear & Greed if it shifted. Keep each bullet to one punchy line.
 
 ## Macro & Liquidity
 1-2 sentences. State the liquidity trend (expanding/contracting, with rate of change if available), cycle phase, and yield curve regime. Connect VIX and DXY only if they're doing something notable. Skip boilerplate — if nothing changed from yesterday, say so in one line.
@@ -718,7 +721,7 @@ Rules:
 - State numbers with context in the same breath, don't explain after the fact.
 - Flag divergences and anomalies — skip confirming signals that just say "everything aligns."
 - Never give investment advice or say "buy" / "sell"
-- Keep total length under ${isFriday && slot === "evening" ? "450" : "300"} words
+- Keep total length under ${isFriday && slot === "evening" ? "500" : "350"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`,
         messages: [
