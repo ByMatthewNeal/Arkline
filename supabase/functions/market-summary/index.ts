@@ -653,6 +653,9 @@ ${slotInstructions}
 
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
 
+## TLDR
+2-4 sentences max. Quick snapshot: BTC state + price, market sentiment, portfolio positioning, and what to watch this weekend. No fluff.
+
 ## Posture
 One sentence. Weekend crypto stance aligned with Macro Regime / Crypto Positioning if present.
 
@@ -672,7 +675,7 @@ Rules:
 - Focus on crypto — traditional markets are closed
 - Say "today" not "over the weekend" — the weekend is still in progress
 - Never give investment advice or say "buy" / "sell"
-- Keep total length under ${isSunday ? "220" : "150"} words
+- Keep total length under ${isSunday ? "270" : "200"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`
 
@@ -683,6 +686,9 @@ ${slotInstructions}
 ${sessionContext}
 
 Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
+
+## TLDR
+2-4 sentences max. A quick snapshot for someone who won't read further. Cover: (1) BTC signal + price + macro regime, (2) overall market breadth or sentiment, (3) portfolio positioning or notable P&L if available, (4) the single most important thing to watch today. No fluff — pack maximum signal into minimum words.
 
 ## Posture
 One sentence. State the regime (e.g. "Risk-On Disinflation") and crypto positioning (e.g. "full exposure", "defensive"). Must align with the Macro Regime value if present.
@@ -712,7 +718,7 @@ Rules:
 - State numbers with context in the same breath, don't explain after the fact.
 - Flag divergences and anomalies — skip confirming signals that just say "everything aligns."
 - Never give investment advice or say "buy" / "sell"
-- Keep total length under ${isFriday && slot === "evening" ? "400" : "250"} words
+- Keep total length under ${isFriday && slot === "evening" ? "450" : "300"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`,
         messages: [
