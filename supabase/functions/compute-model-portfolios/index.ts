@@ -336,17 +336,9 @@ function computeEdgeAllocation(
   const topAlts = getTopBullishAlts(altBtcSignals, cryptoSignals, 3)
   const dominantAlt = topAlts.length > 0 ? topAlts[0][0] : null
 
-  if (isRiskOff && isHighRisk) return { alloc: applyDefensive({}, 1.0, goldSignal), dominantAlt: null }
-
-  if (isRiskOff) {
-    if (btcRiskCategory === "Very Low Risk") {
-      return { alloc: applyDefensive({ BTC: 0.30, ETH: 0.20 }, 0.50, goldSignal), dominantAlt: null }
-    }
-    if (btcRiskCategory === "Low Risk") {
-      return { alloc: applyDefensive({ BTC: 0.20, ETH: 0.10 }, 0.70, goldSignal), dominantAlt: null }
-    }
-    return { alloc: applyDefensive({ BTC: 0.10, ETH: 0.05 }, 0.85, goldSignal), dominantAlt: null }
-  }
+  // Dual-confirmed alts survive regime flips — trim to half but don't remove.
+  // Only fully remove when the alt's own signals flip (dual confirmation lost).
+  const confirmedAltAlloc = distributeAltPct(topAlts, topAlts.length > 0 ? 0.15 : 0)
 
   // Check USD signals for majors
   const bullishAssets: string[] = []
@@ -354,20 +346,43 @@ function computeEdgeAllocation(
     if (cryptoSignals[asset]?.signal === "bullish") bullishAssets.push(asset)
   }
 
-  // Dual confirmation for ETH and SOL: USD pair bullish is necessary but not sufficient.
-  // If their BTC pair is bearish, their USD strength is just BTC carrying them — shift to BTC instead.
+  // Dual confirmation for ETH and SOL
   const ethBtcSignal = altBtcSignals["ETH/BTC"]?.signal ?? "neutral"
   const solBtcSignal = altBtcSignals["SOL/BTC"]?.signal ?? "neutral"
   const ethConfirmed = bullishAssets.includes("ETH") && ethBtcSignal !== "bearish"
   const solConfirmed = bullishAssets.includes("SOL") && solBtcSignal !== "bearish"
 
+  // ── Extreme risk: 100% defensive, no exceptions ──
+  if (isRiskOff && isHighRisk) return { alloc: applyDefensive({}, 1.0, goldSignal), dominantAlt: null }
+
+  // ── Risk-Off: reduce crypto but keep confirmed alts at half size ──
+  if (isRiskOff) {
+    const alloc: Record<string, number> = {}
+
+    if (btcRiskCategory === "Very Low Risk") {
+      alloc.BTC = 0.30; if (ethConfirmed) alloc.ETH = 0.15
+    } else if (btcRiskCategory === "Low Risk") {
+      alloc.BTC = 0.20; if (ethConfirmed) alloc.ETH = 0.10
+    } else {
+      alloc.BTC = 0.10; if (ethConfirmed) alloc.ETH = 0.05
+    }
+
+    // Keep confirmed alts at half their normal allocation
+    for (const [alt, pct] of Object.entries(confirmedAltAlloc)) {
+      alloc[alt] = pct * 0.5
+    }
+
+    const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
+    return { alloc: applyDefensive(alloc, Math.max(0, 1.0 - deployed), goldSignal), dominantAlt }
+  }
+
+  // ── Risk-On: 2+ bullish majors or BTC bullish ──
   if (bullishAssets.length >= 2 || btcSignal === "bullish") {
     const alloc: Record<string, number> = {}
     if (bullishAssets.includes("BTC") || btcSignal === "bullish") alloc.BTC = 0.30
     if (ethConfirmed) {
       alloc.ETH = 0.25
     } else if (bullishAssets.includes("ETH")) {
-      // ETH bullish in USD but bearish vs BTC — give half to ETH, half to BTC
       alloc.ETH = 0.12
       alloc.BTC = (alloc.BTC ?? 0) + 0.13
     }
@@ -377,9 +392,8 @@ function computeEdgeAllocation(
       alloc.SOL = 0.10
       alloc.BTC = (alloc.BTC ?? 0) + 0.10
     }
-    // Distribute 15% among top bullish alts
-    const altAlloc = distributeAltPct(topAlts, 0.15)
-    Object.assign(alloc, altAlloc)
+    // Full alt allocation
+    Object.assign(alloc, confirmedAltAlloc)
     const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
     const remaining = 1.0 - deployed
     if (remaining > 0.01) {
@@ -388,30 +402,41 @@ function computeEdgeAllocation(
     return { alloc, dominantAlt }
   }
 
+  // ── Mild bearish: reduced crypto, keep confirmed alts at reduced size ──
   if (btcSignal === "mild_bearish") {
     const alloc: Record<string, number> = { BTC: 0.15 }
     if (ethConfirmed) alloc.ETH = 0.10
-    const altAlloc = distributeAltPct(topAlts, 0.05)
-    Object.assign(alloc, altAlloc)
+    // Alts at ~1/3 normal size
+    for (const [alt, pct] of Object.entries(confirmedAltAlloc)) {
+      alloc[alt] = pct * 0.33
+    }
     const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
     return { alloc: applyDefensive(alloc, 1.0 - deployed, goldSignal), dominantAlt }
   }
 
+  // ── Full bearish: minimal crypto, keep confirmed alts at tiny size ──
   if (btcSignal === "bearish") {
+    const alloc: Record<string, number> = {}
     if (["Very Low Risk", "Low Risk"].includes(btcRiskCategory)) {
-      return { alloc: applyDefensive({ BTC: 0.20, ETH: 0.10 }, 0.70, goldSignal), dominantAlt }
+      alloc.BTC = 0.20; alloc.ETH = 0.10
+    } else {
+      alloc.BTC = 0.10; alloc.ETH = 0.05
     }
-    return { alloc: applyDefensive({ BTC: 0.10, ETH: 0.05 }, 0.85, goldSignal), dominantAlt }
+    // Alts at 1/4 normal size — still riding confirmed trends
+    for (const [alt, pct] of Object.entries(confirmedAltAlloc)) {
+      alloc[alt] = pct * 0.25
+    }
+    const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
+    return { alloc: applyDefensive(alloc, 1.0 - deployed, goldSignal), dominantAlt }
   }
 
-  // Mixed: deploy into bullish only
+  // ── Mixed: deploy into bullish only ──
   const alloc: Record<string, number> = {}
   if (bullishAssets.length > 0) {
     const weight = 0.60 / bullishAssets.length
     for (const a of bullishAssets) alloc[a] = weight
   }
-  const altAlloc = distributeAltPct(topAlts, 0.10)
-  Object.assign(alloc, altAlloc)
+  Object.assign(alloc, confirmedAltAlloc)
   const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
   const remaining = 1.0 - deployed
   return { alloc: applyDefensive(alloc, Math.max(0, remaining), goldSignal), dominantAlt }
@@ -426,29 +451,40 @@ function computeAlphaAllocation(
   const topAlts = getTopBullishAlts(altBtcSignals, cryptoSignals, 3)
   const dominantAlt = topAlts.length > 0 ? topAlts[0][0] : null
 
-  if (isRiskOff && isHighRisk) return { alloc: applyDefensive({}, 1.0, goldSignal), dominantAlt: null }
-
-  if (isRiskOff) {
-    if (btcRiskCategory === "Very Low Risk") {
-      return { alloc: applyDefensive({ BTC: 0.25, ETH: 0.15 }, 0.60, goldSignal), dominantAlt: null }
-    }
-    if (btcRiskCategory === "Low Risk") {
-      return { alloc: applyDefensive({ BTC: 0.15, ETH: 0.10 }, 0.75, goldSignal), dominantAlt: null }
-    }
-    return { alloc: applyDefensive({ BTC: 0.10, ETH: 0.05 }, 0.85, goldSignal), dominantAlt: null }
-  }
+  // Dual-confirmed alts survive regime flips (same as Edge)
+  const confirmedAltAlloc = distributeAltPct(topAlts, topAlts.length > 0 ? 0.40 : 0)
 
   const bullishAssets: string[] = []
   for (const asset of ["BTC", "ETH", "SOL"]) {
     if (cryptoSignals[asset]?.signal === "bullish") bullishAssets.push(asset)
   }
 
-  // Dual confirmation for ETH/SOL BTC pairs (same logic as Edge)
   const ethBtcSig = altBtcSignals["ETH/BTC"]?.signal ?? "neutral"
   const solBtcSig = altBtcSignals["SOL/BTC"]?.signal ?? "neutral"
   const ethOk = bullishAssets.includes("ETH") && ethBtcSig !== "bearish"
   const solOk = bullishAssets.includes("SOL") && solBtcSig !== "bearish"
 
+  // ── Extreme risk: 100% defensive ──
+  if (isRiskOff && isHighRisk) return { alloc: applyDefensive({}, 1.0, goldSignal), dominantAlt: null }
+
+  // ── Risk-Off: reduce but keep confirmed alts at half ──
+  if (isRiskOff) {
+    const alloc: Record<string, number> = {}
+    if (btcRiskCategory === "Very Low Risk") {
+      alloc.BTC = 0.25; if (ethOk) alloc.ETH = 0.15
+    } else if (btcRiskCategory === "Low Risk") {
+      alloc.BTC = 0.15; if (ethOk) alloc.ETH = 0.10
+    } else {
+      alloc.BTC = 0.10; if (ethOk) alloc.ETH = 0.05
+    }
+    for (const [alt, pct] of Object.entries(confirmedAltAlloc)) {
+      alloc[alt] = pct * 0.5
+    }
+    const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
+    return { alloc: applyDefensive(alloc, Math.max(0, 1.0 - deployed), goldSignal), dominantAlt }
+  }
+
+  // ── Risk-On: 2+ bullish majors or BTC bullish ──
   if (bullishAssets.length >= 2 || btcSignal === "bullish") {
     const alloc: Record<string, number> = {}
     if (bullishAssets.includes("BTC") || btcSignal === "bullish") alloc.BTC = 0.20
@@ -464,9 +500,7 @@ function computeAlphaAllocation(
       alloc.SOL = 0.07
       alloc.BTC = (alloc.BTC ?? 0) + 0.08
     }
-    // 40% into top bullish alts
-    const altAlloc = distributeAltPct(topAlts, 0.40)
-    Object.assign(alloc, altAlloc)
+    Object.assign(alloc, confirmedAltAlloc)
     const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
     const remaining = 1.0 - deployed
     if (remaining > 0.01) {
@@ -475,34 +509,39 @@ function computeAlphaAllocation(
     return { alloc, dominantAlt }
   }
 
+  // ── Mild bearish: keep confirmed alts at 1/3 ──
   if (btcSignal === "mild_bearish") {
     const alloc: Record<string, number> = { BTC: 0.10 }
     if (ethOk) alloc.ETH = 0.08
-    const altAlloc = distributeAltPct(topAlts, 0.12)
-    Object.assign(alloc, altAlloc)
+    for (const [alt, pct] of Object.entries(confirmedAltAlloc)) {
+      alloc[alt] = pct * 0.33
+    }
     const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
     return { alloc: applyDefensive(alloc, 1.0 - deployed, goldSignal), dominantAlt }
   }
 
+  // ── Full bearish: keep confirmed alts at 1/4 ──
   if (btcSignal === "bearish") {
+    const alloc: Record<string, number> = {}
     if (["Very Low Risk", "Low Risk"].includes(btcRiskCategory)) {
-      const alloc: Record<string, number> = { BTC: 0.15, ETH: 0.10 }
-      const altAlloc = distributeAltPct(topAlts, 0.10)
-      Object.assign(alloc, altAlloc)
-      const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
-      return { alloc: applyDefensive(alloc, 1.0 - deployed, goldSignal), dominantAlt }
+      alloc.BTC = 0.15; alloc.ETH = 0.10
+    } else {
+      alloc.BTC = 0.08; alloc.ETH = 0.04
     }
-    return { alloc: applyDefensive({ BTC: 0.08, ETH: 0.04 }, 0.88, goldSignal), dominantAlt: null }
+    for (const [alt, pct] of Object.entries(confirmedAltAlloc)) {
+      alloc[alt] = pct * 0.25
+    }
+    const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
+    return { alloc: applyDefensive(alloc, 1.0 - deployed, goldSignal), dominantAlt }
   }
 
-  // Mixed
+  // ── Mixed ──
   const alloc: Record<string, number> = {}
   if (bullishAssets.length > 0) {
     const weight = 0.45 / bullishAssets.length
     for (const a of bullishAssets) alloc[a] = weight
   }
-  const altAlloc = distributeAltPct(topAlts, 0.25)
-  Object.assign(alloc, altAlloc)
+  Object.assign(alloc, confirmedAltAlloc)
   const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
   const remaining = 1.0 - deployed
   return { alloc: applyDefensive(alloc, Math.max(0, remaining), goldSignal), dominantAlt }
