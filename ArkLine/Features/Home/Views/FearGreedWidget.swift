@@ -110,9 +110,12 @@ struct FearGreedGauge: View {
                         .font(.caption)
                         .foregroundColor(Color(hex: "A1A1AA"))
                 }
-                .offset(y: 10)
             }
-            .frame(height: 120)
+            // The semicircle draws the top half of a 160pt circle (80pt above center).
+            // Offset the whole ZStack down so the arc starts at the top of the frame.
+            .offset(y: 40)
+            .frame(height: 140)
+            .clipped()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fear and Greed gauge, \(value) out of 100")
