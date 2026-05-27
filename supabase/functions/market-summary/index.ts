@@ -685,25 +685,19 @@ ${slotInstructions}
 
 ${sessionContext}
 
-Write a structured briefing using exactly these section headers on their own line, prefixed with "##":
+Write a structured briefing using EXACTLY these section headers on their own line, prefixed with "##". Do NOT add any other sections.
 
 ## TLDR
-2-4 sentences max. A quick snapshot for someone who won't read further. Cover: (1) BTC signal + price + macro regime, (2) overall market breadth or sentiment, (3) portfolio positioning or notable P&L if available, (4) the single most important thing to watch today. No fluff — pack maximum signal into minimum words.
+2-3 sentences. Quick snapshot: BTC state + price, sentiment, portfolio stance, one thing to watch.
 
-## Posture
-One sentence. State the regime (e.g. "Risk-On Disinflation") and crypto positioning (e.g. "full exposure", "defensive"). Must align with the Macro Regime value if present.
+## What's Happening
+2-3 sentences. The day's story across crypto and equities — what moved and why. Weave in any notable credit or risk appetite shifts if relevant. BTC, ETH, SOL action plus any standout alts.
 
-## The Rundown
-1-3 sentences max. Lead with the day's story — what moved and why. Cover equities and anything notable in dollar/gold.
-
-## Crypto
-3 bullet points max. BTC price + key move, ETH/SOL if notable, one alt or positioning stat. One line per bullet.
-
-## Macro & Liquidity
-1-2 sentences max. Liquidity trend, cycle phase. Only mention VIX/DXY if something changed.
+## Macro
+2-3 sentences. Surface any important news, economic data, or events to be aware of. Liquidity trend, VIX/DXY only if notable. Skip if nothing changed.
 
 ## Technical
-1-3 sentences max. BTC trend, nearest Fib support/resistance, funding rate or derivatives if notable.
+2-3 sentences. BTC trend, nearest Fib support/resistance, derivatives if notable.
 
 ## Bottom Line
 1-2 sentences. The "so what" — what to watch next. No recap.
@@ -713,12 +707,12 @@ ${isFriday && slot === "evening" ? `## Week in Review
 1-2 sentences. Only the 2-3 most notable signal changes or portfolio rebalances.`}
 
 Rules:
-- STRICT: No section may exceed 3 sentences. Crypto section max 3 bullets.
+- STRICT: No section may exceed 3 sentences. This is non-negotiable.
+- ONLY use the section headers listed above. Do NOT add Posture, Crypto, Credit & Risk Appetite, Macro & Liquidity, or any other header.
 - No repetition across sections — if you said it in TLDR, don't say it again.
 - Every sentence must add new information.
-- Flag divergences and anomalies — skip confirming signals.
 - Never give investment advice or say "buy" / "sell"
-- Keep total length under ${isFriday && slot === "evening" ? "400" : "250"} words
+- Keep total length under ${isFriday && slot === "evening" ? "350" : "200"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`,
         messages: [
