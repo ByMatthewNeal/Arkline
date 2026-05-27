@@ -694,34 +694,31 @@ Write a structured briefing using exactly these section headers on their own lin
 One sentence. State the regime (e.g. "Risk-On Disinflation") and crypto positioning (e.g. "full exposure", "defensive"). Must align with the Macro Regime value if present.
 
 ## The Rundown
-2-3 sentences max. Lead with the day's story — what moved and why. Cover equities and anything notable in dollar/gold. If economic data dropped, state the result and its market impact in one clause, not a paragraph. Don't list numbers without context, but don't over-explain obvious moves either.
+1-3 sentences max. Lead with the day's story — what moved and why. Cover equities and anything notable in dollar/gold.
 
 ## Crypto
-3-5 bullet points. Cover BTC, ETH, SOL price action and why they moved. Note any notable alt moves (top gainers/losers, breakouts). Include positioning context — how many assets bullish vs bearish, any signal flips today. Mention Fear & Greed if it shifted. Keep each bullet to one punchy line.
+3 bullet points max. BTC price + key move, ETH/SOL if notable, one alt or positioning stat. One line per bullet.
 
 ## Macro & Liquidity
-1-2 sentences. State the liquidity trend (expanding/contracting, with rate of change if available), cycle phase, and yield curve regime. Connect VIX and DXY only if they're doing something notable. Skip boilerplate — if nothing changed from yesterday, say so in one line.
+1-2 sentences max. Liquidity trend, cycle phase. Only mention VIX/DXY if something changed.
 
 ## Technical
-2-3 sentences combining BTC technicals + derivatives + key levels. State trend, RSI read, BMSB status, and nearest Fib support/resistance for BTC (ETH/SOL if notable). Weave in funding rate and liquidation bias. Never include raw strength scores in parentheses. Skip this section entirely if no TA data is present.
-
-## Credit & Risk Appetite
-1 sentence on credit conditions if data is available. Flag divergences (spreads widening while equities rally = warning). Skip entirely if no data.
+1-3 sentences max. BTC trend, nearest Fib support/resistance, funding rate or derivatives if notable.
 
 ## Bottom Line
-1-2 sentences. The "so what" — dominant theme and what to watch. No recap of what you just said. End with a concrete observation, not a platitude.
+1-2 sentences. The "so what" — what to watch next. No recap.
 
 ${isFriday && slot === "evening" ? `## Week in Review
-3-4 sentences. Use WEEKLY PERFORMANCE data: how did BTC, ETH, SOL, S&P, Nasdaq move Mon–Fri? Name the week's defining narrative and any regime/positioning shifts. What to watch next week.` : `## Signals
-1-2 sentences. Pick 2-3 most notable signals only — whatever actually changed or stands out. If DAILY POSITIONING has signal flips, lead with those. If MODEL PORTFOLIOS rebalanced, mention it. Don't list everything — highlight what matters.`}
+2-3 sentences. Weekly moves for BTC, ETH, S&P. Defining narrative and what to watch next week.` : `## Signals
+1-2 sentences. Only the 2-3 most notable signal changes or portfolio rebalances.`}
 
 Rules:
-- Be concise. If a point was made in one section, don't repeat it in another.
-- Every sentence must add new information — no restating the same thesis across Posture, Rundown, and Bottom Line.
-- State numbers with context in the same breath, don't explain after the fact.
-- Flag divergences and anomalies — skip confirming signals that just say "everything aligns."
+- STRICT: No section may exceed 3 sentences. Crypto section max 3 bullets.
+- No repetition across sections — if you said it in TLDR, don't say it again.
+- Every sentence must add new information.
+- Flag divergences and anomalies — skip confirming signals.
 - Never give investment advice or say "buy" / "sell"
-- Keep total length under ${isFriday && slot === "evening" ? "500" : "350"} words
+- Keep total length under ${isFriday && slot === "evening" ? "400" : "250"} words
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`,
         messages: [
