@@ -147,9 +147,50 @@ enum RiskCoin: String, CaseIterable {
     case shib = "SHIB"
     case hbar = "HBAR"
     case algo = "ALGO"
+    // Stocks
+    case aapl = "AAPL"
+    case nvda = "NVDA"
+    case googl = "GOOGL"
+    case msft = "MSFT"
+    case amzn = "AMZN"
+    case tsla = "TSLA"
+    case meta = "META"
+    case coin = "COIN"
+    case mstr = "MSTR"
+    case spy = "SPY"
+    case qqq = "QQQ"
+    case orcl = "ORCL"
+    case hood = "HOOD"
+    case amd = "AMD"
+    case mu = "MU"
+    case uber = "UBER"
+    case asml = "ASML"
+    case tsm = "TSM"
+    case mp = "MP"
+    case cifr = "CIFR"
+    case bmnr = "BMNR"
+    case asts = "ASTS"
+    case pl = "PL"
+    case rklb = "RKLB"
+    case rdw = "RDW"
+    case satl = "SATL"
+    case iren = "IREN"
+    case bitf = "BITF"
+    case wulf = "WULF"
+    case axti = "AXTI"
+    case sndk = "SNDK"
+    case qbts = "QBTS"
+    case nbis = "NBIS"
+    case nuai = "NUAI"
+    case sidu = "SIDU"
+    case open = "OPEN"
+    case onds = "ONDS"
+    case dgxx = "DGXX"
 
     var displayName: String {
-        AssetRiskConfig.forCoin(rawValue)?.displayName ?? rawValue
+        AssetRiskConfig.forCoin(rawValue)?.displayName
+            ?? AssetRiskConfig.forSymbol(rawValue)?.displayName
+            ?? rawValue
     }
 
     var icon: String {
@@ -161,9 +202,10 @@ enum RiskCoin: String, CaseIterable {
         AssetRiskConfig.forCoin(rawValue)?.geckoId ?? rawValue.lowercased()
     }
 
-    /// Logo URL from AssetRiskConfig (backed by cryptoImagePaths)
+    /// Logo URL from AssetRiskConfig
     var iconURL: URL? {
         AssetRiskConfig.forCoin(rawValue)?.logoURL
+            ?? AssetRiskConfig.forSymbol(rawValue)?.logoURL
     }
 
     /// Short ticker symbol for display (e.g. "BTC", "ETH")

@@ -649,6 +649,33 @@ struct AssetRiskConfig {
     /// Bitmine Immersion Technologies
     static let bmnr = AssetRiskConfig(stock: "BMNR", originDate: safeDate(year: 2021, month: 2, day: 16), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "Bitmine")
 
+    // Space / Satellite / Defense
+    static let asts = AssetRiskConfig(stock: "ASTS", originDate: safeDate(year: 2019, month: 11, day: 1), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 5, displayName: "AST SpaceMobile")
+    static let pl = AssetRiskConfig(stock: "PL", originDate: safeDate(year: 2021, month: 4, day: 26), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 4, displayName: "Planet Labs")
+    static let rklb = AssetRiskConfig(stock: "RKLB", originDate: safeDate(year: 2020, month: 11, day: 24), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 5, displayName: "Rocket Lab")
+    static let rdw = AssetRiskConfig(stock: "RDW", originDate: safeDate(year: 2021, month: 1, day: 14), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Redwire")
+    static let satl = AssetRiskConfig(stock: "SATL", originDate: safeDate(year: 2021, month: 3, day: 26), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Satellogic")
+
+    // BTC Miners / Crypto Infra
+    static let iren = AssetRiskConfig(stock: "IREN", originDate: safeDate(year: 2021, month: 11, day: 17), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "IREN (Iris Energy)")
+    static let bitf = AssetRiskConfig(stock: "BITF", originDate: safeDate(year: 2019, month: 8, day: 20), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 5, displayName: "Bitfarms")
+    static let wulf = AssetRiskConfig(stock: "WULF", originDate: safeDate(year: 1994, month: 4, day: 5), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "TeraWulf")
+
+    // Semiconductors / Tech
+    static let axti = AssetRiskConfig(stock: "AXTI", originDate: safeDate(year: 1998, month: 5, day: 21), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 6, displayName: "AXT Inc")
+    static let sndk = AssetRiskConfig(stock: "SNDK", originDate: safeDate(year: 2025, month: 2, day: 13), deviationBounds: (low: -0.8, high: 0.8), confidenceLevel: 2, displayName: "Sandisk")
+
+    // AI / Quantum / Tech
+    static let qbts = AssetRiskConfig(stock: "QBTS", originDate: safeDate(year: 2020, month: 12, day: 11), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "D-Wave Quantum")
+    static let nbis = AssetRiskConfig(stock: "NBIS", originDate: safeDate(year: 2024, month: 10, day: 21), deviationBounds: (low: -0.8, high: 0.8), confidenceLevel: 2, displayName: "Nebius Group")
+    static let nuai = AssetRiskConfig(stock: "NUAI", originDate: safeDate(year: 2022, month: 1, day: 6), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "NuScale Power")
+    static let sidu = AssetRiskConfig(stock: "SIDU", originDate: safeDate(year: 2021, month: 12, day: 14), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "Sidus Space")
+
+    // Real Estate / Fintech / Other
+    static let open = AssetRiskConfig(stock: "OPEN", originDate: safeDate(year: 2020, month: 6, day: 18), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Opendoor")
+    static let onds = AssetRiskConfig(stock: "ONDS", originDate: safeDate(year: 2020, month: 12, day: 4), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Ondas Holdings")
+    static let dgxx = AssetRiskConfig(stock: "DGXX", originDate: safeDate(year: 2021, month: 1, day: 8), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Digimarc")
+
     // MARK: - All Configs
 
     /// All supported crypto assets
@@ -674,7 +701,17 @@ struct AssetRiskConfig {
     /// All supported stock assets
     static let stockConfigs: [AssetRiskConfig] = [
         .aapl, .nvda, .googl, .msft, .amzn, .tsla, .meta, .coin, .mstr, .spy, .qqq,
-        .orcl, .hood, .amd, .mu, .uber, .asml, .tsm, .mp, .cifr, .bmnr
+        .orcl, .hood, .amd, .mu, .uber, .asml, .tsm, .mp, .cifr, .bmnr,
+        // Space / Satellite / Defense
+        .asts, .pl, .rklb, .rdw, .satl,
+        // BTC Miners / Crypto Infra
+        .iren, .bitf, .wulf,
+        // Semiconductors / Tech
+        .axti, .sndk,
+        // AI / Quantum
+        .qbts, .nbis, .nuai, .sidu,
+        // Real Estate / Fintech / Other
+        .open, .onds, .dgxx
     ]
 
     /// All supported assets (crypto + stocks)
