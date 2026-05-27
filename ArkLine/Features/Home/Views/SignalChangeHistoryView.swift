@@ -119,7 +119,8 @@ struct SignalChangeHistoryView: View {
                                 Text(signal.category ?? "")
                                     .font(.system(size: 10))
                                     .foregroundColor(AppColors.textTertiary)
-                                    .frame(width: 50, alignment: .trailing)
+                                    .lineLimit(1)
+                                    .fixedSize()
                             }
                             .padding(.vertical, 6)
                             .padding(.horizontal, 14)
