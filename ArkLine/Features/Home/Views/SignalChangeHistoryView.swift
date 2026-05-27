@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SignalChangeHistoryView: View {
     @State private var changes: [DailyPositioningSignal] = []
+    @State private var currentSignals: [DailyPositioningSignal] = []
     @State private var isLoading = true
     @Environment(\.colorScheme) var colorScheme
 
@@ -54,6 +55,14 @@ struct SignalChangeHistoryView: View {
         }
     }
 
+    private var filteredCurrentSignals: [DailyPositioningSignal] {
+        guard !searchText.isEmpty else { return [] }
+        let query = searchText.lowercased()
+        return currentSignals
+            .filter { $0.asset.lowercased().contains(query) || $0.displayName.lowercased().contains(query) }
+            .sorted { $0.asset < $1.asset }
+    }
+
     /// Group changes by signal_date
     private var groupedChanges: [(date: Date, changes: [DailyPositioningSignal])] {
         let grouped = Dictionary(grouping: filteredChanges) { signal in
@@ -91,6 +100,37 @@ struct SignalChangeHistoryView: View {
                         .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
                 )
                 .padding(.horizontal)
+
+                // Current signal state (shown when searching)
+                if !filteredCurrentSignals.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("CURRENT STATE")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(AppColors.textSecondary)
+                            .tracking(1.0)
+
+                        ForEach(filteredCurrentSignals) { signal in
+                            HStack {
+                                Text(signal.asset)
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                                Spacer()
+                                signalBadge(signal.positioningSignal)
+                                Text(signal.category ?? "")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(AppColors.textTertiary)
+                                    .frame(width: 50, alignment: .trailing)
+                            }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+                            )
+                        }
+                    }
+                    .padding(.horizontal)
+                }
 
                 // Date lookup section
                 dateLookupSection
@@ -146,7 +186,7 @@ struct SignalChangeHistoryView: View {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 40))
                             .foregroundColor(AppColors.textSecondary.opacity(0.4))
-                        Text("No signal changes in the last 30 days")
+                        Text("No signal changes in the last 90 days")
                             .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textSecondary)
                     }
@@ -408,10 +448,26 @@ struct SignalChangeHistoryView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            changes = try await service.fetchRecentSignalChanges(days: 30)
+            async let changesFetch = service.fetchRecentSignalChanges(days: 90)
+            async let currentFetch = service.fetchLatestSignals(forceRefresh: true)
+            let (c, s) = try await (changesFetch, currentFetch)
+            changes = c
+            currentSignals = s
         } catch {
             logWarning("Failed to load signal change history: \(error)", category: .network)
         }
+    }
+
+    private func signalBadge(_ signal: PositioningSignal) -> some View {
+        Text(signal.rawValue.capitalized)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(signal == .bullish ? AppColors.success : signal == .bearish ? AppColors.error : AppColors.warning)
+            )
     }
 
     private func lookupDate() async {

@@ -57,7 +57,7 @@ final class PositioningSignalService {
     }
 
     /// Fetch recent signal changes across all assets (where signal != prev_signal)
-    func fetchRecentSignalChanges(days: Int = 30) async throws -> [DailyPositioningSignal] {
+    func fetchRecentSignalChanges(days: Int = 90) async throws -> [DailyPositioningSignal] {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(identifier: "UTC")
