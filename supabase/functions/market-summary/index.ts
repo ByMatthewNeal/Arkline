@@ -688,7 +688,7 @@ ${sessionContext}
 Write a structured briefing using EXACTLY these section headers on their own line, prefixed with "##". Do NOT add any other sections.
 
 ## TLDR
-2-3 sentences. Quick snapshot: BTC state + price, sentiment, portfolio stance, one thing to watch.
+2-3 sentences. MUST start with the macro regime label (e.g. "Risk-Off:" or "Risk-On:") followed by BTC state + price, sentiment, portfolio stance, one thing to watch.
 
 ## What's Happening
 2-3 sentences. The day's story across crypto and equities — what moved and why. Weave in any notable credit or risk appetite shifts if relevant. BTC, ETH, SOL action plus any standout alts.

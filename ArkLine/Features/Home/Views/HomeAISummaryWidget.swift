@@ -502,12 +502,12 @@ struct HomeAISummaryWidget: View {
         }
 
         // Fallback: broad match — keep direction from briefing, borrow quadrant type from live
-        if body.contains("risk-on") || body.contains("risk on") {
+        if body.contains("risk-on") || body.contains("risk on") || body.contains("risk-on:") {
             // Find the disinflation/inflation suffix from live regime if available
             let suffix = liveRegime?.quadrant.rawValue.replacingOccurrences(of: "Risk-On ", with: "").replacingOccurrences(of: "Risk-Off ", with: "") ?? ""
             let label = suffix.isEmpty ? "Risk-On" : "Risk-On \(suffix)"
             return .riskOn(postureSection.body, label, color: AppColors.success)
-        } else if body.contains("risk-off") || body.contains("risk off") {
+        } else if body.contains("risk-off") || body.contains("risk off") || body.contains("defensive") || body.contains("capitulation") || body.contains("bearish") {
             let suffix = liveRegime?.quadrant.rawValue.replacingOccurrences(of: "Risk-On ", with: "").replacingOccurrences(of: "Risk-Off ", with: "") ?? ""
             let label = suffix.isEmpty ? "Risk-Off" : "Risk-Off \(suffix)"
             return .riskOff(postureSection.body, label, color: AppColors.error)
