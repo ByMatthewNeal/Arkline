@@ -103,16 +103,16 @@ struct FearGreedGauge: View {
                 // Value Text
                 VStack(spacing: 2) {
                     Text("\(value)")
-                        .font(.system(size: 48, weight: .bold))
+                        .font(.system(size: 42, weight: .bold))
                         .foregroundColor(.white)
 
                     Text("/ 100")
                         .font(.caption)
                         .foregroundColor(Color(hex: "A1A1AA"))
                 }
-                .offset(y: 20)
+                .offset(y: 10)
             }
-            .frame(height: 100)
+            .frame(height: 120)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fear and Greed gauge, \(value) out of 100")
@@ -176,9 +176,8 @@ struct FearGreedDetailView: View {
         ScrollView {
             VStack(spacing: 24) {
                 // Current gauge
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     FearGreedGauge(value: index.value)
-                        .padding(.top, 40)
 
                     Text(index.level.rawValue)
                         .font(.system(size: 16, weight: .semibold))
@@ -208,8 +207,10 @@ struct FearGreedDetailView: View {
                 // Level guide
                 levelGuide
                     .padding(.horizontal)
+
+                Spacer().frame(height: 80)
             }
-            .padding(.vertical)
+            .padding(.top)
         }
         .navigationTitle("Fear & Greed Index")
         .navigationBarTitleDisplayMode(.inline)
