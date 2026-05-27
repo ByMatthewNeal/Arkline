@@ -348,16 +348,35 @@ function computeEdgeAllocation(
     return { alloc: applyDefensive({ BTC: 0.10, ETH: 0.05 }, 0.85, goldSignal), dominantAlt: null }
   }
 
+  // Check USD signals for majors
   const bullishAssets: string[] = []
   for (const asset of ["BTC", "ETH", "SOL"]) {
     if (cryptoSignals[asset]?.signal === "bullish") bullishAssets.push(asset)
   }
 
+  // Dual confirmation for ETH and SOL: USD pair bullish is necessary but not sufficient.
+  // If their BTC pair is bearish, their USD strength is just BTC carrying them — shift to BTC instead.
+  const ethBtcSignal = altBtcSignals["ETH/BTC"]?.signal ?? "neutral"
+  const solBtcSignal = altBtcSignals["SOL/BTC"]?.signal ?? "neutral"
+  const ethConfirmed = bullishAssets.includes("ETH") && ethBtcSignal !== "bearish"
+  const solConfirmed = bullishAssets.includes("SOL") && solBtcSignal !== "bearish"
+
   if (bullishAssets.length >= 2 || btcSignal === "bullish") {
     const alloc: Record<string, number> = {}
     if (bullishAssets.includes("BTC") || btcSignal === "bullish") alloc.BTC = 0.30
-    if (bullishAssets.includes("ETH") || cryptoSignals.ETH?.signal === "bullish") alloc.ETH = 0.25
-    if (bullishAssets.includes("SOL")) alloc.SOL = 0.20
+    if (ethConfirmed) {
+      alloc.ETH = 0.25
+    } else if (bullishAssets.includes("ETH")) {
+      // ETH bullish in USD but bearish vs BTC — give half to ETH, half to BTC
+      alloc.ETH = 0.12
+      alloc.BTC = (alloc.BTC ?? 0) + 0.13
+    }
+    if (solConfirmed) {
+      alloc.SOL = 0.20
+    } else if (bullishAssets.includes("SOL")) {
+      alloc.SOL = 0.10
+      alloc.BTC = (alloc.BTC ?? 0) + 0.10
+    }
     // Distribute 15% among top bullish alts
     const altAlloc = distributeAltPct(topAlts, 0.15)
     Object.assign(alloc, altAlloc)
@@ -371,7 +390,7 @@ function computeEdgeAllocation(
 
   if (btcSignal === "mild_bearish") {
     const alloc: Record<string, number> = { BTC: 0.15 }
-    if (bullishAssets.includes("ETH")) alloc.ETH = 0.10
+    if (ethConfirmed) alloc.ETH = 0.10
     const altAlloc = distributeAltPct(topAlts, 0.05)
     Object.assign(alloc, altAlloc)
     const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
@@ -424,11 +443,27 @@ function computeAlphaAllocation(
     if (cryptoSignals[asset]?.signal === "bullish") bullishAssets.push(asset)
   }
 
+  // Dual confirmation for ETH/SOL BTC pairs (same logic as Edge)
+  const ethBtcSig = altBtcSignals["ETH/BTC"]?.signal ?? "neutral"
+  const solBtcSig = altBtcSignals["SOL/BTC"]?.signal ?? "neutral"
+  const ethOk = bullishAssets.includes("ETH") && ethBtcSig !== "bearish"
+  const solOk = bullishAssets.includes("SOL") && solBtcSig !== "bearish"
+
   if (bullishAssets.length >= 2 || btcSignal === "bullish") {
     const alloc: Record<string, number> = {}
     if (bullishAssets.includes("BTC") || btcSignal === "bullish") alloc.BTC = 0.20
-    if (bullishAssets.includes("ETH") || cryptoSignals.ETH?.signal === "bullish") alloc.ETH = 0.15
-    if (bullishAssets.includes("SOL")) alloc.SOL = 0.15
+    if (ethOk) {
+      alloc.ETH = 0.15
+    } else if (bullishAssets.includes("ETH")) {
+      alloc.ETH = 0.07
+      alloc.BTC = (alloc.BTC ?? 0) + 0.08
+    }
+    if (solOk) {
+      alloc.SOL = 0.15
+    } else if (bullishAssets.includes("SOL")) {
+      alloc.SOL = 0.07
+      alloc.BTC = (alloc.BTC ?? 0) + 0.08
+    }
     // 40% into top bullish alts
     const altAlloc = distributeAltPct(topAlts, 0.40)
     Object.assign(alloc, altAlloc)
@@ -442,7 +477,7 @@ function computeAlphaAllocation(
 
   if (btcSignal === "mild_bearish") {
     const alloc: Record<string, number> = { BTC: 0.10 }
-    if (bullishAssets.includes("ETH")) alloc.ETH = 0.08
+    if (ethOk) alloc.ETH = 0.08
     const altAlloc = distributeAltPct(topAlts, 0.12)
     Object.assign(alloc, altAlloc)
     const deployed = Object.values(alloc).reduce((a, b) => a + b, 0)
