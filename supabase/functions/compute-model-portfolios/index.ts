@@ -27,6 +27,12 @@ const MAX_EXPOSURE: Record<string, number> = {
 }
 const DEFAULT_MAX_EXPOSURE = 0.10 // Small-cap alts
 
+// Gradual position sizing: blend rate controls how fast allocations move to target.
+// 0.5 = move halfway to target each day (e.g., 20% → 0% becomes 20% → 10% → 5% → 2.5%)
+// 1.0 = immediate (no blending). Defensive assets (USDC, PAXG) always move immediately.
+const EDGE_BLEND_RATE = 0.5
+const ALPHA_BLEND_RATE = 0.6
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Portfolio {
@@ -209,13 +215,28 @@ function applyDefensive(base: Record<string, number>, defensivePct: number, gold
   return alloc
 }
 
-function getTopBullishAlts(altBtcSignals: Record<string, Signal>, n = 3): Array<[string, number]> {
+/**
+ * Returns top N bullish alts using dual confirmation:
+ * Asset must be bullish on BOTH its BTC pair AND USD pair to qualify.
+ * This filters out alts that outperform BTC but are still falling in dollar terms.
+ */
+function getTopBullishAlts(
+  altBtcSignals: Record<string, Signal>,
+  cryptoSignals: Record<string, Signal>,
+  n = 3,
+): Array<[string, number]> {
   const candidates: Array<[string, number]> = []
   for (const [pair, sig] of Object.entries(altBtcSignals)) {
     if (sig.signal === "bullish") {
       const alt = pair.split("/")[0]
-      if (!["BTC", "ETH", "SOL"].includes(alt)) {
-        candidates.push([alt, sig.trend_score])
+      if (["BTC", "ETH", "SOL"].includes(alt)) continue
+
+      // Dual confirmation: USD pair must also be bullish
+      const usdSignal = cryptoSignals[alt]
+      if (usdSignal?.signal === "bullish") {
+        // Average the trend scores from both pairs for a stronger conviction ranking
+        const avgScore = (sig.trend_score + (usdSignal.trend_score ?? 0)) / 2
+        candidates.push([alt, avgScore])
       }
     }
   }
@@ -235,6 +256,45 @@ function distributeAltPct(topAlts: Array<[string, number]>, totalPct: number): R
   const result: Record<string, number> = {}
   for (const [alt, score] of topAlts) result[alt] = totalPct * (score / totalScore)
   return result
+}
+
+/**
+ * Gradually blends new target allocation with previous allocation.
+ * Defensive assets (USDC, PAXG) move immediately — you don't want to
+ * slowly enter cash when the signal says de-risk.
+ * Crypto positions step toward target by blendRate per day.
+ */
+function blendAllocations(
+  newAlloc: Record<string, number>,
+  prevAlloc: Record<string, number>,
+  blendRate: number,
+): Record<string, number> {
+  const defensiveAssets = new Set(["USDC", "PAXG"])
+  const allAssets = new Set([...Object.keys(newAlloc), ...Object.keys(prevAlloc)])
+  const blended: Record<string, number> = {}
+
+  for (const asset of allAssets) {
+    const target = newAlloc[asset] ?? 0
+    const prev = prevAlloc[asset] ?? 0
+
+    if (defensiveAssets.has(asset)) {
+      // Defensive assets move immediately
+      if (target > 0) blended[asset] = target
+    } else {
+      // Blend: prev + (target - prev) * blendRate
+      const value = prev + (target - prev) * blendRate
+      // Clean up dust positions below 1%
+      if (value >= 0.01) blended[asset] = value
+    }
+  }
+
+  // Normalize to 100%
+  const total = Object.values(blended).reduce((a, b) => a + b, 0)
+  if (total > 0) {
+    for (const k of Object.keys(blended)) blended[k] /= total
+  }
+
+  return blended
 }
 
 function computeCoreAllocation(btcSignal: string, btcRiskCategory: string, goldSignal: string, macroRegime: string): Record<string, number> {
@@ -273,7 +333,7 @@ function computeEdgeAllocation(
 ): { alloc: Record<string, number>; dominantAlt: string | null } {
   const isRiskOff = macroRegime.includes("Risk-Off")
   const isHighRisk = ["High Risk", "Extreme Risk", "Elevated Risk"].includes(btcRiskCategory)
-  const topAlts = getTopBullishAlts(altBtcSignals, 3)
+  const topAlts = getTopBullishAlts(altBtcSignals, cryptoSignals, 3)
   const dominantAlt = topAlts.length > 0 ? topAlts[0][0] : null
 
   if (isRiskOff && isHighRisk) return { alloc: applyDefensive({}, 1.0, goldSignal), dominantAlt: null }
@@ -344,7 +404,7 @@ function computeAlphaAllocation(
 ): { alloc: Record<string, number>; dominantAlt: string | null } {
   const isRiskOff = macroRegime.includes("Risk-Off")
   const isHighRisk = ["High Risk", "Extreme Risk", "Elevated Risk"].includes(btcRiskCategory)
-  const topAlts = getTopBullishAlts(altBtcSignals, 3)
+  const topAlts = getTopBullishAlts(altBtcSignals, cryptoSignals, 3)
   const dominantAlt = topAlts.length > 0 ? topAlts[0][0] : null
 
   if (isRiskOff && isHighRisk) return { alloc: applyDefensive({}, 1.0, goldSignal), dominantAlt: null }
@@ -695,13 +755,7 @@ Deno.serve(async (req) => {
       // Enforce per-asset exposure caps
       newAlloc = enforceExposureCaps(newAlloc)
 
-      // Normalize
-      const total = Object.values(newAlloc).reduce((a, b) => a + b, 0)
-      if (total > 0) {
-        for (const k of Object.keys(newAlloc)) newAlloc[k] /= total
-      }
-
-      // 7. Determine if rebalance needed
+      // Reconstruct previous allocation percentages (for blending + rebalance detection)
       const prevAllocPcts: Record<string, number> = {}
       for (const [asset, data] of Object.entries(prevAllocations)) {
         if (typeof data === "object" && data !== null && "pct" in data) {
@@ -710,6 +764,21 @@ Deno.serve(async (req) => {
           prevAllocPcts[asset] = data / 100
         }
       }
+
+      // Gradual position sizing for Edge and Alpha (Core moves immediately)
+      if ((strategy === "edge" || strategy === "alpha") && Object.keys(prevAllocPcts).length > 0) {
+        const rate = strategy === "edge" ? EDGE_BLEND_RATE : ALPHA_BLEND_RATE
+        newAlloc = blendAllocations(newAlloc, prevAllocPcts, rate)
+        console.log(`  ${strategy}: blended allocation (rate=${rate})`)
+      }
+
+      // Normalize
+      const total = Object.values(newAlloc).reduce((a, b) => a + b, 0)
+      if (total > 0) {
+        for (const k of Object.keys(newAlloc)) newAlloc[k] /= total
+      }
+
+      // 7. Determine if rebalance needed
 
       const rebalance = !allocsEqual(newAlloc, prevAllocPcts)
 
