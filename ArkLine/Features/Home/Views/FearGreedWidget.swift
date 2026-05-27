@@ -151,27 +151,50 @@ struct FearGreedDetailView: View {
     private var levelColor: Color { Color(hex: index.level.color) }
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
+    private var yesterdayValue: String {
+        if let v = index.previousClose { return "\(v)" }
+        guard history.count >= 2 else { return "—" }
+        let sorted = history.sorted { $0.timestamp < $1.timestamp }
+        return "\(sorted[sorted.count - 2].value)"
+    }
+
+    private var weekAgoValue: String {
+        if let v = index.weekAgo { return "\(v)" }
+        guard history.count >= 7 else { return "—" }
+        let sorted = history.sorted { $0.timestamp < $1.timestamp }
+        return "\(sorted[sorted.count - 7].value)"
+    }
+
+    private var monthAgoValue: String {
+        if let v = index.monthAgo { return "\(v)" }
+        guard history.count >= 30 else { return "—" }
+        let sorted = history.sorted { $0.timestamp < $1.timestamp }
+        return "\(sorted[sorted.count - 30].value)"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 // Current gauge
                 VStack(spacing: 12) {
                     FearGreedGauge(value: index.value)
+                        .padding(.top, 40)
 
                     Text(index.level.rawValue)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(levelColor)
 
-                    // Quick stats
+                    // Quick stats — use history to derive yesterday/week/month if index doesn't have them
                     HStack(spacing: 0) {
-                        FearGreedStatItem(label: "Yesterday", value: index.previousClose.map { "\($0)" } ?? "—")
+                        FearGreedStatItem(label: "Yesterday", value: yesterdayValue)
                         Divider().frame(height: 30).background(textPrimary.opacity(0.1))
-                        FearGreedStatItem(label: "Last Week", value: index.weekAgo.map { "\($0)" } ?? "—")
+                        FearGreedStatItem(label: "Last Week", value: weekAgoValue)
                         Divider().frame(height: 30).background(textPrimary.opacity(0.1))
-                        FearGreedStatItem(label: "Last Month", value: index.monthAgo.map { "\($0)" } ?? "—")
+                        FearGreedStatItem(label: "Last Month", value: monthAgoValue)
                     }
                 }
                 .padding(20)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
@@ -289,18 +312,19 @@ struct FearGreedDetailView: View {
 
     private func fearGreedChart(data: [FearGreedIndex]) -> some View {
         let values = data.map { Double($0.value) }
-        let maxVal = 100.0
-        let minVal = 0.0
-        let range = maxVal - minVal
+        let maxVal = min(100, (values.max() ?? 80) + 10)
+        let minVal = max(0, (values.min() ?? 20) - 10)
+        let midVal = Int((maxVal + minVal) / 2)
+        let range = max(maxVal - minVal, 1)
 
         return HStack(spacing: 0) {
             // Y-axis
             VStack {
-                Text("100")
+                Text("\(Int(maxVal))")
                 Spacer()
-                Text("50")
+                Text("\(midVal)")
                 Spacer()
-                Text("0")
+                Text("\(Int(minVal))")
             }
             .font(.system(size: 8, weight: .medium))
             .foregroundColor(AppColors.textSecondary.opacity(0.5))
@@ -313,14 +337,16 @@ struct FearGreedDetailView: View {
                 let stepX = w / CGFloat(max(data.count - 1, 1))
 
                 ZStack(alignment: .topLeading) {
-                    // Zone bands
+                    // Zone bands (only show if within visible range)
                     ForEach([25.0, 45.0, 55.0, 75.0], id: \.self) { threshold in
-                        let y = h * CGFloat((maxVal - threshold) / range)
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: y))
-                            path.addLine(to: CGPoint(x: w, y: y))
+                        if threshold >= minVal && threshold <= maxVal {
+                            let y = h * CGFloat((maxVal - threshold) / range)
+                            Path { path in
+                                path.move(to: CGPoint(x: 0, y: y))
+                                path.addLine(to: CGPoint(x: w, y: y))
+                            }
+                            .stroke(AppColors.textSecondary.opacity(0.1), style: StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
                         }
-                        .stroke(AppColors.textSecondary.opacity(0.1), style: StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
                     }
 
                     // Line with color segments
