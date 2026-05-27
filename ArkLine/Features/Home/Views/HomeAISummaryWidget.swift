@@ -482,7 +482,10 @@ struct HomeAISummaryWidget: View {
     private var parsedPosture: MarketPosture? {
         guard let text = summary?.summary else { return nil }
         let sections = parseSections(text)
-        guard let postureSection = sections.first(where: { $0.header.lowercased() == "posture" }) else { return nil }
+        // Try Posture section first, fall back to TLDR for regime detection
+        let postureSection = sections.first(where: { $0.header.lowercased() == "posture" })
+            ?? sections.first(where: { $0.header.lowercased() == "tldr" })
+        guard let postureSection else { return nil }
         let body = postureSection.body.lowercased()
 
         // Match against the 4 quadrants for exact label + color.
