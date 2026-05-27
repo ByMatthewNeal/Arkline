@@ -59,24 +59,36 @@ struct ModelPortfolioNav: Codable, Identifiable, Hashable {
         let pct: Double
         let value: Double?
         let qty: Double?
+        let entryPrice: Double?
+
+        /// P&L percentage since entry (nil for stablecoins/gold or missing entry price)
+        var pnlPct: Double? {
+            guard let entry = entryPrice, let currentValue = value, let currentQty = qty,
+                  entry > 0, currentQty > 0 else { return nil }
+            let currentPrice = currentValue / currentQty
+            return ((currentPrice - entry) / entry) * 100
+        }
 
         init(from decoder: Decoder) throws {
-            // Handle both formats: {pct, value, qty} or raw number
+            // Handle both formats: {pct, value, qty, entry_price} or raw number
             if let container = try? decoder.container(keyedBy: CodingKeys.self) {
                 pct = try container.decode(Double.self, forKey: .pct)
                 value = try container.decodeIfPresent(Double.self, forKey: .value)
                 qty = try container.decodeIfPresent(Double.self, forKey: .qty)
+                entryPrice = try container.decodeIfPresent(Double.self, forKey: .entryPrice)
             } else {
                 // Raw number (backfill format: {"BTC": 60.0})
                 let single = try decoder.singleValueContainer()
                 pct = try single.decode(Double.self)
                 value = nil
                 qty = nil
+                entryPrice = nil
             }
         }
 
         enum CodingKeys: String, CodingKey {
             case pct, value, qty
+            case entryPrice = "entry_price"
         }
     }
 }

@@ -449,18 +449,26 @@ struct ModelPortfolioDetailView: View {
                     Circle()
                         .fill(assetColor(asset))
                         .frame(width: 8, height: 8)
-                    Text(assetDisplayName(asset))
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                    if asset == "USDC" {
-                        Text("USDC / USDT")
-                            .font(AppFonts.caption12)
-                            .foregroundColor(AppColors.textTertiary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(assetDisplayName(asset))
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                        if asset == "USDC" {
+                            Text("USDC / USDT")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textTertiary)
+                        }
                     }
                     Spacer()
+                    if let pnl = detail.pnlPct {
+                        Text("\(pnl >= 0 ? "+" : "")\(pnl, specifier: "%.1f")%")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundColor(pnl >= 0 ? AppColors.success : AppColors.error)
+                    }
                     Text("\(detail.pct, specifier: "%.1f")%")
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
+                        .frame(width: 44, alignment: .trailing)
                     if let value = detail.value {
                         Text("$\(value, specifier: "%.0f")")
                             .font(AppFonts.caption12)

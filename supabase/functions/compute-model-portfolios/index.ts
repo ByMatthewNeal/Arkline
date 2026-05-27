@@ -869,15 +869,34 @@ Deno.serve(async (req) => {
       )
       console.log(`  ${strategy}: NAV $${nav.toFixed(2)}, rebalance=${rebalance}`)
 
-      // 10. Build allocations JSON with full detail
-      const allocJson: Record<string, { pct: number; value: number; qty: number }> = {}
+      // 10. Build allocations JSON with full detail + entry price tracking
+      const allocJson: Record<string, { pct: number; value: number; qty: number; entry_price?: number }> = {}
       for (const [asset, weight] of Object.entries(newAlloc)) {
         if (weight <= 0) continue
         const pos = positions[asset]
+        const currentPrice = prices[asset] ?? 0
+
+        // Carry forward entry price from previous allocation, or set to current price for new positions
+        const prevDetail = prevAllocations[asset]
+        let entryPrice: number | undefined
+        if (asset === "USDC" || asset === "PAXG") {
+          // Skip entry price for stablecoins and gold (defensive assets)
+          entryPrice = undefined
+        } else if (prevDetail && typeof prevDetail === "object" && "entry_price" in prevDetail && (prevDetail as any).entry_price > 0) {
+          entryPrice = (prevDetail as any).entry_price
+        } else if (prevDetail && typeof prevDetail === "object" && "qty" in prevDetail && (prevDetail as any).qty > 0) {
+          // Existing position without entry_price — use current price as baseline
+          entryPrice = currentPrice
+        } else {
+          // New position — entry at today's price
+          entryPrice = currentPrice
+        }
+
         allocJson[asset] = {
           pct: Math.round(weight * 1000) / 10,
           value: pos ? Math.round(pos.value * 100) / 100 : 0,
           qty: pos ? Math.round(pos.qty * 100000000) / 100000000 : 0,
+          ...(entryPrice ? { entry_price: Math.round(entryPrice * 100) / 100 } : {}),
         }
       }
 
