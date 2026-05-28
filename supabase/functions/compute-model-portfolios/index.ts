@@ -27,6 +27,15 @@ const MAX_EXPOSURE: Record<string, number> = {
 }
 const DEFAULT_MAX_EXPOSURE = 0.10 // Small-cap alts
 
+// Durable asset floors: minimum allocation that never goes to zero regardless of signal.
+// Rationale: BTC and gold are "durable" assets (per BMB risk framework) — cyclical signals
+// should reduce exposure but never fully exit. Alts and ETH have no floor (cyclical).
+const DURABLE_FLOORS: Record<string, Record<string, number>> = {
+  core:  { BTC: 0.15, PAXG: 0.10 },
+  edge:  { BTC: 0.12, PAXG: 0.08 },
+  alpha: { BTC: 0.10, PAXG: 0.05 },
+}
+
 // Gradual position sizing: blend rate controls how fast allocations move to target.
 // 0.5 = move halfway to target each day (e.g., 20% → 0% becomes 20% → 10% → 5% → 2.5%)
 // 1.0 = immediate (no blending). Defensive assets (USDC, PAXG) always move immediately.
@@ -108,6 +117,58 @@ function enforceExposureCaps(alloc: Record<string, number>): Record<string, numb
     } else {
       // All at cap — overflow to USDC
       result.USDC = (result.USDC || 0) + excess
+    }
+  }
+
+  return result
+}
+
+function enforceDurableFloors(alloc: Record<string, number>, strategy: string): Record<string, number> {
+  const floors = DURABLE_FLOORS[strategy]
+  if (!floors) return alloc
+
+  const result = { ...alloc }
+  let deficit = 0
+
+  // Raise any durable asset below its floor
+  for (const [asset, floor] of Object.entries(floors)) {
+    const current = result[asset] ?? 0
+    if (current < floor) {
+      deficit += floor - current
+      result[asset] = floor
+    }
+  }
+
+  if (deficit <= 0) return result
+
+  // Absorb deficit from USDC first, then proportionally from non-durable positions
+  const usdcAvailable = (result.USDC ?? 0) - 0.01 // keep 1% minimum USDC
+  if (usdcAvailable >= deficit) {
+    result.USDC = (result.USDC ?? 0) - deficit
+    return result
+  }
+
+  // USDC can't cover it all — take what we can from USDC, then trim others
+  if (usdcAvailable > 0) {
+    result.USDC = (result.USDC ?? 0) - usdcAvailable
+    deficit -= usdcAvailable
+  }
+
+  // Proportionally reduce non-durable, non-USDC positions
+  const durableAssets = new Set([...Object.keys(floors), "USDC"])
+  const trimmable: string[] = []
+  let trimmableTotal = 0
+  for (const [asset, pct] of Object.entries(result)) {
+    if (!durableAssets.has(asset) && pct > 0) {
+      trimmable.push(asset)
+      trimmableTotal += pct
+    }
+  }
+
+  if (trimmableTotal > 0) {
+    for (const asset of trimmable) {
+      const reduction = deficit * (result[asset] / trimmableTotal)
+      result[asset] = Math.max(0, result[asset] - reduction)
     }
   }
 
@@ -826,7 +887,8 @@ Deno.serve(async (req) => {
         dominantAlt = result.dominantAlt
       }
 
-      // Enforce per-asset exposure caps
+      // Enforce durable asset floors, then per-asset exposure caps
+      newAlloc = enforceDurableFloors(newAlloc, strategy)
       newAlloc = enforceExposureCaps(newAlloc)
 
       // Reconstruct previous allocation percentages (for blending + rebalance detection)
