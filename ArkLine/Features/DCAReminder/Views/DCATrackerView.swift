@@ -206,6 +206,7 @@ struct DCATrackerView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(ArkSpacing.md)
         .background(
             RoundedRectangle(cornerRadius: ArkSpacing.Radius.card)
