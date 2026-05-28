@@ -393,10 +393,60 @@ Defensives rank: ${defensiveRank} of ${sectorResults.length}`
     if (secError) errors.push(`Sector ${sector.sector_id} upsert failed: ${secError.message}`)
   }
 
+  // ── Step 7: Detect regime change and notify ──────────────────────────────
+
+  let regimeChanged = false
+  let prevRegime: string | null = null
+  try {
+    const { data: prevSignal } = await supabase
+      .from("rotation_signals")
+      .select("regime")
+      .lt("signal_date", today)
+      .order("signal_date", { ascending: false })
+      .limit(1)
+
+    prevRegime = prevSignal?.[0]?.regime ?? null
+    regimeChanged = prevRegime !== null && prevRegime !== regime
+
+    if (regimeChanged) {
+      const regimeDisplay = (r: string) => r.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      const title = "Rotation Regime Shift"
+      const body = `${regimeDisplay(prevRegime!)} → ${regimeDisplay(regime)}. ${narrative.slice(0, 120)}`
+
+      console.log(`[rotation] Regime changed: ${prevRegime} → ${regime}, sending notification`)
+
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`,
+            "x-cron-secret": cronSecret,
+          },
+          body: JSON.stringify({
+            broadcast_id: "rotation_signal",
+            title,
+            body,
+            event_type: "rotation_regime_change",
+            target_audience: { type: "all" },
+          }),
+        })
+        console.log(`[rotation] Regime shift notification sent`)
+      } catch (notifErr) {
+        errors.push(`Notification failed: ${notifErr}`)
+        console.error(`[rotation] Notification failed: ${notifErr}`)
+      }
+    }
+  } catch (prevErr) {
+    errors.push(`Regime change detection failed: ${prevErr}`)
+  }
+
   const result = {
     date: today,
     rotation_score: rotationScore,
     regime,
+    prev_regime: prevRegime,
+    regime_changed: regimeChanged,
     narrative,
     sectors_computed: sectorResults.length,
     errors,

@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // MARK: - Rotation Detail View
 
@@ -9,6 +10,9 @@ struct RotationDetailView: View {
     @State private var isLoadingSectors = true
     @State private var expandedSectorId: String?
     @State private var selectedTimeframe: RotationTimeframe = .thirtyDay
+    @State private var signalHistory: [RotationSignal] = []
+    @State private var chartTimeRange: RotationTimeframe = .thirtyDay
+    @State private var selectedChartDate: Date?
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
 
@@ -22,8 +26,16 @@ struct RotationDetailView: View {
                     gaugeSection
                         .padding(.top, ArkSpacing.md)
 
+                    // Historical chart
+                    if !signalHistory.isEmpty {
+                        rotationHistoryChart
+                    }
+
                     // What to Do section
                     actionGuidanceSection
+
+                    // Suggested allocation
+                    allocationTargetsSection
 
                     // Input breakdown
                     inputBreakdownSection
@@ -50,7 +62,10 @@ struct RotationDetailView: View {
         .navigationTitle("Rotation Signal")
         .navigationBarTitleDisplayMode(.large)
         .task {
-            sectors = await RotationSignalService.shared.fetchLatestSectors()
+            async let sectorsTask = RotationSignalService.shared.fetchLatestSectors()
+            async let historyTask = RotationSignalService.shared.fetchSignalHistory(days: 180)
+            sectors = await sectorsTask
+            signalHistory = await historyTask
             isLoadingSectors = false
         }
     }
@@ -499,6 +514,313 @@ struct RotationDetailView: View {
         .padding(.leading, 46)
         .padding(.bottom, 8)
         .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    // MARK: - Historical Chart
+
+    private var chartDays: Int {
+        switch chartTimeRange {
+        case .sevenDay: return 7
+        case .thirtyDay: return 30
+        case .ninetyDay: return 90
+        case .ytd:
+            let jan1 = Calendar.current.date(from: DateComponents(year: Calendar.current.component(.year, from: Date()), month: 1, day: 1))!
+            return Calendar.current.dateComponents([.day], from: jan1, to: Date()).day ?? 180
+        }
+    }
+
+    private var filteredHistory: [RotationSignal] {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -chartDays, to: Date()) ?? Date()
+        return signalHistory.filter { signal in
+            guard let date = dateFromString(signal.signalDate) else { return false }
+            return date >= cutoff
+        }
+    }
+
+    private func dateFromString(_ str: String) -> Date? {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.timeZone = TimeZone(identifier: "UTC")
+        return fmt.date(from: str)
+    }
+
+    private func regimeColorFor(_ regime: RotationRegime) -> Color {
+        switch regime {
+        case .cryptoFavored: return Color(hex: "F7931A")
+        case .equityFavored: return Color(hex: "3B82F6")
+        case .neutral: return AppColors.textSecondary
+        case .riskOff: return AppColors.error
+        }
+    }
+
+    /// Only show chart tabs that have enough data (at least 70% of the range)
+    private var availableChartRanges: [RotationTimeframe] {
+        let totalDays = signalHistory.count
+        var ranges: [RotationTimeframe] = []
+        // Always show 30D if we have any data
+        if totalDays >= 2 { ranges.append(.thirtyDay) }
+        if totalDays >= 63 { ranges.append(.ninetyDay) }  // 70% of 90
+        if totalDays >= 100 { ranges.append(.ytd) }
+        return ranges
+    }
+
+    private var rotationHistoryChart: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack {
+                Text("Score History")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                if availableChartRanges.count > 1 {
+                    // Time range picker — only shown when multiple ranges available
+                    HStack(spacing: 4) {
+                        ForEach(availableChartRanges, id: \.self) { tf in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) { chartTimeRange = tf }
+                            } label: {
+                                Text(tf.rawValue)
+                                    .font(.system(size: 11, weight: chartTimeRange == tf ? .bold : .regular))
+                                    .foregroundColor(chartTimeRange == tf ? .white : AppColors.textSecondary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        chartTimeRange == tf
+                                            ? AnyView(Capsule().fill(AppColors.accent))
+                                            : AnyView(Color.clear)
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(3)
+                    .background(Capsule().fill(AppColors.textSecondary.opacity(colorScheme == .dark ? 0.1 : 0.06)))
+                }
+            }
+
+            if filteredHistory.count >= 2 {
+                Chart {
+                    // Regime color bands (background)
+                    ForEach(filteredHistory, id: \.id) { point in
+                        if let date = dateFromString(point.signalDate) {
+                            RectangleMark(
+                                x: .value("Date", date),
+                                yStart: .value("Min", -100),
+                                yEnd: .value("Max", 100),
+                                width: .automatic
+                            )
+                            .foregroundStyle(regimeColorFor(point.regime).opacity(0.06))
+                        }
+                    }
+
+                    // Threshold lines at -30 and +30
+                    RuleMark(y: .value("Threshold", 30))
+                        .lineStyle(StrokeStyle(lineWidth: 0.8, dash: [4, 4]))
+                        .foregroundStyle(Color(hex: "3B82F6").opacity(0.4))
+
+                    RuleMark(y: .value("Threshold", -30))
+                        .lineStyle(StrokeStyle(lineWidth: 0.8, dash: [4, 4]))
+                        .foregroundStyle(Color(hex: "F7931A").opacity(0.4))
+
+                    RuleMark(y: .value("Zero", 0))
+                        .lineStyle(StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(textPrimary.opacity(0.15))
+
+                    // Score line
+                    ForEach(filteredHistory, id: \.id) { point in
+                        if let date = dateFromString(point.signalDate) {
+                            LineMark(
+                                x: .value("Date", date),
+                                y: .value("Score", point.rotationScore)
+                            )
+                            .foregroundStyle(regimeColor)
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+
+                            AreaMark(
+                                x: .value("Date", date),
+                                yStart: .value("Zero", 0),
+                                yEnd: .value("Score", point.rotationScore)
+                            )
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [regimeColor.opacity(0.15), regimeColor.opacity(0.02)],
+                                    startPoint: point.rotationScore >= 0 ? .top : .bottom,
+                                    endPoint: point.rotationScore >= 0 ? .bottom : .top
+                                )
+                            )
+                        }
+                    }
+
+                    // Selection indicator
+                    if let selectedDate = selectedChartDate,
+                       let closest = filteredHistory.min(by: {
+                           abs((dateFromString($0.signalDate) ?? Date()).timeIntervalSince(selectedDate)) <
+                           abs((dateFromString($1.signalDate) ?? Date()).timeIntervalSince(selectedDate))
+                       }),
+                       let date = dateFromString(closest.signalDate) {
+                        RuleMark(x: .value("Selected", date))
+                            .lineStyle(StrokeStyle(lineWidth: 1))
+                            .foregroundStyle(textPrimary.opacity(0.3))
+
+                        PointMark(
+                            x: .value("Date", date),
+                            y: .value("Score", closest.rotationScore)
+                        )
+                        .symbolSize(40)
+                        .foregroundStyle(regimeColorFor(closest.regime))
+                    }
+                }
+                .chartYScale(domain: -100...100)
+                .chartYAxis {
+                    AxisMarks(values: [-100, -50, 0, 50, 100]) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.3))
+                        AxisValueLabel {
+                            if let v = value.as(Int.self) {
+                                Text("\(v)")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                Text(date, format: .dateTime.month(.abbreviated).day())
+                                    .font(.system(size: 9))
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                    }
+                }
+                .chartXSelection(value: $selectedChartDate)
+                .frame(height: 180)
+
+                // Selected point tooltip
+                if let selectedDate = selectedChartDate,
+                   let closest = filteredHistory.min(by: {
+                       abs((dateFromString($0.signalDate) ?? Date()).timeIntervalSince(selectedDate)) <
+                       abs((dateFromString($1.signalDate) ?? Date()).timeIntervalSince(selectedDate))
+                   }) {
+                    HStack(spacing: ArkSpacing.md) {
+                        Text(closest.signalDate)
+                            .font(.system(size: 11))
+                            .foregroundColor(AppColors.textSecondary)
+
+                        Text("Score: \(closest.rotationScore >= 0 ? "+" : "")\(closest.rotationScore)")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(regimeColorFor(closest.regime))
+
+                        Text(closest.regime.displayName)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(regimeColorFor(closest.regime)))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+
+                // Axis labels
+                HStack {
+                    Text("Crypto")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color(hex: "F7931A"))
+                    Spacer()
+                    Text("Equities")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color(hex: "3B82F6"))
+                }
+            } else {
+                Text("Building history...")
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 30)
+            }
+        }
+        .padding(ArkSpacing.md)
+        .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+    }
+
+    // MARK: - Allocation Targets
+
+    private var allocationTargetsSection: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            HStack(spacing: 8) {
+                Image(systemName: "chart.pie.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(regimeColor)
+
+                Text("Suggested Allocation")
+                    .font(.headline)
+                    .foregroundColor(textPrimary)
+
+                Spacer()
+
+                Text(signal.regime.actionLabel)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(regimeColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(regimeColor.opacity(0.12)))
+            }
+
+            VStack(spacing: ArkSpacing.sm) {
+                ForEach(signal.allocationTargets) { target in
+                    allocationTargetRow(target)
+                }
+            }
+
+            Text("Ranges respect durable asset floors (BTC \u{2265}10%, Gold \u{2265}5%)")
+                .font(.system(size: 10))
+                .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                .padding(.top, 2)
+        }
+        .padding(ArkSpacing.md)
+        .glassCard(cornerRadius: ArkSpacing.Radius.lg)
+    }
+
+    private func allocationTargetRow(_ target: AllocationTarget) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: target.icon)
+                .font(.system(size: 12))
+                .foregroundColor(target.color)
+                .frame(width: 20)
+
+            Text(target.assetClass)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(textPrimary)
+                .frame(width: 60, alignment: .leading)
+
+            // Range bar
+            GeometryReader { geo in
+                let barWidth = geo.size.width
+                let low = CGFloat(target.rangeLow) / 100
+                let high = CGFloat(target.rangeHigh) / 100
+
+                ZStack(alignment: .leading) {
+                    // Background track
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(textPrimary.opacity(0.06))
+                        .frame(height: 8)
+
+                    // Range fill
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(target.color.opacity(0.35))
+                        .frame(width: barWidth * (high - low), height: 8)
+                        .offset(x: barWidth * low)
+                }
+            }
+            .frame(height: 8)
+
+            Text("\(target.rangeLow)–\(target.rangeHigh)%")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundColor(textPrimary)
+                .frame(width: 58, alignment: .trailing)
+        }
     }
 
     // MARK: - Helpers

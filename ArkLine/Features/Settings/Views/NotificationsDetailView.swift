@@ -21,6 +21,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifySwingSignals)
     private var swingSignals = true
 
+    @AppStorage(Constants.UserDefaults.notifyRotationShifts)
+    private var rotationShifts = true
+
     @AppStorage(Constants.UserDefaults.notifyQPSChanges)
     private var qpsChanges = true
 
@@ -142,6 +145,18 @@ struct NotificationsDetailView: View {
                         )
                     }
                     .onChange(of: qpsChanges) { _, _ in
+                        Haptics.selection()
+                    }
+
+                    Toggle(isOn: $rotationShifts) {
+                        NotificationRow(
+                            icon: "arrow.left.arrow.right.circle.fill",
+                            iconColor: Color(hex: "F7931A"),
+                            title: "Rotation Shifts",
+                            description: "When crypto/equities regime changes"
+                        )
+                    }
+                    .onChange(of: rotationShifts) { _, _ in
                         Haptics.selection()
                     }
 

@@ -297,8 +297,10 @@ Deno.serve(async (req) => {
     // Map event_type to the "type" field iOS expects for deep linking
     const isSignalEvent = (event_type || "").startsWith("signal_")
     const isPortfolioEvent = event_type === "model_portfolio_rebalance"
+    const isRotationEvent = event_type === "rotation_regime_change"
     const notificationType = isSignalEvent ? "swing_signal"
       : isPortfolioEvent ? "model_portfolio"
+      : isRotationEvent ? "rotation_signal"
       : event_type === "briefing" ? "briefing"
       : event_type === "qps_change" ? "qps_change"
       : event_type === "dca_reminder" ? "dca_reminder"

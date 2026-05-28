@@ -159,6 +159,7 @@ enum Constants {
         static let notifySignalExpiry = "arkline_notify_signal_expiry"
         static let notifySignalProximity = "arkline_notify_signal_proximity"
 
+        static let notifyRotationShifts = "arkline_rotation_shift_notifications_enabled"
         static let notifyQPSChanges = "arkline_qps_changes_notifications_enabled"
         static let notifyModelPortfolio = "arkline_model_portfolio_notifications_enabled"
         static let followedModelPortfolio = "arkline_followed_model_portfolio"

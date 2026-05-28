@@ -805,6 +805,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 notificationName = Notification.Name("SentimentRegimeNotificationTapped")
             case "market_deck":
                 notificationName = Notification.Name("MarketDeckNotificationTapped")
+            case "rotation_signal":
+                notificationName = Notification.Name("RotationSignalNotificationTapped")
             default:
                 notificationName = Notification.Name("BroadcastNotificationTapped")
             }

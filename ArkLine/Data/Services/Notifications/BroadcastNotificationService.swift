@@ -413,7 +413,20 @@ class BroadcastNotificationService: ObservableObject {
             options: []
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory, qpsCategory, modelPortfolioCategory, sentimentRegimeCategory])
+        let viewRotationAction = UNNotificationAction(
+            identifier: "VIEW_ROTATION",
+            title: "View Signal",
+            options: [.foreground]
+        )
+
+        let rotationShiftCategory = UNNotificationCategory(
+            identifier: "ROTATION_SHIFT",
+            actions: [viewRotationAction, dismissAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([broadcastCategory, briefingCategory, swingSignalCategory, qpsCategory, modelPortfolioCategory, sentimentRegimeCategory, rotationShiftCategory])
     }
 }
 
@@ -451,6 +464,8 @@ extension BroadcastNotificationService {
             result = (type: "model_portfolio", id: strategy)
         case "sentiment_regime":
             result = (type: "sentiment_regime", id: "")
+        case "rotation_signal":
+            result = (type: "rotation_signal", id: "")
         default:
             break
         }
