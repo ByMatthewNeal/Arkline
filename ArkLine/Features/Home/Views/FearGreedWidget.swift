@@ -53,69 +53,52 @@ struct FearGreedWidget: View {
 // MARK: - Fear & Greed Gauge
 struct FearGreedGauge: View {
     let value: Int
+    @Environment(\.colorScheme) private var colorScheme
 
     private var normalizedValue: Double {
         Double(value) / 100.0
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
+        let arcSize: CGFloat = 140
+        let strokeWidth: CGFloat = 12
+        let gaugeColors: [Color] = [
+            Color(hex: "EF4444"),
+            Color(hex: "F97316"),
+            Color(hex: "EAB308"),
+            Color(hex: "22C55E")
+        ]
+        let gradient = LinearGradient(colors: gaugeColors, startPoint: .leading, endPoint: .trailing)
+
+        VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
                 // Background Arc
                 Circle()
-                    .trim(from: 0.25, to: 0.75)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "EF4444"),
-                                Color(hex: "F97316"),
-                                Color(hex: "EAB308"),
-                                Color(hex: "22C55E")
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(180))
-                    .frame(width: 160, height: 160)
+                    .trim(from: 0.5, to: 1.0)
+                    .stroke(gradient, style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+                    .frame(width: arcSize, height: arcSize)
                     .opacity(0.3)
 
                 // Value Arc
                 Circle()
-                    .trim(from: 0.25, to: 0.25 + (normalizedValue * 0.5))
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(hex: "EF4444"),
-                                Color(hex: "F97316"),
-                                Color(hex: "EAB308"),
-                                Color(hex: "22C55E")
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ),
-                        style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(180))
-                    .frame(width: 160, height: 160)
+                    .trim(from: 0.5, to: 0.5 + (normalizedValue * 0.5))
+                    .stroke(gradient, style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+                    .frame(width: arcSize, height: arcSize)
 
                 // Value Text
                 VStack(spacing: 2) {
                     Text("\(value)")
-                        .font(.system(size: 42, weight: .bold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
 
                     Text("/ 100")
                         .font(.caption)
                         .foregroundColor(Color(hex: "A1A1AA"))
                 }
+                .padding(.bottom, 4)
             }
-            // The semicircle draws the top half of a 160pt circle (80pt above center).
-            // Offset the whole ZStack down so the arc starts at the top of the frame.
-            .offset(y: 40)
-            .frame(height: 140)
-            .clipped()
+            .padding(.top, strokeWidth)
+            .fixedSize()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fear and Greed gauge, \(value) out of 100")
@@ -449,6 +432,7 @@ struct FearGreedDetailView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
