@@ -1513,41 +1513,56 @@ function checkBounce(
   }
   if (!zoneTouched) return { confirmed: false, details }
 
+  // Check last 3 candles for bounce confirmation (not just the latest).
+  // A bounce that happened 1-2 candles ago is still a valid setup —
+  // the old code only checked the single most recent candle, which missed
+  // bounces that occurred between pipeline runs.
+  const checkWindow = candles.slice(-3)
+
+  for (const candle of checkWindow) {
+    if (isBuy) {
+      const body = Math.abs(candle.close - candle.open)
+      const lowerWick = Math.min(candle.open, candle.close) - candle.low
+      if (lowerWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001)
+          && candle.low <= zoneHigh + zoneMargin
+          && candle.close > zoneLow) {
+        details.wick_rejection = true
+      }
+    } else {
+      const body = Math.abs(candle.close - candle.open)
+      const upperWick = candle.high - Math.max(candle.open, candle.close)
+      if (upperWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001)
+          && candle.high >= zoneLow - zoneMargin
+          && candle.close < zoneHigh) {
+        details.wick_rejection = true
+      }
+    }
+  }
+
+  // Consecutive closes: check latest + prev
   const latest = candles[candles.length - 1]
   const prev = candles[candles.length - 2]
-
   if (isBuy) {
-    // Wick rejection: candle dipped into/near zone and closed above
-    const body = Math.abs(latest.close - latest.open)
-    const lowerWick = Math.min(latest.open, latest.close) - latest.low
-    if (lowerWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001)
-        && latest.low <= zoneHigh + zoneMargin
-        && latest.close > zoneLow) {
-      details.wick_rejection = true
-    }
     if (latest.close > zoneHigh && prev.close > zoneHigh && prev.low <= zoneHigh) {
       details.consecutive_closes = true
     }
   } else {
-    // Wick rejection: candle wicked into/near zone and closed below
-    const body = Math.abs(latest.close - latest.open)
-    const upperWick = latest.high - Math.max(latest.open, latest.close)
-    if (upperWick >= WICK_REJECTION_RATIO * Math.max(body, 0.001)
-        && latest.high >= zoneLow - zoneMargin
-        && latest.close < zoneHigh) {
-      details.wick_rejection = true
-    }
     if (latest.close < zoneLow && prev.close < zoneLow && prev.high >= zoneLow) {
       details.consecutive_closes = true
     }
   }
 
-  // Volume spike — only counts if zone was touched (already verified above)
-  const volCandles = candles.slice(-21, -1)
-  if (volCandles.length >= 10 && latest.volume > 0) {
-    const avgVol = volCandles.reduce((sum, c) => sum + c.volume, 0) / volCandles.length
-    if (avgVol > 0 && latest.volume >= VOLUME_SPIKE_RATIO * avgVol) {
-      details.volume_spike = true
+  // Volume spike — check last 3 candles against 20-candle average
+  const volBaseline = candles.slice(-23, -3)
+  if (volBaseline.length >= 10) {
+    const avgVol = volBaseline.reduce((sum, c) => sum + c.volume, 0) / volBaseline.length
+    if (avgVol > 0) {
+      for (const candle of checkWindow) {
+        if (candle.volume >= VOLUME_SPIKE_RATIO * avgVol) {
+          details.volume_spike = true
+          break
+        }
+      }
     }
   }
 
