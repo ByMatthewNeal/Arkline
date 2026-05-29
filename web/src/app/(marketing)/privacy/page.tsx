@@ -47,7 +47,7 @@ export default function PrivacyPolicyPage() {
             <p className="mt-4"><strong className="text-ark-text">Information from third parties</strong></p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li><strong className="text-ark-text">Payment information.</strong> We use Stripe to process payments. Stripe collects your payment details (card number, billing address) directly. We do not receive or store your full card number. We receive only your Stripe customer ID and your subscription status (active, past due, canceled, trialing). For more information, see Stripe&apos;s Privacy Policy at stripe.com/privacy.</li>
-              <li><strong className="text-ark-text">AI conversation data.</strong> When you use our AI Briefings or AI Chat features, your queries and contextual information (such as your portfolio composition for personalized briefings) are sent to Anthropic for processing through their Claude API. Anthropic&apos;s data handling is governed by their Commercial Terms and Privacy Policy at anthropic.com/legal.</li>
+              <li><strong className="text-ark-text">AI conversation data.</strong> When you use our AI Briefings feature, your queries and contextual information (such as your portfolio composition for personalized briefings) are sent to Anthropic for processing through their Claude API. Anthropic&apos;s data handling is governed by their Commercial Terms and Privacy Policy at anthropic.com/legal.</li>
             </ul>
 
             <p className="mt-4"><strong className="text-ark-text">Information we do NOT collect</strong></p>

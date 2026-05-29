@@ -68,7 +68,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-ark-text">4. AI-Generated Content</h2>
             <p className="mt-2">
-              The Service includes features that generate content using artificial intelligence (&quot;AI Content&quot;), including AI Briefings and AI Chat. AI Content is produced by third-party language models (currently Anthropic&apos;s Claude) based on prompts and data we send to them.
+              The Service includes features that generate content using artificial intelligence (&quot;AI Content&quot;), including AI Briefings. AI Content is produced by third-party language models (currently Anthropic&apos;s Claude) based on prompts and data we send to them.
             </p>
             <p className="mt-2">You acknowledge:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
