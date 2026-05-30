@@ -37,6 +37,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.arkline.io' }],
+        destination: 'https://arkline.io/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

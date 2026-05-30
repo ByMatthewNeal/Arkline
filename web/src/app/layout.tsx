@@ -19,9 +19,13 @@ const urbanist = Urbanist({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://arkline.io'),
   title: 'Arkline — Market Intelligence, Simplified',
   description:
     'Arkline combines multi-factor risk scoring, macro intelligence, and AI-generated briefings into one platform. Track crypto & stocks, quantify risk, and invest with clarity.',
+  alternates: {
+    canonical: '/',
+  },
   icons: {
     icon: [
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -35,6 +39,7 @@ export const metadata: Metadata = {
       'Multi-factor risk scoring, macro dashboard, and AI briefings — all in one platform. Start free.',
     type: 'website',
     siteName: 'Arkline',
+    url: 'https://arkline.io',
     images: [{ url: '/og-image.png', width: 1200, height: 630 }],
   },
   twitter: {
@@ -48,6 +53,54 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://arkline.io/#organization',
+      name: 'Arkline Technologies LLC',
+      url: 'https://arkline.io',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://arkline.io/icon-512.png',
+      },
+      sameAs: [
+        'https://x.com/Arklineio',
+        'https://www.instagram.com/arklineio/',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        email: 'support@arkline.io',
+        contactType: 'customer support',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://arkline.io/#website',
+      url: 'https://arkline.io',
+      name: 'Arkline',
+      publisher: { '@id': 'https://arkline.io/#organization' },
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': 'https://arkline.io/#app',
+      name: 'Arkline',
+      operatingSystem: 'iOS',
+      applicationCategory: 'FinanceApplication',
+      description:
+        'Market intelligence platform combining multi-factor risk scoring, macro dashboard, AI briefings, and positioning signals for crypto and traditional markets.',
+      offers: {
+        '@type': 'Offer',
+        price: '39.99',
+        priceCurrency: 'USD',
+        priceValidUntil: '2027-12-31',
+      },
+      publisher: { '@id': 'https://arkline.io/#organization' },
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,6 +109,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${urbanist.variable}`} suppressHydrationWarning>
       <body className="antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <MetaPixel />
         <PixelPageViewTracker />
         <ContentProtection />

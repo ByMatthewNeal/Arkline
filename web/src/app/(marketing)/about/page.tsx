@@ -7,6 +7,7 @@ import { FadeIn } from '@/components/marketing/fade-in';
 export const metadata = {
   title: 'About ArkLine — Built by Matt Neal',
   description: 'Why I\'m building ArkLine, and how to reach me.',
+  alternates: { canonical: '/about' },
   robots: { index: true, follow: true },
 };
 
