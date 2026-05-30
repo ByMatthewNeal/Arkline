@@ -279,7 +279,9 @@ function applyDefensive(base: Record<string, number>, defensivePct: number, gold
 /**
  * Returns top N bullish alts using dual confirmation:
  * Asset must be bullish on BOTH its BTC pair AND USD pair to qualify.
- * This filters out alts that outperform BTC but are still falling in dollar terms.
+ * Softened threshold: if one pair is strongly bullish (≥75), the other
+ * only needs to be near-bullish (≥65) — prevents missing alts that are
+ * 1 point below the 70 cutoff on one side.
  */
 function getTopBullishAlts(
   altBtcSignals: Record<string, Signal>,
@@ -287,18 +289,29 @@ function getTopBullishAlts(
   n = 3,
 ): Array<[string, number]> {
   const candidates: Array<[string, number]> = []
-  for (const [pair, sig] of Object.entries(altBtcSignals)) {
-    if (sig.signal === "bullish") {
-      const alt = pair.split("/")[0]
-      if (["BTC", "ETH", "SOL"].includes(alt)) continue
+  const STRONG_THRESHOLD = 75
+  const NEAR_BULLISH_THRESHOLD = 65
 
-      // Dual confirmation: USD pair must also be bullish
-      const usdSignal = cryptoSignals[alt]
-      if (usdSignal?.signal === "bullish") {
-        // Average the trend scores from both pairs for a stronger conviction ranking
-        const avgScore = (sig.trend_score + (usdSignal.trend_score ?? 0)) / 2
-        candidates.push([alt, avgScore])
-      }
+  for (const [pair, sig] of Object.entries(altBtcSignals)) {
+    const alt = pair.split("/")[0]
+    if (["BTC", "ETH", "SOL"].includes(alt)) continue
+
+    const usdSignal = cryptoSignals[alt]
+    if (!usdSignal) continue
+
+    const btcScore = sig.trend_score ?? 0
+    const usdScore = usdSignal.trend_score ?? 0
+
+    // Strict dual confirmation: both bullish
+    const bothBullish = sig.signal === "bullish" && usdSignal.signal === "bullish"
+
+    // Softened: one strongly bullish (≥75), other near-bullish (≥65)
+    const softened = (btcScore >= STRONG_THRESHOLD && usdScore >= NEAR_BULLISH_THRESHOLD)
+      || (usdScore >= STRONG_THRESHOLD && btcScore >= NEAR_BULLISH_THRESHOLD)
+
+    if (bothBullish || softened) {
+      const avgScore = (btcScore + usdScore) / 2
+      candidates.push([alt, avgScore])
     }
   }
   candidates.sort((a, b) => b[1] - a[1])
