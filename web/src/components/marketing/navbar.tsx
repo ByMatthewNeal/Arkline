@@ -8,6 +8,7 @@ import { EmailCapture } from '@/components/marketing/email-capture';
 
 const links = [
   { label: 'Features', href: '/features' },
+  { label: 'Methodology', href: '/methodology' },
   { label: 'Pricing', href: '/pricing' },
 ];
 

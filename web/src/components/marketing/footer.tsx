@@ -10,6 +10,7 @@ const footerLinks = {
     { label: 'Pricing', href: '/pricing' },
   ],
   Resources: [
+    { label: 'Methodology', href: '/methodology' },
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
   ],
