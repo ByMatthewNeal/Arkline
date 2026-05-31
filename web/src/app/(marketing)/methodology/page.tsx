@@ -1,13 +1,5 @@
 import type { Metadata } from 'next';
-import {
-  TrendingUp,
-  Activity,
-  BarChart3,
-  Shield,
-  ArrowRight,
-  Target,
-  Layers,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { FadeIn } from '@/components/marketing/fade-in';
 import { EmailCapture } from '@/components/marketing/email-capture';
 
@@ -68,14 +60,6 @@ function Section({ children, className = '' }: { children: React.ReactNode; clas
   );
 }
 
-/* ── Icon badge ── */
-function IconBadge({ icon: Icon, color = 'text-ark-primary' }: { icon: React.ElementType; color?: string }) {
-  return (
-    <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-ark-fill-secondary ${color}`}>
-      <Icon className="h-5 w-5" />
-    </div>
-  );
-}
 
 /* ── Page ── */
 export default function MethodologyPage() {
@@ -111,12 +95,9 @@ export default function MethodologyPage() {
       {/* ── 1. BTC Risk Score ── */}
       <Section>
         <FadeIn>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={TrendingUp} />
-            <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
-              BTC Risk Score
-            </h2>
-          </div>
+          <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
+            BTC Risk Score
+          </h2>
 
           <p className="mt-4 text-ark-text-secondary leading-relaxed">
             The BTC Risk Score measures where Bitcoin&apos;s current price sits relative to its long-term
@@ -175,12 +156,9 @@ export default function MethodologyPage() {
       {/* ── 2. Positioning Signals (QPS) ── */}
       <Section>
         <FadeIn>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={Activity} color="text-emerald-500" />
-            <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
-              Daily Positioning Signals
-            </h2>
-          </div>
+          <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
+            Daily Positioning Signals
+          </h2>
 
           <p className="mt-4 text-ark-text-secondary leading-relaxed">
             Every day, Arkline evaluates 54+ assets across crypto, equities, commodities, and macro
@@ -223,12 +201,9 @@ export default function MethodologyPage() {
       {/* ── 3. Rotation Signal ── */}
       <Section>
         <FadeIn>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={BarChart3} color="text-violet-500" />
-            <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
-              Crypto / Equities Rotation
-            </h2>
-          </div>
+          <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
+            Crypto / Equities Rotation
+          </h2>
 
           <p className="mt-4 text-ark-text-secondary leading-relaxed">
             The Rotation Signal answers one question: should you favor crypto or equities right now?
@@ -276,12 +251,9 @@ export default function MethodologyPage() {
       {/* ── 4. Model Portfolios ── */}
       <Section>
         <FadeIn>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={Layers} color="text-amber-500" />
-            <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
-              Model Portfolios
-            </h2>
-          </div>
+          <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
+            Model Portfolios
+          </h2>
 
           <p className="mt-4 text-ark-text-secondary leading-relaxed">
             Three systematic portfolios rebalance daily based on positioning signals, BTC risk level,
@@ -326,12 +298,9 @@ export default function MethodologyPage() {
       {/* ── 5. Trade Signals ── */}
       <Section>
         <FadeIn>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={Target} color="text-cyan-500" />
-            <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
-              Fibonacci Trade Signals
-            </h2>
-          </div>
+          <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
+            Fibonacci Trade Signals
+          </h2>
 
           <p className="mt-4 text-ark-text-secondary leading-relaxed">
             Arkline continuously scans crypto assets for trade setups using automated Fibonacci analysis.
@@ -370,12 +339,9 @@ export default function MethodologyPage() {
       {/* ── 6. Macro Regime Detection ── */}
       <Section>
         <FadeIn>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={Shield} color="text-red-400" />
-            <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
-              Macro Regime Detection
-            </h2>
-          </div>
+          <h2 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text sm:text-3xl">
+            Macro Regime Detection
+          </h2>
 
           <p className="mt-4 text-ark-text-secondary leading-relaxed">
             Arkline classifies the current macro environment as Risk-On or Risk-Off by analyzing
