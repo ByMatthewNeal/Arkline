@@ -103,6 +103,7 @@ struct AssetRiskConfig {
         "hedera-hashgraph": "3688/large/hbar.png",
         "kaspa": "25751/large/kaspa-icon-exchanges.png",
         "algorand": "4380/large/download.png",
+        "aster-2": "69040/large/_ASTER.png",
     ]
 
     // MARK: - Crypto Initializer (backward compatible)
@@ -573,6 +574,17 @@ struct AssetRiskConfig {
         binanceSymbol: "ALGOUSDT"
     )
 
+    /// Aster — BNB Chain DEX / DeFi
+    static let aster = AssetRiskConfig(
+        assetId: "ASTER",
+        geckoId: "aster-2",
+        originDate: safeDate(year: 2025, month: 11, day: 19),
+        deviationBounds: (low: -0.65, high: 0.65),
+        confidenceLevel: 2,
+        displayName: "Aster",
+        binanceSymbol: "ASTERUSDT"
+    )
+
     /// Tron
     static let trx = AssetRiskConfig(
         assetId: "TRX",
@@ -693,7 +705,7 @@ struct AssetRiskConfig {
         // Payments / Legacy
         .xrp, .ltc, .zec, .bch, .etc, .trx,
         // RWA / Narratives
-        .ondo, .fil, .inj, .sei, .tia,
+        .ondo, .fil, .inj, .sei, .tia, .aster,
         // Memes
         .doge, .shib, .pepe,
     ]

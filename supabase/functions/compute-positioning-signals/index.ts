@@ -54,6 +54,8 @@ const ASSETS: AssetConfig[] = [
   { ticker: "AAVE",   displayName: "Aave",           source: "coinbase", symbol: "AAVE-USD",   category: "crypto" },
   { ticker: "TRX",    displayName: "Tron",           source: "fmp",      symbol: "TRXUSD",     category: "crypto" },
   { ticker: "AERO",   displayName: "Aerodrome",      source: "coinbase", symbol: "AERO-USD",   category: "crypto" },
+  { ticker: "NEAR",   displayName: "NEAR Protocol",  source: "coinbase", symbol: "NEAR-USD",   category: "crypto" },
+  { ticker: "ASTER",  displayName: "Aster",          source: "coinbase", symbol: "ASTER-USD",  category: "crypto" },
 
   // ── Alt/BTC Pairs (relative strength vs Bitcoin) ──
   { ticker: "ETH/BTC",    displayName: "ETH/BTC",    source: "coinbase",      symbol: "ETH-BTC",    category: "alt_btc" },
@@ -74,6 +76,8 @@ const ASSETS: AssetConfig[] = [
   { ticker: "AAVE/BTC",   displayName: "AAVE/BTC",   source: "coinbase",      symbol: "AAVE-BTC",   category: "alt_btc" },
   { ticker: "TRX/BTC",    displayName: "TRX/BTC",    source: "synthetic_btc_fmp", symbol: "TRXUSD",    category: "alt_btc" },
   { ticker: "AERO/BTC",   displayName: "AERO/BTC",   source: "synthetic_btc", symbol: "AERO-USD",   category: "alt_btc" },
+  { ticker: "NEAR/BTC",   displayName: "NEAR/BTC",   source: "synthetic_btc", symbol: "NEAR-USD",   category: "alt_btc" },
+  { ticker: "ASTER/BTC",  displayName: "ASTER/BTC",  source: "synthetic_btc", symbol: "ASTER-USD",  category: "alt_btc" },
 
   // ── Indices (FMP — ETF proxies) ──
   { ticker: "SPY",    displayName: "S&P 500",       source: "fmp", symbol: "SPY",   category: "index" },
