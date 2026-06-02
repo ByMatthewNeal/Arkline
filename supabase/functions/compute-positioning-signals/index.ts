@@ -52,7 +52,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "DOGE",   displayName: "Dogecoin",      source: "coinbase", symbol: "DOGE-USD",   category: "crypto" },
   { ticker: "BCH",    displayName: "Bitcoin Cash",   source: "coinbase", symbol: "BCH-USD",    category: "crypto" },
   { ticker: "AAVE",   displayName: "Aave",           source: "coinbase", symbol: "AAVE-USD",   category: "crypto" },
-  { ticker: "TRX",    displayName: "Tron",           source: "coinbase", symbol: "TRX-USD",    category: "crypto" },
+  { ticker: "TRX",    displayName: "Tron",           source: "fmp",      symbol: "TRXUSD",     category: "crypto" },
   { ticker: "AERO",   displayName: "Aerodrome",      source: "coinbase", symbol: "AERO-USD",   category: "crypto" },
 
   // ── Alt/BTC Pairs (relative strength vs Bitcoin) ──
@@ -72,7 +72,7 @@ const ASSETS: AssetConfig[] = [
   { ticker: "ONDO/BTC",   displayName: "ONDO/BTC",   source: "synthetic_btc", symbol: "ONDO-USD",   category: "alt_btc" },
   { ticker: "RENDER/BTC", displayName: "RENDER/BTC", source: "synthetic_btc", symbol: "RENDER-USD", category: "alt_btc" },
   { ticker: "AAVE/BTC",   displayName: "AAVE/BTC",   source: "coinbase",      symbol: "AAVE-BTC",   category: "alt_btc" },
-  { ticker: "TRX/BTC",    displayName: "TRX/BTC",    source: "synthetic_btc", symbol: "TRX-USD",    category: "alt_btc" },
+  { ticker: "TRX/BTC",    displayName: "TRX/BTC",    source: "synthetic_btc_fmp", symbol: "TRXUSD",    category: "alt_btc" },
   { ticker: "AERO/BTC",   displayName: "AERO/BTC",   source: "synthetic_btc", symbol: "AERO-USD",   category: "alt_btc" },
 
   // ── Indices (FMP — ETF proxies) ──
@@ -402,7 +402,10 @@ function deriveSignal(
   aboveSma21: boolean,
   aboveSma50: boolean
 ): "bullish" | "neutral" | "bearish" {
-  if (trendScore >= 70) {
+  // Assets without enough history for a 200 SMA can't earn the +18 bonus,
+  // so lower the bullish threshold proportionally (70 → 62)
+  const bullishThreshold = has200SMA ? 70 : 62
+  if (trendScore >= bullishThreshold) {
     // Below both 21 AND 50 SMA caps bullish → neutral
     // (short-term trend is broken — no bullish signal regardless of score)
     if (!aboveSma21 && !aboveSma50) return "neutral"
@@ -463,9 +466,11 @@ Deno.serve(async (req) => {
     try {
       // Fetch candles from appropriate source
       let candles: Candle[]
-      if (asset.source === "synthetic_btc") {
+      if (asset.source === "synthetic_btc" || asset.source === "synthetic_btc_fmp") {
         // Compute ALT/BTC ratio from ALT-USD / BTC-USD candles
-        const altCandles = await fetchCoinbaseCandles(asset.symbol, 210)
+        const altCandles = asset.source === "synthetic_btc_fmp"
+          ? await fetchFMPCandles(asset.symbol, fmpKey)
+          : await fetchCoinbaseCandles(asset.symbol, 210)
         const btcCandles = await fetchCoinbaseCandles("BTC-USD", 210)
         const minLen = Math.min(altCandles.length, btcCandles.length)
         // Align from the end (most recent) and divide
