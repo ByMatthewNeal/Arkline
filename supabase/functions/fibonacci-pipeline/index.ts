@@ -83,7 +83,7 @@ const FIB_RATIOS = [0.618, 0.786]
 
 const CONFLUENCE_TOLERANCE_PCT = 1.5
 const SIGNAL_PROXIMITY_PCT = 3.0   // price must be within 3% of zone to evaluate
-const MIN_RR_RATIO = 1.0
+const MIN_RR_RATIO = 0.8
 const STRONG_MIN_RR_RATIO = 2.0
 
 // ─── Partial TP / Tightened SL ─────────────────────────────────────────────
@@ -122,7 +122,7 @@ const TIER_SWING: TierConfig = {
   swingTimeframes: ["4h", "1d"],
   trendTimeframe: "4h",
   bounceTimeframes: ["1h", "4h"],
-  signalProximityPct: 3.0,
+  signalProximityPct: 3.5,
   confluenceTolerancePct: 1.5,
   expiryHours: 72,
 }
@@ -132,11 +132,11 @@ const TIER_SCALP: TierConfig = {
   swingTimeframes: ["1h", "4h"],
   trendTimeframe: "4h",
   bounceTimeframes: ["1h"],
-  signalProximityPct: 2.0,
+  signalProximityPct: 2.5,
   confluenceTolerancePct: 1.0,
   expiryHours: 48,
 }
-const WICK_REJECTION_RATIO = 1.2
+const WICK_REJECTION_RATIO = 1.0
 const VOLUME_SPIKE_RATIO = 1.15
 
 // EMA periods for trend filter
@@ -144,6 +144,7 @@ const EMA_FAST_PERIOD = 20
 const EMA_SLOW_PERIOD = 50
 const EMA_SLOPE_LOOKBACK = 6  // 6 x 4h = 24h for slope check
 const EMA_PULLBACK_TOLERANCE = 0.015
+const EMA_PULLBACK_PERIOD = 21  // Standard Fibonacci EMA for trend pullbacks
 
 // Delay between assets to stay safe on Binance rate limits
 const INTER_ASSET_DELAY_MS = 100
@@ -358,9 +359,11 @@ Deno.serve(async (req) => {
         const volumeNodes = computeVolumeProfile(candles["4h"])
         const enabledTiers = asset.tiers ?? ["4h", "1h"]  // Both swing + scalp tiers
 
+        // Detect swings once (shared between swing tier and EMA pullback)
+        const swingsSwing = detectAllSwings(candles, TIER_SWING.swingTimeframes)
+
         // ── Tier 1: Swing (4H/1D) ──────────────────────────────────────
         if (enabledTiers.includes("4h")) {
-          const swingsSwing = detectAllSwings(candles, TIER_SWING.swingTimeframes)
           await storeSwings(supabase, asset.ticker, swingsSwing)
           assetResults.swings = { "4h": swingsSwing["4h"]?.length ?? 0, "1d": swingsSwing["1d"]?.length ?? 0 }
 
@@ -385,6 +388,14 @@ Deno.serve(async (req) => {
           const scalpSignals = await evaluateSignals(supabase, asset.ticker, candles, zonesScalp, fibsScalp, currentPrice, volumeNodes, fearGreedIndex, btcRiskScore, swingsScalp, TIER_SCALP, adaptiveParams, btcVolRegime, openSignalCounter)
           assetResults.scalpSignals = scalpSignals
         }
+
+        // ── EMA Pullback (trending markets) ──────────────────────────
+        const emaPullbackSignals = await evaluateEMAPullbackSignals(
+          supabase, asset.ticker, candles, currentPrice,
+          volumeNodes, fearGreedIndex, btcRiskScore,
+          swingsSwing, adaptiveParams, btcVolRegime, openSignalCounter,
+        )
+        assetResults.emaPullbackSignals = emaPullbackSignals
 
         await pruneOldCandles(supabase, asset.ticker)
 
@@ -426,7 +437,7 @@ function computeMarketConditions(allResults: Record<string, any>): {
   let totalGenerated = 0
 
   for (const [, asset] of Object.entries(allResults)) {
-    for (const key of ["newSignals", "scalpSignals"]) {
+    for (const key of ["newSignals", "scalpSignals", "emaPullbackSignals"]) {
       const s = asset[key]
       if (!s) continue
       totalGenerated += s.generated ?? 0
@@ -849,6 +860,480 @@ function calcEma(candles: Candle[], period: number): number | null {
     ema = (candles[i].close - ema) * multiplier + ema
   }
   return ema
+}
+
+function calcEmaArray(candles: Candle[], period: number): number[] {
+  const result: number[] = new Array(candles.length).fill(NaN)
+  if (candles.length < period) return result
+  const multiplier = 2 / (period + 1)
+  let ema = 0
+  for (let i = 0; i < period; i++) ema += candles[i].close
+  ema /= period
+  result[period - 1] = ema
+  for (let i = period; i < candles.length; i++) {
+    ema = (candles[i].close - ema) * multiplier + ema
+    result[i] = ema
+  }
+  return result
+}
+
+// ─── EMA Pullback Detection ─────────────────────────────────────────────────
+
+interface EMAPullbackSetup {
+  ema21: number
+  ema50: number
+  emaSpreadPct: number
+  pullbackCandleIdx: number
+  bounceCandle: Candle
+  pullbackDepthPct: number
+  volumeOnBounce: boolean
+  isBuy: boolean
+}
+
+function detectEMAPullback(candles4h: Candle[], isBuy: boolean): EMAPullbackSetup | null {
+  if (candles4h.length < EMA_SLOW_PERIOD + 10) return null
+
+  const ema21Arr = calcEmaArray(candles4h, EMA_PULLBACK_PERIOD)
+  const ema50Arr = calcEmaArray(candles4h, EMA_SLOW_PERIOD)
+  const lastIdx = candles4h.length - 1
+  const ema21 = ema21Arr[lastIdx]
+  const ema50 = ema50Arr[lastIdx]
+  if (isNaN(ema21) || isNaN(ema50)) return null
+
+  // Trend check: EMAs must be stacked with > 1% spread
+  const spread = Math.abs(ema21 - ema50) / ema50 * 100
+  if (spread < 1.0) return null
+  if (isBuy && ema21 <= ema50) return null
+  if (!isBuy && ema21 >= ema50) return null
+
+  // Look at last 6 candles for a touch of EMA21
+  const searchStart = Math.max(0, lastIdx - 5)
+  let touchIdx = -1
+  for (let i = searchStart; i <= lastIdx; i++) {
+    const e21 = ema21Arr[i]
+    if (isNaN(e21)) continue
+    if (isBuy) {
+      // Price dipped to within 0.5% of EMA21 (or below it)
+      if (candles4h[i].low <= e21 * 1.005) { touchIdx = i; break }
+    } else {
+      if (candles4h[i].high >= e21 * 0.995) { touchIdx = i; break }
+    }
+  }
+  if (touchIdx < 0) return null
+
+  // After the touch, find a confirming candle (bullish close above EMA21 for longs)
+  // Must be one of the last 2 candles (fresh setup)
+  let confirmCandle: Candle | null = null
+  let confirmIdx = -1
+  for (let i = Math.max(touchIdx, lastIdx - 1); i <= lastIdx; i++) {
+    const e21 = ema21Arr[i]
+    if (isNaN(e21)) continue
+    if (isBuy && candles4h[i].close > candles4h[i].open && candles4h[i].close > e21) {
+      confirmCandle = candles4h[i]
+      confirmIdx = i
+      break
+    }
+    if (!isBuy && candles4h[i].close < candles4h[i].open && candles4h[i].close < e21) {
+      confirmCandle = candles4h[i]
+      confirmIdx = i
+      break
+    }
+  }
+  if (!confirmCandle || confirmIdx < lastIdx - 1) return null
+
+  // Pullback depth: how close price got to EMA21
+  const touchE21 = ema21Arr[touchIdx]
+  const depthPct = isBuy
+    ? (touchE21 - candles4h[touchIdx].low) / touchE21 * 100
+    : (candles4h[touchIdx].high - touchE21) / touchE21 * 100
+
+  // Volume on bounce: check if confirm candle has above-average volume
+  const volWindow = candles4h.slice(Math.max(0, confirmIdx - 20), confirmIdx)
+  const avgVol = volWindow.length > 0 ? volWindow.reduce((s, c) => s + c.volume, 0) / volWindow.length : 0
+  const volumeOnBounce = avgVol > 0 && confirmCandle.volume >= 1.15 * avgVol
+
+  return { ema21, ema50, emaSpreadPct: spread, pullbackCandleIdx: touchIdx, bounceCandle: confirmCandle, pullbackDepthPct: depthPct, volumeOnBounce, isBuy }
+}
+
+function computeEMAPullbackTargets(
+  setup: EMAPullbackSetup,
+  currentPrice: number,
+  candles4h: Candle[],
+  swings: Record<string, SwingPoint[]>,
+): { target1: number; target2: number; stopLoss: number } | null {
+  const { ema50, isBuy } = setup
+
+  // Stop loss: below EMA50 with 0.5% buffer (longs) or above (shorts)
+  const emaStop = isBuy ? ema50 * 0.995 : ema50 * 1.005
+
+  // ATR-based stop: 1.5x ATR from current price
+  let atrStop = emaStop
+  if (candles4h.length >= 14) {
+    let atrSum = 0
+    for (let i = candles4h.length - 14; i < candles4h.length; i++) {
+      const prevClose = i > 0 ? candles4h[i - 1].close : candles4h[i].open
+      const tr = Math.max(
+        candles4h[i].high - candles4h[i].low,
+        Math.abs(candles4h[i].high - prevClose),
+        Math.abs(candles4h[i].low - prevClose)
+      )
+      atrSum += tr
+    }
+    const atr = atrSum / 14
+    atrStop = isBuy ? currentPrice - 1.5 * atr : currentPrice + 1.5 * atr
+  }
+
+  // Use whichever stop is tighter (closer to entry)
+  const stopLoss = isBuy ? Math.max(emaStop, atrStop) : Math.min(emaStop, atrStop)
+  const riskDist = Math.abs(currentPrice - stopLoss)
+  if (riskDist <= 0) return null
+
+  // Target 1: recent swing high/low or 1.5R
+  let target1 = isBuy ? currentPrice + 1.5 * riskDist : currentPrice - 1.5 * riskDist
+  const swingPoints = [...(swings["4h"] ?? []), ...(swings["1d"] ?? [])]
+  if (isBuy) {
+    const highs = swingPoints.filter(s => s.type === "high" && s.price > currentPrice).sort((a, b) => a.price - b.price)
+    if (highs.length > 0 && Math.abs(highs[0].price - currentPrice) > 1.5 * riskDist) {
+      target1 = highs[0].price
+    }
+  } else {
+    const lows = swingPoints.filter(s => s.type === "low" && s.price < currentPrice).sort((a, b) => b.price - a.price)
+    if (lows.length > 0 && Math.abs(lows[0].price - currentPrice) > 1.5 * riskDist) {
+      target1 = lows[0].price
+    }
+  }
+
+  // Target 2: 2R extension
+  const target2 = isBuy ? currentPrice + 2.0 * riskDist : currentPrice - 2.0 * riskDist
+
+  return { target1, target2, stopLoss }
+}
+
+function computeEMAPullbackScore(params: {
+  setup: EMAPullbackSetup
+  candles4h: Candle[]
+  volumeConfluence: VolumeConfluenceResult
+  fvgConfluence: FVGConfluenceResult
+  rrRatio: number
+  fearGreedIndex?: number
+  btcRiskScore?: number
+}): number {
+  const { setup, rrRatio, fearGreedIndex } = params
+  let score = 0
+
+  // EMA Alignment Strength (0-30)
+  if (setup.emaSpreadPct > 3.0) score += 30
+  else if (setup.emaSpreadPct > 2.0) score += 20
+  else score += 12
+  // Slope bonus
+  const candles = params.candles4h
+  if (candles.length >= EMA_SLOW_PERIOD + 6) {
+    const emaNow = calcEma(candles, EMA_SLOW_PERIOD)
+    const emaPrev = calcEma(candles.slice(0, -6), EMA_SLOW_PERIOD)
+    if (emaNow && emaPrev) {
+      const slopePct = Math.abs(emaNow - emaPrev) / emaPrev * 100
+      if (slopePct > 1.0) score += 10
+      else if (slopePct > 0.5) score += 5
+    }
+  }
+  score = Math.min(score, 30)
+
+  // Pullback Quality (0-20)
+  if (setup.pullbackDepthPct <= 0.3) score += 10  // Clean EMA21 touch
+  else if (setup.pullbackDepthPct <= 1.0) score += 6
+  const bounceBody = Math.abs(setup.bounceCandle.close - setup.bounceCandle.open)
+  const bounceRange = setup.bounceCandle.high - setup.bounceCandle.low
+  if (bounceRange > 0 && bounceBody / bounceRange >= 0.6) score += 5  // Strong bounce candle
+  if (setup.volumeOnBounce) score += 5
+
+  // R:R (0-15) — same as fib
+  if (rrRatio >= 3.0) score += 15
+  else if (rrRatio >= 2.0) score += 10
+  else score += 5
+
+  // FVG Confluence (0-10)
+  if (params.fvgConfluence.has_fvg_confluence) {
+    score += params.fvgConfluence.score_bonus
+  }
+
+  // Macro/Context (0-15) — same as fib but always with-trend
+  let macroScore = 10
+  if (fearGreedIndex !== undefined) {
+    if (setup.isBuy && fearGreedIndex < 25) macroScore += 3  // Extreme fear, bullish
+    if (!setup.isBuy && fearGreedIndex > 75) macroScore += 3  // Extreme greed, bearish
+  }
+  score += Math.min(macroScore, 15)
+
+  // Volume Confluence (0-10)
+  if (params.volumeConfluence.has_volume_confluence) {
+    score += Math.min(params.volumeConfluence.volume_node_count * 3, 10)
+  }
+
+  return Math.max(0, Math.min(100, score))
+}
+
+async function evaluateEMAPullbackSignals(
+  supabase: SupabaseClient,
+  ticker: string,
+  candles: Record<string, Candle[]>,
+  currentPrice: number,
+  volumeNodes: VolumeNode[],
+  fearGreedIndex: number | undefined,
+  btcRiskScore: number | undefined,
+  swings: Record<string, SwingPoint[]>,
+  adaptiveParams: any,
+  btcVolRegime: VolatilityRegime,
+  openSignalCounter: { total: number },
+): Promise<{ generated: number; skipped: number; skipReasons: string[] }> {
+  const stats = { generated: 0, skipped: 0, skipReasons: [] as string[] }
+  const candles4h = candles["4h"] ?? []
+
+  // Hard gate: only in trending markets (not choppy, EMA spread > 1%)
+  const regime = detectMarketRegime(candles4h)
+  if (regime.isChoppy) {
+    stats.skipReasons.push("choppy market — EMA pullback disabled")
+    stats.skipped++
+    return stats
+  }
+
+  // 12-hour cooldown (shared with swing tier)
+  const cooldownCutoff = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+  const { data: recentSignals } = await supabase
+    .from("trade_signals")
+    .select("id")
+    .eq("asset", ticker)
+    .eq("timeframe", "4h")
+    .gte("generated_at", cooldownCutoff)
+    .limit(1)
+  if (recentSignals && recentSignals.length > 0) {
+    stats.skipReasons.push("12h cooldown (shared with swing)")
+    stats.skipped++
+    return stats
+  }
+
+  // Per-asset concurrent cap
+  const { count: assetOpenCount } = await supabase
+    .from("trade_signals")
+    .select("*", { count: "exact", head: true })
+    .eq("asset", ticker)
+    .in("status", ["active", "triggered"])
+  if ((assetOpenCount ?? 0) >= MAX_SIGNALS_PER_ASSET) {
+    stats.skipReasons.push(`Max ${MAX_SIGNALS_PER_ASSET} open signals`)
+    stats.skipped++
+    return stats
+  }
+
+  // Check both directions
+  for (const isBuy of [true, false]) {
+    const setup = detectEMAPullback(candles4h, isBuy)
+    if (!setup) continue
+
+    // Direction dedup
+    const signalDirection = isBuy ? ["buy", "strong_buy"] : ["sell", "strong_sell"]
+    const { data: existing } = await supabase
+      .from("trade_signals")
+      .select("id")
+      .eq("asset", ticker)
+      .in("status", ["active", "triggered"])
+      .in("signal_type", signalDirection)
+      .limit(1)
+    if (existing && existing.length > 0) {
+      stats.skipReasons.push(`active ${isBuy ? "long" : "short"} signal exists`)
+      stats.skipped++
+      continue
+    }
+
+    // Daily trend guard
+    const dailyCandles = candles["1d"] ?? []
+    if (!checkDailyTrendGuard(dailyCandles, isBuy)) {
+      stats.skipReasons.push(`daily trend guard blocked ${isBuy ? "long" : "short"}`)
+      stats.skipped++
+      continue
+    }
+
+    // Momentum filter
+    if (!checkMomentumFilter(dailyCandles, isBuy)) {
+      stats.skipReasons.push(`momentum filter blocked ${isBuy ? "long" : "short"}`)
+      stats.skipped++
+      continue
+    }
+
+    // Compute targets
+    const targets = computeEMAPullbackTargets(setup, currentPrice, candles4h, swings)
+    if (!targets) {
+      stats.skipReasons.push(`no valid targets for ${isBuy ? "long" : "short"}`)
+      stats.skipped++
+      continue
+    }
+
+    const riskDist = Math.abs(currentPrice - targets.stopLoss)
+    const rewardDist = Math.abs(targets.target1 - currentPrice)
+    const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
+
+    if (rrRatio < 0.8) {
+      stats.skipReasons.push(`R:R ${rrRatio.toFixed(2)} < 0.8`)
+      stats.skipped++
+      continue
+    }
+
+    // Synthetic zone around EMA21 for confluence checks
+    const syntheticZone = {
+      low: setup.ema21 * 0.995,
+      high: setup.ema21 * 1.005,
+      mid: setup.ema21,
+      strength: 1,
+      zone_type: isBuy ? "support" : "resistance",
+      tf_count: 1,
+      levels: [],
+    } as ConfluenceZone
+
+    const fvgs = detectFairValueGaps(candles)
+    const fvgConfluence = checkFVGConfluence(syntheticZone, fvgs, isBuy)
+    const volConfluence = checkVolumeConfluence(syntheticZone, volumeNodes)
+
+    const compositeScore = computeEMAPullbackScore({
+      setup, candles4h, volumeConfluence: volConfluence, fvgConfluence,
+      rrRatio, fearGreedIndex, btcRiskScore,
+    })
+
+    if (compositeScore < 50) {
+      stats.skipReasons.push(`score ${compositeScore} < 50`)
+      stats.skipped++
+      continue
+    }
+
+    const isStrong = rrRatio >= 2.0 && setup.emaSpreadPct > 2.0
+    const signalType = isBuy
+      ? (isStrong ? "strong_buy" : "buy")
+      : (isStrong ? "strong_sell" : "sell")
+
+    // Partial TP and tightened SL (same fractions as fib signals)
+    const partialTP = isBuy
+      ? currentPrice + TP_FRACTION * rewardDist
+      : currentPrice - TP_FRACTION * rewardDist
+    const tightenedSL = isBuy
+      ? currentPrice - SL_FRACTION * riskDist
+      : currentPrice + SL_FRACTION * riskDist
+
+    const macroRegime = fearGreedIndex !== undefined
+      ? (fearGreedIndex >= 70 ? "Risk-On" : fearGreedIndex <= 30 ? "Risk-Off" : "Neutral")
+      : "Unknown"
+
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
+
+    const slopeRegime = checkEMASlopeRegime(candles4h, isBuy)
+    const lowConviction = !slopeRegime.allowed
+    const compression = detectRangeCompression(candles4h)
+
+    const signalRow = {
+      asset: ticker,
+      signal_type: signalType,
+      status: "triggered",
+      timeframe: "4h",
+      entry_zone_low: setup.ema21 * 0.995,
+      entry_zone_high: setup.ema21 * 1.005,
+      entry_price_mid: currentPrice,
+      confluence_zone_id: null,
+      target_1: partialTP,
+      target_2: targets.target2,
+      stop_loss: tightenedSL,
+      risk_reward_ratio: Math.round(rrRatio * 100) / 100,
+      risk_1r: SL_FRACTION * riskDist,
+      best_price: currentPrice,
+      runner_stop: tightenedSL,
+      ema_trend_aligned: true,
+      bounce_confirmed: true,
+      confirmation_details: {
+        strategy: "ema_pullback",
+        ema21_touch: true,
+        bounce_candle: true,
+        volume_spike: setup.volumeOnBounce,
+        ema_spread_pct: Math.round(setup.emaSpreadPct * 100) / 100,
+        pullback_depth_pct: Math.round(setup.pullbackDepthPct * 100) / 100,
+        fvg_confluence: fvgConfluence.has_fvg_confluence,
+        fvg_timeframe: fvgConfluence.best_timeframe,
+        fvg_type: fvgConfluence.fvg_type,
+        fvg_gap_size_pct: fvgConfluence.gap_size_pct,
+      },
+      counter_trend: false,
+      composite_score: compositeScore,
+      volume_confluence: volConfluence,
+      fear_greed_index: fearGreedIndex ?? null,
+      btc_risk_score: btcRiskScore ?? null,
+      macro_regime: macroRegime,
+      chart_pattern: null,
+      range_compressed: compression.isCompressed,
+      compression_score: compression.isCompressed ? Math.round(compression.rangeRatio * 100) : null,
+      low_conviction: lowConviction,
+      volatility_regime: btcVolRegime.regime,
+      suggested_risk_pct: lowConviction
+        ? Math.min(1.0, btcVolRegime.suggestedRiskPct)
+        : btcVolRegime.suggestedRiskPct,
+      triggered_at: new Date().toISOString(),
+      expires_at: expiresAt,
+    }
+
+    // Global cap
+    if (openSignalCounter.total >= MAX_SIGNALS_TOTAL) {
+      stats.skipReasons.push(`Global cap ${MAX_SIGNALS_TOTAL} open signals`)
+      stats.skipped++
+      continue
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("trade_signals")
+      .insert(signalRow)
+      .select("id")
+      .single()
+
+    if (error) {
+      console.error(`[${ticker}] EMA pullback: DB insert error: ${error.message}`)
+      stats.skipReasons.push(`DB error: ${error.message}`)
+      stats.skipped++
+      continue
+    }
+    if (inserted) {
+      openSignalCounter.total++
+      stats.generated++
+      console.log(`[${ticker}] ✅ EMA Pullback ${isBuy ? "LONG" : "SHORT"} | score=${compositeScore} | R:R=${rrRatio.toFixed(2)} | spread=${setup.emaSpreadPct.toFixed(1)}%`)
+
+      // Push notification
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+      const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+      try {
+        const emoji = isBuy ? "📈" : "📉"
+        const direction = isBuy ? "Long" : "Short"
+        const priceStr = currentPrice > 1000 ? `$${Math.round(currentPrice).toLocaleString()}` : currentPrice > 1 ? `$${currentPrice.toFixed(2)}` : `$${currentPrice.toFixed(4)}`
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+        fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}`, "x-cron-secret": cronSecret },
+          body: JSON.stringify({
+            broadcast_id: inserted.id,
+            title: `${emoji} Pullback: ${ticker} ${direction} Signal`,
+            body: `${isStrong ? "Strong " : ""}${direction} at ${priceStr} | R:R ${rrRatio.toFixed(1)} | EMA21 pullback`,
+            event_type: "signal_new",
+            target_audience: { type: "all" },
+          }),
+        }).catch(() => {})
+      } catch {}
+
+      // Generate briefing
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+        const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+        await fetch(`${supabaseUrl}/functions/v1/generate-signal-briefing`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
+          body: JSON.stringify({ signal_id: inserted.id }),
+        })
+      } catch (err) {
+        console.error(`[briefing] Error for ${ticker} EMA pullback: ${err}`)
+      }
+    }
+  }
+
+  return stats
 }
 
 function checkTrendAlignment(candles4h: Candle[], isBuy: boolean): boolean {
@@ -1498,7 +1983,7 @@ function checkBounce(
   zoneHigh: number,
   isBuy: boolean,
 ): { confirmed: boolean; details: Record<string, boolean> } {
-  const details = { wick_rejection: false, volume_spike: false, consecutive_closes: false }
+  const details: Record<string, boolean> = { wick_rejection: false, volume_spike: false, consecutive_closes: false, momentum_breakout: false }
 
   if (candles.length < 3) return { confirmed: false, details }
 
@@ -1566,7 +2051,23 @@ function checkBounce(
     }
   }
 
-  return { confirmed: details.wick_rejection || details.volume_spike || details.consecutive_closes, details }
+  // Momentum breakout: in trending markets, price pushes through zones with strong closes
+  // rather than wicking off them. Accept a strong directional close through the zone.
+  let momentum_breakout = false
+  const latestCandle = candles[candles.length - 1]
+  const body = Math.abs(latestCandle.close - latestCandle.open)
+  const range = latestCandle.high - latestCandle.low
+  const bodyRatio = range > 0 ? body / range : 0
+  if (bodyRatio >= 0.6) { // Strong directional candle (body ≥ 60% of range)
+    if (isBuy && latestCandle.close > latestCandle.open && latestCandle.close > zoneHigh) {
+      momentum_breakout = true
+    } else if (!isBuy && latestCandle.close < latestCandle.open && latestCandle.close < zoneLow) {
+      momentum_breakout = true
+    }
+  }
+  details.momentum_breakout = momentum_breakout
+
+  return { confirmed: details.wick_rejection || details.volume_spike || details.consecutive_closes || details.momentum_breakout, details }
 }
 
 // ─── Targets & Stop Loss ─────────────────────────────────────────────────────
@@ -2266,7 +2767,7 @@ async function evaluateSignals(
     }
 
     // Bounce confirmation — check preferred timeframes in order
-    let bounce = { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false } }
+    let bounce = { confirmed: false, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false, momentum_breakout: false } as Record<string, boolean> }
     for (const btf of tier.bounceTimeframes) {
       const btfCandles = candles[btf] ?? []
       if (btfCandles.length >= 3) {
@@ -2277,6 +2778,12 @@ async function evaluateSignals(
         }
       }
     }
+    // Trend override: when EMA trend is clearly aligned, the trend IS the confirmation.
+    // In trending markets, price doesn't wick off levels — it holds and continues.
+    if (!bounce.confirmed && emaTrendAligned) {
+      bounce = { confirmed: true, details: { wick_rejection: false, volume_spike: false, consecutive_closes: false, momentum_breakout: false, trend_override: true } }
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): trend override — EMA aligned [${tier.tierName}]`)
+    }
     if (!bounce.confirmed) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): no bounce [${tier.tierName}]`)
       stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: no bounce confirmation [${tier.tierName}]`)
@@ -2285,10 +2792,14 @@ async function evaluateSignals(
     }
 
     // In choppy markets, require stronger bounce confirmation (2 of 3 signals)
+    // Trend override and momentum breakout count as confirmation
     if (regime.isChoppy) {
       const bounceCount = (bounce.details.wick_rejection ? 1 : 0)
         + (bounce.details.volume_spike ? 1 : 0)
         + (bounce.details.consecutive_closes ? 1 : 0)
+        + (bounce.details.momentum_breakout ? 1 : 0)
+        + (bounce.details.trend_override ? 1 : 0)
+        + (bounce.details.proximity_only ? 1 : 0)
       if (bounceCount < choppyBounceThreshold) {
         console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): choppy market — weak bounce (${bounceCount}/3) [${tier.tierName}]`)
         stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: choppy market, weak bounce (${bounceCount}/${choppyBounceThreshold} needed)`)
@@ -2373,9 +2884,8 @@ async function evaluateSignals(
       compositeScore = Math.max(0, compositeScore - 5)
     }
 
-    // Only publish signals meeting adaptive score threshold (default 60 = B-grade)
-    // Score threshold — adaptive can raise but not above 65
-    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 60, 65)
+    // Only publish signals meeting score threshold (default 55, adaptive can lower but not raise above 55)
+    const adaptiveScore = Math.min(adaptiveParams?.min_score ?? 55, 55)
     const effectiveMinScore = adaptiveScore
     if (compositeScore < effectiveMinScore) {
       console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): score ${compositeScore} < ${effectiveMinScore}`)
