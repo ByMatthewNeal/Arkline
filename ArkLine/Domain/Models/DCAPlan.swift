@@ -56,12 +56,12 @@ struct DCAPlan: Codable, Identifiable, Hashable {
 
     // MARK: - Computed Properties (price-independent)
 
-    /// Total cost basis including any pre-DCA position
+    /// Total cost basis including any pre-DCA position.
+    /// `totalInvested` is seeded at creation with the pre-DCA position value
+    /// (`startingQty * preDcaAvgCost`) and then accumulates every DCA buy, so it
+    /// already represents the full cost basis — do not add the pre-DCA value again.
     var totalCostBasis: Double {
-        if let preCost = preDcaAvgCost, startingQty > 0 {
-            return preCost * startingQty + totalInvested
-        }
-        return totalInvested
+        totalInvested
     }
 
     /// Blended average cost per unit across pre-DCA and DCA purchases

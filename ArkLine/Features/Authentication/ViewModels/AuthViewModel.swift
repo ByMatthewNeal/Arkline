@@ -248,7 +248,9 @@ class AuthViewModel {
            cached.id != newUserId {
             UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.currentUser)
             try? PasscodeManager.shared.clearPasscode()
-            UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.biometricEnabled)
+            // Biometric preference lives in the Keychain, not UserDefaults — clear it
+            // at its actual source so the new account doesn't inherit it.
+            PasscodeManager.shared.isBiometricEnabled = false
             logInfo("Cleared cached state from previous user before switching accounts", category: .auth)
         }
     }

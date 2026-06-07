@@ -6,7 +6,13 @@ final class APICache {
     static let shared = APICache()
 
     // MARK: - Cache Entry
-    private struct CacheEntry<T> {
+    /// Non-generic façade so expiry can be checked without knowing `T`.
+    /// (`CacheEntry<Concrete> as? CacheEntry<Any>` always fails — generics are invariant.)
+    private protocol ExpirableEntry {
+        var isExpired: Bool { get }
+    }
+
+    private struct CacheEntry<T>: ExpirableEntry {
         let value: T
         let timestamp: Date
         let ttl: TimeInterval
@@ -53,7 +59,7 @@ final class APICache {
                 // Remove expired entries first
                 var expiredKeys: [String] = []
                 for (k, v) in self.cache {
-                    if let entry = v as? CacheEntry<Any>, entry.isExpired {
+                    if let entry = v as? ExpirableEntry, entry.isExpired {
                         expiredKeys.append(k)
                     }
                 }
@@ -91,10 +97,10 @@ final class APICache {
     func clearExpired() {
         queue.async(flags: .barrier) {
             self.cache = self.cache.filter { _, value in
-                if let entry = value as? CacheEntry<Any> {
+                if let entry = value as? ExpirableEntry {
                     return !entry.isExpired
                 }
-                return false
+                return true
             }
         }
     }

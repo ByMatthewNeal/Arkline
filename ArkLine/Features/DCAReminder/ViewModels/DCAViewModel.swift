@@ -290,9 +290,14 @@ final class DCAViewModel {
                 }
             }
 
-            // Re-schedule notification for the next DCA date
+            // Re-schedule the next DCA notification — unless the plan is now
+            // complete, in which case cancel any pending reminder instead.
             if let index = reminders.firstIndex(where: { $0.id == reminder.id }) {
-                await DCANotificationScheduler.schedule(reminders[index])
+                if reminders[index].isCompleted {
+                    DCANotificationScheduler.cancel(reminders[index].id)
+                } else {
+                    await DCANotificationScheduler.schedule(reminders[index])
+                }
             }
         } catch {
             await MainActor.run {

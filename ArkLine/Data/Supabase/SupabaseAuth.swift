@@ -93,12 +93,14 @@ final class SupabaseAuthManager {
 
         do {
             let response = try await auth.verifyOTP(email: email, token: token, type: .email)
-            self.currentSession = response.session
-            self.currentAuthUser = response.user
-            self.isAuthenticated = true
+            // Validate the session before mutating auth state, so a nil-session
+            // response can't leave the manager "authenticated" with no token.
             guard let session = response.session else {
                 throw AppError.unknown(message: "No session returned")
             }
+            self.currentSession = session
+            self.currentAuthUser = response.user
+            self.isAuthenticated = true
             return session
         } catch let error as AuthError {
             throw mapAuthError(error)

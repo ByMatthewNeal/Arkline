@@ -190,9 +190,9 @@ final class YahooFinanceService {
         return VIXData(
             date: dateString,
             value: meta.regularMarketPrice,
-            open: quote.open?.last ?? meta.regularMarketPrice,
-            high: quote.high?.last ?? meta.regularMarketPrice,
-            low: quote.low?.last ?? meta.regularMarketPrice,
+            open: (quote.open?.last ?? nil) ?? meta.regularMarketPrice,
+            high: (quote.high?.last ?? nil) ?? meta.regularMarketPrice,
+            low: (quote.low?.last ?? nil) ?? meta.regularMarketPrice,
             close: meta.regularMarketPrice
         )
     }
@@ -253,9 +253,9 @@ final class YahooFinanceService {
         return DXYData(
             date: dateString,
             value: meta.regularMarketPrice,
-            open: quote.open?.last ?? meta.regularMarketPrice,
-            high: quote.high?.last ?? meta.regularMarketPrice,
-            low: quote.low?.last ?? meta.regularMarketPrice,
+            open: (quote.open?.last ?? nil) ?? meta.regularMarketPrice,
+            high: (quote.high?.last ?? nil) ?? meta.regularMarketPrice,
+            low: (quote.low?.last ?? nil) ?? meta.regularMarketPrice,
             close: meta.regularMarketPrice,
             previousClose: meta.chartPreviousClose ?? meta.previousClose
         )
@@ -322,9 +322,9 @@ final class YahooFinanceService {
         return CrudeOilData(
             date: dateString,
             value: meta.regularMarketPrice,
-            open: quote.open?.last ?? meta.regularMarketPrice,
-            high: quote.high?.last ?? meta.regularMarketPrice,
-            low: quote.low?.last ?? meta.regularMarketPrice,
+            open: (quote.open?.last ?? nil) ?? meta.regularMarketPrice,
+            high: (quote.high?.last ?? nil) ?? meta.regularMarketPrice,
+            low: (quote.low?.last ?? nil) ?? meta.regularMarketPrice,
             close: meta.regularMarketPrice,
             previousClose: meta.chartPreviousClose ?? meta.previousClose
         )
@@ -391,9 +391,9 @@ final class YahooFinanceService {
         return CrudeOilData(
             date: dateString,
             value: meta.regularMarketPrice,
-            open: quote.open?.last ?? meta.regularMarketPrice,
-            high: quote.high?.last ?? meta.regularMarketPrice,
-            low: quote.low?.last ?? meta.regularMarketPrice,
+            open: (quote.open?.last ?? nil) ?? meta.regularMarketPrice,
+            high: (quote.high?.last ?? nil) ?? meta.regularMarketPrice,
+            low: (quote.low?.last ?? nil) ?? meta.regularMarketPrice,
             close: meta.regularMarketPrice,
             previousClose: meta.chartPreviousClose ?? meta.previousClose
         )
@@ -414,7 +414,7 @@ final class YahooFinanceService {
         dateFormatter.dateFormat = "yyyy-MM-dd"
 
         var history: [CrudeOilData] = []
-        var previousClose: Double = 0
+        var previousClose: Double?
 
         for (index, timestamp) in timestamps.enumerated() {
             let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
@@ -432,7 +432,7 @@ final class YahooFinanceService {
                     high: high,
                     low: low,
                     close: close,
-                    previousClose: previousClose ?? 0
+                    previousClose: previousClose
                 ))
                 previousClose = close
             }
@@ -459,9 +459,9 @@ final class YahooFinanceService {
         return GoldData(
             date: dateString,
             value: meta.regularMarketPrice,
-            open: quote.open?.last ?? meta.regularMarketPrice,
-            high: quote.high?.last ?? meta.regularMarketPrice,
-            low: quote.low?.last ?? meta.regularMarketPrice,
+            open: (quote.open?.last ?? nil) ?? meta.regularMarketPrice,
+            high: (quote.high?.last ?? nil) ?? meta.regularMarketPrice,
+            low: (quote.low?.last ?? nil) ?? meta.regularMarketPrice,
             close: meta.regularMarketPrice,
             previousClose: meta.chartPreviousClose ?? meta.previousClose
         )

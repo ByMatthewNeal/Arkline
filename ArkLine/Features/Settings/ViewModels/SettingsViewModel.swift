@@ -53,7 +53,9 @@ final class SettingsViewModel {
         }
 
         notificationsEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.notificationsEnabled)
-        biometricEnabled = UserDefaults.standard.bool(forKey: Constants.UserDefaults.biometricEnabled)
+        // Source of truth is the Keychain (written via toggleBiometric → PasscodeManager),
+        // not UserDefaults — read it back from the same place it's persisted.
+        biometricEnabled = PasscodeManager.shared.isBiometricEnabled
 
         // Load risk coins
         if let savedCoins = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) {
