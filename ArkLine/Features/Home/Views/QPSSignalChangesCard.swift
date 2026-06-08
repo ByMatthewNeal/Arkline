@@ -15,6 +15,30 @@ struct QPSSignalChangesCard: View {
         signals.filter { $0.hasChanged }
     }
 
+    /// Label showing when signals next update, in user's local time
+    private var nextUpdateLabel: String {
+        // Crypto signals compute at 00:15 UTC daily
+        let cal = Calendar.current
+        let now = Date()
+        var nextUTC = cal.date(bySettingHour: 0, minute: 15, second: 0, of: now, matchingPolicy: .nextTime, direction: .forward) ?? now
+        // If we're past today's 00:15 UTC, target tomorrow
+        let utcCal = { var c = Calendar.current; c.timeZone = TimeZone(identifier: "UTC")!; return c }()
+        let nowUTCHour = utcCal.component(.hour, from: now)
+        let nowUTCMin = utcCal.component(.minute, from: now)
+        if nowUTCHour > 0 || (nowUTCHour == 0 && nowUTCMin >= 15) {
+            // Already past today's compute — next is tomorrow 00:15 UTC
+            let tomorrow = utcCal.date(byAdding: .day, value: 1, to: now)!
+            nextUTC = utcCal.date(bySettingHour: 0, minute: 15, second: 0, of: tomorrow)!
+        } else {
+            nextUTC = utcCal.date(bySettingHour: 0, minute: 15, second: 0, of: now)!
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        let timeStr = formatter.string(from: nextUTC)
+        return "Updates daily at \(timeStr) ET"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -50,17 +74,24 @@ struct QPSSignalChangesCard: View {
                     }
                 }
 
-                NavigationLink(destination: SignalChangeHistoryView()) {
-                    HStack(spacing: 4) {
-                        Text("View History")
-                            .font(.system(size: 12, weight: .medium))
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10, weight: .semibold))
+                HStack {
+                    Text(nextUpdateLabel)
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textTertiary)
+
+                    Spacer()
+
+                    NavigationLink(destination: SignalChangeHistoryView()) {
+                        HStack(spacing: 4) {
+                            Text("View History")
+                                .font(.system(size: 12, weight: .medium))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(AppColors.accent)
                     }
-                    .foregroundColor(AppColors.accent)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
         .sheet(isPresented: $showShareSheet) {

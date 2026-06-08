@@ -105,10 +105,8 @@ class ModelPortfolioViewModel {
         do {
             async let navTask = service.fetchNavHistory(portfolioId: portfolio.id, limit: 3000)
             async let tradesTask = service.fetchTrades(portfolioId: portfolio.id, limit: 1000)
-            async let benchmarkTask = service.fetchBenchmarkNav(limit: 3000)
-            async let riskTask = service.fetchRiskHistory(asset: "BTC", limit: 3000)
 
-            let (nav, trades, benchmark, risk) = try await (navTask, tradesTask, benchmarkTask, riskTask)
+            let (nav, trades) = try await (navTask, tradesTask)
 
             if portfolio.isCore {
                 coreNav = nav
@@ -120,11 +118,24 @@ class ModelPortfolioViewModel {
                 alphaNav = nav
                 alphaTrades = trades
             }
-            benchmarkNav = benchmark
-            riskHistory = risk
         } catch {
             errorMessage = error.localizedDescription
         }
+
+        // Benchmark and risk history are supplemental — fetch independently
+        // so failures don't prevent nav/trades from loading
+        async let benchmarkTask: Void = {
+            if let benchmark = try? await service.fetchBenchmarkNav(limit: 3000) {
+                benchmarkNav = benchmark
+            }
+        }()
+        async let riskTask: Void = {
+            if let risk = try? await service.fetchRiskHistory(asset: "BTC", limit: 3000) {
+                riskHistory = risk
+            }
+        }()
+        _ = await (benchmarkTask, riskTask)
+
         isLoadingDetail = false
     }
 

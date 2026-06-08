@@ -7,9 +7,9 @@ import Foundation
 enum PinnedURLSession {
     static let shared: URLSession = {
         let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
-        configuration.waitsForConnectivity = true
+        configuration.timeoutIntervalForRequest = 15
+        configuration.timeoutIntervalForResource = 30
+        configuration.waitsForConnectivity = false
         return URLSession(
             configuration: configuration,
             delegate: SSLPinningDelegate(),

@@ -8,14 +8,20 @@ struct FearGreedIndex: Codable, Equatable {
     let previousClose: Int?
     let weekAgo: Int?
     let monthAgo: Int?
+    var btcPrice: Double?
+    var sp500Price: Double?
+    var nasdaqPrice: Double?
 
-    init(value: Int, classification: String, timestamp: Date, previousClose: Int? = nil, weekAgo: Int? = nil, monthAgo: Int? = nil) {
+    init(value: Int, classification: String, timestamp: Date, previousClose: Int? = nil, weekAgo: Int? = nil, monthAgo: Int? = nil, btcPrice: Double? = nil, sp500Price: Double? = nil, nasdaqPrice: Double? = nil) {
         self.value = value
         self.classification = classification
         self.timestamp = timestamp
         self.previousClose = previousClose
         self.weekAgo = weekAgo
         self.monthAgo = monthAgo
+        self.btcPrice = btcPrice
+        self.sp500Price = sp500Price
+        self.nasdaqPrice = nasdaqPrice
     }
 
     var level: FearGreedLevel {

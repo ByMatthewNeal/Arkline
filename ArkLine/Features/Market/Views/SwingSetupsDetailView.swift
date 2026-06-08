@@ -9,7 +9,7 @@ struct SwingSetupsDetailView: View {
     @State private var selectedConfidence: SignalConfidence? = nil
     @State private var selectedTimeframe: TimeframeFilter = .all
     @State private var sortByScore = false
-    @State private var showActiveAssetsOnly = true
+    @State private var showActiveAssetsOnly = false
     @State private var showGuide = false
     @State private var signalToShare: TradeSignal? = nil
     @State private var performancePeriod: PerformancePeriod = .all

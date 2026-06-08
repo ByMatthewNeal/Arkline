@@ -251,6 +251,22 @@ struct FearGreedDetailView: View {
                                 .background(pointColor.opacity(0.12))
                                 .cornerRadius(6)
                         }
+
+                        // Market prices at time of reading
+                        if point.btcPrice != nil || point.sp500Price != nil || point.nasdaqPrice != nil {
+                            HStack(spacing: 12) {
+                                if let btc = point.btcPrice {
+                                    fgPriceLabel("BTC", price: btc)
+                                }
+                                if let sp = point.sp500Price {
+                                    fgPriceLabel("S&P", price: sp)
+                                }
+                                if let nq = point.nasdaqPrice {
+                                    fgPriceLabel("NDX", price: nq)
+                                }
+                            }
+                            .padding(.top, 2)
+                        }
                     }
                     .transition(.opacity)
                 } else {
@@ -447,9 +463,81 @@ struct FearGreedDetailView: View {
         defer { isLoading = false }
         do {
             let service = ServiceContainer.shared.sentimentService
-            history = try await service.fetchFearGreedHistory(days: 90)
+            var fgHistory = try await service.fetchFearGreedHistory(days: 90)
+
+            // Enrich with BTC / S&P 500 / Nasdaq prices from positioning signals
+            await enrichWithPrices(&fgHistory)
+
+            history = fgHistory
         } catch {
             logWarning("Failed to load F&G history: \(error.localizedDescription)", category: .network)
+        }
+    }
+
+    private func enrichWithPrices(_ history: inout [FearGreedIndex]) async {
+        guard SupabaseManager.shared.isConfigured else { return }
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+
+        do {
+            // Fetch 90 days of BTC, SPY, QQQ prices from positioning signals
+            struct PriceRow: Codable {
+                let asset: String
+                let signalDate: String
+                let price: Double
+
+                enum CodingKeys: String, CodingKey {
+                    case asset
+                    case signalDate = "signal_date"
+                    case price
+                }
+            }
+
+            let rows: [PriceRow] = try await SupabaseManager.shared.client
+                .from("positioning_signals")
+                .select("asset, signal_date, price")
+                .in("asset", values: ["BTC", "SPY", "QQQ"])
+                .order("signal_date", ascending: false)
+                .limit(270) // 3 assets × 90 days
+                .execute()
+                .value
+
+            // Build date → price lookups
+            var btcPrices: [String: Double] = [:]
+            var spyPrices: [String: Double] = [:]
+            var qqqPrices: [String: Double] = [:]
+            for row in rows {
+                switch row.asset {
+                case "BTC": btcPrices[row.signalDate] = row.price
+                case "SPY": spyPrices[row.signalDate] = row.price
+                case "QQQ": qqqPrices[row.signalDate] = row.price
+                default: break
+                }
+            }
+
+            // Merge prices into F&G history by matching dates
+            for i in history.indices {
+                let dateStr = dateFormatter.string(from: history[i].timestamp)
+                history[i].btcPrice = btcPrices[dateStr]
+                history[i].sp500Price = spyPrices[dateStr]
+                history[i].nasdaqPrice = qqqPrices[dateStr]
+            }
+        } catch {
+            logWarning("Failed to enrich F&G with prices: \(error.localizedDescription)", category: .network)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func fgPriceLabel(_ symbol: String, price: Double) -> some View {
+        HStack(spacing: 3) {
+            Text(symbol)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+            Text(price >= 1000 ? "$\(Int(price).formatted())" : String(format: "$%.2f", price))
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
         }
     }
 

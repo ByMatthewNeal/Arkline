@@ -67,7 +67,9 @@ struct ArkLineApp: App {
             if newPhase == .background {
                 // Background = definitely left the app, show immediately
                 privacyOverlayTask?.cancel()
-                showPrivacyOverlay = true
+                withAnimation(.easeIn(duration: 0.15)) {
+                    showPrivacyOverlay = true
+                }
                 Task { await AnalyticsService.shared.flush() }
             } else if newPhase == .inactive {
                 // Inactive = might be notification center, control center, or app switcher
@@ -76,11 +78,18 @@ struct ArkLineApp: App {
                 privacyOverlayTask = Task {
                     try? await Task.sleep(for: .milliseconds(400))
                     guard !Task.isCancelled else { return }
-                    showPrivacyOverlay = true
+                    withAnimation(.easeIn(duration: 0.15)) {
+                        showPrivacyOverlay = true
+                    }
                 }
             } else if newPhase == .active {
+                // Cancel any pending show task and hide immediately —
+                // never delay dismissal or the overlay can get stuck
                 privacyOverlayTask?.cancel()
-                showPrivacyOverlay = false
+                privacyOverlayTask = nil
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showPrivacyOverlay = false
+                }
                 appState.refreshUserProfileCancellable()
                 Task { await IncrementalPriceStore.shared.resetCooldowns() }
                 BroadcastNotificationService.shared.clearBadge()
@@ -121,8 +130,9 @@ struct ArkLineApp: App {
             }
         }
 
-        // Sync daily briefing notifications
-        Task { await BriefingNotificationScheduler.sync() }
+        // Cancel any legacy local briefing notifications —
+        // server-side push handles this now
+        BriefingNotificationScheduler.cancelAll()
     }
 
     private func handleDeepLink(_ url: URL) async {

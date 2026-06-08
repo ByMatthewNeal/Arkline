@@ -6,6 +6,7 @@ struct ModelPortfolioDetailView: View {
     let portfolio: ModelPortfolio
     @Bindable var viewModel: ModelPortfolioViewModel
     @State private var showUnfollowConfirmation = false
+    @State private var hasLoadedDetail = false
     @State private var qpsSignals: [DailyPositioningSignal] = []
     private let qpsService = PositioningSignalService()
 
@@ -89,6 +90,7 @@ struct ModelPortfolioDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
         #endif
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
@@ -119,6 +121,7 @@ struct ModelPortfolioDetailView: View {
         }
         .task {
             await viewModel.loadDetail(for: portfolio)
+            hasLoadedDetail = true
             if let signals = try? await qpsService.fetchLatestSignals() {
                 qpsSignals = signals
             }
@@ -300,7 +303,7 @@ struct ModelPortfolioDetailView: View {
                 }
             }
 
-            if viewModel.isLoadingDetail {
+            if viewModel.isLoadingDetail || !hasLoadedDetail {
                 ProgressView()
                     .frame(height: 200)
                     .frame(maxWidth: .infinity)

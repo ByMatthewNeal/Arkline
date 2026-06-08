@@ -262,11 +262,9 @@ struct HomeView: View {
                 let staleness = viewModel.lastRefreshed.map { Date().timeIntervalSince($0) }
 
                 if let staleness, staleness > 300, !viewModel.isLoading {
-                    // Clear briefing cache if data is more than 30 min old
-                    // so we fetch the latest briefing (cron generates at 10am and 5pm ET)
-                    if staleness > 1800 {
-                        MarketSummaryService.shared.clearLocalCache()
-                    }
+                    // Always clear briefing cache on foreground so we pick up
+                    // new briefings (day/slot changes) without waiting
+                    MarketSummaryService.shared.clearLocalCache()
                     Task {
                         await viewModel.refresh(forceRefresh: true)
                         await viewModel.loadPortfolios(forceRefresh: true)

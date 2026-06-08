@@ -85,6 +85,26 @@ struct QPSGridSection: View {
         return "Broad weakness across assets. Prioritize capital preservation."
     }
 
+    /// Label showing when signals next update, in ET
+    private var nextUpdateLabel: String {
+        let now = Date()
+        let utcCal = { var c = Calendar.current; c.timeZone = TimeZone(identifier: "UTC")!; return c }()
+        let nowUTCHour = utcCal.component(.hour, from: now)
+        let nowUTCMin = utcCal.component(.minute, from: now)
+        let nextUTC: Date
+        if nowUTCHour > 0 || (nowUTCHour == 0 && nowUTCMin >= 15) {
+            let tomorrow = utcCal.date(byAdding: .day, value: 1, to: now)!
+            nextUTC = utcCal.date(bySettingHour: 0, minute: 15, second: 0, of: tomorrow)!
+        } else {
+            nextUTC = utcCal.date(bySettingHour: 0, minute: 15, second: 0, of: now)!
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        formatter.timeZone = TimeZone(identifier: "America/New_York")
+        let timeStr = formatter.string(from: nextUTC)
+        return "Updates daily at \(timeStr) ET"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
@@ -184,9 +204,14 @@ struct QPSGridSection: View {
                     }
                 }
 
-                // Tap hint
+                // Update schedule + tap hint
                 HStack {
+                    Text(nextUpdateLabel)
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textTertiary)
+
                     Spacer()
+
                     HStack(spacing: 4) {
                         Text("View all \(signals.count) assets")
                             .font(AppFonts.caption12)
