@@ -186,9 +186,9 @@ struct QPSGridSection: View {
                 // Signal counts with percentages
                 HStack(spacing: 0) {
                     signalCountWithPct(count: bullishCount, pct: bullishPct, signal: .bullish)
-                    Divider().frame(height: 32).opacity(0.15)
+                    Divider().frame(height: 44).opacity(0.15)
                     signalCountWithPct(count: neutralCount, pct: neutralPct, signal: .neutral)
-                    Divider().frame(height: 32).opacity(0.15)
+                    Divider().frame(height: 44).opacity(0.15)
                     signalCountWithPct(count: bearishCount, pct: bearishPct, signal: .bearish)
                 }
 
@@ -234,15 +234,19 @@ struct QPSGridSection: View {
     // MARK: - Signal Count
 
     private func signalCountWithPct(count: Int, pct: Double, signal: PositioningSignal) -> some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                Text("\(count)")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(signal.color)
-                Text(String(format: "%.0f%%", pct))
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(signal.color.opacity(0.7))
-            }
+        VStack(spacing: 6) {
+            Text("\(count)")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(signal.color)
+            Text(String(format: "%.0f%%", pct))
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(signal.color)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    Capsule()
+                        .fill(signal.color.opacity(0.12))
+                )
             Text(signal.label)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(AppColors.textSecondary)

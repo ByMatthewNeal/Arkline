@@ -238,6 +238,13 @@ struct HomeView: View {
                     }
                 }
             }
+            .onChange(of: appState.shouldRefreshBriefing) { _, shouldRefresh in
+                if shouldRefresh {
+                    appState.shouldRefreshBriefing = false
+                    MarketSummaryService.shared.clearLocalCache()
+                    Task { await viewModel.fetchMarketSummary() }
+                }
+            }
             .onChange(of: appState.pendingMarketDeckId) { _, newValue in
                 if newValue != nil {
                     showDeckFromNotification = true
@@ -289,6 +296,7 @@ struct HomeView: View {
     private func handleNotificationNavigation(_ notification: AppNotification) {
         switch notification.type {
         case .dailyBriefing:
+            appState.shouldRefreshBriefing = true
             appState.shouldExpandBriefing = true
         case .signalGenerated, .signalT1Hit, .signalOutcome:
             let parts = notification.id.components(separatedBy: "_")

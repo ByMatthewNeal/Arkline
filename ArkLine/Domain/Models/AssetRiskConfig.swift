@@ -104,6 +104,7 @@ struct AssetRiskConfig {
         "kaspa": "25751/large/kaspa-icon-exchanges.png",
         "algorand": "4380/large/download.png",
         "aster-2": "69040/large/_ASTER.png",
+        "mantle": "30980/large/token-logo.png",
     ]
 
     // MARK: - Crypto Initializer (backward compatible)
@@ -374,6 +375,17 @@ struct AssetRiskConfig {
         confidenceLevel: 5,
         displayName: "Optimism",
         binanceSymbol: "OPUSDT"
+    )
+
+    /// Mantle — Ethereum L2 rollup
+    static let mnt = AssetRiskConfig(
+        assetId: "MNT",
+        geckoId: "mantle",
+        originDate: safeDate(year: 2023, month: 7, day: 17),
+        deviationBounds: (low: -0.80, high: 0.80),
+        confidenceLevel: 4,
+        displayName: "Mantle",
+        binanceSymbol: "MNTUSDT"
     )
 
     /// Chainlink — oracle network
@@ -697,7 +709,7 @@ struct AssetRiskConfig {
         // L1s
         .bnb, .ada, .dot, .avax, .near, .atom, .sui, .tao, .hbar, .algo,
         // L2s
-        .arb, .op, .imx,
+        .arb, .op, .imx, .mnt,
         // DeFi
         .uni, .aave, .ldo, .ena, .jup, .syrup,
         // Infra / Oracles / AI

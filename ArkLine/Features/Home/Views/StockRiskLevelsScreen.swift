@@ -24,7 +24,13 @@ struct StockRiskLevelsScreen: View {
                     }
                     .padding(.horizontal, ArkSpacing.lg)
                     .padding(.top, ArkSpacing.sm)
-                    .padding(.bottom, ArkSpacing.xs)
+                    .padding(.bottom, 2)
+
+                    Text("Refreshes at 7 AM & 5 PM ET")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textTertiary)
+                        .padding(.horizontal, ArkSpacing.lg)
+                        .padding(.bottom, ArkSpacing.xs)
 
                     ForEach(viewModel.bucketed, id: \.band) { section in
                         bandSection(band: section.band, items: section.items)

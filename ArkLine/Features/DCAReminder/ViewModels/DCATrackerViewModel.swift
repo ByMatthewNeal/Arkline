@@ -96,7 +96,9 @@ class DCATrackerViewModel {
         startingQty: Double,
         preDcaAvgCost: Double?,
         frequency: String,
-        totalWeeks: Int
+        totalWeeks: Int,
+        recurringAmount: Double? = nil,
+        isOngoing: Bool = false
     ) async {
         guard let userId = SupabaseAuthManager.shared.currentUserId else {
             errorMessage = "Please sign in to create a DCA plan"
@@ -113,14 +115,15 @@ class DCATrackerViewModel {
         let startDate = formatter.string(from: Date())
 
         let endDate: String? = {
+            if isOngoing { return nil }
             guard let end = Calendar.current.date(byAdding: .weekOfYear, value: totalWeeks, to: Date()) else { return nil }
             return formatter.string(from: end)
         }()
 
         // Calculate initial cash remaining after accounting for existing position value
         let existingPositionValue = startingQty * (preDcaAvgCost ?? 0)
-        let cashRemaining = startingCapital - existingPositionValue
-        let totalInvested = existingPositionValue
+        let cashRemaining = recurringAmount != nil ? 0 : (startingCapital - existingPositionValue)
+        let totalInvested = recurringAmount != nil ? 0 : existingPositionValue
 
         let request = CreateDCAPlanRequest(
             userId: userId,
@@ -138,6 +141,8 @@ class DCATrackerViewModel {
             currentQty: startingQty,
             totalInvested: totalInvested,
             cashRemaining: max(cashRemaining, 0),
+            recurringAmount: recurringAmount,
+            isOngoing: isOngoing,
             status: "active"
         )
 
@@ -168,7 +173,9 @@ class DCATrackerViewModel {
         let qty = price > 0 ? amount / price : 0
         let newCumulativeInvested = plan.totalInvested + amount
         let newCumulativeQty = plan.currentQty + qty
-        let recommendedAmount = plan.recommendedWeeklyDCA(price: livePrice)
+        let recommendedAmount = plan.isBudgetBased
+            ? (plan.recurringAmount ?? 0)
+            : plan.recommendedWeeklyDCA(price: livePrice)
         let variance = recommendedAmount > 0 ? (amount - recommendedAmount) / recommendedAmount * 100 : nil
 
         let formatter = DateFormatter()
@@ -202,7 +209,7 @@ class DCATrackerViewModel {
             let updates = UpdateDCAPlanRequest(
                 currentQty: newCumulativeQty,
                 totalInvested: newCumulativeInvested,
-                cashRemaining: plan.cashRemaining - amount
+                cashRemaining: plan.isBudgetBased ? 0 : (plan.cashRemaining - amount)
             )
             try await service.updatePlan(id: plan.id, updates: updates)
 

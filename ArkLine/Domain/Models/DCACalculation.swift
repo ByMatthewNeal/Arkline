@@ -4,6 +4,7 @@ import Foundation
 enum DCAStrategyType: String, CaseIterable, Identifiable {
     case timeBased = "Time-Based"
     case riskBased = "Risk-Based"
+    case budgetBased = "Budget-Based"
 
     var id: String { rawValue }
 
@@ -11,6 +12,7 @@ enum DCAStrategyType: String, CaseIterable, Identifiable {
         switch self {
         case .timeBased: return "calendar"
         case .riskBased: return "gauge.with.dots.needle.50percent"
+        case .budgetBased: return "dollarsign.arrow.circlepath"
         }
     }
 
@@ -18,6 +20,7 @@ enum DCAStrategyType: String, CaseIterable, Identifiable {
         switch self {
         case .timeBased: return "Invest on a regular schedule"
         case .riskBased: return "Invest when BTC risk hits target levels"
+        case .budgetBased: return "Set a fixed recurring amount and frequency"
         }
     }
 }

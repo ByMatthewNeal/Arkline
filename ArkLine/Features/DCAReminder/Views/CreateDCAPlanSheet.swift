@@ -7,7 +7,6 @@ struct CreateDCAPlanSheet: View {
     @Bindable var viewModel: DCATrackerViewModel
 
     @State private var currentStep = 1
-    private let totalSteps = 6
 
     // Step 1: Asset
     @State private var selectedAssetSymbol = "BTC"
@@ -16,18 +15,32 @@ struct CreateDCAPlanSheet: View {
     // Step 2: Strategy Type
     @State private var strategyType: DCAStrategyType = .timeBased
 
-    // Step 3: Capital
+    // Step 3: Capital (time/risk-based)
     @State private var capitalString = ""
     @State private var existingQtyString = ""
     @State private var existingAvgCostString = ""
 
-    // Step 4: Target allocation
+    // Step 4: Target allocation (time/risk-based)
     @State private var targetPct: Double = 80
 
-    // Step 5: Schedule
+    // Step 5: Schedule (time/risk-based)
     @State private var frequency = "weekly"
     @State private var durationWeeks: Int = 26
     @State private var riskBand: String = "low"  // for risk-based: very_low, low, neutral
+
+    // Budget-based fields
+    @State private var recurringAmountString = ""
+    @State private var budgetFrequency = "biweekly"
+    @State private var isOngoing = true
+    @State private var budgetDurationWeeks: Int = 26
+
+    private var totalSteps: Int {
+        strategyType == .budgetBased ? 5 : 6
+    }
+
+    private var recurringAmount: Double {
+        Double(recurringAmountString.replacingOccurrences(of: ",", with: "")) ?? 0
+    }
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBg: Color { AppColors.cardBackground(colorScheme) }
@@ -89,14 +102,25 @@ struct CreateDCAPlanSheet: View {
 
     @ViewBuilder
     private var currentStepView: some View {
-        switch currentStep {
-        case 1: assetSelectionStep
-        case 2: strategyTypeStep
-        case 3: capitalStep
-        case 4: allocationStep
-        case 5: scheduleStep
-        case 6: reviewStep
-        default: EmptyView()
+        if strategyType == .budgetBased {
+            switch currentStep {
+            case 1: assetSelectionStep
+            case 2: strategyTypeStep
+            case 3: budgetAmountStep
+            case 4: budgetScheduleStep
+            case 5: budgetReviewStep
+            default: EmptyView()
+            }
+        } else {
+            switch currentStep {
+            case 1: assetSelectionStep
+            case 2: strategyTypeStep
+            case 3: capitalStep
+            case 4: allocationStep
+            case 5: scheduleStep
+            case 6: reviewStep
+            default: EmptyView()
+            }
         }
     }
 
@@ -333,6 +357,13 @@ struct CreateDCAPlanSheet: View {
                     icon: "gauge.with.dots.needle.33percent",
                     title: "Risk-Based",
                     description: "Buy more when risk is low, less when risk is high. Uses Arkline's risk model to suggest optimal buy amounts."
+                )
+
+                strategyCard(
+                    type: .budgetBased,
+                    icon: "dollarsign.arrow.circlepath",
+                    title: "Budget-Based",
+                    description: "Set a fixed amount to invest on a recurring schedule. Simple — just pick your budget and frequency."
                 )
             }
         }
@@ -593,6 +624,232 @@ struct CreateDCAPlanSheet: View {
         }
     }
 
+    // MARK: - Budget Step 3: Recurring Amount
+
+    private var budgetAmountStep: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.lg) {
+            Text("Recurring Amount")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            Text("How much do you want to invest each time?")
+                .font(AppFonts.body14)
+                .foregroundColor(textPrimary.opacity(0.6))
+
+            VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                HStack {
+                    Text("$")
+                        .font(AppFonts.number24)
+                        .foregroundColor(textPrimary.opacity(0.5))
+
+                    TextField("200", text: $recurringAmountString)
+                        .font(AppFonts.number24)
+                        .foregroundColor(textPrimary)
+                        .keyboardType(.decimalPad)
+                }
+                .padding(ArkSpacing.md)
+                .background(
+                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.input)
+                        .fill(AppColors.fillSecondary(colorScheme))
+                )
+            }
+
+            // Quick-select presets
+            HStack(spacing: ArkSpacing.xs) {
+                ForEach([50, 100, 200, 500, 1000], id: \.self) { amount in
+                    Button {
+                        recurringAmountString = "\(amount)"
+                    } label: {
+                        Text("$\(amount)")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(recurringAmount == Double(amount) ? .white : textPrimary.opacity(0.6))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(recurringAmount == Double(amount) ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                            )
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
+    // MARK: - Budget Step 4: Frequency & Duration
+
+    private var budgetScheduleStep: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.lg) {
+            Text("Schedule")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            // Frequency picker
+            VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                Text("How often?")
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(textPrimary.opacity(0.7))
+
+                HStack(spacing: ArkSpacing.xs) {
+                    ForEach(["weekly", "biweekly", "monthly"], id: \.self) { freq in
+                        Button {
+                            budgetFrequency = freq
+                        } label: {
+                            Text(freq.capitalized)
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(budgetFrequency == freq ? .white : textPrimary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, ArkSpacing.sm)
+                                .background(
+                                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                                        .fill(budgetFrequency == freq ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                                )
+                        }
+                    }
+                }
+            }
+
+            // Ongoing toggle
+            VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+                Text("Duration")
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(textPrimary.opacity(0.7))
+
+                Button {
+                    isOngoing.toggle()
+                } label: {
+                    HStack(spacing: ArkSpacing.sm) {
+                        Image(systemName: isOngoing ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 20))
+                            .foregroundColor(isOngoing ? AppColors.accent : textPrimary.opacity(0.3))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Ongoing")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(textPrimary)
+                            Text("Runs until you stop it — no end date")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(textPrimary.opacity(0.5))
+                        }
+
+                        Spacer()
+                    }
+                    .padding(ArkSpacing.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                            .fill(isOngoing ? AppColors.accent.opacity(0.08) : AppColors.fillSecondary(colorScheme))
+                    )
+                }
+                .buttonStyle(.plain)
+
+                if !isOngoing {
+                    HStack(spacing: ArkSpacing.xs) {
+                        ForEach([12, 26, 52], id: \.self) { weeks in
+                            Button {
+                                budgetDurationWeeks = weeks
+                            } label: {
+                                VStack(spacing: 2) {
+                                    Text("\(weeks)")
+                                        .font(AppFonts.number20)
+                                        .foregroundColor(budgetDurationWeeks == weeks ? .white : textPrimary)
+                                    Text(weeks == 12 ? "3 mo" : (weeks == 26 ? "6 mo" : "1 yr"))
+                                        .font(AppFonts.caption12)
+                                        .foregroundColor(budgetDurationWeeks == weeks ? .white.opacity(0.7) : textPrimary.opacity(0.5))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, ArkSpacing.sm)
+                                .background(
+                                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                                        .fill(budgetDurationWeeks == weeks ? AppColors.accent : AppColors.fillSecondary(colorScheme))
+                                )
+                            }
+                        }
+                    }
+                    .padding(.top, ArkSpacing.xs)
+                }
+            }
+
+            // Estimated total
+            if recurringAmount > 0 {
+                let purchaseCount = budgetEstimatedPurchases
+                let estimatedTotal = recurringAmount * Double(purchaseCount)
+
+                VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
+                    if isOngoing {
+                        Text("Recurring Investment")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(textPrimary.opacity(0.5))
+                        Text("\(formatCurrency(recurringAmount)) / \(budgetFrequency)")
+                            .font(AppFonts.number24)
+                            .foregroundColor(AppColors.accent)
+                    } else {
+                        Text("Estimated Total Investment")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(textPrimary.opacity(0.5))
+                        Text(formatCurrency(estimatedTotal))
+                            .font(AppFonts.number24)
+                            .foregroundColor(AppColors.accent)
+                        Text("\(purchaseCount) purchases over \(budgetDurationWeeks) weeks")
+                            .font(AppFonts.caption12)
+                            .foregroundColor(textPrimary.opacity(0.5))
+                    }
+                }
+                .padding(ArkSpacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                        .fill(AppColors.accent.opacity(0.08))
+                )
+            }
+        }
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
+    private var budgetEstimatedPurchases: Int {
+        switch budgetFrequency {
+        case "weekly": return budgetDurationWeeks
+        case "biweekly": return budgetDurationWeeks / 2
+        case "monthly": return budgetDurationWeeks / 4
+        default: return budgetDurationWeeks
+        }
+    }
+
+    // MARK: - Budget Step 5: Review
+
+    private var budgetReviewStep: some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.lg) {
+            Text("Review Your Plan")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(textPrimary)
+
+            VStack(spacing: ArkSpacing.sm) {
+                reviewRow(label: "Asset", value: "\(selectedAssetName) (\(selectedAssetSymbol))")
+                reviewRow(label: "Strategy", value: "Budget-Based")
+
+                Divider().background(AppColors.divider(colorScheme))
+
+                reviewRow(label: "Amount per Buy", value: formatCurrency(recurringAmount), highlight: true)
+                reviewRow(label: "Frequency", value: budgetFrequency.capitalized)
+                reviewRow(label: "Duration", value: isOngoing ? "Ongoing" : "\(budgetDurationWeeks) weeks")
+
+                if !isOngoing {
+                    Divider().background(AppColors.divider(colorScheme))
+
+                    let total = recurringAmount * Double(budgetEstimatedPurchases)
+                    reviewRow(label: "Est. Total", value: formatCurrency(total))
+                    reviewRow(label: "Est. Purchases", value: "\(budgetEstimatedPurchases)")
+                }
+            }
+            .padding(ArkSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: ArkSpacing.Radius.card)
+                    .fill(cardBg)
+            )
+            .arkShadow(ArkSpacing.Shadow.card)
+        }
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
     // MARK: - Navigation Buttons
 
     private var navigationButtons: some View {
@@ -644,21 +901,34 @@ struct CreateDCAPlanSheet: View {
     // MARK: - Validation
 
     private var canProceed: Bool {
-        switch currentStep {
-        case 1: return !selectedAssetSymbol.isEmpty
-        case 2: return true  // Strategy type always has a selection
-        case 3: return capital > 0
-        case 4: return targetPct >= 10
-        case 5: return durationWeeks > 0
-        case 6: return true
-        default: return false
+        if strategyType == .budgetBased {
+            switch currentStep {
+            case 1: return !selectedAssetSymbol.isEmpty
+            case 2: return true
+            case 3: return recurringAmount > 0
+            case 4: return true  // frequency always has a default
+            case 5: return true  // review
+            default: return false
+            }
+        } else {
+            switch currentStep {
+            case 1: return !selectedAssetSymbol.isEmpty
+            case 2: return true
+            case 3: return capital > 0
+            case 4: return targetPct >= 10
+            case 5: return durationWeeks > 0
+            case 6: return true
+            default: return false
+            }
         }
     }
 
     // MARK: - Actions
 
     private func goBack() {
-        withAnimation { currentStep -= 1 }
+        // When going back to strategy type step, reset to step 2
+        // to avoid out-of-bounds after switching strategy
+        withAnimation { currentStep = max(currentStep - 1, 1) }
     }
 
     private func goForward() {
@@ -671,17 +941,33 @@ struct CreateDCAPlanSheet: View {
 
     private func createPlan() {
         Task {
-            let freq = strategyType == .riskBased ? "risk_\(riskBand)" : frequency
-            await viewModel.createPlan(
-                assetSymbol: selectedAssetSymbol,
-                assetName: selectedAssetName,
-                targetAllocationPct: targetPct,
-                startingCapital: capital,
-                startingQty: existingQty,
-                preDcaAvgCost: existingAvgCost,
-                frequency: freq,
-                totalWeeks: durationWeeks
-            )
+            if strategyType == .budgetBased {
+                let weeks = isOngoing ? 9999 : budgetDurationWeeks
+                await viewModel.createPlan(
+                    assetSymbol: selectedAssetSymbol,
+                    assetName: selectedAssetName,
+                    targetAllocationPct: 100,
+                    startingCapital: 0,
+                    startingQty: 0,
+                    preDcaAvgCost: nil,
+                    frequency: budgetFrequency,
+                    totalWeeks: weeks,
+                    recurringAmount: recurringAmount,
+                    isOngoing: isOngoing
+                )
+            } else {
+                let freq = strategyType == .riskBased ? "risk_\(riskBand)" : frequency
+                await viewModel.createPlan(
+                    assetSymbol: selectedAssetSymbol,
+                    assetName: selectedAssetName,
+                    targetAllocationPct: targetPct,
+                    startingCapital: capital,
+                    startingQty: existingQty,
+                    preDcaAvgCost: existingAvgCost,
+                    frequency: freq,
+                    totalWeeks: durationWeeks
+                )
+            }
             dismiss()
         }
     }

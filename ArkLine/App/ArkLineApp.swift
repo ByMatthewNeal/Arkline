@@ -40,6 +40,7 @@ struct ArkLineApp: App {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BriefingNotificationTapped"))) { _ in
                     appState.selectedTab = .home
+                    appState.shouldRefreshBriefing = true
                     appState.shouldExpandBriefing = true
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("QPSChangeNotificationTapped"))) { _ in
@@ -288,6 +289,7 @@ class AppState: ObservableObject {
     @Published var pendingModelPortfolioStrategy: String?
     @Published var pendingMarketDeckId: String?
     @Published var shouldExpandBriefing = false
+    @Published var shouldRefreshBriefing = false
     @Published var pendingSentimentRegime = false
 
     // Unread broadcast badge count for Insights tab

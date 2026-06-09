@@ -116,6 +116,10 @@ struct RiskLevelWidget: View {
                     }
                 }
 
+                Text("Refreshes at 7 AM & 5 PM ET")
+                    .font(.system(size: size == .compact ? 9 : 10))
+                    .foregroundColor(textPrimary.opacity(0.35))
+
                 if size == .expanded {
                     Text("intothecryptoverse.com")
                         .font(.system(size: 9))

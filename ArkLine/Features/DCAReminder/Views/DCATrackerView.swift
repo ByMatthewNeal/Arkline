@@ -17,11 +17,17 @@ struct DCATrackerView: View {
                     // A. Plan Header Card
                     planHeaderCard(plan)
 
-                    // B. Allocation Progress Ring
-                    allocationRingCard(plan)
+                    // B. Allocation Progress Ring (skip for budget-based)
+                    if !plan.isBudgetBased {
+                        allocationRingCard(plan)
+                    }
 
                     // C. Live Portfolio Card
-                    portfolioCard(plan)
+                    if plan.isBudgetBased {
+                        budgetPortfolioCard(plan)
+                    } else {
+                        portfolioCard(plan)
+                    }
 
                     // D. DCA Streak
                     if plan.streakCurrent > 0 || plan.streakBest > 0 {
@@ -95,7 +101,7 @@ struct DCATrackerView: View {
                 HStack(spacing: ArkSpacing.xs) {
                     DCACoinIconView(symbol: plan.assetSymbol, size: 32)
 
-                    Text("\(plan.assetSymbol) Dynamic DCA")
+                    Text("\(plan.assetSymbol) \(plan.isBudgetBased ? "Budget" : "Dynamic") DCA")
                         .font(AppFonts.title18SemiBold)
                         .foregroundColor(textPrimary)
                 }
@@ -106,18 +112,30 @@ struct DCATrackerView: View {
             }
 
             VStack(alignment: .leading, spacing: ArkSpacing.xxs) {
-                Text("Target: \(Int(plan.targetAllocationPct))% \(plan.assetSymbol) / \(Int(plan.cashAllocationPct))% Cash")
-                    .font(AppFonts.body14Medium)
-                    .foregroundColor(textPrimary.opacity(0.7))
+                if plan.isBudgetBased {
+                    Text("Budget: \((plan.recurringAmount ?? 0).asCurrency) / \(plan.frequency.capitalized)")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary.opacity(0.7))
 
-                Text("\(plan.startingCapital.asCurrency) starting capital")
-                    .font(AppFonts.body14)
-                    .foregroundColor(textPrimary.opacity(0.5))
+                    Text(plan.isOngoingPlan ? "Ongoing plan" : "\(plan.totalWeeks) week plan")
+                        .font(AppFonts.body14)
+                        .foregroundColor(textPrimary.opacity(0.5))
+                } else {
+                    Text("Target: \(Int(plan.targetAllocationPct))% \(plan.assetSymbol) / \(Int(plan.cashAllocationPct))% Cash")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(textPrimary.opacity(0.7))
+
+                    Text("\(plan.startingCapital.asCurrency) starting capital")
+                        .font(AppFonts.body14)
+                        .foregroundColor(textPrimary.opacity(0.5))
+                }
 
                 HStack(spacing: ArkSpacing.xxs) {
                     Text("Started \(formattedStartDate(plan.startDate))")
-                    Text("--")
-                    Text("\(plan.totalWeeks) weeks")
+                    if !plan.isOngoingPlan {
+                        Text("--")
+                        Text("\(plan.totalWeeks) weeks")
+                    }
                 }
                 .font(AppFonts.caption12)
                 .foregroundColor(textPrimary.opacity(0.4))
@@ -266,6 +284,41 @@ struct DCATrackerView: View {
                 .font(bold ? AppFonts.body14Bold : AppFonts.body14Medium)
                 .foregroundColor(textPrimary)
         }
+    }
+
+    // MARK: - C2. Budget Portfolio Card
+
+    private func budgetPortfolioCard(_ plan: DCAPlan) -> some View {
+        let price = viewModel.livePrice
+        let positionValue = plan.currentValue(price: price)
+        let entryCount = viewModel.completedEntries.filter { !$0.isCapitalInjection }.count
+
+        return VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            Text("PORTFOLIO")
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(AppColors.accent)
+
+            portfolioRow(label: "\(plan.assetSymbol) Held", value: formatQuantity(plan.currentQty, symbol: plan.assetSymbol))
+            portfolioRow(label: "Current Value", value: positionValue.asCurrency)
+            portfolioRow(label: "Total Invested", value: plan.totalInvested.asCurrency)
+
+            Divider()
+                .background(AppColors.divider(colorScheme))
+
+            portfolioRow(label: "Per Buy", value: (plan.recurringAmount ?? 0).asCurrency, bold: true)
+            portfolioRow(label: "Frequency", value: plan.frequency.capitalized)
+            portfolioRow(label: "Buys Logged", value: "\(entryCount)")
+
+            if !plan.isOngoingPlan, let remaining = plan.weeksRemaining {
+                portfolioRow(label: "Weeks Remaining", value: "\(remaining) of \(plan.totalWeeks)")
+            }
+        }
+        .padding(ArkSpacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: ArkSpacing.Radius.card)
+                .fill(cardBg)
+        )
+        .arkShadow(ArkSpacing.Shadow.card)
     }
 
     // MARK: - D. Streak Card
@@ -498,23 +551,25 @@ struct DCATrackerView: View {
 
     private func bottomActionsSection(_ plan: DCAPlan) -> some View {
         VStack(spacing: ArkSpacing.sm) {
-            // Add Funds button
-            Button {
-                viewModel.showAddFunds = true
-            } label: {
-                HStack(spacing: ArkSpacing.xs) {
-                    Image(systemName: "plus.square.fill")
-                        .font(.system(size: 14))
-                    Text("Add Funds")
-                        .font(AppFonts.body14Medium)
+            // Add Funds button (not applicable for budget-based plans)
+            if !plan.isBudgetBased {
+                Button {
+                    viewModel.showAddFunds = true
+                } label: {
+                    HStack(spacing: ArkSpacing.xs) {
+                        Image(systemName: "plus.square.fill")
+                            .font(.system(size: 14))
+                        Text("Add Funds")
+                            .font(AppFonts.body14Medium)
+                    }
+                    .foregroundColor(AppColors.accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, ArkSpacing.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
+                            .fill(AppColors.accent.opacity(0.1))
+                    )
                 }
-                .foregroundColor(AppColors.accent)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, ArkSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: ArkSpacing.Radius.md)
-                        .fill(AppColors.accent.opacity(0.1))
-                )
             }
 
             // Delete plan button

@@ -355,11 +355,24 @@ struct FullNewsListView: View {
                             }
 
                             HStack(spacing: 6) {
+                                if item.isPriority {
+                                    HStack(spacing: 3) {
+                                        Image(systemName: "bolt.fill")
+                                            .font(.system(size: 8))
+                                        Text("High Impact")
+                                            .font(.system(size: 9, weight: .bold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(Color(hex: "EF4444")))
+                                }
+
                                 Text(item.source)
                                     .font(.system(size: 11))
                                     .foregroundColor(textPrimary.opacity(0.5))
 
-                                Text("•")
+                                Text("·")
                                     .font(.system(size: 8))
                                     .foregroundColor(textPrimary.opacity(0.3))
 
@@ -398,7 +411,7 @@ struct FullNewsListView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 20)
                         } else {
-                            Text("Load More")
+                            Text("See all")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(AppColors.accent)
                                 .frame(maxWidth: .infinity)
@@ -406,8 +419,10 @@ struct FullNewsListView: View {
                         }
                     }
                     .disabled(isLoadingMore)
-                    .accessibilityLabel(isLoadingMore ? "Loading more news" : "Load more news")
+                    .accessibilityLabel(isLoadingMore ? "Loading more news" : "See all news")
                 }
+
+                Spacer().frame(height: 100)
             }
         }
         .refreshable { await refreshNews() }

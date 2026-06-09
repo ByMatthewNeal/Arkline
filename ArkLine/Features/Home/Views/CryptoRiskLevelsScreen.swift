@@ -25,7 +25,13 @@ struct CryptoRiskLevelsScreen: View {
                     }
                     .padding(.horizontal, ArkSpacing.lg)
                     .padding(.top, ArkSpacing.sm)
-                    .padding(.bottom, ArkSpacing.xs)
+                    .padding(.bottom, 2)
+
+                    Text("Refreshes at 7 AM & 5 PM ET")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textTertiary)
+                        .padding(.horizontal, ArkSpacing.lg)
+                        .padding(.bottom, ArkSpacing.xs)
 
                     if viewModel.sortMode == .band {
                         ForEach(viewModel.bucketed, id: \.band) { section in

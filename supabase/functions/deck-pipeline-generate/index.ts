@@ -124,6 +124,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
         max_tokens: 4096,
         messages: [{ role: "user", content: contentParts }],
       }),
+      signal: AbortSignal.timeout(180_000), // 3 minute timeout
     })
 
     if (!response.ok) {
@@ -191,6 +192,7 @@ Respond ONLY with a JSON object (no markdown, no code blocks):
         max_tokens: 1024,
         messages: [{ role: "user", content: prompt }],
       }),
+      signal: AbortSignal.timeout(60_000), // 1 minute timeout
     })
 
     if (!response.ok) {
@@ -387,7 +389,7 @@ Deno.serve(async (req) => {
         .eq("rating", false)
         .not("feedback", "is", null)
         .order("created_at", { ascending: false })
-        .limit(30)
+        .limit(10)
 
       if (recentFeedback?.length) {
         const editorialFb = recentFeedback
@@ -415,9 +417,9 @@ Deno.serve(async (req) => {
       console.error("Failed to fetch feedback history (non-fatal):", e)
     }
 
-    // ── Generate editorial slides + weekly outlook in parallel ────────
+    // ── Generate weekly outlook first (faster), then editorial slides ──
     const hasWebResearch = Object.values(webResearch).flat().length > 0
-    console.log(`[generate] Generating editorial + outlook via Claude Sonnet (web: ${hasWebResearch}, insights: ${fullInsights.length > 0})...`)
+    console.log(`[generate] Generating outlook + editorial via Claude (web: ${hasWebResearch}, insights: ${fullInsights.length > 0})...`)
 
     const researchText = Object.entries(webResearch)
       .map(([cat, items]) => `=== ${cat.toUpperCase()} ===\n${items.join("\n\n")}`)
@@ -426,13 +428,14 @@ Deno.serve(async (req) => {
     // Combine image URLs from attachments for editorial generation
     const imageUrlsForEditorial = attachmentImageUrls.length > 0 ? attachmentImageUrls : undefined
 
-    const [editorialSlides, weeklyOutlook] = await Promise.all([
-      generateEditorialSlides(
-        anthropicKey, webResearch, dbContext, monday, friday,
-        fullInsights || undefined, imageUrlsForEditorial, feedbackContext || undefined
-      ),
-      generateWeeklyOutlook(anthropicKey, dbContext, researchText, monday, friday, feedbackContext || undefined),
-    ])
+    // Sequential: Haiku outlook is fast (~5-10s), then Sonnet editorial (~30-60s)
+    const weeklyOutlook = await generateWeeklyOutlook(anthropicKey, dbContext, researchText, monday, friday, feedbackContext || undefined)
+    console.log(`[generate] Outlook done: ${weeklyOutlook ? "yes" : "no"}, starting editorial...`)
+
+    const editorialSlides = await generateEditorialSlides(
+      anthropicKey, webResearch, dbContext, monday, friday,
+      fullInsights || undefined, imageUrlsForEditorial, feedbackContext || undefined
+    )
 
     console.log(`[generate] Generated ${editorialSlides.length} editorial sections, outlook: ${weeklyOutlook ? "yes" : "no"}`)
 

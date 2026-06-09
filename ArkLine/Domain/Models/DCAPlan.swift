@@ -22,6 +22,8 @@ struct DCAPlan: Codable, Identifiable, Hashable {
     var cashRemaining: Double
     var streakCurrent: Int
     var streakBest: Int
+    var recurringAmount: Double?
+    var isOngoing: Bool?
     var status: String
     let createdAt: Date?
 
@@ -44,9 +46,16 @@ struct DCAPlan: Codable, Identifiable, Hashable {
         case cashRemaining = "cash_remaining"
         case streakCurrent = "streak_current"
         case streakBest = "streak_best"
+        case recurringAmount = "recurring_amount"
+        case isOngoing = "is_ongoing"
         case status
         case createdAt = "created_at"
     }
+
+    // MARK: - Budget-Based Helpers
+
+    var isBudgetBased: Bool { recurringAmount != nil }
+    var isOngoingPlan: Bool { isOngoing == true }
 
     // MARK: - Status Helpers
 
@@ -220,6 +229,8 @@ struct CreateDCAPlanRequest: Encodable {
     let currentQty: Double
     let totalInvested: Double
     let cashRemaining: Double
+    let recurringAmount: Double?
+    let isOngoing: Bool
     let status: String
 
     enum CodingKeys: String, CodingKey {
@@ -238,6 +249,8 @@ struct CreateDCAPlanRequest: Encodable {
         case currentQty = "current_qty"
         case totalInvested = "total_invested"
         case cashRemaining = "cash_remaining"
+        case recurringAmount = "recurring_amount"
+        case isOngoing = "is_ongoing"
         case status
     }
 }
