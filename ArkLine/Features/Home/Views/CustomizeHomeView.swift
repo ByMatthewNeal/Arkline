@@ -78,7 +78,7 @@ struct CustomizeHomeView: View {
 
                     // Widget toggles
                     VStack(spacing: 12) {
-                        ForEach(HomeWidgetType.allCases) { widget in
+                        ForEach(HomeWidgetType.allCases.sorted { $0.displayName < $1.displayName }) { widget in
                             // Hide individual VIX/DXY/M2 when Macro Dashboard is enabled
                             // (they're redundant — the dashboard already shows all three)
                             if isRedundantMacroWidget(widget) {
