@@ -33,6 +33,9 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifyModelPortfolio)
     private var modelPortfolio = true
 
+    @AppStorage(Constants.UserDefaults.notifyBreadthCrossovers)
+    private var breadthCrossovers = true
+
     @AppStorage(Constants.UserDefaults.notifySignalT1Hit)
     private var signalT1Hit = true
 
@@ -168,6 +171,19 @@ struct NotificationsDetailView: View {
                     .onChange(of: modelPortfolio) { _, newValue in
                         Haptics.selection()
                         syncModelPortfolioPreference(newValue)
+                    }
+
+                    Toggle(isOn: $breadthCrossovers) {
+                        NotificationRow(
+                            icon: "chart.bar.xaxis",
+                            iconColor: AppColors.success,
+                            title: "Breadth Crossovers",
+                            description: "When market breadth trend flips bullish or bearish"
+                        )
+                    }
+                    .onChange(of: breadthCrossovers) { _, newValue in
+                        Haptics.selection()
+                        syncBreadthPreference(newValue)
                     }
                 } header: {
                     Text("Market Alerts")
@@ -312,6 +328,29 @@ struct NotificationsDetailView: View {
                     .execute()
             } catch {
                 logWarning("Failed to sync notification preferences: \(error)", category: .network)
+            }
+        }
+    }
+
+    private func syncBreadthPreference(_ enabled: Bool) {
+        Task {
+            guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
+            let prefs: [String: Bool] = [
+                "breadth_crossover": enabled,
+                "model_portfolio_rebalance": modelPortfolio,
+                "signal_t1_hit": swingSignals && signalT1Hit,
+                "signal_stop_loss": swingSignals && signalStopLoss,
+                "signal_runner_close": swingSignals && signalRunnerClose,
+                "signal_expiry": swingSignals && signalExpiry,
+            ]
+            do {
+                try await SupabaseManager.shared.client
+                    .from("profiles")
+                    .update(["notification_preferences": prefs])
+                    .eq("id", value: userId.uuidString)
+                    .execute()
+            } catch {
+                logWarning("Failed to sync breadth preference: \(error)", category: .network)
             }
         }
     }

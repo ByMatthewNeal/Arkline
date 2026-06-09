@@ -187,6 +187,35 @@ Deno.serve(async (req) => {
       (crossover ? ` [${crossover}]` : "")
     )
 
+    // ── 7. Send push notification on crossover ──
+    if (crossover) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
+
+      const isBullish = crossover === "bullish_crossover"
+      const emoji = isBullish ? "📈" : "📉"
+      const direction = isBullish ? "Bullish" : "Bearish"
+      const title = `${emoji} Market Breadth — ${direction} Crossover`
+      const body = `EMA 12 crossed ${isBullish ? "above" : "below"} EMA 21. Breadth: ${row.breadth_pct}% (${trendingCount}/${totalTokens} tokens trending).`
+
+      fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${anonKey}`,
+          "x-cron-secret": cronSecret,
+        },
+        body: JSON.stringify({
+          broadcast_id: `breadth_${today}`,
+          title,
+          body,
+          event_type: "breadth_crossover",
+          target_audience: { type: "all" },
+        }),
+      }).catch((err) => console.error("Breadth notification failed:", err))
+    }
+
     return json({
       success: true,
       date: today,
