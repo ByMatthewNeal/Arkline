@@ -143,6 +143,8 @@ struct ReorderableWidgetStack: View {
             return viewModel.btcPerpPremium != nil || viewModel.ethPerpPremium != nil
         case .rotationGauge:
             return true
+        case .marketBreadth:
+            return true
         case .marketDeck:
             return viewModel.latestDeck != nil
         case .modelPortfolioUpdate:
@@ -331,6 +333,9 @@ struct ReorderableWidgetStack: View {
                 topSectors: Array(viewModel.sectorPerformance.prefix(3)),
                 size: appState.widgetSize(.rotationGauge)
             )
+
+        case .marketBreadth:
+            MarketBreadthSection()
         }
     }
 }

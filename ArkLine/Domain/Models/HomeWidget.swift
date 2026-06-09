@@ -54,6 +54,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case modelPortfolioUpdate = "model_portfolio_update"
     case perpPremium = "perp_premium"
     case rotationGauge = "rotation_gauge"
+    case marketBreadth = "market_breadth"
 
     var id: String { rawValue }
 
@@ -82,6 +83,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .modelPortfolioUpdate: return "Model Portfolio Updates"
         case .perpPremium: return "Perp Premium"
         case .rotationGauge: return "Crypto/Equities Rotation"
+        case .marketBreadth: return "Market Breadth"
         }
     }
 
@@ -110,6 +112,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .modelPortfolioUpdate: return "Latest rebalance from your followed strategy"
         case .perpPremium: return "Directional bias in perpetual futures markets"
         case .rotationGauge: return "Daily signal showing when to favor crypto vs equities, with sector rankings"
+        case .marketBreadth: return "% of tokens in uptrend with EMA crossover signals"
         }
     }
 
@@ -138,6 +141,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .modelPortfolioUpdate: return "arrow.triangle.2.circlepath"
         case .perpPremium: return "gauge.with.dots.needle.33percent"
         case .rotationGauge: return "arrow.left.arrow.right.circle"
+        case .marketBreadth: return "chart.bar.xaxis"
         }
     }
 
@@ -149,7 +153,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate:
+        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium, .rotationGauge:
             return true
@@ -158,7 +162,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize)
