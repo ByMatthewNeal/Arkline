@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Market Breadth Section (Market Tab Widget)
 struct MarketBreadthSection: View {
     var refreshId: UUID = UUID()
+    var embedded: Bool = false
     @Environment(\.colorScheme) var colorScheme
     @State private var latest: MarketBreadthPoint?
     @State private var history: [MarketBreadthPoint] = []
@@ -90,6 +91,18 @@ struct MarketBreadthSection: View {
                             breadthSparkline
                                 .frame(height: 40)
                         }
+
+                        // Tap affordance
+                        HStack {
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Text("Details")
+                                    .font(.system(size: 11, weight: .medium))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 9, weight: .semibold))
+                            }
+                            .foregroundColor(AppColors.textSecondary.opacity(0.6))
+                        }
                     }
                     .padding(16)
                     .background(
@@ -113,7 +126,7 @@ struct MarketBreadthSection: View {
                 }
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, embedded ? 0 : 16)
         .task(id: refreshId) {
             await loadData()
         }

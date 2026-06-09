@@ -335,7 +335,7 @@ struct ReorderableWidgetStack: View {
             )
 
         case .marketBreadth:
-            MarketBreadthSection()
+            MarketBreadthSection(embedded: true)
         }
     }
 }
