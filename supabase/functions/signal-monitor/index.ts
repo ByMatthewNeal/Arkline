@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
         const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
         const totalPnl = (t1Pnl + runnerPnl) / 2
 
-        await supabase.from("trade_signals").update({
+        const { count: c1 } = await supabase.from("trade_signals").update({
           status: totalPnl > 0 ? "target_hit" : "expired",
           outcome: totalPnl > 0 ? "win" : "loss",
           outcome_pct: round2(totalPnl),
@@ -277,9 +277,9 @@ Deno.serve(async (req) => {
           runner_pnl_pct: round2(runnerPnl),
           closed_at: now.toISOString(),
           duration_hours: hoursSince(signal.triggered_at, now),
-        }).eq("id", signal.id)
+        }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
 
-        await notify(supabaseUrl, cronSecret, signal, totalPnl > 0 ? "expired_win" : "expired_loss", exitPrice)
+        if (c1 && c1 > 0) await notify(supabaseUrl, cronSecret, signal, totalPnl > 0 ? "expired_win" : "expired_loss", exitPrice)
       } else {
         const pnl = isBuy
           ? ((exitPrice - entryMid) / entryMid) * 100
@@ -290,15 +290,15 @@ Deno.serve(async (req) => {
           ? bestPrice >= entryMid + (t1 - entryMid) * 0.3
           : bestPrice <= entryMid - (entryMid - t1) * 0.3)
 
-        await supabase.from("trade_signals").update({
+        const { count: c2 } = await supabase.from("trade_signals").update({
           status: "expired",
           outcome: reachedConsiderProfit ? "partial" : "loss",
           outcome_pct: round2(pnl),
           closed_at: now.toISOString(),
           duration_hours: hoursSince(signal.triggered_at, now),
-        }).eq("id", signal.id)
+        }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
 
-        await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "expired_partial" : "expired_loss", exitPrice)
+        if (c2 && c2 > 0) await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "expired_partial" : "expired_loss", exitPrice)
       }
 
       stats.expired++
@@ -319,18 +319,17 @@ Deno.serve(async (req) => {
           const pnl = ((sl - entryMid) / entryMid) * 100
           // Check if best price reached consider-profit zone (30% of entry→T1)
           const reachedConsiderProfit = t1 && bestPrice >= entryMid + (t1 - entryMid) * 0.3
-          await supabase.from("trade_signals").update({
+          const { count: cSL1 } = await supabase.from("trade_signals").update({
             status: "invalidated",
             outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: round2(pnl),
             best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: hoursSince(signal.triggered_at, now),
-          }).eq("id", signal.id)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
           stats.losses++
           stats.resolved++
-          await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
-          stats.notifications++
+          if (cSL1 && cSL1 > 0) { await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl); stats.notifications++ }
           continue
         }
 
@@ -338,15 +337,14 @@ Deno.serve(async (req) => {
           const bnCandle = binanceAggregateAfter(signal.asset, triggerMs)
           console.log(`T1 HIT (buy) ${signal.asset}: T1=$${t1}, CB high=$${candle.high}, BN high=$${bnCandle?.high ?? "N/A"}, entry=$${entryMid}, trigger=${signal.triggered_at}`)
           const t1Pnl = ((t1 - entryMid) / entryMid) * 100
-          await supabase.from("trade_signals").update({
+          const { count: cT1a } = await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: round2(t1Pnl),
             best_price: bestPrice,
             runner_stop: entryMid, // Move to breakeven
-          }).eq("id", signal.id)
+          }, { count: "exact" }).eq("id", signal.id).is("t1_hit_at", null)
           stats.t1Hits++
-          await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1)
-          stats.notifications++
+          if (cT1a && cT1a > 0) { await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1); stats.notifications++ }
           continue
         }
 
@@ -365,7 +363,7 @@ Deno.serve(async (req) => {
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
 
-          await supabase.from("trade_signals").update({
+          const { count: cR1 } = await supabase.from("trade_signals").update({
             status: totalPnl > 0 ? "target_hit" : "invalidated",
             outcome: totalPnl > 0 ? "win" : "loss",
             outcome_pct: round2(totalPnl),
@@ -375,11 +373,10 @@ Deno.serve(async (req) => {
             runner_stop: runnerStop,
             closed_at: now.toISOString(),
             duration_hours: hoursSince(signal.triggered_at, now),
-          }).eq("id", signal.id)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
           stats.runnerStops++
           stats.resolved++
-          await notify(supabaseUrl, cronSecret, signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
-          stats.notifications++
+          if (cR1 && cR1 > 0) { await notify(supabaseUrl, cronSecret, signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop); stats.notifications++ }
         } else {
           // Just update trailing values
           await supabase.from("trade_signals").update({
@@ -399,18 +396,17 @@ Deno.serve(async (req) => {
           const pnl = ((entryMid - sl) / entryMid) * 100
           // Check if best price reached consider-profit zone (30% of entry→T1)
           const reachedConsiderProfit = t1 && bestPrice <= entryMid - (entryMid - t1) * 0.3
-          await supabase.from("trade_signals").update({
+          const { count: cSL2 } = await supabase.from("trade_signals").update({
             status: "invalidated",
             outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: round2(pnl),
             best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: hoursSince(signal.triggered_at, now),
-          }).eq("id", signal.id)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
           stats.losses++
           stats.resolved++
-          await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
-          stats.notifications++
+          if (cSL2 && cSL2 > 0) { await notify(supabaseUrl, cronSecret, signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl); stats.notifications++ }
           continue
         }
 
@@ -418,15 +414,14 @@ Deno.serve(async (req) => {
           const bnCandle = binanceAggregateAfter(signal.asset, triggerMs)
           console.log(`T1 HIT (short) ${signal.asset}: T1=$${t1}, CB low=$${candle.low}, BN low=$${bnCandle?.low ?? "N/A"}, entry=$${entryMid}, trigger=${signal.triggered_at}`)
           const t1Pnl = ((entryMid - t1) / entryMid) * 100
-          await supabase.from("trade_signals").update({
+          const { count: cT1b } = await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: round2(t1Pnl),
             best_price: bestPrice,
             runner_stop: entryMid,
-          }).eq("id", signal.id)
+          }, { count: "exact" }).eq("id", signal.id).is("t1_hit_at", null)
           stats.t1Hits++
-          await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1)
-          stats.notifications++
+          if (cT1b && cT1b > 0) { await notify(supabaseUrl, cronSecret, signal, "t1_hit", t1); stats.notifications++ }
           continue
         }
 
@@ -446,7 +441,7 @@ Deno.serve(async (req) => {
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
 
-          await supabase.from("trade_signals").update({
+          const { count: cR2 } = await supabase.from("trade_signals").update({
             status: totalPnl > 0 ? "target_hit" : "invalidated",
             outcome: totalPnl > 0 ? "win" : "loss",
             outcome_pct: round2(totalPnl),
@@ -456,11 +451,10 @@ Deno.serve(async (req) => {
             runner_stop: runnerStop,
             closed_at: now.toISOString(),
             duration_hours: hoursSince(signal.triggered_at, now),
-          }).eq("id", signal.id)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
           stats.runnerStops++
           stats.resolved++
-          await notify(supabaseUrl, cronSecret, signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
-          stats.notifications++
+          if (cR2 && cR2 > 0) { await notify(supabaseUrl, cronSecret, signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop); stats.notifications++ }
         } else {
           await supabase.from("trade_signals").update({
             best_price: bestPrice,

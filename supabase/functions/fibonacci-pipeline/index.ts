@@ -3196,7 +3196,7 @@ async function resolveOpenSignals(
         const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
         const totalPnl = (t1Pnl + runnerPnl) / 2
 
-        await supabase.from("trade_signals").update({
+        const { count: c1 } = await supabase.from("trade_signals").update({
           status: totalPnl > 0 ? "target_hit" : "expired",
           outcome: totalPnl > 0 ? "win" : "loss",
           outcome_pct: Math.round(totalPnl * 100) / 100,
@@ -3204,8 +3204,8 @@ async function resolveOpenSignals(
           runner_pnl_pct: Math.round(runnerPnl * 100) / 100,
           closed_at: now.toISOString(),
           duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
-        }).eq("id", signal.id)
-        notifyResolution(signal, totalPnl > 0 ? "expired_win" : "expired_loss", exitPrice)
+        }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+        if (c1 && c1 > 0) notifyResolution(signal, totalPnl > 0 ? "expired_win" : "expired_loss", exitPrice)
       } else {
         const pnl = isBuy
           ? ((exitPrice - entryMid) / entryMid) * 100
@@ -3216,14 +3216,14 @@ async function resolveOpenSignals(
           ? bestPrice >= entryMid + (t1 - entryMid) * 0.3
           : bestPrice <= entryMid - (entryMid - t1) * 0.3)
 
-        await supabase.from("trade_signals").update({
+        const { count: c2 } = await supabase.from("trade_signals").update({
           status: "expired",
           outcome: reachedConsiderProfit ? "partial" : "loss",
           outcome_pct: Math.round(pnl * 100) / 100,
           closed_at: now.toISOString(),
           duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
-        }).eq("id", signal.id)
-        notifyResolution(signal, reachedConsiderProfit ? "expired_partial" : "expired_loss", exitPrice)
+        }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+        if (c2 && c2 > 0) notifyResolution(signal, reachedConsiderProfit ? "expired_partial" : "expired_loss", exitPrice)
       }
 
       stats.expired++
@@ -3241,15 +3241,15 @@ async function resolveOpenSignals(
           const pnl = ((sl - entryMid) / entryMid) * 100
           // Check if best price reached consider-profit zone (30% of entry→T1)
           const reachedConsiderProfit = t1 && bestPrice >= entryMid + (t1 - entryMid) * 0.3
-          await supabase.from("trade_signals").update({
+          const { count: cSL1 } = await supabase.from("trade_signals").update({
             status: "invalidated",
             outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: Math.round(pnl * 100) / 100,
             best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
-          }).eq("id", signal.id)
-          notifyResolution(signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+          if (cSL1 && cSL1 > 0) notifyResolution(signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
           stats.losses++
           stats.resolved++
           continue
@@ -3257,13 +3257,13 @@ async function resolveOpenSignals(
 
         if (t1 && isT1Hit(t1, true, candle, signal.triggered_at)) {
           const t1Pnl = ((t1 - entryMid) / entryMid) * 100
-          await supabase.from("trade_signals").update({
+          const { count: cT1a } = await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: Math.round(t1Pnl * 100) / 100,
             best_price: bestPrice,
             runner_stop: entryMid,  // Move to breakeven
-          }).eq("id", signal.id)
-          notifyResolution(signal, "t1_hit", t1)
+          }, { count: "exact" }).eq("id", signal.id).is("t1_hit_at", null)
+          if (cT1a && cT1a > 0) notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
           continue
         }
@@ -3282,7 +3282,7 @@ async function resolveOpenSignals(
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
 
-          await supabase.from("trade_signals").update({
+          const { count: cR1 } = await supabase.from("trade_signals").update({
             status: totalPnl > 0 ? "target_hit" : "invalidated",
             outcome: totalPnl > 0 ? "win" : "loss",
             outcome_pct: Math.round(totalPnl * 100) / 100,
@@ -3292,8 +3292,8 @@ async function resolveOpenSignals(
             runner_stop: runnerStop,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
-          }).eq("id", signal.id)
-          notifyResolution(signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+          if (cR1 && cR1 > 0) notifyResolution(signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
           stats.runnerStops++
           stats.resolved++
         } else {
@@ -3315,15 +3315,15 @@ async function resolveOpenSignals(
           const pnl = ((entryMid - sl) / entryMid) * 100
           // Check if best price reached consider-profit zone (30% of entry→T1)
           const reachedConsiderProfit = t1 && bestPrice <= entryMid - (entryMid - t1) * 0.3
-          await supabase.from("trade_signals").update({
+          const { count: cSL2 } = await supabase.from("trade_signals").update({
             status: "invalidated",
             outcome: reachedConsiderProfit ? "partial" : "loss",
             outcome_pct: Math.round(pnl * 100) / 100,
             best_price: bestPrice,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
-          }).eq("id", signal.id)
-          notifyResolution(signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+          if (cSL2 && cSL2 > 0) notifyResolution(signal, reachedConsiderProfit ? "stop_loss_partial" : "stop_loss", sl)
           stats.losses++
           stats.resolved++
           continue
@@ -3331,13 +3331,13 @@ async function resolveOpenSignals(
 
         if (t1 && isT1Hit(t1, false, candle, signal.triggered_at)) {
           const t1Pnl = ((entryMid - t1) / entryMid) * 100
-          await supabase.from("trade_signals").update({
+          const { count: cT1b } = await supabase.from("trade_signals").update({
             t1_hit_at: now.toISOString(),
             t1_pnl_pct: Math.round(t1Pnl * 100) / 100,
             best_price: bestPrice,
             runner_stop: entryMid,  // Move to breakeven
-          }).eq("id", signal.id)
-          notifyResolution(signal, "t1_hit", t1)
+          }, { count: "exact" }).eq("id", signal.id).is("t1_hit_at", null)
+          if (cT1b && cT1b > 0) notifyResolution(signal, "t1_hit", t1)
           stats.t1Hits++
           continue // Skip runner eval this cycle
         }
@@ -3357,7 +3357,7 @@ async function resolveOpenSignals(
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
 
-          await supabase.from("trade_signals").update({
+          const { count: cR2 } = await supabase.from("trade_signals").update({
             status: totalPnl > 0 ? "target_hit" : "invalidated",
             outcome: totalPnl > 0 ? "win" : "loss",
             outcome_pct: Math.round(totalPnl * 100) / 100,
@@ -3367,8 +3367,8 @@ async function resolveOpenSignals(
             runner_stop: runnerStop,
             closed_at: now.toISOString(),
             duration_hours: Math.round((now.getTime() - new Date(signal.triggered_at).getTime()) / 3600000),
-          }).eq("id", signal.id)
-          notifyResolution(signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
+          }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+          if (cR2 && cR2 > 0) notifyResolution(signal, totalPnl > 0 ? "runner_win" : "runner_loss", runnerStop)
           stats.runnerStops++
           stats.resolved++
         } else {
