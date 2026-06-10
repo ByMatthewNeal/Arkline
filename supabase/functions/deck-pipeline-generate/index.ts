@@ -122,11 +122,11 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 4096,
         messages: [{ role: "user", content: contentParts }],
       }),
-      signal: AbortSignal.timeout(90_000), // 90s timeout — Haiku is fast enough
+      signal: AbortSignal.timeout(120_000), // 2 minute timeout
     })
 
     if (!response.ok) {

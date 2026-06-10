@@ -7,6 +7,14 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
     private let supabase = SupabaseManager.shared
     private let tableName = "market_update_decks"
 
+    // Long-running session for pipeline steps (PinnedURLSession has a 30s resource timeout)
+    private lazy var pipelineSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 300
+        config.timeoutIntervalForResource = 300
+        return URLSession(configuration: config)
+    }()
+
     // 1-hour cache for published deck
     private var cachedPublished: MarketUpdateDeck?
     private var cacheTimestamp: Date?
@@ -400,7 +408,7 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
         let token = try? await supabase.auth.session.accessToken
         request.setValue("Bearer \(token ?? Constants.API.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await PinnedURLSession.shared.data(for: request)
+        let (data, response) = try await pipelineSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let body = String(data: data, encoding: .utf8) ?? "Unknown error"
