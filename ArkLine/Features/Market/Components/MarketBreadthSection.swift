@@ -37,10 +37,27 @@ struct MarketBreadthSection: View {
             }
 
             if isLoading {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(cardBackground)
-                    .frame(height: 160)
-                    .redacted(reason: .placeholder)
+                VStack(spacing: 14) {
+                    HStack {
+                        RoundedRectangle(cornerRadius: 6).fill(cardBackground.opacity(0.6)).frame(width: 80, height: 32)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 6).fill(cardBackground.opacity(0.6)).frame(width: 80, height: 32)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 6).fill(cardBackground.opacity(0.6)).frame(width: 80, height: 32)
+                    }
+                    HStack {
+                        RoundedRectangle(cornerRadius: 4).fill(cardBackground.opacity(0.4)).frame(width: 100, height: 14)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 4).fill(cardBackground.opacity(0.4)).frame(width: 100, height: 14)
+                        Spacer()
+                        RoundedRectangle(cornerRadius: 4).fill(cardBackground.opacity(0.4)).frame(width: 60, height: 14)
+                    }
+                    RoundedRectangle(cornerRadius: 4).fill(cardBackground.opacity(0.3)).frame(height: 40)
+                }
+                .padding(16)
+                .background(RoundedRectangle(cornerRadius: 12).fill(cardBackground))
+                .redacted(reason: .placeholder)
+                .shimmer(isLoading: true)
             } else if let point = latest {
                 NavigationLink {
                     MarketBreadthDetailView()
@@ -113,16 +130,23 @@ struct MarketBreadthSection: View {
                 .buttonStyle(PlainButtonStyle())
             } else {
                 Button {
+                    isLoading = true
                     Task { await loadData() }
                 } label: {
-                    HStack(spacing: 6) {
+                    VStack(spacing: 8) {
                         Image(systemName: "arrow.clockwise")
-                        Text("Tap to retry")
+                            .font(.system(size: 20))
+                            .foregroundColor(AppColors.textSecondary.opacity(0.5))
+                        Text("Tap to load")
+                            .font(.system(size: 13))
+                            .foregroundColor(AppColors.textSecondary)
                     }
-                    .font(.system(size: 13))
-                    .foregroundColor(AppColors.textSecondary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
+                    .padding(.vertical, 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(cardBackground)
+                    )
                 }
             }
         }
