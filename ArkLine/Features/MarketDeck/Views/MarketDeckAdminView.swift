@@ -606,7 +606,7 @@ struct MarketDeckAdminView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 11))
-                        Text("Save Context")
+                        Text(pipelineInsights.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && viewModel.attachments.isEmpty ? "Skip" : "Save Context")
                     }
                     .font(AppFonts.caption12Medium)
                     .foregroundColor(.white)
@@ -614,7 +614,7 @@ struct MarketDeckAdminView: View {
                     .padding(.vertical, ArkSpacing.xs)
                     .background(Capsule().fill(AppColors.accent))
                 }
-                .disabled(pipelineInsights.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && viewModel.attachments.isEmpty)
+                // Allow saving empty context to skip this step
             }
         }
     }
