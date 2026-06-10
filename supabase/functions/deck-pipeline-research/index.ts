@@ -28,7 +28,7 @@ async function tavilySearch(query: string, apiKey: string, days = 7): Promise<st
         api_key: apiKey,
         query,
         search_depth: "advanced",
-        max_results: 5,
+        max_results: 10,
         include_answer: true,
         days,
       }),
