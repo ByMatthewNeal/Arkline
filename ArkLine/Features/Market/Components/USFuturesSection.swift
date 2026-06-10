@@ -266,6 +266,7 @@ struct USFuturesSection: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color(hex: "E8E8ED"))
                         .frame(height: 64)
+                        .shimmer(isLoading: true)
                 }
             } else if futures.isEmpty {
                 Text("Unable to load futures data")
