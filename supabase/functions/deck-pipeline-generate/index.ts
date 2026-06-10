@@ -48,9 +48,11 @@ async function generateEditorialSlides(
   imageUrls?: string[],
   feedbackHistory?: string,
 ): Promise<EditorialSlide[]> {
+  const trimSnippet = (s: string) => s.length > 400 ? s.slice(0, 397) + "..." : s
   const researchText = Object.entries(webResearch)
-    .map(([cat, items]) => `=== ${cat.toUpperCase()} ===\n${items.join("\n\n")}`)
+    .map(([cat, items]) => `=== ${cat.toUpperCase()} ===\n${items.map(trimSnippet).join("\n\n")}`)
     .join("\n\n")
+    .slice(0, 15000)
 
   const prompt = `You are a senior financial analyst writing a weekly market update for an investing app called Arkline. The update covers ${monday} to ${friday}.
 
@@ -124,7 +126,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
         max_tokens: 4096,
         messages: [{ role: "user", content: contentParts }],
       }),
-      signal: AbortSignal.timeout(180_000), // 3 minute timeout
+      signal: AbortSignal.timeout(120_000), // 2 minute timeout (Supabase free tier: 150s wall clock)
     })
 
     if (!response.ok) {
@@ -421,9 +423,13 @@ Deno.serve(async (req) => {
     const hasWebResearch = Object.values(webResearch).flat().length > 0
     console.log(`[generate] Generating outlook + editorial via Claude (web: ${hasWebResearch}, insights: ${fullInsights.length > 0})...`)
 
+    // Truncate each research item to 400 chars and cap total to keep prompt
+    // within a size that Claude can process in <60s on Supabase free tier (150s wall clock)
+    const trimItem = (s: string) => s.length > 400 ? s.slice(0, 397) + "..." : s
     const researchText = Object.entries(webResearch)
-      .map(([cat, items]) => `=== ${cat.toUpperCase()} ===\n${items.join("\n\n")}`)
+      .map(([cat, items]) => `=== ${cat.toUpperCase()} ===\n${items.map(trimItem).join("\n\n")}`)
       .join("\n\n")
+      .slice(0, 15000)
 
     // Combine image URLs from attachments for editorial generation
     const imageUrlsForEditorial = attachmentImageUrls.length > 0 ? attachmentImageUrls : undefined
