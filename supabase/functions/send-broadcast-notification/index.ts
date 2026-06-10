@@ -204,6 +204,7 @@ Deno.serve(async (req) => {
       .from("user_devices")
       .select("device_token, user_id")
       .eq("platform", "ios")
+      .order("updated_at", { ascending: false })
 
     if (target_audience?.type === "premium") {
       // Get premium user IDs first
@@ -324,7 +325,14 @@ Deno.serve(async (req) => {
       ...(isPortfolioEvent && { strategy: broadcast_id }),
     }
 
-    const tokens = filteredDevices.map((d: { device_token: string }) => d.device_token)
+    // Deduplicate: keep only one token per user (most recently updated)
+    const seenUsers = new Set<string>()
+    const uniqueDevices = filteredDevices.filter((d: { user_id: string }) => {
+      if (seenUsers.has(d.user_id)) return false
+      seenUsers.add(d.user_id)
+      return true
+    })
+    const tokens = uniqueDevices.map((d: { device_token: string }) => d.device_token)
 
     // Send to all devices concurrently
     const results = await Promise.all(
