@@ -428,14 +428,14 @@ Deno.serve(async (req) => {
     // Combine image URLs from attachments for editorial generation
     const imageUrlsForEditorial = attachmentImageUrls.length > 0 ? attachmentImageUrls : undefined
 
-    // Sequential: Haiku outlook is fast (~5-10s), then Sonnet editorial (~30-60s)
-    const weeklyOutlook = await generateWeeklyOutlook(anthropicKey, dbContext, researchText, monday, friday, feedbackContext || undefined)
-    console.log(`[generate] Outlook done: ${weeklyOutlook ? "yes" : "no"}, starting editorial...`)
-
-    const editorialSlides = await generateEditorialSlides(
-      anthropicKey, webResearch, dbContext, monday, friday,
-      fullInsights || undefined, imageUrlsForEditorial, feedbackContext || undefined
-    )
+    // Parallel: outlook (Haiku, ~5-10s) and editorial (Sonnet, ~30-90s) are independent
+    const [weeklyOutlook, editorialSlides] = await Promise.all([
+      generateWeeklyOutlook(anthropicKey, dbContext, researchText, monday, friday, feedbackContext || undefined),
+      generateEditorialSlides(
+        anthropicKey, webResearch, dbContext, monday, friday,
+        fullInsights || undefined, imageUrlsForEditorial, feedbackContext || undefined
+      ),
+    ])
 
     console.log(`[generate] Generated ${editorialSlides.length} editorial sections, outlook: ${weeklyOutlook ? "yes" : "no"}`)
 
