@@ -24,16 +24,20 @@ final class MarketBreadthService {
     func fetchHistory(days: Int = 90) async throws -> [MarketBreadthPoint] {
         guard supabase.isConfigured else { return [] }
 
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        let cutoffStr = formatter.string(from: cutoff)
+
         let results: [MarketBreadthPoint] = try await supabase.database
             .from(SupabaseTable.marketBreadth.rawValue)
             .select()
-            .order("signal_date", ascending: false)
-            .limit(days)
+            .gte("signal_date", value: cutoffStr)
+            .order("signal_date", ascending: true)
             .execute()
             .value
 
-        // Return sorted ascending for charting
-        return results.reversed()
+        return results
     }
 
     /// Fetch recent crossover events
