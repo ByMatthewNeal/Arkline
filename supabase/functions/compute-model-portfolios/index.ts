@@ -12,9 +12,19 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? ""
 const STABLECOIN_APY = 0.045
 const DAILY_STABLE_RATE = Math.pow(1 + STABLECOIN_APY, 1 / 365) - 1
 
-// BTC log regression config
-const BTC_ORIGIN_DATE = new Date("2009-01-03")
-const BTC_DEVIATION_BOUNDS: [number, number] = [-0.8, 0.8]
+// Per-asset log regression configs
+interface AssetRiskConfig {
+  asset: string
+  fmpSymbol: string
+  originDate: Date
+  deviationBounds: [number, number]
+}
+
+const ASSET_RISK_CONFIGS: AssetRiskConfig[] = [
+  { asset: "BTC", fmpSymbol: "BTCUSD", originDate: new Date("2009-01-03"), deviationBounds: [-0.8, 0.8] },
+  { asset: "ETH", fmpSymbol: "ETHUSD", originDate: new Date("2015-07-30"), deviationBounds: [-0.8, 0.8] },
+  { asset: "SOL", fmpSymbol: "SOLUSD", originDate: new Date("2020-04-10"), deviationBounds: [-1.0, 1.0] },
+]
 
 // Per-asset max exposure caps (enforced after strategy allocation)
 const MAX_EXPOSURE: Record<string, number> = {
@@ -187,27 +197,39 @@ function allocsEqual(a: Record<string, number>, b: Record<string, number>): bool
   return true
 }
 
-// ─── BTC Risk via Log Regression ────────────────────────────────────────────
+// ─── Per-Asset Risk via Log Regression ──────────────────────────────────────
 
-async function computeBtcRisk(fmpKey: string): Promise<{
+interface AssetRiskResult {
   risk_level: number
   price: number
   fair_value: number
   deviation: number
   category: string
-} | null> {
-  // Fetch BTC full history from FMP
-  const url = `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=BTCUSD&apikey=${fmpKey}`
+}
+
+async function computeAssetRisk(
+  config: AssetRiskConfig,
+  fmpKey: string,
+): Promise<AssetRiskResult | null> {
+  const url = `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${config.fmpSymbol}&apikey=${fmpKey}`
   const resp = await fetch(url)
-  if (!resp.ok) return null
+  if (!resp.ok) {
+    console.warn(`  [risk] FMP fetch failed for ${config.asset}: ${resp.status}`)
+    return null
+  }
   const data = await resp.json()
-  if (!Array.isArray(data) || data.length < 100) return null
+  // SOL has less history, so accept a lower minimum
+  const minPoints = config.asset === "SOL" ? 50 : 100
+  if (!Array.isArray(data) || data.length < minPoints) {
+    console.warn(`  [risk] ${config.asset}: only ${Array.isArray(data) ? data.length : 0} data points (need ${minPoints})`)
+    return null
+  }
 
   // Sort oldest first
   const sorted = [...data].sort((a: any, b: any) => a.date.localeCompare(b.date))
 
   // Least squares in log-log space
-  const originTime = BTC_ORIGIN_DATE.getTime()
+  const originTime = config.originDate.getTime()
   let n = 0, sumX = 0, sumY = 0, sumXX = 0, sumXY = 0
   let lastPrice = 0
 
@@ -236,7 +258,7 @@ async function computeBtcRisk(fmpKey: string): Promise<{
 
   // Deviation and normalize
   const deviation = Math.log10(lastPrice) - Math.log10(fairValue)
-  const [low, high] = BTC_DEVIATION_BOUNDS
+  const [low, high] = config.deviationBounds
   const clamped = Math.max(low, Math.min(high, deviation))
   const riskLevel = (clamped - low) / (high - low)
 
@@ -256,6 +278,7 @@ async function computeBtcRisk(fmpKey: string): Promise<{
     category,
   }
 }
+
 
 // ─── Strategy Rules ─────────────────────────────────────────────────────────
 
@@ -835,22 +858,31 @@ Deno.serve(async (req) => {
     }
     const macroRegime = determineMacroRegime(allSignals)
 
-    // 3. Compute BTC risk
-    const btcRisk = await computeBtcRisk(fmpKey)
+    // 3. Compute per-asset risk (BTC, ETH, SOL)
+    const assetRisks: Record<string, AssetRiskResult> = {}
+    for (const config of ASSET_RISK_CONFIGS) {
+      const result = await computeAssetRisk(config, fmpKey)
+      if (result) {
+        assetRisks[config.asset] = result
+        console.log(`  ${config.asset} risk: ${result.risk_level} (${result.category}), fair_value: ${result.fair_value}, price: ${result.price}`)
+      } else {
+        console.warn(`  ${config.asset} risk: computation failed`)
+      }
+    }
+    const btcRisk = assetRisks["BTC"] ?? null
     const btcRiskLevel = btcRisk?.risk_level ?? 0.5
     const btcRiskCategory = btcRisk?.category ?? "Neutral"
-    console.log(`  BTC risk: ${btcRiskLevel} (${btcRiskCategory})`)
     console.log(`  BTC signal: ${btcSignal}, Gold: ${goldSignal}, Regime: ${macroRegime}`)
 
-    // 4. Save risk history
-    if (btcRisk) {
+    // 4. Save risk history for all assets
+    for (const [asset, risk] of Object.entries(assetRisks)) {
       await supabase.from("model_portfolio_risk_history").upsert({
-        asset: "BTC",
+        asset,
         risk_date: today,
-        risk_level: btcRisk.risk_level,
-        price: btcRisk.price,
-        fair_value: btcRisk.fair_value,
-        deviation: btcRisk.deviation,
+        risk_level: risk.risk_level,
+        price: risk.price,
+        fair_value: risk.fair_value,
+        deviation: risk.deviation,
       }, { onConflict: "asset,risk_date" })
     }
 
