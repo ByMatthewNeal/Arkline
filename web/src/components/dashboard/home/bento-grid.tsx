@@ -46,7 +46,8 @@ import type { NewsCard } from './news-card';
 type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
   | 'riskChart' | 'marketMovers' | 'macro' | 'supply'
-  | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news';
+  | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news'
+  | 'vix' | 'dxy' | 'm2';
 
 const drawerTitles: Record<WidgetKey, string> = {
   portfolio: 'Portfolio',
@@ -62,6 +63,9 @@ const drawerTitles: Record<WidgetKey, string> = {
   favorites: 'Watchlist',
   dca: 'DCA Reminders',
   news: 'Headlines',
+  vix: 'VIX — Volatility Index',
+  dxy: 'DXY — US Dollar Index',
+  m2: 'Global M2 — Money Supply',
 };
 
 /* ── Lazy drawer widget renderer ── */
@@ -70,7 +74,7 @@ function LazyDrawerWidget({ widgetKey }: { widgetKey: WidgetKey }) {
 
   useEffect(() => {
     let cancelled = false;
-    const loaders: Record<WidgetKey, () => Promise<{ default?: React.ComponentType; [k: string]: unknown }>> = {
+    const loaders: Partial<Record<WidgetKey, () => Promise<{ default?: React.ComponentType; [k: string]: unknown }>>> = {
       portfolio: () => import('./portfolio-hero').then(m => ({ default: m.PortfolioHero })),
       briefing: () => import('./briefing-card').then(m => ({ default: m.BriefingCard })),
       fearGreed: () => import('./fear-greed-gauge').then(m => ({ default: m.FearGreedGauge })),
@@ -85,7 +89,19 @@ function LazyDrawerWidget({ widgetKey }: { widgetKey: WidgetKey }) {
       dca: () => import('./dca-card').then(m => ({ default: m.DCACard })),
       news: () => import('./news-card').then(m => ({ default: m.NewsCard })),
     };
-    loaders[widgetKey]().then(mod => {
+    const loader = loaders[widgetKey];
+    if (!loader) {
+      // No dedicated detail view yet — the tile itself carries the data.
+      const Fallback = () => (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm text-ark-text-secondary">Detailed view coming soon</p>
+          <p className="mt-1 text-xs text-ark-text-disabled">This widget&apos;s data is shown on the dashboard tile.</p>
+        </div>
+      );
+      setWidget(() => Fallback as React.ComponentType);
+      return () => { cancelled = true; };
+    }
+    loader().then(mod => {
       if (!cancelled) setWidget(() => (mod.default ?? null) as React.ComponentType | null);
     });
     return () => { cancelled = true; };
@@ -1003,6 +1019,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'favorites',    x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'dca',          x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'news',         x: 3, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'vix',          x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'dxy',          x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'm2',           x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
@@ -1018,6 +1037,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'favorites',    x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'dca',          x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'news',         x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'vix',          x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'dxy',          x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'm2',           x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1033,13 +1055,94 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'favorites',    x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'dca',          x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'news',         x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'vix',          x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'dxy',          x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'm2',           x: 0, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
+
+/* ── Standalone macro indicator tiles (VIX / DXY / Global M2) ──
+ * Matches the iOS VIXWidget / DXYWidget / GlobalLiquidityWidget: value, subtitle,
+ * and a Bullish / Neutral / Bearish level label. Reuses the macro indicator feed.
+ */
+function makeMacroTile(cfg: {
+  indicator: string;
+  title: string;
+  subtitle: string;
+  decimals: number;
+  prefix?: string;
+  suffix?: string;
+  level: (v: number, changePct: number) => { label: string; color: string };
+}) {
+  function MacroSingleTile({ onOpen }: { onOpen: () => void }) {
+    const { data, isLoading } = useMacroIndicators();
+    const ind = (data ?? []).find((d) => d.name === cfg.indicator);
+    const value = ind?.value ?? 0;
+    const changePct = ind?.change_percentage ?? 0;
+    const spark = ind?.sparkline ?? [];
+    const lvl = cfg.level(value, changePct);
+    const counter = useCountUp(value, isLoading, cfg.decimals);
+
+    return (
+      <Tile onClick={onOpen} accentColor={lvl.color}>
+        <AccentLine color={lvl.color} />
+        {isLoading ? <SkeletonSparkTile /> : (
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">{cfg.title}</span>
+              </div>
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: lvl.color }} />
+            </div>
+
+            <div className="relative mt-1 flex items-baseline gap-1.5">
+              <AmbientGlow color={lvl.color} className="-left-2 -bottom-2 h-12 w-20" />
+              <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none text-ark-text relative">
+                {cfg.prefix}{counter.value}{cfg.suffix}
+              </span>
+              <span className={cn('fig text-xs font-semibold', changePct >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+                {formatPercent(changePct)}
+              </span>
+            </div>
+
+            {spark.length > 1 && (
+              <div className="my-2 h-8">
+                <Spark data={spark} color={lvl.color} className="h-full" />
+              </div>
+            )}
+
+            <div className="mt-auto flex items-center justify-between">
+              <span className="text-[10px] text-ark-text-disabled">{cfg.subtitle}</span>
+              <span className="text-[11px] font-semibold" style={{ color: lvl.color }}>{lvl.label}</span>
+            </div>
+          </div>
+        )}
+      </Tile>
+    );
+  }
+  return MacroSingleTile;
+}
+
+const VIX = { success: 'var(--ark-success)', warning: 'var(--ark-warning)', error: 'var(--ark-error)' };
+
+const VixTile = makeMacroTile({
+  indicator: 'VIX', title: 'VIX', subtitle: 'Volatility Index', decimals: 2,
+  level: (v) => v < 20 ? { label: 'Bullish', color: VIX.success } : v < 25 ? { label: 'Neutral', color: VIX.warning } : { label: 'Bearish', color: VIX.error },
+});
+const DxyTile = makeMacroTile({
+  indicator: 'DXY', title: 'DXY', subtitle: 'US Dollar Index', decimals: 2,
+  level: (v) => v < 100 ? { label: 'Bullish', color: VIX.success } : v < 105 ? { label: 'Neutral', color: VIX.warning } : { label: 'Bearish', color: VIX.error },
+});
+const M2Tile = makeMacroTile({
+  indicator: 'M2', title: 'Global M2', subtitle: 'Money Supply', decimals: 1, prefix: '$', suffix: 'T',
+  level: (_v, chg) => chg > 0 ? { label: 'Bullish', color: VIX.success } : chg > -1 ? { label: 'Neutral', color: VIX.warning } : { label: 'Bearish', color: VIX.error },
+});
 
 const widgetKeys: WidgetKey[] = [
   'portfolio', 'fearGreed', 'arklineScore', 'briefing', 'riskChart',
   'marketMovers', 'macro', 'supply', 'assetRisk', 'events',
   'favorites', 'dca', 'news',
+  'vix', 'dxy', 'm2',
 ];
 
 const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
@@ -1056,6 +1159,9 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   favorites: FavoritesTile,
   dca: DCATile,
   news: NewsTile,
+  vix: VixTile,
+  dxy: DxyTile,
+  m2: M2Tile,
 };
 
 export function BentoGrid() {
