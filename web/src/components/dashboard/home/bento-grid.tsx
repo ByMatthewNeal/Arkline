@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
+import { useDashboardPresets } from '@/lib/hooks/use-dashboard-presets';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
@@ -1621,6 +1622,8 @@ function CustomizePanel({
   onClose: () => void;
 }) {
   const enabledCount = widgetKeys.filter(isEnabled).length;
+  const { presets, saveCurrent, apply, remove, canSave } = useDashboardPresets('home');
+  const [presetName, setPresetName] = useState('');
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -1639,6 +1642,36 @@ function CustomizePanel({
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Presets */}
+        <div className="border-b border-ark-divider px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Presets</p>
+          {presets.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {presets.map((p) => (
+                <div key={p.name} className="flex items-center gap-2">
+                  <button onClick={() => apply(p.name)} className="flex-1 rounded-lg bg-ark-fill-secondary/50 px-3 py-1.5 text-left text-sm text-ark-text transition-colors hover:bg-ark-fill-secondary">{p.name}</button>
+                  <button onClick={() => remove(p.name)} className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary"><X className="h-3.5 w-3.5" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder={canSave ? 'Save current as…' : 'Max 2 presets'}
+              disabled={!canSave}
+              className="h-8 flex-1 rounded-lg border border-ark-divider bg-ark-fill-secondary px-2.5 text-xs text-ark-text outline-none placeholder:text-ark-text-tertiary focus:border-ark-primary disabled:opacity-50"
+            />
+            <button
+              onClick={() => { saveCurrent(presetName); setPresetName(''); }}
+              disabled={!canSave || !presetName.trim()}
+              className="rounded-lg bg-ark-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-ark-accent-dark disabled:opacity-40"
+            >Save</button>
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 border-b border-ark-divider px-4 py-2">
           <button onClick={() => setAll(true)} className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-ark-primary transition-colors hover:bg-ark-fill-secondary">Show all</button>
           <button onClick={() => setAll(false)} className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary">Hide all</button>
