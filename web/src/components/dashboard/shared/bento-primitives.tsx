@@ -13,21 +13,36 @@ export function useSparkId() {
   return idRef.current;
 }
 
-/* ── Animated count-up hook ── */
+/* ── Animated count-up hook ──
+ * Counts up from 0 → target once the element scrolls into view. Critically it
+ * never gets *stuck* at 0: if the element isn't (yet) observed in view, or the
+ * value updates after the one-time animation, the real target value is shown
+ * directly. The animation is a progressive enhancement, not a gate on the data.
+ */
 export function useCountUp(target: number, isLoading: boolean, decimals = 0) {
-  const ref = useRef<HTMLSpanElement>(null);
   const inViewRef = useRef<HTMLSpanElement>(null);
   const isInView = useInView(inViewRef, { once: true });
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(target);
   const hasAnimated = useRef(false);
 
   useEffect(() => {
-    if (isLoading || !isInView || hasAnimated.current || target === 0) return;
+    // While loading we don't have a real value yet; the tile shows a skeleton.
+    if (isLoading) return;
+
+    // Nothing to animate, already played the intro, or not in view → show the
+    // real value directly (also keeps it in sync when data refreshes).
+    if (target === 0 || hasAnimated.current || !isInView) {
+      setDisplay(target);
+      return;
+    }
+
+    // First time in view with a real value → play the count-up.
     hasAnimated.current = true;
     const steps = 35;
     const duration = 1200;
     const stepTime = duration / steps;
     let step = 0;
+    setDisplay(0);
     const timer = setInterval(() => {
       step++;
       const t = step / steps;
@@ -40,13 +55,6 @@ export function useCountUp(target: number, isLoading: boolean, decimals = 0) {
     }, stepTime);
     return () => clearInterval(timer);
   }, [target, isLoading, isInView]);
-
-  useEffect(() => {
-    if (isLoading) {
-      hasAnimated.current = false;
-      setDisplay(0);
-    }
-  }, [isLoading]);
 
   const formatted = decimals > 0 ? display.toFixed(decimals) : Math.round(display).toString();
   return { ref: inViewRef, value: formatted };
