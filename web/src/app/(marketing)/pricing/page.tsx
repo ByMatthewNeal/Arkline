@@ -142,11 +142,18 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <div className="mt-8 [&_form]:flex-col [&_form]:items-stretch [&_input]:w-full [&_button]:w-full">
-                <EmailCapture />
-              </div>
+              <a
+                href="https://buy.stripe.com/14A3cxeeE3O63rP5341Fe03"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 block"
+              >
+                <Button size="lg" className="w-full">
+                  Subscribe Now
+                </Button>
+              </a>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                Join the early access list to claim your spot.
+                Secure checkout via Stripe • Cancel anytime
               </p>
             </div>
           </FadeIn>
