@@ -16,6 +16,7 @@ import {
   useRegimeData,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
@@ -98,28 +99,74 @@ function LazyDrawerWidget({ widgetKey }: { widgetKey: WidgetKey }) {
 /* ══════════════════════ TILE COMPONENTS ══════════════════════ */
 
 function PortfolioTile({ onOpen }: { onOpen: () => void }) {
-  const { data: riskData, isLoading } = useRiskHistory(90);
-  const allData = (riskData ?? []).map((p) => ({ value: p.price }));
-  const currentValue = allData[allData.length - 1]?.value ?? 0;
-  const previousValue = allData[allData.length - 2]?.value ?? currentValue;
-  const monthStart = allData[0]?.value ?? currentValue;
-  const dayChange = currentValue - previousValue;
-  const dayChangePct = previousValue ? (dayChange / previousValue) * 100 : 0;
-  const monthChangePct = monthStart ? ((currentValue - monthStart) / monthStart) * 100 : 0;
+  const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
+  const portfolioId = portfolios?.[0]?.id;
+  const { data: holdings, isLoading: holdingsLoading } = useHoldings(portfolioId);
+  const { data: assets } = useCryptoAssets(1);
+  const { data: history } = usePortfolioHistory(portfolioId, 30);
+
+  const isLoading = portfoliosLoading || (!!portfolioId && holdingsLoading);
+
+  // Live price lookup by symbol (from the cached top-coins list).
+  const priceBySymbol = new Map<string, { current_price: number; price_change_percentage_24h: number }>();
+  for (const a of assets ?? []) {
+    priceBySymbol.set(a.symbol.toLowerCase(), {
+      current_price: a.current_price,
+      price_change_percentage_24h: a.price_change_percentage_24h ?? 0,
+    });
+  }
+
+  // Current value + 24h change, summed across holdings (quantity × live price;
+  // falls back to average buy price for anything without a live quote).
+  let currentValue = 0;
+  let dayChange = 0;
+  for (const h of holdings ?? []) {
+    const live = priceBySymbol.get(h.symbol.toLowerCase());
+    const price = live?.current_price ?? h.average_buy_price ?? 0;
+    const value = h.quantity * price;
+    currentValue += value;
+    const pct = live?.price_change_percentage_24h ?? 0;
+    dayChange += value - value / (1 + pct / 100);
+  }
+  const dayChangePct = currentValue - dayChange ? (dayChange / (currentValue - dayChange)) * 100 : 0;
   const isUp = dayChange >= 0;
+
+  // 30-day history (portfolio_history) for the sparkline + 30d return.
+  const histVals = (history ?? []).map((p) => p.value);
+  const sparkVals = histVals.length ? [...histVals, currentValue] : [];
+  const monthStart = histVals[0] ?? currentValue;
+  const monthChangePct = monthStart ? ((currentValue - monthStart) / monthStart) * 100 : 0;
   const isMonthUp = monthChangePct >= 0;
-  const sparkVals = allData.slice(-30).map((d) => d.value);
   const periodHigh = sparkVals.length ? Math.max(...sparkVals) : currentValue;
   const periodLow = sparkVals.length ? Math.min(...sparkVals) : currentValue;
   const rangeSpan = periodHigh - periodLow || 1;
   const rangePct = ((currentValue - periodLow) / rangeSpan) * 100;
 
+  const assetCount = holdings?.length ?? 0;
+  const hasHoldings = assetCount > 0;
   const counter = useCountUp(currentValue, isLoading, 2);
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
-      {isLoading ? <SkeletonHeroTile /> : (
+      {isLoading ? <SkeletonHeroTile /> : !hasHoldings ? (
+        // Empty state — no holdings yet.
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10 transition-transform duration-300 group-hover:scale-110">
+              <Wallet className="h-3.5 w-3.5 text-ark-primary" />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text leading-tight">
+              <span className="opacity-40 font-normal">$</span>0.00
+            </p>
+            <p className="mt-1 text-[11px] text-ark-text-tertiary">No holdings yet</p>
+            <p className="mt-0.5 text-[10px] text-ark-text-disabled">Add holdings to track your portfolio</p>
+          </div>
+        </div>
+      ) : (
         <div className="flex h-full gap-4">
           {/* Left metrics */}
           <div className="flex flex-col justify-between flex-1 min-w-0">
@@ -155,31 +202,35 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
               <div className="w-px bg-ark-divider" />
               <div>
                 <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Assets</p>
-                <p className="fig text-sm font-bold text-ark-text">10</p>
+                <p className="fig text-sm font-bold text-ark-text">{assetCount}</p>
               </div>
             </div>
 
             {/* Range bar */}
-            <div>
-              <div className="flex items-center justify-between text-[8px] text-ark-text-disabled">
-                <span className="fig">{formatCurrency(periodLow)}</span>
-                <span className="font-medium">30d Range</span>
-                <span className="fig">{formatCurrency(periodHigh)}</span>
-              </div>
-              <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-ark-fill-secondary">
-                <div className="relative h-full rounded-full bg-gradient-to-r from-ark-error via-ark-warning to-ark-success transition-all duration-500"
-                  style={{ width: `${Math.max(4, rangePct)}%` }}
-                >
-                  <div className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 translate-x-1/2 rounded-full border border-ark-card bg-ark-text" />
+            {sparkVals.length > 1 && (
+              <div>
+                <div className="flex items-center justify-between text-[8px] text-ark-text-disabled">
+                  <span className="fig">{formatCurrency(periodLow)}</span>
+                  <span className="font-medium">30d Range</span>
+                  <span className="fig">{formatCurrency(periodHigh)}</span>
+                </div>
+                <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+                  <div className="relative h-full rounded-full bg-gradient-to-r from-ark-error via-ark-warning to-ark-success transition-all duration-500"
+                    style={{ width: `${Math.max(4, rangePct)}%` }}
+                  >
+                    <div className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 translate-x-1/2 rounded-full border border-ark-card bg-ark-text" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right sparkline */}
-          <div className="flex flex-col justify-end w-2/5 shrink-0">
-            <Spark data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
-          </div>
+          {sparkVals.length > 1 && (
+            <div className="flex flex-col justify-end w-2/5 shrink-0">
+              <Spark data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
+            </div>
+          )}
         </div>
       )}
     </Tile>

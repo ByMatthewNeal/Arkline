@@ -51,14 +51,18 @@ export async function fetchPortfolioHistory(
   const since = new Date();
   since.setDate(since.getDate() - days);
 
+  const sinceISO = since.toISOString().split('T')[0];
   const { data, error } = await supabase
-    .from('portfolioHistory')
-    .select('*')
+    .from('portfolio_history')
+    .select('recorded_date, total_value')
     .eq('portfolio_id', portfolioId)
-    .gte('date', since.toISOString())
-    .order('date', { ascending: true });
-  if (error) throw error;
-  return data ?? [];
+    .gte('recorded_date', sinceISO)
+    .order('recorded_date', { ascending: true });
+  if (error) return [];
+  return (data as { recorded_date: string; total_value: number }[]).map((p) => ({
+    date: p.recorded_date,
+    value: Number(p.total_value),
+  }));
 }
 
 export async function refreshHoldingPrices(
