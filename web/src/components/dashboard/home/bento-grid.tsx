@@ -105,6 +105,19 @@ function LazyDrawerWidget({ widgetKey }: { widgetKey: WidgetKey }) {
       favorites: () => import('./favorites-card').then(m => ({ default: m.FavoritesCard })),
       dca: () => import('./dca-card').then(m => ({ default: m.DCACard })),
       news: () => import('./news-card').then(m => ({ default: m.NewsCard })),
+      vix: () => import('./macro-detail').then(m => ({ default: m.VixDetail })),
+      dxy: () => import('./macro-detail').then(m => ({ default: m.DxyDetail })),
+      m2: () => import('./macro-detail').then(m => ({ default: m.M2Detail })),
+      marketBreadth: () => import('./market-detail').then(m => ({ default: m.MarketBreadthDetail })),
+      signalChanges: () => import('./market-detail').then(m => ({ default: m.SignalChangesDetail })),
+      stockRisk: () => import('./market-detail').then(m => ({ default: m.StockRiskDetail })),
+      tradeSignals: () => import('./signals-detail').then(m => ({ default: m.TradeSignalsDetail })),
+      rotation: () => import('./signals-detail').then(m => ({ default: m.RotationDetail })),
+      modelPortfolio: () => import('./signals-detail').then(m => ({ default: m.ModelPortfolioDetail })),
+      weeklyUpdate: () => import('./signals-detail').then(m => ({ default: m.WeeklyUpdateDetail })),
+      usFutures: () => import('./extras-detail').then(m => ({ default: m.USFuturesDetail })),
+      perpPremium: () => import('./extras-detail').then(m => ({ default: m.PerpPremiumDetail })),
+      fedWatch: () => import('./extras-detail').then(m => ({ default: m.FedWatchDetail })),
     };
     const loader = loaders[widgetKey];
     if (!loader) {
