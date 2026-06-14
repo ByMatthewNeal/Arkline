@@ -35,6 +35,8 @@ import type {
   RotationData,
   ModelPortfolioUpdate,
   WeeklyDeck,
+  USFuturesItem,
+  PerpPremiumItem,
 } from '@/types';
 
 function getSupabase() {
@@ -169,16 +171,26 @@ export async function fetchEconomicEvents(): Promise<EconomicEvent[]> {
   });
 }
 
+// Fed Watch — written by the refresh-market-extras edge cron as
+// { rate, meetings: FedWatchData[] }. Tolerates a bare array too.
 export async function fetchFedWatchData(): Promise<FedWatchData[]> {
   if (!isSupabaseConfigured()) return [];
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('market_data_cache')
-    .select('data')
-    .eq('key', 'fed_watch')
-    .single();
-  if (error || !data) return [];
-  return data.data as FedWatchData[];
+  const raw = await readCache<FedWatchData[] | { meetings?: FedWatchData[] }>('fed_watch');
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  return raw.meetings ?? [];
+}
+
+// US Futures (ES/YM/NQ) — written by the edge cron under 'us_futures'.
+export async function fetchUSFutures(): Promise<USFuturesItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  return (await readCache<USFuturesItem[]>('us_futures')) ?? [];
+}
+
+// Perp Premium (BTC/ETH funding) — written by the edge cron under 'perp_premium'.
+export async function fetchPerpPremiumData(): Promise<PerpPremiumItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  return (await readCache<PerpPremiumItem[]>('perp_premium')) ?? [];
 }
 
 interface PositioningRow {

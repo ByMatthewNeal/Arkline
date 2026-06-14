@@ -16,6 +16,7 @@ import {
   useSupplyInProfit, useAssetRiskLevels, useEconomicEvents, useNews,
   useRegimeData, useMarketBreadth, useSignalChanges, useStockRiskLevels,
   useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck,
+  useUSFutures, usePerpPremium, useFedWatch,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
@@ -51,7 +52,8 @@ type WidgetKey =
   | 'riskChart' | 'marketMovers' | 'macro' | 'supply'
   | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news'
   | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'signalChanges' | 'stockRisk'
-  | 'tradeSignals' | 'rotation' | 'modelPortfolio' | 'weeklyUpdate';
+  | 'tradeSignals' | 'rotation' | 'modelPortfolio' | 'weeklyUpdate'
+  | 'usFutures' | 'perpPremium' | 'fedWatch';
 
 const drawerTitles: Record<WidgetKey, string> = {
   portfolio: 'Portfolio',
@@ -77,6 +79,9 @@ const drawerTitles: Record<WidgetKey, string> = {
   rotation: 'Crypto / Equities Rotation',
   modelPortfolio: 'Model Portfolio Updates',
   weeklyUpdate: 'Weekly Update',
+  usFutures: 'US Futures',
+  perpPremium: 'Perp Premium',
+  fedWatch: 'Fed Watch',
 };
 
 /* ── Lazy drawer widget renderer ── */
@@ -1040,6 +1045,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'rotation',     x: 3, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'modelPortfolio',x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'weeklyUpdate', x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'usFutures',    x: 2, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'perpPremium',  x: 3, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'fedWatch',     x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
@@ -1065,6 +1073,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'rotation',     x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'modelPortfolio',x: 2, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'weeklyUpdate', x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'usFutures',    x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'perpPremium',  x: 2, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'fedWatch',     x: 0, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1090,6 +1101,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'rotation',     x: 1, y: 33, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'modelPortfolio',x: 0, y: 36, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'weeklyUpdate', x: 1, y: 36, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'usFutures',    x: 0, y: 39, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'perpPremium',  x: 1, y: 39, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'fedWatch',     x: 0, y: 42, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
@@ -1438,12 +1452,132 @@ function WeeklyUpdateTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+/* ── US Futures tile (market_data_cache 'us_futures' via edge cron) ── */
+function USFuturesTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useUSFutures();
+  const futures = data ?? [];
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><TrendingUp className="h-3.5 w-3.5 text-ark-primary" /></div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">US Futures</span>
+          </div>
+          {futures.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <p className="text-xs text-ark-text-tertiary">Awaiting data</p>
+              <p className="mt-0.5 text-[10px] text-ark-text-disabled">Updates when the market-extras job runs</p>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {futures.map((f) => (
+                <div key={f.symbol} className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-ark-text">{f.name}</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="fig text-sm font-bold text-ark-text">{f.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    <span className={cn('fig text-[11px] font-semibold', f.change_percent >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(f.change_percent)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Perp Premium tile (market_data_cache 'perp_premium' via edge cron) ── */
+function PerpPremiumTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = usePerpPremium();
+  const perps = data ?? [];
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Gauge className="h-3.5 w-3.5 text-ark-primary" /></div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Perp Premium</span>
+          </div>
+          {perps.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <p className="text-xs text-ark-text-tertiary">Awaiting data</p>
+              <p className="mt-0.5 text-[10px] text-ark-text-disabled">Updates when the market-extras job runs</p>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {perps.map((p) => {
+                const bullish = p.funding_rate >= 0;
+                return (
+                  <div key={p.symbol} className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-ark-text">{p.symbol}</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className={cn('fig text-sm font-bold', bullish ? 'text-ark-success' : 'text-ark-error')}>{(p.funding_rate * 100).toFixed(4)}%</span>
+                      <span className="text-[10px] text-ark-text-disabled">{bullish ? 'longs pay' : 'shorts pay'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Fed Watch tile (market_data_cache 'fed_watch' via edge cron) ── */
+function FedWatchTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useFedWatch();
+  const meetings = data ?? [];
+  const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Globe className="h-3.5 w-3.5 text-ark-primary" /></div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Fed Watch</span>
+          </div>
+          {meetings.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <p className="text-xs text-ark-text-tertiary">Awaiting data</p>
+              <p className="mt-0.5 text-[10px] text-ark-text-disabled">Updates when the market-extras job runs</p>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {meetings.slice(0, 3).map((m) => (
+                <div key={m.meeting_date}>
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
+                    <span className="text-ark-text-disabled">cut {m.cut_probability}% · hold {m.hold_probability}%</span>
+                  </div>
+                  <div className="mt-1 flex h-1.5 overflow-hidden rounded-full bg-ark-fill-secondary">
+                    <div className="h-full bg-ark-success" style={{ width: `${m.cut_probability}%` }} />
+                    <div className="h-full bg-ark-text-tertiary" style={{ width: `${m.hold_probability}%` }} />
+                    <div className="h-full bg-ark-error" style={{ width: `${m.hike_probability}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
 const widgetKeys: WidgetKey[] = [
   'portfolio', 'fearGreed', 'arklineScore', 'briefing', 'riskChart',
   'marketMovers', 'macro', 'supply', 'assetRisk', 'events',
   'favorites', 'dca', 'news',
   'vix', 'dxy', 'm2', 'marketBreadth', 'signalChanges', 'stockRisk',
   'tradeSignals', 'rotation', 'modelPortfolio', 'weeklyUpdate',
+  'usFutures', 'perpPremium', 'fedWatch',
 ];
 
 const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
@@ -1470,6 +1604,9 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   rotation: RotationTile,
   modelPortfolio: ModelPortfolioTile,
   weeklyUpdate: WeeklyUpdateTile,
+  usFutures: USFuturesTile,
+  perpPremium: PerpPremiumTile,
+  fedWatch: FedWatchTile,
 };
 
 function CustomizePanel({

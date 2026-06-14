@@ -231,6 +231,23 @@ export interface StockRiskItem {
   risk_value: number; // 0-1
 }
 
+/* ── US Futures (Yahoo, via edge cron) ── */
+export interface USFuturesItem {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  change_percent: number;
+}
+
+/* ── Perp Premium (Binance funding, via edge cron) ── */
+export interface PerpPremiumItem {
+  symbol: string;
+  funding_rate: number;
+  annualized_rate: number;
+  premium_score: number;
+}
+
 /* ── Trade Signals (flash intel) ── */
 export interface TradeSignalItem {
   id: string;

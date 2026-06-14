@@ -18,6 +18,9 @@ import {
   fetchRotationSignal,
   fetchModelPortfolioUpdate,
   fetchWeeklyDeck,
+  fetchUSFutures,
+  fetchPerpPremiumData,
+  fetchFedWatchData,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -181,6 +184,18 @@ export function useModelPortfolioUpdate() {
 
 export function useWeeklyDeck() {
   return useQuery({ queryKey: ['weekly-deck'], queryFn: fetchWeeklyDeck, staleTime: 300_000 });
+}
+
+export function useUSFutures() {
+  return useQuery({ queryKey: ['us-futures'], queryFn: fetchUSFutures, staleTime: 120_000 });
+}
+
+export function usePerpPremium() {
+  return useQuery({ queryKey: ['perp-premium'], queryFn: fetchPerpPremiumData, staleTime: 300_000 });
+}
+
+export function useFedWatch() {
+  return useQuery({ queryKey: ['fed-watch'], queryFn: fetchFedWatchData, staleTime: 900_000 });
 }
 
 export function useArkLineScore() {
