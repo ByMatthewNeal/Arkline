@@ -27,6 +27,10 @@ import type {
   AssetPositioning,
   MacroInput,
   MacroInputSignal,
+  MarketBreadthData,
+  SignalChangeItem,
+  QpsSignal,
+  StockRiskItem,
 } from '@/types';
 
 function getSupabase() {
@@ -508,4 +512,73 @@ export async function fetchAltcoinScanner(): Promise<AltcoinScannerEntry[]> {
   }
   entries.sort((a, b) => b.market_cap - a.market_cap);
   return entries.length ? entries.slice(0, 30) : demoAltcoinScanner;
+}
+
+/* ── Market Breadth ── (market_breadth: % tokens in uptrend + EMA crossover) */
+export async function fetchMarketBreadth(): Promise<MarketBreadthData | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('market_breadth')
+    .select('signal_date, breadth_pct, trend, prev_trend, crossover, trending_tokens, total_tokens, btc_price')
+    .order('signal_date', { ascending: false })
+    .limit(30);
+  if (error || !data?.length) return null;
+  const rows = data as {
+    breadth_pct: number; trend: string; prev_trend: string | null; crossover: string | null;
+    trending_tokens: number; total_tokens: number; btc_price: number | null;
+  }[];
+  const latest = rows[0];
+  return {
+    breadth_pct: Number(latest.breadth_pct),
+    trend: latest.trend,
+    prev_trend: latest.prev_trend,
+    crossover: latest.crossover,
+    trending_tokens: latest.trending_tokens,
+    total_tokens: latest.total_tokens,
+    btc_price: latest.btc_price,
+    history: rows.map((r) => Number(r.breadth_pct)).reverse(),
+  };
+}
+
+/* ── Signal Changes ── (positioning_signals where today's signal != prior) */
+export async function fetchSignalChanges(): Promise<SignalChangeItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const latest = await supabase
+    .from('positioning_signals')
+    .select('signal_date')
+    .order('signal_date', { ascending: false })
+    .limit(1);
+  const latestDate = latest.data?.[0]?.signal_date;
+  if (!latestDate) return [];
+  const { data, error } = await supabase
+    .from('positioning_signals')
+    .select('asset, signal, prev_signal')
+    .eq('signal_date', latestDate);
+  if (error || !data?.length) return [];
+  const valid: QpsSignal[] = ['bullish', 'neutral', 'bearish'];
+  return (data as { asset: string; signal: string; prev_signal: string | null }[])
+    .filter((r) => r.prev_signal && r.signal !== r.prev_signal && valid.includes(r.signal as QpsSignal))
+    .map((r) => ({ asset: r.asset, signal: r.signal as QpsSignal, prev_signal: r.prev_signal as QpsSignal }));
+}
+
+/* ── Stock Risk Levels ── (indicator_snapshots stock_risk_*) */
+export async function fetchStockRiskLevels(): Promise<StockRiskItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('indicator_snapshots')
+    .select('indicator, value, recorded_date')
+    .like('indicator', 'stock_risk_%')
+    .order('recorded_date', { ascending: false })
+    .limit(120);
+  if (error || !data?.length) return [];
+  const rows = data as { indicator: string; value: number; recorded_date: string }[];
+  const latestDate = rows[0].recorded_date;
+  return rows
+    .filter((r) => r.recorded_date === latestDate)
+    .map((r) => ({ symbol: r.indicator.replace('stock_risk_', '').toUpperCase(), risk_value: Number(r.value) }))
+    .sort((a, b) => b.risk_value - a.risk_value)
+    .slice(0, 12);
 }

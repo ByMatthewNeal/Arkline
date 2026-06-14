@@ -13,7 +13,7 @@ import {
   useRiskHistory, useFearGreedIndex, useArkLineScore, useCryptoAssets,
   useMarketBriefing, useCryptoPositioning, useMacroIndicators,
   useSupplyInProfit, useAssetRiskLevels, useEconomicEvents, useNews,
-  useRegimeData,
+  useRegimeData, useMarketBreadth, useSignalChanges, useStockRiskLevels,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
@@ -47,7 +47,7 @@ type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
   | 'riskChart' | 'marketMovers' | 'macro' | 'supply'
   | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news'
-  | 'vix' | 'dxy' | 'm2';
+  | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'signalChanges' | 'stockRisk';
 
 const drawerTitles: Record<WidgetKey, string> = {
   portfolio: 'Portfolio',
@@ -66,6 +66,9 @@ const drawerTitles: Record<WidgetKey, string> = {
   vix: 'VIX — Volatility Index',
   dxy: 'DXY — US Dollar Index',
   m2: 'Global M2 — Money Supply',
+  marketBreadth: 'Market Breadth',
+  signalChanges: 'Signal Changes',
+  stockRisk: 'Stock Risk Levels',
 };
 
 /* ── Lazy drawer widget renderer ── */
@@ -1022,6 +1025,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'vix',          x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'dxy',          x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'm2',           x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'marketBreadth',x: 3, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'signalChanges',x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'stockRisk',    x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
@@ -1040,6 +1046,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'vix',          x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'dxy',          x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'm2',           x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'marketBreadth',x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'signalChanges',x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'stockRisk',    x: 2, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1058,6 +1067,9 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'vix',          x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'dxy',          x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'm2',           x: 0, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'marketBreadth',x: 1, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'signalChanges',x: 0, y: 30, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'stockRisk',    x: 1, y: 30, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
@@ -1138,11 +1150,135 @@ const M2Tile = makeMacroTile({
   level: (_v, chg) => chg > 0 ? { label: 'Bullish', color: VIX.success } : chg > -1 ? { label: 'Neutral', color: VIX.warning } : { label: 'Bearish', color: VIX.error },
 });
 
+/* ── Market Breadth tile (market_breadth) ── */
+const SIG_COLORS: Record<string, string> = {
+  bullish: 'var(--ark-success)', neutral: 'var(--ark-warning)', bearish: 'var(--ark-error)',
+};
+function breadthColor(pct: number): string {
+  if (pct >= 70) return 'var(--ark-success)';
+  if (pct >= 40) return 'var(--ark-warning)';
+  return 'var(--ark-error)';
+}
+
+function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useMarketBreadth();
+  const pct = data?.breadth_pct ?? 0;
+  const trend = (data?.trend ?? 'neutral').toLowerCase();
+  const color = breadthColor(pct);
+  const counter = useCountUp(pct, isLoading, 1);
+  return (
+    <Tile onClick={onOpen} accentColor={color}>
+      <AccentLine color={color} />
+      {isLoading ? <SkeletonSparkTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Market Breadth</span>
+            <Badge variant={trend === 'bullish' ? 'success' : trend === 'bearish' ? 'error' : 'warning'}>
+              {trend.charAt(0).toUpperCase() + trend.slice(1)}
+            </Badge>
+          </div>
+          <div className="relative mt-1 flex items-baseline gap-1.5">
+            <AmbientGlow color={color} className="-left-2 -bottom-2 h-12 w-20" />
+            <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none relative" style={{ color }}>
+              {counter.value}%
+            </span>
+            <span className="fig text-[11px] text-ark-text-disabled">{data?.trending_tokens ?? 0}/{data?.total_tokens ?? 0} trending</span>
+          </div>
+          {(data?.history?.length ?? 0) > 1 && (
+            <div className="my-2 h-8"><Spark data={data!.history} color={color} className="h-full" /></div>
+          )}
+          <div className="mt-auto flex items-center justify-between">
+            <span className="text-[10px] text-ark-text-disabled">% tokens in uptrend</span>
+            {data?.crossover && (
+              <span className="text-[10px] font-semibold" style={{ color }}>{data.crossover} cross</span>
+            )}
+          </div>
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Signal Changes tile (positioning_signals) ── */
+function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useSignalChanges();
+  const changes = data ?? [];
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10">
+              <Repeat className="h-3.5 w-3.5 text-ark-primary" />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Signal Changes</span>
+          </div>
+          {changes.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <p className="text-xs text-ark-text-tertiary">No signal changes today</p>
+            </div>
+          ) : (
+            <div className="mt-2 space-y-1.5 overflow-hidden">
+              {changes.slice(0, 5).map((c) => (
+                <div key={c.asset} className="flex items-center gap-2">
+                  <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{c.asset}</span>
+                  <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
+                  <ArrowUpRight className="h-3 w-3 rotate-45 text-ark-text-disabled" />
+                  <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Stock Risk Levels tile (indicator_snapshots stock_risk_*) ── */
+function StockRiskTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useStockRiskLevels();
+  const stocks = data ?? [];
+  const riskColor = (v: number) => v < 0.3 ? 'var(--ark-success)' : v < 0.5 ? 'var(--ark-warning)' : v < 0.7 ? '#F97316' : 'var(--ark-error)';
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10">
+              <BarChart3 className="h-3.5 w-3.5 text-ark-primary" />
+            </div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Stock Risk Levels</span>
+          </div>
+          {stocks.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center"><p className="text-xs text-ark-text-disabled">No data</p></div>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {stocks.slice(0, 6).map((s) => (
+                <div key={s.symbol} className="flex items-center gap-2">
+                  <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{s.symbol}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+                    <div className="h-full rounded-full" style={{ width: `${s.risk_value * 100}%`, backgroundColor: riskColor(s.risk_value) }} />
+                  </div>
+                  <span className="fig w-8 text-right text-[10px] font-semibold text-ark-text">{s.risk_value.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
 const widgetKeys: WidgetKey[] = [
   'portfolio', 'fearGreed', 'arklineScore', 'briefing', 'riskChart',
   'marketMovers', 'macro', 'supply', 'assetRisk', 'events',
   'favorites', 'dca', 'news',
-  'vix', 'dxy', 'm2',
+  'vix', 'dxy', 'm2', 'marketBreadth', 'signalChanges', 'stockRisk',
 ];
 
 const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
@@ -1162,6 +1298,9 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   vix: VixTile,
   dxy: DxyTile,
   m2: M2Tile,
+  marketBreadth: MarketBreadthTile,
+  signalChanges: SignalChangesTile,
+  stockRisk: StockRiskTile,
 };
 
 export function BentoGrid() {

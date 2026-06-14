@@ -11,6 +11,9 @@ import {
   fetchTraditionalMarkets,
   fetchMarketSentiment,
   fetchAltcoinScanner,
+  fetchMarketBreadth,
+  fetchSignalChanges,
+  fetchStockRiskLevels,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -132,6 +135,30 @@ export function useAltcoinScanner() {
   return useQuery({
     queryKey: ['altcoin-scanner'],
     queryFn: fetchAltcoinScanner,
+    staleTime: 300_000,
+  });
+}
+
+export function useMarketBreadth() {
+  return useQuery({
+    queryKey: ['market-breadth'],
+    queryFn: fetchMarketBreadth,
+    staleTime: 300_000,
+  });
+}
+
+export function useSignalChanges() {
+  return useQuery({
+    queryKey: ['signal-changes'],
+    queryFn: fetchSignalChanges,
+    staleTime: 300_000,
+  });
+}
+
+export function useStockRiskLevels() {
+  return useQuery({
+    queryKey: ['stock-risk-levels'],
+    queryFn: fetchStockRiskLevels,
     staleTime: 300_000,
   });
 }

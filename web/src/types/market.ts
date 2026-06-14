@@ -205,6 +205,32 @@ export interface MarketSentimentData {
 
 /* ── Altcoin Scanner ── */
 
+/* ── Market Breadth ── */
+export interface MarketBreadthData {
+  breadth_pct: number;
+  trend: string; // 'bullish' | 'bearish' | 'neutral'
+  prev_trend: string | null;
+  crossover: string | null;
+  trending_tokens: number;
+  total_tokens: number;
+  btc_price: number | null;
+  history: number[]; // breadth_pct over time
+}
+
+/* ── Signal Changes (QPS) ── */
+export type QpsSignal = 'bullish' | 'neutral' | 'bearish';
+export interface SignalChangeItem {
+  asset: string;
+  signal: QpsSignal;
+  prev_signal: QpsSignal;
+}
+
+/* ── Stock Risk Levels ── */
+export interface StockRiskItem {
+  symbol: string;
+  risk_value: number; // 0-1
+}
+
 export type ScannerPeriod = '7d' | '30d' | '90d';
 
 export interface AltcoinScannerEntry {
