@@ -1,12 +1,10 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ResponsiveGridLayout,
   verticalCompactor,
-  useContainerWidth,
   type ResponsiveLayouts,
-  type Layout,
 } from 'react-grid-layout';
 import { RotateCcw } from 'lucide-react';
 import { useWidgetLayout } from '@/lib/hooks/use-widget-layout';
@@ -30,7 +28,26 @@ export type { ResponsiveLayouts };
 
 export function DraggableGrid({ layoutKey, defaultLayouts, children }: DraggableGridProps) {
   const { layouts, onLayoutChange, resetLayout, isReady } = useWidgetLayout(layoutKey, defaultLayouts);
-  const { containerRef: widthRef, width } = useContainerWidth({ measureBeforeMount: true });
+
+  // Measure the actual container width ourselves so the grid always fills the
+  // available space (react-grid-layout's useContainerWidth can get stuck at its
+  // 1280px default on wide screens).
+  const widthRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const node = widthRef.current;
+    if (!node) return;
+    const measure = () => setWidth(node.offsetWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [isReady]);
 
   if (!isReady) {
     return (
@@ -52,21 +69,23 @@ export function DraggableGrid({ layoutKey, defaultLayouts, children }: Draggable
         <RotateCcw className="h-3 w-3" />
         Reset
       </button>
-      <ResponsiveGridLayout
-        className="arkline-grid"
-        width={width}
-        layouts={layouts}
-        breakpoints={BREAKPOINTS}
-        cols={COLS}
-        rowHeight={ROW_HEIGHT}
-        margin={MARGIN}
-        containerPadding={[0, 0]}
-        dragConfig={{ handle: '.drag-handle' }}
-        compactor={verticalCompactor}
-        onLayoutChange={onLayoutChange}
-      >
-        {children}
-      </ResponsiveGridLayout>
+      {width > 0 && (
+        <ResponsiveGridLayout
+          className="arkline-grid"
+          width={width}
+          layouts={layouts}
+          breakpoints={BREAKPOINTS}
+          cols={COLS}
+          rowHeight={ROW_HEIGHT}
+          margin={MARGIN}
+          containerPadding={[0, 0]}
+          dragConfig={{ handle: '.drag-handle' }}
+          compactor={verticalCompactor}
+          onLayoutChange={onLayoutChange}
+        >
+          {children}
+        </ResponsiveGridLayout>
+      )}
     </div>
   );
 }
