@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Urbanist:wght@700;800;900&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1350" fill="#0F0F0F"/>
+
+  <!-- Hook -->
+  <text x="90" y="370" font-family="Urbanist, sans-serif" font-weight="800" font-size="104" fill="#FFFFFF" letter-spacing="-3">Stop investing on</text>
+  <text x="90" y="485" font-family="Urbanist, sans-serif" font-weight="800" font-size="104" fill="#FFFFFF" letter-spacing="-3">influencer takes.</text>
+
+  <!-- Accent line -->
+  <rect x="90" y="545" width="80" height="3" fill="#3B82F6"/>
+
+  <!-- Body opening line -->
+  <text x="90" y="640" font-family="Inter, sans-serif" font-weight="500" font-size="28" fill="#FFFFFF">Built by an investor tired of crypto Twitter noise.</text>
+
+  <!-- Body main -->
+  <text x="90" y="730" font-family="Inter, sans-serif" font-weight="400" font-size="26" fill="#A1A1AA">Multi-factor risk scoring. Macro regime detection.</text>
+  <text x="90" y="770" font-family="Inter, sans-serif" font-weight="400" font-size="26" fill="#A1A1AA">AI-generated briefings. For retail investors who</text>
+  <text x="90" y="810" font-family="Inter, sans-serif" font-weight="400" font-size="26" fill="#A1A1AA">want signal, not screaming.</text>
+
+  <!-- Tagline -->
+  <text x="90" y="910" font-family="Inter, sans-serif" font-weight="500" font-size="28" fill="#FFFFFF">Arkline. Invest with conviction.</text>
+
+  <!-- CTA Button -->
+  <rect x="90" y="1000" width="360" height="72" rx="10" fill="#3B82F6"/>
+  <text x="122" y="1047" font-family="Inter, sans-serif" font-weight="600" font-size="24" fill="#FFFFFF">Reserve early access →</text>
+
+  <!-- Bottom logo strip -->
+  <polygon points="90,1265 112,1235 134,1265 125,1265 112,1247 99,1265" fill="#3B82F6"/>
+  <text x="146" y="1265" font-family="Urbanist, sans-serif" font-weight="700" font-size="28" fill="#FFFFFF" letter-spacing="-0.5">Arkline</text>
+  <text x="990" y="1265" font-family="Inter, sans-serif" font-weight="400" font-size="24" fill="#A1A1AA" text-anchor="end">arkline.io</text>
+</svg>

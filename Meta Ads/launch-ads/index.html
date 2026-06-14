@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Arkline — Launch Ads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0F0F; --panel: #161616; --panel-light: #F4F4F5;
+    --fg: #FFFFFF; --muted: #A1A1AA; --accent: #3B82F6;
+    --hairline: rgba(255,255,255,0.08);
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 80px 60px 120px; }
+  header { border-bottom: 1px solid var(--hairline); padding-bottom: 32px; }
+  .brand { display: flex; align-items: center; gap: 14px; font-family: 'Urbanist', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.01em; }
+  .brand .mark { width: 18px; height: 18px; background: var(--accent); clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
+  h1 { font-family: 'Urbanist', sans-serif; font-weight: 800; font-size: 56px; letter-spacing: -0.03em; line-height: 1.02; margin: 28px 0 0; max-width: 720px; }
+  .sub { color: var(--muted); font-size: 16px; max-width: 540px; line-height: 1.55; margin-top: 14px; }
+  .accent-line { width: 56px; height: 3px; background: var(--accent); margin: 32px 0 0; border: 0; }
+
+  .section-divider { margin: 80px 0 24px; }
+  .section-divider h3 { font-family: 'Urbanist', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.02em; margin: 0; }
+  .section-divider p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 10px 0 0; max-width: 620px; }
+
+  .group { margin-top: 48px; }
+  .group h2 { display: flex; align-items: center; gap: 14px; font-family: 'Urbanist', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; margin: 0 0 20px; }
+  .palette-pill { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; padding: 5px 10px; border-radius: 4px; }
+  .palette-dark  { background: #1F1F22; color: #D4D4D8; border: 1px solid var(--hairline); }
+  .palette-light { background: #FAFAFA; color: #0F0F0F; }
+
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .card { display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: var(--fg); transition: transform .15s; }
+  .card:hover { transform: translateY(-2px); }
+  .card:hover .thumb { border-color: var(--accent); }
+  .thumb { position: relative; border-radius: 12px; display: flex; align-items: flex-end; padding: 16px; transition: border-color .15s; }
+  .thumb-dark  { background: var(--panel); border: 1px solid var(--hairline); }
+  .thumb-light { background: var(--panel-light); border: 1px solid rgba(0,0,0,0.08); }
+  .thumb-1x1 { aspect-ratio: 1 / 1; }
+  .thumb-4x5 { aspect-ratio: 4 / 5; }
+  .thumb-9x16 { aspect-ratio: 9 / 16; }
+  .thumb-dark  .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); background: rgba(0,0,0,0.4); padding: 6px 10px; border-radius: 6px; letter-spacing: 0.05em; }
+  .thumb-light .badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #52525B; background: rgba(255,255,255,0.7); padding: 6px 10px; border-radius: 6px; letter-spacing: 0.05em; }
+  .filename { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  .howto { margin-top: 96px; padding-top: 40px; border-top: 1px solid var(--hairline); color: var(--muted); font-size: 14px; line-height: 1.7; max-width: 720px; }
+  .howto h3 { color: var(--fg); font-family: 'Urbanist', sans-serif; font-weight: 700; font-size: 18px; margin: 0 0 12px; }
+  .howto code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--fg); }
+  .howto ol { padding-left: 20px; }
+  .howto li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark"></span><span>Arkline</span></div>
+    <h1>Launch ad set.</h1>
+    <hr class="accent-line">
+    <p class="sub">18 standalone HTML files — three concepts × three aspect ratios × two palettes. Open any in Chrome, screenshot the <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#161616;padding:1px 5px;border-radius:3px;color:#fff">.frame</code> div at exact pixel dimensions, ship.</p>
+  </header>
+
+  <div class="section-divider">
+    <h3>Dark — primary launch set</h3>
+    <p>Ship these first. After ~2 weeks of data, race the best-performing dark concept against its light twin.</p>
+  </div>
+  
+    <section class="group">
+      <h2><span class="palette-pill palette-dark">dark</span>Concept #1 · Today's BTC Risk</h2>
+      <div class="row">
+        
+            <a class="card" href="concept-1_1x1.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-1x1 thumb-dark">
+                <span class="badge">1:1 · 1080×1080</span>
+              </div>
+              <div class="filename">concept-1_1x1.html</div>
+            </a>
+            <a class="card" href="concept-1_4x5.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-4x5 thumb-dark">
+                <span class="badge">4:5 · 1080×1350</span>
+              </div>
+              <div class="filename">concept-1_4x5.html</div>
+            </a>
+            <a class="card" href="concept-1_9x16.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-9x16 thumb-dark">
+                <span class="badge">9:16 · 1080×1920</span>
+              </div>
+              <div class="filename">concept-1_9x16.html</div>
+            </a>
+      </div>
+    </section>
+    <section class="group">
+      <h2><span class="palette-pill palette-dark">dark</span>Concept #2 · Influencer Takes</h2>
+      <div class="row">
+        
+            <a class="card" href="concept-2_1x1.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-1x1 thumb-dark">
+                <span class="badge">1:1 · 1080×1080</span>
+              </div>
+              <div class="filename">concept-2_1x1.html</div>
+            </a>
+            <a class="card" href="concept-2_4x5.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-4x5 thumb-dark">
+                <span class="badge">4:5 · 1080×1350</span>
+              </div>
+              <div class="filename">concept-2_4x5.html</div>
+            </a>
+            <a class="card" href="concept-2_9x16.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-9x16 thumb-dark">
+                <span class="badge">9:16 · 1080×1920</span>
+              </div>
+              <div class="filename">concept-2_9x16.html</div>
+            </a>
+      </div>
+    </section>
+    <section class="group">
+      <h2><span class="palette-pill palette-dark">dark</span>Concept #5 · 150 Founding Members</h2>
+      <div class="row">
+        
+            <a class="card" href="concept-5_1x1.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-1x1 thumb-dark">
+                <span class="badge">1:1 · 1080×1080</span>
+              </div>
+              <div class="filename">concept-5_1x1.html</div>
+            </a>
+            <a class="card" href="concept-5_4x5.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-4x5 thumb-dark">
+                <span class="badge">4:5 · 1080×1350</span>
+              </div>
+              <div class="filename">concept-5_4x5.html</div>
+            </a>
+            <a class="card" href="concept-5_9x16.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-9x16 thumb-dark">
+                <span class="badge">9:16 · 1080×1920</span>
+              </div>
+              <div class="filename">concept-5_9x16.html</div>
+            </a>
+      </div>
+    </section>
+
+  <div class="section-divider">
+    <h3>Light — A/B test variants</h3>
+    <p>Identical copy + layout to the dark versions. Only the palette changes — that's the experiment. Dark CTA on off-white is the premium move.</p>
+  </div>
+  
+    <section class="group">
+      <h2><span class="palette-pill palette-light">light</span>Concept #1 · Today's BTC Risk</h2>
+      <div class="row">
+        
+            <a class="card" href="concept-1_1x1_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-1x1 thumb-light">
+                <span class="badge">1:1 · 1080×1080</span>
+              </div>
+              <div class="filename">concept-1_1x1_light.html</div>
+            </a>
+            <a class="card" href="concept-1_4x5_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-4x5 thumb-light">
+                <span class="badge">4:5 · 1080×1350</span>
+              </div>
+              <div class="filename">concept-1_4x5_light.html</div>
+            </a>
+            <a class="card" href="concept-1_9x16_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-9x16 thumb-light">
+                <span class="badge">9:16 · 1080×1920</span>
+              </div>
+              <div class="filename">concept-1_9x16_light.html</div>
+            </a>
+      </div>
+    </section>
+    <section class="group">
+      <h2><span class="palette-pill palette-light">light</span>Concept #2 · Influencer Takes</h2>
+      <div class="row">
+        
+            <a class="card" href="concept-2_1x1_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-1x1 thumb-light">
+                <span class="badge">1:1 · 1080×1080</span>
+              </div>
+              <div class="filename">concept-2_1x1_light.html</div>
+            </a>
+            <a class="card" href="concept-2_4x5_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-4x5 thumb-light">
+                <span class="badge">4:5 · 1080×1350</span>
+              </div>
+              <div class="filename">concept-2_4x5_light.html</div>
+            </a>
+            <a class="card" href="concept-2_9x16_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-9x16 thumb-light">
+                <span class="badge">9:16 · 1080×1920</span>
+              </div>
+              <div class="filename">concept-2_9x16_light.html</div>
+            </a>
+      </div>
+    </section>
+    <section class="group">
+      <h2><span class="palette-pill palette-light">light</span>Concept #5 · 150 Founding Members</h2>
+      <div class="row">
+        
+            <a class="card" href="concept-5_1x1_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-1x1 thumb-light">
+                <span class="badge">1:1 · 1080×1080</span>
+              </div>
+              <div class="filename">concept-5_1x1_light.html</div>
+            </a>
+            <a class="card" href="concept-5_4x5_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-4x5 thumb-light">
+                <span class="badge">4:5 · 1080×1350</span>
+              </div>
+              <div class="filename">concept-5_4x5_light.html</div>
+            </a>
+            <a class="card" href="concept-5_9x16_light.html" target="_blank" rel="noopener">
+              <div class="thumb thumb-9x16 thumb-light">
+                <span class="badge">9:16 · 1080×1920</span>
+              </div>
+              <div class="filename">concept-5_9x16_light.html</div>
+            </a>
+      </div>
+    </section>
+
+  <div class="howto">
+    <h3>Exporting to PNG</h3>
+    <ol>
+      <li>Open the ad's HTML file in Chrome.</li>
+      <li>Open DevTools (<code>Cmd+Opt+I</code>) → Elements panel.</li>
+      <li>Select the <code>.frame</code> div (the inner 1080×H wrapper).</li>
+      <li><code>Cmd+Shift+P</code> → type "Capture node screenshot" → Enter.</li>
+      <li>PNG downloads at exact pixel dimensions.</li>
+    </ol>
+  </div>
+</div>
+</body>
+</html>
