@@ -31,6 +31,10 @@ import type {
   SignalChangeItem,
   QpsSignal,
   StockRiskItem,
+  TradeSignalItem,
+  RotationData,
+  ModelPortfolioUpdate,
+  WeeklyDeck,
 } from '@/types';
 
 function getSupabase() {
@@ -581,4 +585,106 @@ export async function fetchStockRiskLevels(): Promise<StockRiskItem[]> {
     .map((r) => ({ symbol: r.indicator.replace('stock_risk_', '').toUpperCase(), risk_value: Number(r.value) }))
     .sort((a, b) => b.risk_value - a.risk_value)
     .slice(0, 12);
+}
+
+/* ── Trade Signals ── (trade_signals: Fibonacci-based setups) */
+export async function fetchTradeSignals(): Promise<TradeSignalItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('trade_signals')
+    .select('id, asset, signal_type, status, risk_reward_ratio, timeframe, generated_at')
+    .order('generated_at', { ascending: false })
+    .limit(6);
+  if (error || !data?.length) return [];
+  return (data as TradeSignalItem[]).map((r) => ({
+    id: r.id, asset: r.asset, signal_type: r.signal_type, status: r.status,
+    risk_reward_ratio: r.risk_reward_ratio, timeframe: r.timeframe,
+  }));
+}
+
+/* ── Rotation Signal ── (rotation_signals + top sectors) */
+export async function fetchRotationSignal(): Promise<RotationData | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const rot = await supabase
+    .from('rotation_signals')
+    .select('signal_date, rotation_score, regime, narrative, btc_30d_return, spy_30d_return')
+    .order('signal_date', { ascending: false })
+    .limit(1);
+  const r = rot.data?.[0] as {
+    signal_date: string; rotation_score: number; regime: string; narrative: string | null;
+    btc_30d_return: number | null; spy_30d_return: number | null;
+  } | undefined;
+  if (rot.error || !r) return null;
+
+  const secRes = await supabase
+    .from('sector_performance')
+    .select('sector_name, return_30d, signal_date')
+    .order('signal_date', { ascending: false })
+    .limit(40);
+  const secRows = (secRes.data ?? []) as { sector_name: string; return_30d: number; signal_date: string }[];
+  const latestSecDate = secRows[0]?.signal_date;
+  const sectors = secRows
+    .filter((s) => s.signal_date === latestSecDate)
+    .sort((a, b) => Number(b.return_30d) - Number(a.return_30d))
+    .slice(0, 3)
+    .map((s) => ({ name: s.sector_name, return_30d: Number(s.return_30d) }));
+
+  return {
+    rotation_score: Number(r.rotation_score),
+    regime: r.regime,
+    narrative: r.narrative,
+    btc_30d_return: r.btc_30d_return,
+    spy_30d_return: r.spy_30d_return,
+    sectors,
+  };
+}
+
+/* ── Model Portfolio Update ── (latest rebalance from model_portfolio_trades) */
+export async function fetchModelPortfolioUpdate(): Promise<ModelPortfolioUpdate | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const tr = await supabase
+    .from('model_portfolio_trades')
+    .select('portfolio_id, trade_date, trigger, from_allocation, to_allocation')
+    .order('trade_date', { ascending: false })
+    .limit(1);
+  const t = tr.data?.[0] as {
+    portfolio_id: string; trade_date: string; trigger: string;
+    from_allocation: Record<string, number>; to_allocation: Record<string, number>;
+  } | undefined;
+  if (tr.error || !t) return null;
+
+  const pf = await supabase.from('model_portfolios').select('name').eq('id', t.portfolio_id).maybeSingle();
+  const portfolio_name = (pf.data as { name: string } | null)?.name ?? 'Model Portfolio';
+
+  const from = t.from_allocation ?? {};
+  const to = t.to_allocation ?? {};
+  const assets = Array.from(new Set([...Object.keys(from), ...Object.keys(to)]));
+  const changes = assets
+    .map((a) => ({ asset: a, from: Number(from[a] ?? 0), to: Number(to[a] ?? 0) }))
+    .filter((c) => Math.abs(c.from - c.to) >= 0.05)
+    .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from));
+
+  return { portfolio_name, trigger: t.trigger, trade_date: t.trade_date, changes };
+}
+
+/* ── Weekly Update deck ── (market_update_decks latest published) */
+export async function fetchWeeklyDeck(): Promise<WeeklyDeck | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('market_update_decks')
+    .select('week_start, week_end, status, slides, published_at')
+    .order('week_start', { ascending: false })
+    .limit(1);
+  const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown[] } | undefined;
+  if (error || !d) return null;
+  return {
+    week_start: d.week_start,
+    week_end: d.week_end,
+    slide_count: Array.isArray(d.slides) ? d.slides.length : 0,
+    status: d.status,
+  };
 }

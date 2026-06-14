@@ -231,6 +231,42 @@ export interface StockRiskItem {
   risk_value: number; // 0-1
 }
 
+/* ── Trade Signals (flash intel) ── */
+export interface TradeSignalItem {
+  id: string;
+  asset: string;
+  signal_type: string; // 'buy' | 'sell'
+  status: string; // 'target_hit' | 'invalidated' | 'active' | ...
+  risk_reward_ratio: number | null;
+  timeframe: string | null;
+}
+
+/* ── Rotation Signal (crypto vs equities) ── */
+export interface RotationData {
+  rotation_score: number; // -100..100 (>0 favors equities)
+  regime: string;
+  narrative: string | null;
+  btc_30d_return: number | null;
+  spy_30d_return: number | null;
+  sectors: { name: string; return_30d: number }[];
+}
+
+/* ── Model Portfolio Update ── */
+export interface ModelPortfolioUpdate {
+  portfolio_name: string;
+  trigger: string;
+  trade_date: string;
+  changes: { asset: string; from: number; to: number }[];
+}
+
+/* ── Weekly Update deck ── */
+export interface WeeklyDeck {
+  week_start: string;
+  week_end: string;
+  slide_count: number;
+  status: string;
+}
+
 export type ScannerPeriod = '7d' | '30d' | '90d';
 
 export interface AltcoinScannerEntry {

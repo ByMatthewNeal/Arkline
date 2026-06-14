@@ -14,6 +14,7 @@ import {
   useMarketBriefing, useCryptoPositioning, useMacroIndicators,
   useSupplyInProfit, useAssetRiskLevels, useEconomicEvents, useNews,
   useRegimeData, useMarketBreadth, useSignalChanges, useStockRiskLevels,
+  useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
@@ -47,7 +48,8 @@ type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
   | 'riskChart' | 'marketMovers' | 'macro' | 'supply'
   | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news'
-  | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'signalChanges' | 'stockRisk';
+  | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'signalChanges' | 'stockRisk'
+  | 'tradeSignals' | 'rotation' | 'modelPortfolio' | 'weeklyUpdate';
 
 const drawerTitles: Record<WidgetKey, string> = {
   portfolio: 'Portfolio',
@@ -69,6 +71,10 @@ const drawerTitles: Record<WidgetKey, string> = {
   marketBreadth: 'Market Breadth',
   signalChanges: 'Signal Changes',
   stockRisk: 'Stock Risk Levels',
+  tradeSignals: 'Trade Signals',
+  rotation: 'Crypto / Equities Rotation',
+  modelPortfolio: 'Model Portfolio Updates',
+  weeklyUpdate: 'Weekly Update',
 };
 
 /* ── Lazy drawer widget renderer ── */
@@ -1028,6 +1034,10 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'marketBreadth',x: 3, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'signalChanges',x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'stockRisk',    x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'tradeSignals', x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'rotation',     x: 3, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'modelPortfolio',x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'weeklyUpdate', x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
@@ -1049,6 +1059,10 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'marketBreadth',x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'signalChanges',x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'stockRisk',    x: 2, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'tradeSignals', x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'rotation',     x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'modelPortfolio',x: 2, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'weeklyUpdate', x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1070,6 +1084,10 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'marketBreadth',x: 1, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'signalChanges',x: 0, y: 30, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'stockRisk',    x: 1, y: 30, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'tradeSignals', x: 0, y: 33, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'rotation',     x: 1, y: 33, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'modelPortfolio',x: 0, y: 36, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'weeklyUpdate', x: 1, y: 36, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
@@ -1274,11 +1292,156 @@ function StockRiskTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+/* ── Trade Signals tile (trade_signals) ── */
+function TradeSignalsTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useTradeSignals();
+  const signals = data ?? [];
+  const outcomeColor = (s: string) => s === 'target_hit' ? 'var(--ark-success)' : s === 'invalidated' ? 'var(--ark-error)' : 'var(--ark-warning)';
+  const outcomeLabel = (s: string) => s === 'target_hit' ? 'Win' : s === 'invalidated' ? 'Stopped' : s.charAt(0).toUpperCase() + s.slice(1);
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><BarChart3 className="h-3.5 w-3.5 text-ark-primary" /></div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Trade Signals</span>
+          </div>
+          {signals.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center"><p className="text-xs text-ark-text-disabled">No recent signals</p></div>
+          ) : (
+            <div className="mt-2 space-y-1.5">
+              {signals.slice(0, 5).map((s) => (
+                <div key={s.id} className="flex items-center gap-2">
+                  <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-bold text-white', s.signal_type === 'buy' ? 'bg-ark-success' : 'bg-ark-error')}>{s.signal_type.toUpperCase()}</span>
+                  <span className="w-10 truncate text-[11px] font-semibold text-ark-text">{s.asset}</span>
+                  {s.timeframe && <span className="text-[10px] text-ark-text-disabled">{s.timeframe}</span>}
+                  {s.risk_reward_ratio != null && <span className="fig text-[10px] text-ark-text-tertiary">{s.risk_reward_ratio.toFixed(1)}x</span>}
+                  <span className="ml-auto text-[10px] font-semibold" style={{ color: outcomeColor(s.status) }}>{outcomeLabel(s.status)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Rotation Signal tile (rotation_signals) ── */
+function RotationTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useRotationSignal();
+  const score = data?.rotation_score ?? 0;
+  const favors = score < 0 ? 'Crypto' : score > 0 ? 'Equities' : 'Neutral';
+  const color = score < 0 ? 'var(--ark-primary)' : score > 0 ? 'var(--ark-violet)' : 'var(--ark-text-tertiary)';
+  const regimeLabel = (data?.regime ?? '').split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return (
+    <Tile onClick={onOpen} accentColor={color}>
+      <AccentLine color={color} />
+      {isLoading ? <SkeletonListTile /> : !data ? (
+        <div className="flex h-full items-center justify-center"><p className="text-xs text-ark-text-disabled">No rotation data</p></div>
+      ) : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Rotation Signal</span>
+            {regimeLabel && <Badge variant="default">{regimeLabel}</Badge>}
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-[family-name:var(--font-urbanist)] text-2xl font-bold leading-none" style={{ color }}>→ {favors}</span>
+          </div>
+          <div className="mt-2 flex items-center gap-3 text-[10px]">
+            <span className="text-ark-text-disabled">BTC 30d <span className={cn('fig font-semibold', (data.btc_30d_return ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(data.btc_30d_return ?? 0)}</span></span>
+            <span className="text-ark-text-disabled">SPY 30d <span className={cn('fig font-semibold', (data.spy_30d_return ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(data.spy_30d_return ?? 0)}</span></span>
+          </div>
+          {data.sectors.length > 0 && (
+            <div className="mt-2">
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Top Sectors</p>
+              <div className="mt-1 space-y-0.5">
+                {data.sectors.map((s) => (
+                  <div key={s.name} className="flex items-center justify-between text-[10px]">
+                    <span className="truncate text-ark-text-secondary">{s.name}</span>
+                    <span className="fig font-semibold text-ark-success">{formatPercent(s.return_30d)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Model Portfolio Update tile (model_portfolio_trades) ── */
+function ModelPortfolioTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useModelPortfolioUpdate();
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
+      {isLoading ? <SkeletonListTile /> : !data ? (
+        <div className="flex h-full items-center justify-center"><p className="text-xs text-ark-text-disabled">No updates</p></div>
+      ) : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><PieChart className="h-3.5 w-3.5 text-ark-primary" /></div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Model Portfolio</span>
+          </div>
+          <div className="mt-1.5 flex items-center justify-between">
+            <span className="text-sm font-semibold text-ark-text">{data.portfolio_name}</span>
+            <span className="text-[10px] text-ark-text-disabled">{data.trigger}</span>
+          </div>
+          {data.changes.length === 0 ? (
+            <p className="mt-2 text-[11px] text-ark-text-tertiary">No allocation changes</p>
+          ) : (
+            <div className="mt-2 space-y-1">
+              {data.changes.slice(0, 5).map((c) => (
+                <div key={c.asset} className="flex items-center gap-2 text-[10px]">
+                  <span className="w-12 font-semibold text-ark-text">{c.asset}</span>
+                  <span className="fig text-ark-text-disabled">{c.from.toFixed(0)}%</span>
+                  <ArrowUpRight className={cn('h-3 w-3', c.to >= c.from ? 'text-ark-success' : 'text-ark-error rotate-90')} />
+                  <span className="fig font-semibold text-ark-text">{c.to.toFixed(0)}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Tile>
+  );
+}
+
+/* ── Weekly Update deck tile (market_update_decks) ── */
+function WeeklyUpdateTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useWeeklyDeck();
+  const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-violet)">
+      <AccentLine color="var(--ark-violet)" />
+      {isLoading ? <SkeletonListTile /> : !data ? (
+        <div className="flex h-full items-center justify-center"><p className="text-xs text-ark-text-disabled">No deck yet</p></div>
+      ) : (
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-violet/10"><Newspaper className="h-3.5 w-3.5 text-ark-violet" /></div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Weekly Update</span>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="font-[family-name:var(--font-urbanist)] text-lg font-bold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</p>
+            <p className="mt-1 text-[11px] text-ark-text-tertiary">{data.slide_count} slides</p>
+            <span className="mt-2 rounded-full bg-ark-violet/10 px-2.5 py-0.5 text-[10px] font-semibold text-ark-violet capitalize">{data.status}</span>
+          </div>
+        </div>
+      )}
+    </Tile>
+  );
+}
+
 const widgetKeys: WidgetKey[] = [
   'portfolio', 'fearGreed', 'arklineScore', 'briefing', 'riskChart',
   'marketMovers', 'macro', 'supply', 'assetRisk', 'events',
   'favorites', 'dca', 'news',
   'vix', 'dxy', 'm2', 'marketBreadth', 'signalChanges', 'stockRisk',
+  'tradeSignals', 'rotation', 'modelPortfolio', 'weeklyUpdate',
 ];
 
 const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
@@ -1301,6 +1464,10 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   marketBreadth: MarketBreadthTile,
   signalChanges: SignalChangesTile,
   stockRisk: StockRiskTile,
+  tradeSignals: TradeSignalsTile,
+  rotation: RotationTile,
+  modelPortfolio: ModelPortfolioTile,
+  weeklyUpdate: WeeklyUpdateTile,
 };
 
 export function BentoGrid() {

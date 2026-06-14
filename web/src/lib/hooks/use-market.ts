@@ -14,6 +14,10 @@ import {
   fetchMarketBreadth,
   fetchSignalChanges,
   fetchStockRiskLevels,
+  fetchTradeSignals,
+  fetchRotationSignal,
+  fetchModelPortfolioUpdate,
+  fetchWeeklyDeck,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -161,6 +165,22 @@ export function useStockRiskLevels() {
     queryFn: fetchStockRiskLevels,
     staleTime: 300_000,
   });
+}
+
+export function useTradeSignals() {
+  return useQuery({ queryKey: ['trade-signals'], queryFn: fetchTradeSignals, staleTime: 300_000 });
+}
+
+export function useRotationSignal() {
+  return useQuery({ queryKey: ['rotation-signal'], queryFn: fetchRotationSignal, staleTime: 300_000 });
+}
+
+export function useModelPortfolioUpdate() {
+  return useQuery({ queryKey: ['model-portfolio-update'], queryFn: fetchModelPortfolioUpdate, staleTime: 300_000 });
+}
+
+export function useWeeklyDeck() {
+  return useQuery({ queryKey: ['weekly-deck'], queryFn: fetchWeeklyDeck, staleTime: 300_000 });
 }
 
 export function useArkLineScore() {
