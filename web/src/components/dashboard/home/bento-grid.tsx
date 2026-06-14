@@ -5,6 +5,7 @@ import {
   Wallet, Brain, Sparkles, Gauge, Shield, BarChart3, Globe,
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
+  SlidersHorizontal, X, Check,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge, Skeleton } from '@/components/ui';
@@ -18,6 +19,7 @@ import {
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
@@ -1470,19 +1472,91 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   weeklyUpdate: WeeklyUpdateTile,
 };
 
+function CustomizePanel({
+  isEnabled,
+  toggle,
+  setAll,
+  onClose,
+}: {
+  isEnabled: (k: string) => boolean;
+  toggle: (k: string) => void;
+  setAll: (on: boolean) => void;
+  onClose: () => void;
+}) {
+  const enabledCount = widgetKeys.filter(isEnabled).length;
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ x: 24, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.25 }}
+        className="relative flex h-full w-full max-w-sm flex-col border-l border-ark-divider bg-ark-bg shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-ark-divider p-4">
+          <div>
+            <h3 className="font-[family-name:var(--font-urbanist)] text-base font-semibold text-ark-text">Customize Home</h3>
+            <p className="text-[11px] text-ark-text-disabled">{enabledCount} of {widgetKeys.length} widgets shown</p>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex items-center gap-2 border-b border-ark-divider px-4 py-2">
+          <button onClick={() => setAll(true)} className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-ark-primary transition-colors hover:bg-ark-fill-secondary">Show all</button>
+          <button onClick={() => setAll(false)} className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary">Hide all</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2">
+          {widgetKeys.map((key) => {
+            const on = isEnabled(key);
+            return (
+              <button
+                key={key}
+                onClick={() => toggle(key)}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-ark-fill-secondary"
+              >
+                <span className={cn('text-sm', on ? 'text-ark-text' : 'text-ark-text-tertiary')}>{drawerTitles[key]}</span>
+                <span className={cn('flex h-5 w-9 items-center rounded-full px-0.5 transition-colors', on ? 'justify-end bg-ark-primary' : 'justify-start bg-ark-fill-secondary')}>
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white">
+                    {on && <Check className="h-2.5 w-2.5 text-ark-primary" />}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export function BentoGrid() {
   const [activeWidget, setActiveWidget] = useState<WidgetKey | null>(null);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const { isEnabled, toggle, setAll } = useWidgetVisibility('home', widgetKeys);
   const open = (key: WidgetKey) => () => setActiveWidget(key);
+
+  const enabledKeys = widgetKeys.filter(isEnabled);
 
   return (
     <>
+      <div className="mb-2 flex">
+        <button
+          onClick={() => setShowCustomize(true)}
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+        >
+          <SlidersHorizontal className="h-3 w-3" />
+          Customize
+        </button>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
         <DraggableGrid layoutKey="home" defaultLayouts={HOME_DEFAULT_LAYOUTS}>
-          {widgetKeys.map((key, i) => {
+          {enabledKeys.map((key, i) => {
             const TileComp = tileComponents[key];
             return (
               <div key={key} className="h-full [&>*]:h-full">
@@ -1501,6 +1575,15 @@ export function BentoGrid() {
       >
         {activeWidget && <LazyDrawerWidget widgetKey={activeWidget} />}
       </DetailDrawer>
+
+      {showCustomize && (
+        <CustomizePanel
+          isEnabled={isEnabled}
+          toggle={toggle}
+          setAll={setAll}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
     </>
   );
 }
