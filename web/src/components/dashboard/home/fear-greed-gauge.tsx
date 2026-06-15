@@ -1,8 +1,10 @@
 'use client';
 
-import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { useState } from 'react';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 import { Skeleton } from '@/components/ui';
 import { useFearGreedDetail } from '@/lib/hooks/use-market';
+import type { FearGreedHistoryPoint } from '@/types';
 
 function fgColor(v: number): string {
   if (v < 25) return 'var(--ark-error)';
@@ -33,8 +35,11 @@ function pointAt(v: number) {
   return { x: 100 + 80 * Math.cos(angle), y: 100 - 80 * Math.sin(angle) };
 }
 
+const money = (v?: number) => v == null ? '—' : `$${Math.round(v).toLocaleString()}`;
+
 export function FearGreedGauge() {
   const { data, isLoading } = useFearGreedDetail();
+  const [active, setActive] = useState<FearGreedHistoryPoint | null>(null);
   if (isLoading || !data) return <Skeleton className="h-72 w-full rounded-2xl" />;
 
   const { value } = data;
@@ -82,27 +87,59 @@ export function FearGreedGauge() {
 
       {/* History */}
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">History (90 Days)</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">History (90 Days)</p>
+          {active && <button onClick={() => setActive(null)} className="text-xs font-semibold text-ark-info">Reset</button>}
+        </div>
+
         {data.history.length > 1 ? (
-          <div className="mt-3 h-40 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.history} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
-                <defs>
-                  <linearGradient id="fg-hist" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <YAxis domain={[0, 100]} hide />
-                <Tooltip
-                  contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 11 }}
-                  labelFormatter={(l) => new Date(String(l) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  formatter={(v) => [`${v}`, 'Index']}
-                />
-                <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill="url(#fg-hist)" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            {active ? (
+              <div className="mt-2">
+                <p className="text-xs text-ark-text-tertiary">{new Date(active.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className="fig text-2xl font-bold" style={{ color: fgColor(active.value) }}>{active.value}</span>
+                  <span className="rounded px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${fgColor(active.value)}1F`, color: fgColor(active.value) }}>{active.classification || fgClass(active.value)}</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-ark-text-disabled">
+                  <span>BTC <span className="fig font-semibold text-ark-text-secondary">{money(active.btcPrice)}</span></span>
+                  <span>S&amp;P <span className="fig font-semibold text-ark-text-secondary">{money(active.sp500Price)}</span></span>
+                  <span>NDX <span className="fig font-semibold text-ark-text-secondary">{money(active.nasdaqPrice)}</span></span>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-ark-text-disabled">Touch the chart to view historical values</p>
+            )}
+
+            <div className="mt-3 h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={data.history}
+                  margin={{ top: 6, right: 6, bottom: 0, left: 6 }}
+                  onMouseMove={(s) => {
+                    const st = s as { activeLabel?: string; activeTooltipIndex?: number };
+                    let pt: FearGreedHistoryPoint | undefined;
+                    if (st.activeLabel != null) pt = data.history.find((h) => h.date === st.activeLabel);
+                    if (!pt && st.activeTooltipIndex != null && st.activeTooltipIndex >= 0) pt = data.history[st.activeTooltipIndex];
+                    if (pt) setActive(pt);
+                  }}
+                  onMouseLeave={() => setActive(null)}
+                >
+                  <defs>
+                    <linearGradient id="fg-hist" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                      <stop offset="100%" stopColor={color} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" hide />
+                  <YAxis domain={[0, 100]} hide />
+                  <Tooltip cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3' }} content={() => null} />
+                  {active && <ReferenceLine x={active.date} stroke={color} strokeWidth={1} />}
+                  <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill="url(#fg-hist)" activeDot={{ r: 4, fill: color }} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         ) : (
           <p className="py-10 text-center text-sm text-ark-text-disabled">Not enough history data</p>
         )}

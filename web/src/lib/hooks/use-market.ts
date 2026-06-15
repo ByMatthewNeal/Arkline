@@ -37,6 +37,8 @@ import {
   fetchAssetTechnical,
   fetchMarketBreadthDetail,
   fetchFearGreedDetail,
+  fetchIndicatorHistory,
+  fetchRiskLevels,
 } from '@/lib/api/macro';
 
 export function useCryptoAssets(page = 1) {
@@ -234,6 +236,14 @@ export function useMarketBreadthDetail(days = 365) {
 
 export function useFearGreedDetail() {
   return useQuery({ queryKey: ['fear-greed-detail'], queryFn: fetchFearGreedDetail, staleTime: 60_000 });
+}
+
+export function useIndicatorHistory(dbKey: string, days: number) {
+  return useQuery({ queryKey: ['indicator-history', dbKey, days], queryFn: () => fetchIndicatorHistory(dbKey, days), staleTime: 60_000, enabled: !!dbKey });
+}
+
+export function useRiskLevels(kind: 'crypto' | 'stock') {
+  return useQuery({ queryKey: ['risk-levels', kind], queryFn: () => fetchRiskLevels(kind), staleTime: 60_000 });
 }
 
 export function useSupplyInProfit() {

@@ -1,15 +1,17 @@
 'use client';
 
-import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { useState } from 'react';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
-import { useMacroIndicators } from '@/lib/hooks/use-market';
+import { useIndicatorHistory } from '@/lib/hooks/use-market';
+import { cn } from '@/lib/utils/format';
 
 interface LevelRow { range: string; description: string; color: string }
 interface InfoSection { title: string; content: string }
 
 interface MacroDetailConfig {
-  indicator: string; // matches useMacroIndicators name (VIX/DXY/M2)
+  dbKey: string;       // indicator_snapshots key (vix/dxy/global_m2/net_liquidity)
   title: string;
   format: (v: number) => string;
   level: (v: number, changePct: number) => { label: string; color: string };
@@ -25,9 +27,11 @@ const C = {
   violet: 'var(--ark-violet)',
 };
 
+const PERIODS = [{ label: '1M', days: 30 }, { label: '3M', days: 90 }, { label: '6M', days: 180 }, { label: '1Y', days: 365 }];
+
 function MacroDetail({ config }: { config: MacroDetailConfig }) {
-  const { data, isLoading } = useMacroIndicators();
-  const ind = (data ?? []).find((d) => d.name === config.indicator);
+  const [days, setDays] = useState(30);
+  const { data: history, isLoading } = useIndicatorHistory(config.dbKey, days);
 
   if (isLoading) {
     return (
@@ -38,52 +42,59 @@ function MacroDetail({ config }: { config: MacroDetailConfig }) {
       </div>
     );
   }
-  if (!ind) {
-    return <p className="py-8 text-center text-sm text-ark-text-tertiary">No data available.</p>;
-  }
+  const series = history ?? [];
+  if (!series.length) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No data available.</p>;
 
-  const value = ind.value;
-  const changePct = ind.change_percentage ?? 0;
+  const value = series[series.length - 1].value;
+  const first = series[0].value;
+  const changePct = first !== 0 ? ((value - first) / first) * 100 : 0;
   const lvl = config.level(value, changePct);
-  const chartData = (ind.sparkline ?? []).map((v, i) => ({ i, v }));
   const TrendIcon = lvl.label === 'Bullish' ? TrendingUp : lvl.label === 'Bearish' ? TrendingDown : Minus;
+  const fmtDay = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const periodLabel = PERIODS.find((p) => p.days === days)?.label ?? '';
 
   return (
     <div className="space-y-6 pb-4">
       {/* Hero value + signal */}
       <div className="flex flex-col items-center gap-3 pt-2">
         <span className="font-[family-name:var(--font-urbanist)] text-5xl font-bold text-ark-text">{config.format(value)}</span>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold"
-          style={{ color: lvl.color, backgroundColor: `${lvl.color}26` }}
-        >
+        <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold" style={{ color: lvl.color, backgroundColor: `${lvl.color}26` }}>
           <TrendIcon className="h-4 w-4" />
           {lvl.label}
-          <span className="ml-1 opacity-70">{changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%</span>
+          <span className="ml-1 opacity-70">{changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}% · {periodLabel}</span>
         </span>
       </div>
 
+      {/* Period toggle */}
+      <div className="flex justify-center">
+        <div className="inline-flex rounded-full bg-ark-fill-secondary p-0.5">
+          {PERIODS.map((p) => (
+            <button key={p.label} onClick={() => setDays(p.days)} className={cn('rounded-full px-4 py-1 text-xs font-semibold transition-colors', days === p.days ? 'bg-ark-info text-white' : 'text-ark-text-tertiary')}>{p.label}</button>
+          ))}
+        </div>
+      </div>
+
       {/* Chart */}
-      {chartData.length > 1 && (
-        <div className="h-48 w-full">
+      {series.length > 1 && (
+        <div className="h-52 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+            <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
               <defs>
-                <linearGradient id={`md-${config.indicator}`} x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`md-${config.dbKey}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={lvl.color} stopOpacity={0.25} />
                   <stop offset="100%" stopColor={lvl.color} stopOpacity={0} />
                 </linearGradient>
               </defs>
+              <XAxis dataKey="date" tickLine={false} axisLine={false} ticks={series.length ? [series[0].date, series[series.length - 1].date] : []} tickFormatter={fmtDay} tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }} interval="preserveStartEnd" />
               <YAxis domain={['dataMin', 'dataMax']} hide />
               <Tooltip
                 contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 12 }}
-                labelFormatter={() => ''}
-                formatter={(v) => [config.format(Number(v)), config.indicator]}
+                labelFormatter={(l) => fmtDay(String(l))}
+                formatter={(v) => [config.format(Number(v)), config.title]}
               />
-              <Area type="monotone" dataKey="v" stroke={lvl.color} strokeWidth={2} fill={`url(#md-${config.indicator})`} dot={false} />
+              <Area type="monotone" dataKey="value" stroke={lvl.color} strokeWidth={2} fill={`url(#md-${config.dbKey})`} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
-          <p className="mt-1 text-center text-[10px] text-ark-text-disabled">Last {chartData.length} days</p>
         </div>
       )}
 
@@ -108,9 +119,7 @@ function MacroDetail({ config }: { config: MacroDetailConfig }) {
         <div key={s.title}>
           <h4 className="mb-1.5 text-sm font-semibold text-ark-text">{s.title}</h4>
           <div className="space-y-1 text-[13px] leading-relaxed text-ark-text-secondary">
-            {s.content.trim().split('\n').map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
+            {s.content.trim().split('\n').map((line, i) => <p key={i}>{line}</p>)}
           </div>
         </div>
       ))}
@@ -120,11 +129,11 @@ function MacroDetail({ config }: { config: MacroDetailConfig }) {
 
 const vixLevel = (v: number) => v < 20 ? { label: 'Bullish', color: C.success } : v < 25 ? { label: 'Neutral', color: C.warning } : { label: 'Bearish', color: C.error };
 const dxyLevel = (v: number) => v < 100 ? { label: 'Bullish', color: C.success } : v < 105 ? { label: 'Neutral', color: C.warning } : { label: 'Bearish', color: C.error };
-const m2Level = (_v: number, chg: number) => chg > 0 ? { label: 'Bullish', color: C.success } : chg > -1 ? { label: 'Neutral', color: C.warning } : { label: 'Bearish', color: C.error };
+const liquidityLevel = (_v: number, chg: number) => chg >= 0 ? { label: 'Bullish', color: C.success } : chg > -1 ? { label: 'Neutral', color: C.warning } : { label: 'Bearish', color: C.error };
 
 export function VixDetail() {
   return <MacroDetail config={{
-    indicator: 'VIX', title: 'VIX', format: (v) => v.toFixed(2), level: vixLevel,
+    dbKey: 'vix', title: 'VIX', format: (v) => v.toFixed(2), level: vixLevel,
     levels: [
       { range: 'Below 15', description: 'Low volatility — complacency', color: C.success },
       { range: '15–20', description: 'Normal market conditions', color: C.primary },
@@ -142,7 +151,7 @@ export function VixDetail() {
 
 export function DxyDetail() {
   return <MacroDetail config={{
-    indicator: 'DXY', title: 'DXY', format: (v) => v.toFixed(2), level: dxyLevel,
+    dbKey: 'dxy', title: 'DXY', format: (v) => v.toFixed(2), level: dxyLevel,
     levels: [
       { range: 'Below 90', description: 'Weak dollar — risk-on', color: C.success },
       { range: '90–100', description: 'Normal range', color: C.primary },
@@ -159,10 +168,21 @@ export function DxyDetail() {
 
 export function M2Detail() {
   return <MacroDetail config={{
-    indicator: 'M2', title: 'Global M2', format: (v) => `$${v.toFixed(2)}T`, level: m2Level,
+    dbKey: 'global_m2', title: 'CB Liquidity', format: (v) => `$${(v / 1e12).toFixed(2)}T`, level: liquidityLevel,
     info: [
-      { title: 'What is Global M2?', content: 'Global M2 represents the total money supply across major economies — cash, checking deposits, and easily convertible near-money. It’s a key indicator of global liquidity and monetary conditions.' },
-      { title: 'Impact on Crypto', content: '• Expanding M2: more liquidity in the system, historically supportive of risk assets including Bitcoin (often with a 2–3 month lag).\n• Contracting M2: tightening liquidity, a headwind for crypto.' },
+      { title: 'What is Global M2 / CB Liquidity?', content: 'Global M2 represents the total money supply across major economies — cash, deposits, and easily convertible near-money. It’s a key gauge of global liquidity and central-bank monetary conditions.' },
+      { title: 'Impact on Crypto', content: '• Expanding liquidity: more money in the system, historically supportive of risk assets including Bitcoin (often with a 2–3 month lag).\n• Contracting liquidity: tightening conditions, a headwind for crypto.' },
+    ],
+  }} />;
+}
+
+export function NetLiquidityDetail() {
+  return <MacroDetail config={{
+    dbKey: 'net_liquidity', title: 'US Net Liquidity', format: (v) => `$${(v / 1e12).toFixed(2)}T`, level: liquidityLevel,
+    info: [
+      { title: 'What is US Net Liquidity?', content: 'US Net Liquidity tracks the Federal Reserve’s balance sheet minus money locked in the Treasury General Account (TGA) and reverse repos (RRP). It measures how much cash is actually circulating in financial markets.' },
+      { title: 'Impact on Crypto', content: '• Rising Net Liquidity: more cash available for risk assets — historically the #1 short-term driver of crypto prices.\n• Falling Net Liquidity: liquidity drains (TGA rebuilds, QT, RRP inflows) tend to pressure crypto and equities.' },
+      { title: 'What moves it', content: '• Fed balance sheet (QE adds, QT removes liquidity)\n• Treasury General Account (debt issuance drains, spending adds)\n• Reverse repo facility (inflows drain, outflows add)' },
     ],
   }} />;
 }

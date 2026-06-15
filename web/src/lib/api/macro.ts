@@ -21,6 +21,8 @@ import type {
   MarketBreadthDetailData,
   MarketBreadthPoint,
   FearGreedDetailData,
+  RiskBand,
+  RiskLevelItem,
   SupplyInProfitData,
   SupplyInProfitStatus,
   AssetRiskLevelData,
@@ -394,6 +396,113 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
   };
 }
 
+/* ── Single macro indicator history (for the detail period toggles) ── */
+export async function fetchIndicatorHistory(dbKey: string, days: number): Promise<{ date: string; value: number }[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('indicator_snapshots')
+    .select('value, recorded_date')
+    .eq('indicator', dbKey)
+    .gte('recorded_date', daysAgoISO(days))
+    .order('recorded_date', { ascending: true })
+    .limit(500);
+  if (error || !data) return [];
+  return (data as { value: number; recorded_date: string }[]).map((r) => ({ date: r.recorded_date, value: Number(r.value) }));
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Risk Levels — full lists for Crypto & Stock (indicator_snapshots *_risk_*)
+ * ────────────────────────────────────────────────────────────────────────── */
+const RISK_ASSET_NAMES: Record<string, string> = {
+  btc: 'Bitcoin', eth: 'Ethereum', sol: 'Solana', bnb: 'BNB', xrp: 'XRP', ada: 'Cardano', doge: 'Dogecoin',
+  avax: 'Avalanche', dot: 'Polkadot', link: 'Chainlink', ltc: 'Litecoin', bch: 'Bitcoin Cash', atom: 'Cosmos',
+  arb: 'Arbitrum', op: 'Optimism', imx: 'Immutable', ldo: 'Lido DAO', sui: 'Sui', uni: 'Uniswap', aave: 'Aave',
+  algo: 'Algorand', etc: 'Ethereum Classic', fil: 'Filecoin', fet: 'Fetch.ai', hbar: 'Hedera', inj: 'Injective',
+  jup: 'Jupiter', near: 'NEAR', ena: 'Ethena', ondo: 'Ondo', pepe: 'Pepe', shib: 'Shiba Inu', tao: 'Bittensor',
+  tia: 'Celestia', trx: 'TRON', sei: 'Sei', render: 'Render', syrup: 'Maple', zec: 'Zcash', aster: 'Aster',
+  // stocks
+  aapl: 'Apple', amd: 'AMD', amzn: 'Amazon', asml: 'ASML', asts: 'AST SpaceMobile', axti: 'AXT',
+  bitf: 'Bitfarms', bmnr: 'Bitmine', cifr: 'Cipher Mining', coin: 'Coinbase', dgxx: 'Digihost',
+  googl: 'Alphabet', hood: 'Robinhood', iren: 'IREN', meta: 'Meta', mp: 'MP Materials', msft: 'Microsoft',
+  mstr: 'MicroStrategy', mu: 'Micron', nbis: 'Nebius', nuai: 'Nuvve', nvda: 'NVIDIA', onds: 'Ondas',
+  open: 'Opendoor', orcl: 'Oracle', pl: 'Planet Labs', qbts: 'D-Wave', qqq: 'Nasdaq 100 ETF', rdw: 'Redwire',
+  rklb: 'Rocket Lab', satl: 'Satellogic', sidu: 'Sidus Space', sndk: 'SanDisk', spy: 'S&P 500 ETF',
+  tsla: 'Tesla', tsm: 'TSMC', uber: 'Uber', wulf: 'TeraWulf',
+};
+
+function riskBand(v: number): RiskBand {
+  if (v < 0.20) return 'Very Low';
+  if (v < 0.40) return 'Low';
+  if (v < 0.55) return 'Neutral';
+  if (v < 0.70) return 'Elevated';
+  return 'High';
+}
+
+export async function fetchRiskLevels(kind: 'crypto' | 'stock'): Promise<RiskLevelItem[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+
+  // stock symbols (used to exclude stocks from the crypto_risk_* prefix, which mixes both)
+  const stockLatest = await supabase
+    .from('indicator_snapshots')
+    .select('indicator')
+    .like('indicator', 'stock_risk_%')
+    .gte('recorded_date', daysAgoISO(3))
+    .limit(300);
+  const stockSyms = new Set((stockLatest.data ?? []).map((r: { indicator: string }) => r.indicator.replace('stock_risk_', '')));
+
+  const prefix = kind === 'stock' ? 'stock_risk_' : 'crypto_risk_';
+  const { data, error } = await supabase
+    .from('indicator_snapshots')
+    .select('indicator, value, recorded_date')
+    .like('indicator', `${prefix}%`)
+    .gte('recorded_date', daysAgoISO(220))
+    .order('recorded_date', { ascending: true })
+    .limit(20000);
+  if (error || !data?.length) return [];
+
+  const bySym = new Map<string, { value: number; date: string }[]>();
+  for (const r of data as { indicator: string; value: number; recorded_date: string }[]) {
+    const sym = r.indicator.replace(prefix, '');
+    if (kind === 'crypto' && stockSyms.has(sym)) continue; // exclude stocks from crypto list
+    const arr = bySym.get(sym) ?? [];
+    arr.push({ value: Number(r.value), date: r.recorded_date });
+    bySym.set(sym, arr);
+  }
+
+  const atOrBefore = (series: { value: number; date: string }[], targetISO: string) => {
+    let v: number | undefined;
+    for (const p of series) { if (p.date <= targetISO) v = p.value; else break; }
+    return v;
+  };
+
+  const items: RiskLevelItem[] = [];
+  for (const [sym, series] of bySym) {
+    if (!series.length) continue;
+    const current = series[series.length - 1].value;
+    const band = riskBand(current);
+    const v7 = atOrBefore(series, daysAgoISO(7)) ?? series[0].value;
+    const v30 = atOrBefore(series, daysAgoISO(30)) ?? series[0].value;
+    const last7 = series.slice(-7);
+    const sevenDayAvg = last7.reduce((s, p) => s + p.value, 0) / last7.length;
+    // days at current band (consecutive from latest)
+    let daysAtLevel = 0;
+    for (let i = series.length - 1; i >= 0; i--) { if (riskBand(series[i].value) === band) daysAtLevel++; else break; }
+    items.push({
+      symbol: sym.toUpperCase(),
+      name: RISK_ASSET_NAMES[sym] ?? sym.toUpperCase(),
+      value: current,
+      band,
+      change7d: current - v7,
+      change30d: current - v30,
+      daysAtLevel,
+      sevenDayAvg,
+    });
+  }
+  return items.sort((a, b) => a.value - b.value);
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Per-asset Core Technical detail (BTC / ETH / SOL)
  * Source: technicals_snapshots + market_snapshots.
@@ -550,14 +659,35 @@ export async function fetchMarketBreadthDetail(days = 365): Promise<MarketBreadt
 export async function fetchFearGreedDetail(): Promise<FearGreedDetailData | null> {
   if (!isSupabaseConfigured()) return null;
   const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('fear_greed_history')
-    .select('date, value, classification')
-    .gte('date', daysAgoISO(95))
-    .order('date', { ascending: true })
-    .limit(120);
-  if (error || !data?.length) return null;
-  const rows = (data as { date: string; value: number; classification: string }[]).map((r) => ({ date: r.date, value: Number(r.value), classification: r.classification }));
+  const since = daysAgoISO(95);
+  const [fgRes, priceRes] = await Promise.all([
+    supabase.from('fear_greed_history').select('date, value, classification').gte('date', since).order('date', { ascending: true }).limit(120),
+    supabase.from('risk_snapshots').select('recorded_date, btc_price, sp500_price, nasdaq_price').gte('recorded_date', since).order('recorded_date', { ascending: true }).limit(200),
+  ]);
+  if (fgRes.error || !fgRes.data?.length) return null;
+
+  // price map by date (carry forward the last known price for gaps)
+  const priceRows = (priceRes.data ?? []) as { recorded_date: string; btc_price: number; sp500_price: number; nasdaq_price: number }[];
+  const priceByDate = new Map(priceRows.map((p) => [p.recorded_date, p]));
+  const sortedPriceDates = priceRows.map((p) => p.recorded_date);
+  const nearestPrice = (date: string) => {
+    if (priceByDate.has(date)) return priceByDate.get(date)!;
+    let last: typeof priceRows[number] | undefined;
+    for (const d of sortedPriceDates) { if (d <= date) last = priceByDate.get(d); else break; }
+    return last;
+  };
+
+  const rows = (fgRes.data as { date: string; value: number; classification: string }[]).map((r) => {
+    const p = nearestPrice(r.date);
+    return {
+      date: r.date,
+      value: Number(r.value),
+      classification: r.classification,
+      btcPrice: p?.btc_price != null ? Number(p.btc_price) : undefined,
+      sp500Price: p?.sp500_price != null ? Number(p.sp500_price) : undefined,
+      nasdaqPrice: p?.nasdaq_price != null ? Number(p.nasdaq_price) : undefined,
+    };
+  });
   const latest = rows[rows.length - 1];
   const at = (back: number) => rows[rows.length - 1 - back]?.value;
   return {
@@ -566,7 +696,7 @@ export async function fetchFearGreedDetail(): Promise<FearGreedDetailData | null
     yesterday: at(1),
     lastWeek: at(7),
     lastMonth: at(30),
-    history: rows.map((r) => ({ date: r.date, value: r.value })),
+    history: rows,
   };
 }
 

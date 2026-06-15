@@ -89,7 +89,7 @@ function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: 
       marketMovers: () => import('./market-movers').then(m => ({ default: m.MarketMovers })),
       macro: () => import('./macro-dashboard').then(m => ({ default: m.MacroDashboard })),
       supply: () => import('./supply-in-profit').then(m => ({ default: m.SupplyInProfit })),
-      assetRisk: () => import('./crypto-risk-detail').then(m => ({ default: m.CryptoRiskDetail })),
+      assetRisk: () => import('./risk-levels-detail').then(m => ({ default: m.CryptoRiskLevelsDetail })),
       events: () => import('./events-card').then(m => ({ default: m.EventsCard })),
       favorites: () => import('./favorites-card').then(m => ({ default: m.FavoritesCard })),
       dca: () => import('./dca-card').then(m => ({ default: m.DCACard })),
@@ -99,7 +99,7 @@ function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: 
       m2: () => import('./macro-detail').then(m => ({ default: m.M2Detail })),
       marketBreadth: () => import('./market-detail').then(m => ({ default: m.MarketBreadthDetail })),
       signalChanges: () => import('./market-detail').then(m => ({ default: m.SignalChangesDetail })),
-      stockRisk: () => import('./market-detail').then(m => ({ default: m.StockRiskDetail })),
+      stockRisk: () => import('./risk-levels-detail').then(m => ({ default: m.StockRiskLevelsDetail })),
       tradeSignals: () => import('./signals-detail').then(m => ({ default: m.TradeSignalsDetail })),
       rotation: () => import('./signals-detail').then(m => ({ default: m.RotationDetail })),
       modelPortfolio: () => import('./signals-detail').then(m => ({ default: m.ModelPortfolioDetail })),
@@ -566,7 +566,7 @@ function MarketMoversTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenP
                 <button
                   key={asset.id}
                   onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(sym); }}
-                  className="flex flex-col rounded-xl border border-ark-divider/60 bg-ark-fill-secondary/40 p-2.5 text-left transition-colors hover:border-ark-divider hover:bg-ark-fill-secondary/70"
+                  className="flex flex-col rounded-xl border border-ark-divider bg-ark-fill-secondary/80 p-2.5 text-left shadow-sm transition-colors hover:border-ark-text-disabled/40 hover:bg-ark-fill-secondary"
                 >
                   <div className="flex items-center justify-between">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: accent }}>{sym}</span>
@@ -576,7 +576,7 @@ function MarketMoversTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenP
                     </span>
                   </div>
                   <span className="mt-2 text-base font-bold text-ark-text">{sym}</span>
-                  <span className="fig text-[11px] text-ark-text-disabled">{formatCurrency(asset.current_price)}</span>
+                  <span className="fig text-xs font-semibold text-ark-text-secondary">{formatCurrency(asset.current_price)}</span>
                 </button>
               );
             })}

@@ -31,6 +31,19 @@ export interface MacroDashboardData {
   insight: string;
 }
 
+/* ── Risk Levels (Crypto & Stock) full lists ── */
+export type RiskBand = 'Very Low' | 'Low' | 'Neutral' | 'Elevated' | 'High';
+export interface RiskLevelItem {
+  symbol: string;
+  name: string;
+  value: number;        // 0-1
+  band: RiskBand;
+  change7d: number;
+  change30d: number;
+  daysAtLevel: number;
+  sevenDayAvg: number;
+}
+
 /* ── Per-asset Core Technical detail ── */
 export interface TechnicalTimeframeTrend {
   timeframe: string;          // 1D / 1W / 1M
@@ -90,13 +103,21 @@ export interface MarketBreadthDetailData {
 }
 
 /* ── Fear & Greed detail ── */
+export interface FearGreedHistoryPoint {
+  date: string;
+  value: number;
+  classification?: string;
+  btcPrice?: number;
+  sp500Price?: number;
+  nasdaqPrice?: number;
+}
 export interface FearGreedDetailData {
   value: number;
   classification: string;
   yesterday?: number;
   lastWeek?: number;
   lastMonth?: number;
-  history: { date: string; value: number }[];
+  history: FearGreedHistoryPoint[];
 }
 
 export interface VIXData {

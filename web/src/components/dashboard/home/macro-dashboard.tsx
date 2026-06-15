@@ -1,11 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { TrendingUp, DollarSign, Landmark, Globe, ChevronDown, ChevronRight } from 'lucide-react';
+import { TrendingUp, DollarSign, Landmark, Globe, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { useMacroDashboard } from '@/lib/hooks/use-market';
 import { cn } from '@/lib/utils/format';
+import { VixDetail, DxyDetail, M2Detail, NetLiquidityDetail } from './macro-detail';
 import type { MacroDashIndicator } from '@/types';
+
+const INDICATOR_DETAIL: Record<string, { title: string; Comp: () => React.ReactElement }> = {
+  vix: { title: 'VIX — Volatility Index', Comp: VixDetail },
+  dxy: { title: 'DXY — US Dollar Index', Comp: DxyDetail },
+  netLiquidity: { title: 'US Net Liquidity', Comp: NetLiquidityDetail },
+  cbLiquidity: { title: 'CB Liquidity', Comp: M2Detail },
+};
 
 const ICONS = { vix: TrendingUp, dxy: DollarSign, netLiquidity: Landmark, cbLiquidity: Globe } as const;
 
@@ -33,6 +41,20 @@ export function MacroDashboard() {
   const [whatExpanded, setWhatExpanded] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [alerts, setAlerts] = useState(true);
+  const [detailKey, setDetailKey] = useState<string | null>(null);
+
+  if (detailKey && INDICATOR_DETAIL[detailKey]) {
+    const { title, Comp } = INDICATOR_DETAIL[detailKey];
+    return (
+      <div>
+        <button onClick={() => setDetailKey(null)} className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ark-info">
+          <ChevronLeft className="h-4 w-4" /> Macro Dashboard
+        </button>
+        <p className="mb-2 text-sm font-semibold text-ark-text">{title}</p>
+        <Comp />
+      </div>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -74,7 +96,7 @@ export function MacroDashboard() {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Current Values</p>
         <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
           {data.indicators.map((ind, i) => (
-            <IndicatorRow key={ind.key} ind={ind} divider={i > 0} />
+            <IndicatorRow key={ind.key} ind={ind} divider={i > 0} onClick={() => setDetailKey(ind.key)} />
           ))}
         </div>
       </div>
@@ -123,12 +145,12 @@ export function MacroDashboard() {
   );
 }
 
-function IndicatorRow({ ind, divider }: { ind: MacroDashIndicator; divider: boolean }) {
+function IndicatorRow({ ind, divider, onClick }: { ind: MacroDashIndicator; divider: boolean; onClick: () => void }) {
   const Icon = ICONS[ind.key];
   const color = sigColor(ind.signal);
   const change = fmtChange(ind.changePct);
   return (
-    <div className={cn('flex items-center gap-3 p-3.5', divider && 'border-t border-ark-divider')}>
+    <button onClick={onClick} className={cn('flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-ark-fill-secondary/40', divider && 'border-t border-ark-divider')}>
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ark-info/10">
         <Icon className="h-4 w-4 text-ark-info" />
       </div>
@@ -141,6 +163,6 @@ function IndicatorRow({ ind, divider }: { ind: MacroDashIndicator; divider: bool
       </div>
       <span className="rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ backgroundColor: `${color}1F`, color }}>{ind.signalLabel}</span>
       <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
-    </div>
+    </button>
   );
 }
