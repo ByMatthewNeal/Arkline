@@ -1722,13 +1722,13 @@ export function BentoGrid() {
 
   const enabledKeys = widgetKeys.filter(isEnabled);
 
-  const [header] = useState<{ greeting: string; date: string }>(() => {
-    if (typeof window === 'undefined') return { greeting: '', date: '' };
+  const [header, setHeader] = useState<{ greeting: string; date: string }>({ greeting: '', date: '' });
+  useEffect(() => {
     const h = new Date().getHours();
     const greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
     const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    return { greeting, date };
-  });
+    setHeader({ greeting, date }); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
   const name = profile?.full_name?.split(' ')[0] || profile?.username || '';
 
   return (
@@ -1737,7 +1737,7 @@ export function BentoGrid() {
         <div>
           <p suppressHydrationWarning className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{header.date}</p>
           <h1 suppressHydrationWarning className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
-            {header.greeting || 'Dashboard'}{name ? `, ${name}` : ''}
+            {header.greeting || 'Welcome'}{name ? `, ${name}` : ''}
           </h1>
         </div>
         <button
