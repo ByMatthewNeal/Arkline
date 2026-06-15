@@ -14,6 +14,13 @@ import type {
   ArkLineScoreLevel,
   ArkLineScoreComponent,
   ArkLineScoreHistoryPoint,
+  MacroDashboardData,
+  MacroDashIndicator,
+  AssetTechnicalData,
+  TechnicalTimeframeTrend,
+  MarketBreadthDetailData,
+  MarketBreadthPoint,
+  FearGreedDetailData,
   SupplyInProfitData,
   SupplyInProfitStatus,
   AssetRiskLevelData,
@@ -291,6 +298,272 @@ export async function fetchAssetRiskHistory(
     date: r.risk_date,
     risk_level: Number(r.risk_level),
   }));
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Macro Dashboard — regime + 4 key drivers (VIX, DXY, US Net Liquidity, CB Liq)
+ * Source: indicator_snapshots (vix, dxy, net_liquidity, global_m2).
+ * ────────────────────────────────────────────────────────────────────────── */
+const REGIME_TEXT: Record<string, string> = {
+  'Risk-On Disinflation': 'Economic growth with easing monetary conditions. Historically the best environment for crypto assets.',
+  'Risk-On Inflation': 'Growth alongside rising inflation. Risk assets can work, but expect higher volatility and policy risk.',
+  'Risk-Off Disinflation': 'Slowing growth with easing conditions. Defensive positioning is favored until growth signals improve.',
+  'Risk-Off Inflation': 'Weak growth with sticky inflation (stagflation). Historically the toughest backdrop for risk assets.',
+};
+
+export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const keys = ['vix', 'dxy', 'net_liquidity', 'global_m2'];
+  const { data, error } = await supabase
+    .from('indicator_snapshots')
+    .select('indicator, value, recorded_date')
+    .in('indicator', keys)
+    .gte('recorded_date', daysAgoISO(40))
+    .order('recorded_date', { ascending: true });
+  if (error || !data?.length) return null;
+
+  const byInd = new Map<string, { value: number; date: string }[]>();
+  for (const r of data as { indicator: string; value: number; recorded_date: string }[]) {
+    const arr = byInd.get(r.indicator) ?? [];
+    arr.push({ value: Number(r.value), date: r.recorded_date });
+    byInd.set(r.indicator, arr);
+  }
+  // latest value + week-over-week change (vs value ~7 days back, else oldest)
+  const latestOf = (k: string) => {
+    const s = byInd.get(k);
+    if (!s?.length) return null;
+    const latest = s[s.length - 1];
+    const weekAgo = s.find((p) => p.date <= daysAgoISO(7)) ?? s[0];
+    const changePct = weekAgo.value !== 0 ? ((latest.value - weekAgo.value) / weekAgo.value) * 100 : 0;
+    return { value: latest.value, changePct, date: latest.date };
+  };
+
+  const vix = latestOf('vix');
+  const dxy = latestOf('dxy');
+  const netLiq = latestOf('net_liquidity');
+  const cbLiq = latestOf('global_m2');
+  if (!vix || !dxy || !netLiq || !cbLiq) return null;
+
+  const indicators: MacroDashIndicator[] = [
+    {
+      key: 'vix', label: 'VIX', value: vix.value,
+      formattedValue: vix.value.toFixed(1), changePct: vix.changePct,
+      signal: vix.value < 20 ? 'bullish' : vix.value > 28 ? 'bearish' : 'neutral',
+      signalLabel: vix.value < 20 ? 'Bullish' : vix.value > 28 ? 'Bearish' : 'Neutral',
+    },
+    {
+      key: 'dxy', label: 'DXY', value: dxy.value,
+      formattedValue: dxy.value.toFixed(1), changePct: dxy.changePct,
+      signal: dxy.value < 100 ? 'bullish' : dxy.value > 105 ? 'bearish' : 'neutral',
+      signalLabel: dxy.value < 100 ? 'Bullish' : dxy.value > 105 ? 'Bearish' : 'Neutral',
+    },
+    {
+      key: 'netLiquidity', label: 'US Net Liquidity', value: netLiq.value,
+      formattedValue: `$${(netLiq.value / 1e12).toFixed(1)}T`, changePct: netLiq.changePct,
+      signal: netLiq.changePct >= 0 ? 'bullish' : 'bearish',
+      signalLabel: netLiq.changePct >= 0 ? 'Bullish' : 'Bearish',
+    },
+    {
+      key: 'cbLiquidity', label: 'CB Liquidity', value: cbLiq.value,
+      formattedValue: `$${(cbLiq.value / 1e12).toFixed(1)}T`, changePct: cbLiq.changePct,
+      signal: cbLiq.changePct >= 0 ? 'expanding' : 'contracting',
+      signalLabel: cbLiq.changePct >= 0 ? 'Expanding' : 'Contracting',
+    },
+  ];
+
+  const bullishCount = [vix.value < 20, dxy.value < 100, netLiq.changePct >= 0].filter(Boolean).length;
+  const riskOn = bullishCount >= 2;
+  const easing = cbLiq.changePct >= 0; // expanding liquidity ≈ disinflationary/easing
+  const regimeLabel = `${riskOn ? 'Risk-On' : 'Risk-Off'} ${easing ? 'Disinflation' : 'Inflation'}`;
+  const insight = riskOn
+    ? 'Macro indicators are aligned to the upside. Low fear, a weakening or stable dollar, and growing liquidity have historically supported risk assets like BTC.'
+    : 'Macro indicators are pointed to the downside. Elevated fear, a strengthening dollar, or contracting liquidity have historically pressured risk assets like BTC.';
+
+  return {
+    regimeLabel,
+    regimeDescription: REGIME_TEXT[regimeLabel] ?? '',
+    regimeBullish: riskOn,
+    asOf: vix.date,
+    indicators,
+    insight,
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Per-asset Core Technical detail (BTC / ETH / SOL)
+ * Source: technicals_snapshots + market_snapshots.
+ * ────────────────────────────────────────────────────────────────────────── */
+const ASSET_META: Record<string, { coin: string; name: string; market: string }> = {
+  BTC: { coin: 'btc', name: 'Bitcoin', market: 'bitcoin' },
+  ETH: { coin: 'eth', name: 'Ethereum', market: 'ethereum' },
+  SOL: { coin: 'sol', name: 'Solana', market: 'solana' },
+};
+
+function trendToScore(direction: string): { score: number; label: string } {
+  const d = direction.toLowerCase();
+  if (d.includes('strong') && d.includes('up')) return { score: 90, label: 'Strong Up' };
+  if (d.includes('up')) return { score: 70, label: 'Uptrend' };
+  if (d.includes('strong') && d.includes('down')) return { score: 10, label: 'Strong Down' };
+  if (d.includes('down')) return { score: 30, label: 'Downtrend' };
+  return { score: 50, label: 'Neutral' };
+}
+
+export async function fetchAssetTechnical(symbol: string): Promise<AssetTechnicalData | null> {
+  if (!isSupabaseConfigured()) return null;
+  const meta = ASSET_META[symbol.toUpperCase()];
+  if (!meta) return null;
+  const supabase = getSupabase();
+
+  const [techRes, mktRes] = await Promise.all([
+    supabase.from('technicals_snapshots').select('*').eq('coin_id', meta.coin).order('recorded_date', { ascending: false }).limit(1),
+    supabase.from('market_snapshots').select('current_price, price_change_pct_24h').eq('coin_id', meta.market).order('recorded_date', { ascending: false }).limit(1),
+  ]);
+  const t = techRes.data?.[0] as Record<string, number | string> | undefined;
+  if (!t) return null;
+  const m = mktRes.data?.[0] as { current_price: number; price_change_pct_24h: number } | undefined;
+
+  const price = Number(m?.current_price ?? t.current_price);
+  const changePct24h = Number(m?.price_change_pct_24h ?? 0);
+  const rsi = Number(t.rsi);
+  const sma21 = Number(t.sma_21), sma50 = Number(t.sma_50), sma200 = Number(t.sma_200);
+  const sma20w = Number(t.bmsb_sma_20w), ema21w = Number(t.bmsb_ema_21w);
+  const dir = String(t.trend_direction ?? 'Neutral');
+  const trend = trendToScore(dir);
+
+  // Valuation: derived from RSI position (lower RSI ⇒ more oversold ⇒ higher "value")
+  const valuationScore = Math.round(Math.max(0, Math.min(100, 100 - rsi)));
+  const valuationLabel = rsi < 30 ? 'Oversold' : rsi < 45 ? 'Oversold' : rsi > 70 ? 'Overbought' : rsi > 55 ? 'Elevated' : 'Fair Value';
+
+  const down = trend.score < 40;
+  const strongDown = trend.score <= 15;
+  const shortTerm = { label: down ? 'Bearish' : trend.score > 60 ? 'Bullish' : 'Neutral', direction: (down ? 'down' : trend.score > 60 ? 'up' : 'flat') as 'up' | 'down' | 'flat' };
+  const belowAllMas = price < sma21 && price < sma50 && price < sma200;
+  const longTerm = { label: belowAllMas ? 'Very Bearish' : down ? 'Bearish' : trend.score > 60 ? 'Bullish' : 'Neutral', direction: (down || belowAllMas ? 'down' : trend.score > 60 ? 'up' : 'flat') as 'up' | 'down' | 'flat' };
+
+  const tfTrend = (above: boolean): TechnicalTimeframeTrend => ({
+    timeframe: '', label: above ? (trend.score > 60 ? 'Strong Up' : 'Up') : (strongDown ? 'Strong Down' : 'Down'),
+    direction: above ? 'up' : 'down', strength: above ? (trend.score > 60 ? 3 : 2) : (strongDown ? 3 : 2),
+  });
+  const timeframes: TechnicalTimeframeTrend[] = [
+    { ...tfTrend(price >= sma21), timeframe: '1D' },
+    { ...tfTrend(price >= sma50), timeframe: '1W' },
+    { ...tfTrend(price >= sma200), timeframe: '1M' },
+  ];
+
+  const aboveBmsb = price >= Math.min(sma20w, ema21w);
+  const insight = aboveBmsb
+    ? 'Price is holding above bull market support bands. Trend structure remains constructive while support holds.'
+    : 'Price has broken below bull market support bands. Risk is elevated — patience may be warranted until support is reclaimed.';
+
+  const rsiLabel = rsi < 30 ? 'Oversold' : rsi < 45 ? 'Weak' : rsi > 70 ? 'Overbought' : rsi > 55 ? 'Strong' : 'Neutral';
+  const rsiNote = rsi < 45 ? 'Momentum weakening' : rsi > 55 ? 'Momentum strengthening' : 'Momentum balanced';
+
+  return {
+    symbol: symbol.toUpperCase(),
+    name: meta.name,
+    price,
+    changePct24h,
+    insight,
+    trendScore: trend.score,
+    trendLabel: trend.label,
+    valuationScore,
+    valuationLabel,
+    shortTerm,
+    longTerm,
+    rsi,
+    rsiLabel,
+    rsiNote,
+    timeframes,
+    bmsb: {
+      status: aboveBmsb ? 'Above Support' : 'Below Support',
+      above: aboveBmsb,
+      sma20w, ema21w,
+      sma20wPct: sma20w ? ((price - sma20w) / sma20w) * 100 : 0,
+      ema21wPct: ema21w ? ((price - ema21w) / ema21w) * 100 : 0,
+    },
+    keyLevels: [
+      { label: '21 MA', value: sma21, above: price >= sma21 },
+      { label: '50 MA', value: sma50, above: price >= sma50 },
+      { label: '200 MA', value: sma200, above: price >= sma200 },
+    ],
+    deathCross: sma50 < sma200,
+    goldenCross: sma50 >= sma200,
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Market Breadth detail — current trend, recent signals, multi-line history.
+ * Source: market_breadth.
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function fetchMarketBreadthDetail(days = 365): Promise<MarketBreadthDetailData | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('market_breadth')
+    .select('signal_date, total_tokens, trending_tokens, breadth_pct, ema_12, ema_21, trend, crossover, btc_price')
+    .gte('signal_date', daysAgoISO(days))
+    .order('signal_date', { ascending: true })
+    .limit(400);
+  if (error || !data?.length) return null;
+  type Row = { signal_date: string; total_tokens: number; trending_tokens: number; breadth_pct: number; ema_12: number; ema_21: number; trend: string; crossover: string | null; btc_price: number };
+  const rows = data as Row[];
+  const latest = rows[rows.length - 1];
+
+  const history: MarketBreadthPoint[] = rows.map((r) => ({
+    date: r.signal_date,
+    breadth: Number(r.breadth_pct),
+    ema12: Number(r.ema_12),
+    ema21: Number(r.ema_21),
+    btc: Number(r.btc_price),
+    crossover: r.crossover,
+  }));
+
+  const recentSignals = rows
+    .filter((r) => r.crossover === 'bullish_crossover' || r.crossover === 'bearish_crossover')
+    .slice(-6)
+    .reverse()
+    .map((r) => ({ type: (r.crossover === 'bullish_crossover' ? 'bullish' : 'bearish') as 'bullish' | 'bearish', date: r.signal_date }));
+
+  return {
+    breadthPct: Number(latest.breadth_pct),
+    trend: latest.trend,
+    ema12: Number(latest.ema_12),
+    ema21: Number(latest.ema_21),
+    trendingTokens: Number(latest.trending_tokens),
+    totalTokens: Number(latest.total_tokens),
+    btcPrice: Number(latest.btc_price),
+    asOf: latest.signal_date,
+    recentSignals,
+    history,
+  };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Fear & Greed detail — current + yesterday/last week/last month + 90d history.
+ * Source: fear_greed_history.
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function fetchFearGreedDetail(): Promise<FearGreedDetailData | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('fear_greed_history')
+    .select('date, value, classification')
+    .gte('date', daysAgoISO(95))
+    .order('date', { ascending: true })
+    .limit(120);
+  if (error || !data?.length) return null;
+  const rows = (data as { date: string; value: number; classification: string }[]).map((r) => ({ date: r.date, value: Number(r.value), classification: r.classification }));
+  const latest = rows[rows.length - 1];
+  const at = (back: number) => rows[rows.length - 1 - back]?.value;
+  return {
+    value: latest.value,
+    classification: latest.classification,
+    yesterday: at(1),
+    lastWeek: at(7),
+    lastMonth: at(30),
+    history: rows.map((r) => ({ date: r.date, value: r.value })),
+  };
 }
 
 /* ── BTC supply in profit ──

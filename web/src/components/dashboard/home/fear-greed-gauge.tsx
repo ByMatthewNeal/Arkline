@@ -1,166 +1,130 @@
 'use client';
 
-import { Gauge, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { GlassCard, Badge, Skeleton } from '@/components/ui';
-import { useFearGreedIndex } from '@/lib/hooks/use-market';
-import { cn } from '@/lib/utils/format';
+import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { Skeleton } from '@/components/ui';
+import { useFearGreedDetail } from '@/lib/hooks/use-market';
 
-function getVariant(value: number): 'error' | 'warning' | 'default' | 'success' {
-  if (value <= 25) return 'error';
-  if (value <= 45) return 'warning';
-  if (value <= 55) return 'default';
-  return 'success';
+function fgColor(v: number): string {
+  if (v < 25) return 'var(--ark-error)';
+  if (v < 45) return '#F97316';
+  if (v < 56) return 'var(--ark-warning)';
+  if (v < 76) return '#65A30D';
+  return 'var(--ark-success)';
+}
+function fgClass(v: number): string {
+  if (v < 25) return 'Extreme Fear';
+  if (v < 45) return 'Fear';
+  if (v < 56) return 'Neutral';
+  if (v < 76) return 'Greed';
+  return 'Extreme Greed';
 }
 
-function getGaugeColor(value: number): string {
-  if (value <= 25) return 'var(--ark-error)';
-  if (value <= 45) return 'var(--ark-warning)';
-  if (value <= 55) return 'var(--ark-text-tertiary)';
-  return 'var(--ark-success)';
+const LEVELS = [
+  { range: '0–24', label: 'Extreme Fear', note: 'Market panic — historically a buying opportunity', color: 'var(--ark-error)' },
+  { range: '25–44', label: 'Fear', note: 'Investors are worried — caution dominates', color: '#F97316' },
+  { range: '45–55', label: 'Neutral', note: 'No strong bias in either direction', color: 'var(--ark-warning)' },
+  { range: '56–75', label: 'Greed', note: 'Optimism rising — markets trending up', color: '#65A30D' },
+  { range: '76–100', label: 'Extreme Greed', note: 'Euphoria — historically a time to be cautious', color: 'var(--ark-success)' },
+];
+
+// point on a 180° semicircle (cx100 cy100 r80) for value 0-100
+function pointAt(v: number) {
+  const angle = (Math.PI) * (1 - v / 100); // π (left) → 0 (right)
+  return { x: 100 + 80 * Math.cos(angle), y: 100 - 80 * Math.sin(angle) };
 }
 
 export function FearGreedGauge() {
-  const { data, isLoading } = useFearGreedIndex();
+  const { data, isLoading } = useFearGreedDetail();
+  if (isLoading || !data) return <Skeleton className="h-72 w-full rounded-2xl" />;
 
-  const value = data?.value ?? 50;
-  const label = data?.value_classification ?? 'Neutral';
-  const rotation = (value / 100) * 180 - 90;
-  const color = getGaugeColor(value);
-
-  // Simulate yesterday's value for comparison (in real app, fetch historical)
-  const prevValue = Math.max(0, Math.min(100, value + (value > 50 ? -3 : 4)));
-  const change = value - prevValue;
+  const { value } = data;
+  const color = fgColor(value);
+  const marker = pointAt(value);
+  const cmp = (label: string, v?: number) => (
+    <div className="flex-1 text-center">
+      <p className="fig text-lg font-bold text-ark-text">{v == null ? '—' : v}</p>
+      <p className="text-[11px] text-ark-text-disabled">{label}</p>
+    </div>
+  );
 
   return (
-    <GlassCard className="relative flex flex-col overflow-hidden">
-      {/* Subtle glow at top */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{
-          background: `linear-gradient(to right, transparent, ${color}40, transparent)`,
-        }}
-      />
-
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ark-warning/10">
-            <Gauge className="h-5 w-5 text-ark-warning" />
-          </div>
-          <h3 className="text-sm font-semibold text-ark-text">Fear & Greed</h3>
+    <div className="space-y-5 pb-2">
+      {/* Gauge card */}
+      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-5">
+        <div className="flex justify-center">
+          <svg viewBox="0 0 200 120" className="w-60">
+            <defs>
+              <linearGradient id="fg-arc" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="var(--ark-error)" />
+                <stop offset="35%" stopColor="#F97316" />
+                <stop offset="50%" stopColor="var(--ark-warning)" />
+                <stop offset="70%" stopColor="#65A30D" />
+                <stop offset="100%" stopColor="var(--ark-success)" />
+              </linearGradient>
+            </defs>
+            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#fg-arc)" strokeWidth="12" strokeLinecap="round" />
+            <circle cx={marker.x} cy={marker.y} r="7" fill="var(--ark-card)" stroke={color} strokeWidth="3" />
+          </svg>
         </div>
-        <Badge variant={getVariant(value)}>{label}</Badge>
+        <div className="-mt-4 text-center">
+          <p className="font-[family-name:var(--font-urbanist)] text-5xl font-bold text-ark-text">{value}</p>
+          <p className="text-xs text-ark-text-disabled">/ 100</p>
+          <p className="mt-1 text-lg font-bold" style={{ color }}>{data.classification || fgClass(value)}</p>
+        </div>
+        <div className="mt-4 flex border-t border-ark-divider pt-3">
+          {cmp('Yesterday', data.yesterday)}
+          <div className="w-px bg-ark-divider" />
+          {cmp('Last Week', data.lastWeek)}
+          <div className="w-px bg-ark-divider" />
+          {cmp('Last Month', data.lastMonth)}
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex flex-1 items-center justify-center">
-          <Skeleton className="h-32 w-48" />
-        </div>
-      ) : (
-        <div className="flex flex-1 flex-col items-center justify-center">
-          {/* Semi-circle gauge */}
-          <svg viewBox="0 0 200 120" className="w-52">
-            {/* Background arc */}
-            <path
-              d="M 20 100 A 80 80 0 0 1 180 100"
-              fill="none"
-              stroke="var(--ark-divider)"
-              strokeWidth="12"
-              strokeLinecap="round"
-            />
-            {/* Extreme Fear */}
-            <path
-              d="M 20 100 A 80 80 0 0 1 52 40"
-              fill="none"
-              stroke="var(--ark-error)"
-              strokeWidth="12"
-              strokeLinecap="round"
-              opacity="0.75"
-            />
-            {/* Fear */}
-            <path
-              d="M 52 40 A 80 80 0 0 1 85 22"
-              fill="none"
-              stroke="var(--ark-warning)"
-              strokeWidth="12"
-              strokeLinecap="round"
-              opacity="0.75"
-            />
-            {/* Neutral */}
-            <path
-              d="M 85 22 A 80 80 0 0 1 115 22"
-              fill="none"
-              stroke="var(--ark-text-tertiary)"
-              strokeWidth="12"
-              strokeLinecap="round"
-              opacity="0.35"
-            />
-            {/* Greed */}
-            <path
-              d="M 115 22 A 80 80 0 0 1 148 40"
-              fill="none"
-              stroke="var(--ark-success)"
-              strokeWidth="12"
-              strokeLinecap="round"
-              opacity="0.75"
-            />
-            {/* Extreme Greed */}
-            <path
-              d="M 148 40 A 80 80 0 0 1 180 100"
-              fill="none"
-              stroke="var(--ark-success-muted)"
-              strokeWidth="12"
-              strokeLinecap="round"
-              opacity="0.75"
-            />
-            {/* Needle */}
-            <line
-              x1="100"
-              y1="100"
-              x2="100"
-              y2="35"
-              stroke="var(--ark-text-primary)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              transform={`rotate(${rotation}, 100, 100)`}
-              className="transition-transform duration-700"
-            />
-            {/* Center dot */}
-            <circle cx="100" cy="100" r="6" fill="var(--ark-text-primary)" />
-            <circle cx="100" cy="100" r="3" fill="var(--ark-card)" />
-            {/* Scale labels */}
-            <text x="20" y="116" textAnchor="start" className="fill-ark-text-disabled text-[9px]">0</text>
-            <text x="100" y="14" textAnchor="middle" className="fill-ark-text-disabled text-[9px]">50</text>
-            <text x="180" y="116" textAnchor="end" className="fill-ark-text-disabled text-[9px]">100</text>
-          </svg>
-
-          {/* Value + change */}
-          <div className="mt-2 flex flex-col items-center">
-            <div className="flex items-baseline gap-1.5">
-              <span
-                className="font-[family-name:var(--font-urbanist)] text-4xl font-bold"
-                style={{ color }}
-              >
-                {value}
-              </span>
-              <span className="text-sm text-ark-text-disabled">/ 100</span>
-            </div>
-            <div className={cn(
-              'mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-              change > 0 ? 'bg-ark-success/10 text-ark-success' : change < 0 ? 'bg-ark-error/10 text-ark-error' : 'bg-ark-fill-secondary text-ark-text-disabled',
-            )}>
-              {change > 0 ? <TrendingUp className="h-2.5 w-2.5" /> : change < 0 ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
-              {change > 0 ? '+' : ''}{change} vs yesterday
-            </div>
+      {/* History */}
+      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">History (90 Days)</p>
+        {data.history.length > 1 ? (
+          <div className="mt-3 h-40 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.history} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+                <defs>
+                  <linearGradient id="fg-hist" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <YAxis domain={[0, 100]} hide />
+                <Tooltip
+                  contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 11 }}
+                  labelFormatter={(l) => new Date(String(l) + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  formatter={(v) => [`${v}`, 'Index']}
+                />
+                <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill="url(#fg-hist)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
+        ) : (
+          <p className="py-10 text-center text-sm text-ark-text-disabled">Not enough history data</p>
+        )}
+      </div>
 
-          {/* Scale bar */}
-          <div className="mt-4 flex w-full items-center justify-between px-1 text-[9px] text-ark-text-disabled">
-            <span>Extreme Fear</span>
-            <span>Neutral</span>
-            <span>Extreme Greed</span>
-          </div>
+      {/* Level guide */}
+      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">Level Guide</p>
+        <div className="space-y-3">
+          {LEVELS.map((l) => (
+            <div key={l.range} className="flex items-start gap-2.5">
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: l.color }} />
+              <div>
+                <p className="text-sm font-semibold text-ark-text">
+                  <span className="fig">{l.range}</span> <span style={{ color: l.color }}>{l.label}</span>
+                </p>
+                <p className="text-[12px] text-ark-text-tertiary">{l.note}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
-    </GlassCard>
+      </div>
+    </div>
   );
 }

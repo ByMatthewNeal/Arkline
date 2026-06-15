@@ -152,8 +152,11 @@ export function ArkLineScore() {
                 data={hist}
                 margin={{ top: 6, right: 4, bottom: 0, left: 4 }}
                 onMouseMove={(s) => {
-                  const pl = (s as { activePayload?: { payload?: ArkLineScoreHistoryPoint }[] })?.activePayload?.[0]?.payload;
-                  if (pl) setActive(pl);
+                  const st = s as { activeLabel?: string; activeTooltipIndex?: number; activePayload?: { payload?: ArkLineScoreHistoryPoint }[] };
+                  let pt = st.activePayload?.[0]?.payload;
+                  if (!pt && st.activeLabel != null) pt = hist.find((h) => h.date === st.activeLabel);
+                  if (!pt && st.activeTooltipIndex != null && st.activeTooltipIndex >= 0) pt = hist[st.activeTooltipIndex];
+                  if (pt) setActive(pt);
                 }}
                 onMouseLeave={() => setActive(null)}
               >

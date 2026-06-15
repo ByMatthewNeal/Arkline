@@ -1,10 +1,11 @@
 'use client';
 
-import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { useState } from 'react';
+import { Area, AreaChart, ComposedChart, Line, CartesianGrid, XAxis, ResponsiveContainer, YAxis, Tooltip, ReferenceDot } from 'recharts';
 import { ArrowRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
 import { cn, signalChangeHint } from '@/lib/utils/format';
-import { useMarketBreadth, useSignalChanges, useStockRiskLevels } from '@/lib/hooks/use-market';
+import { useSignalChanges, useStockRiskLevels, useMarketBreadthDetail } from '@/lib/hooks/use-market';
 
 const SIG: Record<string, string> = {
   bullish: 'var(--ark-success)', neutral: 'var(--ark-warning)', bearish: 'var(--ark-error)',
@@ -23,53 +24,110 @@ function Info({ title, lines }: { title: string; lines: string[] }) {
 }
 
 // ── Market Breadth ──────────────────────────────────────────────────────────
+const BREADTH_PERIODS = [{ label: '1M', days: 30 }, { label: '3M', days: 90 }, { label: '6M', days: 180 }, { label: '1Y', days: 365 }];
+
 export function MarketBreadthDetail() {
-  const { data, isLoading } = useMarketBreadth();
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  const [days, setDays] = useState(90);
+  const { data, isLoading } = useMarketBreadthDetail(days);
+  if (isLoading) return <Skeleton className="h-72 w-full" />;
   if (!data) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No data available.</p>;
 
-  const color = data.breadth_pct >= 70 ? 'var(--ark-success)' : data.breadth_pct >= 40 ? 'var(--ark-warning)' : 'var(--ark-error)';
-  const chart = data.history.map((v, i) => ({ i, v }));
+  const bullish = data.trend === 'bullish';
+  const trendColor = bullish ? 'var(--ark-success)' : 'var(--ark-error)';
+  const breadthColor = data.breadthPct >= 60 ? 'var(--ark-success)' : data.breadthPct >= 40 ? 'var(--ark-warning)' : 'var(--ark-error)';
+  const breadthLabel = data.breadthPct >= 60 ? 'Strong' : data.breadthPct >= 40 ? 'Moderate' : 'Weak';
+
+  const fmtDay = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const btcVals = data.history.map((h) => h.btc);
+  const btcMin = Math.min(...btcVals), btcMax = Math.max(...btcVals);
+  const signals = data.history.filter((h) => h.crossover === 'bullish_crossover' || h.crossover === 'bearish_crossover');
+  const firstDate = data.history[0]?.date, lastDate = data.history[data.history.length - 1]?.date;
 
   return (
-    <div className="space-y-6 pb-4">
-      <div className="flex flex-col items-center gap-2 pt-2">
-        <span className="font-[family-name:var(--font-urbanist)] text-5xl font-bold" style={{ color }}>{data.breadth_pct.toFixed(1)}%</span>
-        <Badge variant={data.trend === 'bullish' ? 'success' : data.trend === 'bearish' ? 'error' : 'warning'}>{cap(data.trend)}</Badge>
+    <div className="space-y-5 pb-2">
+      {/* Current trend card */}
+      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-ark-text-disabled">Current Trend</p>
+            <p className="font-[family-name:var(--font-urbanist)] text-2xl font-bold" style={{ color: trendColor }}>{cap(data.trend)}</p>
+          </div>
+          <p className="text-right text-xs font-semibold" style={{ color: trendColor }}>
+            EMA 12 ({data.ema12.toFixed(1)}%)<br />
+            <span className="text-ark-text-tertiary">{data.ema12 >= data.ema21 ? '>' : '<'}</span> EMA 21 ({data.ema21.toFixed(1)}%)
+          </p>
+        </div>
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-ark-fill-secondary">
+          <div className="h-full rounded-full" style={{ width: `${data.breadthPct}%`, backgroundColor: trendColor }} />
+        </div>
+        <div className="mt-1 flex justify-between text-[11px] text-ark-text-disabled">
+          <span>{data.breadthPct.toFixed(1)}% of tokens in uptrend</span>
+          <span className="fig font-semibold text-ark-text">{data.trendingTokens} / {data.totalTokens}</span>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-3 border-t border-ark-divider pt-3">
+          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">Breadth</p><p className="fig text-base font-bold" style={{ color: breadthColor }}>{data.breadthPct.toFixed(1)}%</p><p className="text-[10px] text-ark-text-disabled">{breadthLabel}</p></div>
+          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">Trending</p><p className="fig text-base font-bold text-ark-text">{data.trendingTokens}</p><p className="text-[10px] text-ark-text-disabled">of {data.totalTokens}</p></div>
+          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">BTC</p><p className="fig text-base font-bold text-ark-text">${data.btcPrice.toLocaleString()}</p><p className="text-[10px] text-ark-text-disabled">{fmtDay(data.asOf)}</p></div>
+        </div>
       </div>
 
-      {chart.length > 1 && (
-        <div className="h-44 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chart} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-              <defs>
-                <linearGradient id="mb-detail" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.25} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <YAxis domain={[0, 100]} hide />
-              <Tooltip contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 12 }} labelFormatter={() => ''} formatter={(v) => [`${Number(v).toFixed(1)}%`, 'Breadth']} />
-              <Area type="monotone" dataKey="v" stroke={color} strokeWidth={2} fill="url(#mb-detail)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* Recent signals */}
+      {data.recentSignals.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Recent Signals</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {data.recentSignals.map((s, i) => (
+              <span key={i} className={cn('flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold', s.type === 'bullish' ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>
+                {s.type === 'bullish' ? '▲' : '▼'} {s.type} ({fmtDay(s.date)})
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
-        <Stat label="Trending" value={`${data.trending_tokens}/${data.total_tokens}`} />
-        <Stat label="Trend" value={cap(data.trend)} />
-        <Stat label="Crossover" value={data.crossover ? cap(data.crossover) : '—'} />
+      {/* Multi-line chart */}
+      <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-3">
+        <div className="mb-2 flex justify-center">
+          <div className="inline-flex rounded-full bg-ark-fill-secondary p-0.5">
+            {BREADTH_PERIODS.map((p) => (
+              <button key={p.label} onClick={() => setDays(p.days)} className={cn('rounded-full px-3 py-1 text-xs font-semibold transition-colors', days === p.days ? 'bg-ark-info text-white' : 'text-ark-text-tertiary')}>{p.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data.history} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke="var(--ark-divider)" strokeDasharray="3 3" vertical={false} opacity={0.4} />
+              <XAxis dataKey="date" tickLine={false} axisLine={false} ticks={firstDate && lastDate ? [firstDate, lastDate] : []} tickFormatter={fmtDay} tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }} interval="preserveStartEnd" />
+              <YAxis yAxisId="b" domain={[0, 100]} hide />
+              <YAxis yAxisId="btc" orientation="right" domain={[btcMin, btcMax]} hide />
+              <Tooltip
+                contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 11 }}
+                labelFormatter={(l) => fmtDay(String(l))}
+                formatter={(v, name) => name === 'btc' ? [`$${Number(v).toLocaleString()}`, 'BTC'] : [`${Number(v).toFixed(1)}%`, name === 'breadth' ? 'Breadth' : name === 'ema12' ? 'EMA 12' : 'EMA 21']}
+              />
+              <Line yAxisId="b" type="monotone" dataKey="breadth" stroke="var(--ark-text-tertiary)" strokeWidth={1} dot={false} opacity={0.5} />
+              <Line yAxisId="b" type="monotone" dataKey="ema12" stroke="var(--ark-success)" strokeWidth={2} dot={false} />
+              <Line yAxisId="b" type="monotone" dataKey="ema21" stroke="#15803D" strokeWidth={1.5} dot={false} />
+              <Line yAxisId="btc" type="monotone" dataKey="btc" stroke="#F59E0B" strokeWidth={1.5} dot={false} />
+              {signals.map((s, i) => (
+                <ReferenceDot key={i} yAxisId="b" x={s.date} y={s.ema12} r={4} fill={s.crossover === 'bullish_crossover' ? 'var(--ark-success)' : 'var(--ark-error)'} stroke="var(--ark-card)" strokeWidth={1} />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] text-ark-text-tertiary">
+          <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded bg-ark-text-tertiary" /> Breadth</span>
+          <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded bg-ark-success" /> EMA 12</span>
+          <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded" style={{ background: '#15803D' }} /> EMA 21</span>
+          <span className="flex items-center gap-1"><span className="h-0.5 w-3 rounded" style={{ background: '#F59E0B' }} /> BTC</span>
+        </div>
       </div>
 
-      <Info title="What is Market Breadth?" lines={[
-        'Market breadth measures the percentage of tokens currently in an uptrend (price above their 7-day moving average).',
-        'High values (70–100%) indicate broad market strength; low values (0–30%) suggest most tokens are trending down.',
-      ]} />
-      <Info title="EMA Trend Analysis" lines={[
-        '• EMA 12 > EMA 21 (bullish): breadth improving — more tokens entering uptrends.',
-        '• EMA 12 < EMA 21 (bearish): breadth declining — tokens losing momentum.',
-        '• Crossovers mark potential turning points; divergence vs. BTC price can signal a narrowing or broadening rally.',
+      <Info title="How Market Breadth Works" lines={[
+        'Market Breadth measures the percentage of tokens in an uptrend (price above their 7-day moving average).',
+        'Green EMAs = bullish trend (breadth improving). Red EMAs = bearish trend (breadth declining).',
+        'EMA 12 crossing above EMA 21 marks a bullish signal; crossing below marks a bearish signal. Divergence vs. BTC can flag a narrowing or broadening rally.',
       ]} />
     </div>
   );

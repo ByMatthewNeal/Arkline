@@ -10,6 +10,94 @@ export interface MacroIndicator {
 
 export type MacroIndicatorType = 'vix' | 'dxy' | 'm2' | 'wti';
 
+/* ── Macro Dashboard (regime + 4 key indicators) ── */
+export interface MacroDashIndicator {
+  key: 'vix' | 'dxy' | 'netLiquidity' | 'cbLiquidity';
+  label: string;
+  value: number;
+  formattedValue: string;
+  changePct?: number;
+  signal: 'bullish' | 'bearish' | 'neutral' | 'expanding' | 'contracting';
+  signalLabel: string;
+}
+
+export interface MacroDashboardData {
+  regimeLabel: string;
+  regimeDescription: string;
+  regimeBullish: boolean;
+  asOf: string;
+  indicators: MacroDashIndicator[];
+  insight: string;
+}
+
+/* ── Per-asset Core Technical detail ── */
+export interface TechnicalTimeframeTrend {
+  timeframe: string;          // 1D / 1W / 1M
+  label: string;              // Strong Down, Up, etc.
+  direction: 'up' | 'down' | 'flat';
+  strength: number;           // 0-3 bars
+}
+export interface AssetTechnicalData {
+  symbol: string;             // BTC / ETH / SOL
+  name: string;               // Bitcoin
+  price: number;
+  changePct24h: number;
+  insight: string;
+  trendScore: number;         // 0-100
+  trendLabel: string;         // Strong Down
+  valuationScore: number;     // 0-100
+  valuationLabel: string;     // Oversold
+  shortTerm: { label: string; direction: 'up' | 'down' | 'flat' };
+  longTerm: { label: string; direction: 'up' | 'down' | 'flat' };
+  rsi: number;
+  rsiLabel: string;
+  rsiNote: string;
+  timeframes: TechnicalTimeframeTrend[];
+  bmsb: {
+    status: string;           // Below Support / Above Support
+    above: boolean;
+    sma20w: number;
+    ema21w: number;
+    sma20wPct: number;
+    ema21wPct: number;
+  };
+  keyLevels: { label: string; value: number; above: boolean }[];   // 21/50/200 MA
+  deathCross: boolean;
+  goldenCross: boolean;
+}
+
+/* ── Market Breadth detail (history + signals) ── */
+export interface MarketBreadthPoint {
+  date: string;
+  breadth: number;
+  ema12: number;
+  ema21: number;
+  btc: number;
+  crossover?: string | null;
+}
+export interface MarketBreadthDetailData {
+  breadthPct: number;
+  trend: string;
+  ema12: number;
+  ema21: number;
+  trendingTokens: number;
+  totalTokens: number;
+  btcPrice: number;
+  asOf: string;
+  recentSignals: { type: 'bullish' | 'bearish'; date: string }[];
+  history: MarketBreadthPoint[];
+}
+
+/* ── Fear & Greed detail ── */
+export interface FearGreedDetailData {
+  value: number;
+  classification: string;
+  yesterday?: number;
+  lastWeek?: number;
+  lastMonth?: number;
+  history: { date: string; value: number }[];
+}
+
 export interface VIXData {
   date: string;
   value: number;

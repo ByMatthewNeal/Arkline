@@ -33,6 +33,10 @@ import {
   fetchSupplyInProfit,
   fetchAssetRiskLevels,
   fetchAssetRiskHistory,
+  fetchMacroDashboard,
+  fetchAssetTechnical,
+  fetchMarketBreadthDetail,
+  fetchFearGreedDetail,
 } from '@/lib/api/macro';
 
 export function useCryptoAssets(page = 1) {
@@ -214,6 +218,22 @@ export function useArkLineScoreHistory() {
     queryFn: fetchArkLineScoreHistory,
     staleTime: 60_000,
   });
+}
+
+export function useMacroDashboard() {
+  return useQuery({ queryKey: ['macro-dashboard'], queryFn: fetchMacroDashboard, staleTime: 60_000 });
+}
+
+export function useAssetTechnical(symbol: string) {
+  return useQuery({ queryKey: ['asset-technical', symbol], queryFn: () => fetchAssetTechnical(symbol), staleTime: 60_000, enabled: !!symbol });
+}
+
+export function useMarketBreadthDetail(days = 365) {
+  return useQuery({ queryKey: ['market-breadth-detail', days], queryFn: () => fetchMarketBreadthDetail(days), staleTime: 60_000 });
+}
+
+export function useFearGreedDetail() {
+  return useQuery({ queryKey: ['fear-greed-detail'], queryFn: fetchFearGreedDetail, staleTime: 60_000 });
 }
 
 export function useSupplyInProfit() {
