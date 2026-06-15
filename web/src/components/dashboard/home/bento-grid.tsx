@@ -8,7 +8,9 @@ import {
   SlidersHorizontal, X, Check, RotateCcw,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Badge, Skeleton } from '@/components/ui';
+import Link from 'next/link';
+import { Play, Square } from 'lucide-react';
+import { Badge, Skeleton, GlassCard } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import {
   useRiskHistory, useFearGreedIndex, useArkLineScore, useCryptoAssets,
@@ -32,21 +34,6 @@ import {
   SkeletonHeroTile, SkeletonGaugeTile, SkeletonSparkTile, SkeletonListTile, SkeletonMacroTile,
 } from '../shared/bento-primitives';
 import { DraggableGrid, type ResponsiveLayouts } from '../shared/draggable-grid';
-
-// Full-size widget imports (rendered inside drawer — lazily via switch)
-import type { PortfolioHero } from './portfolio-hero';
-import type { BriefingCard } from './briefing-card';
-import type { FearGreedGauge } from './fear-greed-gauge';
-import type { ArkLineScore as ArkLineScoreWidget } from './arkline-score';
-import type { RiskChart } from './risk-chart';
-import type { MarketMovers } from './market-movers';
-import type { MacroDashboard } from './macro-dashboard';
-import type { SupplyInProfit as SupplyInProfitWidget } from './supply-in-profit';
-import type { AssetRiskLevel } from './asset-risk-level';
-import type { EventsCard } from './events-card';
-import type { FavoritesCard } from './favorites-card';
-import type { DCACard } from './dca-card';
-import type { NewsCard } from './news-card';
 
 type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
@@ -1036,10 +1023,8 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
 // rowHeight = 80px. h:2 = 168px (compact), h:3 = 248px (hero)
 const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
   lg: [
-    { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
     { i: 'fearGreed',    x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'arklineScore', x: 3, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'briefing',     x: 0, y: 3,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
     { i: 'riskChart',    x: 2, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'marketMovers', x: 3, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'macro',        x: 0, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
@@ -1064,10 +1049,8 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'fedWatch',     x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
-    { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
     { i: 'fearGreed',    x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'arklineScore', x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'briefing',     x: 1, y: 3,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
     { i: 'riskChart',    x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'marketMovers', x: 1, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'macro',        x: 2, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
@@ -1092,10 +1075,8 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'fedWatch',     x: 0, y: 27, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
-    { i: 'portfolio',    x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'fearGreed',    x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'arklineScore', x: 1, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'briefing',     x: 0, y: 6,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'riskChart',    x: 0, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'marketMovers', x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'macro',        x: 0, y: 12, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1585,10 +1566,11 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-// Note: 'briefing' is intentionally excluded — it's pinned as a full-width hero
-// at the top of the dashboard (see BriefingHero), matching the iOS app.
+// Note: 'portfolio' and 'briefing' are intentionally excluded — they're pinned
+// as full-width heroes at the top of the dashboard (PortfolioHero / BriefingHero),
+// matching the iOS app's Portfolio → Briefing → widgets order.
 const widgetKeys: WidgetKey[] = [
-  'portfolio', 'fearGreed', 'arklineScore', 'riskChart',
+  'fearGreed', 'arklineScore', 'riskChart',
   'marketMovers', 'macro', 'supply', 'assetRisk', 'events',
   'favorites', 'dca', 'news',
   'vix', 'dxy', 'm2', 'marketBreadth', 'signalChanges', 'stockRisk',
@@ -1715,6 +1697,94 @@ function CustomizePanel({
   );
 }
 
+/* ── Portfolio hero ── (pinned full-width at the top, like the iOS app) */
+function PortfolioHero() {
+  const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
+  const portfolioId = portfolios?.[0]?.id;
+  const { data: holdings, isLoading: holdingsLoading } = useHoldings(portfolioId);
+  const { data: assets } = useCryptoAssets(1);
+  const { data: history } = usePortfolioHistory(portfolioId, 30);
+  const isLoading = portfoliosLoading || (!!portfolioId && holdingsLoading);
+
+  const priceBySymbol = new Map<string, { current_price: number; price_change_percentage_24h: number }>();
+  for (const a of assets ?? []) {
+    priceBySymbol.set(a.symbol.toLowerCase(), {
+      current_price: a.current_price,
+      price_change_percentage_24h: a.price_change_percentage_24h ?? 0,
+    });
+  }
+  let currentValue = 0;
+  let dayChange = 0;
+  for (const h of holdings ?? []) {
+    const live = priceBySymbol.get(h.symbol.toLowerCase());
+    const price = live?.current_price ?? h.average_buy_price ?? 0;
+    const value = h.quantity * price;
+    currentValue += value;
+    dayChange += value - value / (1 + (live?.price_change_percentage_24h ?? 0) / 100);
+  }
+  const dayChangePct = currentValue - dayChange ? (dayChange / (currentValue - dayChange)) * 100 : 0;
+  const isUp = dayChange >= 0;
+  const histVals = (history ?? []).map((p) => p.value);
+  const sparkVals = histVals.length ? [...histVals, currentValue] : [];
+  const monthStart = histVals[0] ?? currentValue;
+  const monthChangePct = monthStart ? ((currentValue - monthStart) / monthStart) * 100 : 0;
+  const isMonthUp = monthChangePct >= 0;
+  const assetCount = holdings?.length ?? 0;
+  const hasHoldings = assetCount > 0;
+  const counter = useCountUp(currentValue, isLoading, 2);
+
+  return (
+    <Link href="/dashboard/portfolio" className="mb-4 block">
+      <GlassCard hover className="relative overflow-hidden p-5">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/40 to-transparent" />
+        {isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : !hasHoldings ? (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10"><Wallet className="h-5 w-5 text-ark-primary" /></div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</p>
+              <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text"><span className="opacity-40 font-normal">$</span>0.00</p>
+              <p className="text-[11px] text-ark-text-tertiary">No holdings yet — add positions to track your portfolio</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-6">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Wallet className="h-3.5 w-3.5 text-ark-primary" /></div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+              </div>
+              <p className="fig mt-2 font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none text-ark-text">
+                <span className="opacity-40 font-normal">$</span>{counter.value}
+              </p>
+              <span className={cn('fig mt-1.5 inline-flex items-center gap-0.5 text-sm font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
+                {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {formatCurrency(Math.abs(dayChange))} ({formatPercent(dayChangePct)}) today
+              </span>
+              <div className="mt-3 flex gap-6">
+                <div>
+                  <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">30d Return</p>
+                  <p className={cn('fig text-sm font-bold', isMonthUp ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(monthChangePct)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Assets</p>
+                  <p className="fig text-sm font-bold text-ark-text">{assetCount}</p>
+                </div>
+              </div>
+            </div>
+            {sparkVals.length > 1 && (
+              <div className="hidden h-24 w-1/2 sm:block">
+                <Spark data={sparkVals} color={isMonthUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
+              </div>
+            )}
+          </div>
+        )}
+      </GlassCard>
+    </Link>
+  );
+}
+
 /* ── Daily Briefing hero ── (pinned full-width at the top, like the iOS app) */
 function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; date: string; onOpen: () => void }) {
   const { data: briefing, isLoading } = useMarketBriefing();
@@ -1727,8 +1797,29 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
   const regimeLabel = isRiskOn ? 'RISK-ON' : isRiskOff ? 'RISK-OFF' : 'MIXED';
   const regimeVariant: 'success' | 'error' | 'warning' = isRiskOn ? 'success' : isRiskOff ? 'error' : 'warning';
 
+  const [speaking, setSpeaking] = useState(false);
+  const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  useEffect(() => () => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
+
+  const toggleSpeak = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!ttsSupported || !briefing) return;
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const text = `${greetingLine} ${sections.map((s) => `${s.title}. ${s.body}`).join(' ')}`;
+    const u = new SpeechSynthesisUtterance(text);
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setSpeaking(true);
+  };
+
   return (
-    <button onClick={onOpen} className="mb-4 block w-full text-left">
+    <div onClick={onOpen} role="button" tabIndex={0} className="mb-4 block w-full cursor-pointer text-left">
       <div className="relative overflow-hidden rounded-2xl border border-ark-primary/20 bg-gradient-to-br from-ark-primary/[0.07] via-ark-card to-ark-card p-5 shadow-sm transition-shadow hover:shadow-md">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/60 to-transparent" />
         <div className="mb-3 flex items-center justify-between">
@@ -1749,7 +1840,18 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
               </p>
             </div>
           </div>
-          {regime && <Badge variant={regimeVariant}>{regimeLabel}</Badge>}
+          <div className="flex items-center gap-2">
+            {ttsSupported && briefing && (
+              <button
+                onClick={toggleSpeak}
+                aria-label={speaking ? 'Stop reading' : 'Listen to briefing'}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-ark-primary/10 text-ark-primary transition-colors hover:bg-ark-primary/20"
+              >
+                {speaking ? <Square className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current" />}
+              </button>
+            )}
+            {regime && <Badge variant={regimeVariant}>{regimeLabel}</Badge>}
+          </div>
         </div>
 
         {isLoading ? (
@@ -1769,7 +1871,7 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
           <p className="text-sm text-ark-text-tertiary">No briefing available yet.</p>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -1819,6 +1921,8 @@ export function BentoGrid() {
           </button>
         </div>
       </div>
+
+      <PortfolioHero />
 
       <BriefingHero
         greetingLine={`${header.greeting || 'Welcome'}${name ? `, ${name}` : ''}. Here's your daily briefing.`}
