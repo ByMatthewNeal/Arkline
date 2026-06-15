@@ -6,7 +6,6 @@ import {
   verticalCompactor,
   type ResponsiveLayouts,
 } from 'react-grid-layout';
-import { RotateCcw } from 'lucide-react';
 import { useWidgetLayout } from '@/lib/hooks/use-widget-layout';
 import { Skeleton } from '@/components/ui';
 
@@ -22,12 +21,18 @@ interface DraggableGridProps {
   layoutKey: string;
   defaultLayouts: ResponsiveLayouts;
   children: ReactNode;
+  /** Optional: receives the reset function so a parent can render its own Reset control. */
+  resetRef?: { current: (() => void) | null };
 }
 
 export type { ResponsiveLayouts };
 
-export function DraggableGrid({ layoutKey, defaultLayouts, children }: DraggableGridProps) {
+export function DraggableGrid({ layoutKey, defaultLayouts, children, resetRef }: DraggableGridProps) {
   const { layouts, onLayoutChange, resetLayout, isReady } = useWidgetLayout(layoutKey, defaultLayouts);
+
+  useEffect(() => {
+    if (resetRef) resetRef.current = resetLayout;
+  }, [resetRef, resetLayout]);
 
   // Measure the actual container width ourselves so the grid always fills the
   // available space (react-grid-layout's useContainerWidth can get stuck at its
@@ -61,14 +66,6 @@ export function DraggableGrid({ layoutKey, defaultLayouts, children }: Draggable
 
   return (
     <div ref={widthRef} className="relative">
-      <button
-        onClick={resetLayout}
-        className="absolute -top-9 right-0 z-10 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
-        title="Reset layout"
-      >
-        <RotateCcw className="h-3 w-3" />
-        Reset
-      </button>
       {width > 0 && (
         <ResponsiveGridLayout
           className="arkline-grid"

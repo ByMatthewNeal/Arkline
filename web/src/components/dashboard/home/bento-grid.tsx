@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Wallet, Brain, Sparkles, Gauge, Shield, BarChart3, Globe,
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
-  SlidersHorizontal, X, Check,
+  SlidersHorizontal, X, Check, RotateCcw,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge, Skeleton } from '@/components/ui';
@@ -1730,6 +1730,7 @@ export function BentoGrid() {
     setHeader({ greeting, date }); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
   const name = profile?.full_name?.split(' ')[0] || profile?.username || '';
+  const resetRef = useRef<(() => void) | null>(null);
 
   return (
     <>
@@ -1740,13 +1741,23 @@ export function BentoGrid() {
             {header.greeting || 'Welcome'}{name ? `, ${name}` : ''}
           </h1>
         </div>
-        <button
-          onClick={() => setShowCustomize(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-ark-divider px-3 py-1.5 text-xs font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          Customize
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => resetRef.current?.()}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+            title="Reset layout"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </button>
+          <button
+            onClick={() => setShowCustomize(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-ark-divider px-3 py-1.5 text-xs font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Customize
+          </button>
+        </div>
       </div>
 
       <motion.div
@@ -1754,7 +1765,7 @@ export function BentoGrid() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <DraggableGrid layoutKey="home" defaultLayouts={HOME_DEFAULT_LAYOUTS}>
+        <DraggableGrid layoutKey="home" defaultLayouts={HOME_DEFAULT_LAYOUTS} resetRef={resetRef}>
           {enabledKeys.map((key, i) => {
             const TileComp = tileComponents[key];
             return (
