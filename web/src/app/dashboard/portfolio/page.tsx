@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { GlassCard, Badge, Skeleton } from '@/components/ui';
 import { usePortfolios, useHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/utils/format';
 import type { PortfolioHolding } from '@/types';
 
@@ -48,11 +49,26 @@ export default function PortfolioPage() {
   const { data: holdings, isLoading: loadingHoldings } = useHoldings(portfolio?.id);
   const { data: transactions } = useTransactions(portfolio?.id);
   const { data: history } = usePortfolioHistory(portfolio?.id, 30);
+  const { data: assets } = useCryptoAssets(1);
 
-  const stats = computeStats(holdings ?? []);
+  // Merge live prices into holdings (fetchHoldings returns no current_price).
+  const priceBySymbol = new Map<string, { price: number; pct: number }>();
+  for (const a of assets ?? []) {
+    priceBySymbol.set(a.symbol.toLowerCase(), { price: a.current_price, pct: a.price_change_percentage_24h ?? 0 });
+  }
+  const pricedHoldings = (holdings ?? []).map((h) => {
+    const live = priceBySymbol.get(h.symbol.toLowerCase());
+    return {
+      ...h,
+      current_price: live?.price ?? h.current_price ?? h.average_buy_price ?? 0,
+      price_change_percentage_24h: live?.pct ?? h.price_change_percentage_24h ?? 0,
+    };
+  });
+
+  const stats = computeStats(pricedHoldings);
 
   // Allocation data
-  const allocations = (holdings ?? [])
+  const allocations = pricedHoldings
     .map((h, i) => ({
       name: h.symbol.toUpperCase(),
       value: (h.current_price ?? 0) * h.quantity,
@@ -212,10 +228,10 @@ export default function PortfolioPage() {
             <GlassCard className="sm:col-span-1 lg:col-span-2">
               <h3 className="mb-3 text-sm font-semibold text-ark-text">Holdings</h3>
               <div className="space-y-2">
-                {(holdings ?? []).length === 0 && (
+                {pricedHoldings.length === 0 && (
                   <p className="text-sm text-ark-text-tertiary">No holdings yet.</p>
                 )}
-                {(holdings ?? []).map((h) => {
+                {pricedHoldings.map((h) => {
                   const value = (h.current_price ?? 0) * h.quantity;
                   const cost = (h.average_buy_price ?? 0) * h.quantity;
                   const pnl = value - cost;

@@ -1819,18 +1819,18 @@ function PortfolioHero() {
       ) : (
         <>
           {/* Header: label + pill period selector */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Wallet className="h-3.5 w-3.5 text-ark-primary" /></div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
             </div>
-            <div className="flex gap-1 rounded-full bg-ark-fill-secondary/60 p-1">
+            <div className="flex w-full gap-1 overflow-x-auto rounded-full bg-ark-fill-secondary/60 p-1 sm:w-auto">
               {PORTFOLIO_PERIODS.map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
                   className={cn(
-                    'rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors',
+                    'shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors',
                     period === p ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
                   )}
                 >
@@ -1843,7 +1843,7 @@ function PortfolioHero() {
           <div className="mt-5 flex items-center gap-8">
             {/* Value block — spacious */}
             <div className="min-w-0 shrink-0">
-              <p className="fig font-[family-name:var(--font-urbanist)] text-[40px] font-bold leading-none tracking-tight text-ark-text">
+              <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none tracking-tight text-ark-text sm:text-[40px]">
                 <span className="opacity-30 font-normal">$</span>{counter.value}
               </p>
               <span
