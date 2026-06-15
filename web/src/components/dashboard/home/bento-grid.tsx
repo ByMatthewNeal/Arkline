@@ -1496,16 +1496,30 @@ function USFuturesTile({ onOpen }: { onOpen: () => void }) {
               <p className="mt-0.5 text-[10px] text-ark-text-disabled">Updates when the market-extras job runs</p>
             </div>
           ) : (
-            <div className="mt-2 space-y-2">
-              {futures.map((f) => (
-                <div key={f.symbol} className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-ark-text">{f.name}</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="fig text-sm font-bold text-ark-text">{f.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    <span className={cn('fig text-[11px] font-semibold', f.change_percent >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(f.change_percent)}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-2 flex flex-1 flex-col">
+              <div className="flex flex-1 flex-col justify-evenly divide-y divide-ark-divider/60">
+                {futures.map((f) => {
+                  const up = f.change_percent >= 0;
+                  return (
+                    <div key={f.symbol} className="flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: up ? 'var(--ark-success)' : 'var(--ark-error)' }} />
+                        <div className="leading-tight">
+                          <span className="block text-[12px] font-semibold text-ark-text">{f.name}</span>
+                          <span className={cn('text-[9px] font-semibold uppercase tracking-wide', up ? 'text-ark-success' : 'text-ark-error')}>{up ? 'Bullish' : 'Bearish'}</span>
+                        </div>
+                      </div>
+                      <div className="text-right leading-tight">
+                        <span className="fig block text-base font-bold text-ark-text">{f.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                        <span className={cn('fig text-[11px] font-semibold', up ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(f.change_percent)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-2 rounded-lg px-2.5 py-1.5 text-center text-[10px] font-medium" style={{ backgroundColor: `${biasColor}14`, color: biasColor }}>
+                {futures.filter((f) => f.change_percent >= 0).length} of {futures.length} index futures higher · {session === 'Weekend' ? "Friday's close" : session.toLowerCase()}
+              </div>
             </div>
           )}
         </div>
