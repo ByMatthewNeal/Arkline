@@ -1257,7 +1257,7 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
               {changes.slice(0, 5).map((c) => (
                 <div key={c.asset}>
                   <div className="flex items-center gap-2">
-                    <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{c.asset}</span>
+                    <span className="shrink-0 text-[11px] font-semibold text-ark-text">{c.asset}</span>
                     <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
                     <ArrowUpRight className="h-3 w-3 rotate-45 text-ark-text-disabled" />
                     <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
