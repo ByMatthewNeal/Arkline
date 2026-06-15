@@ -63,7 +63,24 @@ export function useCountUp(target: number, isLoading: boolean, decimals = 0) {
   return { ref: inViewRef, value: formatted };
 }
 
-/* ── Mini SVG Sparkline ── */
+/* ── Mini SVG Sparkline ── (smooth Catmull-Rom curve + gradient fill) */
+function smoothLine(points: [number, number][]): string {
+  if (points.length < 2) return '';
+  let d = `M ${points[0][0]},${points[0][1]}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+
 export function Spark({ data, color, className = '' }: { data: number[]; color: string; className?: string }) {
   const id = useSparkId();
   if (data.length < 2) return null;
@@ -71,21 +88,22 @@ export function Spark({ data, color, className = '' }: { data: number[]; color: 
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * (h - 4) - 2;
-    return `${x},${y}`;
-  }).join(' ');
+  const pts: [number, number][] = data.map((v, i) => [
+    (i / (data.length - 1)) * w,
+    h - ((v - min) / range) * (h - 4) - 2,
+  ]);
+  const line = smoothLine(pts);
+  const area = `${line} L ${w},${h} L 0,${h} Z`;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className={`w-full ${className}`} preserveAspectRatio="none">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+          <stop offset="0%" stopColor={color} stopOpacity={0.22} />
           <stop offset="100%" stopColor={color} stopOpacity={0} />
         </linearGradient>
       </defs>
-      <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#${id})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <path d={area} fill={`url(#${id})`} stroke="none" />
+      <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
