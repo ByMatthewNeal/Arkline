@@ -110,9 +110,18 @@ export function MarketBreadthDetail() {
               <Line yAxisId="b" type="monotone" dataKey="ema12" stroke="var(--ark-success)" strokeWidth={2} dot={false} />
               <Line yAxisId="b" type="monotone" dataKey="ema21" stroke="#15803D" strokeWidth={1.5} dot={false} />
               <Line yAxisId="btc" type="monotone" dataKey="btc" stroke="#F59E0B" strokeWidth={1.5} dot={false} />
-              {signals.map((s, i) => (
-                <ReferenceDot key={i} yAxisId="b" x={s.date} y={s.ema12} r={4} fill={s.crossover === 'bullish_crossover' ? 'var(--ark-success)' : 'var(--ark-error)'} stroke="var(--ark-card)" strokeWidth={1} />
-              ))}
+              {signals.map((s, i) => {
+                const bull = s.crossover === 'bullish_crossover';
+                const col = bull ? 'var(--ark-success)' : 'var(--ark-error)';
+                return (
+                  <ReferenceDot key={i} yAxisId="b" x={s.date} y={s.ema12} r={0} shape={(props: { cx?: number; cy?: number }) => {
+                    const { cx = 0, cy = 0 } = props;
+                    // up triangle for bullish, down triangle for bearish
+                    const pts = bull ? `${cx},${cy - 6} ${cx - 5},${cy + 4} ${cx + 5},${cy + 4}` : `${cx},${cy + 6} ${cx - 5},${cy - 4} ${cx + 5},${cy - 4}`;
+                    return <polygon points={pts} fill={col} stroke="var(--ark-card)" strokeWidth={1} />;
+                  }} />
+                );
+              })}
             </ComposedChart>
           </ResponsiveContainer>
         </div>

@@ -336,7 +336,7 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
     const latest = s[s.length - 1];
     const weekAgo = s.find((p) => p.date <= daysAgoISO(7)) ?? s[0];
     const changePct = weekAgo.value !== 0 ? ((latest.value - weekAgo.value) / weekAgo.value) * 100 : 0;
-    return { value: latest.value, changePct, date: latest.date };
+    return { value: latest.value, changePct, date: latest.date, sparkline: s.slice(-24).map((p) => p.value) };
   };
 
   const vix = latestOf('vix');
@@ -351,24 +351,28 @@ export async function fetchMacroDashboard(): Promise<MacroDashboardData | null> 
       formattedValue: vix.value.toFixed(1), changePct: vix.changePct,
       signal: vix.value < 20 ? 'bullish' : vix.value > 28 ? 'bearish' : 'neutral',
       signalLabel: vix.value < 20 ? 'Bullish' : vix.value > 28 ? 'Bearish' : 'Neutral',
+      sparkline: vix.sparkline,
     },
     {
       key: 'dxy', label: 'DXY', value: dxy.value,
       formattedValue: dxy.value.toFixed(1), changePct: dxy.changePct,
       signal: dxy.value < 100 ? 'bullish' : dxy.value > 105 ? 'bearish' : 'neutral',
       signalLabel: dxy.value < 100 ? 'Bullish' : dxy.value > 105 ? 'Bearish' : 'Neutral',
+      sparkline: dxy.sparkline,
     },
     {
       key: 'netLiquidity', label: 'US Net Liquidity', value: netLiq.value,
       formattedValue: `$${(netLiq.value / 1e12).toFixed(1)}T`, changePct: netLiq.changePct,
       signal: netLiq.changePct >= 0 ? 'bullish' : 'bearish',
       signalLabel: netLiq.changePct >= 0 ? 'Bullish' : 'Bearish',
+      sparkline: netLiq.sparkline,
     },
     {
       key: 'cbLiquidity', label: 'CB Liquidity', value: cbLiq.value,
       formattedValue: `$${(cbLiq.value / 1e12).toFixed(1)}T`, changePct: cbLiq.changePct,
       signal: cbLiq.changePct >= 0 ? 'expanding' : 'contracting',
       signalLabel: cbLiq.changePct >= 0 ? 'Expanding' : 'Contracting',
+      sparkline: cbLiq.sparkline,
     },
   ];
 

@@ -5,7 +5,7 @@ import {
   Wallet, Brain, Sparkles, Gauge, Shield, BarChart3, Globe,
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
-  SlidersHorizontal, X, Check, RotateCcw, ChevronDown,
+  SlidersHorizontal, X, Check, RotateCcw, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -14,12 +14,13 @@ import { Play, Square } from 'lucide-react';
 import { Badge, Skeleton, GlassCard } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import {
-  useRiskHistory, useFearGreedIndex, useArkLineScore, useCryptoAssets,
+  useRiskHistory, useArkLineScore, useCryptoAssets,
   useMarketBriefing, useCryptoPositioning, useMacroIndicators,
   useSupplyInProfit, useAssetRiskLevels, useEconomicEvents, useNews,
-  useRegimeData, useMarketBreadth, useSignalChanges, useStockRiskLevels,
+  useSignalChanges, useStockRiskLevels,
   useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck,
   useUSFutures, usePerpPremium, useFedWatch,
+  useMacroDashboard, useMarketBreadthDetail, useFearGreedDetail,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
@@ -28,7 +29,7 @@ import { useDashboardPresets } from '@/lib/hooks/use-dashboard-presets';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn, parseBriefingSections, signalChangeHint } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, formatRelativeTime, cn, parseBriefingSections, signalChangeHint } from '@/lib/utils/format';
 import {
   Tile, Spark, MiniGauge, CircleGauge, AccentLine, AmbientGlow, ShineSweep,
   useCountUp,
@@ -74,12 +75,12 @@ const drawerTitles: Record<WidgetKey, string> = {
 };
 
 /* ── Lazy drawer widget renderer ── */
-function LazyDrawerWidget({ widgetKey }: { widgetKey: WidgetKey }) {
-  const [Widget, setWidget] = useState<React.ComponentType | null>(null);
+function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: string }) {
+  const [Widget, setWidget] = useState<React.ComponentType<{ initialSymbol?: string }> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const loaders: Partial<Record<WidgetKey, () => Promise<{ default?: React.ComponentType; [k: string]: unknown }>>> = {
+    const loaders: Partial<Record<WidgetKey, () => Promise<{ default?: React.ComponentType<{ initialSymbol?: string }>; [k: string]: unknown }>>> = {
       portfolio: () => import('./portfolio-hero').then(m => ({ default: m.PortfolioHero })),
       briefing: () => import('./briefing-card').then(m => ({ default: m.BriefingCard })),
       fearGreed: () => import('./fear-greed-gauge').then(m => ({ default: m.FearGreedGauge })),
@@ -116,17 +117,17 @@ function LazyDrawerWidget({ widgetKey }: { widgetKey: WidgetKey }) {
           <p className="mt-1 text-xs text-ark-text-disabled">This widget&apos;s data is shown on the dashboard tile.</p>
         </div>
       );
-      setWidget(() => Fallback as React.ComponentType);
+      setWidget(() => Fallback as React.ComponentType<{ initialSymbol?: string }>);
       return () => { cancelled = true; };
     }
     loader().then(mod => {
-      if (!cancelled) setWidget(() => (mod.default ?? null) as React.ComponentType | null);
+      if (!cancelled) setWidget(() => (mod.default ?? null) as React.ComponentType<{ initialSymbol?: string }> | null);
     });
     return () => { cancelled = true; };
   }, [widgetKey]);
 
   if (!Widget) return <Skeleton className="h-64 w-full" />;
-  return <Widget />;
+  return <Widget initialSymbol={param} />;
 }
 
 
@@ -272,13 +273,12 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
 }
 
 function FearGreedTile({ onOpen }: { onOpen: () => void }) {
-  const { data, isLoading } = useFearGreedIndex();
+  const { data, isLoading } = useFearGreedDetail();
   const value = data?.value ?? 50;
-  const label = data?.value_classification ?? 'Neutral';
-  const color = value <= 25 ? 'var(--ark-error)' : value <= 45 ? 'var(--ark-warning)' : value <= 55 ? 'var(--ark-text-tertiary)' : 'var(--ark-success)';
+  const label = data?.classification ?? 'Neutral';
+  const color = value < 25 ? 'var(--ark-error)' : value < 45 ? '#F97316' : value < 56 ? 'var(--ark-warning)' : value < 76 ? '#65A30D' : 'var(--ark-success)';
   const variant: 'error' | 'warning' | 'default' | 'success' = value <= 25 ? 'error' : value <= 45 ? 'warning' : value <= 55 ? 'default' : 'success';
-  const prevValue = Math.max(0, Math.min(100, value + (value > 50 ? -3 : 4)));
-  const change = value - prevValue;
+  const change = data?.yesterday != null ? value - data.yesterday : 0;
 
   const counter = useCountUp(value, isLoading);
 
@@ -539,118 +539,99 @@ function RiskChartTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function MarketMoversTile({ onOpen }: { onOpen: () => void }) {
+function MarketMoversTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenParam?: (p: string) => void }) {
   const { data: assets, isLoading } = useCryptoAssets(1);
-  const movers = (assets ?? []).filter((a) => ['bitcoin', 'ethereum', 'solana'].includes(a.id));
-  const coinColors: Record<string, string> = { btc: '#F7931A', eth: '#627EEA', sol: '#9945FF' };
+  const ORDER = ['bitcoin', 'ethereum', 'solana'];
+  const list = assets ?? [];
+  const movers = ORDER.map((id) => list.find((a) => a.id === id)).filter((a): a is NonNullable<typeof a> => !!a);
+  const coinColors: Record<string, string> = { btc: '#F7931A', eth: '#627EEA', sol: '#14F195' };
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
       {isLoading ? <SkeletonListTile /> : (
-        <>
+        <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10 transition-transform duration-300 group-hover:scale-110">
               <BarChart3 className="h-3.5 w-3.5 text-ark-primary" />
             </div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Core Technical Analysis</span>
           </div>
-          <div className="space-y-2">
+          <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
             {movers.map((asset) => {
+              const sym = asset.symbol.toUpperCase();
               const isUp = (asset.price_change_percentage_24h ?? 0) >= 0;
               const accent = coinColors[asset.symbol.toLowerCase()] ?? 'var(--ark-primary)';
-              const sparkData = asset.sparkline_in_7d?.price?.slice(-24) ?? [];
               return (
-                <div key={asset.id} className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                    style={{ backgroundColor: accent }}>
-                    {asset.symbol.toUpperCase().slice(0, 3)}
+                <button
+                  key={asset.id}
+                  onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(sym); }}
+                  className="flex flex-col rounded-xl border border-ark-divider/60 bg-ark-fill-secondary/40 p-2.5 text-left transition-colors hover:border-ark-divider hover:bg-ark-fill-secondary/70"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: accent }}>{sym}</span>
+                    <span className={cn('fig flex items-center gap-0.5 text-[10px] font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
+                      {isUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
+                      {formatPercent(asset.price_change_percentage_24h ?? 0)}
+                    </span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-ark-text">{asset.symbol.toUpperCase()}</span>
-                      <span className="fig text-[11px] font-bold text-ark-text">
-                        {formatCurrency(asset.current_price)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="w-16 h-4">
-                        {sparkData.length > 2 && <Spark data={sparkData} color={accent} className="h-4" />}
-                      </div>
-                      <span className={cn(
-                        'fig flex items-center gap-0.5 text-[10px] font-semibold',
-                        isUp ? 'text-ark-success' : 'text-ark-error',
-                      )}>
-                        {isUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
-                        {formatPercent(asset.price_change_percentage_24h ?? 0)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  <span className="mt-2 text-base font-bold text-ark-text">{sym}</span>
+                  <span className="fig text-[11px] text-ark-text-disabled">{formatCurrency(asset.current_price)}</span>
+                </button>
               );
             })}
           </div>
-        </>
+        </div>
       )}
     </Tile>
   );
 }
 
 function MacroTile({ onOpen }: { onOpen: () => void }) {
-  const { data: indicators, isLoading } = useMacroIndicators();
-  const { data: regime } = useRegimeData();
-  const indicatorMeta: Record<string, { label: string; color: string }> = {
-    VIX: { label: 'VIX', color: 'var(--ark-warning)' }, vix: { label: 'VIX', color: 'var(--ark-warning)' },
-    DXY: { label: 'DXY', color: 'var(--ark-primary)' }, dxy: { label: 'DXY', color: 'var(--ark-primary)' },
-    M2: { label: 'M2', color: 'var(--ark-success)' }, m2: { label: 'M2', color: 'var(--ark-success)' },
-    WTI: { label: 'WTI', color: 'var(--ark-error)' }, wti: { label: 'WTI', color: 'var(--ark-error)' },
-  };
+  const { data, isLoading } = useMacroDashboard();
+  const sigDot = (s: string) => s === 'bullish' || s === 'expanding' ? 'var(--ark-success)' : s === 'bearish' || s === 'contracting' ? 'var(--ark-error)' : 'var(--ark-warning)';
+  // app widget shows VIX, DXY, CB Liquidity
+  const cols = (data?.indicators ?? []).filter((i) => i.key === 'vix' || i.key === 'dxy' || i.key === 'cbLiquidity');
+  const regimeColor = data?.regimeBullish ? 'var(--ark-success)' : 'var(--ark-error)';
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-success)">
       <AccentLine color="var(--ark-success)" />
-      {isLoading ? <SkeletonMacroTile /> : (
-        <div className="flex flex-col justify-between h-full">
+      {isLoading || !data ? <SkeletonMacroTile /> : (
+        <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-success/10 transition-transform duration-300 group-hover:scale-110">
                 <Globe className="h-3.5 w-3.5 text-ark-success" />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Macro</span>
-                <span className="flex items-center gap-1 rounded-full bg-ark-success/10 px-1.5 py-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-ark-success animate-pulse" />
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-ark-success">Live</span>
-                </span>
-              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Macro</span>
             </div>
-            {regime && (
-              <Badge variant={regime.regime === 'risk-on' ? 'success' : regime.regime === 'risk-off' ? 'error' : 'default'}>
-                {regime.regime === 'risk-on' ? 'Risk On' : regime.regime === 'risk-off' ? 'Risk Off' : 'Neutral'}
-              </Badge>
-            )}
+            <span className="flex items-center gap-1 rounded-full bg-ark-success/10 px-1.5 py-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-ark-success animate-pulse" />
+              <span className="text-[8px] font-bold uppercase tracking-wider text-ark-success">Live</span>
+            </span>
           </div>
 
-          {/* Indicators with sparklines */}
-          <div className="space-y-1.5">
-            {(indicators ?? []).slice(0, 4).map((ind) => {
-              const meta = indicatorMeta[ind.name] ?? { label: ind.name, color: 'var(--ark-primary)' };
-              const sparkData = ind.sparkline ?? [];
-              const isPositive = ind.change_percentage >= 0;
-              return (
-                <div key={ind.name} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1.5">
-                  <div className="h-6 w-0.5 shrink-0 rounded-full" style={{ backgroundColor: meta.color }} />
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-ark-text-tertiary w-7">{meta.label}</span>
-                  <span className="fig text-[11px] font-bold text-ark-text w-12 text-right">{formatNumber(ind.value, 1)}</span>
-                  <div className="flex-1 h-5">
-                    {sparkData.length > 2 && <Spark data={sparkData} color={meta.color} className="h-5" />}
-                  </div>
-                  <span className={cn('fig text-[10px] font-semibold w-12 text-right', isPositive ? 'text-ark-success' : 'text-ark-error')}>
-                    {formatPercent(ind.change_percentage, 1)}
-                  </span>
-                </div>
-              );
-            })}
+          {/* 3 columns: VIX / DXY / CB Liq */}
+          <div className="mt-3 flex flex-1 items-stretch rounded-xl bg-ark-fill-secondary/40">
+            {cols.map((ind, i) => (
+              <div key={ind.key} className={cn('flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2', i > 0 && 'border-l border-ark-divider/60')}>
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-disabled">{ind.key === 'cbLiquidity' ? 'CB Liq' : ind.label}</span>
+                <span className="flex items-center gap-1 text-[12px] font-bold" style={{ color: sigDot(ind.signal) }}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: sigDot(ind.signal) }} />{ind.signalLabel}
+                </span>
+                {ind.sparkline.length > 1 && <div className="h-6 w-full px-1"><Spark data={ind.sparkline} color={sigDot(ind.signal)} className="h-6" /></div>}
+                <span className="fig text-sm font-bold text-ark-text">{ind.formattedValue.replace('$', '').replace('T', 'T')}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Regime footer */}
+          <div className="mt-2 flex items-center gap-2 rounded-xl bg-ark-fill-secondary/40 px-3 py-2">
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: regimeColor }} />
+            <span className="shrink-0 text-[12px] font-bold" style={{ color: regimeColor }}>{data.regimeLabel}</span>
+            <span className="truncate text-[11px] text-ark-text-disabled">{data.regimeDescription}</span>
+            <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-ark-text-disabled" />
           </div>
         </div>
       )}
@@ -1198,45 +1179,39 @@ const M2Tile = makeMacroTile({
 const SIG_COLORS: Record<string, string> = {
   bullish: 'var(--ark-success)', neutral: 'var(--ark-warning)', bearish: 'var(--ark-error)',
 };
-function breadthColor(pct: number): string {
-  if (pct >= 70) return 'var(--ark-success)';
-  if (pct >= 40) return 'var(--ark-warning)';
-  return 'var(--ark-error)';
-}
-
 function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
-  const { data, isLoading } = useMarketBreadth();
-  const pct = data?.breadth_pct ?? 0;
+  const { data, isLoading } = useMarketBreadthDetail(90);
   const trend = (data?.trend ?? 'neutral').toLowerCase();
-  const color = breadthColor(pct);
-  const counter = useCountUp(pct, isLoading, 1);
+  const color = trend === 'bullish' ? 'var(--ark-success)' : trend === 'bearish' ? 'var(--ark-error)' : 'var(--ark-warning)';
+  const emaColor = (data?.ema12 ?? 0) >= (data?.ema21 ?? 0) ? 'var(--ark-success)' : 'var(--ark-error)';
+  const fmtDay = (d?: string) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
   return (
     <Tile onClick={onOpen} accentColor={color}>
       <AccentLine color={color} />
-      {isLoading ? <SkeletonSparkTile /> : (
+      {isLoading || !data ? <SkeletonSparkTile /> : (
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Market Breadth</span>
-            <Badge variant={trend === 'bullish' ? 'success' : trend === 'bearish' ? 'error' : 'warning'}>
-              {trend.charAt(0).toUpperCase() + trend.slice(1)}
-            </Badge>
-          </div>
-          <div className="relative mt-1 flex items-baseline gap-1.5">
-            <AmbientGlow color={color} className="-left-2 -bottom-2 h-12 w-20" />
-            <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none relative" style={{ color }}>
-              {counter.value}%
+            <span className="flex items-center gap-1 text-[12px] font-bold" style={{ color }}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />{trend.charAt(0).toUpperCase() + trend.slice(1)}
             </span>
-            <span className="fig text-[11px] text-ark-text-disabled">{data?.trending_tokens ?? 0}/{data?.total_tokens ?? 0} trending</span>
           </div>
-          {(data?.history?.length ?? 0) > 1 && (
-            <div className="my-2 h-8"><Spark data={data!.history} color={color} className="h-full" /></div>
+
+          <div className="mt-2 grid grid-cols-3 gap-1">
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">Breadth</p><p className="fig text-lg font-bold" style={{ color }}>{data.breadthPct.toFixed(1)}%</p></div>
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">Trending</p><p className="fig text-lg font-bold text-ark-text">{data.trendingTokens}/{data.totalTokens}</p></div>
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">BTC</p><p className="fig text-lg font-bold text-ark-text">${(data.btcPrice / 1000).toFixed(1)}K</p></div>
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between text-[10px]">
+            <span className="text-ark-text-disabled">EMA 12 <span className="fig font-semibold" style={{ color: emaColor }}>{data.ema12.toFixed(1)}%</span></span>
+            <span className="text-ark-text-disabled">EMA 21 <span className="fig font-semibold" style={{ color: emaColor }}>{data.ema21.toFixed(1)}%</span></span>
+            <span className="fig text-ark-text-disabled">{fmtDay(data.asOf)}</span>
+          </div>
+
+          {data.history.length > 1 && (
+            <div className="mt-2 flex-1"><Spark data={data.history.map((h) => h.breadth)} color={color} className="h-full w-full" /></div>
           )}
-          <div className="mt-auto flex items-center justify-between">
-            <span className="text-[10px] text-ark-text-disabled">% tokens in uptrend</span>
-            {data?.crossover && (
-              <span className="text-[10px] font-semibold" style={{ color }}>{data.crossover} cross</span>
-            )}
-          </div>
         </div>
       )}
     </Tile>
@@ -1635,7 +1610,7 @@ const widgetKeys: WidgetKey[] = [
   'modelPortfolio', 'perpPremium', 'fedWatch',
 ];
 
-const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
+const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void; onOpenParam?: (p: string) => void }>> = {
   portfolio: PortfolioTile,
   fearGreed: FearGreedTile,
   arklineScore: ArkLineScoreTile,
@@ -2039,10 +2014,11 @@ function BriefingHero({ greetingLine, date }: { greetingLine: string; date: stri
 
 export function BentoGrid() {
   const [activeWidget, setActiveWidget] = useState<WidgetKey | null>(null);
+  const [drawerParam, setDrawerParam] = useState<string | undefined>(undefined);
   const [showCustomize, setShowCustomize] = useState(false);
   const { isEnabled, toggle, setAll } = useWidgetVisibility('home', widgetKeys);
   const { profile } = useAuth();
-  const open = (key: WidgetKey) => () => setActiveWidget(key);
+  const open = (key: WidgetKey, param?: string) => () => { setActiveWidget(key); setDrawerParam(param); };
 
   const enabledKeys = widgetKeys.filter(isEnabled);
 
@@ -2102,7 +2078,7 @@ export function BentoGrid() {
             return (
               <div key={key} className="h-full [&>*]:h-full">
                 {i === 0 && <ShineSweep />}
-                <TileComp onOpen={open(key)} />
+                <TileComp onOpen={open(key)} onOpenParam={(p: string) => open(key, p)()} />
               </div>
             );
           })}
@@ -2114,7 +2090,7 @@ export function BentoGrid() {
         onClose={() => setActiveWidget(null)}
         title={activeWidget ? drawerTitles[activeWidget] : ''}
       >
-        {activeWidget && <LazyDrawerWidget widgetKey={activeWidget} />}
+        {activeWidget && <LazyDrawerWidget widgetKey={activeWidget} param={drawerParam} />}
       </DetailDrawer>
 
       {showCustomize && (

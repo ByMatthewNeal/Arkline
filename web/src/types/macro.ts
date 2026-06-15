@@ -19,6 +19,7 @@ export interface MacroDashIndicator {
   changePct?: number;
   signal: 'bullish' | 'bearish' | 'neutral' | 'expanding' | 'contracting';
   signalLabel: string;
+  sparkline: number[];
 }
 
 export interface MacroDashboardData {

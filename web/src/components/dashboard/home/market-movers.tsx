@@ -17,8 +17,8 @@ const YELLOW = 'var(--ark-warning)';
 const money = (v: number) => `$${v.toLocaleString(undefined, { maximumFractionDigits: v < 10 ? 4 : 2 })}`;
 const pct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 
-export function MarketMovers() {
-  const [symbol, setSymbol] = useState('BTC');
+export function MarketMovers({ initialSymbol }: { initialSymbol?: string } = {}) {
+  const [symbol, setSymbol] = useState(initialSymbol && ASSETS.includes(initialSymbol.toUpperCase()) ? initialSymbol.toUpperCase() : 'BTC');
   const { data, isLoading } = useAssetTechnical(symbol);
 
   return (
