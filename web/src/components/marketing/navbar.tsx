@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { ArklineLogo, ThemeToggle } from '@/components/ui';
 import { EmailCapture } from '@/components/marketing/email-capture';
+import { useAuth } from '@/lib/hooks/use-auth';
 
 const links = [
   { label: 'Features', href: '/features' },
@@ -15,6 +16,8 @@ const links = [
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { authUser } = useAuth();
+  const account = authUser ? { label: 'Dashboard', href: '/dashboard' } : { label: 'Log In', href: '/login' };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -53,10 +56,10 @@ export function Navbar() {
           <div className="mx-2 h-5 w-px bg-ark-divider" />
           <ThemeToggle />
           <Link
-            href="/login"
+            href={account.href}
             className="rounded-lg px-3 py-2 text-sm font-semibold text-ark-text-secondary transition-colors hover:bg-white/[0.04] hover:text-ark-text"
           >
-            Log In
+            {account.label}
           </Link>
           <EmailCapture size="inline" />
         </div>
@@ -91,11 +94,11 @@ export function Navbar() {
           ))}
           <div className="my-1 h-px bg-ark-divider" />
           <Link
-            href="/login"
+            href={account.href}
             className="rounded-xl px-4 py-3 text-sm font-semibold text-ark-text transition-colors hover:bg-white/[0.04]"
             onClick={() => setOpen(false)}
           >
-            Log In
+            {account.label}
           </Link>
           <div className="p-1">
             <EmailCapture size="inline" className="w-full justify-center" />
