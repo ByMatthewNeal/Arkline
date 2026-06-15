@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 import { Play, Square } from 'lucide-react';
 import { Badge, Skeleton, GlassCard } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
@@ -1698,6 +1699,46 @@ function CustomizePanel({
 }
 
 /* ── Portfolio hero ── (pinned full-width at the top, like the iOS app) */
+/* Clean smooth area chart (gradient fill + end dot) — matches the iOS look. */
+function PortfolioChart({ data, color }: { data: number[]; color: string }) {
+  const cd = data.map((v, i) => ({ i, v }));
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={cd} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id="pf-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <YAxis domain={['dataMin', 'dataMax']} hide />
+        <Area
+          type="monotone"
+          dataKey="v"
+          stroke={color}
+          strokeWidth={2.5}
+          fill="url(#pf-area)"
+          isAnimationActive={false}
+          dot={(p: { cx?: number; cy?: number; index?: number }) => {
+            const isLast = p.index === cd.length - 1;
+            return (
+              <circle
+                key={p.index}
+                cx={p.cx}
+                cy={p.cy}
+                r={isLast ? 4 : 0}
+                fill={color}
+                stroke="var(--ark-card)"
+                strokeWidth={isLast ? 2 : 0}
+              />
+            );
+          }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
 const PORTFOLIO_PERIODS = ['1H', '1D', '1W', '1M', 'YTD', '1Y', 'ALL'] as const;
 type PortfolioPeriod = (typeof PORTFOLIO_PERIODS)[number];
 const PERIOD_SUFFIX: Record<PortfolioPeriod, string> = {
@@ -1777,19 +1818,19 @@ function PortfolioHero() {
         </div>
       ) : (
         <>
-          <div className="flex items-start justify-between">
+          {/* Header: label + pill period selector */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Wallet className="h-3.5 w-3.5 text-ark-primary" /></div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
             </div>
-            {/* Time-period selector */}
-            <div className="flex gap-0.5 rounded-lg bg-ark-fill-secondary/50 p-0.5">
+            <div className="flex gap-1 rounded-full bg-ark-fill-secondary/60 p-1">
               {PORTFOLIO_PERIODS.map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
                   className={cn(
-                    'rounded-md px-2 py-1 text-[10px] font-semibold transition-colors',
+                    'rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors',
                     period === p ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
                   )}
                 >
@@ -1799,28 +1840,33 @@ function PortfolioHero() {
             </div>
           </div>
 
-          <div className="mt-2 flex items-center gap-6">
-            <div className="min-w-0 flex-1">
-              <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none text-ark-text">
-                <span className="opacity-40 font-normal">$</span>{counter.value}
+          <div className="mt-5 flex items-center gap-8">
+            {/* Value block — spacious */}
+            <div className="min-w-0 shrink-0">
+              <p className="fig font-[family-name:var(--font-urbanist)] text-[40px] font-bold leading-none tracking-tight text-ark-text">
+                <span className="opacity-30 font-normal">$</span>{counter.value}
               </p>
-              <span className={cn('fig mt-1.5 inline-flex items-center gap-0.5 text-sm font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
+              <span
+                className={cn(
+                  'fig mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold',
+                  isUp ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error',
+                )}
+              >
                 {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {formatCurrency(Math.abs(change))} ({formatPercent(changePct)}) {PERIOD_SUFFIX[period]}
+                {formatCurrency(Math.abs(change))} ({formatPercent(changePct)})
               </span>
-              <div className="mt-3 flex items-center gap-6">
-                <div>
-                  <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Assets</p>
-                  <p className="fig text-sm font-bold text-ark-text">{assetCount}</p>
-                </div>
-                <Link href="/dashboard/portfolio" className="text-[11px] font-medium text-ark-primary hover:text-ark-accent-light">
-                  View details →
-                </Link>
+              <div className="mt-4 flex items-center gap-3 text-[11px] text-ark-text-tertiary">
+                <span><span className="font-semibold text-ark-text-secondary">{assetCount}</span> assets</span>
+                <span className="text-ark-text-disabled">·</span>
+                <span className="capitalize">{PERIOD_SUFFIX[period]}</span>
+                <span className="text-ark-text-disabled">·</span>
+                <Link href="/dashboard/portfolio" className="font-medium text-ark-primary hover:text-ark-accent-light">View details →</Link>
               </div>
             </div>
+            {/* Smooth area chart */}
             {sparkVals.length > 1 && (
-              <div className="hidden h-24 w-1/2 sm:block">
-                <Spark data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
+              <div className="hidden h-28 flex-1 sm:block">
+                <PortfolioChart data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} />
               </div>
             )}
           </div>
