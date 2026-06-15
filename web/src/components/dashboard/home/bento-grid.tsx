@@ -271,10 +271,10 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
             )}
           </div>
 
-          {/* Right sparkline */}
+          {/* Right sparkline — colored by the period (30d) trend */}
           {sparkVals.length > 1 && (
             <div className="flex flex-col justify-end w-2/5 shrink-0">
-              <Spark data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
+              <Spark data={sparkVals} color={isMonthUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
             </div>
           )}
         </div>
@@ -1717,18 +1717,34 @@ export function BentoGrid() {
   const [activeWidget, setActiveWidget] = useState<WidgetKey | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
   const { isEnabled, toggle, setAll } = useWidgetVisibility('home', widgetKeys);
+  const { profile } = useAuth();
   const open = (key: WidgetKey) => () => setActiveWidget(key);
 
   const enabledKeys = widgetKeys.filter(isEnabled);
 
+  const [header] = useState<{ greeting: string; date: string }>(() => {
+    if (typeof window === 'undefined') return { greeting: '', date: '' };
+    const h = new Date().getHours();
+    const greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    return { greeting, date };
+  });
+  const name = profile?.full_name?.split(' ')[0] || profile?.username || '';
+
   return (
     <>
-      <div className="mb-2 flex">
+      <div className="mb-4 flex items-end justify-between">
+        <div>
+          <p suppressHydrationWarning className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{header.date}</p>
+          <h1 suppressHydrationWarning className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
+            {header.greeting || 'Dashboard'}{name ? `, ${name}` : ''}
+          </h1>
+        </div>
         <button
           onClick={() => setShowCustomize(true)}
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+          className="flex items-center gap-1.5 rounded-lg border border-ark-divider px-3 py-1.5 text-xs font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
         >
-          <SlidersHorizontal className="h-3 w-3" />
+          <SlidersHorizontal className="h-3.5 w-3.5" />
           Customize
         </button>
       </div>

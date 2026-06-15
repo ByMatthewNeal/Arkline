@@ -14,7 +14,16 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-ark-bg">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundColor: 'var(--ark-bg)',
+        backgroundImage:
+          'radial-gradient(1100px 550px at 50% -8%, color-mix(in srgb, var(--ark-primary) 8%, transparent), transparent 60%)',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
