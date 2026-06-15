@@ -17,17 +17,18 @@ const BANDS: { band: RiskBand; color: string }[] = [
 ];
 const bandColor = (b: RiskBand) => BANDS.find((x) => x.band === b)?.color ?? 'var(--ark-text-tertiary)';
 
-export function CryptoRiskLevelsDetail() { return <RiskLevelsDetail kind="crypto" />; }
-export function StockRiskLevelsDetail() { return <RiskLevelsDetail kind="stock" />; }
+export function CryptoRiskLevelsDetail({ initialSymbol }: { initialSymbol?: string } = {}) { return <RiskLevelsDetail kind="crypto" initialSymbol={initialSymbol} />; }
+export function StockRiskLevelsDetail({ initialSymbol }: { initialSymbol?: string } = {}) { return <RiskLevelsDetail kind="stock" initialSymbol={initialSymbol} />; }
 
-function RiskLevelsDetail({ kind }: { kind: 'crypto' | 'stock' }) {
+function RiskLevelsDetail({ kind, initialSymbol }: { kind: 'crypto' | 'stock'; initialSymbol?: string }) {
   const { data, isLoading } = useRiskLevels(kind);
   const [sort, setSort] = useState<'band' | 'az'>('band');
   const [period, setPeriod] = useState<7 | 30>(7);
-  const [selected, setSelected] = useState<RiskLevelItem | null>(null);
+  const [selectedSym, setSelectedSym] = useState<string | null>(initialSymbol ? initialSymbol.toUpperCase() : null);
 
-  if (selected) {
-    return <AssetRiskChart kind={kind} item={selected} onBack={() => setSelected(null)} />;
+  const selected = selectedSym ? (data ?? []).find((i) => i.symbol === selectedSym) : undefined;
+  if (selectedSym && selected) {
+    return <AssetRiskChart kind={kind} item={selected} onBack={() => setSelectedSym(null)} />;
   }
 
   if (isLoading || !data) {
@@ -59,7 +60,7 @@ function RiskLevelsDetail({ kind }: { kind: 'crypto' | 'stock' }) {
       {sort === 'az' ? (
         <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
           {[...items].sort((a, b) => a.symbol.localeCompare(b.symbol)).map((it, i) => (
-            <Row key={it.symbol} it={it} period={period} divider={i > 0} onClick={() => setSelected(it)} />
+            <Row key={it.symbol} it={it} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />
           ))}
         </div>
       ) : (
@@ -74,7 +75,7 @@ function RiskLevelsDetail({ kind }: { kind: 'crypto' | 'stock' }) {
                 <span className="rounded-full bg-ark-fill-secondary px-1.5 py-0.5 text-[10px] font-semibold text-ark-text-tertiary">{group.length}</span>
               </div>
               <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
-                {group.map((it, i) => <Row key={it.symbol} it={it} period={period} divider={i > 0} onClick={() => setSelected(it)} />)}
+                {group.map((it, i) => <Row key={it.symbol} it={it} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />)}
               </div>
             </div>
           );

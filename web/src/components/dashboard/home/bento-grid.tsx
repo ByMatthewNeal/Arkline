@@ -16,11 +16,11 @@ import { DetailDrawer } from '@/components/ui/detail-drawer';
 import {
   useRiskHistory, useArkLineScore, useCryptoAssets,
   useMarketBriefing, useCryptoPositioning, useMacroIndicators,
-  useSupplyInProfit, useAssetRiskLevels, useEconomicEvents, useNews,
-  useSignalChanges, useStockRiskLevels,
+  useSupplyInProfit, useEconomicEvents, useNews,
+  useSignalChanges,
   useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck,
   useUSFutures, usePerpPremium, useFedWatch,
-  useMacroDashboard, useMarketBreadthDetail, useFearGreedDetail,
+  useMacroDashboard, useMarketBreadthDetail, useFearGreedDetail, useRiskLevels,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
@@ -31,7 +31,7 @@ import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { formatCurrency, formatPercent, formatRelativeTime, cn, parseBriefingSections, signalChangeHint } from '@/lib/utils/format';
 import {
-  Tile, Spark, MiniGauge, CircleGauge, AccentLine, AmbientGlow, ShineSweep,
+  Tile, Spark, MiniGauge, AccentLine, AmbientGlow, ShineSweep,
   useCountUp,
   SkeletonHeroTile, SkeletonGaugeTile, SkeletonSparkTile, SkeletonListTile, SkeletonMacroTile,
 } from '../shared/bento-primitives';
@@ -700,68 +700,53 @@ function SupplyTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function AssetRiskTile({ onOpen }: { onOpen: () => void }) {
-  const { data: assets, isLoading } = useAssetRiskLevels();
-  const active = assets?.[0];
-  const riskVal = active?.risk_value ?? 0;
-  const color = riskVal < 0.3 ? 'var(--ark-success)' : riskVal < 0.5 ? 'var(--ark-warning)' : riskVal < 0.7 ? '#F97316' : 'var(--ark-error)';
-  const variant: 'success' | 'warning' | 'error' = active?.level === 'Low' ? 'success' : active?.level === 'Moderate' ? 'warning' : 'error';
-  const delta = active ? riskVal - active.seven_day_avg : 0;
+const RISK_BAND_COLOR: Record<string, string> = {
+  'Very Low': 'var(--ark-info)', 'Low': 'var(--ark-success)', 'Neutral': 'var(--ark-warning)', 'Elevated': '#F97316', 'High': 'var(--ark-error)',
+};
+const RISK_COIN_COLORS: Record<string, string> = { BTC: '#F7931A', ETH: '#627EEA', SOL: '#14F195' };
+
+function RiskLevelCard({ it, accent, onClick }: { it: { symbol: string; value: number; band: string; sevenDayAvg: number }; accent: string; onClick: (e: React.MouseEvent) => void }) {
+  const color = RISK_BAND_COLOR[it.band] ?? 'var(--ark-text-tertiary)';
+  const delta = it.value - it.sevenDayAvg;
+  return (
+    <button onClick={onClick} className="flex flex-col rounded-xl border border-ark-divider bg-ark-fill-secondary/80 p-2.5 text-left shadow-sm transition-colors hover:border-ark-text-disabled/40 hover:bg-ark-fill-secondary">
+      <div className="flex items-center justify-between">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: accent }}>{it.symbol.slice(0, 3)}</span>
+        {Math.abs(delta) >= 0.005 && (
+          <span className="fig text-[9px] font-semibold" style={{ color: delta > 0 ? 'var(--ark-error)' : 'var(--ark-success)' }}>{delta > 0 ? '+' : ''}{delta.toFixed(3)}</span>
+        )}
+      </div>
+      <span className="fig mt-1.5 text-lg font-bold leading-none" style={{ color }}>{it.value.toFixed(3)}</span>
+      <span className="mt-1 text-[10px] font-semibold leading-tight" style={{ color }}>{it.band} Risk</span>
+    </button>
+  );
+}
+
+function AssetRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenParam?: (p: string) => void }) {
+  const { data, isLoading } = useRiskLevels('crypto');
+  const items = data ?? [];
+  const featured = ['BTC', 'ETH', 'SOL'].map((s) => items.find((i) => i.symbol === s)).filter((i): i is NonNullable<typeof i> => !!i);
 
   return (
-    <Tile onClick={onOpen} accentColor={color}>
-      <AccentLine color={color} />
+    <Tile onClick={onOpen} accentColor="var(--ark-primary)">
+      <AccentLine color="var(--ark-primary)" />
       {isLoading ? <SkeletonGaugeTile /> : (
-        <>
+        <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: `${color}15` }}>
-                <Shield className="h-3.5 w-3.5" style={{ color }} />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10 transition-transform duration-300 group-hover:scale-110">
+                <Shield className="h-3.5 w-3.5 text-ark-primary" />
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Crypto Risk Levels</span>
             </div>
-            {active && <Badge variant={variant}>{active.level}</Badge>}
+            <span className="flex items-center gap-0.5 text-[10px] font-semibold text-ark-primary">See all<ChevronRight className="h-3 w-3" /></span>
           </div>
-
-          <div className="flex items-center gap-3">
-            <CircleGauge value={riskVal} color={color} />
-            <div className="flex-1 space-y-1">
-              {active && (
-                <>
-                  <p className="text-[10px] text-ark-text-disabled">{active.days_at_level}d at {active.level}</p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] text-ark-text-disabled">7d avg</span>
-                    <span className="fig text-xs font-semibold text-ark-text">{active.seven_day_avg.toFixed(3)}</span>
-                    <span className={cn(
-                      'fig text-[9px] font-semibold',
-                      delta > 0.01 ? 'text-ark-error' : delta < -0.01 ? 'text-ark-success' : 'text-ark-text-disabled',
-                    )}>
-                      {delta > 0 ? '+' : ''}{delta.toFixed(3)}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+          <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
+            {featured.map((it) => (
+              <RiskLevelCard key={it.symbol} it={it} accent={RISK_COIN_COLORS[it.symbol] ?? 'var(--ark-primary)'} onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(it.symbol); }} />
+            ))}
           </div>
-
-          {/* Top 3 factor bars */}
-          {active && (
-            <div className="space-y-0.5">
-              {active.factors.slice(0, 3).map((f) => {
-                const val = f.normalized_value ?? 0;
-                const fColor = val < 0.3 ? 'var(--ark-success)' : val < 0.5 ? 'var(--ark-warning)' : val < 0.7 ? '#F97316' : 'var(--ark-error)';
-                return (
-                  <div key={f.type} className="flex items-center gap-1">
-                    <span className="w-14 truncate text-[8px] text-ark-text-disabled">{f.type}</span>
-                    <div className="h-1 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
-                      <div className="h-full rounded-full" style={{ width: `${val * 100}%`, backgroundColor: fColor }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
+        </div>
       )}
     </Tile>
   );
@@ -1258,33 +1243,32 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
 }
 
 /* ── Stock Risk Levels tile (indicator_snapshots stock_risk_*) ── */
-function StockRiskTile({ onOpen }: { onOpen: () => void }) {
-  const { data, isLoading } = useStockRiskLevels();
-  const stocks = data ?? [];
-  const riskColor = (v: number) => v < 0.3 ? 'var(--ark-success)' : v < 0.5 ? 'var(--ark-warning)' : v < 0.7 ? '#F97316' : 'var(--ark-error)';
+function StockRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenParam?: (p: string) => void }) {
+  const { data, isLoading } = useRiskLevels('stock');
+  const items = data ?? [];
+  const featured = ['AAPL', 'NVDA', 'GOOGL'].map((s) => items.find((i) => i.symbol === s)).filter((i): i is NonNullable<typeof i> => !!i);
+  const display = featured.length === 3 ? featured : items.slice(0, 3);
+
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
       {isLoading ? <SkeletonListTile /> : (
         <div className="flex h-full flex-col">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10">
-              <BarChart3 className="h-3.5 w-3.5 text-ark-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10">
+                <BarChart3 className="h-3.5 w-3.5 text-ark-primary" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Stock Risk Levels</span>
             </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Stock Risk Levels</span>
+            <span className="flex items-center gap-0.5 text-[10px] font-semibold text-ark-primary">See all<ChevronRight className="h-3 w-3" /></span>
           </div>
-          {stocks.length === 0 ? (
+          {display.length === 0 ? (
             <div className="flex flex-1 items-center justify-center"><p className="text-xs text-ark-text-disabled">No data</p></div>
           ) : (
-            <div className="mt-2 space-y-1.5">
-              {stocks.slice(0, 6).map((s) => (
-                <div key={s.symbol} className="flex items-center gap-2">
-                  <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{s.symbol}</span>
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
-                    <div className="h-full rounded-full" style={{ width: `${s.risk_value * 100}%`, backgroundColor: riskColor(s.risk_value) }} />
-                  </div>
-                  <span className="fig w-8 text-right text-[10px] font-semibold text-ark-text">{s.risk_value.toFixed(2)}</span>
-                </div>
+            <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
+              {display.map((it) => (
+                <RiskLevelCard key={it.symbol} it={it} accent="var(--ark-text-tertiary)" onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(it.symbol); }} />
               ))}
             </div>
           )}
