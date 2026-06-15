@@ -708,16 +708,18 @@ function RiskLevelCard({ it, kind, onClick }: { it: { symbol: string; value: num
   const color = RISK_BAND_COLOR[it.band] ?? 'var(--ark-text-tertiary)';
   const delta = it.value - it.sevenDayAvg;
   return (
-    <button onClick={onClick} className="flex flex-col rounded-xl border border-ark-divider bg-ark-fill-secondary/80 p-2.5 text-left shadow-sm transition-colors hover:border-ark-text-disabled/40 hover:bg-ark-fill-secondary">
+    <button onClick={onClick} className="flex h-full flex-col justify-between rounded-xl border border-ark-divider bg-ark-fill-secondary/80 p-3 text-left shadow-sm transition-colors hover:border-ark-text-disabled/40 hover:bg-ark-fill-secondary">
       <div className="flex items-center justify-between">
-        <AssetLogo symbol={it.symbol} kind={kind} size={22} />
+        <AssetLogo symbol={it.symbol} kind={kind} size={26} />
         {Math.abs(delta) >= 0.005 && (
-          <span className="fig text-[9px] font-semibold" style={{ color: delta > 0 ? 'var(--ark-error)' : 'var(--ark-success)' }}>{delta > 0 ? '+' : ''}{delta.toFixed(3)}</span>
+          <span className="fig text-[10px] font-semibold" style={{ color: delta > 0 ? 'var(--ark-error)' : 'var(--ark-success)' }}>{delta > 0 ? '+' : ''}{delta.toFixed(3)}</span>
         )}
       </div>
-      <span className="fig mt-1.5 text-lg font-bold leading-none" style={{ color }}>{it.value.toFixed(3)}</span>
-      <span className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color }}>{it.band} Risk</span>
-      <span className="mt-1 text-[9px] leading-tight text-ark-text-disabled">{it.daysAtLevel}d · 7d <span className="fig">{it.sevenDayAvg.toFixed(3)}</span></span>
+      <div className="py-1">
+        <span className="fig block text-2xl font-bold leading-none" style={{ color }}>{it.value.toFixed(3)}</span>
+        <span className="mt-1.5 block text-[11px] font-semibold leading-tight" style={{ color }}>{it.band} Risk</span>
+      </div>
+      <span className="text-[10px] leading-tight text-ark-text-disabled">{it.daysAtLevel}d at level · 7d <span className="fig">{it.sevenDayAvg.toFixed(3)}</span></span>
     </button>
   );
 }
