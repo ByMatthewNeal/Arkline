@@ -35,6 +35,7 @@ import {
   useCountUp,
   SkeletonHeroTile, SkeletonGaugeTile, SkeletonSparkTile, SkeletonListTile, SkeletonMacroTile,
 } from '../shared/bento-primitives';
+import { AssetLogo } from './risk-levels-detail';
 import { DraggableGrid, type ResponsiveLayouts } from '../shared/draggable-grid';
 
 type WidgetKey =
@@ -703,21 +704,20 @@ function SupplyTile({ onOpen }: { onOpen: () => void }) {
 const RISK_BAND_COLOR: Record<string, string> = {
   'Very Low': 'var(--ark-info)', 'Low': 'var(--ark-success)', 'Neutral': 'var(--ark-warning)', 'Elevated': '#F97316', 'High': 'var(--ark-error)',
 };
-const RISK_COIN_COLORS: Record<string, string> = { BTC: '#F7931A', ETH: '#627EEA', SOL: '#14F195' };
-
-function RiskLevelCard({ it, accent, onClick }: { it: { symbol: string; value: number; band: string; sevenDayAvg: number }; accent: string; onClick: (e: React.MouseEvent) => void }) {
+function RiskLevelCard({ it, kind, onClick }: { it: { symbol: string; value: number; band: string; sevenDayAvg: number; daysAtLevel: number }; kind: 'crypto' | 'stock'; onClick: (e: React.MouseEvent) => void }) {
   const color = RISK_BAND_COLOR[it.band] ?? 'var(--ark-text-tertiary)';
   const delta = it.value - it.sevenDayAvg;
   return (
     <button onClick={onClick} className="flex flex-col rounded-xl border border-ark-divider bg-ark-fill-secondary/80 p-2.5 text-left shadow-sm transition-colors hover:border-ark-text-disabled/40 hover:bg-ark-fill-secondary">
       <div className="flex items-center justify-between">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ backgroundColor: accent }}>{it.symbol.slice(0, 3)}</span>
+        <AssetLogo symbol={it.symbol} kind={kind} size={22} />
         {Math.abs(delta) >= 0.005 && (
           <span className="fig text-[9px] font-semibold" style={{ color: delta > 0 ? 'var(--ark-error)' : 'var(--ark-success)' }}>{delta > 0 ? '+' : ''}{delta.toFixed(3)}</span>
         )}
       </div>
       <span className="fig mt-1.5 text-lg font-bold leading-none" style={{ color }}>{it.value.toFixed(3)}</span>
-      <span className="mt-1 text-[10px] font-semibold leading-tight" style={{ color }}>{it.band} Risk</span>
+      <span className="mt-0.5 text-[10px] font-semibold leading-tight" style={{ color }}>{it.band} Risk</span>
+      <span className="mt-1 text-[9px] leading-tight text-ark-text-disabled">{it.daysAtLevel}d · 7d <span className="fig">{it.sevenDayAvg.toFixed(3)}</span></span>
     </button>
   );
 }
@@ -743,7 +743,7 @@ function AssetRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
           </div>
           <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
             {featured.map((it) => (
-              <RiskLevelCard key={it.symbol} it={it} accent={RISK_COIN_COLORS[it.symbol] ?? 'var(--ark-primary)'} onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(it.symbol); }} />
+              <RiskLevelCard key={it.symbol} it={it} kind="crypto" onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(it.symbol); }} />
             ))}
           </div>
         </div>
@@ -1268,7 +1268,7 @@ function StockRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
           ) : (
             <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
               {display.map((it) => (
-                <RiskLevelCard key={it.symbol} it={it} accent="var(--ark-text-tertiary)" onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(it.symbol); }} />
+                <RiskLevelCard key={it.symbol} it={it} kind="stock" onClick={(e) => { e.stopPropagation(); (onOpenParam ?? (() => onOpen()))(it.symbol); }} />
               ))}
             </div>
           )}

@@ -17,6 +17,37 @@ const BANDS: { band: RiskBand; color: string }[] = [
 ];
 const bandColor = (b: RiskBand) => BANDS.find((x) => x.band === b)?.color ?? 'var(--ark-text-tertiary)';
 
+// ticker → company domain for stock logos (Clearbit); crypto uses the icon CDN
+const STOCK_DOMAIN: Record<string, string> = {
+  aapl: 'apple.com', amd: 'amd.com', amzn: 'amazon.com', asml: 'asml.com', asts: 'ast-science.com',
+  axti: 'axt.com', bitf: 'bitfarms.com', bmnr: 'bitminetech.io', cifr: 'ciphermining.com', coin: 'coinbase.com',
+  dgxx: 'digipowerx.com', googl: 'abc.xyz', hood: 'robinhood.com', iren: 'iren.com', meta: 'meta.com',
+  mp: 'mpmaterials.com', msft: 'microsoft.com', mstr: 'strategy.com', mu: 'micron.com', nbis: 'nebius.com',
+  nuai: 'nuvve.com', nvda: 'nvidia.com', onds: 'ondas.com', open: 'opendoor.com', orcl: 'oracle.com',
+  pl: 'planet.com', qbts: 'dwavequantum.com', qqq: 'invesco.com', rdw: 'redwirespace.com', rklb: 'rocketlabusa.com',
+  satl: 'satellogic.com', sidu: 'sidusspace.com', sndk: 'sandisk.com', spy: 'ssga.com', tsla: 'tesla.com',
+  tsm: 'tsmc.com', uber: 'uber.com', wulf: 'terawulf.com',
+};
+
+export function AssetLogo({ symbol, kind, size = 36 }: { symbol: string; kind: 'crypto' | 'stock'; size?: number }) {
+  const [err, setErr] = useState(false);
+  const lower = symbol.toLowerCase();
+  const src = kind === 'crypto'
+    ? `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${lower}.svg`
+    : (STOCK_DOMAIN[lower] ? `https://logo.clearbit.com/${STOCK_DOMAIN[lower]}` : '');
+  if (!src || err) {
+    return (
+      <span className="flex shrink-0 items-center justify-center rounded-full bg-ark-fill-secondary text-[9px] font-bold text-ark-text-secondary" style={{ width: size, height: size }}>
+        {symbol.slice(0, 4)}
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={symbol} onError={() => setErr(true)} className="shrink-0 rounded-full bg-white object-contain" style={{ width: size, height: size }} />
+  );
+}
+
 export function CryptoRiskLevelsDetail({ initialSymbol }: { initialSymbol?: string } = {}) { return <RiskLevelsDetail kind="crypto" initialSymbol={initialSymbol} />; }
 export function StockRiskLevelsDetail({ initialSymbol }: { initialSymbol?: string } = {}) { return <RiskLevelsDetail kind="stock" initialSymbol={initialSymbol} />; }
 
@@ -60,7 +91,7 @@ function RiskLevelsDetail({ kind, initialSymbol }: { kind: 'crypto' | 'stock'; i
       {sort === 'az' ? (
         <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
           {[...items].sort((a, b) => a.symbol.localeCompare(b.symbol)).map((it, i) => (
-            <Row key={it.symbol} it={it} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />
+            <Row key={it.symbol} it={it} kind={kind} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />
           ))}
         </div>
       ) : (
@@ -75,7 +106,7 @@ function RiskLevelsDetail({ kind, initialSymbol }: { kind: 'crypto' | 'stock'; i
                 <span className="rounded-full bg-ark-fill-secondary px-1.5 py-0.5 text-[10px] font-semibold text-ark-text-tertiary">{group.length}</span>
               </div>
               <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
-                {group.map((it, i) => <Row key={it.symbol} it={it} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />)}
+                {group.map((it, i) => <Row key={it.symbol} it={it} kind={kind} period={period} divider={i > 0} onClick={() => setSelectedSym(it.symbol)} />)}
               </div>
             </div>
           );
@@ -91,16 +122,16 @@ function Toggle({ active, onClick, children }: { active: boolean; onClick: () =>
   );
 }
 
-function Row({ it, period, divider, onClick }: { it: RiskLevelItem; period: 7 | 30; divider: boolean; onClick: () => void }) {
+function Row({ it, kind, period, divider, onClick }: { it: RiskLevelItem; kind: 'crypto' | 'stock'; period: 7 | 30; divider: boolean; onClick: () => void }) {
   const color = bandColor(it.band);
   const change = period === 7 ? it.change7d : it.change30d;
   const flat = Math.abs(change) < 0.005;
   return (
     <button onClick={onClick} className={cn('flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-ark-fill-secondary/40', divider && 'border-t border-ark-divider')}>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ark-fill-secondary text-[10px] font-bold text-ark-text-secondary">{it.symbol.slice(0, 4)}</span>
+      <AssetLogo symbol={it.symbol} kind={kind} size={36} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold text-ark-text">{it.symbol}</p>
-        <p className="truncate text-[11px] text-ark-text-disabled">{it.name}</p>
+        <p className="truncate text-[11px] text-ark-text-disabled">{it.name} · {it.daysAtLevel}d at level</p>
       </div>
       <div className="text-right">
         <p className="fig text-base font-bold" style={{ color }}>{it.value.toFixed(3)}</p>
@@ -129,6 +160,10 @@ function AssetRiskChart({ kind, item, onBack }: { kind: 'crypto' | 'stock'; item
   const current = series.length ? series[series.length - 1].value : item.value;
   const color = bandColor(item.band);
   const fmtDay = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // pad the y-domain around the actual range so movement is visible (a fixed 0–1 axis flattens it)
+  const vals = series.map((p) => p.value);
+  const lo = vals.length ? Math.max(0, Math.min(...vals) - 0.05) : 0;
+  const hi = vals.length ? Math.min(1, Math.max(...vals) + 0.05) : 1;
 
   return (
     <div className="space-y-5 pb-2">
@@ -137,7 +172,7 @@ function AssetRiskChart({ kind, item, onBack }: { kind: 'crypto' | 'stock'; item
       </button>
 
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ark-fill-secondary text-xs font-bold text-ark-text-secondary">{item.symbol.slice(0, 4)}</span>
+        <AssetLogo symbol={item.symbol} kind={kind} size={44} />
         <div className="flex-1">
           <p className="text-lg font-bold text-ark-text">{item.symbol}</p>
           <p className="text-xs text-ark-text-disabled">{item.name}</p>
@@ -172,7 +207,7 @@ function AssetRiskChart({ kind, item, onBack }: { kind: 'crypto' | 'stock'; item
                 </linearGradient>
               </defs>
               <XAxis dataKey="date" tickLine={false} axisLine={false} ticks={series.length ? [series[0].date, series[series.length - 1].date] : []} tickFormatter={fmtDay} tick={{ fontSize: 10, fill: 'var(--ark-text-disabled)' }} interval="preserveStartEnd" />
-              <YAxis domain={[0, 1]} hide />
+              <YAxis domain={[lo, hi]} hide />
               <Tooltip contentStyle={{ background: 'var(--ark-card)', border: '1px solid var(--ark-divider)', borderRadius: 8, fontSize: 12 }} labelFormatter={(l) => fmtDay(String(l))} formatter={(v) => [Number(v).toFixed(3), 'Risk']} />
               <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2.5} fill="url(#rl-chart)" dot={false} />
             </AreaChart>
