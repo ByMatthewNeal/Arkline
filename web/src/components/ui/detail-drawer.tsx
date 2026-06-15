@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -25,6 +26,8 @@ function useIsMobile() {
 
 export function DetailDrawer({ open, onClose, title, children }: DetailDrawerProps) {
   const isMobile = useIsMobile();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -43,7 +46,9 @@ export function DetailDrawer({ open, onClose, title, children }: DetailDrawerPro
     };
   }, [open, handleEscape]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -101,6 +106,7 @@ export function DetailDrawer({ open, onClose, title, children }: DetailDrawerPro
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

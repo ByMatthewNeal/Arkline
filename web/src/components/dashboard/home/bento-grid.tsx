@@ -821,20 +821,32 @@ function EventsTile({ onOpen }: { onOpen: () => void }) {
             )}
           </div>
 
-          <div>
-            <span ref={counter.ref} className="fig text-3xl font-bold text-ark-text">{counter.value}</span>
-            <span className="text-xs text-ark-text-disabled ml-1">
-              {todayEvents.length > 0 ? 'today' : 'this week'}
-            </span>
-          </div>
+          <div className="mt-1.5 flex flex-1 flex-col">
+            <div className="flex items-baseline">
+              <span ref={counter.ref} className="fig text-3xl font-bold text-ark-text">{counter.value}</span>
+              <span className="text-xs text-ark-text-disabled ml-1">
+                {todayEvents.length > 0 ? 'today' : 'this week'}
+              </span>
+            </div>
 
-          <div className="space-y-1">
-            {upcoming.slice(0, 3).map((e) => (
-              <div key={e.id} className="flex items-center gap-1.5">
-                <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', impactDot[e.impact] ?? impactDot.low)} />
-                <span className="text-[10px] text-ark-text-secondary truncate flex-1">{e.title}</span>
-              </div>
-            ))}
+            <div className="mt-2 flex flex-1 flex-col justify-evenly divide-y divide-ark-divider/60">
+              {upcoming.slice(0, 6).map((e) => {
+                const released = e.actual != null && e.actual !== '';
+                const beat = e.beat_miss?.toLowerCase();
+                const beatColor = beat === 'beat' ? 'text-ark-success' : beat === 'miss' ? 'text-ark-error' : 'text-ark-text-tertiary';
+                return (
+                  <div key={e.id} className="flex items-center gap-1.5 py-1">
+                    <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', impactDot[e.impact] ?? impactDot.low)} />
+                    <span className="flex-1 truncate text-[11px] text-ark-text-secondary">{e.title}</span>
+                    {released && beat ? (
+                      <span className={cn('shrink-0 text-[9px] font-semibold capitalize', beatColor)}>{beat}</span>
+                    ) : e.time ? (
+                      <span className="shrink-0 text-[9px] text-ark-text-disabled">{e.time}</span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </>
       )}
