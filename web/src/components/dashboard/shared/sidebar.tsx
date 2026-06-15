@@ -7,7 +7,7 @@ import {
   TrendingUp,
   Briefcase,
   Bell,
-  Users,
+  Radio,
   Settings,
   User,
   ChevronLeft,
@@ -28,7 +28,7 @@ const mainNav = [
   { label: 'Market', href: '/dashboard/market', icon: TrendingUp },
   { label: 'Portfolio', href: '/dashboard/portfolio', icon: Briefcase },
   { label: 'DCA', href: '/dashboard/dca', icon: Bell },
-  { label: 'Community', href: '/dashboard/community', icon: Users },
+  { label: 'Broadcasts', href: '/dashboard/community', icon: Radio },
 ];
 
 const utilNav = [

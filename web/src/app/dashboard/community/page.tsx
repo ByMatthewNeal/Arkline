@@ -1,172 +1,158 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Users,
-  MessageCircle,
-  MessagesSquare,
-  TrendingUp,
-  BarChart3,
-  Shield,
-  Lightbulb,
-  DollarSign,
-  Lock,
-} from 'lucide-react';
-import { GlassCard } from '@/components/ui';
-import { cn } from '@/lib/utils/format';
+import { Radio, Search, Pin, Eye, Heart, Sparkles, ChevronDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { GlassCard, Badge, Skeleton } from '@/components/ui';
+import { fetchBroadcasts, type Broadcast } from '@/lib/api/broadcasts';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { formatRelativeTime, cn } from '@/lib/utils/format';
 
-const tabs = [
-  { id: 'feed', label: 'Feed', icon: Users },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
-  { id: 'rooms', label: 'Chat Rooms', icon: MessagesSquare },
-] as const;
+const DATE_FILTERS = ['All', 'Today', 'This Week', 'This Month'] as const;
+type DateFilter = (typeof DATE_FILTERS)[number];
 
-type TabId = (typeof tabs)[number]['id'];
+function cleanContent(md: string): string {
+  return md.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`/g, '').replace(/^#{1,6}\s*/gm, '').trim();
+}
 
-const chatRooms = [
-  { name: 'BTC & Altcoins', icon: TrendingUp, members: 1243, color: '#F59E0B', description: 'Bitcoin and altcoin discussion' },
-  { name: 'Macro Economics', icon: BarChart3, members: 856, color: '#3B82F6', description: 'Global macro and monetary policy' },
-  { name: 'Technical Analysis', icon: TrendingUp, members: 672, color: '#8B5CF6', description: 'Charts, patterns, and TA strategies' },
-  { name: 'Risk Management', icon: Shield, members: 534, color: '#DC2626', description: 'Position sizing and risk frameworks' },
-  { name: 'DCA Strategies', icon: DollarSign, members: 421, color: '#22C55E', description: 'Dollar-cost averaging tips and plans' },
-  { name: 'Trading Ideas', icon: Lightbulb, members: 389, color: '#F97316', description: 'Share and discuss trade setups' },
-];
+function matchesDate(b: Broadcast, filter: DateFilter): boolean {
+  if (filter === 'All') return true;
+  const d = new Date(b.published_at ?? b.created_at);
+  const now = new Date();
+  const diffDays = (now.getTime() - d.getTime()) / 86_400_000;
+  if (filter === 'Today') return d.toDateString() === now.toDateString();
+  if (filter === 'This Week') return diffDays <= 7;
+  return diffDays <= 31;
+}
 
-const categories = ['Analysis', 'News', 'Discussion', 'Trading Ideas', 'Market Updates'];
-
-export default function CommunityPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('feed');
+function BroadcastCard({ b }: { b: Broadcast }) {
+  const [expanded, setExpanded] = useState(false);
+  const body = cleanContent(b.content);
+  const paras = body.split('\n').filter(Boolean);
+  const when = b.published_at ?? b.created_at;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
-          Community
-        </h1>
-        <p className="mt-1 text-sm text-ark-text-tertiary">
-          Connect with other investors and share insights
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-ark-fill-secondary p-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all cursor-pointer',
-              activeTab === tab.id
-                ? 'bg-ark-surface text-ark-text shadow-sm'
-                : 'text-ark-text-tertiary hover:text-ark-text',
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'feed' && (
-        <div className="space-y-4">
-          {/* Category filters */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button className="shrink-0 rounded-full bg-ark-primary px-3 py-1 text-xs font-medium text-white cursor-pointer">
-              All
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                className="shrink-0 rounded-full bg-ark-fill-secondary px-3 py-1 text-xs font-medium text-ark-text-secondary hover:bg-ark-fill-tertiary transition-colors cursor-pointer"
-              >
-                {cat}
-              </button>
-            ))}
+    <GlassCard
+      className={cn('relative cursor-pointer overflow-hidden transition-shadow hover:shadow-md', b.is_pinned && 'border-ark-primary/30')}
+      onClick={() => setExpanded((v) => !v)}
+    >
+      {b.is_pinned && <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/60 to-transparent" />}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {b.is_pinned && <Pin className="h-3.5 w-3.5 text-ark-primary" />}
+            <h3 className="text-base font-semibold text-ark-text">{b.title}</h3>
           </div>
+          <p className="mt-0.5 text-[11px] text-ark-text-disabled">{when ? formatRelativeTime(when) : ''}</p>
+        </div>
+        <ChevronDown className={cn('h-4 w-4 shrink-0 text-ark-text-tertiary transition-transform', expanded && 'rotate-180')} />
+      </div>
 
-          {/* Coming soon state */}
-          <GlassCard className="relative overflow-hidden">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary/30 to-transparent" />
-            <div className="flex flex-col items-center py-12 text-center">
-              <div className="relative">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-ark-primary/20 to-violet-500/20">
-                  <Users className="h-8 w-8 text-ark-primary" />
-                </div>
-                <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-ark-warning shadow-md">
-                  <Lock className="h-3 w-3 text-white" />
-                </div>
-              </div>
-              <h3 className="mt-4 text-lg font-semibold text-ark-text">Community Feed Coming Soon</h3>
-              <p className="mt-2 max-w-sm text-sm text-ark-text-tertiary">
-                Share analysis, trading ideas, and market insights with the Arkline community. Post and discuss with fellow investors.
-              </p>
-              <div className="mt-4 flex gap-2">
-                {['Analysis', 'Discussion', 'Trading Ideas'].map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-ark-fill-secondary px-3 py-1 text-xs text-ark-text-tertiary"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </GlassCard>
+      {b.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {b.tags.map((t) => (
+            <span key={t} className="rounded-full bg-ark-fill-secondary px-2 py-0.5 text-[10px] font-medium text-ark-text-tertiary">{t}</span>
+          ))}
         </div>
       )}
 
-      {activeTab === 'messages' && (
-        <GlassCard className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
-          <div className="flex flex-col items-center py-12 text-center">
-            <div className="relative">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/20 to-ark-primary/20">
-                <MessageCircle className="h-8 w-8 text-violet-500" />
-              </div>
-              <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-ark-warning shadow-md">
-                <Lock className="h-3 w-3 text-white" />
-              </div>
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-ark-text">Direct Messages Coming Soon</h3>
-            <p className="mt-2 max-w-sm text-sm text-ark-text-tertiary">
-              Send private messages to other Arkline members. Discuss trades, share insights, and connect one-on-one.
-            </p>
-          </div>
-        </GlassCard>
-      )}
+      <div className={cn('mt-3 space-y-2 text-sm leading-relaxed text-ark-text-secondary', !expanded && 'line-clamp-3')}>
+        {(expanded ? paras : paras.slice(0, 3)).map((p, i) => <p key={i}>{p}</p>)}
+      </div>
 
-      {activeTab === 'rooms' && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {chatRooms.map((room) => (
-            <GlassCard
-              key={room.name}
-              className="group relative cursor-pointer overflow-hidden transition-all hover:shadow-md"
+      <div className="mt-3 flex items-center gap-4 text-[11px] text-ark-text-disabled">
+        <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{b.view_count}</span>
+        <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{b.reaction_count}</span>
+        <span className="ml-auto font-medium text-ark-primary">{expanded ? 'Show less ↑' : 'Read more →'}</span>
+      </div>
+    </GlassCard>
+  );
+}
+
+export default function BroadcastsPage() {
+  const isDemo = !isSupabaseConfigured();
+  const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('All');
+
+  const { data: broadcasts, isLoading } = useQuery({
+    queryKey: ['broadcasts'],
+    queryFn: fetchBroadcasts,
+    enabled: !isDemo,
+    staleTime: 300_000,
+  });
+
+  const all = broadcasts ?? [];
+  const filtered = all.filter((b) => {
+    if (!matchesDate(b, dateFilter)) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return b.title.toLowerCase().includes(q) || b.content.toLowerCase().includes(q) || b.tags.some((t) => t.toLowerCase().includes(q));
+    }
+    return true;
+  });
+  const pinned = filtered.filter((b) => b.is_pinned);
+  const rest = filtered.filter((b) => !b.is_pinned);
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ark-primary/10">
+          <Radio className="h-5 w-5 text-ark-primary" />
+        </div>
+        <div>
+          <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">Broadcasts</h1>
+          <p className="text-sm text-ark-text-tertiary">Market insights & updates from Arkline</p>
+        </div>
+      </div>
+
+      {/* Search + date filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ark-text-tertiary" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search broadcasts…"
+            className="h-10 w-full rounded-xl border border-ark-divider bg-ark-fill-secondary pl-9 pr-3 text-sm text-ark-text outline-none placeholder:text-ark-text-tertiary focus:border-ark-primary"
+          />
+        </div>
+        <div className="flex gap-1 overflow-x-auto rounded-full bg-ark-fill-secondary/60 p-1">
+          {DATE_FILTERS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setDateFilter(f)}
+              className={cn(
+                'shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors',
+                dateFilter === f ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
+              )}
             >
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-xl" style={{ backgroundColor: room.color }} />
-              <div className="flex items-start gap-3">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: `${room.color}20` }}
-                >
-                  <room.icon className="h-5 w-5" style={{ color: room.color }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-ark-text group-hover:text-ark-primary transition-colors">
-                    {room.name}
-                  </p>
-                  <p className="mt-0.5 text-xs text-ark-text-tertiary line-clamp-1">
-                    {room.description}
-                  </p>
-                  <div className="mt-2 flex items-center gap-1 text-[10px] text-ark-text-tertiary">
-                    <Users className="h-3 w-3" />
-                    {room.members.toLocaleString()} members
-                  </div>
-                </div>
-              </div>
-            </GlassCard>
+              {f}
+            </button>
           ))}
+        </div>
+      </div>
+
+      {/* Feed */}
+      {isLoading ? (
+        <div className="space-y-4">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ark-fill-secondary"><Sparkles className="h-6 w-6 text-ark-text-tertiary" /></div>
+          <p className="mt-3 text-sm text-ark-text-tertiary">{search || dateFilter !== 'All' ? 'No broadcasts match your filters.' : 'No broadcasts yet.'}</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pinned.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Pinned</p>
+              {pinned.map((b) => <BroadcastCard key={b.id} b={b} />)}
+            </div>
+          )}
+          <div className="space-y-3">
+            {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Latest</p>}
+            {rest.map((b) => <BroadcastCard key={b.id} b={b} />)}
+          </div>
         </div>
       )}
     </div>
