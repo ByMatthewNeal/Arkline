@@ -5,6 +5,7 @@ import { ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from 'lucide-
 import { Badge, Skeleton } from '@/components/ui';
 import { cn, formatPercent } from '@/lib/utils/format';
 import { useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck } from '@/lib/hooks/use-market';
+import { Spark } from '@/components/dashboard/shared/bento-primitives';
 import type { DeckSlide } from '@/types';
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -167,6 +168,52 @@ function asStr(v: unknown): string {
   return v == null ? '' : String(v);
 }
 
+// Coerce bullets that may be plain strings OR { text, detail } objects
+function bulletText(b: unknown): { text: string; detail?: string } {
+  if (b && typeof b === 'object') {
+    const o = b as Record<string, unknown>;
+    const text = asStr(o.text ?? o.point ?? o.title ?? o.headline ?? '');
+    const detail = o.detail != null ? asStr(o.detail) : undefined;
+    return { text: text || JSON.stringify(o), detail };
+  }
+  return { text: asStr(b) };
+}
+
+function toArray(v: unknown): unknown[] {
+  if (Array.isArray(v)) return v;
+  if (v == null || v === '') return [];
+  return [v];
+}
+
+const sigColor = (s: string) =>
+  s === 'bullish' ? 'var(--ark-success)' : s === 'bearish' ? 'var(--ark-error)' : 'var(--ark-warning)';
+const toneVariant = (t: string): 'success' | 'error' | 'warning' | 'default' =>
+  t === 'bullish' ? 'success' : t === 'bearish' ? 'error' : t === 'neutral' ? 'warning' : 'default';
+
+function num(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+const pct = (v: unknown) => { const n = num(v); return n == null ? '—' : `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`; };
+const price = (v: unknown) => { const n = num(v); return n == null ? '—' : `$${n.toLocaleString(undefined, { maximumFractionDigits: n < 10 ? 2 : 0 })}`; };
+
+type AssetRow = { symbol?: string; name?: string; price?: unknown; week_change?: unknown; signal?: string; sparkline?: unknown };
+
+function AssetLine({ a }: { a: AssetRow }) {
+  const ch = num(a.week_change);
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-ark-divider bg-ark-card/40 p-2.5">
+      <span className="w-12 text-sm font-bold text-ark-text">{a.symbol ?? a.name}</span>
+      {Array.isArray(a.sparkline) && a.sparkline.length > 1 && (
+        <Spark data={(a.sparkline as number[]).map(Number)} color={ch != null && ch < 0 ? 'var(--ark-error)' : 'var(--ark-success)'} className="h-7 w-20" />
+      )}
+      <span className="fig ml-auto text-sm text-ark-text-secondary">{price(a.price)}</span>
+      {ch != null && <span className="fig w-16 text-right text-xs font-semibold" style={{ color: ch >= 0 ? 'var(--ark-success)' : 'var(--ark-error)' }}>{pct(ch)}</span>}
+      {a.signal && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: sigColor(a.signal) }} />}
+    </div>
+  );
+}
+
 function SlideBody({ slide }: { slide: DeckSlide }) {
   const p = slide.payload ?? {};
   switch (slide.type) {
@@ -176,8 +223,8 @@ function SlideBody({ slide }: { slide: DeckSlide }) {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Weekly Market Update</p>
           {p.regime != null && <p className="mt-2 text-2xl font-bold text-ark-text">{asStr(p.regime)}</p>}
           <div className="mt-4 grid grid-cols-2 gap-3 text-left">
-            {p.btc_price != null && <Stat label="BTC" value={`$${Number(p.btc_price).toLocaleString()}`} />}
-            {p.btc_weekly_change != null && <Stat label="BTC Weekly" value={`${Number(p.btc_weekly_change) >= 0 ? '+' : ''}${Number(p.btc_weekly_change).toFixed(1)}%`} />}
+            {p.btc_price != null && <Stat label="BTC" value={price(p.btc_price)} />}
+            {p.btc_weekly_change != null && <Stat label="BTC Weekly" value={pct(p.btc_weekly_change)} />}
             {p.fear_greed_start != null && <Stat label="F&G Start" value={asStr(p.fear_greed_start)} />}
             {p.fear_greed_end != null && <Stat label="F&G End" value={asStr(p.fear_greed_end)} />}
           </div>
@@ -190,34 +237,104 @@ function SlideBody({ slide }: { slide: DeckSlide }) {
           {p.subtitle != null && <p className="mt-2 text-sm text-ark-text-secondary">{asStr(p.subtitle)}</p>}
         </div>
       );
-    case 'editorial':
+    case 'editorial': {
+      const bullets = toArray(p.bullets).map(bulletText);
       return (
         <div>
           {p.category != null && <p className="text-[10px] font-bold uppercase tracking-wider text-ark-primary">{asStr(p.category)}</p>}
           <h4 className="mt-1 text-base font-semibold text-ark-text">{slide.title}</h4>
-          {Array.isArray(p.bullets) && (
-            <ul className="mt-2 space-y-1.5">
-              {(p.bullets as unknown[]).map((b, i) => (
-                <li key={i} className="flex gap-2 text-sm leading-relaxed text-ark-text-secondary">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-ark-primary" />{asStr(b)}
+          <ul className="mt-3 space-y-3">
+            {bullets.map((b, i) => (
+              <li key={i} className="flex gap-2.5">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary" />
+                <div>
+                  <p className="text-sm leading-relaxed text-ark-text-secondary">{b.text}</p>
+                  {b.detail && <p className="mt-1 text-xs leading-relaxed text-ark-text-disabled">{b.detail}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+    case 'weeklyOutlook': {
+      const ahead = toArray(p.look_ahead).map((x) => bulletText(x).text);
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h4 className="text-base font-semibold text-ark-text">Week Ahead</h4>
+            {p.tone != null && <Badge variant={toneVariant(asStr(p.tone))}>{asStr(p.tone)}</Badge>}
+          </div>
+          {p.headline != null && <p className="text-sm font-medium leading-relaxed text-ark-text">{asStr(p.headline)}</p>}
+          {ahead.length > 0 && (
+            <ul className="space-y-2">
+              {ahead.map((l, i) => (
+                <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-ark-text-secondary">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary" />{l}
                 </li>
               ))}
             </ul>
           )}
-        </div>
-      );
-    case 'weeklyOutlook':
-      return (
-        <div className="space-y-2">
-          {p.tone != null && <Badge variant="default">{asStr(p.tone)}</Badge>}
-          {p.headline != null && <h4 className="text-base font-semibold text-ark-text">{asStr(p.headline)}</h4>}
-          {p.look_ahead != null && <p className="text-sm leading-relaxed text-ark-text-secondary">{asStr(p.look_ahead)}</p>}
           {p.risk_asset_impact != null && (
-            <div><p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-ark-primary">Risk Asset Impact</p>
-              <p className="text-sm leading-relaxed text-ark-text-secondary">{asStr(p.risk_asset_impact)}</p></div>
+            <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-ark-primary">Risk Asset Impact</p>
+              <p className="mt-1 text-sm leading-relaxed text-ark-text-secondary">{asStr(p.risk_asset_impact)}</p>
+            </div>
           )}
         </div>
       );
+    }
+    case 'correlation':
+    case 'marketPulse': {
+      const groups = toArray(p.groups) as { group?: string; assets?: AssetRow[] }[];
+      const flat = toArray(p.assets) as AssetRow[];
+      return (
+        <div className="space-y-4">
+          <h4 className="text-base font-semibold text-ark-text">{slide.title || (slide.type === 'correlation' ? 'Cross-Asset Snapshot' : 'Market Pulse')}</h4>
+          {groups.length > 0 ? groups.map((g, gi) => (
+            <div key={gi}>
+              {g.group && <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-ark-text-tertiary">{g.group}</p>}
+              <div className="space-y-1.5">{toArray(g.assets).map((a, i) => <AssetLine key={i} a={a as AssetRow} />)}</div>
+            </div>
+          )) : (
+            <div className="space-y-1.5">{flat.map((a, i) => <AssetLine key={i} a={a} />)}</div>
+          )}
+        </div>
+      );
+    }
+    case 'snapshot': {
+      const risks = toArray(p.asset_risks) as { symbol?: string; risk_label?: string; risk_level?: unknown; signal?: string }[];
+      return (
+        <div className="space-y-4">
+          <h4 className="text-base font-semibold text-ark-text">{slide.title || 'Weekly Snapshot'}</h4>
+          <div className="grid grid-cols-2 gap-3">
+            {p.spy_price != null && <Stat label="SPY" value={price(p.spy_price)} />}
+            {p.qqq_price != null && <Stat label="QQQ" value={price(p.qqq_price)} />}
+            {p.fear_greed_end != null && <Stat label="Fear & Greed" value={asStr(p.fear_greed_end)} />}
+            {p.sentiment_regime != null && <Stat label="Sentiment" value={asStr(p.sentiment_regime)} />}
+          </div>
+          {risks.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-ark-text-tertiary">Asset Risk Levels</p>
+              <div className="space-y-2">
+                {risks.map((r, i) => {
+                  const lvl = num(r.risk_level) ?? 0;
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="w-12 text-sm font-semibold text-ark-text">{r.symbol}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+                        <div className="h-full rounded-full" style={{ width: `${lvl * 100}%`, backgroundColor: lvl < 0.3 ? 'var(--ark-success)' : lvl < 0.5 ? 'var(--ark-warning)' : lvl < 0.7 ? '#F97316' : 'var(--ark-error)' }} />
+                      </div>
+                      <span className="fig w-10 text-right text-xs font-semibold text-ark-text">{lvl.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
     default:
       return (
         <div className="space-y-2">

@@ -1030,7 +1030,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'events',        x: 0, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'weeklyUpdate',  x: 1, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'usFutures',     x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'signalChanges', x: 3, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'signalChanges', x: 3, y: 0,  w: 1, h: 4, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'arklineScore',  x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'fearGreed',     x: 1, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'marketMovers',  x: 2, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
@@ -1056,7 +1056,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'events',        x: 0, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'weeklyUpdate',  x: 1, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'usFutures',     x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'signalChanges', x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'signalChanges', x: 0, y: 3,  w: 1, h: 4, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'arklineScore',  x: 1, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'fearGreed',     x: 2, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'marketMovers',  x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
@@ -1082,7 +1082,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'events',        x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'weeklyUpdate',  x: 0, y: 3,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'usFutures',     x: 0, y: 6,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'signalChanges', x: 0, y: 9,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'signalChanges', x: 0, y: 9,  w: 2, h: 4, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'arklineScore',  x: 0, y: 12, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'fearGreed',     x: 0, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'marketMovers',  x: 0, y: 18, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1254,7 +1254,7 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
             </div>
           ) : (
             <div className="mt-2 space-y-2 overflow-hidden">
-              {changes.slice(0, 3).map((c) => (
+              {changes.slice(0, 5).map((c) => (
                 <div key={c.asset}>
                   <div className="flex items-center gap-2">
                     <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{c.asset}</span>
@@ -1265,7 +1265,7 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
                   <p className="mt-0.5 text-[10px] leading-tight text-ark-text-tertiary">{signalChangeHint(c.prev_signal, c.signal)}</p>
                 </div>
               ))}
-              {changes.length > 3 && <p className="text-[10px] text-ark-text-disabled">+{changes.length - 3} more</p>}
+              {changes.length > 5 && <p className="text-[10px] text-ark-text-disabled">+{changes.length - 5} more</p>}
             </div>
           )}
         </div>
@@ -1459,6 +1459,23 @@ function WeeklyUpdateTile({ onOpen }: { onOpen: () => void }) {
 function USFuturesTile({ onOpen }: { onOpen: () => void }) {
   const { data, isLoading } = useUSFutures();
   const futures = data ?? [];
+
+  // Session-aware bias (ET)
+  let session = '', bias = '', biasColor = '';
+  if (futures.length) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+    const wd = parts.find((p) => p.type === 'weekday')?.value ?? '';
+    const t = Number(parts.find((p) => p.type === 'hour')?.value ?? 0) * 60 + Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
+    session = (wd === 'Sat' || wd === 'Sun') ? 'Weekend'
+      : t >= 240 && t < 570 ? 'Pre-Market'
+      : t >= 570 && t < 960 ? 'Open'
+      : t >= 960 && t < 1200 ? 'After Hours'
+      : 'Overnight';
+    const up = futures.filter((f) => f.change_percent >= 0).length;
+    bias = up > futures.length - up ? 'Bullish' : up < futures.length - up ? 'Bearish' : 'Mixed';
+    biasColor = bias === 'Bullish' ? 'var(--ark-success)' : bias === 'Bearish' ? 'var(--ark-error)' : 'var(--ark-warning)';
+  }
+
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
@@ -1467,6 +1484,11 @@ function USFuturesTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><TrendingUp className="h-3.5 w-3.5 text-ark-primary" /></div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">US Futures</span>
+            {bias && (
+              <span className="ml-auto rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: `${biasColor}1F`, color: biasColor }}>
+                {session} · {bias}
+              </span>
+            )}
           </div>
           {futures.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center">
