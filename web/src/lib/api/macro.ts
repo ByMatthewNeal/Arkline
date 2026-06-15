@@ -453,23 +453,37 @@ export async function fetchRiskLevels(kind: 'crypto' | 'stock'): Promise<RiskLev
   const stockSyms = new Set((stockLatest.data ?? []).map((r: { indicator: string }) => r.indicator.replace('stock_risk_', '')));
 
   const prefix = kind === 'stock' ? 'stock_risk_' : 'crypto_risk_';
-  const { data, error } = await supabase
-    .from('indicator_snapshots')
-    .select('indicator, value, recorded_date')
-    .like('indicator', `${prefix}%`)
-    .gte('recorded_date', daysAgoISO(220))
-    .order('recorded_date', { ascending: true })
-    .limit(20000);
-  if (error || !data?.length) return [];
+  const since = daysAgoISO(200);
+
+  // PostgREST caps each response at 1000 rows, so page through the history.
+  const PAGE = 1000;
+  const all: { indicator: string; value: number; recorded_date: string }[] = [];
+  for (let offset = 0; offset < 40000; offset += PAGE) {
+    const { data, error } = await supabase
+      .from('indicator_snapshots')
+      .select('indicator, value, recorded_date')
+      .like('indicator', `${prefix}%`)
+      .gte('recorded_date', since)
+      .order('recorded_date', { ascending: true })
+      .order('indicator', { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) break;
+    if (!data?.length) break;
+    all.push(...(data as typeof all));
+    if (data.length < PAGE) break;
+  }
+  if (!all.length) return [];
 
   const bySym = new Map<string, { value: number; date: string }[]>();
-  for (const r of data as { indicator: string; value: number; recorded_date: string }[]) {
+  for (const r of all) {
     const sym = r.indicator.replace(prefix, '');
     if (kind === 'crypto' && stockSyms.has(sym)) continue; // exclude stocks from crypto list
     const arr = bySym.get(sym) ?? [];
     arr.push({ value: Number(r.value), date: r.recorded_date });
     bySym.set(sym, arr);
   }
+  // each symbol's series must be chronological for change/days-at-level math
+  for (const arr of bySym.values()) arr.sort((a, b) => a.date.localeCompare(b.date));
 
   const atOrBefore = (series: { value: number; date: string }[], targetISO: string) => {
     let v: number | undefined;

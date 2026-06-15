@@ -1030,7 +1030,6 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'rotation',      x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'macro',         x: 1, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
     { i: 'assetRisk',     x: 3, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'riskChart',     x: 0, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'supply',        x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'favorites',     x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'dca',           x: 3, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
@@ -1056,7 +1055,6 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'rotation',      x: 2, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'macro',         x: 0, y: 9,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
     { i: 'assetRisk',     x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'riskChart',     x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'supply',        x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'favorites',     x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'dca',           x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
@@ -1082,7 +1080,6 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'rotation',      x: 0, y: 24, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'macro',         x: 0, y: 27, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'assetRisk',     x: 0, y: 30, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'riskChart',     x: 0, y: 33, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'supply',        x: 0, y: 36, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'favorites',     x: 0, y: 39, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'dca',           x: 0, y: 42, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1605,7 +1602,7 @@ const widgetKeys: WidgetKey[] = [
   'arklineScore', 'fearGreed', 'marketMovers', 'marketBreadth',
   'rotation', 'macro', 'assetRisk',
   // Remaining widgets
-  'riskChart', 'supply', 'favorites', 'dca', 'news',
+  'supply', 'favorites', 'dca', 'news',
   'vix', 'dxy', 'm2', 'stockRisk', 'tradeSignals',
   'modelPortfolio', 'perpPremium', 'fedWatch',
 ];
