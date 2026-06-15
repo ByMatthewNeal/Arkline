@@ -1916,9 +1916,6 @@ function BriefingHero({ greetingLine, date }: { greetingLine: string; date: stri
         <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/60 to-transparent" />
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10">
-              <Brain className="h-5 w-5 text-ark-primary" />
-            </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold text-ark-text">Daily Briefing</h2>
