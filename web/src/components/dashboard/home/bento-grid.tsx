@@ -25,7 +25,7 @@ import { useDashboardPresets } from '@/lib/hooks/use-dashboard-presets';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn, parseBriefingSections } from '@/lib/utils/format';
 import {
   Tile, Spark, MiniGauge, CircleGauge, AccentLine, AmbientGlow, ShineSweep,
   useCountUp,
@@ -1585,8 +1585,10 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+// Note: 'briefing' is intentionally excluded — it's pinned as a full-width hero
+// at the top of the dashboard (see BriefingHero), matching the iOS app.
 const widgetKeys: WidgetKey[] = [
-  'portfolio', 'fearGreed', 'arklineScore', 'briefing', 'riskChart',
+  'portfolio', 'fearGreed', 'arklineScore', 'riskChart',
   'marketMovers', 'macro', 'supply', 'assetRisk', 'events',
   'favorites', 'dca', 'news',
   'vix', 'dxy', 'm2', 'marketBreadth', 'signalChanges', 'stockRisk',
@@ -1713,6 +1715,64 @@ function CustomizePanel({
   );
 }
 
+/* ── Daily Briefing hero ── (pinned full-width at the top, like the iOS app) */
+function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; date: string; onOpen: () => void }) {
+  const { data: briefing, isLoading } = useMarketBriefing();
+  const { data: positioning } = useCryptoPositioning();
+  const sections = parseBriefingSections(briefing);
+  const tldr = sections.find((s) => /tldr/i.test(s.title)) ?? sections[0];
+  const regime = positioning?.regime ?? '';
+  const isRiskOn = regime.includes('risk-on');
+  const isRiskOff = regime.includes('risk-off');
+  const regimeLabel = isRiskOn ? 'RISK-ON' : isRiskOff ? 'RISK-OFF' : 'MIXED';
+  const regimeVariant: 'success' | 'error' | 'warning' = isRiskOn ? 'success' : isRiskOff ? 'error' : 'warning';
+
+  return (
+    <button onClick={onOpen} className="mb-4 block w-full text-left">
+      <div className="relative overflow-hidden rounded-2xl border border-ark-primary/20 bg-gradient-to-br from-ark-primary/[0.07] via-ark-card to-ark-card p-5 shadow-sm transition-shadow hover:shadow-md">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/60 to-transparent" />
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10">
+              <Brain className="h-5 w-5 text-ark-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-ark-text">Daily Briefing</h2>
+                <span className="flex items-center gap-1 rounded-full bg-ark-primary/10 px-2 py-0.5">
+                  <Sparkles className="h-2.5 w-2.5 text-ark-primary" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-ark-primary">AI</span>
+                </span>
+              </div>
+              <p suppressHydrationWarning className="mt-0.5 flex items-center gap-1 text-[10px] text-ark-text-disabled">
+                <Clock className="h-2.5 w-2.5" />{date}
+              </p>
+            </div>
+          </div>
+          {regime && <Badge variant={regimeVariant}>{regimeLabel}</Badge>}
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+        ) : tldr ? (
+          <div>
+            <p suppressHydrationWarning className="text-sm font-medium text-ark-text-secondary">{greetingLine}</p>
+            {tldr.title && <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-ark-primary">{tldr.title}</p>}
+            <p className="mt-1 max-w-4xl text-sm leading-relaxed text-ark-text line-clamp-3">{tldr.body}</p>
+            <span className="mt-2 inline-block text-[11px] font-medium text-ark-primary">Read full briefing →</span>
+          </div>
+        ) : (
+          <p className="text-sm text-ark-text-tertiary">No briefing available yet.</p>
+        )}
+      </div>
+    </button>
+  );
+}
+
 export function BentoGrid() {
   const [activeWidget, setActiveWidget] = useState<WidgetKey | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -1759,6 +1819,12 @@ export function BentoGrid() {
           </button>
         </div>
       </div>
+
+      <BriefingHero
+        greetingLine={`${header.greeting || 'Welcome'}${name ? `, ${name}` : ''}. Here's your daily briefing.`}
+        date={header.date}
+        onOpen={() => setActiveWidget('briefing')}
+      />
 
       <motion.div
         initial={{ opacity: 0 }}

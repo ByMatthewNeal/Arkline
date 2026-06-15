@@ -121,8 +121,9 @@ export async function fetchRiskHistory(days = 365): Promise<RiskHistoryPoint[]> 
  * markdown header markers so the plain-text card reads cleanly.
  */
 function cleanBriefing(md: string): string {
+  // Keep the "## Section" headers so the UI can render labeled sections like the
+  // iOS app; just strip inline bold/code markers.
   return md
-    .replace(/^#{1,6}\s*/gm, '') // drop "## " heading markers
     .replace(/\*\*(.*?)\*\*/g, '$1') // bold
     .replace(/`/g, '')
     .trim();

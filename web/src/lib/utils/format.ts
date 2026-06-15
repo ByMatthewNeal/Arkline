@@ -95,3 +95,25 @@ export function formatTimestamp(): string {
 export function cn(...classes: (string | false | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+/* Parse a markdown briefing ("## TLDR\n…\n\n## Weekend Pulse\n…") into labeled
+ * sections, matching the iOS app's sectioned Daily Briefing layout. */
+export interface BriefingSection {
+  title: string;
+  body: string;
+}
+
+export function parseBriefingSections(md: string | null | undefined): BriefingSection[] {
+  if (!md) return [];
+  const hasHeaders = /^##\s+/m.test(md);
+  if (!hasHeaders) return [{ title: '', body: md.trim() }];
+  return md
+    .split(/^##\s+/m)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((part) => {
+      const nl = part.indexOf('\n');
+      if (nl === -1) return { title: part.trim(), body: '' };
+      return { title: part.slice(0, nl).trim(), body: part.slice(nl + 1).trim() };
+    });
+}
