@@ -11,7 +11,7 @@ const pageNames: Record<string, string> = {
   '/dashboard/market': 'Market Data',
   '/dashboard/portfolio': 'Portfolio',
   '/dashboard/dca': 'DCA Reminders',
-  '/dashboard/community': 'Broadcasts',
+  '/dashboard/broadcasts': 'Broadcasts',
   '/dashboard/settings': 'Settings',
   '/dashboard/profile': 'Profile',
 };

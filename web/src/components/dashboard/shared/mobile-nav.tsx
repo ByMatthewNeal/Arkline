@@ -10,7 +10,7 @@ const items = [
   { label: 'Market', href: '/dashboard/market', icon: TrendingUp },
   { label: 'Portfolio', href: '/dashboard/portfolio', icon: Briefcase },
   { label: 'DCA', href: '/dashboard/dca', icon: Bell },
-  { label: 'Broadcasts', href: '/dashboard/community', icon: Radio },
+  { label: 'Broadcasts', href: '/dashboard/broadcasts', icon: Radio },
 ];
 
 export function MobileNav() {
