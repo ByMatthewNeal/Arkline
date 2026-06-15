@@ -56,7 +56,10 @@ export function useCountUp(target: number, isLoading: boolean, decimals = 0) {
     return () => clearInterval(timer);
   }, [target, isLoading, isInView]);
 
-  const formatted = decimals > 0 ? display.toFixed(decimals) : Math.round(display).toString();
+  const formatted = display.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
   return { ref: inViewRef, value: formatted };
 }
 

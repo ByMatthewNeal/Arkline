@@ -5,7 +5,7 @@ import {
   Wallet, Brain, Sparkles, Gauge, Shield, BarChart3, Globe,
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
-  SlidersHorizontal, X, Check, RotateCcw,
+  SlidersHorizontal, X, Check, RotateCcw, ChevronDown,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -1698,13 +1698,21 @@ function CustomizePanel({
 }
 
 /* ── Portfolio hero ── (pinned full-width at the top, like the iOS app) */
+const PORTFOLIO_PERIODS = ['1H', '1D', '1W', '1M', 'YTD', '1Y', 'ALL'] as const;
+type PortfolioPeriod = (typeof PORTFOLIO_PERIODS)[number];
+const PERIOD_SUFFIX: Record<PortfolioPeriod, string> = {
+  '1H': 'past hour', '1D': 'today', '1W': 'past week', '1M': 'past month',
+  YTD: 'YTD', '1Y': 'past year', ALL: 'all time',
+};
+
 function PortfolioHero() {
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
   const portfolioId = portfolios?.[0]?.id;
   const { data: holdings, isLoading: holdingsLoading } = useHoldings(portfolioId);
   const { data: assets } = useCryptoAssets(1);
-  const { data: history } = usePortfolioHistory(portfolioId, 30);
+  const { data: history } = usePortfolioHistory(portfolioId, 365);
   const isLoading = portfoliosLoading || (!!portfolioId && holdingsLoading);
+  const [period, setPeriod] = useState<PortfolioPeriod>('1M');
 
   const priceBySymbol = new Map<string, { current_price: number; price_change_percentage_24h: number }>();
   for (const a of assets ?? []) {
@@ -1723,70 +1731,107 @@ function PortfolioHero() {
     dayChange += value - value / (1 + (live?.price_change_percentage_24h ?? 0) / 100);
   }
   const dayChangePct = currentValue - dayChange ? (dayChange / (currentValue - dayChange)) * 100 : 0;
-  const isUp = dayChange >= 0;
-  const histVals = (history ?? []).map((p) => p.value);
-  const sparkVals = histVals.length ? [...histVals, currentValue] : [];
-  const monthStart = histVals[0] ?? currentValue;
-  const monthChangePct = monthStart ? ((currentValue - monthStart) / monthStart) * 100 : 0;
-  const isMonthUp = monthChangePct >= 0;
+
+  // Period-aware window from daily history (granularity is daily; 1H/1D use the
+  // live 24h move since intraday isn't stored).
+  const todayISO = new Date().toISOString().split('T')[0];
+  const allPts = (history ?? []).map((p) => ({ date: p.date, value: p.value }));
+  const ptsNow = allPts.length ? [...allPts, { date: todayISO, value: currentValue }] : [];
+  const sliceByPeriod = (p: PortfolioPeriod) => {
+    if (!ptsNow.length) return ptsNow;
+    if (p === 'ALL') return ptsNow;
+    if (p === 'YTD') {
+      const ys = `${new Date().getFullYear()}-01-01`;
+      return ptsNow.filter((x) => x.date >= ys);
+    }
+    const days = p === '1H' || p === '1D' ? 1 : p === '1W' ? 7 : p === '1M' ? 30 : 365;
+    return ptsNow.slice(-(days + 1));
+  };
+  const windowPts = sliceByPeriod(period);
+  const sparkVals = windowPts.map((x) => x.value);
+  const periodStart = windowPts[0]?.value ?? currentValue;
+  const periodChange = currentValue - periodStart;
+  const periodChangePct = periodStart ? (periodChange / periodStart) * 100 : 0;
+  const useDayLive = period === '1H' || period === '1D';
+  const change = useDayLive ? dayChange : periodChange;
+  const changePct = useDayLive ? dayChangePct : periodChangePct;
+  const isUp = change >= 0;
+
   const assetCount = holdings?.length ?? 0;
   const hasHoldings = assetCount > 0;
   const counter = useCountUp(currentValue, isLoading, 2);
 
   return (
-    <Link href="/dashboard/portfolio" className="mb-4 block">
-      <GlassCard hover className="relative overflow-hidden p-5">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/40 to-transparent" />
-        {isLoading ? (
-          <Skeleton className="h-24 w-full" />
-        ) : !hasHoldings ? (
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10"><Wallet className="h-5 w-5 text-ark-primary" /></div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</p>
-              <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text"><span className="opacity-40 font-normal">$</span>0.00</p>
-              <p className="text-[11px] text-ark-text-tertiary">No holdings yet — add positions to track your portfolio</p>
+    <GlassCard className="relative mb-4 overflow-hidden p-5">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/40 to-transparent" />
+      {isLoading ? (
+        <Skeleton className="h-24 w-full" />
+      ) : !hasHoldings ? (
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10"><Wallet className="h-5 w-5 text-ark-primary" /></div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</p>
+            <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text"><span className="opacity-40 font-normal">$</span>0.00</p>
+            <p className="text-[11px] text-ark-text-tertiary">No holdings yet — add positions to track your portfolio</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Wallet className="h-3.5 w-3.5 text-ark-primary" /></div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+            </div>
+            {/* Time-period selector */}
+            <div className="flex gap-0.5 rounded-lg bg-ark-fill-secondary/50 p-0.5">
+              {PORTFOLIO_PERIODS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    'rounded-md px-2 py-1 text-[10px] font-semibold transition-colors',
+                    period === p ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
-        ) : (
-          <div className="flex items-center gap-6">
+
+          <div className="mt-2 flex items-center gap-6">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Wallet className="h-3.5 w-3.5 text-ark-primary" /></div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
-              </div>
-              <p className="fig mt-2 font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none text-ark-text">
+              <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none text-ark-text">
                 <span className="opacity-40 font-normal">$</span>{counter.value}
               </p>
               <span className={cn('fig mt-1.5 inline-flex items-center gap-0.5 text-sm font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
                 {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {formatCurrency(Math.abs(dayChange))} ({formatPercent(dayChangePct)}) today
+                {formatCurrency(Math.abs(change))} ({formatPercent(changePct)}) {PERIOD_SUFFIX[period]}
               </span>
-              <div className="mt-3 flex gap-6">
-                <div>
-                  <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">30d Return</p>
-                  <p className={cn('fig text-sm font-bold', isMonthUp ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(monthChangePct)}</p>
-                </div>
+              <div className="mt-3 flex items-center gap-6">
                 <div>
                   <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Assets</p>
                   <p className="fig text-sm font-bold text-ark-text">{assetCount}</p>
                 </div>
+                <Link href="/dashboard/portfolio" className="text-[11px] font-medium text-ark-primary hover:text-ark-accent-light">
+                  View details →
+                </Link>
               </div>
             </div>
             {sparkVals.length > 1 && (
               <div className="hidden h-24 w-1/2 sm:block">
-                <Spark data={sparkVals} color={isMonthUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
+                <Spark data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-full" />
               </div>
             )}
           </div>
-        )}
-      </GlassCard>
-    </Link>
+        </>
+      )}
+    </GlassCard>
   );
 }
 
 /* ── Daily Briefing hero ── (pinned full-width at the top, like the iOS app) */
-function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; date: string; onOpen: () => void }) {
+function BriefingHero({ greetingLine, date }: { greetingLine: string; date: string }) {
   const { data: briefing, isLoading } = useMarketBriefing();
   const { data: positioning } = useCryptoPositioning();
   const sections = parseBriefingSections(briefing);
@@ -1798,6 +1843,7 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
   const regimeVariant: 'success' | 'error' | 'warning' = isRiskOn ? 'success' : isRiskOff ? 'error' : 'warning';
 
   const [speaking, setSpeaking] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
   useEffect(() => () => { if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
 
@@ -1819,7 +1865,7 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
   };
 
   return (
-    <div onClick={onOpen} role="button" tabIndex={0} className="mb-4 block w-full cursor-pointer text-left">
+    <div onClick={() => setExpanded((v) => !v)} role="button" tabIndex={0} className="mb-4 block w-full cursor-pointer text-left">
       <div className="relative overflow-hidden rounded-2xl border border-ark-primary/20 bg-gradient-to-br from-ark-primary/[0.07] via-ark-card to-ark-card p-5 shadow-sm transition-shadow hover:shadow-md">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-ark-primary/60 to-transparent" />
         <div className="mb-3 flex items-center justify-between">
@@ -1851,6 +1897,7 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
               </button>
             )}
             {regime && <Badge variant={regimeVariant}>{regimeLabel}</Badge>}
+            <ChevronDown className={cn('h-4 w-4 text-ark-text-tertiary transition-transform', expanded && 'rotate-180')} />
           </div>
         </div>
 
@@ -1860,12 +1907,28 @@ function BriefingHero({ greetingLine, date, onOpen }: { greetingLine: string; da
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
           </div>
-        ) : tldr ? (
+        ) : sections.length ? (
           <div>
             <p suppressHydrationWarning className="text-sm font-medium text-ark-text-secondary">{greetingLine}</p>
-            {tldr.title && <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-ark-primary">{tldr.title}</p>}
-            <p className="mt-1 max-w-4xl text-sm leading-relaxed text-ark-text line-clamp-3">{tldr.body}</p>
-            <span className="mt-2 inline-block text-[11px] font-medium text-ark-primary">Read full briefing →</span>
+            {expanded ? (
+              <div className="mt-3 space-y-4">
+                {sections.map((s, i) => (
+                  <div key={i}>
+                    {s.title && <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-ark-primary">{s.title}</p>}
+                    <div className="space-y-2 text-sm leading-relaxed text-ark-text">
+                      {s.body.split('\n').filter(Boolean).map((line, j) => <p key={j}>{line}</p>)}
+                    </div>
+                  </div>
+                ))}
+                <span className="inline-block text-[11px] font-medium text-ark-primary">Show less ↑</span>
+              </div>
+            ) : (
+              <>
+                {tldr?.title && <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-ark-primary">{tldr.title}</p>}
+                <p className="mt-1 max-w-4xl text-sm leading-relaxed text-ark-text line-clamp-3">{tldr?.body}</p>
+                <span className="mt-2 inline-block text-[11px] font-medium text-ark-primary">Read full briefing →</span>
+              </>
+            )}
           </div>
         ) : (
           <p className="text-sm text-ark-text-tertiary">No briefing available yet.</p>
@@ -1927,7 +1990,6 @@ export function BentoGrid() {
       <BriefingHero
         greetingLine={`${header.greeting || 'Welcome'}${name ? `, ${name}` : ''}. Here's your daily briefing.`}
         date={header.date}
-        onOpen={() => setActiveWidget('briefing')}
       />
 
       <motion.div
