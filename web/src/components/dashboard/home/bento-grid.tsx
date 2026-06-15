@@ -1257,10 +1257,10 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
               {changes.slice(0, 5).map((c) => (
                 <div key={c.asset}>
                   <div className="flex items-center gap-2">
-                    <span className="shrink-0 text-[11px] font-semibold text-ark-text">{c.asset}</span>
-                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
-                    <ArrowUpRight className="h-3 w-3 rotate-45 text-ark-text-disabled" />
-                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
+                    <span className="w-[88px] shrink-0 text-[11px] font-semibold text-ark-text">{c.asset}</span>
+                    <span className="w-[52px] shrink-0 rounded py-0.5 text-center text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
+                    <ArrowUpRight className="h-3 w-3 shrink-0 rotate-45 text-ark-text-disabled" />
+                    <span className="w-[52px] shrink-0 rounded py-0.5 text-center text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
                   </div>
                   <p className="mt-0.5 text-[10px] leading-tight text-ark-text-tertiary">{signalChangeHint(c.prev_signal, c.signal)}</p>
                 </div>
