@@ -241,6 +241,28 @@ export async function fetchArkLineScore(): Promise<ArkLineScoreData> {
   return { score, level: scoreToLevel(score), components };
 }
 
+/* ── Per-asset risk history ── (model_portfolio_risk_history; powers the
+ * Crypto Risk Levels detail period selector: 7D/30D/90D/1Y/ALL). */
+export async function fetchAssetRiskHistory(
+  asset: string,
+  days: number,
+): Promise<{ date: string; risk_level: number }[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('model_portfolio_risk_history')
+    .select('risk_date, risk_level')
+    .eq('asset', asset)
+    .gte('risk_date', daysAgoISO(days))
+    .order('risk_date', { ascending: true })
+    .limit(1000);
+  if (error || !data) return [];
+  return (data as { risk_date: string; risk_level: number }[]).map((r) => ({
+    date: r.risk_date,
+    risk_level: Number(r.risk_level),
+  }));
+}
+
 /* ── BTC supply in profit ──
  * Real source: indicator_snapshots 'supply_in_profit' (kept current; the legacy
  * supply_in_profit table is stale). value is a percentage.

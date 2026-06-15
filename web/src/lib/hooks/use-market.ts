@@ -31,6 +31,7 @@ import {
   fetchArkLineScore,
   fetchSupplyInProfit,
   fetchAssetRiskLevels,
+  fetchAssetRiskHistory,
 } from '@/lib/api/macro';
 
 export function useCryptoAssets(page = 1) {
@@ -219,5 +220,13 @@ export function useAssetRiskLevels() {
     queryKey: ['asset-risk-levels'],
     queryFn: fetchAssetRiskLevels,
     staleTime: 60_000,
+  });
+}
+
+export function useAssetRiskHistory(asset: string, days: number) {
+  return useQuery({
+    queryKey: ['asset-risk-history', asset, days],
+    queryFn: () => fetchAssetRiskHistory(asset, days),
+    staleTime: 300_000,
   });
 }
