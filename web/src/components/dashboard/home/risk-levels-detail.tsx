@@ -30,12 +30,20 @@ const STOCK_DOMAIN: Record<string, string> = {
 };
 
 export function AssetLogo({ symbol, kind, size = 36 }: { symbol: string; kind: 'crypto' | 'stock'; size?: number }) {
-  const [err, setErr] = useState(false);
+  const [idx, setIdx] = useState(0);
   const lower = symbol.toLowerCase();
-  const src = kind === 'crypto'
-    ? `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${lower}.svg`
-    : (STOCK_DOMAIN[lower] ? `https://logo.clearbit.com/${STOCK_DOMAIN[lower]}` : '');
-  if (!src || err) {
+  const upper = symbol.toUpperCase();
+  const sources = kind === 'crypto'
+    ? [
+        `https://assets.coincap.io/assets/icons/${lower}@2x.png`,
+        `https://cdn.jsdelivr.net/npm/cryptocurrency-icons@0.18.1/svg/color/${lower}.svg`,
+      ]
+    : [
+        `https://financialmodelingprep.com/image-stock/${upper}.png`,
+        ...(STOCK_DOMAIN[lower] ? [`https://logo.clearbit.com/${STOCK_DOMAIN[lower]}`] : []),
+      ];
+
+  if (idx >= sources.length) {
     return (
       <span className="flex shrink-0 items-center justify-center rounded-full bg-ark-fill-secondary text-[9px] font-bold text-ark-text-secondary" style={{ width: size, height: size }}>
         {symbol.slice(0, 4)}
@@ -44,7 +52,7 @@ export function AssetLogo({ symbol, kind, size = 36 }: { symbol: string; kind: '
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={symbol} onError={() => setErr(true)} className="shrink-0 rounded-full bg-white object-contain" style={{ width: size, height: size }} />
+    <img src={sources[idx]} alt={symbol} onError={() => setIdx((i) => i + 1)} className="shrink-0 rounded-full bg-white object-contain" style={{ width: size, height: size }} />
   );
 }
 
