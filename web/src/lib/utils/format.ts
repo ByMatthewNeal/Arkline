@@ -103,6 +103,19 @@ export interface BriefingSection {
   body: string;
 }
 
+/** Action guidance for a positioning-signal transition (matches iOS changeHint). */
+export function signalChangeHint(from: string, to: string): string {
+  const map: Record<string, string> = {
+    'bearish>neutral': 'Downtrend pressure easing. Watch for bullish confirmation.',
+    'bearish>bullish': 'Trend reversal. Conditions turning favorable for exposure.',
+    'neutral>bullish': 'Trend strengthening. Favorable to add or hold positions.',
+    'neutral>bearish': 'Trend weakening. Consider reducing exposure.',
+    'bullish>neutral': 'Momentum fading. Consider tightening stops or trimming.',
+    'bullish>bearish': 'Trend breakdown. Prioritize capital preservation.',
+  };
+  return map[`${from}>${to}`] ?? '';
+}
+
 export function parseBriefingSections(md: string | null | undefined): BriefingSection[] {
   if (!md) return [];
   const hasHeaders = /^##\s+/m.test(md);

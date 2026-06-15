@@ -3,7 +3,7 @@
 import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
 import { ArrowRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
-import { cn } from '@/lib/utils/format';
+import { cn, signalChangeHint } from '@/lib/utils/format';
 import { useMarketBreadth, useSignalChanges, useStockRiskLevels } from '@/lib/hooks/use-market';
 
 const SIG: Record<string, string> = {
@@ -101,11 +101,14 @@ export function SignalChangesDetail() {
       <p className="text-sm text-ark-text-secondary">{changes.length === 0 ? 'No positioning signal changes today.' : `${changes.length} asset${changes.length === 1 ? '' : 's'} changed positioning today.`}</p>
       <div className="space-y-2">
         {changes.map((c) => (
-          <div key={c.asset} className="flex items-center gap-3 rounded-xl border p-3" style={{ borderColor: `${dir(c.prev_signal, c.signal)}4D` }}>
-            <span className="w-16 text-sm font-semibold text-ark-text">{c.asset}</span>
-            <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.prev_signal] }}>{cap(c.prev_signal)}</span>
-            <ArrowRight className="h-3.5 w-3.5 text-ark-text-tertiary" />
-            <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.signal] }}>{cap(c.signal)}</span>
+          <div key={c.asset} className="rounded-xl border p-3" style={{ borderColor: `${dir(c.prev_signal, c.signal)}4D` }}>
+            <div className="flex items-center gap-3">
+              <span className="w-16 text-sm font-semibold text-ark-text">{c.asset}</span>
+              <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.prev_signal] }}>{cap(c.prev_signal)}</span>
+              <ArrowRight className="h-3.5 w-3.5 text-ark-text-tertiary" />
+              <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.signal] }}>{cap(c.signal)}</span>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-ark-text-secondary">{signalChangeHint(c.prev_signal, c.signal)}</p>
           </div>
         ))}
       </div>

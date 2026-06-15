@@ -37,6 +37,7 @@ import type {
   WeeklyDeck,
   USFuturesItem,
   PerpPremiumItem,
+  DeckSlide,
 } from '@/types';
 
 function getSupabase() {
@@ -133,12 +134,15 @@ export async function fetchEconomicEvents(): Promise<EconomicEvent[]> {
   if (!isSupabaseConfigured()) return demoEvents;
   const supabase = getSupabase();
   const todayISO = new Date().toISOString().split('T')[0];
+  // Pull a window around today so the feed has both upcoming and just-released
+  // events (released ones carry actual + analysis).
+  const sinceISO = new Date(Date.now() - 7 * 86_400_000).toISOString().split('T')[0];
   const { data, error } = await supabase
     .from('economic_events')
-    .select('id, title, country, currency, event_date, event_time, impact, forecast, previous, actual')
-    .gte('event_date', todayISO)
+    .select('id, title, country, currency, event_date, event_time, impact, forecast, previous, actual, beat_miss, claude_analysis')
+    .gte('event_date', sinceISO)
     .order('event_date', { ascending: true })
-    .limit(12);
+    .limit(40);
   if (error || !data?.length) return demoEvents;
   return (data as {
     id: string;
@@ -150,6 +154,8 @@ export async function fetchEconomicEvents(): Promise<EconomicEvent[]> {
     forecast: string | null;
     previous: string | null;
     actual: string | null;
+    beat_miss: string | null;
+    claude_analysis: string | null;
   }[]).map((e) => {
     const impact = (['low', 'medium', 'high'].includes(e.impact ?? '') ? e.impact : 'medium') as
       | 'low'
@@ -167,6 +173,8 @@ export async function fetchEconomicEvents(): Promise<EconomicEvent[]> {
       actual: e.actual ?? undefined,
       forecast: e.forecast ?? undefined,
       previous: e.previous ?? undefined,
+      beat_miss: e.beat_miss ?? undefined,
+      analysis: e.claude_analysis ?? undefined,
     };
   });
 }
@@ -691,12 +699,27 @@ export async function fetchWeeklyDeck(): Promise<WeeklyDeck | null> {
     .select('week_start, week_end, status, slides, published_at')
     .order('week_start', { ascending: false })
     .limit(1);
-  const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown[] } | undefined;
+  const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown } | undefined;
   if (error || !d) return null;
+  let raw = d.slides;
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch { raw = []; }
+  }
+  const arr = Array.isArray(raw) ? raw : [];
+  const slides: DeckSlide[] = arr.map((s: Record<string, unknown>, i) => {
+    const dataObj = (s.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      id: String(s.id ?? i),
+      type: String(s.type ?? dataObj.type ?? 'slide'),
+      title: String(s.title ?? ''),
+      payload: (dataObj.payload as Record<string, unknown>) ?? {},
+    };
+  });
   return {
     week_start: d.week_start,
     week_end: d.week_end,
-    slide_count: Array.isArray(d.slides) ? d.slides.length : 0,
+    slide_count: slides.length,
     status: d.status,
+    slides,
   };
 }

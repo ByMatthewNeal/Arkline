@@ -28,7 +28,7 @@ import { useDashboardPresets } from '@/lib/hooks/use-dashboard-presets';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn, parseBriefingSections } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn, parseBriefingSections, signalChangeHint } from '@/lib/utils/format';
 import {
   Tile, Spark, MiniGauge, CircleGauge, AccentLine, AmbientGlow, ShineSweep,
   useCountUp,
@@ -1253,15 +1253,19 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
               <p className="text-xs text-ark-text-tertiary">No signal changes today</p>
             </div>
           ) : (
-            <div className="mt-2 space-y-1.5 overflow-hidden">
-              {changes.slice(0, 5).map((c) => (
-                <div key={c.asset} className="flex items-center gap-2">
-                  <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{c.asset}</span>
-                  <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
-                  <ArrowUpRight className="h-3 w-3 rotate-45 text-ark-text-disabled" />
-                  <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
+            <div className="mt-2 space-y-2 overflow-hidden">
+              {changes.slice(0, 3).map((c) => (
+                <div key={c.asset}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-12 truncate text-[11px] font-semibold text-ark-text">{c.asset}</span>
+                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
+                    <ArrowUpRight className="h-3 w-3 rotate-45 text-ark-text-disabled" />
+                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
+                  </div>
+                  <p className="mt-0.5 text-[10px] leading-tight text-ark-text-tertiary">{signalChangeHint(c.prev_signal, c.signal)}</p>
                 </div>
               ))}
+              {changes.length > 3 && <p className="text-[10px] text-ark-text-disabled">+{changes.length - 3} more</p>}
             </div>
           )}
         </div>

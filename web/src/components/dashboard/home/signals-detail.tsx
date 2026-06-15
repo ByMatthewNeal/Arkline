@@ -1,9 +1,20 @@
 'use client';
 
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
 import { cn, formatPercent } from '@/lib/utils/format';
 import { useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck } from '@/lib/hooks/use-market';
+import type { DeckSlide } from '@/types';
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3">
+      <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">{label}</p>
+      <p className="fig mt-0.5 text-sm font-bold text-ark-text">{value}</p>
+    </div>
+  );
+}
 
 function Info({ title, lines }: { title: string; lines: string[] }) {
   return (
@@ -151,24 +162,118 @@ export function ModelPortfolioDetail() {
   );
 }
 
-// ── Weekly Update ───────────────────────────────────────────────────────────
+// ── Weekly Update (slide viewer) ─────────────────────────────────────────────
+function asStr(v: unknown): string {
+  return v == null ? '' : String(v);
+}
+
+function SlideBody({ slide }: { slide: DeckSlide }) {
+  const p = slide.payload ?? {};
+  switch (slide.type) {
+    case 'cover':
+      return (
+        <div className="text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Weekly Market Update</p>
+          {p.regime != null && <p className="mt-2 text-2xl font-bold text-ark-text">{asStr(p.regime)}</p>}
+          <div className="mt-4 grid grid-cols-2 gap-3 text-left">
+            {p.btc_price != null && <Stat label="BTC" value={`$${Number(p.btc_price).toLocaleString()}`} />}
+            {p.btc_weekly_change != null && <Stat label="BTC Weekly" value={`${Number(p.btc_weekly_change) >= 0 ? '+' : ''}${Number(p.btc_weekly_change).toFixed(1)}%`} />}
+            {p.fear_greed_start != null && <Stat label="F&G Start" value={asStr(p.fear_greed_start)} />}
+            {p.fear_greed_end != null && <Stat label="F&G End" value={asStr(p.fear_greed_end)} />}
+          </div>
+        </div>
+      );
+    case 'sectionTitle':
+      return (
+        <div className="flex h-full flex-col items-center justify-center text-center">
+          <p className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">{slide.title}</p>
+          {p.subtitle != null && <p className="mt-2 text-sm text-ark-text-secondary">{asStr(p.subtitle)}</p>}
+        </div>
+      );
+    case 'editorial':
+      return (
+        <div>
+          {p.category != null && <p className="text-[10px] font-bold uppercase tracking-wider text-ark-primary">{asStr(p.category)}</p>}
+          <h4 className="mt-1 text-base font-semibold text-ark-text">{slide.title}</h4>
+          {Array.isArray(p.bullets) && (
+            <ul className="mt-2 space-y-1.5">
+              {(p.bullets as unknown[]).map((b, i) => (
+                <li key={i} className="flex gap-2 text-sm leading-relaxed text-ark-text-secondary">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-ark-primary" />{asStr(b)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      );
+    case 'weeklyOutlook':
+      return (
+        <div className="space-y-2">
+          {p.tone != null && <Badge variant="default">{asStr(p.tone)}</Badge>}
+          {p.headline != null && <h4 className="text-base font-semibold text-ark-text">{asStr(p.headline)}</h4>}
+          {p.look_ahead != null && <p className="text-sm leading-relaxed text-ark-text-secondary">{asStr(p.look_ahead)}</p>}
+          {p.risk_asset_impact != null && (
+            <div><p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-ark-primary">Risk Asset Impact</p>
+              <p className="text-sm leading-relaxed text-ark-text-secondary">{asStr(p.risk_asset_impact)}</p></div>
+          )}
+        </div>
+      );
+    default:
+      return (
+        <div className="space-y-2">
+          <h4 className="text-base font-semibold text-ark-text">{slide.title}</h4>
+          {Object.entries(p).filter(([, v]) => typeof v === 'string' || typeof v === 'number').slice(0, 8).map(([k, v]) => (
+            <div key={k} className="flex justify-between text-sm">
+              <span className="capitalize text-ark-text-tertiary">{k.replace(/_/g, ' ')}</span>
+              <span className="fig font-medium text-ark-text">{asStr(v)}</span>
+            </div>
+          ))}
+        </div>
+      );
+  }
+}
+
 export function WeeklyUpdateDetail() {
   const { data, isLoading } = useWeeklyDeck();
-  if (isLoading) return <Skeleton className="h-64 w-full" />;
+  const [idx, setIdx] = useState(0);
+  if (isLoading) return <Skeleton className="h-72 w-full" />;
   if (!data) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No deck published yet.</p>;
   const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  const slides = data.slides ?? [];
+  if (!slides.length) return <p className="py-8 text-center text-sm text-ark-text-tertiary">This deck has no slides.</p>;
+  const i = Math.min(idx, slides.length - 1);
+  const slide = slides[i];
 
   return (
-    <div className="space-y-5 pb-4">
-      <div className="flex flex-col items-center gap-2 pt-2 text-center">
-        <span className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</span>
-        <span className="rounded-full bg-ark-violet/10 px-3 py-1 text-xs font-semibold capitalize text-ark-violet">{data.status}</span>
-        <p className="text-sm text-ark-text-secondary">{data.slide_count} slides in this week’s market update</p>
+    <div className="space-y-3 pb-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</span>
+        <span className="rounded-full bg-ark-violet/10 px-2.5 py-0.5 text-[10px] font-semibold capitalize text-ark-violet">{data.status}</span>
       </div>
-      <Info title="Weekly Market Update" lines={[
-        'A curated slide deck reviewing the week’s macro and crypto developments, risk regime, and positioning.',
-        'Open the Arkline app to view the full deck.',
-      ]} />
+
+      {/* Slide */}
+      <div className="flex min-h-[260px] flex-col rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-5">
+        <SlideBody slide={slide} />
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        <button onClick={() => setIdx(Math.max(0, i - 1))} disabled={i === 0}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-ark-fill-secondary text-ark-text-secondary transition-colors hover:bg-ark-divider disabled:opacity-30">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div className="flex items-center gap-1.5">
+          {slides.map((_, j) => (
+            <button key={j} onClick={() => setIdx(j)} aria-label={`Slide ${j + 1}`}
+              className={cn('h-1.5 rounded-full transition-all', j === i ? 'w-4 bg-ark-primary' : 'w-1.5 bg-ark-divider')} />
+          ))}
+        </div>
+        <button onClick={() => setIdx(Math.min(slides.length - 1, i + 1))} disabled={i === slides.length - 1}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-ark-fill-secondary text-ark-text-secondary transition-colors hover:bg-ark-divider disabled:opacity-30">
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+      <p className="text-center text-[11px] text-ark-text-disabled">{slide.title || `Slide ${i + 1}`} · {i + 1} / {slides.length}</p>
     </div>
   );
 }

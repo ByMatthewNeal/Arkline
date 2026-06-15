@@ -83,6 +83,8 @@ export interface EconomicEvent {
   actual?: string;
   forecast?: string;
   previous?: string;
+  beat_miss?: string;
+  analysis?: string; // "why it matters"
 }
 
 export interface FedWatchData {
@@ -277,11 +279,18 @@ export interface ModelPortfolioUpdate {
 }
 
 /* ── Weekly Update deck ── */
+export interface DeckSlide {
+  id: string;
+  type: string;
+  title: string;
+  payload: Record<string, unknown>;
+}
 export interface WeeklyDeck {
   week_start: string;
   week_end: string;
   slide_count: number;
   status: string;
+  slides: DeckSlide[];
 }
 
 export type ScannerPeriod = '7d' | '30d' | '90d';
