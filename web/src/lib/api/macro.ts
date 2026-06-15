@@ -13,6 +13,7 @@ import type {
   ArkLineScoreData,
   ArkLineScoreLevel,
   ArkLineScoreComponent,
+  ArkLineScoreHistoryPoint,
   SupplyInProfitData,
   SupplyInProfitStatus,
   AssetRiskLevelData,
@@ -219,12 +220,12 @@ export async function fetchArkLineScore(): Promise<ArkLineScoreData> {
 
   const { data, error } = await supabase
     .from('risk_snapshots')
-    .select('composite_score, tier, components, recorded_date')
+    .select('composite_score, tier, recommendation, components, recorded_date, btc_price, sp500_price, nasdaq_price')
     .order('recorded_date', { ascending: false })
     .limit(1);
 
   const row = data?.[0] as
-    | { composite_score: number; tier: string; components: RiskComponentRow[] }
+    | { composite_score: number; tier: string; recommendation: string; components: RiskComponentRow[]; btc_price: number; sp500_price: number; nasdaq_price: number }
     | undefined;
   if (error || !row) return demoArkLineScore;
 
@@ -234,11 +235,40 @@ export async function fetchArkLineScore(): Promise<ArkLineScoreData> {
         name: c.name,
         value: Math.round(Number(c.value) * 100), // 0-1 → 0-100
         weight: Math.round(Number(c.weight) * 100), // 0-1 → percentage
+        signal: c.signal,
         icon: '',
       }))
     : [];
 
-  return { score, level: scoreToLevel(score), components };
+  return {
+    score,
+    level: scoreToLevel(score),
+    tier: row.tier ?? scoreToLevel(score),
+    recommendation: row.recommendation ?? '',
+    btcPrice: row.btc_price != null ? Number(row.btc_price) : undefined,
+    sp500Price: row.sp500_price != null ? Number(row.sp500_price) : undefined,
+    nasdaqPrice: row.nasdaq_price != null ? Number(row.nasdaq_price) : undefined,
+    components,
+  };
+}
+
+export async function fetchArkLineScoreHistory(): Promise<ArkLineScoreHistoryPoint[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('risk_snapshots')
+    .select('recorded_date, composite_score, tier, btc_price, sp500_price, nasdaq_price')
+    .order('recorded_date', { ascending: true })
+    .limit(400);
+  if (error || !data) return [];
+  return (data as Array<{ recorded_date: string; composite_score: number; tier: string; btc_price: number; sp500_price: number; nasdaq_price: number }>).map((r) => ({
+    date: r.recorded_date,
+    score: Number(r.composite_score),
+    tier: r.tier,
+    btcPrice: r.btc_price != null ? Number(r.btc_price) : undefined,
+    sp500Price: r.sp500_price != null ? Number(r.sp500_price) : undefined,
+    nasdaqPrice: r.nasdaq_price != null ? Number(r.nasdaq_price) : undefined,
+  }));
 }
 
 /* ── Per-asset risk history ── (model_portfolio_risk_history; powers the

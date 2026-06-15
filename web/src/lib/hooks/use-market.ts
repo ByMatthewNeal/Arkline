@@ -29,6 +29,7 @@ import {
   fetchSentimentData,
   fetchRegimeData,
   fetchArkLineScore,
+  fetchArkLineScoreHistory,
   fetchSupplyInProfit,
   fetchAssetRiskLevels,
   fetchAssetRiskHistory,
@@ -203,6 +204,14 @@ export function useArkLineScore() {
   return useQuery({
     queryKey: ['arkline-score'],
     queryFn: fetchArkLineScore,
+    staleTime: 60_000,
+  });
+}
+
+export function useArkLineScoreHistory() {
+  return useQuery({
+    queryKey: ['arkline-score-history'],
+    queryFn: fetchArkLineScoreHistory,
     staleTime: 60_000,
   });
 }

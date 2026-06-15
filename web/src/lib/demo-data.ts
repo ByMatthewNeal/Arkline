@@ -216,16 +216,24 @@ export const demoSentiment: MarketSentimentData = {
 /* ── ArkLine Score ── */
 
 export const demoArkLineScore: ArkLineScoreData = {
-  score: 42,
+  score: 33,
   level: 'Moderate',
+  tier: 'Bearish',
+  recommendation: 'Market showing fear. Potential buying opportunity with caution.',
+  btcPrice: 65673,
+  sp500Price: 7431,
+  nasdaqPrice: 25889,
   components: [
-    { name: 'Fear & Greed', value: 68, weight: 20, icon: 'gauge' },
-    { name: 'Funding Rates', value: 35, weight: 15, icon: 'bar-chart-3' },
-    { name: 'RSI', value: 52, weight: 15, icon: 'activity' },
-    { name: 'Log Regression', value: 38, weight: 15, icon: 'trending-up' },
-    { name: 'SMA Position', value: 45, weight: 10, icon: 'git-branch' },
-    { name: 'Bull Market Bands', value: 30, weight: 10, icon: 'layers' },
-    { name: 'Macro Risk', value: 40, weight: 15, icon: 'globe' },
+    { name: 'BTC Cycle Risk', value: 30, weight: 14, icon: '', signal: 'Bearish' },
+    { name: 'Funding Rates', value: 0, weight: 10, icon: '', signal: 'Extremely Bearish' },
+    { name: 'Capital Flow', value: 30, weight: 7, icon: '', signal: 'Bearish' },
+    { name: 'Fear & Greed', value: 20, weight: 14, icon: '', signal: 'Extremely Bearish' },
+    { name: 'App Store FOMO', value: 10, weight: 7, icon: '', signal: 'Bearish' },
+    { name: 'Altcoin Season', value: 32, weight: 7, icon: '', signal: 'Bearish' },
+    { name: 'VIX (Volatility)', value: 74, weight: 10, icon: '', signal: 'Bullish' },
+    { name: 'DXY (Dollar)', value: 41, weight: 10, icon: '', signal: 'Bullish' },
+    { name: 'US Net Liquidity', value: 57, weight: 8, icon: '', signal: 'Bullish' },
+    { name: 'WTI Crude Oil', value: 49, weight: 7, icon: '', signal: 'Bearish' },
   ],
 };
 

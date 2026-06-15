@@ -69,12 +69,27 @@ export interface ArkLineScoreComponent {
   value: number;       // 0-100
   weight: number;      // percentage weight
   icon: string;        // lucide icon name
+  signal?: string;     // directional label, e.g. "Bullish", "Extremely Bearish"
 }
 
 export interface ArkLineScoreData {
   score: number;       // 0-100
   level: ArkLineScoreLevel;
+  tier: string;        // directional label from DB, e.g. "Bearish"
+  recommendation: string; // description text
+  btcPrice?: number;
+  sp500Price?: number;
+  nasdaqPrice?: number;
   components: ArkLineScoreComponent[];
+}
+
+export interface ArkLineScoreHistoryPoint {
+  date: string;        // YYYY-MM-DD
+  score: number;
+  tier: string;
+  btcPrice?: number;
+  sp500Price?: number;
+  nasdaqPrice?: number;
 }
 
 /* ── BTC Supply in Profit ── */

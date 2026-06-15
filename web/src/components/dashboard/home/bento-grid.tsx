@@ -327,11 +327,10 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
 function ArkLineScoreTile({ onOpen }: { onOpen: () => void }) {
   const { data, isLoading } = useArkLineScore();
   const score = data?.score ?? 0;
-  const level = data?.level ?? 'Moderate';
+  const tier = data?.tier ?? data?.level ?? 'Moderate';
   const components = data?.components ?? [];
-  const color = score < 30 ? 'var(--ark-success)' : score < 50 ? 'var(--ark-warning)' : score < 70 ? '#F97316' : 'var(--ark-error)';
-  const variant: 'success' | 'warning' | 'error' = level === 'Low Risk' ? 'success' : level === 'Moderate' ? 'warning' : 'error';
-  const scoreColor = (v: number) => v < 30 ? 'var(--ark-success)' : v < 50 ? 'var(--ark-warning)' : v < 70 ? '#F97316' : 'var(--ark-error)';
+  const scoreColor = (v: number) => v < 20 ? '#2563EB' : v < 40 ? 'var(--ark-info)' : v < 60 ? 'var(--ark-text-tertiary)' : v < 80 ? 'var(--ark-warning)' : 'var(--ark-error)';
+  const color = scoreColor(score);
 
   const counter = useCountUp(score, isLoading);
 
@@ -347,7 +346,7 @@ function ArkLineScoreTile({ onOpen }: { onOpen: () => void }) {
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">ArkLine Score</span>
             </div>
-            <Badge variant={variant}>{level}</Badge>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${color}1F`, color }}>{tier}</span>
           </div>
 
           {/* Gauge + score */}
