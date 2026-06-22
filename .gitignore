@@ -7,6 +7,10 @@ Secrets.plist
 **/Secrets.plist
 *.secrets.plist
 
+# Apple private keys — APNs auth keys, StoreKit/subscription keys (.p8)
+*.p8
+**/*.p8
+
 # Python
 __pycache__/
 

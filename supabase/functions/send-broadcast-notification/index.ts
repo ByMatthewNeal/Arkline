@@ -277,8 +277,10 @@ Deno.serve(async (req) => {
     const apnsKeyId = Deno.env.get("APNS_KEY_ID")
     const apnsTeamId = Deno.env.get("APNS_TEAM_ID")
     const apnsBundleId = "com.arkline.app"
-    // Use sandbox for TestFlight/development, production for App Store
-    const useSandbox = Deno.env.get("APNS_USE_SANDBOX") !== "false"
+    // Default to PRODUCTION (App Store builds). The opposite-environment retry
+    // below still delivers to TestFlight/sandbox devices, so production-first is
+    // safe. Set APNS_USE_SANDBOX="true" to make sandbox the first attempt.
+    const useSandbox = Deno.env.get("APNS_USE_SANDBOX") === "true"
 
     if (!apnsKey || !apnsKeyId || !apnsTeamId) {
       // APNs not configured — log and return
@@ -325,50 +327,94 @@ Deno.serve(async (req) => {
       ...(isPortfolioEvent && { strategy: broadcast_id }),
     }
 
-    // Deduplicate: keep only one token per user (most recently updated)
-    const seenUsers = new Set<string>()
-    const uniqueDevices = filteredDevices.filter((d: { user_id: string }) => {
-      if (seenUsers.has(d.user_id)) return false
-      seenUsers.add(d.user_id)
-      return true
-    })
-    const tokens = uniqueDevices.map((d: { device_token: string }) => d.device_token)
+    // ─── Group tokens by user (newest first) for per-user fallback ──────────
+    // A user can have several device tokens (re-registrations across builds /
+    // launches). Previously we deduped to a SINGLE token per user and sent only
+    // to that one — so one stale or wrong-environment token silenced the user
+    // entirely. That regression took out signal alerts. Now we try a user's
+    // tokens newest-first and stop at the first success: still one push per user
+    // in the normal case, but a bad newest token falls back to an older valid one.
+    const tokensByUser = new Map<string, string[]>()
+    for (const d of filteredDevices as { user_id: string; device_token: string }[]) {
+      const list = tokensByUser.get(d.user_id) ?? []
+      list.push(d.device_token) // filteredDevices is already ordered updated_at DESC
+      tokensByUser.set(d.user_id, list)
+    }
 
-    // Send to all devices concurrently
-    const results = await Promise.all(
-      tokens.map((token) => sendApns(token, jwt, apnsBundleId, payload, useSandbox))
+    // The device's APNs environment (sandbox vs production) can differ from this
+    // function's default when the installed build doesn't match APNS_USE_SANDBOX.
+    // An env mismatch returns BadDeviceToken / DeviceTokenNotForTopic. We retry
+    // the opposite environment before treating a token as dead, so a mismatch no
+    // longer silently purges valid tokens (the other half of the outage).
+    const envMismatchReasons = new Set(["BadDeviceToken", "DeviceTokenNotForTopic"])
+    const hardReasons = new Set(["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"])
+
+    async function sendToToken(
+      token: string
+    ): Promise<{ success: boolean; reason?: string; dead: boolean }> {
+      const first = await sendApns(token, jwt, apnsBundleId, payload, useSandbox)
+      if (first.success) return { success: true, dead: false }
+
+      // Retry the opposite environment only on an environment-mismatch reason.
+      if (envMismatchReasons.has(first.reason ?? "")) {
+        const second = await sendApns(token, jwt, apnsBundleId, payload, !useSandbox)
+        if (second.success) return { success: true, dead: false }
+        // Dead only if BOTH environments reject it as a permanently bad token.
+        const dead =
+          hardReasons.has(first.reason ?? "") && hardReasons.has(second.reason ?? "")
+        return { success: false, reason: second.reason, dead }
+      }
+
+      // Non-mismatch failure: only Unregistered is a permanent removal.
+      return { success: false, reason: first.reason, dead: first.reason === "Unregistered" }
+    }
+
+    const tokensToRemove: string[] = []
+    let attempted = 0
+
+    // For each user, walk tokens newest-first and stop at the first delivery.
+    const perUser = await Promise.all(
+      [...tokensByUser.values()].map(async (tokens) => {
+        let delivered = false
+        for (const token of tokens) {
+          attempted++
+          const r = await sendToToken(token)
+          if (r.success) {
+            delivered = true
+            break
+          }
+          if (r.dead) tokensToRemove.push(token)
+        }
+        return delivered
+      })
     )
 
-    const succeeded = results.filter((r) => r.success).length
-    const failed = results.filter((r) => !r.success)
+    const succeeded = perUser.filter(Boolean).length
+    const usersFailed = perUser.length - succeeded
 
-    // Remove invalid tokens (gone, unregistered)
-    const badTokenReasons = new Set(["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"])
-    const tokensToRemove = failed
-      .filter((r) => badTokenReasons.has(r.reason ?? ""))
-      .map((r) => r.token)
-
+    // Remove only tokens that BOTH environments rejected as permanently invalid.
     if (tokensToRemove.length > 0) {
       await supabaseAdmin
         .from("user_devices")
         .delete()
         .in("device_token", tokensToRemove)
-      console.log(`[send-broadcast-notification] Removed ${tokensToRemove.length} invalid tokens`)
+      console.log(`[send-broadcast-notification] Removed ${tokensToRemove.length} dead tokens`)
     }
 
-    if (failed.length > 0) {
-      console.log(
-        `[send-broadcast-notification] ${succeeded}/${tokens.length} sent, failures:`,
-        failed.map((f) => `${f.status}:${f.reason}`).join(", ")
-      )
-    }
+    console.log(
+      `[send-broadcast-notification] ${succeeded}/${perUser.length} users delivered, ` +
+        `${usersFailed} failed, ${attempted} token attempts, ` +
+        `${tokensToRemove.length} removed, default env=${useSandbox ? "sandbox" : "production"}`
+    )
 
     return new Response(
       JSON.stringify({
         sent: succeeded,
-        failed: failed.length,
+        users_failed: usersFailed,
+        token_attempts: attempted,
+        removed_tokens: tokensToRemove.length,
         broadcast_id,
-        sandbox: useSandbox,
+        default_sandbox: useSandbox,
       }),
       { headers: corsHeaders }
     )
