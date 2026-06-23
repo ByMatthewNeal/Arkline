@@ -9,9 +9,11 @@ import { z } from 'zod';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Input } from '@/components/ui';
+import { validateInviteCode } from '@/lib/api/onboarding';
 
 const schema = z
   .object({
+    inviteCode: z.string().min(1, 'An invite code is required'),
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
@@ -40,13 +42,24 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
     try {
+      // Invite-only: validate the code before creating the account.
+      const invite = await validateInviteCode(data.inviteCode);
+      if (!invite.ok) {
+        setError(invite.error ?? 'Invalid invite code.');
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: { data: { invite_code: invite.code } },
       });
       if (authError) throw authError;
-      router.push('/dashboard');
+
+      // New users continue into the onboarding flow (profile setup).
+      router.push('/onboarding');
       router.refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Signup failed');
@@ -65,10 +78,18 @@ export default function SignupPage() {
           Create your Arkline account
         </h1>
         <p className="mt-1.5 text-sm text-ark-text-secondary">
-          Start your 10-day free trial. Get instant access to portfolio tracking and market intelligence.
+          Arkline is invite-only. Enter your invite code to set up your account.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
+          <Input
+            id="inviteCode"
+            type="text"
+            label="Invite Code"
+            placeholder="ARK-XXXXXX"
+            error={errors.inviteCode?.message}
+            {...register('inviteCode')}
+          />
           <Input
             id="email"
             type="email"
