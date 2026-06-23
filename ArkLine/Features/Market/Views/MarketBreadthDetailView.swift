@@ -6,6 +6,7 @@ struct MarketBreadthDetailView: View {
     @State private var history: [MarketBreadthPoint] = []
     @State private var crossovers: [MarketBreadthPoint] = []
     @State private var isLoading = true
+    @State private var errorMessage: String?
     @State private var selectedRange: TimeRange = .threeMonths
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
@@ -32,22 +33,32 @@ struct MarketBreadthDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Current status card
-                if let latest = history.last {
-                    currentStatusCard(latest)
+                if isLoading && history.isEmpty {
+                    // First load (or retry) in progress — show a spinner rather
+                    // than collapsing to just the explanation card.
+                    loadingState
+                } else if history.isEmpty {
+                    // Load finished but we have no data (transient failure) —
+                    // surface it with a retry instead of failing silently.
+                    errorState
+                } else {
+                    // Current status card
+                    if let latest = history.last {
+                        currentStatusCard(latest)
+                    }
+
+                    // Recent signals
+                    if !crossovers.isEmpty {
+                        recentSignals
+                    }
+
+                    // Chart section
+                    if history.count >= 2 {
+                        chartSection
+                    }
                 }
 
-                // Recent signals
-                if !crossovers.isEmpty {
-                    recentSignals
-                }
-
-                // Chart section
-                if history.count >= 2 {
-                    chartSection
-                }
-
-                // How it works
+                // How it works (always available)
                 howItWorks
             }
             .padding(.vertical)
@@ -67,17 +78,70 @@ struct MarketBreadthDetailView: View {
 
     private func loadData() async {
         isLoading = true
+        errorMessage = nil
         let service = ServiceContainer.shared.marketBreadthService
+
+        // History drives the entire view, so fetch it on its own and never let a
+        // failure in the secondary crossovers call discard it. One quick retry
+        // absorbs transient network/session hiccups before we surface an error.
         do {
-            async let historyFetch = service.fetchHistory(days: selectedRange.days)
-            async let crossoverFetch = service.fetchRecentCrossovers(limit: 5)
-            let (h, c) = try await (historyFetch, crossoverFetch)
-            history = h
-            crossovers = c
+            history = try await service.fetchHistory(days: selectedRange.days)
         } catch {
-            logWarning("MarketBreadthDetail: \(error.localizedDescription)", category: .network)
+            do {
+                try await Task.sleep(nanoseconds: 400_000_000)
+                history = try await service.fetchHistory(days: selectedRange.days)
+            } catch {
+                logWarning("MarketBreadthDetail history: \(error.localizedDescription)", category: .network)
+                if history.isEmpty {
+                    errorMessage = "Couldn't load market breadth. Check your connection and tap retry."
+                }
+            }
         }
+
+        // Crossovers are supplementary — a failure here must not blank the view.
+        do {
+            crossovers = try await service.fetchRecentCrossovers(limit: 5)
+        } catch {
+            logWarning("MarketBreadthDetail crossovers: \(error.localizedDescription)", category: .network)
+        }
+
         isLoading = false
+    }
+
+    // MARK: - Loading / Error States
+
+    private var loadingState: some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .padding(.vertical, 60)
+            Spacer()
+        }
+    }
+
+    private var errorState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 28))
+                .foregroundColor(AppColors.textTertiary)
+            Text(errorMessage ?? "No market breadth data available yet.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundColor(AppColors.textSecondary)
+            Button {
+                Task { await loadData() }
+            } label: {
+                Text("Retry")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(AppColors.accent))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .padding(.horizontal)
     }
 
     // MARK: - Current Status Card
