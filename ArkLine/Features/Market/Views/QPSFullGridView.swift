@@ -51,6 +51,15 @@ struct QPSFullGridView: View {
                 )
                 .padding(.horizontal, 20)
 
+                // Momentum map entry
+                NavigationLink {
+                    MomentumMapView()
+                } label: {
+                    momentumMapBanner
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 20)
+
                 if filteredSignals.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")
@@ -86,6 +95,31 @@ struct QPSFullGridView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private var momentumMapBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(AppColors.success)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Momentum Map")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                Text("Assets where the USD and BTC pair agree")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(colorScheme == .dark ? Color(hex: "1A1A1A") : Color.white)
+        )
     }
 
     private func categorySection(_ category: QPSAssetCategory, signals: [DailyPositioningSignal]) -> some View {
