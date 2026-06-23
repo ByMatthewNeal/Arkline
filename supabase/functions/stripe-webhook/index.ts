@@ -88,6 +88,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
+  // Self-serve web checkout (create-self-checkout): the user already has an
+  // account and is mid-onboarding, so skip invite-code creation + email. Just
+  // link the subscription to their profile by email and activate it now.
+  if (session.metadata?.self_serve === "true") {
+    if (session.subscription) {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      await upsertSubscription(subscription, email)
+      await syncProfileStatus(subscription.id, mapStripeStatus(subscription.status))
+    }
+    console.log(`Self-serve checkout completed for ${email} — invite email skipped`)
+    return
+  }
+
   // Determine tier from checkout session line items
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 })
   const priceId = lineItems.data[0]?.price?.id ?? ""
