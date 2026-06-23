@@ -8,6 +8,7 @@ import {
   fetchNews,
   fetchEconomicEvents,
   fetchCryptoPositioning,
+  fetchMomentumMap,
   fetchTraditionalMarkets,
   fetchMarketSentiment,
   fetchAltcoinScanner,
@@ -126,6 +127,14 @@ export function useCryptoPositioning() {
   return useQuery({
     queryKey: ['crypto-positioning'],
     queryFn: fetchCryptoPositioning,
+    staleTime: 300_000,
+  });
+}
+
+export function useMomentumMap() {
+  return useQuery({
+    queryKey: ['momentum-map'],
+    queryFn: fetchMomentumMap,
     staleTime: 300_000,
   });
 }

@@ -18,6 +18,9 @@ import type {
   EconomicEvent,
   FedWatchData,
   CryptoPositioningData,
+  MomentumMapData,
+  MomentumPair,
+  MomentumQuadrant,
   TraditionalMarketAsset,
   TrendSignal,
   MarketSentimentData,
@@ -330,6 +333,90 @@ export async function fetchCryptoPositioning(): Promise<CryptoPositioningData> {
     extreme_move: false,
     macro_inputs,
     assets,
+  };
+}
+
+/* ── Momentum Map ── (pairs each asset's USD positioning signal with its /BTC
+   signal for the latest day, then sorts into alignment quadrants). */
+
+const MOMENTUM_REAL_BTC_PAIRS = new Set([
+  'ETH', 'SOL', 'LINK', 'AVAX', 'DOGE', 'BCH', 'UNI', 'AAVE',
+]);
+
+const MOMENTUM_QUADRANT_ORDER: MomentumQuadrant[] = [
+  'momentum', 'outperforming_btc', 'usd_leading', 'mixed', 'both_bearish',
+];
+
+function classifyMomentumQuadrant(usd: PositioningSignal, btc: PositioningSignal): MomentumQuadrant {
+  const usdBull = usd === 'bullish';
+  const btcBull = btc === 'bullish';
+  if (usdBull && btcBull) return 'momentum';
+  if (btcBull && !usdBull) return 'outperforming_btc';
+  if (usdBull && !btcBull) return 'usd_leading';
+  if (usd === 'bearish' && btc === 'bearish') return 'both_bearish';
+  return 'mixed';
+}
+
+export async function fetchMomentumMap(): Promise<MomentumMapData> {
+  const empty: MomentumMapData = { as_of: null, groups: [], momentum_count: 0 };
+  if (!isSupabaseConfigured()) return empty;
+  const supabase = getSupabase();
+
+  const latest = await supabase
+    .from('positioning_signals')
+    .select('signal_date')
+    .order('signal_date', { ascending: false })
+    .limit(1);
+  const latestDate = latest.data?.[0]?.signal_date;
+  if (!latestDate) return empty;
+
+  const { data, error } = await supabase
+    .from('positioning_signals')
+    .select('asset, signal, trend_score, category, signal_date')
+    .eq('signal_date', latestDate);
+  if (error || !data?.length) return empty;
+
+  const rows = data as { asset: string; signal: PositioningSignal; trend_score: number | null; category: string | null }[];
+
+  const usdByAsset = new Map<string, { signal: PositioningSignal; score: number }>();
+  const btcByAsset = new Map<string, { signal: PositioningSignal; score: number }>();
+  for (const r of rows) {
+    const score = Math.round(Number(r.trend_score ?? 0));
+    if (r.asset.includes('/BTC')) {
+      btcByAsset.set(r.asset.replace('/BTC', ''), { signal: r.signal, score });
+    } else if (r.category === 'crypto') {
+      usdByAsset.set(r.asset, { signal: r.signal, score });
+    }
+  }
+
+  const pairs: MomentumPair[] = [];
+  for (const [asset, usd] of usdByAsset) {
+    const btc = btcByAsset.get(asset);
+    if (!btc) continue;
+    pairs.push({
+      asset,
+      usd_signal: usd.signal,
+      usd_score: usd.score,
+      btc_signal: btc.signal,
+      btc_score: btc.score,
+      is_real_btc_pair: MOMENTUM_REAL_BTC_PAIRS.has(asset),
+      quadrant: classifyMomentumQuadrant(usd.signal, btc.signal),
+    });
+  }
+
+  const groups = MOMENTUM_QUADRANT_ORDER
+    .map((quadrant) => ({
+      quadrant,
+      pairs: pairs
+        .filter((p) => p.quadrant === quadrant)
+        .sort((a, b) => (b.usd_score + b.btc_score) - (a.usd_score + a.btc_score)),
+    }))
+    .filter((g) => g.pairs.length > 0);
+
+  return {
+    as_of: latestDate,
+    groups,
+    momentum_count: pairs.filter((p) => p.quadrant === 'momentum').length,
   };
 }
 

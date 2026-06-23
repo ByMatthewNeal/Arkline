@@ -17,7 +17,7 @@ import {
 import { DraggableGrid, type ResponsiveLayouts } from '../shared/draggable-grid';
 import {
   useGlobalMarketData, useFearGreedIndex, useMarketSentiment,
-  useMacroIndicators, useRegimeData, useCryptoPositioning,
+  useMacroIndicators, useRegimeData, useCryptoPositioning, useMomentumMap,
   useTraditionalMarkets, useCryptoAssets, useAltcoinScanner, useNews,
 } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
@@ -26,7 +26,7 @@ import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } f
 
 type MarketWidgetKey =
   | 'marketOverview' | 'fearGreed' | 'regime' | 'sentiment'
-  | 'macro' | 'positioning' | 'tradMarkets' | 'topCoins'
+  | 'macro' | 'positioning' | 'momentumMap' | 'tradMarkets' | 'topCoins'
   | 'altcoinScanner' | 'news' | 'retailSentiment' | 'funding';
 
 const drawerTitles: Record<MarketWidgetKey, string> = {
@@ -36,6 +36,7 @@ const drawerTitles: Record<MarketWidgetKey, string> = {
   sentiment: 'Market Sentiment',
   macro: 'Macro Dashboard',
   positioning: 'Crypto Positioning',
+  momentumMap: 'Momentum Map',
   tradMarkets: 'Traditional Markets',
   topCoins: 'Top Coins',
   altcoinScanner: 'Altcoin Scanner',
@@ -58,6 +59,7 @@ function LazyMarketWidget({ widgetKey }: { widgetKey: MarketWidgetKey }) {
       sentiment: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
       macro: () => import('../home/macro-dashboard').then(m => ({ default: m.MacroDashboard })),
       positioning: () => import('./crypto-positioning').then(m => ({ default: m.CryptoPositioning })),
+      momentumMap: () => import('./momentum-map').then(m => ({ default: m.MomentumMap })),
       tradMarkets: () => import('./traditional-markets').then(m => ({ default: m.TraditionalMarkets })),
       topCoins: () => import('./top-coins').then(m => ({ default: m.TopCoins })),
       altcoinScanner: () => import('./altcoin-scanner').then(m => ({ default: m.AltcoinScanner })),
@@ -455,6 +457,46 @@ function PositioningTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useMomentumMap();
+  const momentum = data?.groups.find((g) => g.quadrant === 'momentum')?.pairs ?? [];
+  const count = data?.momentum_count ?? 0;
+
+  return (
+    <Tile onClick={onOpen} accentColor="var(--ark-success)">
+      <AccentLine color="var(--ark-success)" />
+      {isLoading ? <SkeletonListTile /> : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-success/10 transition-transform duration-300 group-hover:scale-110">
+                <Activity className="h-3.5 w-3.5 text-ark-success" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Momentum Map</span>
+            </div>
+            <Badge variant={count > 0 ? 'success' : 'default'}>{count} aligned</Badge>
+          </div>
+
+          <p className="text-[10px] font-semibold text-ark-text-secondary">USD + BTC pair both bullish</p>
+
+          <div className="space-y-1.5">
+            {momentum.slice(0, 3).map((p) => (
+              <div key={p.asset} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1">
+                <span className="text-[10px] font-bold text-ark-text flex-1">{p.asset}</span>
+                <span className="rounded-full bg-ark-success/10 px-1.5 py-0.5 text-[8px] font-bold uppercase text-ark-success">USD</span>
+                <span className="rounded-full bg-ark-success/10 px-1.5 py-0.5 text-[8px] font-bold uppercase text-ark-success">BTC</span>
+              </div>
+            ))}
+            {momentum.length === 0 && (
+              <p className="text-[10px] text-ark-text-disabled">No fully-aligned assets right now</p>
+            )}
+          </div>
+        </>
+      )}
+    </Tile>
+  );
+}
+
 function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
   const { data: assets, isLoading } = useTraditionalMarkets();
   const top3 = (assets ?? []).slice(0, 3);
@@ -734,6 +776,7 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'news',            x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'retailSentiment', x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'funding',         x: 3, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 12, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
@@ -748,6 +791,7 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'news',            x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'retailSentiment', x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'funding',         x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -762,12 +806,13 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'news',            x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'retailSentiment', x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'funding',         x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 24, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
 const widgetKeys: MarketWidgetKey[] = [
   'marketOverview', 'fearGreed', 'regime', 'sentiment', 'macro',
-  'positioning', 'tradMarkets', 'topCoins', 'altcoinScanner',
+  'positioning', 'momentumMap', 'tradMarkets', 'topCoins', 'altcoinScanner',
   'news', 'retailSentiment', 'funding',
 ];
 
@@ -778,6 +823,7 @@ const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () =
   sentiment: SentimentTile,
   macro: MacroTile,
   positioning: PositioningTile,
+  momentumMap: MomentumMapTile,
   tradMarkets: TradMarketsTile,
   topCoins: TopCoinsTile,
   altcoinScanner: AltcoinScannerTile,

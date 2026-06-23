@@ -136,6 +136,31 @@ export interface CryptoPositioningData {
   assets: AssetPositioning[];
 }
 
+/* ── Momentum Map (USD + BTC pair alignment) ── */
+
+export type MomentumQuadrant =
+  | 'momentum'          // USD bullish + BTC bullish
+  | 'outperforming_btc' // BTC bullish, USD not bullish
+  | 'usd_leading'       // USD bullish, BTC not bullish
+  | 'both_bearish'      // USD bearish + BTC bearish
+  | 'mixed';            // neutral combinations
+
+export interface MomentumPair {
+  asset: string;
+  usd_signal: PositioningSignal;
+  usd_score: number;
+  btc_signal: PositioningSignal;
+  btc_score: number;
+  is_real_btc_pair: boolean; // false = synthetic (USD ÷ BTC-USD)
+  quadrant: MomentumQuadrant;
+}
+
+export interface MomentumMapData {
+  as_of: string | null;
+  groups: { quadrant: MomentumQuadrant; pairs: MomentumPair[] }[];
+  momentum_count: number;
+}
+
 /* ── Traditional Markets ── */
 
 export type TrendSignal = 'Bullish' | 'Neutral' | 'Bearish';
