@@ -3,6 +3,7 @@
 // and an account-linked Stripe payment step that iOS doesn't have).
 
 export type OnboardingStepId =
+  | 'payment'
   | 'name'
   | 'interests'
   | 'experience'
@@ -72,6 +73,13 @@ export const PRICE_IDS = {
   foundingMonthly: 'price_1TXCJyPHuageZ7zbIGTJCHPl', // $39.99/mo
   foundingAnnual: 'price_1TXCOPPHuageZ7zb7d2HyeHc',  // $400/yr
 } as const;
+
+// Self-serve payment plans shown in the onboarding payment step (when the user
+// did not arrive with a pre-paid invite code).
+export const PAYMENT_PLANS = [
+  { id: PRICE_IDS.foundingAnnual, label: 'Annual', price: '$400', cadence: 'per year', note: 'Save ~17% · founding rate', highlight: true },
+  { id: PRICE_IDS.foundingMonthly, label: 'Monthly', price: '$39.99', cadence: 'per month', note: 'Founding rate', highlight: false },
+] as const;
 
 // ── Collected onboarding data ────────────────────────────────────────────────
 

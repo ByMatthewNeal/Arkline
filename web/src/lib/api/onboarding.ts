@@ -46,6 +46,49 @@ export async function validateInviteCode(raw: string): Promise<InviteValidationR
   return { ok: true, code, email: data.email };
 }
 
+// ── Payment state ────────────────────────────────────────────────────────────
+
+export interface OnboardingState {
+  isActive: boolean;   // subscription active or trialing
+  hasInvite: boolean;  // arrived with a (paid) invite code → no in-flow payment
+  needsPayment: boolean;
+}
+
+const ACTIVE_STATUSES = new Set(['active', 'trialing']);
+
+export async function getOnboardingState(): Promise<OnboardingState> {
+  const supabase = createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+  if (!user) return { isActive: false, hasInvite: false, needsPayment: true };
+
+  const hasInvite = !!(user.user_metadata?.invite_code as string | undefined);
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_status')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const isActive = ACTIVE_STATUSES.has(profile?.subscription_status ?? '');
+  // Invite users paid upstream; everyone else must pay unless already active.
+  const needsPayment = !hasInvite && !isActive;
+  return { isActive, hasInvite, needsPayment };
+}
+
+// ── Self-serve Stripe checkout ───────────────────────────────────────────────
+
+export async function startSelfCheckout(priceId: string): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const supabase = createClient();
+  const { data, error } = await supabase.functions.invoke('create-self-checkout', {
+    body: { price_id: priceId },
+  });
+  if (error) return { ok: false, error: 'Could not start checkout. Please try again.' };
+  const url = (data as { checkout_url?: string })?.checkout_url;
+  if (!url) return { ok: false, error: 'Checkout is temporarily unavailable.' };
+  return { ok: true, url };
+}
+
 // ── Complete onboarding (persist profile, redeem invite, activate) ───────────
 
 export interface CompleteResult {
@@ -65,9 +108,23 @@ export async function completeOnboarding(data: OnboardingData): Promise<Complete
   const fullName = `${data.firstName} ${data.lastName}`.trim();
   const username = email.split('@')[0] || 'user';
 
-  // Persist the profile. subscription_status is set to active to match the iOS
-  // single-tier model (payment already happened upstream via the paid invite).
-  const { error: profileErr } = await supabase.from('profiles').upsert({
+  // Payment gate: self-serve users (no paid invite) must have an active
+  // subscription before onboarding can complete. Invite users paid upstream.
+  let activateNow = false;
+  if (inviteCode) {
+    activateNow = true; // paid invite → safe to mark active
+  } else {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (!ACTIVE_STATUSES.has(profile?.subscription_status ?? '')) {
+      return { ok: false, error: 'Payment not completed. Please finish checkout to continue.' };
+    }
+  }
+
+  const profilePayload: Record<string, unknown> = {
     id: user.id,
     email,
     username,
@@ -80,9 +137,14 @@ export async function completeOnboarding(data: OnboardingData): Promise<Complete
       goals: data.goals,
     },
     onboarding_complete: true,
-    subscription_status: 'active',
     is_active: true,
-  }, { onConflict: 'id' });
+  };
+  // Only force-activate for invite users; for self-serve the webhook owns status.
+  if (activateNow) profilePayload.subscription_status = 'active';
+
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .upsert(profilePayload, { onConflict: 'id' });
 
   if (profileErr) return { ok: false, error: profileErr.message };
 

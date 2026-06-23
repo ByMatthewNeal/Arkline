@@ -13,7 +13,7 @@ import { validateInviteCode } from '@/lib/api/onboarding';
 
 const schema = z
   .object({
-    inviteCode: z.string().min(1, 'An invite code is required'),
+    inviteCode: z.string().optional(),
     email: z.string().email('Invalid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
@@ -42,19 +42,25 @@ export default function SignupPage() {
     setError('');
     setLoading(true);
     try {
-      // Invite-only: validate the code before creating the account.
-      const invite = await validateInviteCode(data.inviteCode);
-      if (!invite.ok) {
-        setError(invite.error ?? 'Invalid invite code.');
-        setLoading(false);
-        return;
+      // Invite is optional: with a valid (paid) code, payment is already handled
+      // upstream; without one, the user pays in the onboarding flow (self-serve).
+      const code = data.inviteCode?.trim();
+      let validatedCode: string | undefined;
+      if (code) {
+        const invite = await validateInviteCode(code);
+        if (!invite.ok) {
+          setError(invite.error ?? 'Invalid invite code.');
+          setLoading(false);
+          return;
+        }
+        validatedCode = invite.code;
       }
 
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
-        options: { data: { invite_code: invite.code } },
+        options: { data: validatedCode ? { invite_code: validatedCode } : {} },
       });
       if (authError) throw authError;
 
@@ -78,14 +84,15 @@ export default function SignupPage() {
           Create your Arkline account
         </h1>
         <p className="mt-1.5 text-sm text-ark-text-secondary">
-          Arkline is invite-only. Enter your invite code to set up your account.
+          Set up your account. Have an invite code? Enter it below — otherwise you&apos;ll
+          choose a plan next.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
           <Input
             id="inviteCode"
             type="text"
-            label="Invite Code"
+            label="Invite Code (optional)"
             placeholder="ARK-XXXXXX"
             error={errors.inviteCode?.message}
             {...register('inviteCode')}

@@ -6,14 +6,15 @@ import { ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils/format';
 import {
-  ONBOARDING_STEPS, SKIPPABLE_STEPS, EMPTY_ONBOARDING_DATA,
+  ONBOARDING_STEPS, SKIPPABLE_STEPS, EMPTY_ONBOARDING_DATA, PAYMENT_PLANS,
   INVESTMENT_INTERESTS, EXPERIENCE_LEVELS, PORTFOLIO_SIZES,
   CRYPTO_APPROACHES, PORTFOLIO_GOALS,
   type OnboardingData, type OnboardingStepId,
 } from '@/lib/onboarding/config';
-import { completeOnboarding } from '@/lib/api/onboarding';
+import { completeOnboarding, getOnboardingState, startSelfCheckout } from '@/lib/api/onboarding';
 
 const STEP_TITLES: Record<OnboardingStepId, { title: string; subtitle: string }> = {
+  payment: { title: 'Activate your membership', subtitle: 'Secure checkout via Stripe. Cancel anytime.' },
   name: { title: 'What should we call you?', subtitle: 'Your name personalizes your briefings.' },
   interests: { title: 'What do you invest in?', subtitle: 'Select all that apply.' },
   experience: { title: 'Your experience', subtitle: 'Helps us tune the depth of your signals.' },
@@ -27,13 +28,38 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<OnboardingData>(EMPTY_ONBOARDING_DATA);
+  const [steps, setSteps] = useState<OnboardingStepId[]>(ONBOARDING_STEPS);
+  const [initializing, setInitializing] = useState(true);
 
-  const step = ONBOARDING_STEPS[stepIndex];
-  const numberedSteps: OnboardingStepId[] = ONBOARDING_STEPS.filter((s) => s !== 'complete');
+  // Decide whether the payment step is needed (self-serve users who haven't paid)
+  // and handle the return from Stripe (?paid=1) by polling for activation.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const justPaid = new URLSearchParams(window.location.search).get('paid') === '1';
+      let state = await getOnboardingState();
+
+      if (justPaid && state.needsPayment) {
+        // Webhook may lag the redirect — poll briefly for the active status.
+        for (let i = 0; i < 6 && state.needsPayment; i++) {
+          await new Promise((r) => setTimeout(r, 1500));
+          state = await getOnboardingState();
+        }
+      }
+      if (cancelled) return;
+
+      setSteps(state.needsPayment ? ['payment', ...ONBOARDING_STEPS] : ONBOARDING_STEPS);
+      setInitializing(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const step = steps[stepIndex];
+  const numberedSteps: OnboardingStepId[] = steps.filter((s) => s !== 'complete');
   const currentNumber = numberedSteps.indexOf(step) + 1;
   const total = numberedSteps.length;
 
-  const next = () => setStepIndex((i) => Math.min(i + 1, ONBOARDING_STEPS.length - 1));
+  const next = () => setStepIndex((i) => Math.min(i + 1, steps.length - 1));
   const back = () => setStepIndex((i) => Math.max(i - 1, 0));
 
   const set = <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) =>
@@ -47,6 +73,14 @@ export default function OnboardingPage() {
 
   const canAdvance =
     step === 'name' ? data.firstName.trim().length > 0 : true;
+
+  if (initializing) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-ark-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-5 py-10">
@@ -79,6 +113,8 @@ export default function OnboardingPage() {
         )}
 
         <div className="mt-8 flex-1">
+          {step === 'payment' && <PaymentStep />}
+
           {step === 'name' && (
             <div className="space-y-4">
               <TextField label="First name" value={data.firstName} onChange={(v) => set('firstName', v)} placeholder="Jane" autoFocus />
@@ -152,9 +188,9 @@ export default function OnboardingPage() {
           {step === 'complete' && <CompleteStep data={data} onDone={() => { router.push('/dashboard'); router.refresh(); }} />}
         </div>
 
-        {step !== 'complete' && (
+        {step !== 'complete' && step !== 'payment' && (
           <div className="mt-8 flex items-center gap-3">
-            {stepIndex > 0 && (
+            {stepIndex > 0 && steps[stepIndex - 1] !== 'payment' && (
               <Button type="button" variant="secondary" onClick={back} className="px-4">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -253,6 +289,64 @@ function CompleteStep({ data, onDone }: { data: OnboardingData; onDone: () => vo
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <Loader2 className="h-8 w-8 animate-spin text-ark-primary" />
       <p className="mt-4 text-sm text-ark-text-secondary">Finishing setup…</p>
+    </div>
+  );
+}
+
+function PaymentStep() {
+  const [selected, setSelected] = useState<string>(PAYMENT_PLANS[0].id);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const checkout = async () => {
+    setLoading(true);
+    setError('');
+    const res = await startSelfCheckout(selected);
+    if (res.ok && res.url) {
+      window.location.href = res.url;
+    } else {
+      setError(res.error ?? 'Could not start checkout.');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {PAYMENT_PLANS.map((plan) => {
+        const active = selected === plan.id;
+        return (
+          <button
+            key={plan.id}
+            onClick={() => setSelected(plan.id)}
+            className={cn(
+              'flex w-full items-center justify-between rounded-xl border p-4 text-left transition-colors',
+              active ? 'border-ark-primary bg-ark-primary/5' : 'border-ark-divider bg-ark-fill-secondary/30 hover:border-ark-text-disabled/40',
+            )}
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-ark-text">{plan.label}</p>
+                {plan.highlight && (
+                  <span className="rounded-full bg-ark-primary/10 px-2 py-0.5 text-[10px] font-semibold text-ark-primary">Best value</span>
+                )}
+              </div>
+              <p className="text-xs text-ark-text-tertiary">{plan.note}</p>
+            </div>
+            <div className="text-right">
+              <p className="fig text-sm font-bold text-ark-text">{plan.price}</p>
+              <p className="text-[11px] text-ark-text-tertiary">{plan.cadence}</p>
+            </div>
+          </button>
+        );
+      })}
+
+      {error && <p className="text-sm text-ark-error">{error}</p>}
+
+      <Button type="button" onClick={checkout} loading={loading} className="mt-2 w-full">
+        Continue to secure checkout
+        <ArrowRight className="h-4 w-4" />
+      </Button>
+      <p className="text-center text-[11px] text-ark-text-tertiary">Powered by Stripe · Cancel anytime</p>
     </div>
   );
 }
