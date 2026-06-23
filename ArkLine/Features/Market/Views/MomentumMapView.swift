@@ -44,7 +44,8 @@ struct MomentumMapView: View {
 
                 howItWorks
             }
-            .padding(.vertical)
+            .padding(.top)
+            .padding(.bottom, 100)
         }
         .navigationTitle("Momentum Map")
         #if os(iOS)
@@ -163,13 +164,13 @@ struct MomentumMapView: View {
                     .foregroundColor(AppColors.textSecondary)
             }
             Spacer()
-            signalPill(label: "USD", signal: pair.usdSignal, score: pair.usdScore)
-            signalPill(label: "BTC", signal: pair.btcSignal, score: pair.btcScore)
+            signalPill(label: "USD", signal: pair.usdSignal)
+            signalPill(label: "BTC", signal: pair.btcSignal)
         }
         .padding(.vertical, 8)
     }
 
-    private func signalPill(label: String, signal: PositioningSignal, score: Int) -> some View {
+    private func signalPill(label: String, signal: PositioningSignal) -> some View {
         HStack(spacing: 5) {
             Text(label)
                 .font(.system(size: 10, weight: .medium))
@@ -177,9 +178,6 @@ struct MomentumMapView: View {
             Text(signal.label)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(signal.color)
-            Text("\(score)")
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundColor(signal.color.opacity(0.65))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
