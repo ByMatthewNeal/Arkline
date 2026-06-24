@@ -432,9 +432,11 @@ final class APISentimentService: SentimentServiceProtocol {
         async let itcRiskTask = try? itcRiskService.fetchLatestRiskLevel(coin: "BTC")
         async let oilTask = try? crudeOilService.fetchLatestCrudeOil()
 
-        // Await all results
-        let fg = try await fearGreedTask
-        let btc = try await btcDomTask
+        // Await all results. Fear & Greed and BTC Dominance are treated as
+        // optional like every other input — a single failing source must not
+        // sink the whole composite (which would hide the widget entirely).
+        let fg = try? await fearGreedTask
+        let btc = try? await btcDomTask
         let domSnapshot = await domSnapshotTask
         let funding = await fundingTask
         let altcoin = await altcoinTask
@@ -451,14 +453,16 @@ final class APISentimentService: SentimentServiceProtocol {
         var totalWeight: Double = 0
 
         // 1. Fear & Greed (13% weight) - Direct sentiment
-        let fgValue = Double(fg.value) / 100.0
-        components.append(RiskScoreComponent(
-            name: "Fear & Greed",
-            value: fgValue,
-            weight: 0.13,
-            signal: SentimentTier.from(score: fg.value)
-        ))
-        totalWeight += 0.13
+        if let fg {
+            let fgValue = Double(fg.value) / 100.0
+            components.append(RiskScoreComponent(
+                name: "Fear & Greed",
+                value: fgValue,
+                weight: 0.13,
+                signal: SentimentTier.from(score: fg.value)
+            ))
+            totalWeight += 0.13
+        }
 
         // 2. ITC Risk Level (13% weight) - Bitcoin cycle risk
         if let risk = itcRisk {
@@ -580,7 +584,7 @@ final class APISentimentService: SentimentServiceProtocol {
                 signal: rotationSignalTier(rotation.score)
             ))
             totalWeight += 0.07
-        } else {
+        } else if let btc {
             // Fallback to raw BTC dominance if snapshot unavailable
             let btcDomValue = 1.0 - (btc.value / 100.0)
             components.append(RiskScoreComponent(
@@ -602,6 +606,12 @@ final class APISentimentService: SentimentServiceProtocol {
                 signal: altcoinSignalTier(alt.value)
             ))
             totalWeight += 0.07
+        }
+
+        // If every input failed (e.g. no connectivity), surface an error so the
+        // caller hides the widget instead of showing a misleading 0 score.
+        guard !components.isEmpty else {
+            throw AppError.custom(message: "Risk score data unavailable")
         }
 
         // Normalize weights if some indicators are missing
