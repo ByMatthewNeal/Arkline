@@ -59,6 +59,9 @@ export function TradeSignalsDetail() {
         'Fibonacci-based pattern detection runs across 1H and 4H candles, requiring multi-timeframe confluence, EMA trend alignment, and at least a 1:1 risk-to-reward ratio.',
         'Win = first target hit; Stopped = stop loss / invalidation. For educational purposes only.',
       ]} />
+      <p className="px-1 text-[11px] leading-relaxed text-ark-text-disabled">
+        Prices are delayed and may lag the live market by a few minutes — they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Arkline signals are informational only, not financial advice.
+      </p>
     </div>
   );
 }
