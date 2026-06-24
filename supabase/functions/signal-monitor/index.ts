@@ -252,6 +252,7 @@ Deno.serve(async (req) => {
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
     const entryMid = Number(signal.entry_price_mid)
     const t1 = signal.target_1 ? Number(signal.target_1) : null
+    const t2 = signal.target_2 ? Number(signal.target_2) : null
     const sl = Number(signal.stop_loss)
     const risk1r = signal.risk_1r ? Number(signal.risk_1r) : Math.abs(entryMid - sl)
     const t1AlreadyHit = !!signal.t1_hit_at
@@ -348,6 +349,17 @@ Deno.serve(async (req) => {
           continue
         }
 
+        // Consider-profit heads-up (~30% of the way to T1), fired once before T1 fills.
+        if (t1 && !signal.consider_profit_notified_at && bestPrice >= entryMid + (t1 - entryMid) * 0.3) {
+          await sendSignalAlert(
+            supabase, supabaseUrl, cronSecret, signal, "signal_consider_profit",
+            `💡 ${signal.asset} Long — Approaching Profit Zone`,
+            `Up ~30% toward Target 1 (now ${formatPrice(latest.close)}). Consider managing risk — take profit at your own discretion.`,
+            "consider_profit_notified_at",
+          )
+          stats.notifications++
+        }
+
         // No resolution — persist best price for MFE tracking
         if (bestPrice > (signal.best_price ? Number(signal.best_price) : 0)) {
           await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
@@ -357,6 +369,17 @@ Deno.serve(async (req) => {
         // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
         bestPrice = Math.max(bestPrice, latest.high)
         runnerStop = Math.max(runnerStop, bestPrice - risk1r)
+
+        // Target 2 reached — notify once. Runner keeps trailing; the user decides.
+        if (t2 && !signal.t2_notified_at && latest.high >= t2) {
+          await sendSignalAlert(
+            supabase, supabaseUrl, cronSecret, signal, "signal_t2_hit",
+            `🎯 ${signal.asset} Long — Target 2 Reached`,
+            `T2 at ${formatPrice(t2)} reached. Consider taking profit at your own discretion.`,
+            "t2_notified_at",
+          )
+          stats.notifications++
+        }
 
         if (latest.low <= runnerStop) {
           const runnerPnl = ((runnerStop - entryMid) / entryMid) * 100
@@ -425,6 +448,17 @@ Deno.serve(async (req) => {
           continue
         }
 
+        // Consider-profit heads-up (~30% of the way to T1), fired once before T1 fills.
+        if (t1 && !signal.consider_profit_notified_at && bestPrice <= entryMid - (entryMid - t1) * 0.3) {
+          await sendSignalAlert(
+            supabase, supabaseUrl, cronSecret, signal, "signal_consider_profit",
+            `💡 ${signal.asset} Short — Approaching Profit Zone`,
+            `Up ~30% toward Target 1 (now ${formatPrice(latest.close)}). Consider managing risk — take profit at your own discretion.`,
+            "consider_profit_notified_at",
+          )
+          stats.notifications++
+        }
+
         // No resolution — persist best price for MFE tracking
         const currentBest = signal.best_price ? Number(signal.best_price) : Infinity
         if (bestPrice < currentBest) {
@@ -435,6 +469,17 @@ Deno.serve(async (req) => {
         // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
         bestPrice = Math.min(bestPrice, latest.low)
         runnerStop = Math.min(runnerStop, bestPrice + risk1r)
+
+        // Target 2 reached — notify once. Runner keeps trailing; the user decides.
+        if (t2 && !signal.t2_notified_at && latest.low <= t2) {
+          await sendSignalAlert(
+            supabase, supabaseUrl, cronSecret, signal, "signal_t2_hit",
+            `🎯 ${signal.asset} Short — Target 2 Reached`,
+            `T2 at ${formatPrice(t2)} reached. Consider taking profit at your own discretion.`,
+            "t2_notified_at",
+          )
+          stats.notifications++
+        }
 
         if (latest.high >= runnerStop) {
           const runnerPnl = ((entryMid - runnerStop) / entryMid) * 100
@@ -530,6 +575,41 @@ Deno.serve(async (req) => {
   console.log(`Signal monitor: ${JSON.stringify(stats)}`)
   return json(stats)
 })
+
+// ─── Proactive Alert Helper (consider-profit, target 2) ─────────────────────
+// Fires an informational push and stamps a dedup column so each alert sends once
+// per signal. These never change a signal's status — they only inform the user.
+async function sendSignalAlert(
+  supabase: SupabaseClient,
+  supabaseUrl: string,
+  cronSecret: string,
+  signal: any,
+  eventType: string,
+  title: string,
+  body: string,
+  dedupColumn: string,
+) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`,
+        "x-cron-secret": cronSecret,
+      },
+      body: JSON.stringify({
+        broadcast_id: signal.id,
+        title,
+        body,
+        event_type: eventType,
+        target_audience: { type: "all" },
+      }),
+    })
+    await supabase.from("trade_signals").update({ [dedupColumn]: new Date().toISOString() }).eq("id", signal.id)
+  } catch (err) {
+    console.error(`Signal alert (${eventType}) failed for ${signal.id}: ${err}`)
+  }
+}
 
 // ─── Notification Helper ────────────────────────────────────────────────────
 
