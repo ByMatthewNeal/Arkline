@@ -421,7 +421,7 @@ struct SwingSetupsDetailView: View {
                     }
 
                     // Compliance footer — visible on Active and History list views
-                    Text("Trade signals are educational tools — not financial or investment advice. Always do your own research.")
+                    Text("Prices are delayed and may lag the live market by a few minutes — they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Trade signals are educational tools, not financial advice.")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)
