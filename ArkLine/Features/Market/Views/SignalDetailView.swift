@@ -241,7 +241,7 @@ struct SignalDetailView: View {
     private func startRefreshTimerIfNeeded() {
         guard signal?.status.isLive == true else { return }
         refreshTimer?.invalidate()
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { _ in
             Task { @MainActor in
                 do {
                     let updated = try await service.fetchSignal(id: signalId)
