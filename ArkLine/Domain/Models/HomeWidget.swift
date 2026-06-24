@@ -61,7 +61,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     var displayName: String {
         switch self {
         case .upcomingEvents: return "Upcoming Events"
-        case .riskScore: return "ArkLine Risk Score"
+        case .riskScore: return "ArkLine Score"
         case .fearGreedIndex: return "Fear & Greed Index"
         case .marketMovers: return "Core"
         case .dcaReminders: return "DCA Reminders"

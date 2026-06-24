@@ -74,7 +74,7 @@ struct RiskScoreCard: View {
         if itcRiskLevel != nil {
             return "\(selectedCoin.rawValue) Risk Level"
         }
-        return "ArkLine Risk Score"
+        return "ArkLine Score"
     }
 
     private var cardSubtitle: String {
@@ -340,7 +340,7 @@ struct RiskScoreDetailView: View {
                             .font(.headline)
                             .foregroundColor(textPrimary)
 
-                        Text("The ArkLine Risk Score combines multiple market indicators to assess current market conditions. A lower score (0-30) suggests favorable buying conditions, while a higher score (70-100) indicates elevated risk and potential for correction.")
+                        Text("The ArkLine Score combines multiple market indicators to assess current market conditions. A lower score (0-30) suggests favorable buying conditions, while a higher score (70-100) indicates elevated risk and potential for correction.")
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary)
                             .lineSpacing(4)

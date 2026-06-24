@@ -520,7 +520,7 @@ enum AppSection: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .arklineRiskScore: return "ArkLine Risk Score"
+        case .arklineRiskScore: return "ArkLine Score"
         case .fearGreed: return "Fear & Greed Index"
         case .bitcoinRisk: return "Asset Risk Level"
         case .coreAssets: return "Core Assets (BTC/ETH/SOL)"
