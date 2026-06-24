@@ -28,9 +28,16 @@ struct ArkLineApp: App {
                     setupNotifications()
                     migrateNotificationKeys()
                     CrashReportingService.shared.register()
+                    RevenueCatService.shared.configure()
                     Task {
                         await BroadcastNotificationService.shared.syncDeviceTokenIfNeeded()
                         await AnalyticsService.shared.trackAppOpen()
+                        // If we already have a signed-in user from session restore,
+                        // link them to RevenueCat so the appUserID matches our
+                        // Supabase user_id for webhook attribution.
+                        if appState.isAuthenticated, let userId = appState.currentUser?.id {
+                            await RevenueCatService.shared.logIn(userId: userId)
+                        }
                     }
                 }
                 .onOpenURL { url in
@@ -66,26 +73,17 @@ struct ArkLineApp: App {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
-                // Background = definitely left the app, show immediately
+                // Only obscure when the app is actually backgrounded (app switcher /
+                // home screen). Show instantly so the overlay is up before iOS takes
+                // the app-switcher snapshot. Transient .inactive states — notification
+                // banners, Control Center, Notification Center — are intentionally
+                // ignored so the overlay no longer flashes during normal use.
                 privacyOverlayTask?.cancel()
-                withAnimation(.easeIn(duration: 0.15)) {
-                    showPrivacyOverlay = true
-                }
+                privacyOverlayTask = nil
+                showPrivacyOverlay = true
                 Task { await AnalyticsService.shared.flush() }
-            } else if newPhase == .inactive {
-                // Inactive = might be notification center, control center, or app switcher
-                // Wait 400ms before showing — if we go active again quickly, cancel
-                privacyOverlayTask?.cancel()
-                privacyOverlayTask = Task {
-                    try? await Task.sleep(for: .milliseconds(400))
-                    guard !Task.isCancelled else { return }
-                    withAnimation(.easeIn(duration: 0.15)) {
-                        showPrivacyOverlay = true
-                    }
-                }
             } else if newPhase == .active {
-                // Cancel any pending show task and hide immediately —
-                // never delay dismissal or the overlay can get stuck
+                // Returning to the foreground — hide the overlay.
                 privacyOverlayTask?.cancel()
                 privacyOverlayTask = nil
                 withAnimation(.easeOut(duration: 0.2)) {
@@ -95,6 +93,7 @@ struct ArkLineApp: App {
                 Task { await IncrementalPriceStore.shared.resetCooldowns() }
                 BroadcastNotificationService.shared.clearBadge()
             }
+            // .inactive: intentionally no-op — see the .background comment above.
         }
     }
 
@@ -417,6 +416,14 @@ class AppState: ObservableObject {
                 }
             }
         }
+
+        // Link the user to RevenueCat so purchases attribute correctly via the
+        // RevenueCat → Supabase webhook. Only after we have a Supabase user id.
+        if authenticated, let userId = (user ?? currentUser)?.id {
+            Task {
+                await RevenueCatService.shared.logIn(userId: userId)
+            }
+        }
     }
 
     func setOnboarded(_ onboarded: Bool) {
@@ -665,6 +672,9 @@ class AppState: ObservableObject {
         // Clear Supabase auth session
         Task {
             try? await SupabaseManager.shared.client.auth.signOut()
+            // Sign out from RevenueCat so the next user on this device doesn't
+            // inherit the previous user's purchase history / entitlements.
+            await RevenueCatService.shared.logOut()
         }
 
         // Clear in-memory and on-disk caches
