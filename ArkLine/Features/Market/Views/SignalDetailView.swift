@@ -1348,7 +1348,7 @@ struct SignalDetailView: View {
     // MARK: - 7. Disclaimer
 
     private var disclaimerSection: some View {
-        Text("This is not financial advice. Always do your own research and consult a licensed advisor before making investment decisions.")
+        Text("Prices are delayed and may lag the live market by a few minutes — they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Arkline signals are informational only, not financial advice. Always do your own research.")
             .font(.system(size: 10))
             .foregroundColor(AppColors.textSecondary.opacity(0.6))
             .multilineTextAlignment(.center)
