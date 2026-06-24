@@ -20,6 +20,12 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: "2.0.0"
+  Kingfisher:
+    url: https://github.com/onevcat/Kingfisher
+    from: "8.6.2"
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios-spm
+    from: "5.58.0"
 
 targets:
   ArkLine:
@@ -46,6 +52,11 @@ targets:
         ENABLE_PREVIEWS: YES
     dependencies:
       - package: Supabase
+      - package: Kingfisher
+      - package: RevenueCat
+        product: RevenueCat
+      - package: RevenueCat
+        product: RevenueCatUI
 
 schemes:
   ArkLine:

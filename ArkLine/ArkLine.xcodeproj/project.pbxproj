@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -217,6 +217,7 @@
 		61DFA937BCCB970F35FA2F4F /* PortfolioSnapshotCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86C1F9D381443967536C494 /* PortfolioSnapshotCardView.swift */; };
 		628B818C69781D7CF29F53E0 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4910EA95756EA732F81117A /* TransactionDetailView.swift */; };
 		62A89ADE6CCF2DD3E4F8CFF3 /* SettingsAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADC03A3050F01A2A809D4A4 /* SettingsAppearance.swift */; };
+		62C285E6F1CF82C15C7CCE90 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 8568AD8DB84E597243BE23CC /* RevenueCatUI */; };
 		6381F7DC80B6158842FC7AE2 /* PercentageChangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78845800D59A83C7C923898 /* PercentageChangeView.swift */; };
 		661D93D3C9553D0912721495 /* SignalChangesShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5809703939A497F103FD66DF /* SignalChangesShareCard.swift */; };
 		667A5DC45682FDB0777B1C5A /* SentimentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5831D493E668A00494BC0398 /* SentimentViewModel.swift */; };
@@ -329,6 +330,7 @@
 		9452427A9F5F37F93D159FA8 /* OperatingCostsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDC03DBAF22897F25822A3F0 /* OperatingCostsView.swift */; };
 		9470ED1F53F3D5F3FEFB592F /* BroadcastTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40990CC9BF2288BFFDF01E6D /* BroadcastTabView.swift */; };
 		962A4A281FFCA08959F170F4 /* FeatureRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0610C9DCC90E5DE9BA5E6122 /* FeatureRequest.swift */; };
+		983717DFFC14D91F25768CB6 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 2D4A3AA158661C343130FE9C /* RevenueCat */; };
 		98C7A0EA20939B98C4968F4B /* RSIChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D2E4F8DD620FF0593EDE75 /* RSIChartView.swift */; };
 		98CEA03E857EB2C3B42432C2 /* APIITCRiskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C65CF590247013A3CE455B1 /* APIITCRiskService.swift */; };
 		98FB888D352DDC8FB8127057 /* MarketBreadth.swift in Sources */ = {isa = PBXBuildFile; fileRef = D55E2BE73F737377E2E4A202 /* MarketBreadth.swift */; };
@@ -415,6 +417,7 @@
 		C3FBD16C521507EA40CFD953 /* EconomicEventsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F85984ECA110FEAA838B5870 /* EconomicEventsData.swift */; };
 		C515208CC5C1562E18F7B67F /* PasscodeEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2809F009DF87E6D253FCAF00 /* PasscodeEntryView.swift */; };
 		C55880EFEC7735E41C3B4912 /* MockCoinglassService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B3C7779A63C5B62E44CC9E /* MockCoinglassService.swift */; };
+		C5777BA957E93F98CF6C00CB /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 481B3CC9BE69121A158325F5 /* Kingfisher */; };
 		C604E45C43976A417C6023D0 /* SparklineChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FE43164BCBFA94F69EA31F /* SparklineChart.swift */; };
 		C6595E45A39887FF8A4F75AD /* EditHoldingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE62F83D3AC5AFBD6B480FA4 /* EditHoldingView.swift */; };
 		C6D58AAA96B8FBB851F1D0F0 /* CMEFedWatchScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0659CA02D3A55140C6B3897 /* CMEFedWatchScraper.swift */; };
@@ -962,7 +965,7 @@
 		D24CDE4614D289DAD18FCEB5 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
 		D27C191CC461606E44DF972D /* RiskHistoryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskHistoryPoint.swift; sourceTree = "<group>"; };
 		D2A21FA2DC3B6B33E6BF9BFA /* CreateInviteCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateInviteCodeSheet.swift; sourceTree = "<group>"; };
-		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2ECE08953445F88F1B1315A /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
 		D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerIndustryView.swift; sourceTree = "<group>"; };
 		D377FA2AC5E8B5CF4F6EEEB8 /* QPSMethodologySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSMethodologySheet.swift; sourceTree = "<group>"; };
@@ -1066,6 +1069,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A4E2A533164007A148D5BD1B /* Supabase in Frameworks */,
+				C5777BA957E93F98CF6C00CB /* Kingfisher in Frameworks */,
+				983717DFFC14D91F25768CB6 /* RevenueCat in Frameworks */,
+				62C285E6F1CF82C15C7CCE90 /* RevenueCatUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2355,6 +2361,9 @@
 			name = ArkLine;
 			packageProductDependencies = (
 				EA13A8FFF30057BEEE4AD8A3 /* Supabase */,
+				481B3CC9BE69121A158325F5 /* Kingfisher */,
+				2D4A3AA158661C343130FE9C /* RevenueCat */,
+				8568AD8DB84E597243BE23CC /* RevenueCatUI */,
 			);
 			productName = ArkLine;
 			productReference = D2B4B747E4AAC8EDD578589A /* ArkLine.app */;
@@ -2370,7 +2379,6 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					A7ECDF5FA599356DF0251A76 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -2386,9 +2394,10 @@
 			mainGroup = DC3F4E083A6B14DF59D19605;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				33E2587AA7F1B34EA3216893 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				35185B0F97428AE6D9A07070 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 				32B905E01A0974D0EAAFBF1C /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -3005,6 +3014,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3024,6 +3034,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3130,9 +3141,40 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		33E2587AA7F1B34EA3216893 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
+		35185B0F97428AE6D9A07070 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.58.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2D4A3AA158661C343130FE9C /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 35185B0F97428AE6D9A07070 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
+		481B3CC9BE69121A158325F5 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 33E2587AA7F1B34EA3216893 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		8568AD8DB84E597243BE23CC /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 35185B0F97428AE6D9A07070 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCatUI;
+		};
 		EA13A8FFF30057BEEE4AD8A3 /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 32B905E01A0974D0EAAFBF1C /* XCRemoteSwiftPackageReference "supabase-swift" */;
