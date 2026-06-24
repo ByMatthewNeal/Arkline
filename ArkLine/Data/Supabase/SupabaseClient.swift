@@ -92,6 +92,8 @@ enum SupabaseTable: String {
     case broadcastReads = "broadcast_reads"
     case broadcastReactions = "broadcast_reactions"
     case broadcastBookmarks = "broadcast_bookmarks"
+    case memberQuestions = "member_questions"
+    case memberQuestionLikes = "member_question_likes"
     case featureRequests = "feature_requests"
     case riskBasedDcaReminders = "risk_based_dca_reminders"
     case riskDcaInvestments = "risk_dca_investments"

@@ -46,3 +46,13 @@ targets:
         ENABLE_PREVIEWS: YES
     dependencies:
       - package: Supabase
+
+schemes:
+  ArkLine:
+    build:
+      targets:
+        ArkLine: all
+    run:
+      config: Debug
+    archive:
+      config: Release
