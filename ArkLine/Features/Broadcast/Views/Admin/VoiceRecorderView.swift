@@ -12,6 +12,9 @@ struct VoiceRecorderView: View {
 
     @Binding var audioURL: URL?
     @Binding var transcribedText: String
+    /// Called when the user chooses "Use & Refine" — lets the presenter open the
+    /// AI refine sheet after this recorder dismisses.
+    var onRefineRequested: (() -> Void)? = nil
 
     @State private var showingTranscription = false
 
@@ -226,12 +229,36 @@ struct VoiceRecorderView: View {
                     }
                     .padding()
                 } else {
-                    TextEditor(text: $transcriptionService.transcription)
-                        .font(ArkFonts.body)
-                        .padding(ArkSpacing.sm)
-                        .background(AppColors.cardBackground(colorScheme))
-                        .cornerRadius(ArkSpacing.sm)
-                        .padding()
+                    VStack(spacing: ArkSpacing.md) {
+                        TextEditor(text: $transcriptionService.transcription)
+                            .font(ArkFonts.body)
+                            .padding(ArkSpacing.sm)
+                            .background(AppColors.cardBackground(colorScheme))
+                            .cornerRadius(ArkSpacing.sm)
+
+                        // Primary path: clean it up in the admin's voice.
+                        Button {
+                            useAndRefine()
+                        } label: {
+                            HStack {
+                                Image(systemName: "wand.and.stars")
+                                Text("Use & Refine with AI")
+                            }
+                            .font(ArkFonts.bodySemibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, ArkSpacing.sm)
+                            .background(AppColors.accent)
+                            .cornerRadius(ArkSpacing.sm)
+                        }
+                        .disabled(transcriptionService.transcription.isEmpty)
+
+                        Text("Refines your words into a polished post in your voice. You can still edit before publishing.")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textTertiary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
                 }
             }
             .background(AppColors.background(colorScheme))
@@ -286,6 +313,15 @@ struct VoiceRecorderView: View {
     private func saveAndDismiss() {
         audioURL = recordingService.recordingURL
         dismiss()
+    }
+
+    /// Apply the transcript and ask the presenter to open the AI refine sheet,
+    /// then save audio and dismiss the recorder.
+    private func useAndRefine() {
+        transcribedText = transcriptionService.transcription
+        showingTranscription = false
+        onRefineRequested?()
+        saveAndDismiss()
     }
 }
 

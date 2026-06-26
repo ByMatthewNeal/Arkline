@@ -107,6 +107,18 @@ enum ShareCardRenderer {
     /// Present the native share sheet with an image
     @MainActor
     static func presentShareSheet(image: UIImage) {
+        presentShareSheet(items: [image])
+    }
+
+    /// Present the native share sheet with plain text (captions, tweets, etc.)
+    @MainActor
+    static func presentShareSheet(text: String) {
+        presentShareSheet(items: [text])
+    }
+
+    /// Present the native share sheet with arbitrary activity items.
+    @MainActor
+    static func presentShareSheet(items: [Any]) {
         #if canImport(UIKit)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
@@ -119,7 +131,7 @@ enum ShareCardRenderer {
         }
 
         let activityVC = UIActivityViewController(
-            activityItems: [image],
+            activityItems: items,
             applicationActivities: nil
         )
 

@@ -6,6 +6,7 @@ struct WelcomeView: View {
     @Bindable var viewModel: OnboardingViewModel
     @Environment(\.colorScheme) private var colorScheme
     @State private var currentPage = 0
+    @State private var showPaywall = false
 
     private let slides: [WelcomeSlide] = [
         WelcomeSlide(
@@ -63,9 +64,9 @@ struct WelcomeView: View {
                 // Bottom buttons
                 VStack(spacing: ArkSpacing.sm) {
                     PrimaryButton(
-                        title: "Get Started",
-                        action: { viewModel.nextStep() },
-                        icon: "arrow.right"
+                        title: "Get Arkline Pro",
+                        action: { showPaywall = true },
+                        icon: "sparkles"
                     )
 
                     Button(action: { viewModel.skipToLogin() }) {
@@ -80,6 +81,28 @@ struct WelcomeView: View {
             }
         }
         .navigationBarBackButtonHidden()
+        .sheet(isPresented: $showPaywall) {
+            ArkPaywallSheet { outcome in
+                // Always dismiss the sheet first.
+                showPaywall = false
+
+                switch outcome {
+                case .purchased, .restored:
+                    // TODO (Phase 3 follow-up): route to account-creation flow
+                    // so the new IAP customer can set up email + password and
+                    // we can link the apple_original_transaction_id to a
+                    // Supabase user. For now, just continue through the
+                    // existing onboarding (which still goes through invite
+                    // code — that step needs to be conditionalized for IAP
+                    // users in the next iteration).
+                    viewModel.nextStep()
+                case .dismissed:
+                    // User backed out without buying. Stay on the welcome
+                    // screen; they can try again or sign in instead.
+                    break
+                }
+            }
+        }
     }
 }
 

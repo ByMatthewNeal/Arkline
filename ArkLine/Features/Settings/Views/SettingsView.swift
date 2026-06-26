@@ -164,9 +164,31 @@ struct SettingsView: View {
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
                 // Subscription Section
-                if let status = appState.currentUser?.subscriptionStatus,
-                   status == .active || status == .pastDue || status == .trialing {
-                    Section {
+                // Always shown — Apple guideline 3.1.1 requires Restore
+                // Purchases to be discoverable even for non-subscribers.
+                // Manage Subscription routes based on subscription source:
+                // - Apple IAP customer (RevenueCat entitlement active) → iOS Settings
+                // - Stripe customer (active/past_due/trialing from Supabase) → billing portal
+                Section {
+                    // Manage Subscription
+                    // Apple IAP path takes precedence — if RC sees an active
+                    // Apple entitlement, route the user to iOS Settings (per
+                    // Apple anti-steering rules, we cannot send them to our
+                    // Stripe portal instead).
+                    if RevenueCatService.shared.isPro {
+                        Button {
+                            Haptics.selection()
+                            viewModel.openAppleSubscriptions()
+                        } label: {
+                            SettingsRow(
+                                icon: "creditcard.fill",
+                                iconColor: AppColors.accent,
+                                title: "Manage Subscription"
+                            )
+                        }
+                    } else if let status = appState.currentUser?.subscriptionStatus,
+                              status == .active || status == .pastDue || status == .trialing {
+                        // Stripe customer — keep existing billing portal path
                         Button {
                             Task { await viewModel.openBillingPortal(email: appState.currentUser?.email) }
                         } label: {
@@ -190,29 +212,67 @@ struct SettingsView: View {
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.error)
                         }
-                        if status == .trialing {
-                            HStack(spacing: ArkSpacing.xs) {
-                                Image(systemName: "clock.fill")
-                                    .font(.system(size: 12))
-                                if let days = appState.currentUser?.trialDaysRemaining {
-                                    Text(days <= 1 ? "Trial ends today" : "\(days) days left in trial")
-                                        .font(AppFonts.caption12)
-                                } else {
-                                    Text("Free trial active")
-                                        .font(AppFonts.caption12)
-                                }
-                            }
-                            .foregroundColor(AppColors.accent)
-                            .padding(.horizontal, ArkSpacing.md)
-                            .padding(.vertical, ArkSpacing.xs)
-                            .background(AppColors.accent.opacity(0.1))
-                            .cornerRadius(ArkSpacing.Radius.sm)
-                        }
-                    } header: {
-                        Text("Subscription")
                     }
-                    .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                    // Restore Purchases — Apple 3.1.1 requirement.
+                    // Visible to ALL users so anyone with a prior App Store
+                    // purchase can recover entitlement on a new device.
+                    Button {
+                        Haptics.selection()
+                        Task { await viewModel.restorePurchases() }
+                    } label: {
+                        HStack {
+                            SettingsRow(
+                                icon: "arrow.clockwise.circle.fill",
+                                iconColor: AppColors.info,
+                                title: "Restore Purchases"
+                            )
+                            if viewModel.isRestoringPurchases {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.small)
+                            }
+                        }
+                    }
+                    .disabled(viewModel.isRestoringPurchases)
+
+                    if let error = viewModel.restorePurchasesError {
+                        Text(error)
+                            .font(AppFonts.caption12)
+                            .foregroundColor(AppColors.error)
+                    }
+
+                    // Trial badge (Stripe trials only — Apple handles its own
+                    // trial display via iOS Settings)
+                    if let status = appState.currentUser?.subscriptionStatus,
+                       status == .trialing,
+                       !RevenueCatService.shared.isPro {
+                        HStack(spacing: ArkSpacing.xs) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 12))
+                            if let days = appState.currentUser?.trialDaysRemaining {
+                                Text(days <= 1 ? "Trial ends today" : "\(days) days left in trial")
+                                    .font(AppFonts.caption12)
+                            } else {
+                                Text("Free trial active")
+                                    .font(AppFonts.caption12)
+                            }
+                        }
+                        .foregroundColor(AppColors.accent)
+                        .padding(.horizontal, ArkSpacing.md)
+                        .padding(.vertical, ArkSpacing.xs)
+                        .background(AppColors.accent.opacity(0.1))
+                        .cornerRadius(ArkSpacing.Radius.sm)
+                    }
+                } header: {
+                    Text("Subscription")
+                } footer: {
+                    // Auto-renewal disclosure — required adjacent to any
+                    // subscription management surface. Generic wording covers
+                    // both Apple-IAP and Stripe billing flows.
+                    Text("Subscriptions renew automatically until canceled. Manage or cancel anytime through your account.")
                 }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
 
                 // Support Section
                 Section {
@@ -318,6 +378,16 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("This action cannot be undone. All your data will be permanently deleted.")
+            }
+            .alert("Purchases Restored", isPresented: $viewModel.showRestoreSuccessAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your subscription has been restored to this device.")
+            }
+            .alert("No Purchases Found", isPresented: $viewModel.showRestoreNothingAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("We couldn't find an active subscription tied to your Apple ID. If you believe this is a mistake, make sure you're signed in to the App Store with the Apple ID that made the purchase.")
             }
         }
     }

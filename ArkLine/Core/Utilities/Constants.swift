@@ -47,6 +47,25 @@ enum Constants {
         #endif
     }
 
+    // MARK: - RevenueCat
+    enum RevenueCat {
+        /// Public SDK key for RevenueCat. Safe to embed in client code —
+        /// RevenueCat's public keys are designed to live in the iOS app.
+        /// Find at app.revenuecat.com → Apps → Arkline (App Store) → Public API Key.
+        ///
+        static let publicAPIKey = "appl_RsHoYaeDrekzeupWQirtMYrYsdu"
+
+        /// Identifier of the entitlement that grants Pro access. Must exactly
+        /// match the entitlement identifier configured in RevenueCat (currently
+        /// "Arkline Pro" — entl7201012b3f at the REST API level).
+        static let entitlementId = "Arkline Pro"
+
+        /// Subscription Group identifier (App Store Connect side) used for
+        /// fetching Offerings. Cosmetic — matches "Arkline Pro" subscription
+        /// group ID 22175777 in App Store Connect.
+        static let offeringIdentifier = "default"
+    }
+
     // MARK: - API Endpoints
     enum Endpoints {
         static let coinGeckoBase = "https://pro-api.coingecko.com/api/v3"

@@ -25,6 +25,8 @@ struct BroadcastEditorView: View {
     @State private var isScheduled = false
     @State private var scheduledDate = Date().addingTimeInterval(3600)
     @State private var showingVoiceRecorder = false
+    @State private var showingRefine = false
+    @State private var refineAfterVoice = false
     @State private var showingImageAnnotation = false
     @State private var showingAppReferencePicker = false
     @State private var showingPortfolioPicker = false
@@ -60,12 +62,27 @@ struct BroadcastEditorView: View {
 
                     // Content Field
                     VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        HStack {
+                        HStack(spacing: ArkSpacing.md) {
                             Text("Content")
                                 .font(ArkFonts.caption)
                                 .foregroundColor(AppColors.textSecondary)
 
                             Spacer()
+
+                            if !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Button {
+                                    showingRefine = true
+                                } label: {
+                                    HStack(spacing: ArkSpacing.xxs) {
+                                        Image(systemName: "wand.and.stars")
+                                            .font(.caption)
+                                        Text("Refine with AI")
+                                            .font(ArkFonts.caption)
+                                    }
+                                    .foregroundColor(AppColors.accent)
+                                }
+                                .buttonStyle(.plain)
+                            }
 
                             Button {
                                 showingPreview.toggle()
@@ -215,8 +232,24 @@ struct BroadcastEditorView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingVoiceRecorder) {
-                VoiceRecorderView(audioURL: $audioURL, transcribedText: $content)
+            .sheet(isPresented: $showingVoiceRecorder, onDismiss: {
+                // If the user chose "Use & Refine" in the voice sheet, open the
+                // refine sheet now that the recorder has fully dismissed.
+                if refineAfterVoice {
+                    refineAfterVoice = false
+                    showingRefine = true
+                }
+            }) {
+                VoiceRecorderView(
+                    audioURL: $audioURL,
+                    transcribedText: $content,
+                    onRefineRequested: { refineAfterVoice = true }
+                )
+            }
+            .sheet(isPresented: $showingRefine) {
+                AIRefineSheet(input: content, title: title) { refinedText in
+                    content = refinedText
+                }
             }
             .sheet(isPresented: $showingAppReferencePicker) {
                 AppReferencePickerView(selectedReferences: $appReferences)

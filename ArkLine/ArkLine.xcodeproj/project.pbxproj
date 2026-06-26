@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -387,6 +387,7 @@
 		B766D23CC78A49BEC70200AC /* CrashReportingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7147C6D6C0BCF07FFC732DB5 /* CrashReportingService.swift */; };
 		B8294A44B6A4109C2975C726 /* RiskFactorBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 542156911269CE786C8CB4A4 /* RiskFactorBreakdownView.swift */; };
 		B83AA868332D6DB480F706E1 /* EntryStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2974B9A6BA61F192F259764 /* EntryStrategy.swift */; };
+		B8651503527E6CD0826C7AE0 /* AIRefineSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F8820878B143E80AFF5CCC /* AIRefineSheet.swift */; };
 		B8D1EF167A0F9EFFFEAF07C8 /* MockCrudeOilService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8355DD1E86BB494268928E /* MockCrudeOilService.swift */; };
 		B8E57FD000C047ED3175790B /* AdminModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D88CC4CB3BB49C4CE3F9148 /* AdminModels.swift */; };
 		BA80C58197F5138E504E51A2 /* NewsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C9947884BDE4102F110274 /* NewsCard.swift */; };
@@ -511,6 +512,7 @@
 		F509B4875B08ED49361BB1C7 /* SentimentRegimeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CDE7869151464DCD59F892 /* SentimentRegimeService.swift */; };
 		F65C271D3E1094F59CABB755 /* PrivacyOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE0E8CCBD0004E1E4DB73EBD /* PrivacyOverlayView.swift */; };
 		F6AF2CE608321F27B8A538AB /* DictionaryTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599DC904AC236680BAFCC840 /* DictionaryTerm.swift */; };
+		F6FE52D5F4E77A3DEB15AE74 /* BroadcastRefineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B5CBF350E3B5ED210871A9 /* BroadcastRefineService.swift */; };
 		F7214BD2EB251E7F13185F50 /* MetalTechnicalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80E0CAADEFF57AC920FF1931 /* MetalTechnicalAnalysisService.swift */; };
 		F7325A702FDC6A2E32038A9E /* HomeFavoritesComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81498D861E56E10C1525F8D4 /* HomeFavoritesComponents.swift */; };
 		F7B78FAF7A8313BB21D7A569 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E883AE1AA31B83DDBA8AE59 /* WelcomeView.swift */; };
@@ -679,6 +681,7 @@
 		440FC32555A994CF7B6FD757 /* AssetRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetRowView.swift; sourceTree = "<group>"; };
 		44FE2895811E929A476F500D /* AdminQuickShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminQuickShareView.swift; sourceTree = "<group>"; };
 		4670E22A47757A0E792C9687 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		46B5CBF350E3B5ED210871A9 /* BroadcastRefineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastRefineService.swift; sourceTree = "<group>"; };
 		46D02D2650C564BBF0777922 /* CapitalRotationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapitalRotationService.swift; sourceTree = "<group>"; };
 		476BA52C2DA61D12BED93190 /* MarketBreadthDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketBreadthDetailView.swift; sourceTree = "<group>"; };
 		485E39BC2617032A735FE520 /* MacroDashboardWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroDashboardWidget.swift; sourceTree = "<group>"; };
@@ -745,6 +748,7 @@
 		69434750EB242A71EBE4E60B /* AppStoreRankingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreRankingDetailView.swift; sourceTree = "<group>"; };
 		69AAF3AD9FEF272FCC234650 /* RiskLevelChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskLevelChart.swift; sourceTree = "<group>"; };
 		69DE9537870AFEA78CFB2851 /* MemberDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberDetailView.swift; sourceTree = "<group>"; };
+		69F8820878B143E80AFF5CCC /* AIRefineSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIRefineSheet.swift; sourceTree = "<group>"; };
 		6AAD112D23BA84E621364649 /* DCAReminderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DCAReminderWidget.swift; sourceTree = "<group>"; };
 		6AAEE1738797E6A8FC96A232 /* CreatePasscodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeView.swift; sourceTree = "<group>"; };
 		6BB4E143627F05C545048B81 /* MetricCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCard.swift; sourceTree = "<group>"; };
@@ -965,7 +969,7 @@
 		D24CDE4614D289DAD18FCEB5 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
 		D27C191CC461606E44DF972D /* RiskHistoryPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskHistoryPoint.swift; sourceTree = "<group>"; };
 		D2A21FA2DC3B6B33E6BF9BFA /* CreateInviteCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateInviteCodeSheet.swift; sourceTree = "<group>"; };
-		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D2B4B747E4AAC8EDD578589A /* ArkLine.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ArkLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2ECE08953445F88F1B1315A /* ToastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastManager.swift; sourceTree = "<group>"; };
 		D3011CEE6A1AB634E78F6E49 /* CareerIndustryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerIndustryView.swift; sourceTree = "<group>"; };
 		D377FA2AC5E8B5CF4F6EEEB8 /* QPSMethodologySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSMethodologySheet.swift; sourceTree = "<group>"; };
@@ -1245,6 +1249,7 @@
 				4DF1BFB51FB1E1230231ABF6 /* ArticleSummaryService.swift */,
 				257AFA6B8B7252875D32A613 /* BloombergRSSService.swift */,
 				6FB105E71D6CDAB4EB4D0F73 /* BriefingAudioService.swift */,
+				46B5CBF350E3B5ED210871A9 /* BroadcastRefineService.swift */,
 				7BFE60F13DE081F3BA05C188 /* BroadcastService.swift */,
 				46D02D2650C564BBF0777922 /* CapitalRotationService.swift */,
 				E8DBD00F42D571DB036123D3 /* CuratedNewsService.swift */,
@@ -1437,6 +1442,7 @@
 		516C18A56D5162B05F262615 /* Admin */ = {
 			isa = PBXGroup;
 			children = (
+				69F8820878B143E80AFF5CCC /* AIRefineSheet.swift */,
 				8C4E88A96179BE19B987617B /* AppReferencePickerView.swift */,
 				120DE65AF0CCBAC99711310E /* AudiencePickerView.swift */,
 				7FED1A2C343B72D10F682C3B /* BroadcastAnalyticsView.swift */,
@@ -2379,6 +2385,7 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					A7ECDF5FA599356DF0251A76 = {
+						DevelopmentTeam = 6U27SSHQZ5;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -2398,6 +2405,7 @@
 				35185B0F97428AE6D9A07070 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 				32B905E01A0974D0EAAFBF1C /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -2411,6 +2419,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B8651503527E6CD0826C7AE0 /* AIRefineSheet.swift in Sources */,
 				DBB8730372590CFDFDDEC5AB /* APIAppStoreRankingService.swift in Sources */,
 				3AAE62EC51CEE26B90FC075B /* APIBinanceFundingService.swift in Sources */,
 				ACEFE15DB41B0605DDB72213 /* APICache.swift in Sources */,
@@ -2484,6 +2493,7 @@
 				A364701C919CD3C83DA60809 /* BroadcastFeedView.swift in Sources */,
 				D7A72FFED64CE36F4ED5D4B9 /* BroadcastNotificationService.swift in Sources */,
 				D274A225E28D657AB554C908 /* BroadcastPortfolioPicker.swift in Sources */,
+				F6FE52D5F4E77A3DEB15AE74 /* BroadcastRefineService.swift in Sources */,
 				A6FA7AF243B04FE795748CC1 /* BroadcastService.swift in Sources */,
 				B5E9886BED130516596BF07F /* BroadcastServiceProtocol.swift in Sources */,
 				B5A60431C95CCC30A985C566 /* BroadcastStudioComponents.swift in Sources */,
@@ -2976,7 +2986,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -3014,7 +3024,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3034,7 +3043,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -3084,7 +3092,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 6U27SSHQZ5;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

@@ -25,6 +25,12 @@ final class SettingsViewModel {
     var isLoadingBillingPortal = false
     var billingPortalError: String?
 
+    // Restore Purchases (Apple 3.1.1 requirement)
+    var isRestoringPurchases = false
+    var restorePurchasesError: String?
+    var showRestoreSuccessAlert = false
+    var showRestoreNothingAlert = false
+
     // MARK: - Currency Options
     let currencyOptions = [
         ("USD", "US Dollar"),
@@ -207,6 +213,42 @@ final class SettingsViewModel {
         } catch {
             billingPortalError = "Unable to open billing portal. Please try again."
             logError(error, context: "Billing Portal", category: .network)
+        }
+    }
+
+    /// Open the iOS Settings → Subscriptions deep link so the user can manage
+    /// their Apple-billed subscription. Used for App Store IAP customers
+    /// (anti-steering compliant — sends them to Apple's native UI, not our
+    /// billing portal).
+    func openAppleSubscriptions() {
+        #if canImport(UIKit)
+        if let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+            UIApplication.shared.open(url)
+        }
+        #endif
+    }
+
+    /// Restore prior App Store purchases for the signed-in Apple ID.
+    /// Required by Apple guideline 3.1.1 — must be discoverable from any
+    /// place where the user could buy or manage a subscription.
+    func restorePurchases() async {
+        isRestoringPurchases = true
+        restorePurchasesError = nil
+        defer { isRestoringPurchases = false }
+
+        do {
+            let info = try await RevenueCatService.shared.restorePurchases()
+            let hasEntitlement = info.entitlements[Constants.RevenueCat.entitlementId]?.isActive == true
+            if hasEntitlement {
+                showRestoreSuccessAlert = true
+            } else {
+                // The call succeeded but no active entitlement was found on
+                // this Apple ID. Apple wants us to be transparent about this.
+                showRestoreNothingAlert = true
+            }
+        } catch {
+            restorePurchasesError = error.localizedDescription
+            logError(error, context: "Restore Purchases", category: .data)
         }
     }
 

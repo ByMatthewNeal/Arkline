@@ -2,11 +2,16 @@ import SwiftUI
 
 // MARK: - Subscription Expired View
 /// Full-screen lockout shown when a user's subscription has ended.
-/// Blocks all app access. User can renew via web or sign out.
+/// Blocks all app access. User can re-subscribe via IAP or sign out.
+///
+/// ANTI-STEERING NOTE: This view previously opened https://arkline.io/renew
+/// in a browser to direct users to Stripe checkout. That was a 3.1.3
+/// violation. The renew button now presents the in-app IAP paywall.
 struct SubscriptionExpiredView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @State private var isSigningOut = false
+    @State private var showPaywall = false
 
     var body: some View {
         ZStack {
@@ -29,7 +34,7 @@ struct SubscriptionExpiredView: View {
                     .multilineTextAlignment(.center)
 
                 // Body
-                Text("Renew to continue receiving signals, briefings, and portfolio insights. Your data is safe — when you re-subscribe, everything will be right where you left it.")
+                Text("Re-subscribe to continue receiving signals, briefings, and portfolio insights. Your data is safe — when you re-subscribe, everything will be right where you left it.")
                     .font(AppFonts.body14)
                     .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)
@@ -39,15 +44,12 @@ struct SubscriptionExpiredView: View {
 
                 // Actions
                 VStack(spacing: ArkSpacing.md) {
-                    // Primary: Renew
+                    // Primary: Re-subscribe via IAP
                     Button {
-                        if let url = URL(string: "https://arkline.io/renew") {
-                            #if canImport(UIKit)
-                            UIApplication.shared.open(url)
-                            #endif
-                        }
+                        Haptics.selection()
+                        showPaywall = true
                     } label: {
-                        Text("Renew Subscription")
+                        Text("Re-subscribe")
                             .font(AppFonts.body14Bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -91,6 +93,22 @@ struct SubscriptionExpiredView: View {
         }
         .onAppear {
             Haptics.warning()
+        }
+        .sheet(isPresented: $showPaywall) {
+            ArkPaywallSheet { outcome in
+                showPaywall = false
+                switch outcome {
+                case .purchased, .restored:
+                    // Refresh the user profile so the gate re-evaluates.
+                    // The Supabase profile may take a beat to update via
+                    // the RevenueCat webhook; AppState polling handles that.
+                    Task {
+                        await appState.refreshUserProfile()
+                    }
+                case .dismissed:
+                    break
+                }
+            }
         }
     }
 }
