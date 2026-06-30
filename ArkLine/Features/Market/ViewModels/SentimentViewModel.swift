@@ -767,15 +767,15 @@ class SentimentViewModel {
         if gold == nil { failedMacro.append("Gold") }
         if gei == nil { failedMacro.append("GEI") }
 
+        // Only surface a banner for a broad outage (several indicators failing at
+        // once). A single miss — especially cosmetic data like Market Cap, which
+        // often just means a CoinGecko rate-limit — degrades silently; the
+        // relevant card already shows "Unavailable" on its own.
         let totalFailed = failedCore.count + failedMacro.count
         if totalFailed >= 3 {
             ToastManager.shared.warning(
                 "Some data unavailable",
                 message: "\(totalFailed) indicators couldn't be updated"
-            )
-        } else if !failedCore.isEmpty {
-            ToastManager.shared.warning(
-                "\(failedCore.joined(separator: ", ")) unavailable"
             )
         }
     }
