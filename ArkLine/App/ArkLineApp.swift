@@ -38,6 +38,8 @@ struct ArkLineApp: App {
                         if appState.isAuthenticated, let userId = appState.currentUser?.id {
                             await RevenueCatService.shared.logIn(userId: userId)
                         }
+                        // Restore cloud-synced dashboard layout + settings on launch.
+                        await appState.restorePreferencesFromCloud()
                     }
                 }
                 .onOpenURL { url in
@@ -82,6 +84,8 @@ struct ArkLineApp: App {
                 privacyOverlayTask = nil
                 showPrivacyOverlay = true
                 Task { await AnalyticsService.shared.flush() }
+                // Push any dashboard/settings changes to the cloud as we leave.
+                Task { await appState.uploadPreferences(force: false) }
             } else if newPhase == .active {
                 // Returning to the foreground — hide the overlay.
                 privacyOverlayTask?.cancel()
@@ -92,6 +96,8 @@ struct ArkLineApp: App {
                 appState.refreshUserProfileCancellable()
                 Task { await IncrementalPriceStore.shared.resetCooldowns() }
                 BroadcastNotificationService.shared.clearBadge()
+                // Pick up layout/settings changes made on another device.
+                Task { await appState.restorePreferencesFromCloud() }
             }
             // .inactive: intentionally no-op — see the .background comment above.
         }
@@ -422,6 +428,9 @@ class AppState: ObservableObject {
         if authenticated, let userId = (user ?? currentUser)?.id {
             Task {
                 await RevenueCatService.shared.logIn(userId: userId)
+                // Restore the user's cloud-synced layout + settings (e.g. after a
+                // fresh install / new sign-in) so it doesn't reset to defaults.
+                await restorePreferencesFromCloud()
             }
         }
     }
