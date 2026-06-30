@@ -38,9 +38,15 @@ targets:
       - path: Domain
       - path: Features
       - path: SharedComponents
-    resources:
+      # Resources MUST live under `sources` — XcodeGen has no `resources:` key and
+      # silently ignores it, which drops Assets.xcassets (the app icon!), the
+      # privacy manifest, Secrets.plist, and the splash sound from the build.
+      # Info.plist is excluded here because it's wired via INFOPLIST_FILE below;
+      # bundling it as a resource too causes a duplicate-Info.plist build error.
       - path: Resources
-        optional: true
+        excludes:
+          - "Info.plist"
+          - "Secrets.plist.example"
     settings:
       base:
         INFOPLIST_FILE: Resources/Info.plist
@@ -49,6 +55,10 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: false
         CODE_SIGN_STYLE: Automatic
+        # Wires the Push Notifications entitlement (aps-environment). Without this,
+        # `xcodegen generate` drops the capability and the device stops registering
+        # for push. Path is relative to the project dir (where the .xcodeproj lives).
+        CODE_SIGN_ENTITLEMENTS: ArkLine.entitlements
         ENABLE_PREVIEWS: YES
     dependencies:
       - package: Supabase
