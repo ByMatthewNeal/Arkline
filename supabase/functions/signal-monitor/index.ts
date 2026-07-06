@@ -243,12 +243,6 @@ Deno.serve(async (req) => {
     // Skip if already resolved by pipeline (race condition guard)
     if (signal.closed_at) continue
 
-    const triggerMs = new Date(signal.triggered_at).getTime()
-    const candle = aggregateAfter(signal.asset, triggerMs)
-    if (!candle) continue
-    // Latest-only candle for runner trailing (avoids stale highs/lows)
-    const latest = latestPrice(signal.asset)!
-
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
     const entryMid = Number(signal.entry_price_mid)
     const t1 = signal.target_1 ? Number(signal.target_1) : null
@@ -259,9 +253,14 @@ Deno.serve(async (req) => {
     let bestPrice = signal.best_price ? Number(signal.best_price) : entryMid
     let runnerStop = signal.runner_stop ? Number(signal.runner_stop) : sl
 
-    // --- Expiry check ---
+    // --- Expiry check (time-based) ---
+    // MUST run before the candle guard below. Previously it lived after
+    // `if (!candle) continue`, so any signal whose fresh candle/price data was
+    // briefly unavailable never resolved and lingered in "Active" indefinitely
+    // (days past expires_at). Expiry is purely time-based and needs no candle.
     if (signal.expires_at && new Date(signal.expires_at) <= now) {
-      const exitPrice = latest.close
+      const latestExpiry = latestPrice(signal.asset)
+      const exitPrice = latestExpiry ? latestExpiry.close : bestPrice
 
       if (t1AlreadyHit) {
         const runnerPnl = isBuy
@@ -307,6 +306,14 @@ Deno.serve(async (req) => {
       stats.notifications++
       continue
     }
+
+    // Live monitoring below needs fresh candle/price data since the trigger.
+    const triggerMs = new Date(signal.triggered_at).getTime()
+    const candle = aggregateAfter(signal.asset, triggerMs)
+    if (!candle) continue
+    // Latest-only price for runner trailing (avoids stale highs/lows).
+    const latest = latestPrice(signal.asset)
+    if (!latest) continue
 
     // --- LONG ---
     if (isBuy) {
