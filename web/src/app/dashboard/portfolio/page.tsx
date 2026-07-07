@@ -65,10 +65,26 @@ export default function PortfolioPage() {
     };
   });
 
-  const stats = computeStats(pricedHoldings);
+  // Aggregate multiple lots of the same asset into one position (qty-weighted avg cost).
+  const bySymbol = new Map<string, PortfolioHolding>();
+  for (const h of pricedHoldings) {
+    const key = h.symbol.toLowerCase();
+    const ex = bySymbol.get(key);
+    if (ex) {
+      const totalQty = ex.quantity + h.quantity;
+      const wCost = ((ex.average_buy_price ?? 0) * ex.quantity + (h.average_buy_price ?? 0) * h.quantity);
+      ex.average_buy_price = totalQty > 0 ? wCost / totalQty : 0;
+      ex.quantity = totalQty;
+    } else {
+      bySymbol.set(key, { ...h });
+    }
+  }
+  const aggHoldings = [...bySymbol.values()];
+
+  const stats = computeStats(aggHoldings);
 
   // Allocation data
-  const allocations = pricedHoldings
+  const allocations = aggHoldings
     .map((h, i) => ({
       name: h.symbol.toUpperCase(),
       value: (h.current_price ?? 0) * h.quantity,
@@ -228,10 +244,10 @@ export default function PortfolioPage() {
             <GlassCard className="sm:col-span-1 lg:col-span-2">
               <h3 className="mb-3 text-sm font-semibold text-ark-text">Holdings</h3>
               <div className="space-y-2">
-                {pricedHoldings.length === 0 && (
+                {aggHoldings.length === 0 && (
                   <p className="text-sm text-ark-text-tertiary">No holdings yet.</p>
                 )}
-                {pricedHoldings.map((h) => {
+                {aggHoldings.map((h) => {
                   const value = (h.current_price ?? 0) * h.quantity;
                   const cost = (h.average_buy_price ?? 0) * h.quantity;
                   const pnl = value - cost;

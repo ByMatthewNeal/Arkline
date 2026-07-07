@@ -20,21 +20,67 @@ If you ever change the password (e.g., security rotation), update both Supabase 
 ## Review Notes (paste into "Notes" field)
 
 ```
+RESUBMISSION CONTEXT
+
+This build addresses the previous rejection under Guideline 3.1.1
+(Payments — In-App Purchase Required). We've added In-App Purchase
+support via RevenueCat (StoreKit 2). Two subscription tiers are now
+available in the app:
+
+  - Arkline Founding Monthly  — com.arkline.app.founding.monthly  — $39.99/month
+  - Arkline Founding Annual   — com.arkline.app.founding.annual   — $399.00/year
+
+Both subscriptions are in the "Arkline Pro" subscription group and
+have completed metadata in App Store Connect. Settings now exposes:
+
+  - "Manage Subscription" (routes Apple-IAP subscribers to iOS Settings)
+  - "Restore Purchases" (required by 3.1.1)
+  - Auto-renewal disclosure footer text
+
+We've also audited the app and removed/replaced any in-app references
+that previously pointed to an external subscription page. Privacy
+Policy and Terms of Service remain linked in Settings → About
+(allowed under Apple guidelines).
+
 APP OVERVIEW
 
-ArkLine is an invite-only crypto and traditional markets tracking app
-for serious individual investors. Users sign up by entering an invite
-code (format: ARK-XXXXXX) and completing payment via our website
-(Stripe). The reviewer account credentials above are pre-activated
-with an active subscription — no invite code or payment required for
-sign-in.
+ArkLine is an invite-only crypto and traditional markets intelligence
+app for serious individual investors. Going forward, new users sign up
+via In-App Purchase. Legacy users (pre-IAP) subscribed via Stripe on
+our website and can continue to use those credentials to sign in; the
+"Manage Subscription" button is source-aware and routes them to the
+correct billing portal for managing their existing subscription only
+(no new external purchases).
 
-SIGN-IN INSTRUCTIONS
+PRIMARY TESTING PATH — SIGN IN WITH REVIEWER CREDENTIALS
 
 1. Launch the app.
 2. On the Welcome screen, tap "I already have an account."
 3. Enter the email and password from the Sign-In fields above.
-4. The app will route to the home screen (MainTabView).
+   (These credentials have an active subscription already provisioned,
+   so you can verify all app functionality without making a purchase.)
+4. The app routes to the home screen (MainTabView).
+
+SECONDARY TESTING PATH — VERIFY THE IAP PURCHASE FLOW
+
+To verify the new IAP integration end-to-end:
+
+1. Sign out (Settings → Sign Out) or relaunch on a fresh device.
+2. On the Welcome screen, tap "Get Arkline Pro".
+3. The in-app paywall (powered by RevenueCat) appears with both
+   subscription tiers and real App Store pricing.
+4. Select a tier and tap "Purchase".
+5. Complete the sandbox transaction with your sandbox test account.
+6. On successful purchase, the "Arkline Pro" entitlement is granted
+   via RevenueCat. The app records the subscription in our backend
+   (Supabase) via our RevenueCat webhook with source='apple'.
+
+NOTE ON POST-PURCHASE ONBOARDING: After a successful IAP purchase, the
+current build still routes new users through our legacy onboarding
+(invite-code entry → email verification → profile setup). This is a
+UX bridge we are actively shortening in our next release. For your
+testing, the simpler path is to use the reviewer account credentials
+above (primary path).
 
 PASSWORD RECOVERY (if needed)
 
@@ -44,28 +90,20 @@ bottom — that opens an email+password sheet. If the password ever
 needs reset, tap "Forgot password?" — an email arrives within ~30
 seconds from auth@arkline.io.
 
-NO IN-APP PURCHASES
-
-This app contains zero In-App Purchase / StoreKit code. All payments
-are handled externally via Stripe on our website (arkline.io). The
-architecture follows Apple's "reader app" model (guideline 3.1.3(a)),
-similar to Spotify, Notion, or 1Password. Subscription management
-(cancel, renew, billing) is handled on the website. The app contains
-no pricing displays, no external payment links, and no "Upgrade" CTAs.
-
-KEY FEATURES TO TEST
+KEY FEATURES TO TEST (once signed in)
 
 - Home tab: portfolio value, daily AI briefing, crypto risk levels
 - Market tab: daily positioning signals, sentiment indicators
 - Portfolio tab: holdings tracking, model portfolios
 - Insights tab: market deck broadcasts from admin
-- Profile tab: account settings, DCA reminders
+- Profile tab: account settings, DCA reminders, Manage Subscription,
+  Restore Purchases
 - Crypto Risk Levels (tap "See all" from home): 41 crypto assets
   bucketed by risk band, with 7D/30D trend indicators
 
 CONTACT
 
-Any issues with sign-in or testing: support@arkline.io
+Any issues with sign-in, testing, or the IAP flow: support@arkline.io
 ```
 
 ---

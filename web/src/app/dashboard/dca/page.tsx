@@ -101,7 +101,7 @@ export default function DCAPage() {
             <div>
               <p className="text-xs text-ark-text-tertiary">Weekly Investment</p>
               <p className="text-xl font-bold text-ark-text">
-                {formatCurrency(totalWeekly)}
+                {formatCurrency(totalWeekly, 'USD', { decimals: 2 })}
               </p>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default function DCAPage() {
             <div>
               <p className="text-xs text-ark-text-tertiary">Total Invested</p>
               <p className="text-xl font-bold text-ark-text">
-                {formatCurrency(totalInvested)}
+                {formatCurrency(totalInvested, 'USD', { decimals: 2 })}
               </p>
             </div>
           </div>
