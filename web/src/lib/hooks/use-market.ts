@@ -22,6 +22,7 @@ import {
   fetchUSFutures,
   fetchPerpPremiumData,
   fetchFedWatchData,
+  fetchAssetSnapshots,
 } from '@/lib/api/market';
 import {
   fetchMacroIndicators,
@@ -253,6 +254,10 @@ export function useIndicatorHistory(dbKey: string, days: number) {
 
 export function useRiskLevels(kind: 'crypto' | 'stock') {
   return useQuery({ queryKey: ['risk-levels', kind], queryFn: () => fetchRiskLevels(kind), staleTime: 60_000 });
+}
+
+export function useAssetSnapshots(coinId: string) {
+  return useQuery({ queryKey: ['asset-snapshots', coinId], queryFn: () => fetchAssetSnapshots(coinId), staleTime: 60_000, enabled: !!coinId });
 }
 
 export function useSupplyInProfit() {

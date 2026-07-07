@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Coins, Search, ArrowUpRight, ArrowDownRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { GlassCard, Skeleton } from '@/components/ui';
@@ -10,6 +11,7 @@ import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
 const INITIAL_SHOW = 10;
 
 export function TopCoins() {
+  const router = useRouter();
   const { data: assets, isLoading } = useCryptoAssets(1);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(false);
@@ -94,8 +96,9 @@ export function TopCoins() {
               return (
                 <tr
                   key={asset.id}
+                  onClick={() => router.push(`/dashboard/market/${asset.id}`)}
                   className={cn(
-                    'border-b border-ark-divider/30 transition-colors hover:bg-ark-fill-secondary/50',
+                    'cursor-pointer border-b border-ark-divider/30 transition-colors hover:bg-ark-fill-secondary/50',
                     idx % 2 === 1 && 'bg-ark-fill-secondary/20',
                   )}
                 >

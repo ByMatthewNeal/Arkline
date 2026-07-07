@@ -204,6 +204,52 @@ export async function fetchPerpPremiumData(): Promise<PerpPremiumItem[]> {
   return (await readCache<PerpPremiumItem[]>('perp_premium')) ?? [];
 }
 
+export interface AssetSnapshot {
+  date: string;
+  price: number;
+  market_cap: number;
+  total_volume: number;
+  high_24h: number;
+  low_24h: number;
+  price_change_pct_24h: number;
+  ath: number;
+  ath_change_percentage: number;
+  atl: number;
+  market_cap_rank: number;
+  circulating_supply: number;
+  total_supply: number;
+  max_supply: number;
+}
+
+/** Daily snapshots for one coin (chart history + latest extended stats). */
+export async function fetchAssetSnapshots(coinId: string): Promise<AssetSnapshot[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('market_snapshots')
+    .select('recorded_date, current_price, market_cap, total_volume, high_24h, low_24h, price_change_pct_24h, ath, ath_change_percentage, atl, market_cap_rank, circulating_supply, total_supply, max_supply')
+    .eq('coin_id', coinId)
+    .order('recorded_date', { ascending: true })
+    .limit(500);
+  if (error || !data) return [];
+  return (data as Array<Record<string, number | string>>).map((r) => ({
+    date: String(r.recorded_date),
+    price: Number(r.current_price),
+    market_cap: Number(r.market_cap),
+    total_volume: Number(r.total_volume),
+    high_24h: Number(r.high_24h),
+    low_24h: Number(r.low_24h),
+    price_change_pct_24h: Number(r.price_change_pct_24h),
+    ath: Number(r.ath),
+    ath_change_percentage: Number(r.ath_change_percentage),
+    atl: Number(r.atl),
+    market_cap_rank: Number(r.market_cap_rank),
+    circulating_supply: Number(r.circulating_supply),
+    total_supply: Number(r.total_supply),
+    max_supply: Number(r.max_supply),
+  }));
+}
+
 interface PositioningRow {
   asset: string;
   signal: PositioningSignal;
