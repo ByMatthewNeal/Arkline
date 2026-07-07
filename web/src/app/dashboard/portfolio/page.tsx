@@ -241,8 +241,9 @@ export default function PortfolioPage() {
                         cy="50%"
                         innerRadius={50}
                         outerRadius={80}
-                        paddingAngle={2}
+                        paddingAngle={allocations.length > 1 ? 2 : 0}
                         dataKey="value"
+                        isAnimationActive={false}
                       >
                         {allocations.map((a, i) => (
                           <Cell key={i} fill={a.color} />
