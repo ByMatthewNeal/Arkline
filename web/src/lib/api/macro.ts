@@ -181,19 +181,8 @@ export async function fetchRegimeData(): Promise<{
   if (!isSupabaseConfigured()) return null;
   const supabase = getSupabase();
 
-  // 1) Prefer derived_signals if the table exists and has a row.
-  const derived = await supabase
-    .from('derived_signals')
-    .select('macro_regime, regime_days_in_state')
-    .order('as_of', { ascending: false })
-    .limit(1);
-  const macroRegime = derived.data?.[0]?.macro_regime as string | undefined;
-  if (!derived.error && macroRegime) {
-    const key = macroRegime.toLowerCase().includes('off') ? 'risk-off' : 'risk-on';
-    return REGIME_BADGE[key];
-  }
-
-  // 2) Fallback proxy: sign of gei_composite.
+  // Regime proxy: sign of the gei_composite indicator (Global Economic Index).
+  // Risk-on when gei_composite >= 0, risk-off otherwise.
   const gei = await supabase
     .from('indicator_snapshots')
     .select('value')
