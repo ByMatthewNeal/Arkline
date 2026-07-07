@@ -36,6 +36,7 @@ import {
   SkeletonHeroTile, SkeletonGaugeTile, SkeletonSparkTile, SkeletonListTile, SkeletonMacroTile,
 } from '../shared/bento-primitives';
 import { AssetLogo } from './risk-levels-detail';
+import { useWatchlist } from '@/lib/hooks/use-watchlist';
 import { DraggableGrid, type ResponsiveLayouts } from '../shared/draggable-grid';
 
 type WidgetKey =
@@ -822,12 +823,9 @@ function EventsTile({ onOpen }: { onOpen: () => void }) {
 }
 
 function FavoritesTile({ onOpen }: { onOpen: () => void }) {
-  const { profile } = useAuth();
   const { data: assets, isLoading } = useCryptoAssets(1);
-  const riskCoins = profile?.risk_coins ?? ['bitcoin', 'ethereum'];
-  const favorites = (assets ?? []).filter((a) =>
-    riskCoins.some((rc) => rc.toLowerCase() === a.id.toLowerCase()),
-  );
+  const { has } = useWatchlist();
+  const favorites = (assets ?? []).filter((a) => has(a.symbol));
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-warning)">

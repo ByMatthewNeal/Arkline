@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ArrowLeft, Star } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { useCryptoAssets, useAssetSnapshots, useRiskLevels } from '@/lib/hooks/use-market';
-import { useAuth } from '@/lib/hooks/use-auth';
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { useWatchlist } from '@/lib/hooks/use-watchlist';
 import { AssetLogo } from '@/components/dashboard/home/risk-levels-detail';
 import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
 
@@ -30,25 +29,16 @@ export default function AssetDetailPage() {
   const { data: assets, isLoading: assetsLoading } = useCryptoAssets(1);
   const { data: snaps, isLoading: snapsLoading } = useAssetSnapshots(coin);
   const { data: risk } = useRiskLevels('crypto');
-  const { profile, authUser } = useAuth();
+  const { has, toggle } = useWatchlist();
 
   const asset = (assets ?? []).find((a) => a.id === coin);
   const latest = snaps && snaps.length ? snaps[snaps.length - 1] : undefined;
   const riskItem = asset ? (risk ?? []).find((r) => r.symbol.toLowerCase() === asset.symbol.toLowerCase()) : undefined;
 
   const [days, setDays] = useState(90);
-  const [fav, setFav] = useState(false);
-  useEffect(() => { setFav((profile?.risk_coins ?? []).some((c) => c.toLowerCase() === coin.toLowerCase())); }, [profile, coin]);
-
-  const toggleFav = async () => {
-    const next = !fav;
-    setFav(next);
-    if (!isSupabaseConfigured() || !authUser) return;
-    const cur = (profile?.risk_coins ?? []).map((c) => c.toLowerCase());
-    const set = new Set(cur);
-    if (next) set.add(coin.toLowerCase()); else set.delete(coin.toLowerCase());
-    try { await createClient().from('profiles').update({ risk_coins: [...set] }).eq('id', authUser.id); } catch { /* ignore */ }
-  };
+  const favSymbol = asset?.symbol ?? coin;
+  const fav = has(favSymbol);
+  const toggleFav = () => toggle(favSymbol);
 
   if (assetsLoading || snapsLoading) {
     return <div className="space-y-4"><Skeleton className="h-24 w-full rounded-2xl" /><Skeleton className="h-72 w-full rounded-2xl" /><Skeleton className="h-40 w-full rounded-2xl" /></div>;

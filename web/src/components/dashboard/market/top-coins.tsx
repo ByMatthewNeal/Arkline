@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Coins, Search, ArrowUpRight, ArrowDownRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Coins, Search, ArrowUpRight, ArrowDownRight, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
+import { useWatchlist } from '@/lib/hooks/use-watchlist';
 import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
 
 const INITIAL_SHOW = 10;
@@ -13,6 +14,7 @@ const INITIAL_SHOW = 10;
 export function TopCoins() {
   const router = useRouter();
   const { data: assets, isLoading } = useCryptoAssets(1);
+  const { has, toggle } = useWatchlist();
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState(false);
 
@@ -98,7 +100,7 @@ export function TopCoins() {
                   key={asset.id}
                   onClick={() => router.push(`/dashboard/market/${asset.id}`)}
                   className={cn(
-                    'cursor-pointer border-b border-ark-divider/30 transition-colors hover:bg-ark-fill-secondary/50',
+                    'group cursor-pointer border-b border-ark-divider/30 transition-colors hover:bg-ark-fill-secondary/50',
                     idx % 2 === 1 && 'bg-ark-fill-secondary/20',
                   )}
                 >
@@ -122,6 +124,13 @@ export function TopCoins() {
                           {asset.name}
                         </span>
                       </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggle(asset.symbol); }}
+                        title={has(asset.symbol) ? 'Remove from watchlist' : 'Add to watchlist'}
+                        className={cn('flex h-6 w-6 items-center justify-center rounded-md transition-colors', has(asset.symbol) ? 'text-ark-warning' : 'text-ark-text-disabled opacity-0 hover:bg-ark-fill-secondary group-hover:opacity-100')}
+                      >
+                        <Star className={cn('h-3.5 w-3.5', has(asset.symbol) && 'fill-current')} />
+                      </button>
                     </div>
                   </td>
                   <td className="fig px-4 py-3 text-right text-sm font-semibold text-ark-text">
