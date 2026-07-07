@@ -4,21 +4,27 @@ import { useState } from 'react';
 import {
   Bell,
   Plus,
-  Clock,
   CheckCircle2,
-  Calendar,
   DollarSign,
   Repeat,
   TrendingUp,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Pause,
+  Play,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
-import { GlassCard, Badge, Skeleton } from '@/components/ui';
+import { GlassCard, Skeleton } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDCAReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { formatCurrency, formatDate, formatRelativeTime, cn } from '@/lib/utils/format';
+import { formatCurrency, formatRelativeTime, cn } from '@/lib/utils/format';
+import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
+import { useLogInvestment, useUpdateReminder, useDeleteReminder } from '@/lib/hooks/use-dca-mutations';
+import type { DCAReminder } from '@/types';
 
 const frequencyLabels: Record<string, string> = {
   daily: 'Daily',
@@ -32,6 +38,11 @@ export default function DCAPage() {
   const { authUser } = useAuth();
   const isDemo = !isSupabaseConfigured();
   const [showCompleted, setShowCompleted] = useState(false);
+  const [modal, setModal] = useState<{ open: boolean; editing: DCAReminder | null }>({ open: false, editing: null });
+
+  const logInvestment = useLogInvestment();
+  const updateReminder = useUpdateReminder();
+  const deleteReminder = useDeleteReminder();
 
   const { data: reminders, isLoading } = useQuery({
     queryKey: ['dca-reminders-all', authUser?.id ?? 'demo'],
@@ -71,11 +82,17 @@ export default function DCAPage() {
             Dollar-cost average into your favorite assets
           </p>
         </div>
-        <button className="flex items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-ark-primary/25 transition-all hover:shadow-lg hover:shadow-ark-primary/30 hover:brightness-110 cursor-pointer">
+        <button
+          onClick={() => setModal({ open: true, editing: null })}
+          disabled={isDemo}
+          className="flex items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-ark-primary/25 transition-all hover:shadow-lg hover:shadow-ark-primary/30 hover:brightness-110 disabled:opacity-50"
+        >
           <Plus className="h-4 w-4" />
           New Reminder
         </button>
       </div>
+
+      <ReminderModal open={modal.open} onClose={() => setModal((m) => ({ ...m, open: false }))} editing={modal.editing} />
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -186,7 +203,21 @@ export default function DCAPage() {
                         </p>
                       </div>
                     )}
-                    <button className="rounded-lg bg-ark-success/15 px-3 py-1.5 text-xs font-medium text-ark-success transition-colors hover:bg-ark-success/25 cursor-pointer">
+                    {/* Hover actions */}
+                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button onClick={() => setModal({ open: true, editing: r })} title="Edit"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => updateReminder.mutate({ id: r.id, patch: { is_active: false } })} title="Pause"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Pause className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => { if (confirm(`Delete the ${r.symbol.toUpperCase()} reminder?`)) deleteReminder.mutate(r.id); }} title="Delete"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                    <button
+                      onClick={() => logInvestment.mutate(r)}
+                      disabled={logInvestment.isPending}
+                      className="flex items-center gap-1.5 rounded-lg bg-ark-success/15 px-3 py-1.5 text-xs font-medium text-ark-success transition-colors hover:bg-ark-success/25 disabled:opacity-60"
+                    >
+                      {logInvestment.isPending && logInvestment.variables?.id === r.id && <Loader2 className="h-3 w-3 animate-spin" />}
                       Invest
                     </button>
                   </div>
@@ -204,8 +235,8 @@ export default function DCAPage() {
             onClick={() => setShowCompleted(!showCompleted)}
             className="mb-3 flex items-center gap-2 text-sm font-semibold text-ark-text-secondary hover:text-ark-text transition-colors cursor-pointer"
           >
-            <CheckCircle2 className="h-4 w-4" />
-            Completed ({completed.length})
+            <Pause className="h-4 w-4" />
+            Paused ({completed.length})
             {showCompleted ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -229,7 +260,12 @@ export default function DCAPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant="default">Completed</Badge>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => updateReminder.mutate({ id: r.id, patch: { is_active: true } })} title="Resume"
+                        className="flex items-center gap-1 rounded-lg bg-ark-primary/10 px-2.5 py-1 text-xs font-medium text-ark-primary hover:bg-ark-primary/20"><Play className="h-3 w-3" /> Resume</button>
+                      <button onClick={() => { if (confirm(`Delete the ${r.symbol.toUpperCase()} reminder?`)) deleteReminder.mutate(r.id); }} title="Delete"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
                   </div>
                 </GlassCard>
               ))}
