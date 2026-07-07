@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Briefcase, ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -15,8 +15,10 @@ import {
 } from 'recharts';
 import { GlassCard, Badge, Skeleton } from '@/components/ui';
 import { usePortfolios, useHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { useDeleteHolding } from '@/lib/hooks/use-portfolio-mutations';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/utils/format';
+import { AddTransactionModal } from '@/components/dashboard/portfolio/add-transaction-modal';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -44,12 +46,14 @@ function computeStats(holdings: PortfolioHolding[]) {
 export default function PortfolioPage() {
   const { data: portfolios, isLoading: loadingPortfolios } = usePortfolios();
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [modal, setModal] = useState<{ open: boolean; type: 'buy' | 'sell'; symbol?: string }>({ open: false, type: 'buy' });
 
   const portfolio = portfolios?.[selectedIdx];
   const { data: holdings, isLoading: loadingHoldings } = useHoldings(portfolio?.id);
   const { data: transactions } = useTransactions(portfolio?.id);
   const { data: history } = usePortfolioHistory(portfolio?.id, 30);
   const { data: assets } = useCryptoAssets(1);
+  const deleteHolding = useDeleteHolding(portfolio?.id);
 
   // Merge live prices into holdings (fetchHoldings returns no current_price).
   const priceBySymbol = new Map<string, { price: number; pct: number }>();
@@ -107,23 +111,41 @@ export default function PortfolioPage() {
         <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-semibold text-ark-text">
           Portfolio
         </h1>
-        {(portfolios ?? []).length > 1 && (
-          <div className="relative">
-            <select
-              value={selectedIdx}
-              onChange={(e) => setSelectedIdx(Number(e.target.value))}
-              className="appearance-none rounded-lg border border-ark-divider bg-ark-fill-secondary px-3 py-1.5 pr-8 text-sm text-ark-text cursor-pointer"
-            >
-              {portfolios!.map((p, i) => (
-                <option key={p.id} value={i}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-ark-text-tertiary" />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {(portfolios ?? []).length > 1 && (
+            <div className="relative">
+              <select
+                value={selectedIdx}
+                onChange={(e) => setSelectedIdx(Number(e.target.value))}
+                className="appearance-none rounded-lg border border-ark-divider bg-ark-fill-secondary px-3 py-1.5 pr-8 text-sm text-ark-text cursor-pointer"
+              >
+                {portfolios!.map((p, i) => (
+                  <option key={p.id} value={i}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-ark-text-tertiary" />
+            </div>
+          )}
+          <button
+            onClick={() => setModal({ open: true, type: 'buy' })}
+            disabled={!portfolio}
+            className="flex items-center gap-1.5 rounded-xl bg-ark-primary px-4 py-2 text-sm font-semibold text-white shadow-md shadow-ark-primary/25 transition-all hover:brightness-110 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Add Transaction
+          </button>
+        </div>
       </div>
+
+      <AddTransactionModal
+        open={modal.open}
+        onClose={() => setModal((m) => ({ ...m, open: false }))}
+        portfolioId={portfolio?.id}
+        holdings={aggHoldings}
+        initialType={modal.type}
+        initialSymbol={modal.symbol}
+      />
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -255,24 +277,30 @@ export default function PortfolioPage() {
                   return (
                     <div
                       key={h.id}
-                      className="flex items-center justify-between rounded-xl bg-ark-fill-secondary/60 px-4 py-3 transition-colors hover:bg-ark-fill-secondary"
+                      className="group flex items-center justify-between gap-2 rounded-xl bg-ark-fill-secondary/60 px-4 py-3 transition-colors hover:bg-ark-fill-secondary"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {h.icon_url && (
-                          <img src={h.icon_url} alt={h.name} className="h-8 w-8 rounded-full" />
-                        )}
+                      <div className="flex min-w-0 items-center gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-ark-text">{h.symbol.toUpperCase()}</p>
-                          <p className="text-xs text-ark-text-tertiary truncate">{h.name}</p>
+                          <p className="truncate text-xs text-ark-text-tertiary">{h.name} · <span className="fig">{h.quantity}</span> @ {formatCurrency(h.average_buy_price ?? 0)}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="fig text-sm font-bold text-ark-text">
-                          {formatCurrency(value)}
-                        </p>
-                        <p className={`fig text-xs font-medium ${isUp ? 'text-ark-success' : 'text-ark-error'}`}>
-                          {formatCurrency(pnl)} ({formatPercent(cost > 0 ? (pnl / cost) * 100 : 0)})
-                        </p>
+                      <div className="flex items-center gap-3">
+                        {/* Hover actions */}
+                        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button onClick={() => setModal({ open: true, type: 'buy', symbol: h.symbol })} title="Buy more"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-success hover:bg-ark-success/10"><TrendingUp className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => setModal({ open: true, type: 'sell', symbol: h.symbol })} title="Sell"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><TrendingDown className="h-3.5 w-3.5" /></button>
+                          <button onClick={() => { if (confirm(`Remove ${h.symbol.toUpperCase()} from this portfolio?`)) deleteHolding.mutate(h.symbol); }} title="Remove"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Trash2 className="h-3.5 w-3.5" /></button>
+                        </div>
+                        <div className="text-right">
+                          <p className="fig text-sm font-bold text-ark-text">{formatCurrency(value)}</p>
+                          <p className={`fig text-xs font-medium ${isUp ? 'text-ark-success' : 'text-ark-error'}`}>
+                            {formatCurrency(pnl)} ({formatPercent(cost > 0 ? (pnl / cost) * 100 : 0)})
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
