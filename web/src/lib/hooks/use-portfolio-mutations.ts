@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { recordTransaction, deleteHoldingsBySymbol, createPortfolio, type RecordTxInput } from '@/lib/api/portfolio-mutations';
+import { recordTransaction, deleteHoldingsBySymbol, updateHoldingTarget, createPortfolio, type RecordTxInput } from '@/lib/api/portfolio-mutations';
 import { useAuth } from './use-auth';
 
 export function useRecordTransaction(portfolioId: string | undefined) {
@@ -19,6 +19,16 @@ export function useDeleteHolding(portfolioId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (symbol: string) => deleteHoldingsBySymbol(portfolioId!, symbol),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['holdings', portfolioId] });
+    },
+  });
+}
+
+export function useUpdateHoldingTarget(portfolioId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ holdingId, target }: { holdingId: string; target: number | null }) => updateHoldingTarget(holdingId, target),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['holdings', portfolioId] });
     },

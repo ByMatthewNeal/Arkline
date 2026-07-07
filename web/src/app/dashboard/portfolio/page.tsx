@@ -15,10 +15,11 @@ import {
 } from 'recharts';
 import { GlassCard, Badge, Skeleton } from '@/components/ui';
 import { usePortfolios, useHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
-import { useDeleteHolding } from '@/lib/hooks/use-portfolio-mutations';
+import { useDeleteHolding, useUpdateHoldingTarget, useCreatePortfolio } from '@/lib/hooks/use-portfolio-mutations';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
-import { formatCurrency, formatPercent, formatDate } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, formatDate, cn } from '@/lib/utils/format';
 import { AddTransactionModal } from '@/components/dashboard/portfolio/add-transaction-modal';
+import { PerformancePanel } from '@/components/dashboard/portfolio/performance-panel';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -51,9 +52,11 @@ export default function PortfolioPage() {
   const portfolio = portfolios?.[selectedIdx];
   const { data: holdings, isLoading: loadingHoldings } = useHoldings(portfolio?.id);
   const { data: transactions } = useTransactions(portfolio?.id);
-  const { data: history } = usePortfolioHistory(portfolio?.id, 30);
+  const { data: history } = usePortfolioHistory(portfolio?.id, 365);
   const { data: assets } = useCryptoAssets(1);
   const deleteHolding = useDeleteHolding(portfolio?.id);
+  const updateTarget = useUpdateHoldingTarget(portfolio?.id);
+  const createPortfolio = useCreatePortfolio();
 
   // Merge live prices into holdings (fetchHoldings returns no current_price).
   const priceBySymbol = new Map<string, { price: number; pct: number }>();
@@ -128,6 +131,12 @@ export default function PortfolioPage() {
               <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-ark-text-tertiary" />
             </div>
           )}
+          <button
+            onClick={() => { const name = prompt('New portfolio name:'); if (name?.trim()) createPortfolio.mutate(name.trim()); }}
+            className="rounded-xl border border-ark-divider px-3 py-2 text-sm font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary"
+          >
+            New Portfolio
+          </button>
           <button
             onClick={() => setModal({ open: true, type: 'buy' })}
             disabled={!portfolio}
@@ -252,14 +261,39 @@ export default function PortfolioPage() {
                   </ResponsiveContainer>
                 </div>
               )}
-              <div className="mt-2 flex flex-wrap gap-2">
-                {allocations.slice(0, 6).map((a) => (
-                  <div key={a.name} className="flex items-center gap-1.5 text-xs text-ark-text-secondary">
-                    <div className="h-2 w-2 rounded-full" style={{ background: a.color }} />
-                    {a.name}
+              {/* Current vs target allocation (editable) */}
+              {aggHoldings.length > 0 && stats.totalValue > 0 && (
+                <div className="mt-3 space-y-1.5 border-t border-ark-divider pt-3">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">
+                    <span>Asset</span><span>Current · Target</span>
                   </div>
-                ))}
-              </div>
+                  {aggHoldings.map((h, i) => {
+                    const cur = ((h.current_price ?? 0) * h.quantity) / stats.totalValue * 100;
+                    const tgt = h.target_percentage ?? null;
+                    const drift = tgt != null ? cur - tgt : null;
+                    return (
+                      <div key={h.id} className="flex items-center gap-2 text-xs">
+                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                        <span className="w-12 font-semibold text-ark-text">{h.symbol.toUpperCase()}</span>
+                        <span className="fig w-12 text-ark-text-secondary">{cur.toFixed(1)}%</span>
+                        <input
+                          type="number" defaultValue={tgt ?? ''} placeholder="—" min={0} max={100}
+                          onBlur={(e) => {
+                            const v = e.target.value.trim();
+                            const num = v === '' ? null : Math.max(0, Math.min(100, parseFloat(v)));
+                            if ((num ?? null) !== (tgt ?? null)) updateTarget.mutate({ holdingId: h.id, target: num });
+                          }}
+                          className="fig w-14 rounded-md border border-ark-divider bg-ark-fill-secondary/40 px-1.5 py-0.5 text-right text-ark-text outline-none focus:border-ark-info"
+                        />
+                        {drift != null && Math.abs(drift) >= 0.5 && (
+                          <span className={cn('fig text-[10px] font-semibold', drift > 0 ? 'text-ark-warning' : 'text-ark-info')}>{drift > 0 ? '+' : ''}{drift.toFixed(0)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <p className="pt-1 text-[10px] text-ark-text-disabled">Set a target % to track drift.</p>
+                </div>
+              )}
             </GlassCard>
 
             {/* Holdings list */}
@@ -349,6 +383,14 @@ export default function PortfolioPage() {
               ))}
             </div>
           </GlassCard>
+
+          {/* Performance */}
+          <PerformancePanel
+            history={history ?? []}
+            holdings={aggHoldings}
+            transactions={transactions ?? []}
+            portfolioName={portfolio?.name ?? 'portfolio'}
+          />
         </>
       )}
     </div>
