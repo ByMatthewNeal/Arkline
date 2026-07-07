@@ -524,6 +524,18 @@ Deno.serve(async (req) => {
   const PROXIMITY_COOLDOWN_MS = 4 * 3600000 // 4 hours between alerts
 
   for (const signal of proximitySignals) {
+    // Expire untriggered setups whose window passed without price ever entering
+    // the entry zone. They never filled (no P&L) — close them so they leave
+    // "Active" and stop blocking new setups for the asset via the dedup check.
+    if (signal.expires_at && new Date(signal.expires_at) <= now) {
+      await supabase.from("trade_signals").update({
+        status: "expired",
+        closed_at: now.toISOString(),
+      }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+      stats.expired++
+      continue
+    }
+
     const price = latestPrice(signal.asset)
     if (!price) continue
 

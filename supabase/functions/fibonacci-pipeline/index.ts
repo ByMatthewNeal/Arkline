@@ -3178,13 +3178,9 @@ async function resolveOpenSignals(
     let bestPrice = signal.best_price ? Number(signal.best_price) : entryMid
     let runnerStop = signal.runner_stop ? Number(signal.runner_stop) : sl
 
-    // Per-signal candle aggregation — only candles after this signal was created
-    const candle = aggregateAfter(signal.triggered_at)
-    if (!candle) continue
-    // Latest candle only for runner trailing (avoids stale highs/lows)
-    const latestOnly = recent4h[recent4h.length - 1]
-
-    // --- Expiry check ---
+    // --- Expiry check (time-based) ---
+    // Runs before the candle guard so an expired signal always resolves even
+    // when fresh candle data is briefly unavailable (matches signal-monitor).
     if (signal.expires_at && new Date(signal.expires_at) <= now) {
       const exitPrice = latestClose
 
@@ -3230,6 +3226,12 @@ async function resolveOpenSignals(
       stats.resolved++
       continue
     }
+
+    // Per-signal candle aggregation — only candles after this signal triggered.
+    const candle = aggregateAfter(signal.triggered_at)
+    if (!candle) continue
+    // Latest candle only for runner trailing (avoids stale highs/lows).
+    const latestOnly = recent4h[recent4h.length - 1]
 
     if (isBuy) {
       if (!t1AlreadyHit) {
