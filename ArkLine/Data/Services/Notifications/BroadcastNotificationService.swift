@@ -295,6 +295,14 @@ class BroadcastNotificationService: ObservableObject {
         guard isNotificationsEnabled else { return }
         guard let change = signal.changeDescription else { return }
 
+        // Persistent, per-signal dedup so the same change never notifies twice on
+        // this device. Home can refresh or rebuild its view model any number of
+        // times (which resets its in-memory guard) — this ensures exactly one
+        // banner per signal change. The 1s trigger means iOS won't coalesce
+        // repeat adds, so this claim is what actually prevents the duplicates.
+        let notifKey = "qps_\(signal.asset)_\(signal.signalDate.timeIntervalSince1970)"
+        guard claimQPSNotification(notifKey) else { return }
+
         let content = UNMutableNotificationContent()
         content.title = "\(signal.asset) Signal Changed"
         content.body = "\(signal.asset): \(change)"
@@ -306,7 +314,7 @@ class BroadcastNotificationService: ObservableObject {
         ]
 
         let request = UNNotificationRequest(
-            identifier: "qps_\(signal.asset)_\(signal.signalDate.timeIntervalSince1970)",
+            identifier: notifKey,
             content: content,
             trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         )
@@ -317,6 +325,24 @@ class BroadcastNotificationService: ObservableObject {
         } catch {
             logError("Failed to send QPS notification: \(error)", category: .data)
         }
+    }
+
+    // MARK: - QPS Notification Dedup
+
+    private let qpsNotifiedKeysKey = "arkline_qps_notified_keys"
+
+    /// Atomically claims a QPS-change notification key. Returns true the first time
+    /// a key is seen (caller should notify) and false if it was already sent.
+    /// Persisted across launches and bounded to the most recent keys so the same
+    /// signal change can't produce duplicate banners even across app restarts or
+    /// multiple Home refreshes. Safe because the service is @MainActor-isolated.
+    private func claimQPSNotification(_ key: String) -> Bool {
+        var keys = UserDefaults.standard.stringArray(forKey: qpsNotifiedKeysKey) ?? []
+        if keys.contains(key) { return false }
+        keys.append(key)
+        if keys.count > 200 { keys.removeFirst(keys.count - 200) }
+        UserDefaults.standard.set(keys, forKey: qpsNotifiedKeysKey)
+        return true
     }
 
     private func formatNotifPrice(_ price: Double) -> String {
