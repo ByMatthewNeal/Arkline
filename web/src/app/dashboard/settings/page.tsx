@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check, BookOpen, HelpCircle, ChevronRight } from 'lucide-react';
+import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check, BookOpen, HelpCircle, MessagesSquare, ChevronRight } from 'lucide-react';
 import { GlassCard, Button, Badge } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTheme } from '@/lib/hooks/use-theme';
@@ -220,6 +220,11 @@ export default function SettingsPage() {
           <Link href="/dashboard/faq" className="flex items-center gap-3 py-3 transition-colors hover:opacity-80">
             <HelpCircle className="h-4 w-4 text-ark-primary" />
             <div className="flex-1"><p className="text-sm font-medium text-ark-text">FAQ</p><p className="text-xs text-ark-text-disabled">Answers to common questions</p></div>
+            <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
+          </Link>
+          <Link href="/dashboard/qa" className="flex items-center gap-3 py-3 transition-colors hover:opacity-80">
+            <MessagesSquare className="h-4 w-4 text-ark-violet" />
+            <div className="flex-1"><p className="text-sm font-medium text-ark-text">Member Q&amp;A</p><p className="text-xs text-ark-text-disabled">Ask the Arkline team a question</p></div>
             <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
           </Link>
         </div>
