@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check } from 'lucide-react';
+import Link from 'next/link';
+import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check, BookOpen, HelpCircle, ChevronRight } from 'lucide-react';
 import { GlassCard, Button, Badge } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTheme } from '@/lib/hooks/use-theme';
@@ -201,6 +202,26 @@ export default function SettingsPage() {
             checked={notifications.insights}
             onChange={(v) => updateNotification('insights', v)}
           />
+        </div>
+      </GlassCard>
+
+      {/* Resources */}
+      <GlassCard>
+        <div className="mb-3 flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-ark-text-tertiary" />
+          <h2 className="text-sm font-semibold text-ark-text">Resources</h2>
+        </div>
+        <div className="divide-y divide-ark-divider/60">
+          <Link href="/dashboard/dictionary" className="flex items-center gap-3 py-3 transition-colors hover:opacity-80">
+            <BookOpen className="h-4 w-4 text-ark-info" />
+            <div className="flex-1"><p className="text-sm font-medium text-ark-text">Dictionary</p><p className="text-xs text-ark-text-disabled">Crypto &amp; investing terms explained</p></div>
+            <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
+          </Link>
+          <Link href="/dashboard/faq" className="flex items-center gap-3 py-3 transition-colors hover:opacity-80">
+            <HelpCircle className="h-4 w-4 text-ark-primary" />
+            <div className="flex-1"><p className="text-sm font-medium text-ark-text">FAQ</p><p className="text-xs text-ark-text-disabled">Answers to common questions</p></div>
+            <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
+          </Link>
         </div>
       </GlassCard>
 

@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Search, Pin, Eye, Heart, Sparkles, ChevronDown } from 'lucide-react';
+import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { fetchBroadcasts, type Broadcast } from '@/lib/api/broadcasts';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { useBroadcastSocial } from '@/lib/hooks/use-broadcast-social';
 import { formatRelativeTime, cn } from '@/lib/utils/format';
+
+type Social = ReturnType<typeof useBroadcastSocial>;
 
 const DATE_FILTERS = ['All', 'Today', 'This Week', 'This Month'] as const;
 type DateFilter = (typeof DATE_FILTERS)[number];
@@ -25,11 +28,14 @@ function matchesDate(b: Broadcast, filter: DateFilter): boolean {
   return diffDays <= 31;
 }
 
-function BroadcastCard({ b }: { b: Broadcast }) {
+function BroadcastCard({ b, social }: { b: Broadcast; social: Social }) {
   const [expanded, setExpanded] = useState(false);
   const body = cleanContent(b.content);
   const paras = body.split('\n').filter(Boolean);
   const when = b.published_at ?? b.created_at;
+  const liked = social.isReacted(b.id);
+  const saved = social.isBookmarked(b.id);
+  const likeCount = b.reaction_count + (liked ? 1 : 0);
 
   return (
     <GlassCard
@@ -60,9 +66,21 @@ function BroadcastCard({ b }: { b: Broadcast }) {
         {(expanded ? paras : paras.slice(0, 3)).map((p, i) => <p key={i}>{p}</p>)}
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-[11px] text-ark-text-disabled">
+      <div className="mt-3 flex items-center gap-3 text-[11px] text-ark-text-disabled">
         <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{b.view_count}</span>
-        <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{b.reaction_count}</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); social.toggleReact(b.id); }}
+          className={cn('flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-ark-fill-secondary', liked ? 'text-ark-error' : 'text-ark-text-disabled')}
+        >
+          <Heart className={cn('h-3.5 w-3.5', liked && 'fill-current')} />{likeCount}
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); social.toggleBookmark(b.id); }}
+          title={saved ? 'Remove bookmark' : 'Save'}
+          className={cn('flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-ark-fill-secondary', saved ? 'text-ark-primary' : 'text-ark-text-disabled')}
+        >
+          <Bookmark className={cn('h-3.5 w-3.5', saved && 'fill-current')} />
+        </button>
         <span className="ml-auto font-medium text-ark-primary">{expanded ? 'Show less ↑' : 'Read more →'}</span>
       </div>
     </GlassCard>
@@ -73,6 +91,8 @@ export default function BroadcastsPage() {
   const isDemo = !isSupabaseConfigured();
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('All');
+  const [savedOnly, setSavedOnly] = useState(false);
+  const social = useBroadcastSocial();
 
   const { data: broadcasts, isLoading } = useQuery({
     queryKey: ['broadcasts'],
@@ -83,6 +103,7 @@ export default function BroadcastsPage() {
 
   const all = broadcasts ?? [];
   const filtered = all.filter((b) => {
+    if (savedOnly && !social.isBookmarked(b.id)) return false;
     if (!matchesDate(b, dateFilter)) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -131,6 +152,13 @@ export default function BroadcastsPage() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => setSavedOnly((v) => !v)}
+          className={cn('flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors',
+            savedOnly ? 'border-ark-primary bg-ark-primary/10 text-ark-primary' : 'border-ark-divider text-ark-text-tertiary hover:text-ark-text')}
+        >
+          <Bookmark className={cn('h-3.5 w-3.5', savedOnly && 'fill-current')} /> Saved
+        </button>
       </div>
 
       {/* Feed */}
@@ -146,12 +174,12 @@ export default function BroadcastsPage() {
           {pinned.length > 0 && (
             <div className="space-y-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Pinned</p>
-              {pinned.map((b) => <BroadcastCard key={b.id} b={b} />)}
+              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} />)}
             </div>
           )}
           <div className="space-y-3">
             {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Latest</p>}
-            {rest.map((b) => <BroadcastCard key={b.id} b={b} />)}
+            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} />)}
           </div>
         </div>
       )}
