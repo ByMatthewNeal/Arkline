@@ -14,13 +14,14 @@ import {
   YAxis,
   ReferenceLine,
 } from 'recharts';
-import { GlassCard, Badge, Skeleton, ConfirmDialog, PromptDialog, useToast } from '@/components/ui';
+import { GlassCard, Skeleton, ConfirmDialog, PromptDialog, useToast } from '@/components/ui';
 import { usePortfolios, usePricedHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 import { useDeleteHolding, useUpdateHoldingTarget, useCreatePortfolio } from '@/lib/hooks/use-portfolio-mutations';
-import { formatCurrency, formatPercent, formatDate, cn } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
 import { AddTransactionModal } from '@/components/dashboard/portfolio/add-transaction-modal';
 import { PerformancePanel } from '@/components/dashboard/portfolio/performance-panel';
 import { TransactionsPanel } from '@/components/dashboard/portfolio/transactions-panel';
+import { ModelPortfolioCard } from '@/components/dashboard/portfolio/model-portfolio-card';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -291,7 +292,7 @@ export default function PortfolioPage() {
             )}
           </GlassCard>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2">
             {/* Allocation donut */}
             <GlassCard>
               <h3 className="mb-3 text-sm font-semibold text-ark-text">Allocation</h3>
@@ -363,8 +364,11 @@ export default function PortfolioPage() {
               )}
             </GlassCard>
 
+            {/* Model portfolio strategies (iOS Overview-tab parity) */}
+            <ModelPortfolioCard />
+
             {/* Holdings list */}
-            <GlassCard className="sm:col-span-1 lg:col-span-2">
+            <GlassCard className="sm:col-span-2">
               <h3 className="mb-3 text-sm font-semibold text-ark-text">Holdings</h3>
               <div className="space-y-2">
                 {aggHoldings.length === 0 && (
