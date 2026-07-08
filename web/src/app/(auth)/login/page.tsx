@@ -99,7 +99,7 @@ export default function LoginPage() {
   const verifyOtp = async () => {
     setError('');
     if (otpCode.trim().length < 6) {
-      setError('Enter the 6-digit code from your email.');
+      setError('Enter the code from your email.');
       return;
     }
     setLoading(true);
@@ -196,7 +196,7 @@ export default function LoginPage() {
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendOtp(); } }}
                 />
                 <p className="text-xs text-ark-text-tertiary">
-                  We&apos;ll email you a 6-digit code — the same way you signed in on the iOS app.
+                  We&apos;ll email you a sign-in code — the same way you signed in on the iOS app.
                 </p>
                 {error && (
                   <div className="rounded-xl border border-ark-error/20 bg-ark-error/5 p-3">
@@ -211,16 +211,16 @@ export default function LoginPage() {
             ) : (
               <>
                 <p className="text-sm text-ark-text-secondary">
-                  Enter the 6-digit code we sent to <span className="font-semibold text-ark-text">{otpEmail.trim()}</span>.
+                  Enter the code we sent to <span className="font-semibold text-ark-text">{otpEmail.trim()}</span>.
                 </p>
                 <Input
                   id="otp-code"
                   type="text"
                   label="Verification code"
-                  placeholder="123456"
+                  placeholder="12345678"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
+                  maxLength={10}
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); verifyOtp(); } }}
