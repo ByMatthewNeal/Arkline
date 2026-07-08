@@ -25,6 +25,8 @@ export interface DCAReminderInput {
   frequency: string;
   notification_time: string; // HH:MM
   start_date: string;        // YYYY-MM-DD
+  /** Optional plan length — total number of purchases (wizard "duration"). */
+  total_purchases?: number;
 }
 
 export async function createReminder(userId: string, input: DCAReminderInput): Promise<void> {
@@ -41,6 +43,7 @@ export async function createReminder(userId: string, input: DCAReminderInput): P
     next_reminder_date: advance(input.start_date, input.frequency),
     is_active: true,
     completed_purchases: 0,
+    total_purchases: input.total_purchases ?? null,
   });
   if (error) throw error;
 }

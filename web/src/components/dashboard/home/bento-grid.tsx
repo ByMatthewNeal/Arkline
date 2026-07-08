@@ -103,7 +103,7 @@ function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: 
       marketBreadth: () => import('./market-detail').then(m => ({ default: m.MarketBreadthDetail })),
       signalChanges: () => import('./market-detail').then(m => ({ default: m.SignalChangesDetail })),
       stockRisk: () => import('./risk-levels-detail').then(m => ({ default: m.StockRiskLevelsDetail })),
-      tradeSignals: () => import('./signals-detail').then(m => ({ default: m.TradeSignalsDetail })),
+      tradeSignals: () => import('./trade-signal-detail').then(m => ({ default: m.TradeSignalsDetail })),
       rotation: () => import('./signals-detail').then(m => ({ default: m.RotationDetail })),
       modelPortfolio: () => import('./model-portfolios-detail').then(m => ({ default: m.ModelPortfoliosDetail })),
       weeklyUpdate: () => import('./signals-detail').then(m => ({ default: m.WeeklyUpdateDetail })),

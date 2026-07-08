@@ -23,6 +23,7 @@ import { fetchDCAReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils/format';
 import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
+import { PlanWizard } from '@/components/dashboard/dca/plan-wizard';
 import { useLogInvestment, useUpdateReminder, useDeleteReminder } from '@/lib/hooks/use-dca-mutations';
 import type { DCAReminder } from '@/types';
 
@@ -40,6 +41,7 @@ export default function DCAPage() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; editing: DCAReminder | null }>({ open: false, editing: null });
   const [deleteTarget, setDeleteTarget] = useState<DCAReminder | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const toast = useToast();
 
   const logInvestment = useLogInvestment();
@@ -84,17 +86,28 @@ export default function DCAPage() {
             Dollar-cost average into your favorite assets
           </p>
         </div>
-        <button
-          onClick={() => setModal({ open: true, editing: null })}
-          disabled={isDemo}
-          className="flex items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-ark-primary/25 transition-all hover:shadow-lg hover:shadow-ark-primary/30 hover:brightness-110 disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" />
-          New Reminder
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setWizardOpen(true)}
+            disabled={isDemo}
+            className="flex items-center gap-2 rounded-xl border border-ark-divider px-4 py-2.5 text-sm font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text disabled:opacity-50"
+          >
+            <Repeat className="h-4 w-4" />
+            Plan Wizard
+          </button>
+          <button
+            onClick={() => setModal({ open: true, editing: null })}
+            disabled={isDemo}
+            className="flex items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-medium text-white shadow-md shadow-ark-primary/25 transition-all hover:shadow-lg hover:shadow-ark-primary/30 hover:brightness-110 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            New Reminder
+          </button>
+        </div>
       </div>
 
       <ReminderModal open={modal.open} onClose={() => setModal((m) => ({ ...m, open: false }))} editing={modal.editing} />
+      <PlanWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
       <ConfirmDialog
         open={deleteTarget !== null}

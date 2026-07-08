@@ -9,6 +9,7 @@ import { useTheme } from '@/lib/hooks/use-theme';
 import { createClient } from '@/lib/supabase/client';
 import { deleteAccountData } from '@/lib/api/account';
 import { setPreferredCurrency } from '@/lib/utils/format';
+import { subscribeToPush, unsubscribeFromPush, isPushSupported, isPushConfigured } from '@/lib/push';
 import type { NotificationSettings } from '@/types';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'] as const;
@@ -81,6 +82,37 @@ export default function SettingsPage() {
 
   const updateNotification = (key: keyof NotificationSettings, value: boolean) => {
     setNotifications((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Master push toggle actually subscribes/unsubscribes this browser
+  // (stored in user_devices, platform 'web' — the APNs equivalent).
+  const handlePushToggle = async (on: boolean) => {
+    updateNotification('push_enabled', on);
+    if (!profile) return;
+    if (on) {
+      if (!isPushSupported()) {
+        toast.info('This browser does not support push notifications.');
+        return;
+      }
+      if (!isPushConfigured()) {
+        toast.info('Browser push is coming soon — your preference is saved.');
+        return;
+      }
+      try {
+        const result = await subscribeToPush(profile.id);
+        if (result === 'subscribed') toast.success('Push notifications enabled for this browser');
+        else if (result === 'denied') {
+          updateNotification('push_enabled', false);
+          toast.error('Notifications are blocked — allow them in your browser settings.');
+        }
+      } catch {
+        toast.error('Could not enable push notifications.');
+      }
+    } else {
+      try {
+        await unsubscribeFromPush(profile.id);
+      } catch { /* row cleanup is best-effort */ }
+    }
   };
 
   const handleSave = async () => {
@@ -192,7 +224,7 @@ export default function SettingsPage() {
             label="Push Notifications"
             description="Browser push notifications for alerts"
             checked={notifications.push_enabled}
-            onChange={(v) => updateNotification('push_enabled', v)}
+            onChange={handlePushToggle}
           />
           <ToggleRow
             label="Email Notifications"
