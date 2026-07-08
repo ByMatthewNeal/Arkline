@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import webpush from "npm:web-push@3.6.7"
 
 const corsHeaders = {
   "Content-Type": "application/json",
@@ -199,11 +200,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     )
 
-    // Build device token query based on audience
+    // Build device token query based on audience (iOS/APNs + web/VAPID)
     let deviceQuery = supabaseAdmin
       .from("user_devices")
-      .select("device_token, user_id")
-      .eq("platform", "ios")
+      .select("device_token, user_id, platform")
+      .in("platform", ["ios", "web"])
       .order("updated_at", { ascending: false })
 
     if (target_audience?.type === "premium") {
@@ -271,6 +272,81 @@ Deno.serve(async (req) => {
       )
     }
 
+    // ─── Web Push (VAPID) ───────────────────────────────────────────────────
+    // Browser subscriptions live in the same table with platform = 'web';
+    // device_token holds the serialized PushSubscription JSON. Handled before
+    // APNs so web delivery works even when APNs isn't configured.
+
+    const webDevices = filteredDevices.filter(
+      (d: { platform?: string }) => d.platform === "web"
+    ) as { user_id: string; device_token: string }[]
+    filteredDevices = filteredDevices.filter(
+      (d: { platform?: string }) => d.platform !== "web"
+    )
+
+    let webSent = 0
+    let webRemoved = 0
+    const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY")
+    const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY")
+    const vapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "mailto:support@arkline.io"
+
+    if (webDevices.length > 0 && vapidPublic && vapidPrivate) {
+      webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
+
+      // Deep-link target inside the web dashboard, by event type.
+      const et = event_type || ""
+      const webUrl = et.startsWith("signal_") ? "/dashboard"
+        : et === "dca_reminder" ? "/dashboard/dca"
+        : et === "model_portfolio_rebalance" ? "/dashboard"
+        : "/dashboard/broadcasts"
+
+      const webPayload = JSON.stringify({
+        title,
+        body: body || "",
+        url: webUrl,
+        tag: `arkline-${broadcast_id}`,
+      })
+
+      const deadWebTokens: string[] = []
+      await Promise.all(
+        webDevices.map(async (d) => {
+          try {
+            const subscription = JSON.parse(d.device_token)
+            await webpush.sendNotification(subscription, webPayload)
+            webSent++
+          } catch (e: unknown) {
+            const status = (e as { statusCode?: number })?.statusCode
+            // 404 / 410 = subscription expired or revoked — purge it.
+            if (status === 404 || status === 410) deadWebTokens.push(d.device_token)
+            else console.error(`[send-broadcast-notification] web push failed:`, e)
+          }
+        })
+      )
+
+      if (deadWebTokens.length > 0) {
+        await supabaseAdmin
+          .from("user_devices")
+          .delete()
+          .in("device_token", deadWebTokens)
+        webRemoved = deadWebTokens.length
+      }
+      console.log(
+        `[send-broadcast-notification] web push: ${webSent}/${webDevices.length} sent, ${webRemoved} removed`
+      )
+    } else if (webDevices.length > 0) {
+      console.log(
+        `[send-broadcast-notification] ${webDevices.length} web subscriptions found but VAPID keys not configured`
+      )
+    }
+
+    if (filteredDevices.length === 0) {
+      // Web-only delivery — no iOS devices to push.
+      return new Response(
+        JSON.stringify({ sent: webSent, web_sent: webSent, web_removed: webRemoved, broadcast_id }),
+        { headers: corsHeaders }
+      )
+    }
+
     // ─── APNs Push ────────────────────────────────────────────────────────
 
     const apnsKey = Deno.env.get("APNS_AUTH_KEY")
@@ -289,7 +365,7 @@ Deno.serve(async (req) => {
         `[send-broadcast-notification] APNs not configured. Would send to ${tokens.length} devices for broadcast ${broadcast_id}`
       )
       return new Response(
-        JSON.stringify({ sent: 0, reason: "APNs credentials not configured", devices_found: tokens.length }),
+        JSON.stringify({ sent: webSent, web_sent: webSent, reason: "APNs credentials not configured", ios_devices_found: tokens.length }),
         { headers: corsHeaders }
       )
     }
@@ -409,7 +485,10 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        sent: succeeded,
+        sent: succeeded + webSent,
+        ios_sent: succeeded,
+        web_sent: webSent,
+        web_removed: webRemoved,
         users_failed: usersFailed,
         token_attempts: attempted,
         removed_tokens: tokensToRemove.length,
