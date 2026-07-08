@@ -40,7 +40,7 @@ export function ModelPortfolioCard() {
   return (
     <>
       <GlassCard
-        className="group cursor-pointer transition-shadow hover:shadow-md"
+        className="group flex h-full cursor-pointer flex-col transition-shadow hover:shadow-md"
         onClick={() => setOpen(true)}
       >
         <div className="flex items-center justify-between">
@@ -71,20 +71,25 @@ export function ModelPortfolioCard() {
               {latest?.macro_regime && <Badge variant="default">{latest.macro_regime}</Badge>}
             </div>
 
+            {/* Chart fills the card's flexible middle */}
             {points.length > 1 && (
-              <div className="mt-3">
+              <div className="mt-4 min-h-16 flex-1">
                 <Spark
                   data={points}
                   color={up ? 'var(--ark-success)' : 'var(--ark-error)'}
                   format={(v) => v.toFixed(0)}
                   interactive={false}
-                  className="h-10"
+                  className="h-full"
                 />
               </div>
             )}
 
-            <div className="mt-3 flex items-center justify-end gap-0.5 text-xs font-medium text-ark-primary">
-              View strategies <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            {/* Footer anchored to the card's bottom edge */}
+            <div className="mt-4 flex items-center justify-between border-t border-ark-divider/60 pt-3">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-ark-text-disabled">Past 30 days</span>
+              <span className="flex items-center gap-0.5 text-xs font-medium text-ark-primary">
+                View strategies <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
             </div>
           </>
         )}
