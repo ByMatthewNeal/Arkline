@@ -81,7 +81,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <nav className="flex-1 px-3 pt-4">
         <div className="space-y-1">
           {!collapsed && (
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">
+            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
               Main
             </p>
           )}
@@ -93,7 +93,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         <div className="space-y-1">
           {!collapsed && (
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">
+            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
               Account
             </p>
           )}

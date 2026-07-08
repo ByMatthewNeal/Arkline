@@ -181,7 +181,7 @@ export function PortfolioHero() {
 
       {/* Top holdings */}
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Top holdings</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Top holdings</p>
         <div className="space-y-1">
           {topHoldings.map((h) => {
             const pct = currentValue ? (h.value / currentValue) * 100 : 0;

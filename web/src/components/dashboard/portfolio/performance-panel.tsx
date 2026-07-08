@@ -68,7 +68,7 @@ export function PerformancePanel({ history, holdings, transactions, portfolioNam
 
   const metric = (label: string, value: string, color?: string) => (
     <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/40 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">{label}</p>
       <p className="fig mt-0.5 text-sm font-bold" style={{ color: color ?? 'var(--ark-text)' }}>{value}</p>
     </div>
   );

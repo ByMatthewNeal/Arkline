@@ -92,7 +92,7 @@ function RegimeQuadrant({ trajectory, emotionScore, engagementScore }: {
             <span className="text-[10px] font-bold uppercase tracking-wider text-ark-success/60">FOMO</span>
           </div>
           <div className="bg-ark-fill-secondary/50 flex items-end justify-center pb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-ark-text-disabled">Apathy</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ark-text-tertiary">Apathy</span>
           </div>
           <div className="bg-ark-violet/5 flex items-end justify-center pb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-ark-violet/60">Complacency</span>

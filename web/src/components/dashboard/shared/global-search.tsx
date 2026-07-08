@@ -67,7 +67,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
         <div className="max-h-[50vh] overflow-y-auto p-2">
           {coins.length > 0 && (
             <div className="mb-1">
-              <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Coins</p>
+              <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Coins</p>
               {coins.map((a) => {
                 const up = (a.price_change_percentage_24h ?? 0) >= 0;
                 return (
@@ -84,7 +84,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
           )}
 
           <div>
-            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Pages</p>
+            <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Pages</p>
             {pages.map((p) => (
               <button key={p.href} onClick={() => go(p.href)}
                 className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-ark-fill-secondary">

@@ -123,7 +123,7 @@ export function ArkLineScore() {
       {hist.length > 1 && (
         <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">Score History</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ark-text-tertiary">Score History</span>
             {active && (
               <button onClick={() => setActive(null)} className="text-xs font-semibold text-ark-info">Reset</button>
             )}
@@ -194,7 +194,7 @@ export function ArkLineScore() {
             <div key={cat.title}>
               <div className="mb-2 flex items-center gap-1.5">
                 <Icon className="h-3.5 w-3.5 text-ark-text-tertiary" />
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">{cat.title}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{cat.title}</span>
               </div>
               <div className="space-y-2">{rows.map((c) => <ComponentRow key={c.name} c={c} />)}</div>
             </div>

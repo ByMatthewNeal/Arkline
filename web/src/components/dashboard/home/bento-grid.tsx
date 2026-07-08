@@ -183,7 +183,7 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <Wallet className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Portfolio</span>
           </div>
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text leading-tight">
@@ -199,7 +199,7 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex flex-col justify-between flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <Wallet className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Portfolio</span>
             </div>
 
             <div className="relative">
@@ -219,14 +219,14 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
 
             <div className="flex gap-4">
               <div>
-                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">30d Return</p>
+                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">30d Return</p>
                 <p className={cn('fig text-sm font-bold', isMonthUp ? 'text-ark-success' : 'text-ark-error')}>
                   {formatPercent(monthChangePct)}
                 </p>
               </div>
               <div className="w-px bg-ark-divider" />
               <div>
-                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Assets</p>
+                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Assets</p>
                 <p className="fig text-sm font-bold text-ark-text">{assetCount}</p>
               </div>
             </div>
@@ -280,7 +280,7 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Gauge className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Fear & Greed</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Fear & Greed</span>
             </div>
             <Badge variant={variant}>{label}</Badge>
           </div>
@@ -330,7 +330,7 @@ function ArkLineScoreTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">ArkLine Score</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">ArkLine Score</span>
             </div>
             <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: `${color}1F`, color }}>{tier}</span>
           </div>
@@ -387,7 +387,7 @@ function BriefingTile({ onOpen }: { onOpen: () => void }) {
             <div className="flex items-center gap-2">
               <Brain className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Daily Briefing</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Daily Briefing</span>
                 <p className="flex items-center gap-1 text-[9px] text-ark-text-disabled">
                   <Clock className="h-2.5 w-2.5" />
                   {today}
@@ -480,7 +480,7 @@ function RiskChartTile({ onOpen }: { onOpen: () => void }) {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: `${color}15` }}>
                 <Shield className="h-3.5 w-3.5" style={{ color }} />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Risk Score</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Risk Score</span>
             </div>
             <Badge variant={variant}>{label}</Badge>
           </div>
@@ -537,7 +537,7 @@ function MarketMoversTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenP
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Core Technical Analysis</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Core Technical Analysis</span>
           </div>
           <div className="mt-3 grid flex-1 grid-cols-3 gap-2">
             {movers.map((asset) => {
@@ -584,7 +584,7 @@ function MacroTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Globe className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-success" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Macro</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Macro</span>
             </div>
             <span className="flex items-center gap-1 rounded-full bg-ark-success/10 px-1.5 py-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-ark-success animate-pulse" />
@@ -596,7 +596,7 @@ function MacroTile({ onOpen }: { onOpen: () => void }) {
           <div className="mt-3 flex flex-1 items-stretch rounded-xl bg-ark-fill-secondary/40">
             {cols.map((ind, i) => (
               <div key={ind.key} className={cn('flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2', i > 0 && 'border-l border-ark-divider/60')}>
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-disabled">{ind.key === 'cbLiquidity' ? 'CB Liq' : ind.label}</span>
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{ind.key === 'cbLiquidity' ? 'CB Liq' : ind.label}</span>
                 <span className="flex items-center gap-1 text-[12px] font-bold" style={{ color: sigDot(ind.signal) }}>
                   <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: sigDot(ind.signal) }} />{ind.signalLabel}
                 </span>
@@ -647,7 +647,7 @@ function SupplyTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <PieChart className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-info" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Supply in Profit</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Supply in Profit</span>
             </div>
             <Badge variant={variantMap[status] ?? 'info'}>{status}</Badge>
           </div>
@@ -714,7 +714,7 @@ function AssetRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Crypto Risk Levels</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Crypto Risk Levels</span>
             </div>
             <span className="flex items-center gap-0.5 text-[10px] font-semibold text-ark-primary">See all<ChevronRight className="h-3 w-3" /></span>
           </div>
@@ -754,7 +754,7 @@ function EventsTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-info" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Events</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Events</span>
             </div>
             {highCount > 0 && (
               <span className="rounded-full bg-ark-error/10 px-1.5 py-0.5 text-[9px] font-semibold text-ark-error">
@@ -809,7 +809,7 @@ function FavoritesTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Star className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Watchlist</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Watchlist</span>
             </div>
             <span className="text-[9px] text-ark-text-disabled">{favorites.length} tracked</span>
           </div>
@@ -873,7 +873,7 @@ function DCATile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bell className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">DCA</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">DCA</span>
             </div>
             <span className="fig rounded-full bg-ark-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-ark-primary">
               {upcoming.length} active
@@ -931,7 +931,7 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center gap-2">
             <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Headlines</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Headlines</span>
           </div>
 
           <div className="space-y-1.5">
@@ -1077,7 +1077,7 @@ function makeMacroTile(cfg: {
           <div className="flex h-full flex-col">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">{cfg.title}</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{cfg.title}</span>
               </div>
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: lvl.color }} />
             </div>
@@ -1141,16 +1141,16 @@ function MarketBreadthTile({ onOpen }: { onOpen: () => void }) {
       {isLoading || !data ? <SkeletonSparkTile /> : (
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Market Breadth</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Market Breadth</span>
             <span className="flex items-center gap-1 text-[12px] font-bold" style={{ color }}>
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />{trend.charAt(0).toUpperCase() + trend.slice(1)}
             </span>
           </div>
 
           <div className="mt-2 grid grid-cols-3 gap-1">
-            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">Breadth</p><p className="fig text-lg font-bold" style={{ color }}>{data.breadthPct.toFixed(1)}%</p></div>
-            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">Trending</p><p className="fig text-lg font-bold text-ark-text">{data.trendingTokens}/{data.totalTokens}</p></div>
-            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">BTC</p><p className="fig text-lg font-bold text-ark-text">${(data.btcPrice / 1000).toFixed(1)}K</p></div>
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">Breadth</p><p className="fig text-lg font-bold" style={{ color }}>{data.breadthPct.toFixed(1)}%</p></div>
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">Trending</p><p className="fig text-lg font-bold text-ark-text">{data.trendingTokens}/{data.totalTokens}</p></div>
+            <div><p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">BTC</p><p className="fig text-lg font-bold text-ark-text">${(data.btcPrice / 1000).toFixed(1)}K</p></div>
           </div>
 
           <div className="mt-1.5 flex items-center justify-between text-[10px]">
@@ -1180,7 +1180,7 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <Repeat className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Signal Changes</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Signal Changes</span>
           </div>
           {changes.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -1223,7 +1223,7 @@ function StockRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Stock Risk Levels</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Stock Risk Levels</span>
             </div>
             <span className="flex items-center gap-0.5 text-[10px] font-semibold text-ark-primary">See all<ChevronRight className="h-3 w-3" /></span>
           </div>
@@ -1255,7 +1255,7 @@ function TradeSignalsTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Trade Signals</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Trade Signals</span>
           </div>
           {signals.length === 0 ? (
             <div className="flex flex-1 items-center justify-center"><p className="text-xs text-ark-text-disabled">No recent signals</p></div>
@@ -1293,7 +1293,7 @@ function RotationTile({ onOpen }: { onOpen: () => void }) {
       ) : (
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Rotation Signal</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Rotation Signal</span>
             {regimeLabel && <Badge variant="default">{regimeLabel}</Badge>}
           </div>
           <div className="mt-1 flex items-baseline gap-2">
@@ -1305,7 +1305,7 @@ function RotationTile({ onOpen }: { onOpen: () => void }) {
           </div>
           {data.sectors.length > 0 && (
             <div className="mt-2">
-              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Top Sectors</p>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Top Sectors</p>
               <div className="mt-1 space-y-0.5">
                 {data.sectors.map((s) => (
                   <div key={s.name} className="flex items-center justify-between text-[10px]">
@@ -1334,7 +1334,7 @@ function ModelPortfolioTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <PieChart className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Model Portfolio</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Model Portfolio</span>
           </div>
           <div className="mt-1.5 flex items-center justify-between">
             <span className="text-sm font-semibold text-ark-text">{data.portfolio_name}</span>
@@ -1373,7 +1373,7 @@ function WeeklyUpdateTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Weekly Update</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Weekly Update</span>
           </div>
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <p className="font-[family-name:var(--font-urbanist)] text-lg font-bold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</p>
@@ -1414,7 +1414,7 @@ function USFuturesTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">US Futures</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">US Futures</span>
             {bias && (
               <span className="ml-auto rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ backgroundColor: `${biasColor}1F`, color: biasColor }}>
                 {session} · {bias}
@@ -1470,7 +1470,7 @@ function PerpPremiumTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <Gauge className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Perp Premium</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Perp Premium</span>
           </div>
           {perps.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -1511,7 +1511,7 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <Globe className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Fed Watch</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Fed Watch</span>
           </div>
           {meetings.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -1755,7 +1755,7 @@ function PortfolioHero() {
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10"><Wallet className="h-5 w-5 text-ark-primary" /></div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Portfolio</p>
             <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text"><span className="opacity-40 font-normal">$</span>0.00</p>
             <p className="text-[11px] text-ark-text-tertiary">No holdings yet — add positions to track your portfolio</p>
           </div>
@@ -1766,7 +1766,7 @@ function PortfolioHero() {
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <Wallet className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Portfolio</span>
               <button
                 onClick={toggleHideBalance}
                 title={hideBalance ? 'Show balance' : 'Hide balance'}

@@ -92,7 +92,7 @@ export function TransactionsPanel({
         <div className="mt-3 space-y-4">
           {groups.map((g) => (
             <div key={g.label}>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">{g.label}</p>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{g.label}</p>
               <div className="divide-y divide-ark-divider/50">
                 {g.items.map((t) => {
                   const meta = TYPE_META[t.type] ?? TYPE_META.buy;
@@ -168,7 +168,7 @@ export function TransactionsPanel({
                 { label: 'Fee', value: formatCurrency(selected.gas_fee ?? 0) },
               ].map((row) => (
                 <div key={row.label} className="rounded-xl bg-ark-fill-secondary/40 px-3 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">{row.label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{row.label}</p>
                   <p className="fig mt-0.5 text-sm font-semibold text-ark-text">{row.value}</p>
                 </div>
               ))}
@@ -179,7 +179,7 @@ export function TransactionsPanel({
                 'rounded-xl border px-3 py-3',
                 selected.realized_profit_loss >= 0 ? 'border-ark-success/30 bg-ark-success/5' : 'border-ark-error/30 bg-ark-error/5',
               )}>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Realized P/L</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Realized P/L</p>
                 <p className={cn('fig mt-0.5 text-lg font-bold', selected.realized_profit_loss >= 0 ? 'text-ark-success' : 'text-ark-error')}>
                   {formatCurrency(selected.realized_profit_loss, undefined, { sign: true })}
                 </p>
@@ -191,14 +191,14 @@ export function TransactionsPanel({
 
             {selected.emotional_state && (
               <div className="rounded-xl bg-ark-fill-secondary/40 px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Emotional state</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Emotional state</p>
                 <p className="mt-0.5 text-sm capitalize text-ark-text">{selected.emotional_state}</p>
               </div>
             )}
 
             {selected.notes && (
               <div className="rounded-xl bg-ark-fill-secondary/40 px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Notes</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Notes</p>
                 <p className="mt-0.5 text-sm text-ark-text-secondary">{selected.notes}</p>
               </div>
             )}

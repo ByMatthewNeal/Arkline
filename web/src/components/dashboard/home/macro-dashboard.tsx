@@ -93,7 +93,7 @@ export function MacroDashboard() {
 
       {/* Current values */}
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Current Values</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Current Values</p>
         <div className="overflow-hidden rounded-2xl border border-ark-divider bg-ark-fill-secondary/20">
           {data.indicators.map((ind, i) => (
             <IndicatorRow key={ind.key} ind={ind} divider={i > 0} onClick={() => setDetailKey(ind.key)} />
@@ -103,7 +103,7 @@ export function MacroDashboard() {
 
       {/* Alerts */}
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Alerts</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Alerts</p>
         <div className="flex items-center justify-between rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
           <div>
             <p className="text-sm font-semibold text-ark-text">Regime Change Alerts</p>

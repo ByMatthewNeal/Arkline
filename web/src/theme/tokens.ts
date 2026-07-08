@@ -34,7 +34,8 @@ export const colors = {
   textPrimary: { dark: '#FFFFFF', light: '#1E293B' },
   textSecondary: '#475569',
   textTertiary: { dark: '#71717A', light: '#64748B' },
-  textDisabled: { dark: '#4A4A5A', light: '#CCCCCC' },
+  // Light was #CCCCCC (iOS value) — raised for desktop legibility on white.
+  textDisabled: { dark: '#4A4A5A', light: '#A5AEBB' },
 
   // Glass
   glass: {

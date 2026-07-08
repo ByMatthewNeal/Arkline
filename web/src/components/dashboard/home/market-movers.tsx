@@ -185,7 +185,7 @@ function GaugeCard({ title, value, label, color }: { title: string; value: numbe
           <span className="fig text-2xl font-bold" style={{ color }}>{value}</span>
         </div>
       </div>
-      <p className="mt-1 text-center text-[11px] uppercase tracking-wider text-ark-text-disabled">{title}</p>
+      <p className="mt-1 text-center text-[11px] uppercase tracking-wider text-ark-text-tertiary">{title}</p>
       <p className="text-center text-[13px] font-bold" style={{ color }}>{label}</p>
     </div>
   );

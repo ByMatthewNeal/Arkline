@@ -56,7 +56,7 @@ export function CustomizePanel({
 
         {/* Presets */}
         <div className="border-b border-ark-divider px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Presets</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Presets</p>
           {presets.length > 0 && (
             <div className="mt-2 space-y-1.5">
               {presets.map((p) => (

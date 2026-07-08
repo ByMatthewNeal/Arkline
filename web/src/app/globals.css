@@ -67,7 +67,8 @@ img {
   --ark-fill-secondary: #F5F5F5;
   --ark-fill-tertiary: #E2E8F0;
   --ark-text-primary: #1E293B;
-  --ark-text-disabled: #CCCCCC;
+  /* Was #CCCCCC (iOS value) — too faint on white (~1.6:1). Muted but legible. */
+  --ark-text-disabled: #A5AEBB;
   --ark-glass-bg: rgba(255, 255, 255, 0.72);
   --ark-glass-border: rgba(226, 232, 240, 0.6);
 }

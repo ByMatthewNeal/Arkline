@@ -49,7 +49,7 @@ export function MarketBreadthDetail() {
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-ark-text-disabled">Current Trend</p>
+            <p className="text-[11px] uppercase tracking-wider text-ark-text-tertiary">Current Trend</p>
             <p className="font-[family-name:var(--font-urbanist)] text-2xl font-bold" style={{ color: trendColor }}>{cap(data.trend)}</p>
           </div>
           <p className="text-right text-xs font-semibold" style={{ color: trendColor }}>
@@ -65,16 +65,16 @@ export function MarketBreadthDetail() {
           <span className="fig font-semibold text-ark-text">{data.trendingTokens} / {data.totalTokens}</span>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3 border-t border-ark-divider pt-3">
-          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">Breadth</p><p className="fig text-base font-bold" style={{ color: breadthColor }}>{data.breadthPct.toFixed(1)}%</p><p className="text-[10px] text-ark-text-disabled">{breadthLabel}</p></div>
-          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">Trending</p><p className="fig text-base font-bold text-ark-text">{data.trendingTokens}</p><p className="text-[10px] text-ark-text-disabled">of {data.totalTokens}</p></div>
-          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">BTC</p><p className="fig text-base font-bold text-ark-text">${data.btcPrice.toLocaleString()}</p><p className="text-[10px] text-ark-text-disabled">{fmtDay(data.asOf)}</p></div>
+          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">Breadth</p><p className="fig text-base font-bold" style={{ color: breadthColor }}>{data.breadthPct.toFixed(1)}%</p><p className="text-[10px] text-ark-text-disabled">{breadthLabel}</p></div>
+          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">Trending</p><p className="fig text-base font-bold text-ark-text">{data.trendingTokens}</p><p className="text-[10px] text-ark-text-disabled">of {data.totalTokens}</p></div>
+          <div><p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">BTC</p><p className="fig text-base font-bold text-ark-text">${data.btcPrice.toLocaleString()}</p><p className="text-[10px] text-ark-text-disabled">{fmtDay(data.asOf)}</p></div>
         </div>
       </div>
 
       {/* Recent signals */}
       {data.recentSignals.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Recent Signals</p>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Recent Signals</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {data.recentSignals.map((s, i) => (
               <span key={i} className={cn('flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold', s.type === 'bullish' ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>
@@ -145,7 +145,7 @@ export function MarketBreadthDetail() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3 text-center">
-      <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">{label}</p>
       <p className="fig mt-0.5 text-sm font-bold text-ark-text">{value}</p>
     </div>
   );

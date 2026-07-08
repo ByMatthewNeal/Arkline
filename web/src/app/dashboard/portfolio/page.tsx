@@ -332,7 +332,7 @@ export default function PortfolioPage() {
               {/* Current vs target allocation (editable) */}
               {aggHoldings.length > 0 && stats.totalValue > 0 && (
                 <div className="mt-3 space-y-1.5 border-t border-ark-divider pt-3">
-                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">
+                  <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
                     <span>Asset</span><span>Current · Target</span>
                   </div>
                   {aggHoldings.map((h, i) => {

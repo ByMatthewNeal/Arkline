@@ -88,7 +88,7 @@ export function FearGreedGauge() {
       {/* History */}
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">History (90 Days)</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-ark-text-tertiary">History (90 Days)</p>
           {active && <button onClick={() => setActive(null)} className="text-xs font-semibold text-ark-info">Reset</button>}
         </div>
 
@@ -147,7 +147,7 @@ export function FearGreedGauge() {
 
       {/* Level guide */}
       <div className="rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-ark-text-disabled">Level Guide</p>
+        <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-ark-text-tertiary">Level Guide</p>
         <div className="space-y-3">
           {LEVELS.map((l) => (
             <div key={l.range} className="flex items-start gap-2.5">

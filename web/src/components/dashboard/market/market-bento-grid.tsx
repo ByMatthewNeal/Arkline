@@ -155,7 +155,7 @@ function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex flex-col justify-between flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <Globe className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Market Overview</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Market Overview</span>
             </div>
 
             <div className="relative">
@@ -176,14 +176,14 @@ function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
 
             <div className="flex gap-4">
               <div>
-                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">24h Vol</p>
+                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">24h Vol</p>
                 <p className="fig text-sm font-bold text-ark-text">
                   {global ? formatCurrency(global.total_volume, 'USD', { compact: true }) : '—'}
                 </p>
               </div>
               <div className="w-px bg-ark-divider" />
               <div>
-                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">BTC Dom</p>
+                <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">BTC Dom</p>
                 <p className="fig text-sm font-bold text-ark-text">
                   {global ? `${global.btc_dominance.toFixed(1)}%` : '—'}
                 </p>
@@ -213,7 +213,7 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Gauge className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Fear & Greed</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Fear & Greed</span>
             </div>
             <Badge variant={variant}>{label}</Badge>
           </div>
@@ -255,7 +255,7 @@ function RegimeTile({ onOpen }: { onOpen: () => void }) {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: `${color}15` }}>
                 <Compass className="h-3.5 w-3.5" style={{ color }} />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Regime</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Regime</span>
             </div>
             <Badge variant={variant}>{regimeLabel}</Badge>
           </div>
@@ -311,7 +311,7 @@ function SentimentTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Sentiment</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Sentiment</span>
             </div>
             <Badge variant={season === 'altcoin' ? 'info' : 'default'}>
               {season === 'altcoin' ? 'Alt Season' : 'BTC Season'}
@@ -321,7 +321,7 @@ function SentimentTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-end justify-between relative">
             <AmbientGlow color={color} className="-left-2 -bottom-2 h-12 w-20" />
             <div className="relative">
-              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">ArkLine Score</p>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">ArkLine Score</p>
               <span ref={counter.ref} className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none" style={{ color }}>
                 {counter.value}
               </span>
@@ -368,7 +368,7 @@ function MacroTile({ onOpen }: { onOpen: () => void }) {
             <div className="flex items-center gap-2">
               <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-success" />
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Macro</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Macro</span>
                 <span className="flex items-center gap-1 rounded-full bg-ark-success/10 px-1.5 py-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-ark-success animate-pulse" />
                   <span className="text-[8px] font-bold uppercase tracking-wider text-ark-success">Live</span>
@@ -422,7 +422,7 @@ function PositioningTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Target className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Positioning</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Positioning</span>
             </div>
           </div>
 
@@ -465,7 +465,7 @@ function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Activity className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-success" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Momentum Map</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Momentum Map</span>
             </div>
             <Badge variant={count > 0 ? 'success' : 'default'}>{count} aligned</Badge>
           </div>
@@ -501,7 +501,7 @@ function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center gap-2">
             <Landmark className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-info" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Trad Markets</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Trad Markets</span>
           </div>
           <div className="space-y-1.5">
             {top3.map((asset) => {
@@ -541,7 +541,7 @@ function TopCoinsTile({ onOpen }: { onOpen: () => void }) {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F7931A]/10 transition-transform duration-300 group-hover:scale-110">
               <Bitcoin className="h-3.5 w-3.5 text-[#F7931A]" />
             </div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Top Coins</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Top Coins</span>
           </div>
           <div className="space-y-1.5">
             {movers.map((asset) => {
@@ -579,7 +579,7 @@ function AltcoinScannerTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center gap-2">
             <Search className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Alt Scanner</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Alt Scanner</span>
           </div>
           <div className="space-y-1.5">
             {top3.map((alt) => {
@@ -620,7 +620,7 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center gap-2">
             <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Headlines</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Headlines</span>
           </div>
           <div className="space-y-1.5">
             {articles.slice(0, 3).map((article, i) => (
@@ -668,12 +668,12 @@ function RetailSentimentTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center gap-2">
             <Users className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Retail</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Retail</span>
           </div>
 
           <div className="space-y-2">
             <div>
-              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Coinbase Rank</p>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Coinbase Rank</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
                   #{cbRank ?? '>200'}
@@ -689,7 +689,7 @@ function RetailSentimentTile({ onOpen }: { onOpen: () => void }) {
               </div>
             </div>
             <div>
-              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">BTC Search Index</p>
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">BTC Search Index</p>
               <span ref={counter.ref} className="fig text-lg font-bold text-ark-text">{counter.value}</span>
               <span className="text-[10px] text-ark-text-disabled ml-0.5">/ 100</span>
             </div>
@@ -719,21 +719,21 @@ function FundingTile({ onOpen }: { onOpen: () => void }) {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110" style={{ backgroundColor: `${color}15` }}>
                 <DollarSign className="h-3.5 w-3.5" style={{ color }} />
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Funding</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Funding</span>
             </div>
             <Badge variant={variant}>{sentiment}</Badge>
           </div>
 
           <div className="relative">
             <AmbientGlow color={color} className="-left-2 -bottom-2 h-12 w-20" />
-            <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Funding Rate</p>
+            <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Funding Rate</p>
             <span className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none relative" style={{ color }}>
               {(rate * 100).toFixed(4)}%
             </span>
           </div>
 
           <div>
-            <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-disabled">Annualized</p>
+            <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Annualized</p>
             <span className={cn('fig text-sm font-bold', annualized >= 0 ? 'text-ark-success' : 'text-ark-error')}>
               {formatPercent(annualized, 1)}
             </span>

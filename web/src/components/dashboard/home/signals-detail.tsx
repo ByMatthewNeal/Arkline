@@ -11,7 +11,7 @@ import type { DeckSlide } from '@/types';
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">{label}</p>
       <p className="fig mt-0.5 text-sm font-bold text-ark-text">{value}</p>
     </div>
   );
@@ -86,7 +86,7 @@ export function RotationDetail() {
 
       {/* Crypto ↔ Equities scale */}
       <div>
-        <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">
+        <div className="flex justify-between text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
           <span>Crypto</span><span>Equities</span>
         </div>
         <div className="relative mt-1 h-2 rounded-full bg-gradient-to-r from-ark-primary via-ark-text-tertiary to-ark-violet">
@@ -96,11 +96,11 @@ export function RotationDetail() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">BTC 30d</p>
+          <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">BTC 30d</p>
           <p className={cn('fig mt-0.5 text-sm font-bold', (data.btc_30d_return ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(data.btc_30d_return ?? 0)}</p>
         </div>
         <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">SPY 30d</p>
+          <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">SPY 30d</p>
           <p className={cn('fig mt-0.5 text-sm font-bold', (data.spy_30d_return ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(data.spy_30d_return ?? 0)}</p>
         </div>
       </div>

@@ -119,7 +119,7 @@ const H_STYLES: Record<number, string> = {
   3: 'text-sm font-semibold text-ark-text',
   4: 'text-sm font-semibold text-ark-text-secondary',
   5: 'text-xs font-semibold uppercase tracking-wider text-ark-text-tertiary',
-  6: 'text-xs font-semibold uppercase tracking-wider text-ark-text-disabled',
+  6: 'text-xs font-semibold uppercase tracking-wider text-ark-text-tertiary',
 };
 
 export function Markdown({ content, className }: { content: string; className?: string }) {

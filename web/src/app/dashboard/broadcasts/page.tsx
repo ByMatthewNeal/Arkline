@@ -206,12 +206,12 @@ export default function BroadcastsPage() {
         <div className="space-y-4">
           {pinned.length > 0 && (
             <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Pinned</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Pinned</p>
               {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} />)}
             </div>
           )}
           <div className="space-y-3">
-            {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Latest</p>}
+            {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Latest</p>}
             {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} />)}
           </div>
         </div>

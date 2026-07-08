@@ -23,7 +23,7 @@ function TermRow({ t }: { t: DictionaryTerm }) {
           <p className="text-[13px] leading-relaxed text-ark-text-secondary">{t.definition}</p>
           {t.example && (
             <div className="mt-2 rounded-lg border-l-2 border-ark-info/40 bg-ark-fill-secondary/40 px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Example</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Example</p>
               <p className="mt-0.5 text-[13px] leading-relaxed text-ark-text-secondary">{t.example}</p>
             </div>
           )}

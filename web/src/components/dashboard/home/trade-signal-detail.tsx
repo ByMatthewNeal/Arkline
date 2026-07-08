@@ -81,7 +81,7 @@ function LeverageCalculator({ signal }: { signal: TradeSignal }) {
           { label: 'Gain at T1', value: t1 != null ? formatCurrency(t1) : '—', color: 'text-ark-success' },
         ].map((c) => (
           <div key={c.label} className="rounded-lg bg-ark-fill-secondary/40 px-2.5 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">{c.label}</p>
+            <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">{c.label}</p>
             <p className={cn('fig mt-0.5 font-semibold', c.color)}>{c.value}</p>
           </div>
         ))}
@@ -164,14 +164,14 @@ function SignalDeepDive({ signal, onBack }: { signal: TradeSignal; onBack: () =>
         )}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Live P&L from entry</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Live P&L from entry</p>
               <p className={cn('fig text-xl font-bold', (pnlPct ?? 0) >= 0 ? 'text-ark-success' : 'text-ark-error')}>
                 {pnlPct != null ? formatPercent(pnlPct) : '—'}
                 {rMultiple != null && <span className="ml-2 text-sm font-semibold text-ark-text-secondary">{rMultiple.toFixed(2)}R</span>}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">Current price</p>
+              <p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">Current price</p>
               <p className="fig text-sm font-semibold text-ark-text">{formatCurrency(price)}</p>
             </div>
           </div>
@@ -181,7 +181,7 @@ function SignalDeepDive({ signal, onBack }: { signal: TradeSignal; onBack: () =>
           'rounded-xl border px-3.5 py-3',
           signal.outcome_pct >= 0 ? 'border-ark-success/30 bg-ark-success/5' : 'border-ark-error/30 bg-ark-error/5',
         )}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-disabled">Outcome</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Outcome</p>
           <p className={cn('fig text-xl font-bold', signal.outcome_pct >= 0 ? 'text-ark-success' : 'text-ark-error')}>
             {formatPercent(signal.outcome_pct)}
           </p>
@@ -190,7 +190,7 @@ function SignalDeepDive({ signal, onBack }: { signal: TradeSignal; onBack: () =>
 
       {/* Trade structure */}
       <div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Trade structure</p>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Trade structure</p>
         <div className="space-y-1.5">
           <StructureRow label="Target 2" price={signal.target_2} entry={entry} tone="var(--ark-success)" />
           <StructureRow label="Target 1" price={signal.target_1} entry={entry} tone="var(--ark-success)" />
@@ -221,7 +221,7 @@ function SignalDeepDive({ signal, onBack }: { signal: TradeSignal; onBack: () =>
       {/* Rationale */}
       {(signal.short_rationale || signal.briefing_text) && (
         <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Analysis</p>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Analysis</p>
           <Markdown content={signal.briefing_text || signal.short_rationale || ''} />
         </div>
       )}

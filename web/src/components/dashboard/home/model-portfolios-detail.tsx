@@ -160,7 +160,7 @@ export function ModelPortfoliosDetail() {
       {/* NAV vs SPY */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Performance vs. S&P 500</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Performance vs. S&P 500</p>
           <div className="flex gap-1 rounded-full bg-ark-fill-secondary/60 p-0.5">
             {RANGES.map((r) => (
               <button
@@ -226,7 +226,7 @@ export function ModelPortfoliosDetail() {
       {/* Current allocations */}
       {allocations.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Current allocation</p>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Current allocation</p>
           <div className="space-y-1.5">
             {allocations.map((a) => (
               <div key={a.asset} className="flex items-center gap-3">
@@ -244,7 +244,7 @@ export function ModelPortfoliosDetail() {
       {/* Trade log */}
       {(trades ?? []).length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Rebalance history</p>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Rebalance history</p>
           <div className="space-y-2">
             {(trades ?? []).map((t) => {
               const changes = Object.keys({ ...t.from_allocation, ...t.to_allocation })

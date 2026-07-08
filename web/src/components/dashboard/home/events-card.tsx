@@ -42,7 +42,7 @@ function EventRow({ e }: { e: EconomicEvent }) {
           <div className="grid grid-cols-3 gap-2 text-center">
             {[['Previous', e.previous], ['Forecast', e.forecast], ['Actual', e.actual]].map(([label, val]) => (
               <div key={label} className="rounded-lg bg-ark-fill-secondary/40 py-2">
-                <p className="text-[9px] uppercase tracking-wider text-ark-text-disabled">{label}</p>
+                <p className="text-[9px] uppercase tracking-wider text-ark-text-tertiary">{label}</p>
                 <p className={cn('fig mt-0.5 text-sm font-bold', label === 'Actual' ? beatColor : 'text-ark-text')}>{val ?? '—'}</p>
               </div>
             ))}

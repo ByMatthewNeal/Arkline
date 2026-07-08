@@ -58,7 +58,7 @@ export default function QAPage() {
 
       {/* Sort */}
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">{list.length} question{list.length === 1 ? '' : 's'}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{list.length} question{list.length === 1 ? '' : 's'}</p>
         <div className="inline-flex rounded-full bg-ark-fill-secondary p-0.5">
           {(['newest', 'top'] as const).map((s) => (
             <button key={s} onClick={() => setSort(s)} className={cn('rounded-full px-3 py-1 text-xs font-semibold capitalize transition-colors', sort === s ? 'bg-ark-info text-white' : 'text-ark-text-tertiary')}>{s}</button>

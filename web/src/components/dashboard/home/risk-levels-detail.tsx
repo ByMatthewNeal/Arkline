@@ -192,8 +192,8 @@ function AssetRiskChart({ kind, item, onBack }: { kind: 'crypto' | 'stock'; item
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3"><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">7d Avg</p><p className="fig mt-0.5 text-sm font-bold text-ark-text">{item.sevenDayAvg.toFixed(3)}</p></div>
-        <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3"><p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">Days at level</p><p className="fig mt-0.5 text-sm font-bold text-ark-text">{item.daysAtLevel}</p></div>
+        <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3"><p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">7d Avg</p><p className="fig mt-0.5 text-sm font-bold text-ark-text">{item.sevenDayAvg.toFixed(3)}</p></div>
+        <div className="rounded-xl border border-ark-divider bg-ark-fill-secondary/30 p-3"><p className="text-[10px] uppercase tracking-wider text-ark-text-tertiary">Days at level</p><p className="fig mt-0.5 text-sm font-bold text-ark-text">{item.daysAtLevel}</p></div>
       </div>
 
       <div className="flex justify-center">
