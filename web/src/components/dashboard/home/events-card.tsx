@@ -4,8 +4,23 @@ import { useState } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { useEconomicEvents } from '@/lib/hooks/use-market';
-import { cn } from '@/lib/utils/format';
+import { cn, localDateISO } from '@/lib/utils/format';
 import type { EconomicEvent } from '@/types';
+
+/** "Today · Tue, Jul 8" / "Yesterday · Mon, Jul 7" / "Thu, Jul 10" */
+function dayLabel(dateISO: string): { primary: string; secondary: string | null } {
+  const todayISO = localDateISO();
+  const d = new Date(dateISO + 'T00:00:00');
+  const formatted = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dateISO === todayISO) return { primary: 'Today', secondary: formatted };
+  if (dateISO === localDateISO(yesterday)) return { primary: 'Yesterday', secondary: formatted };
+  if (dateISO === localDateISO(tomorrow)) return { primary: 'Tomorrow', secondary: formatted };
+  return { primary: formatted, secondary: null };
+}
 
 const impactStyles: Record<string, { dot: string; label: string }> = {
   high: { dot: 'bg-ark-error', label: 'text-ark-error' },
@@ -77,10 +92,45 @@ export function EventsCard() {
     );
   }
 
+  // Group by calendar day so day changes are unmistakable while scrolling.
+  const groups: { date: string; items: EconomicEvent[] }[] = [];
+  for (const e of list) {
+    const date = (e.date ?? '').slice(0, 10);
+    const g = groups[groups.length - 1];
+    if (g && g.date === date) g.items.push(e);
+    else groups.push({ date, items: [e] });
+  }
+  const todayISO = localDateISO();
+
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-ark-text-disabled">Tap an event for the data, forecast vs. actual, and why it matters.</p>
-      {list.map((e) => <EventRow key={e.id} e={e} />)}
+      {groups.map((g) => {
+        const label = dayLabel(g.date);
+        const isToday = g.date === todayISO;
+        const isPast = g.date < todayISO;
+        return (
+          <div key={g.date}>
+            {/* Sticky day header — survives scrolling inside the drawer */}
+            <div className="sticky top-0 z-10 -mx-1 flex items-baseline gap-2 bg-ark-card/95 px-1 py-2 backdrop-blur-sm">
+              <span className={cn(
+                'text-[11px] font-bold uppercase tracking-wider',
+                isToday ? 'text-ark-primary' : isPast ? 'text-ark-text-tertiary' : 'text-ark-text',
+              )}>
+                {label.primary}
+              </span>
+              {label.secondary && (
+                <span className="text-[10px] font-medium text-ark-text-tertiary">{label.secondary}</span>
+              )}
+              <span className="h-px flex-1 self-center bg-ark-divider/60" />
+              <span className="fig text-[10px] text-ark-text-tertiary">{g.items.length}</span>
+            </div>
+            <div className={cn('space-y-2', isPast && 'opacity-70')}>
+              {g.items.map((e) => <EventRow key={e.id} e={e} />)}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
