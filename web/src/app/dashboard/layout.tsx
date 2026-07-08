@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/shared/sidebar';
 import { Topbar } from '@/components/dashboard/shared/topbar';
+import { NewsTicker } from '@/components/dashboard/shared/news-ticker';
 import { MobileNav } from '@/components/dashboard/shared/mobile-nav';
 import { cn, setPreferredCurrency, getPreferredCurrency } from '@/lib/utils/format';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -58,6 +59,7 @@ export default function DashboardLayout({
         )}
       >
         <Topbar />
+        <NewsTicker />
         <main key={currency} className="animate-fade-in p-4 pb-24 sm:p-6 md:pb-6">
           {children}
         </main>

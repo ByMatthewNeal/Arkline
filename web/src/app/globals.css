@@ -283,6 +283,17 @@ body {
   animation: status-pulse 3s ease-in-out infinite;
 }
 
+/* ── News ticker crawl ── (content is duplicated; -50% = one full copy) */
+
+@keyframes ticker-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.animate-ticker {
+  animation: ticker-scroll 60s linear infinite;
+}
+
 /* ── Line clamp ── */
 
 .line-clamp-2 {
