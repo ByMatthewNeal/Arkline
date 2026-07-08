@@ -23,7 +23,7 @@ import {
   useMacroDashboard, useMarketBreadthDetail, useFearGreedDetail, useRiskLevels,
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { usePortfolios, useHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { usePortfolios, usePricedHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
 import { useDashboardPresets } from '@/lib/hooks/use-dashboard-presets';
 import { useQuery } from '@tanstack/react-query';
@@ -138,31 +138,21 @@ function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: 
 function PortfolioTile({ onOpen }: { onOpen: () => void }) {
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
   const portfolioId = portfolios?.[0]?.id;
-  const { data: holdings, isLoading: holdingsLoading } = useHoldings(portfolioId);
-  const { data: assets } = useCryptoAssets(1);
+  // Live pricing for ALL holdings (beyond top-100, stocks, metals), 60 s refresh.
+  const { data: holdings, isLoading: holdingsLoading } = usePricedHoldings(portfolioId);
   const { data: history } = usePortfolioHistory(portfolioId, 30);
 
   const isLoading = portfoliosLoading || (!!portfolioId && holdingsLoading);
-
-  // Live price lookup by symbol (from the cached top-coins list).
-  const priceBySymbol = new Map<string, { current_price: number; price_change_percentage_24h: number }>();
-  for (const a of assets ?? []) {
-    priceBySymbol.set(a.symbol.toLowerCase(), {
-      current_price: a.current_price,
-      price_change_percentage_24h: a.price_change_percentage_24h ?? 0,
-    });
-  }
 
   // Current value + 24h change, summed across holdings (quantity × live price;
   // falls back to average buy price for anything without a live quote).
   let currentValue = 0;
   let dayChange = 0;
   for (const h of holdings ?? []) {
-    const live = priceBySymbol.get(h.symbol.toLowerCase());
-    const price = live?.current_price ?? h.average_buy_price ?? 0;
+    const price = h.current_price ?? h.average_buy_price ?? 0;
     const value = h.quantity * price;
     currentValue += value;
-    const pct = live?.price_change_percentage_24h ?? 0;
+    const pct = h.price_change_percentage_24h ?? 0;
     dayChange += value - value / (1 + pct / 100);
   }
   const dayChangePct = currentValue - dayChange ? (dayChange / (currentValue - dayChange)) * 100 : 0;
@@ -1761,27 +1751,19 @@ const PERIOD_SUFFIX: Record<PortfolioPeriod, string> = {
 function PortfolioHero() {
   const { data: portfolios, isLoading: portfoliosLoading } = usePortfolios();
   const portfolioId = portfolios?.[0]?.id;
-  const { data: holdings, isLoading: holdingsLoading } = useHoldings(portfolioId);
-  const { data: assets } = useCryptoAssets(1);
+  // Live pricing for ALL holdings (beyond top-100, stocks, metals), 60 s refresh.
+  const { data: holdings, isLoading: holdingsLoading } = usePricedHoldings(portfolioId);
   const { data: history } = usePortfolioHistory(portfolioId, 365);
   const isLoading = portfoliosLoading || (!!portfolioId && holdingsLoading);
   const [period, setPeriod] = useState<PortfolioPeriod>('1M');
 
-  const priceBySymbol = new Map<string, { current_price: number; price_change_percentage_24h: number }>();
-  for (const a of assets ?? []) {
-    priceBySymbol.set(a.symbol.toLowerCase(), {
-      current_price: a.current_price,
-      price_change_percentage_24h: a.price_change_percentage_24h ?? 0,
-    });
-  }
   let currentValue = 0;
   let dayChange = 0;
   for (const h of holdings ?? []) {
-    const live = priceBySymbol.get(h.symbol.toLowerCase());
-    const price = live?.current_price ?? h.average_buy_price ?? 0;
+    const price = h.current_price ?? h.average_buy_price ?? 0;
     const value = h.quantity * price;
     currentValue += value;
-    dayChange += value - value / (1 + (live?.price_change_percentage_24h ?? 0) / 100);
+    dayChange += value - value / (1 + (h.price_change_percentage_24h ?? 0) / 100);
   }
   const dayChangePct = currentValue - dayChange ? (dayChange / (currentValue - dayChange)) * 100 : 0;
 

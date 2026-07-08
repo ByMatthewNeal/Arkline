@@ -65,38 +65,167 @@ export async function fetchPortfolioHistory(
   }));
 }
 
-export async function refreshHoldingPrices(
-  holdings: PortfolioHolding[],
-): Promise<PortfolioHolding[]> {
-  if (!isSupabaseConfigured()) return holdings;
+/* ── Live pricing ─────────────────────────────────────────────────────────
+ * Live prices for ALL holdings (crypto beyond the cached top-100, stocks,
+ * metals) via the `api-proxy` edge function — mirrors the iOS pricing path
+ * (CoinGecko + FMP + Metals API). NOTE: the proxy reads `queryItems`, not
+ * `params`, and CoinGecko `/simple/price` requires coin IDS, not symbols.
+ */
+
+export interface LivePrice {
+  price: number;
+  change24h?: number;
+}
+
+/** symbol(lowercase) → CoinGecko id, memoized per session to avoid re-searching. */
+const cgIdCache = new Map<string, string | null>();
+
+async function invokeProxy<T>(
+  body: { service: string; path: string; queryItems?: Record<string, string> },
+): Promise<T | null> {
   const supabase = getSupabase();
-  const cryptoSymbols = holdings
-    .filter((h) => h.asset_type === 'crypto')
-    .map((h) => h.symbol.toLowerCase());
+  const { data, error } = await supabase.functions.invoke('api-proxy', { body });
+  if (error) return null;
+  return data as T;
+}
 
-  if (cryptoSymbols.length === 0) return holdings;
+async function resolveCoinGeckoIds(
+  symbols: string[],
+  knownIds: Map<string, string>,
+): Promise<Map<string, string>> {
+  const resolved = new Map<string, string>();
+  const unresolved: string[] = [];
 
-  const { data, error } = await supabase.functions.invoke('api-proxy', {
-    body: {
-      service: 'coingecko',
-      path: '/simple/price',
-      params: {
-        ids: cryptoSymbols.join(','),
-        vs_currencies: 'usd',
-        include_24hr_change: 'true',
-      },
+  for (const sym of symbols) {
+    const known = knownIds.get(sym) ?? cgIdCache.get(sym);
+    if (known) resolved.set(sym, known);
+    else if (cgIdCache.get(sym) !== null || !cgIdCache.has(sym)) unresolved.push(sym);
+  }
+
+  // Fall back to CoinGecko /search for long-tail coins (exact symbol match,
+  // best market-cap rank wins). Sequential-ish but only runs for unknowns once.
+  await Promise.all(
+    unresolved.map(async (sym) => {
+      type SearchResult = { coins?: { id: string; symbol: string; market_cap_rank?: number | null }[] };
+      const res = await invokeProxy<SearchResult>({
+        service: 'coingecko',
+        path: '/search',
+        queryItems: { query: sym },
+      });
+      const match = (res?.coins ?? [])
+        .filter((c) => c.symbol?.toLowerCase() === sym)
+        .sort((a, b) => (a.market_cap_rank ?? 1e9) - (b.market_cap_rank ?? 1e9))[0];
+      cgIdCache.set(sym, match?.id ?? null);
+      if (match?.id) resolved.set(sym, match.id);
+    }),
+  );
+
+  return resolved;
+}
+
+async function fetchCryptoPrices(
+  symbols: string[],
+  knownIds: Map<string, string>,
+): Promise<Map<string, LivePrice>> {
+  const out = new Map<string, LivePrice>();
+  if (!symbols.length) return out;
+
+  const idBySymbol = await resolveCoinGeckoIds(symbols, knownIds);
+  if (!idBySymbol.size) return out;
+
+  type SimplePrice = Record<string, { usd?: number; usd_24h_change?: number }>;
+  const data = await invokeProxy<SimplePrice>({
+    service: 'coingecko',
+    path: '/simple/price',
+    queryItems: {
+      ids: [...new Set(idBySymbol.values())].join(','),
+      vs_currencies: 'usd',
+      include_24hr_change: 'true',
     },
   });
+  if (!data) return out;
 
-  if (error) return holdings;
+  for (const [sym, id] of idBySymbol) {
+    const p = data[id];
+    if (p?.usd != null) out.set(sym, { price: p.usd, change24h: p.usd_24h_change });
+  }
+  return out;
+}
 
+async function fetchStockPrices(symbols: string[]): Promise<Map<string, LivePrice>> {
+  const out = new Map<string, LivePrice>();
+  // FMP stable tier: one /quote call per symbol (matches iOS FMPService).
+  await Promise.all(
+    symbols.map(async (sym) => {
+      type FMPQuote = { symbol: string; price?: number; changePercentage?: number; changesPercentage?: number };
+      const data = await invokeProxy<FMPQuote[]>({
+        service: 'fmp',
+        path: '/quote',
+        queryItems: { symbol: sym.toUpperCase() },
+      });
+      const q = Array.isArray(data) ? data[0] : undefined;
+      if (q?.price != null) {
+        out.set(sym, { price: q.price, change24h: q.changePercentage ?? q.changesPercentage });
+      }
+    }),
+  );
+  return out;
+}
+
+async function fetchMetalPrices(symbols: string[]): Promise<Map<string, LivePrice>> {
+  const out = new Map<string, LivePrice>();
+  if (!symbols.length) return out;
+  // Metals API returns rates per USD → invert for price per unit (matches iOS).
+  type MetalsResponse = { rates?: Record<string, number> };
+  const data = await invokeProxy<MetalsResponse>({
+    service: 'metals',
+    path: '/latest',
+    queryItems: { base: 'USD', symbols: symbols.map((s) => s.toUpperCase()).join(',') },
+  });
+  for (const sym of symbols) {
+    const rate = data?.rates?.[sym.toUpperCase()];
+    if (rate) out.set(sym, { price: 1 / rate });
+  }
+  return out;
+}
+
+/**
+ * Fetch live prices for every holding, keyed by lowercase symbol.
+ * `knownIds` lets callers pass symbol→CoinGecko-id pairs already known from
+ * the cached top-100 list so those never need a /search round-trip.
+ */
+export async function fetchLivePrices(
+  holdings: PortfolioHolding[],
+  knownIds: Map<string, string> = new Map(),
+): Promise<Map<string, LivePrice>> {
+  if (!isSupabaseConfigured() || !holdings.length) return new Map();
+
+  const uniq = (type: string) =>
+    [...new Set(holdings.filter((h) => h.asset_type === type).map((h) => h.symbol.toLowerCase()))];
+
+  const [crypto, stocks, metals] = await Promise.all([
+    fetchCryptoPrices(uniq('crypto'), knownIds),
+    fetchStockPrices(uniq('stock')),
+    fetchMetalPrices(uniq('metal')),
+  ]);
+
+  return new Map([...crypto, ...stocks, ...metals]);
+}
+
+/** Merge live prices into holdings (live > cached top-100 > stored > avg cost). */
+export function applyLivePrices(
+  holdings: PortfolioHolding[],
+  live: Map<string, LivePrice> | undefined,
+  cached?: Map<string, LivePrice>,
+): PortfolioHolding[] {
   return holdings.map((h) => {
-    const priceData = data?.[h.symbol.toLowerCase()];
-    if (!priceData) return h;
+    const sym = h.symbol.toLowerCase();
+    const p = live?.get(sym) ?? cached?.get(sym);
+    if (!p) return h;
     return {
       ...h,
-      current_price: priceData.usd,
-      price_change_percentage_24h: priceData.usd_24h_change,
+      current_price: p.price,
+      price_change_percentage_24h: p.change24h ?? h.price_change_percentage_24h ?? 0,
     };
   });
 }

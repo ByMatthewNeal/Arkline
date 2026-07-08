@@ -16,12 +16,12 @@ import {
   Trash2,
   Loader2,
 } from 'lucide-react';
-import { GlassCard, Skeleton } from '@/components/ui';
+import { GlassCard, Skeleton, ConfirmDialog, useToast } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDCAReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { formatCurrency, formatRelativeTime, cn } from '@/lib/utils/format';
+import { formatCurrency, formatRelativeTime } from '@/lib/utils/format';
 import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
 import { useLogInvestment, useUpdateReminder, useDeleteReminder } from '@/lib/hooks/use-dca-mutations';
 import type { DCAReminder } from '@/types';
@@ -39,6 +39,8 @@ export default function DCAPage() {
   const isDemo = !isSupabaseConfigured();
   const [showCompleted, setShowCompleted] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; editing: DCAReminder | null }>({ open: false, editing: null });
+  const [deleteTarget, setDeleteTarget] = useState<DCAReminder | null>(null);
+  const toast = useToast();
 
   const logInvestment = useLogInvestment();
   const updateReminder = useUpdateReminder();
@@ -93,6 +95,23 @@ export default function DCAPage() {
       </div>
 
       <ReminderModal open={modal.open} onClose={() => setModal((m) => ({ ...m, open: false }))} editing={modal.editing} />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={`Delete the ${deleteTarget?.symbol.toUpperCase() ?? ''} reminder?`}
+        message="This removes the reminder and its schedule. Logged purchases are kept."
+        confirmLabel="Delete"
+        destructive
+        loading={deleteReminder.isPending}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteReminder.mutate(deleteTarget.id, {
+            onSuccess: () => { setDeleteTarget(null); toast.success('Reminder deleted'); },
+            onError: () => toast.error('Could not delete reminder. Please try again.'),
+          });
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -209,7 +228,7 @@ export default function DCAPage() {
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Pencil className="h-3.5 w-3.5" /></button>
                       <button onClick={() => updateReminder.mutate({ id: r.id, patch: { is_active: false } })} title="Pause"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Pause className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => { if (confirm(`Delete the ${r.symbol.toUpperCase()} reminder?`)) deleteReminder.mutate(r.id); }} title="Delete"
+                      <button onClick={() => setDeleteTarget(r)} title="Delete"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                     <button
@@ -263,7 +282,7 @@ export default function DCAPage() {
                     <div className="flex items-center gap-2">
                       <button onClick={() => updateReminder.mutate({ id: r.id, patch: { is_active: true } })} title="Resume"
                         className="flex items-center gap-1 rounded-lg bg-ark-primary/10 px-2.5 py-1 text-xs font-medium text-ark-primary hover:bg-ark-primary/20"><Play className="h-3 w-3" /> Resume</button>
-                      <button onClick={() => { if (confirm(`Delete the ${r.symbol.toUpperCase()} reminder?`)) deleteReminder.mutate(r.id); }} title="Delete"
+                      <button onClick={() => setDeleteTarget(r)} title="Delete"
                         className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>

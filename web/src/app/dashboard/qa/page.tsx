@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MessagesSquare, Heart, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
-import { GlassCard, Skeleton } from '@/components/ui';
+import { GlassCard, Skeleton, ConfirmDialog, useToast } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useQuestions, useQaMutations } from '@/lib/hooks/use-qa';
 import { formatRelativeTime, cn } from '@/lib/utils/format';
@@ -16,6 +16,8 @@ export default function QAPage() {
   const [text, setText] = useState('');
   const [anon, setAnon] = useState(false);
   const [sort, setSort] = useState<'newest' | 'top'>('newest');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const toast = useToast();
 
   const list = [...(questions ?? [])].sort((a, b) => sort === 'top' ? b.like_count - a.like_count : (a.created_at < b.created_at ? 1 : -1));
 
@@ -73,9 +75,26 @@ export default function QAPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {list.map((q) => <QuestionCard key={q.id} q={q} mine={q.user_id === authUser?.id} onLike={() => like.mutate(q)} onDelete={() => { if (confirm('Delete your question?')) remove.mutate(q.id); }} />)}
+          {list.map((q) => <QuestionCard key={q.id} q={q} mine={q.user_id === authUser?.id} onLike={() => like.mutate(q)} onDelete={() => setDeleteId(q.id)} />)}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        title="Delete your question?"
+        message="This permanently removes your question and any answer it received."
+        confirmLabel="Delete"
+        destructive
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (!deleteId) return;
+          remove.mutate(deleteId, {
+            onSuccess: () => { setDeleteId(null); toast.success('Question deleted'); },
+            onError: () => toast.error('Could not delete question. Please try again.'),
+          });
+        }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

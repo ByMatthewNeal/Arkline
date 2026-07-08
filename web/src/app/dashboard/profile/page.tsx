@@ -7,15 +7,13 @@ import { z } from 'zod';
 import {
   User,
   Mail,
-  Calendar,
   Briefcase,
   BarChart3,
   Globe,
   Camera,
   Check,
-  ExternalLink,
 } from 'lucide-react';
-import { GlassCard, Button, Input, Badge } from '@/components/ui';
+import { GlassCard, Button, Input, Badge, useToast } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { createClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils/format';
@@ -60,6 +58,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarOverride, setAvatarOverride] = useState<string | null>(null);
+  const toast = useToast();
 
   const {
     register,
@@ -91,7 +91,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const supabase = createClient();
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
           username: data.username,
@@ -107,8 +107,11 @@ export default function ProfilePage() {
           },
         })
         .eq('id', profile.id);
+      if (error) throw error;
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch {
+      toast.error('Could not save profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -124,15 +127,23 @@ export default function ProfilePage() {
       const ext = file.name.split('.').pop();
       const path = `${profile.id}/avatar.${ext}`;
 
-      await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl, use_photo_avatar: true })
         .eq('id', profile.id);
+      if (updateError) throw updateError;
 
-      window.location.reload();
+      // Swap the avatar in place (cache-busted) — no full page reload.
+      setAvatarOverride(`${urlData.publicUrl}?t=${Date.now()}`);
+      toast.success('Avatar updated');
+    } catch {
+      toast.error('Avatar upload failed. Please try again.');
     } finally {
       setAvatarUploading(false);
     }
@@ -151,9 +162,9 @@ export default function ProfilePage() {
         <div className="flex items-start gap-5">
           {/* Avatar */}
           <div className="relative shrink-0">
-            {profile?.avatar_url && profile.use_photo_avatar ? (
+            {avatarOverride || (profile?.avatar_url && profile.use_photo_avatar) ? (
               <img
-                src={profile.avatar_url}
+                src={avatarOverride ?? profile?.avatar_url ?? ''}
                 alt="Avatar"
                 className="h-20 w-20 rounded-2xl object-cover"
               />

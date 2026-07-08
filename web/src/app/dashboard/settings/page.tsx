@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check, BookOpen, HelpCircle, MessagesSquare, ChevronRight } from 'lucide-react';
-import { GlassCard, Button, Badge } from '@/components/ui';
+import { GlassCard, Button, Badge, ConfirmDialog, useToast } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTheme } from '@/lib/hooks/use-theme';
 import { createClient } from '@/lib/supabase/client';
+import { deleteAccountData } from '@/lib/api/account';
+import { setPreferredCurrency } from '@/lib/utils/format';
 import type { NotificationSettings } from '@/types';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'] as const;
@@ -74,6 +76,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const toast = useToast();
 
   const updateNotification = (key: keyof NotificationSettings, value: boolean) => {
     setNotifications((prev) => ({ ...prev, [key]: value }));
@@ -84,7 +88,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const supabase = createClient();
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
           preferred_currency: currency,
@@ -92,10 +96,28 @@ export default function SettingsPage() {
           dark_mode: theme,
         })
         .eq('id', profile.id);
+      if (error) throw error;
+      // Apply immediately app-wide (formatting only — values stay USD-denominated, matching iOS).
+      setPreferredCurrency(currency);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch {
+      toast.error('Could not save settings. Please try again.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!profile) return;
+    setDeleting(true);
+    try {
+      await deleteAccountData(profile.id);
+      window.location.href = '/';
+    } catch {
+      setDeleting(false);
+      setDeleteConfirm(false);
+      toast.error('Account deletion failed. Please contact support.');
     }
   };
 
@@ -257,10 +279,10 @@ export default function SettingsPage() {
               </Badge>
             </p>
           </div>
-          {profile?.role !== 'premium' && (
-            <Button size="sm">Upgrade to Premium</Button>
-          )}
         </div>
+        <p className="mt-3 text-xs text-ark-text-tertiary">
+          Subscriptions are managed on the web — contact support for billing changes.
+        </p>
       </GlassCard>
 
       {/* Danger Zone */}
@@ -272,33 +294,24 @@ export default function SettingsPage() {
         <p className="text-sm text-ark-text-secondary">
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
-        {!deleteConfirm ? (
-          <Button
-            variant="danger"
-            size="sm"
-            className="mt-3"
-            onClick={() => setDeleteConfirm(true)}
-          >
-            Delete Account
-          </Button>
-        ) : (
-          <div className="mt-3 flex items-center gap-2">
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={async () => {
-                const supabase = createClient();
-                await supabase.auth.signOut();
-                window.location.href = '/';
-              }}
-            >
-              Yes, delete my account
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(false)}>
-              Cancel
-            </Button>
-          </div>
-        )}
+        <Button
+          variant="danger"
+          size="sm"
+          className="mt-3"
+          onClick={() => setDeleteConfirm(true)}
+        >
+          Delete Account
+        </Button>
+        <ConfirmDialog
+          open={deleteConfirm}
+          title="Delete your account?"
+          message="This permanently deletes your portfolios, transactions, DCA reminders, and profile data. This action cannot be undone."
+          confirmLabel="Yes, delete everything"
+          destructive
+          loading={deleting}
+          onConfirm={handleDeleteAccount}
+          onCancel={() => setDeleteConfirm(false)}
+        />
       </GlassCard>
 
       {/* Save */}

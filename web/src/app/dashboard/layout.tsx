@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Sidebar } from '@/components/dashboard/shared/sidebar';
 import { Topbar } from '@/components/dashboard/shared/topbar';
 import { MobileNav } from '@/components/dashboard/shared/mobile-nav';
-import { cn } from '@/lib/utils/format';
+import { cn, setPreferredCurrency, getPreferredCurrency } from '@/lib/utils/format';
+import { useAuth } from '@/lib/hooks/use-auth';
 
 export default function DashboardLayout({
   children,
@@ -12,6 +13,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+
+  // Apply the user's preferred currency (Settings) app-wide. Keying <main>
+  // on the currency re-renders pages when the preference loads or changes.
+  const { profile } = useAuth();
+  setPreferredCurrency(profile?.preferred_currency);
+  const currency = getPreferredCurrency();
 
   return (
     <div
@@ -37,7 +44,7 @@ export default function DashboardLayout({
         )}
       >
         <Topbar />
-        <main className="animate-fade-in p-4 pb-24 sm:p-6 md:pb-6">
+        <main key={currency} className="animate-fade-in p-4 pb-24 sm:p-6 md:pb-6">
           {children}
         </main>
       </div>

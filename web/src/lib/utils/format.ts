@@ -1,24 +1,45 @@
+/* ── Currency preference ─────────────────────────────────────────────────
+ * The user's preferred currency (Settings → Preferred Currency) is applied
+ * app-wide. `setPreferredCurrency` is called from the dashboard layout when
+ * the profile loads; consumers re-render via the layout's currency key.
+ */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$', EUR: '€', GBP: '£', JPY: '¥', AUD: 'A$', CAD: 'C$', CHF: 'CHF ',
+};
+
+let preferredCurrency = 'USD';
+
+export function setPreferredCurrency(code: string | null | undefined) {
+  if (code && CURRENCY_SYMBOLS[code]) preferredCurrency = code;
+}
+
+export function getPreferredCurrency(): string {
+  return preferredCurrency;
+}
+
 export function formatCurrency(
   value: number,
-  currency = 'USD',
+  currency?: string,
   opts?: { compact?: boolean; decimals?: number; sign?: boolean },
 ): string {
+  const cur = currency ?? preferredCurrency;
   const { compact, decimals, sign } = opts ?? {};
   const prefix = sign && value > 0 ? '+' : '';
+  const symbol = CURRENCY_SYMBOLS[cur] ?? '$';
 
   if (compact && Math.abs(value) >= 1_000_000_000) {
-    return `${prefix}$${(value / 1_000_000_000).toFixed(1)}B`;
+    return `${prefix}${symbol}${(value / 1_000_000_000).toFixed(1)}B`;
   }
   if (compact && Math.abs(value) >= 1_000_000) {
-    return `${prefix}$${(value / 1_000_000).toFixed(1)}M`;
+    return `${prefix}${symbol}${(value / 1_000_000).toFixed(1)}M`;
   }
   if (compact && Math.abs(value) >= 1_000) {
-    return `${prefix}$${(value / 1_000).toFixed(1)}K`;
+    return `${prefix}${symbol}${(value / 1_000).toFixed(1)}K`;
   }
 
   const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency,
+    currency: cur,
     minimumFractionDigits: decimals ?? (Math.abs(value) < 1 ? 4 : 2),
     maximumFractionDigits: decimals ?? (Math.abs(value) < 1 ? 6 : 2),
   }).format(value);

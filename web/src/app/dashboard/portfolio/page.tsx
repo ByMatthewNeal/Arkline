@@ -13,10 +13,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { GlassCard, Badge, Skeleton } from '@/components/ui';
-import { usePortfolios, useHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { GlassCard, Badge, Skeleton, ConfirmDialog, PromptDialog, useToast } from '@/components/ui';
+import { usePortfolios, usePricedHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 import { useDeleteHolding, useUpdateHoldingTarget, useCreatePortfolio } from '@/lib/hooks/use-portfolio-mutations';
-import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatDate, cn } from '@/lib/utils/format';
 import { AddTransactionModal } from '@/components/dashboard/portfolio/add-transaction-modal';
 import { PerformancePanel } from '@/components/dashboard/portfolio/performance-panel';
@@ -48,29 +47,25 @@ export default function PortfolioPage() {
   const { data: portfolios, isLoading: loadingPortfolios } = usePortfolios();
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [modal, setModal] = useState<{ open: boolean; type: 'buy' | 'sell'; symbol?: string }>({ open: false, type: 'buy' });
+  const [newPortfolioOpen, setNewPortfolioOpen] = useState(false);
+  const [removeSymbol, setRemoveSymbol] = useState<string | null>(null);
+  const toast = useToast();
 
   const portfolio = portfolios?.[selectedIdx];
-  const { data: holdings, isLoading: loadingHoldings } = useHoldings(portfolio?.id);
+  // Live pricing for ALL holdings (crypto beyond top-100, stocks, metals),
+  // refreshed every 60 s — matches the iOS pricing path.
+  const { data: holdings, isLoading: loadingHoldings } = usePricedHoldings(portfolio?.id);
   const { data: transactions } = useTransactions(portfolio?.id);
   const { data: history } = usePortfolioHistory(portfolio?.id, 365);
-  const { data: assets } = useCryptoAssets(1);
   const deleteHolding = useDeleteHolding(portfolio?.id);
   const updateTarget = useUpdateHoldingTarget(portfolio?.id);
   const createPortfolio = useCreatePortfolio();
 
-  // Merge live prices into holdings (fetchHoldings returns no current_price).
-  const priceBySymbol = new Map<string, { price: number; pct: number }>();
-  for (const a of assets ?? []) {
-    priceBySymbol.set(a.symbol.toLowerCase(), { price: a.current_price, pct: a.price_change_percentage_24h ?? 0 });
-  }
-  const pricedHoldings = (holdings ?? []).map((h) => {
-    const live = priceBySymbol.get(h.symbol.toLowerCase());
-    return {
-      ...h,
-      current_price: live?.price ?? h.current_price ?? h.average_buy_price ?? 0,
-      price_change_percentage_24h: live?.pct ?? h.price_change_percentage_24h ?? 0,
-    };
-  });
+  const pricedHoldings = (holdings ?? []).map((h) => ({
+    ...h,
+    current_price: h.current_price ?? h.average_buy_price ?? 0,
+    price_change_percentage_24h: h.price_change_percentage_24h ?? 0,
+  }));
 
   // Aggregate multiple lots of the same asset into one position (qty-weighted avg cost).
   const bySymbol = new Map<string, PortfolioHolding>();
@@ -132,7 +127,7 @@ export default function PortfolioPage() {
             </div>
           )}
           <button
-            onClick={() => { const name = prompt('New portfolio name:'); if (name?.trim()) createPortfolio.mutate(name.trim()); }}
+            onClick={() => setNewPortfolioOpen(true)}
             className="rounded-xl border border-ark-divider px-3 py-2 text-sm font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary"
           >
             New Portfolio
@@ -154,6 +149,39 @@ export default function PortfolioPage() {
         holdings={aggHoldings}
         initialType={modal.type}
         initialSymbol={modal.symbol}
+      />
+
+      <PromptDialog
+        open={newPortfolioOpen}
+        title="New portfolio"
+        message="Give your new portfolio a name."
+        placeholder="e.g. Long-term, Trading, Retirement"
+        confirmLabel="Create"
+        loading={createPortfolio.isPending}
+        onSubmit={(name) => {
+          createPortfolio.mutate(name, {
+            onSuccess: () => { setNewPortfolioOpen(false); toast.success(`"${name}" created`); },
+            onError: () => toast.error('Could not create portfolio. Please try again.'),
+          });
+        }}
+        onCancel={() => setNewPortfolioOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={removeSymbol !== null}
+        title={`Remove ${removeSymbol?.toUpperCase() ?? ''}?`}
+        message="This removes the holding and its lots from this portfolio. Transactions are not affected."
+        confirmLabel="Remove"
+        destructive
+        loading={deleteHolding.isPending}
+        onConfirm={() => {
+          if (!removeSymbol) return;
+          deleteHolding.mutate(removeSymbol, {
+            onSuccess: () => { setRemoveSymbol(null); toast.success('Holding removed'); },
+            onError: () => toast.error('Could not remove holding. Please try again.'),
+          });
+        }}
+        onCancel={() => setRemoveSymbol(null)}
       />
 
       {isLoading ? (
@@ -327,7 +355,7 @@ export default function PortfolioPage() {
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-success hover:bg-ark-success/10"><TrendingUp className="h-3.5 w-3.5" /></button>
                           <button onClick={() => setModal({ open: true, type: 'sell', symbol: h.symbol })} title="Sell"
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><TrendingDown className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => { if (confirm(`Remove ${h.symbol.toUpperCase()} from this portfolio?`)) deleteHolding.mutate(h.symbol); }} title="Remove"
+                          <button onClick={() => setRemoveSymbol(h.symbol)} title="Remove"
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                         <div className="text-right">
