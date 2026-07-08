@@ -1,13 +1,16 @@
 'use client';
 
-import { Newspaper, ExternalLink, ArrowUpRight } from 'lucide-react';
+import { Newspaper, ArrowUpRight } from 'lucide-react';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { useNews } from '@/lib/hooks/use-market';
+import { useReadArticles } from '@/lib/hooks/use-read-articles';
 import { formatRelativeTime, cn } from '@/lib/utils/format';
 
 export function NewsCard() {
   const { data: news, isLoading } = useNews(4);
+  const { isRead, markRead } = useReadArticles();
   const articles = news ?? [];
+  const unreadCount = articles.filter((a) => !isRead(a.id)).length;
 
   return (
     <GlassCard className="relative overflow-hidden">
@@ -20,7 +23,9 @@ export function NewsCard() {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-ark-text">Headlines</h3>
-            <p className="text-[10px] text-ark-text-disabled">Latest crypto news</p>
+            <p className="text-[10px] text-ark-text-disabled">
+              {unreadCount > 0 ? `${unreadCount} unread` : 'Latest crypto news'}
+            </p>
           </div>
         </div>
       </div>
@@ -47,15 +52,21 @@ export function NewsCard() {
               href={article.url !== '#' ? article.url : undefined}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => markRead(article.id)}
               className={cn(
                 'group flex items-start gap-3 rounded-xl border px-3.5 py-2.5 transition-all hover:bg-ark-fill-secondary',
                 i === 0 ? 'border-ark-violet/15 bg-ark-violet/[0.02]' : 'border-transparent',
               )}
             >
+              {/* Unread indicator (iOS blue-dot parity) */}
+              {!isRead(article.id) && (
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ark-primary" />
+              )}
               <div className="min-w-0 flex-1">
                 <p className={cn(
-                  'font-medium leading-snug text-ark-text line-clamp-2 group-hover:text-ark-primary transition-colors',
+                  'font-medium leading-snug line-clamp-2 group-hover:text-ark-primary transition-colors',
                   i === 0 ? 'text-sm' : 'text-xs',
+                  isRead(article.id) ? 'text-ark-text-tertiary' : 'text-ark-text',
                 )}>
                   {article.title}
                 </p>

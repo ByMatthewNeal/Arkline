@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
+import { useCoinSearch } from '@/lib/hooks/use-coin-search';
 import { useRecordTransaction } from '@/lib/hooks/use-portfolio-mutations';
 import { cn, formatCurrency } from '@/lib/utils/format';
 import type { PortfolioHolding } from '@/types';
@@ -65,6 +66,13 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
       .filter((a) => a.symbol.toLowerCase().includes(term) || a.name.toLowerCase().includes(term))
       .slice(0, 6);
   }, [search, assets]);
+
+  // Long-tail coins beyond the cached top-100 (live CoinGecko search).
+  const { data: remoteResults, isFetching: searchingRemote } = useCoinSearch(type === 'buy' ? search : '');
+  const extraResults = useMemo(() => {
+    const localSymbols = new Set(results.map((r) => r.symbol.toLowerCase()));
+    return (remoteResults ?? []).filter((r) => !localSymbols.has(r.symbol.toLowerCase())).slice(0, 4);
+  }, [remoteResults, results]);
 
   const heldForSell = holdings.filter((h) => h.quantity > 0);
   const selectedHolding = holdings.find((h) => h.symbol.toLowerCase() === symbol.toLowerCase());
@@ -134,7 +142,7 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
                   placeholder="Search coins (BTC, ETH…) or type a ticker"
                   className="w-full rounded-xl border border-ark-divider bg-ark-fill-secondary/40 py-2.5 pl-9 pr-3 text-sm text-ark-text outline-none focus:border-ark-info"
                 />
-                {results.length > 0 && (
+                {(results.length > 0 || extraResults.length > 0) && (
                   <div className="mt-1 overflow-hidden rounded-xl border border-ark-divider bg-ark-card">
                     {results.map((a) => (
                       <button key={a.id} onClick={() => pickAsset(a.symbol, a.name, 'crypto', a.current_price)}
@@ -143,9 +151,19 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
                         <span className="fig text-xs text-ark-text-tertiary">{formatCurrency(a.current_price)}</span>
                       </button>
                     ))}
+                    {extraResults.map((a) => (
+                      <button key={`cg-${a.id}`} onClick={() => pickAsset(a.symbol, a.name, 'crypto', a.price ?? undefined)}
+                        className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-ark-fill-secondary">
+                        <span className="text-sm text-ark-text"><b>{a.symbol.toUpperCase()}</b> <span className="text-ark-text-disabled">{a.name}</span></span>
+                        <span className="fig text-xs text-ark-text-tertiary">{a.price != null ? formatCurrency(a.price) : `#${a.rank ?? '—'}`}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
-                {search.trim() && results.length === 0 && (
+                {searchingRemote && search.trim().length >= 2 && (
+                  <p className="mt-1 px-1 text-[11px] text-ark-text-disabled">Searching all coins…</p>
+                )}
+                {search.trim() && results.length === 0 && extraResults.length === 0 && !searchingRemote && (
                   <button onClick={() => pickAsset(search.trim(), search.trim().toUpperCase(), 'crypto')}
                     className="mt-1 w-full rounded-xl border border-dashed border-ark-divider px-3 py-2 text-left text-xs text-ark-text-secondary hover:bg-ark-fill-secondary">
                     Use &ldquo;{search.trim().toUpperCase()}&rdquo; as a custom ticker

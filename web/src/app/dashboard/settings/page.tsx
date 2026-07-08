@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check, BookOpen, HelpCircle, MessagesSquare, ChevronRight } from 'lucide-react';
+import { Sun, Moon, Monitor, Bell, DollarSign, Shield, Trash2, Check, BookOpen, HelpCircle, MessagesSquare, ChevronRight, Lightbulb } from 'lucide-react';
 import { GlassCard, Button, Badge, ConfirmDialog, useToast } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTheme } from '@/lib/hooks/use-theme';
@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { deleteAccountData } from '@/lib/api/account';
 import { setPreferredCurrency } from '@/lib/utils/format';
 import { subscribeToPush, unsubscribeFromPush, isPushSupported, isPushConfigured } from '@/lib/push';
+import { FeatureRequestModal } from '@/components/dashboard/shared/feature-request';
 import type { NotificationSettings } from '@/types';
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF'] as const;
@@ -78,6 +79,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [featureRequestOpen, setFeatureRequestOpen] = useState(false);
   const toast = useToast();
 
   const updateNotification = (key: keyof NotificationSettings, value: boolean) => {
@@ -281,8 +283,15 @@ export default function SettingsPage() {
             <div className="flex-1"><p className="text-sm font-medium text-ark-text">Member Q&amp;A</p><p className="text-xs text-ark-text-disabled">Ask the Arkline team a question</p></div>
             <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
           </Link>
+          <button onClick={() => setFeatureRequestOpen(true)} className="flex w-full items-center gap-3 py-3 text-left transition-colors hover:opacity-80">
+            <Lightbulb className="h-4 w-4 text-ark-warning" />
+            <div className="flex-1"><p className="text-sm font-medium text-ark-text">Request a Feature</p><p className="text-xs text-ark-text-disabled">Tell us what to build next</p></div>
+            <ChevronRight className="h-4 w-4 text-ark-text-disabled" />
+          </button>
         </div>
       </GlassCard>
+
+      <FeatureRequestModal open={featureRequestOpen} onClose={() => setFeatureRequestOpen(false)} />
 
       {/* Subscription */}
       <GlassCard>

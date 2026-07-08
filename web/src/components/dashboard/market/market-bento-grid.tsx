@@ -23,6 +23,7 @@ import {
 } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
+import { useReadArticles } from '@/lib/hooks/use-read-articles';
 import { CustomizePanel } from '@/components/dashboard/shared/customize-panel';
 import { RefreshStatus } from '@/components/dashboard/shared/refresh-status';
 
@@ -625,6 +626,7 @@ function AltcoinScannerTile({ onOpen }: { onOpen: () => void }) {
 
 function NewsTile({ onOpen }: { onOpen: () => void }) {
   const { data: news, isLoading } = useNews(6);
+  const { isRead } = useReadArticles();
   const articles = news ?? [];
 
   return (
@@ -645,9 +647,11 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
                 i === 0 ? 'bg-ark-violet/[0.04] border border-ark-violet/10' : 'bg-ark-fill-secondary/30',
               )}>
                 <p className={cn(
-                  'font-medium leading-snug text-ark-text line-clamp-1',
+                  'font-medium leading-snug line-clamp-1',
                   i === 0 ? 'text-[11px]' : 'text-[10px]',
+                  isRead(article.id) ? 'text-ark-text-tertiary' : 'text-ark-text',
                 )}>
+                  {!isRead(article.id) && <span className="mr-1 inline-block h-1 w-1 -translate-y-0.5 rounded-full bg-ark-primary" />}
                   {article.title}
                 </p>
                 <div className="mt-0.5 flex items-center gap-1 text-[8px] text-ark-text-disabled">
