@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChevronRight, ChevronLeft, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
-import { useRiskLevels, useIndicatorHistory, useArkLineScore } from '@/lib/hooks/use-market';
+import { useRiskLevels, useIndicatorHistory, useBtcMultiFactor } from '@/lib/hooks/use-market';
+import { RISK_BANDS, riskBandFor } from '@/lib/risk/multi-factor';
 import { cn } from '@/lib/utils/format';
 import type { RiskBand, RiskLevelItem } from '@/types';
 
@@ -157,44 +158,78 @@ function Row({ it, kind, period, divider, onClick }: { it: RiskLevelItem; kind: 
   );
 }
 
-/* ── Multi-factor market composite (risk_snapshots.components) ── */
+/* ── BTC 8-factor multi-factor risk (iOS RiskFactorBreakdown parity) ── */
 function MultiFactorSection() {
-  const { data } = useArkLineScore();
-  if (!data?.components?.length) return null;
+  const { data } = useBtcMultiFactor();
+  if (!data) return null;
 
-  const sigColor = (signal?: string) =>
-    /bull/i.test(signal ?? '') ? 'var(--ark-success)' : /bear/i.test(signal ?? '') ? 'var(--ark-error)' : 'var(--ark-warning)';
+  const regBand = riskBandFor(data.regression);
+  const compBand = riskBandFor(data.composite);
+  const valueColor = (v: number) => riskBandFor(v).color;
 
   return (
-    <div className="rounded-xl border border-ark-divider p-3.5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-ark-text">Multi-Factor Analysis</p>
-        <span className="fig text-sm font-bold text-ark-text">
-          {data.score}<span className="text-[10px] font-medium text-ark-text-tertiary"> / 100 · {data.tier}</span>
-        </span>
-      </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-ark-text-tertiary">
-        Market-wide composite of weighted risk factors — context for the regression risk above.
-      </p>
-      <div className="mt-3 space-y-2">
-        {data.components.map((c) => (
-          <div key={c.name} className="flex items-center gap-2.5">
-            <span className="w-28 shrink-0 truncate text-[11px] text-ark-text-secondary">{c.name}</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, c.value * 100))}%`, background: sigColor(c.signal) }}
-              />
-            </div>
-            <span className="w-24 shrink-0 text-right text-[10px] font-semibold" style={{ color: sigColor(c.signal) }}>
-              {c.signal ?? '—'}
-            </span>
+    <div className="space-y-3">
+      {/* Regression → Composite comparison (iOS "Multi-Factor BTC Risk" card) */}
+      <div className="rounded-xl border border-ark-divider p-4 text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Multi-Factor BTC Risk</p>
+        <p className="fig mt-1 font-[family-name:var(--font-urbanist)] text-3xl font-bold" style={{ color: compBand.color }}>
+          {data.composite.toFixed(3)}
+        </p>
+        <p className="mt-0.5 text-xs font-semibold" style={{ color: compBand.color }}>● {compBand.label.replace(' Risk', '')}</p>
+        <div className="mt-3 flex items-center justify-center gap-6 border-t border-ark-divider/60 pt-3">
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Regression Only</p>
+            <p className="fig text-base font-bold" style={{ color: regBand.color }}>{data.regression.toFixed(3)}</p>
+            <p className="text-[10px] font-medium" style={{ color: regBand.color }}>{regBand.label}</p>
           </div>
-        ))}
+          <span className="text-ark-text-disabled">→</span>
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{data.availableCount}-Factor Composite</p>
+            <p className="fig text-base font-bold" style={{ color: compBand.color }}>{data.composite.toFixed(3)}</p>
+            <p className="text-[10px] font-medium" style={{ color: compBand.color }}>{compBand.label}</p>
+          </div>
+        </div>
+        <p className="mt-2.5 text-[10px] leading-relaxed text-ark-text-tertiary">
+          The chart above shows regression risk (1 factor). This composite combines {data.availableCount} indicators for a broader assessment.
+        </p>
       </div>
-      {data.recommendation && (
-        <p className="mt-3 border-t border-ark-divider/60 pt-2.5 text-[11px] leading-relaxed text-ark-text-secondary">{data.recommendation}</p>
-      )}
+
+      {/* Risk Factor Breakdown */}
+      <div className="rounded-xl border border-ark-divider p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-ark-text">Risk Factor Breakdown</p>
+          <span className="rounded-full bg-ark-primary/10 px-2 py-0.5 text-[10px] font-semibold text-ark-primary">
+            {data.availableCount} factors
+          </span>
+        </div>
+        <div className="mt-3 space-y-3">
+          {data.factors.map((f) => (
+            <div key={f.key}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-medium text-ark-text">{f.name}</span>
+                <span className="fig text-xs">
+                  <span className="text-ark-text-disabled">{Math.round(f.weight * 100)}%</span>
+                  <span className="ml-2 font-bold" style={{ color: f.value != null ? valueColor(f.value) : 'var(--ark-text-disabled)' }}>
+                    {f.value != null ? `${Math.round(f.value * 100)}%` : 'N/A'}
+                  </span>
+                </span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ark-fill-secondary">
+                {f.value != null && (
+                  <div className="h-full rounded-full transition-all" style={{ width: `${f.value * 100}%`, background: valueColor(f.value) }} />
+                )}
+              </div>
+              <p className="fig mt-0.5 text-[10px] text-ark-text-tertiary">{f.raw}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 border-t border-ark-divider/60 pt-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Calculation Method</p>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-ark-text-tertiary">
+            Weighted average of normalized factors. Unavailable factors have their weights redistributed proportionally.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -239,12 +274,23 @@ function RiskLevelGuide({ kind }: { kind: 'crypto' | 'stock' }) {
       </button>
       {open && (
         <div className="space-y-4 border-t border-ark-divider/60 px-3.5 py-3.5">
-          {/* Band legend */}
-          <div className="flex overflow-hidden rounded-lg text-center text-[9px] font-bold text-white">
-            <div className="flex-[40] bg-ark-success py-1.5">LOW &lt; 0.40</div>
-            <div className="flex-[15] bg-ark-warning py-1.5">0.40–0.55</div>
-            <div className="flex-[15] bg-ark-warning/70 py-1.5">0.55–0.70</div>
-            <div className="flex-[30] bg-ark-error py-1.5">HIGH &gt; 0.70</div>
+          {/* Risk Level Guide — 6 bands, iOS copy matched */}
+          <div>
+            <p className="mb-2 text-xs font-semibold text-ark-text">Risk Level Guide</p>
+            <div className="space-y-2.5">
+              {RISK_BANDS.map((b) => (
+                <div key={b.label} className="flex gap-2.5">
+                  <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: b.color }} />
+                  <div>
+                    <p className="text-xs">
+                      <span className="font-semibold" style={{ color: b.color }}>{b.label}</span>
+                      <span className="fig ml-1.5 text-ark-text-tertiary">({b.range})</span>
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-ark-text-secondary">{b.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           {sections.map((s) => (
             <div key={s.title}>
@@ -252,6 +298,7 @@ function RiskLevelGuide({ kind }: { kind: 'crypto' | 'stock' }) {
               <p className="mt-1 text-[12px] leading-relaxed text-ark-text-secondary">{s.body}</p>
             </div>
           ))}
+          <p className="text-[10px] text-ark-text-disabled">For informational purposes only. Not investment advice.</p>
         </div>
       )}
     </div>
@@ -330,8 +377,8 @@ function AssetRiskChart({ kind, item, onBack }: { kind: 'crypto' | 'stock'; item
         Risk is {item.symbol}&apos;s position within its long-term {kind === 'stock' ? 'trend & momentum model' : 'logarithmic regression channel'} — 0.0 is deeply undervalued (accumulation), 1.0 is historically overextended (distribution).
       </p>
 
-      {/* Multi-factor market composite (iOS RiskFactorBreakdownView parity) */}
-      {kind === 'crypto' && <MultiFactorSection />}
+      {/* BTC 8-factor composite (iOS Multi-Factor BTC Risk parity) */}
+      {kind === 'crypto' && item.symbol === 'BTC' && <MultiFactorSection />}
 
       <RiskLevelGuide kind={kind} />
     </div>

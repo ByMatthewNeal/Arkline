@@ -15,6 +15,9 @@ import {
   fetchMarketBreadth,
   fetchSignalChanges,
   fetchSignalChangeHistory,
+} from '@/lib/api/market';
+import { fetchBtcMultiFactor } from '@/lib/api/btc-multi-factor';
+import {
   fetchStockRiskLevels,
   fetchTradeSignals,
   fetchRotationSignal,
@@ -178,6 +181,14 @@ export function useSignalChanges() {
     queryKey: ['signal-changes'],
     queryFn: fetchSignalChanges,
     staleTime: 300_000,
+  });
+}
+
+export function useBtcMultiFactor() {
+  return useQuery({
+    queryKey: ['btc-multi-factor'],
+    queryFn: fetchBtcMultiFactor,
+    staleTime: 900_000,
   });
 }
 

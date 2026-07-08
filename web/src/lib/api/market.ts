@@ -116,7 +116,9 @@ export async function fetchNews(limit = 20): Promise<NewsItem[]> {
     .select('id, curated_title, source, source_url, published_at, category')
     .order('published_at', { ascending: false })
     .limit(limit);
-  if (error || !data?.length) return demoNews.slice(0, limit);
+  // NEVER show demo headlines in production — an honest empty state beats
+  // fabricated news in a finance product (members caught "$49K BTC" at $63K).
+  if (error || !data?.length) return [];
   return (data as {
     id: string;
     curated_title: string;
