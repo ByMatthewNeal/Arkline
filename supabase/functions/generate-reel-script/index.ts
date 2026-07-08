@@ -155,7 +155,7 @@ RULES:
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 500,
         system: systemPrompt,
         messages: [{ role: "user", content: `Generate a Reel script based on today's market context:\n\n${marketContext}` }],

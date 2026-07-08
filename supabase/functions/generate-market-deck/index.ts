@@ -197,7 +197,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 4096,
         messages: [{ role: "user", content: contentParts }],
       }),
@@ -282,7 +282,7 @@ Respond ONLY with a JSON array:
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 4096,
         messages: [{ role: "user", content: contentParts }],
       }),
@@ -347,7 +347,7 @@ Respond ONLY with a JSON object (no markdown, no code blocks):
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 1024,
         messages: [{ role: "user", content: prompt }],
       }),
@@ -485,7 +485,7 @@ ${editorialContext}`
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-5",
         max_tokens: 1500,
         messages: [{ role: "user", content: contentParts }],
       }),
@@ -893,7 +893,7 @@ Respond ONLY with a JSON object (no markdown):
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-5",
             max_tokens: 2048,
             messages: [{ role: "user", content: prompt }],
           }),
@@ -959,7 +959,7 @@ Respond ONLY with JSON (no markdown):
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-5",
             max_tokens: 1024,
             messages: [{ role: "user", content: prompt }],
           }),
@@ -1004,7 +1004,7 @@ Respond ONLY with JSON: { "regime": "..." }`
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-5",
             max_tokens: 256,
             messages: [{ role: "user", content: prompt }],
           }),

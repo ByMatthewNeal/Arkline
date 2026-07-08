@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
         ENRICH_SYSTEM_PROMPT,
         `Analyze and rewrite these articles:\n\n${batchInput}`,
         2000,
-        "claude-sonnet-4-20250514"
+        "claude-sonnet-5"
       )
       const results = parseJSONResponse<EnrichResult[]>(enrichResponse) ?? []
 
@@ -386,7 +386,7 @@ async function callClaude(
   systemPrompt: string,
   userMessage: string,
   maxTokens: number,
-  model: "claude-haiku-4-5-20251001" | "claude-sonnet-4-20250514" = "claude-haiku-4-5-20251001"
+  model: "claude-haiku-4-5-20251001" | "claude-sonnet-5" = "claude-haiku-4-5-20251001"
 ): Promise<string> {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
