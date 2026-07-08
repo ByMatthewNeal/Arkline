@@ -32,6 +32,7 @@ import type {
   MacroInputSignal,
   MarketBreadthData,
   SignalChangeItem,
+  SignalChangeDay,
   QpsSignal,
   StockRiskItem,
   TradeSignalItem,
@@ -720,6 +721,32 @@ export async function fetchSignalChanges(): Promise<SignalChangeItem[]> {
   return (data as { asset: string; signal: string; prev_signal: string | null }[])
     .filter((r) => r.prev_signal && r.signal !== r.prev_signal && valid.includes(r.signal as QpsSignal))
     .map((r) => ({ asset: r.asset, signal: r.signal as QpsSignal, prev_signal: r.prev_signal as QpsSignal }));
+}
+
+/* ── Signal change history ── (day-by-day transitions, iOS parity) */
+export async function fetchSignalChangeHistory(days = 21): Promise<SignalChangeDay[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const sinceISO = new Date(Date.now() - days * 86_400_000).toISOString().split('T')[0];
+  const { data, error } = await supabase
+    .from('positioning_signals')
+    .select('asset, signal, prev_signal, signal_date')
+    .gte('signal_date', sinceISO)
+    .order('signal_date', { ascending: false });
+  if (error || !data?.length) return [];
+
+  const valid: QpsSignal[] = ['bullish', 'neutral', 'bearish'];
+  const byDate = new Map<string, SignalChangeItem[]>();
+  for (const r of data as { asset: string; signal: string; prev_signal: string | null; signal_date: string }[]) {
+    if (!r.prev_signal || r.signal === r.prev_signal) continue;
+    if (!valid.includes(r.signal as QpsSignal) || !valid.includes(r.prev_signal as QpsSignal)) continue;
+    const list = byDate.get(r.signal_date) ?? [];
+    list.push({ asset: r.asset, signal: r.signal as QpsSignal, prev_signal: r.prev_signal as QpsSignal });
+    byDate.set(r.signal_date, list);
+  }
+  return [...byDate.entries()]
+    .map(([date, changes]) => ({ date, changes }))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
 /* ── Stock Risk Levels ── (indicator_snapshots stock_risk_*) */

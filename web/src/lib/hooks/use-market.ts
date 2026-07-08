@@ -14,6 +14,7 @@ import {
   fetchAltcoinScanner,
   fetchMarketBreadth,
   fetchSignalChanges,
+  fetchSignalChangeHistory,
   fetchStockRiskLevels,
   fetchTradeSignals,
   fetchRotationSignal,
@@ -177,6 +178,14 @@ export function useSignalChanges() {
     queryKey: ['signal-changes'],
     queryFn: fetchSignalChanges,
     staleTime: 300_000,
+  });
+}
+
+export function useSignalChangeHistory() {
+  return useQuery({
+    queryKey: ['signal-change-history'],
+    queryFn: () => fetchSignalChangeHistory(),
+    staleTime: 900_000,
   });
 }
 

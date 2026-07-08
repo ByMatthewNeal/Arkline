@@ -252,6 +252,12 @@ export interface SignalChangeItem {
   prev_signal: QpsSignal;
 }
 
+/** One day's positioning-signal transitions (iOS SignalChangeHistoryView). */
+export interface SignalChangeDay {
+  date: string;
+  changes: SignalChangeItem[];
+}
+
 /* ── Stock Risk Levels ── */
 export interface StockRiskItem {
   symbol: string;

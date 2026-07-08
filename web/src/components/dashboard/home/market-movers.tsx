@@ -5,10 +5,10 @@ import { ArrowUp, ArrowDown, ArrowDownRight, ArrowUpRight, ArrowRight, Snowflake
 import { Skeleton } from '@/components/ui';
 import { useAssetTechnical } from '@/lib/hooks/use-market';
 import { cn } from '@/lib/utils/format';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import type { AssetTechnicalData } from '@/types';
 
 const ASSETS = ['BTC', 'ETH', 'SOL'];
-const ASSET_COLORS: Record<string, string> = { BTC: '#F7931A', ETH: '#627EEA', SOL: '#14F195' };
 
 const RED = 'var(--ark-error)';
 const GREEN = 'var(--ark-success)';
@@ -51,7 +51,7 @@ function AssetTechnical({ d }: { d: AssetTechnicalData }) {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3 rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: ASSET_COLORS[d.symbol] ?? 'var(--ark-info)' }}>{d.symbol}</div>
+        <CoinIcon symbol={d.symbol} size="lg" className="h-11 w-11" />
         <div className="flex-1">
           <p className="text-lg font-bold text-ark-text">{d.name}</p>
           <p className="fig text-sm text-ark-text-secondary">{money(d.price)}</p>

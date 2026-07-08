@@ -16,6 +16,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui';
 import { formatCurrency, formatPercent, cn, localDateISO } from '@/lib/utils/format';
 import { usePortfolios, usePricedHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 
 const PERIODS = ['1H', '1D', '1W', '1M', 'YTD', '1Y', 'ALL'] as const;
 type Period = (typeof PERIODS)[number];
@@ -188,11 +189,14 @@ export function PortfolioHero() {
             const up = h.change24h >= 0;
             return (
               <div key={h.id} className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-ark-fill-secondary/40">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <CoinIcon symbol={h.symbol} size="md" />
+                  <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-ark-text">{h.name || h.symbol.toUpperCase()}</p>
                   <p className="fig text-[11px] text-ark-text-tertiary">
                     {h.quantity} {h.symbol.toUpperCase()} · {pct.toFixed(1)}%
                   </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="fig text-sm font-semibold text-ark-text">{formatCurrency(h.value)}</p>

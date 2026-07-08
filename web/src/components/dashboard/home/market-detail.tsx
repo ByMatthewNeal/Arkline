@@ -5,7 +5,10 @@ import { Area, AreaChart, ComposedChart, Line, CartesianGrid, XAxis, ResponsiveC
 import { ArrowRight } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
 import { cn, signalChangeHint } from '@/lib/utils/format';
-import { useSignalChanges, useStockRiskLevels, useMarketBreadthDetail } from '@/lib/hooks/use-market';
+import { useSignalChangeHistory, useStockRiskLevels, useMarketBreadthDetail } from '@/lib/hooks/use-market';
+import { MomentumMap } from '@/components/dashboard/market/momentum-map';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
+import { localDateISO } from '@/lib/utils/format';
 
 const SIG: Record<string, string> = {
   bullish: 'var(--ark-success)', neutral: 'var(--ark-warning)', bearish: 'var(--ark-error)',
@@ -152,10 +155,24 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 // ── Signal Changes ──────────────────────────────────────────────────────────
+function signalDayLabel(dateISO: string): string {
+  const todayISO = localDateISO();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const formatted = new Date(dateISO + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  if (dateISO === todayISO) return `Today · ${formatted}`;
+  if (dateISO === localDateISO(yesterday)) return `Yesterday · ${formatted}`;
+  return formatted;
+}
+
 export function SignalChangesDetail() {
-  const { data, isLoading } = useSignalChanges();
+  const { data: history, isLoading } = useSignalChangeHistory();
+  const [tab, setTab] = useState<'changes' | 'momentum'>('changes');
   if (isLoading) return <Skeleton className="h-64 w-full" />;
-  const changes = data ?? [];
+
+  const days = history ?? [];
+  const todayISO = localDateISO();
+  const todayCount = days.find((d) => d.date === todayISO)?.changes.length ?? 0;
 
   const dir = (from: string, to: string) => {
     const order = ['bearish', 'neutral', 'bullish'];
@@ -165,20 +182,67 @@ export function SignalChangesDetail() {
 
   return (
     <div className="space-y-4 pb-4">
-      <p className="text-sm text-ark-text-secondary">{changes.length === 0 ? 'No positioning signal changes today.' : `${changes.length} asset${changes.length === 1 ? '' : 's'} changed positioning today.`}</p>
-      <div className="space-y-2">
-        {changes.map((c) => (
-          <div key={c.asset} className="rounded-xl border p-3" style={{ borderColor: `${dir(c.prev_signal, c.signal)}4D` }}>
-            <div className="flex items-center gap-3">
-              <span className="w-16 text-sm font-semibold text-ark-text">{c.asset}</span>
-              <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.prev_signal] }}>{cap(c.prev_signal)}</span>
-              <ArrowRight className="h-3.5 w-3.5 text-ark-text-tertiary" />
-              <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.signal] }}>{cap(c.signal)}</span>
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-ark-text-secondary">{signalChangeHint(c.prev_signal, c.signal)}</p>
-          </div>
-        ))}
+      {/* Tabs: recent changes vs. momentum quadrants (iOS parity) */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex gap-1 rounded-full bg-ark-fill-secondary/60 p-1">
+          {([['changes', 'Recent changes'], ['momentum', 'Momentum map']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={cn(
+                'rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                tab === key ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="text-[10px] text-ark-text-tertiary">Updates daily · 00:15 UTC</span>
       </div>
+
+      {tab === 'momentum' ? (
+        <MomentumMap />
+      ) : days.length === 0 ? (
+        <p className="py-8 text-center text-sm text-ark-text-tertiary">No positioning changes in the past 3 weeks.</p>
+      ) : (
+        <>
+          <p className="text-sm text-ark-text-secondary">
+            {todayCount === 0 ? 'No changes today — showing recent history.' : `${todayCount} asset${todayCount === 1 ? '' : 's'} changed positioning today.`}
+          </p>
+          {days.map((day) => {
+            const isToday = day.date === todayISO;
+            return (
+              <div key={day.date}>
+                <div className="sticky top-0 z-10 -mx-1 flex items-baseline gap-2 bg-ark-card/95 px-1 py-2 backdrop-blur-sm">
+                  <span className={cn('text-[11px] font-bold uppercase tracking-wider', isToday ? 'text-ark-primary' : 'text-ark-text-tertiary')}>
+                    {signalDayLabel(day.date)}
+                  </span>
+                  <span className="h-px flex-1 self-center bg-ark-divider/60" />
+                  <span className="fig text-[10px] text-ark-text-tertiary">{day.changes.length}</span>
+                </div>
+                <div className={cn('space-y-2', !isToday && 'opacity-80')}>
+                  {day.changes.map((c) => (
+                    <div key={`${day.date}-${c.asset}`} className="rounded-xl border p-3" style={{ borderColor: `${dir(c.prev_signal, c.signal)}4D` }}>
+                      <div className="flex items-center gap-3">
+                        <span className="flex w-28 items-center gap-1.5 truncate text-sm font-semibold text-ark-text">
+                          <CoinIcon symbol={c.asset.split('/')[0]} size="sm" />{c.asset}
+                        </span>
+                        <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.prev_signal] }}>{cap(c.prev_signal)}</span>
+                        <ArrowRight className="h-3.5 w-3.5 text-ark-text-tertiary" />
+                        <span className="rounded px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: SIG[c.signal] }}>{cap(c.signal)}</span>
+                      </div>
+                      {isToday && (
+                        <p className="mt-1.5 text-xs leading-relaxed text-ark-text-secondary">{signalChangeHint(c.prev_signal, c.signal)}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Search, Loader2 } from 'lucide-react';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCoinSearch } from '@/lib/hooks/use-coin-search';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { useRecordTransaction } from '@/lib/hooks/use-portfolio-mutations';
 import { cn, formatCurrency, localDateISO } from '@/lib/utils/format';
 import type { PortfolioHolding } from '@/types';
@@ -131,7 +132,10 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
             <label className="mb-1.5 block text-xs font-semibold text-ark-text-secondary">Asset</label>
             {symbol ? (
               <div className="flex items-center justify-between rounded-xl border border-ark-divider bg-ark-fill-secondary/40 p-3">
-                <div><span className="text-sm font-bold text-ark-text">{symbol}</span> <span className="text-xs text-ark-text-disabled">{name}</span></div>
+                <div className="flex items-center gap-2.5">
+                  <CoinIcon symbol={symbol} size="md" />
+                  <div><span className="text-sm font-bold text-ark-text">{symbol}</span> <span className="text-xs text-ark-text-disabled">{name}</span></div>
+                </div>
                 <button onClick={() => { setSymbol(''); setName(''); setPrice(''); }} className="text-xs font-semibold text-ark-info">Change</button>
               </div>
             ) : (
@@ -146,15 +150,17 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
                   <div className="mt-1 overflow-hidden rounded-xl border border-ark-divider bg-ark-card">
                     {results.map((a) => (
                       <button key={a.id} onClick={() => pickAsset(a.symbol, a.name, 'crypto', a.current_price)}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-ark-fill-secondary">
-                        <span className="text-sm text-ark-text"><b>{a.symbol.toUpperCase()}</b> <span className="text-ark-text-disabled">{a.name}</span></span>
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-ark-fill-secondary">
+                        <CoinIcon symbol={a.symbol} size="sm" />
+                        <span className="flex-1 text-sm text-ark-text"><b>{a.symbol.toUpperCase()}</b> <span className="text-ark-text-disabled">{a.name}</span></span>
                         <span className="fig text-xs text-ark-text-tertiary">{formatCurrency(a.current_price)}</span>
                       </button>
                     ))}
                     {extraResults.map((a) => (
                       <button key={`cg-${a.id}`} onClick={() => pickAsset(a.symbol, a.name, 'crypto', a.price ?? undefined)}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-ark-fill-secondary">
-                        <span className="text-sm text-ark-text"><b>{a.symbol.toUpperCase()}</b> <span className="text-ark-text-disabled">{a.name}</span></span>
+                        className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-ark-fill-secondary">
+                        <CoinIcon symbol={a.symbol} size="sm" />
+                        <span className="flex-1 text-sm text-ark-text"><b>{a.symbol.toUpperCase()}</b> <span className="text-ark-text-disabled">{a.name}</span></span>
                         <span className="fig text-xs text-ark-text-tertiary">{a.price != null ? formatCurrency(a.price) : `#${a.rank ?? '—'}`}</span>
                       </button>
                     ))}

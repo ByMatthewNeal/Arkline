@@ -22,6 +22,7 @@ import { AddTransactionModal } from '@/components/dashboard/portfolio/add-transa
 import { PerformancePanel } from '@/components/dashboard/portfolio/performance-panel';
 import { TransactionsPanel } from '@/components/dashboard/portfolio/transactions-panel';
 import { ModelPortfolioCard } from '@/components/dashboard/portfolio/model-portfolio-card';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -385,6 +386,7 @@ export default function PortfolioPage() {
                       className="group flex items-center justify-between gap-2 rounded-xl bg-ark-fill-secondary/60 px-4 py-3 transition-colors hover:bg-ark-fill-secondary"
                     >
                       <div className="flex min-w-0 items-center gap-3">
+                        <CoinIcon symbol={h.symbol} size="lg" className="h-9 w-9" />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-ark-text">{h.symbol.toUpperCase()}</p>
                           <p className="truncate text-xs text-ark-text-tertiary">{h.name} · <span className="fig">{h.quantity}</span> @ {formatCurrency(h.average_buy_price ?? 0)}</p>

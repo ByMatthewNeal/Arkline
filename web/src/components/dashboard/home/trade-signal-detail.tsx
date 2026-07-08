@@ -20,6 +20,7 @@ import {
   type TradeSignal,
 } from '@/lib/api/signals';
 import { Markdown } from '@/components/dashboard/shared/markdown';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { formatCurrency, formatPercent, formatRelativeTime, cn } from '@/lib/utils/format';
 
 function useTradeSignalsFull() {
@@ -142,6 +143,7 @@ function SignalDeepDive({ signal, onBack }: { signal: TradeSignal; onBack: () =>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
+            <CoinIcon symbol={signal.asset} size="md" />
             <p className="text-lg font-bold text-ark-text">{signal.asset.toUpperCase()}</p>
             <span className={cn('flex items-center gap-1 text-sm font-semibold', long ? 'text-ark-success' : 'text-ark-error')}>
               {long ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
@@ -259,9 +261,7 @@ export function TradeSignalsDetail() {
             onClick={() => setSelected(s)}
             className="flex w-full items-center gap-3 rounded-xl border border-ark-divider p-3 text-left transition-colors hover:bg-ark-fill-secondary/40"
           >
-            <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', long ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>
-              {long ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-            </div>
+            <CoinIcon symbol={s.asset} size="lg" className="h-8 w-8" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-ark-text">
                 {s.asset.toUpperCase()} <span className={cn('font-medium', long ? 'text-ark-success' : 'text-ark-error')}>{SIGNAL_TYPE_LABEL[s.signal_type]}</span>

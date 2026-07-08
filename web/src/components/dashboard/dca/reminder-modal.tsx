@@ -6,6 +6,7 @@ import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCreateReminder, useUpdateReminder } from '@/lib/hooks/use-dca-mutations';
 import { cn, localDateISO } from '@/lib/utils/format';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import type { DCAReminder } from '@/types';
 
 const FREQUENCIES = [
@@ -97,7 +98,8 @@ export function ReminderModal({ open, onClose, editing }: Props) {
                 <div className="mt-1 overflow-hidden rounded-xl border border-ark-divider bg-ark-card">
                   {results.map((a) => (
                     <button key={a.id} onClick={() => { setSymbol(a.symbol.toUpperCase()); setName(a.name); setSearch(''); }}
-                      className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-ark-fill-secondary">
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-ark-fill-secondary">
+                      <CoinIcon symbol={a.symbol} size="sm" />
                       <span className="text-sm text-ark-text"><b>{a.symbol.toUpperCase()}</b> <span className="text-ark-text-disabled">{a.name}</span></span>
                     </button>
                   ))}

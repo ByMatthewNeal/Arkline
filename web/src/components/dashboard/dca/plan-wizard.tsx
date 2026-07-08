@@ -16,6 +16,7 @@ import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCreateReminder } from '@/lib/hooks/use-dca-mutations';
 import { formatCurrency, cn, localDateISO } from '@/lib/utils/format';
 import { useMounted } from '@/lib/hooks/use-mounted';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 
 const FREQUENCIES = [
   { key: 'daily', label: 'Daily', perMonth: 30 },
@@ -198,8 +199,9 @@ export function PlanWizard({ open, onClose }: { open: boolean; onClose: () => vo
                       <div className="absolute inset-x-0 top-11 z-10 overflow-hidden rounded-xl border border-ark-divider bg-ark-card shadow-xl">
                         {results.map((c) => (
                           <button key={c.id} onClick={() => addAsset(c.symbol, c.name)}
-                            className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-ark-fill-secondary">
-                            <span className="text-sm text-ark-text">{c.name}</span>
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-ark-fill-secondary">
+                            <CoinIcon symbol={c.symbol} size="sm" />
+                            <span className="flex-1 text-sm text-ark-text">{c.name}</span>
                             <span className="fig text-xs text-ark-text-tertiary">{c.symbol.toUpperCase()}</span>
                           </button>
                         ))}
@@ -209,7 +211,9 @@ export function PlanWizard({ open, onClose }: { open: boolean; onClose: () => vo
                   <div className="space-y-2">
                     {assets.map((a) => (
                       <div key={a.symbol} className="flex items-center gap-3 rounded-xl border border-ark-divider p-2.5">
-                        <span className="w-14 text-sm font-semibold text-ark-text">{a.symbol}</span>
+                        <span className="flex w-20 items-center gap-1.5 text-sm font-semibold text-ark-text">
+                          <CoinIcon symbol={a.symbol} size="sm" />{a.symbol}
+                        </span>
                         <input
                           type="range" min={5} max={100} step={5} value={a.split}
                           onChange={(e) => setSplit(a.symbol, Number(e.target.value))}
@@ -282,7 +286,10 @@ export function PlanWizard({ open, onClose }: { open: boolean; onClose: () => vo
                   <div className="space-y-1.5">
                     {assets.map((a) => (
                       <div key={a.symbol} className="flex items-center justify-between rounded-lg border border-ark-divider px-3 py-2">
-                        <span className="text-sm font-medium text-ark-text">{a.name} <span className="fig text-xs text-ark-text-tertiary">{a.symbol}</span></span>
+                        <span className="flex items-center gap-2 text-sm font-medium text-ark-text">
+                          <CoinIcon symbol={a.symbol} size="sm" />
+                          {a.name} <span className="fig text-xs text-ark-text-tertiary">{a.symbol}</span>
+                        </span>
                         <span className="fig text-sm font-semibold text-ark-text">{formatCurrency(amount * (a.split / 100))} <span className="text-xs font-normal text-ark-text-tertiary">({a.split}%)</span></span>
                       </div>
                     ))}

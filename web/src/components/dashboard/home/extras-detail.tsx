@@ -4,12 +4,18 @@ import { Skeleton } from '@/components/ui';
 import { cn, formatPercent } from '@/lib/utils/format';
 import { useUSFutures, usePerpPremium, useFedWatch } from '@/lib/hooks/use-market';
 
-function Info({ title, lines }: { title: string; lines: string[] }) {
+/** Structured "about this data" footer: labeled rows scan faster than prose. */
+function Info({ title, items }: { title: string; items: { label: string; text: string }[] }) {
   return (
-    <div>
-      <h4 className="mb-1.5 text-sm font-semibold text-ark-text">{title}</h4>
-      <div className="space-y-1 text-[13px] leading-relaxed text-ark-text-secondary">
-        {lines.map((l, i) => <p key={i}>{l}</p>)}
+    <div className="rounded-xl bg-ark-fill-secondary/40 p-3.5">
+      <h4 className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{title}</h4>
+      <div className="mt-2 space-y-2">
+        {items.map((item) => (
+          <div key={item.label} className="flex gap-3">
+            <span className="w-20 shrink-0 pt-px text-[10px] font-semibold uppercase tracking-wide text-ark-text-tertiary">{item.label}</span>
+            <p className="text-xs leading-relaxed text-ark-text-secondary">{item.text}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -66,9 +72,10 @@ export function USFuturesDetail() {
           </div>
         ))}
       </div>
-      <Info title="US Index Futures" lines={[
-        'Front-month futures for the S&P 500 (ES), Dow (YM), and Nasdaq (NQ). Outside cash-market hours these reflect overnight sentiment; on weekends they show the last Friday session move.',
-        'Equity futures often lead crypto risk appetite at the open.',
+      <Info title="About this data" items={[
+        { label: 'What', text: 'Front-month index futures: S&P 500 (ES), Dow (YM), Nasdaq (NQ).' },
+        { label: 'Timing', text: 'Outside market hours this is overnight sentiment. On weekends, it shows Friday’s session.' },
+        { label: 'Why it matters', text: 'Equity futures often lead crypto risk appetite at the open.' },
       ]} />
     </div>
   );
@@ -100,9 +107,10 @@ export function PerpPremiumDetail() {
           );
         })}
       </div>
-      <Info title="What is Perp Premium?" lines={[
-        'Perpetual futures use a funding rate to keep their price tethered to spot. Positive funding means longs pay shorts (leverage skewed bullish); negative means shorts pay longs (skewed bearish).',
-        'Extreme funding often precedes mean-reversion squeezes.',
+      <Info title="About this data" items={[
+        { label: 'What', text: 'Funding rates keep perpetual futures tethered to spot price.' },
+        { label: 'Reading it', text: 'Positive → longs pay shorts (leverage skewed bullish). Negative → shorts pay longs (skewed bearish).' },
+        { label: 'Why it matters', text: 'Extreme funding often precedes mean-reversion squeezes.' },
       ]} />
     </div>
   );
@@ -137,9 +145,10 @@ export function FedWatchDetail() {
           </div>
         ))}
       </div>
-      <Info title="CME FedWatch" lines={[
-        'Estimated probabilities for upcoming FOMC rate decisions, derived from the current fed funds rate and the meeting calendar.',
-        'Rate-cut expectations are broadly risk-on for crypto; hike or hold-higher expectations are a headwind.',
+      <Info title="About this data" items={[
+        { label: 'What', text: 'Estimated probabilities for upcoming FOMC rate decisions.' },
+        { label: 'Source', text: 'Derived from the current fed funds rate and the meeting calendar.' },
+        { label: 'Why it matters', text: 'Cut expectations are broadly risk-on for crypto; hold-higher or hikes are a headwind.' },
       ]} />
     </div>
   );

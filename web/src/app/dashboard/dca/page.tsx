@@ -24,6 +24,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { formatCurrency, formatRelativeTime } from '@/lib/utils/format';
 import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
 import { PlanWizard } from '@/components/dashboard/dca/plan-wizard';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { useLogInvestment, useUpdateReminder, useDeleteReminder } from '@/lib/hooks/use-dca-mutations';
 import type { DCAReminder } from '@/types';
 
@@ -204,8 +205,8 @@ export default function DCAPage() {
                 <div className="pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-xl bg-ark-primary" />
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ark-fill-secondary text-lg font-bold text-ark-text uppercase">
-                      {r.symbol.slice(0, 3)}
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ark-fill-secondary">
+                      <CoinIcon symbol={r.symbol} size="lg" className="h-9 w-9" />
                     </div>
                     <div>
                       <p className="font-semibold text-ark-text">{r.name}</p>

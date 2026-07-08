@@ -25,6 +25,7 @@ import {
 } from '@/lib/hooks/use-market';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { RefreshStatus } from '@/components/dashboard/shared/refresh-status';
+import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { usePortfolios, usePricedHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
 import { CustomizePanel } from '@/components/dashboard/shared/customize-panel';
@@ -551,7 +552,12 @@ function MarketMoversTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenP
                   className="flex flex-col rounded-xl border border-ark-divider bg-ark-fill-secondary/80 p-2.5 text-left shadow-sm transition-colors hover:border-ark-text-disabled/40 hover:bg-ark-fill-secondary"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: accent }}>{sym}</span>
+                    {asset.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={asset.image} alt={asset.name} className="h-7 w-7 rounded-full" />
+                    ) : (
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ backgroundColor: accent }}>{sym}</span>
+                    )}
                     <span className={cn('fig flex items-center gap-0.5 text-[10px] font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
                       {isUp ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
                       {formatPercent(asset.price_change_percentage_24h ?? 0)}
@@ -1191,7 +1197,10 @@ function SignalChangesTile({ onOpen }: { onOpen: () => void }) {
               {changes.slice(0, 5).map((c) => (
                 <div key={c.asset}>
                   <div className="flex items-center gap-2">
-                    <span className="w-[88px] shrink-0 text-[11px] font-semibold text-ark-text">{c.asset}</span>
+                    <span className="flex w-[88px] shrink-0 items-center gap-1 text-[11px] font-semibold text-ark-text">
+                      <CoinIcon symbol={c.asset.split('/')[0]} size="xs" />
+                      <span className="truncate">{c.asset}</span>
+                    </span>
                     <span className="w-[52px] shrink-0 rounded py-0.5 text-center text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.prev_signal] }}>{cap(c.prev_signal)}</span>
                     <ArrowUpRight className="h-3 w-3 shrink-0 rotate-45 text-ark-text-disabled" />
                     <span className="w-[52px] shrink-0 rounded py-0.5 text-center text-[9px] font-bold text-white" style={{ backgroundColor: SIG_COLORS[c.signal] }}>{cap(c.signal)}</span>
