@@ -14,7 +14,7 @@ import { X, Search, ChevronLeft, ChevronRight, Check, CalendarDays, Wallet, PieC
 import { Button, useToast } from '@/components/ui';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCreateReminder } from '@/lib/hooks/use-dca-mutations';
-import { formatCurrency, cn } from '@/lib/utils/format';
+import { formatCurrency, cn, localDateISO } from '@/lib/utils/format';
 import { useMounted } from '@/lib/hooks/use-mounted';
 
 const FREQUENCIES = [
@@ -52,7 +52,7 @@ export function PlanWizard({ open, onClose }: { open: boolean; onClose: () => vo
   const [search, setSearch] = useState('');
   const [frequency, setFrequency] = useState<(typeof FREQUENCIES)[number]>(FREQUENCIES[2]);
   const [time, setTime] = useState('09:00');
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => localDateISO());
   const [durationMonths, setDurationMonths] = useState(0);
   const [saving, setSaving] = useState(false);
 

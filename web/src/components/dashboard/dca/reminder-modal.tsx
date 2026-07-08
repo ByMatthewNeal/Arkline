@@ -5,7 +5,7 @@ import { Search, Loader2 } from 'lucide-react';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCreateReminder, useUpdateReminder } from '@/lib/hooks/use-dca-mutations';
-import { cn } from '@/lib/utils/format';
+import { cn, localDateISO } from '@/lib/utils/format';
 import type { DCAReminder } from '@/types';
 
 const FREQUENCIES = [
@@ -33,7 +33,7 @@ export function ReminderModal({ open, onClose, editing }: Props) {
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState('weekly');
   const [time, setTime] = useState('09:00');
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => localDateISO());
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export function ReminderModal({ open, onClose, editing }: Props) {
         setStartDate(editing.start_date);
       } else {
         setSymbol(''); setName(''); setAmount(''); setFrequency('weekly'); setTime('09:00');
-        setStartDate(new Date().toISOString().split('T')[0]);
+        setStartDate(localDateISO());
       }
       setSearch('');
     }

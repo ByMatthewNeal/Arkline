@@ -30,7 +30,7 @@ import { CustomizePanel } from '@/components/dashboard/shared/customize-panel';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveReminders } from '@/lib/api/dca';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { formatCurrency, formatPercent, formatRelativeTime, cn, parseBriefingSections, signalChangeHint } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, formatRelativeTime, cn, parseBriefingSections, signalChangeHint, localDateISO } from '@/lib/utils/format';
 import {
   Tile, Spark, MiniGauge, AccentLine, AmbientGlow, ShineSweep,
   useCountUp,
@@ -748,14 +748,16 @@ function AssetRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
 
 function EventsTile({ onOpen }: { onOpen: () => void }) {
   const { data: events, isLoading } = useEconomicEvents();
-  const todayStr = new Date().toISOString().split('T')[0];
+  // LOCAL dates — UTC (toISOString) rolls to tomorrow during US evenings,
+  // which made this tile show "0 events" after ~8 PM ET.
+  const todayStr = localDateISO();
   const todayEvents = (events ?? []).filter((e) => e.date?.startsWith(todayStr));
   const weekEnd = new Date();
   weekEnd.setDate(weekEnd.getDate() + 7);
-  const weekStr = weekEnd.toISOString().split('T')[0];
+  const weekStr = localDateISO(weekEnd);
   const upcoming = todayEvents.length > 0
     ? todayEvents
-    : (events ?? []).filter((e) => e.date > todayStr && e.date <= weekStr);
+    : (events ?? []).filter((e) => e.date >= todayStr && e.date <= weekStr);
   const highCount = upcoming.filter((e) => e.impact === 'high').length;
   const impactDot: Record<string, string> = { high: 'bg-ark-error', medium: 'bg-ark-warning', low: 'bg-ark-text-disabled' };
 
@@ -1695,7 +1697,7 @@ function PortfolioHero() {
 
   // Period-aware window from daily history (granularity is daily; 1H/1D use the
   // live 24h move since intraday isn't stored).
-  const todayISO = new Date().toISOString().split('T')[0];
+  const todayISO = localDateISO();
   const allPts = (history ?? []).map((p) => ({ date: p.date, value: p.value }));
   const ptsNow = allPts.length ? [...allPts, { date: todayISO, value: currentValue }] : [];
   const sliceByPeriod = (p: PortfolioPeriod) => {

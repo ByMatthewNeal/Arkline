@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { ArrowUpRight, ArrowDownRight, Wallet, ChevronDown } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui';
-import { formatCurrency, formatPercent, cn } from '@/lib/utils/format';
+import { formatCurrency, formatPercent, cn, localDateISO } from '@/lib/utils/format';
 import { usePortfolios, usePricedHoldings, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
 
 const PERIODS = ['1H', '1D', '1W', '1M', 'YTD', '1Y', 'ALL'] as const;
@@ -40,7 +40,7 @@ export function PortfolioHero() {
   const dayChangePct = currentValue - dayChange ? (dayChange / (currentValue - dayChange)) * 100 : 0;
 
   // Period window over daily history (1H/1D fall back to live 24h — history is daily).
-  const todayISO = new Date().toISOString().split('T')[0];
+  const todayISO = localDateISO();
   const allPts = (history ?? []).map((p) => ({ date: p.date, value: p.value }));
   const ptsNow = allPts.length ? [...allPts, { date: todayISO, value: currentValue }] : [];
   const windowPts = (() => {

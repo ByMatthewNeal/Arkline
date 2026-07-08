@@ -6,7 +6,7 @@ import { DetailDrawer } from '@/components/ui/detail-drawer';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import { useCoinSearch } from '@/lib/hooks/use-coin-search';
 import { useRecordTransaction } from '@/lib/hooks/use-portfolio-mutations';
-import { cn, formatCurrency } from '@/lib/utils/format';
+import { cn, formatCurrency, localDateISO } from '@/lib/utils/format';
 import type { PortfolioHolding } from '@/types';
 
 interface Props {
@@ -29,7 +29,7 @@ export function AddTransactionModal({ open, onClose, portfolioId, holdings, init
   const [search, setSearch] = useState('');
   const [qty, setQty] = useState('');
   const [price, setPrice] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => localDateISO());
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 

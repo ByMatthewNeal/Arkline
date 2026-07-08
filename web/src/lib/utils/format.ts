@@ -117,6 +117,18 @@ export function cn(...classes: (string | false | undefined | null)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
+/**
+ * YYYY-MM-DD in the user's LOCAL timezone. Use this — not
+ * `toISOString().split('T')[0]` — for "today" comparisons: toISOString is UTC,
+ * which rolls to tomorrow during US evenings and breaks date filters.
+ */
+export function localDateISO(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /* Parse a markdown briefing ("## TLDR\n…\n\n## Weekend Pulse\n…") into labeled
  * sections, matching the iOS app's sectioned Daily Briefing layout. */
 export interface BriefingSection {
