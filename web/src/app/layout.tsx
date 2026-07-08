@@ -108,6 +108,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${urbanist.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Apply the theme class before first paint to avoid a light/dark flash.
+            Mirrors ThemeProvider's resolution: stored preference, else system. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('ark-theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="antialiased">
         <script
           type="application/ld+json"

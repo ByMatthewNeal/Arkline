@@ -1,6 +1,13 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useSyncExternalStore,
+} from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -12,43 +19,48 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
-
-  const applyTheme = useCallback((t: Theme) => {
-    let resolved: 'light' | 'dark';
-    if (t === 'system') {
-      resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else {
-      resolved = t;
-    }
-    setResolvedTheme(resolved);
-    document.documentElement.classList.toggle('dark', resolved === 'dark');
-  }, []);
-
-  const setTheme = useCallback(
-    (t: Theme) => {
-      setThemeState(t);
-      localStorage.setItem('ark-theme', t);
-      applyTheme(t);
-    },
-    [applyTheme],
-  );
-
-  useEffect(() => {
+function loadStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'system';
+  try {
     const stored = localStorage.getItem('ark-theme') as Theme | null;
-    const initial = stored || 'dark';
-    setThemeState(initial);
-    applyTheme(initial);
+    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+  } catch {
+    return 'system';
+  }
+}
 
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      if (theme === 'system') applyTheme('system');
-    };
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [applyTheme, theme]);
+/** OS color-scheme preference as an external store (reactive to changes). */
+function useSystemPrefersDark(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
+    () => true, // server snapshot — corrected before paint by the inline head script
+  );
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // Default = follow the OS ("system"), matching the iOS `.automatic` default.
+  const [theme, setThemeState] = useState<Theme>(loadStoredTheme);
+  const systemDark = useSystemPrefersDark();
+
+  const resolvedTheme: 'light' | 'dark' =
+    theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
+
+  // Sync the resolved theme to the DOM (external system).
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+  }, [resolvedTheme]);
+
+  const setTheme = useCallback((t: Theme) => {
+    setThemeState(t);
+    try {
+      localStorage.setItem('ark-theme', t);
+    } catch { /* ignore */ }
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>

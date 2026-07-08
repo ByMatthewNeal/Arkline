@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ResponsiveLayouts, Layout, LayoutItem } from 'react-grid-layout';
 import { useAuth } from './use-auth';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { PREFS_APPLIED_EVENT } from '@/lib/api/dashboard-prefs';
 
 const LS_PREFIX = 'arkline-layout-';
 
@@ -74,6 +75,22 @@ export function useWidgetLayout(layoutKey: string, defaultLayouts: ResponsiveLay
     load();
     return () => { active = false; };
   }, [layoutKey, profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-hydrate from localStorage when a preset is applied (no page reload).
+  useEffect(() => {
+    const onApplied = (e: Event) => {
+      const detail = (e as CustomEvent<{ layoutKey: string }>).detail;
+      if (detail?.layoutKey !== layoutKey) return;
+      try {
+        const stored = localStorage.getItem(`${LS_PREFIX}${layoutKey}`);
+        if (stored) {
+          setLayouts(mergeWithDefaults(JSON.parse(stored) as ResponsiveLayouts, defaultLayouts));
+        }
+      } catch { /* keep current layout */ }
+    };
+    window.addEventListener(PREFS_APPLIED_EVENT, onApplied);
+    return () => window.removeEventListener(PREFS_APPLIED_EVENT, onApplied);
+  }, [layoutKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save layout on change (debounced)
   const onLayoutChange = useCallback((_layout: Layout, allLayouts: ResponsiveLayouts) => {

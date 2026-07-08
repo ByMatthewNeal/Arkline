@@ -1,13 +1,22 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from './use-auth';
+import {
+  loadDashboardPref,
+  saveDashboardPref,
+  saveDashboardPrefs,
+  notifyPrefsApplied,
+} from '@/lib/api/dashboard-prefs';
 
-// Saveable dashboard presets (mirrors the iOS "presets" — up to 2 named
+// Saveable dashboard presets (mirrors iOS "Dashboard Presets" — up to 2 named
 // snapshots of layout + which widgets are shown). A preset captures the two
 // localStorage stores the dashboard already uses:
 //   arkline-layout-<key>  (grid layout, written by useWidgetLayout)
 //   arkline-hidden-<key>  (hidden widgets, written by useWidgetVisibility)
-// Applying a preset writes both, then reloads so the grid re-hydrates cleanly.
+// Applying a preset writes both stores and broadcasts a prefs-applied event —
+// the layout/visibility hooks re-hydrate live, no page reload. Presets also
+// sync to `profiles.dashboard_layouts.presets_<key>` for cross-device parity.
 
 const MAX_PRESETS = 2;
 
@@ -33,11 +42,26 @@ function load(layoutKey: string): DashboardPreset[] {
 
 export function useDashboardPresets(layoutKey: string) {
   const [presets, setPresets] = useState<DashboardPreset[]>(() => load(layoutKey));
+  const { profile } = useAuth();
+  const profileId = profile?.id ?? null;
+
+  // Hydrate presets from Supabase when the profile loads.
+  useEffect(() => {
+    let active = true;
+    if (!profileId) return;
+    loadDashboardPref<DashboardPreset[]>(profileId, `presets_${layoutKey}`).then((cloud) => {
+      if (!active || !cloud?.length) return;
+      setPresets(cloud);
+      try { localStorage.setItem(presetsKey(layoutKey), JSON.stringify(cloud)); } catch { /* ignore */ }
+    });
+    return () => { active = false; };
+  }, [profileId, layoutKey]);
 
   const persist = useCallback((next: DashboardPreset[]) => {
     setPresets(next);
     try { localStorage.setItem(presetsKey(layoutKey), JSON.stringify(next)); } catch { /* ignore */ }
-  }, [layoutKey]);
+    if (profileId) saveDashboardPref(profileId, `presets_${layoutKey}`, next);
+  }, [layoutKey, profileId]);
 
   const saveCurrent = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -63,9 +87,15 @@ export function useDashboardPresets(layoutKey: string) {
       if (preset.layouts) localStorage.setItem(layoutLSKey(layoutKey), JSON.stringify(preset.layouts));
       localStorage.setItem(hiddenLSKey(layoutKey), JSON.stringify(preset.hidden ?? []));
     } catch { /* ignore */ }
-    // Re-hydrate the dashboard with the applied stores.
-    if (typeof window !== 'undefined') window.location.reload();
-  }, [layoutKey, presets]);
+    // Live re-hydration — useWidgetLayout/useWidgetVisibility listen for this.
+    notifyPrefsApplied(layoutKey);
+    // Persist the applied state to the cloud too (single merged write).
+    if (profileId) {
+      const entries: Record<string, unknown> = { [`hidden_${layoutKey}`]: preset.hidden ?? [] };
+      if (preset.layouts) entries[layoutKey] = preset.layouts;
+      saveDashboardPrefs(profileId, entries);
+    }
+  }, [layoutKey, presets, profileId]);
 
   const remove = useCallback((name: string) => {
     persist(presets.filter((p) => p.name !== name));

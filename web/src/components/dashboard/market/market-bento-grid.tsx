@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Globe, Gauge, Compass, Activity, BarChart3, Target,
   Landmark, Bitcoin, Search, Newspaper, Users, DollarSign,
   ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown,
+  RotateCcw, SlidersHorizontal,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge, Skeleton } from '@/components/ui';
@@ -21,6 +22,9 @@ import {
   useTraditionalMarkets, useCryptoAssets, useAltcoinScanner, useNews,
 } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
+import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
+import { CustomizePanel } from '@/components/dashboard/shared/customize-panel';
+import { RefreshStatus } from '@/components/dashboard/shared/refresh-status';
 
 /* ── Widget keys & drawer titles ── */
 
@@ -834,17 +838,47 @@ const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () =
 
 export function MarketBentoGrid() {
   const [activeWidget, setActiveWidget] = useState<MarketWidgetKey | null>(null);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const { isEnabled, toggle, setAll } = useWidgetVisibility('market', widgetKeys);
+  const resetRef = useRef<(() => void) | null>(null);
   const open = (key: MarketWidgetKey) => () => setActiveWidget(key);
+
+  const enabledKeys = widgetKeys.filter(isEnabled);
 
   return (
     <>
+      {/* Header — mirrors Home: refresh status + Reset + Customize */}
+      <div className="mb-4 flex items-end justify-between">
+        <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
+          Market
+        </h1>
+        <div className="flex items-center gap-2">
+          <RefreshStatus />
+          <button
+            onClick={() => resetRef.current?.()}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ark-text-tertiary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+            title="Reset layout"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </button>
+          <button
+            onClick={() => setShowCustomize(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-ark-divider px-3 py-1.5 text-xs font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Customize
+          </button>
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <DraggableGrid layoutKey="market" defaultLayouts={MARKET_DEFAULT_LAYOUTS}>
-          {widgetKeys.map((key, i) => {
+        <DraggableGrid layoutKey="market" defaultLayouts={MARKET_DEFAULT_LAYOUTS} resetRef={resetRef}>
+          {enabledKeys.map((key, i) => {
             const TileComp = tileComponents[key];
             return (
               <div key={key} className="h-full [&>*]:h-full">
@@ -855,6 +889,19 @@ export function MarketBentoGrid() {
           })}
         </DraggableGrid>
       </motion.div>
+
+      {showCustomize && (
+        <CustomizePanel
+          title="Customize Market"
+          layoutKey="market"
+          widgetKeys={widgetKeys}
+          widgetTitles={drawerTitles}
+          isEnabled={isEnabled}
+          toggle={toggle}
+          setAll={setAll}
+          onClose={() => setShowCustomize(false)}
+        />
+      )}
 
       <DetailDrawer
         open={activeWidget !== null}

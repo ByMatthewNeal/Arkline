@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/shared/sidebar';
 import { Topbar } from '@/components/dashboard/shared/topbar';
 import { MobileNav } from '@/components/dashboard/shared/mobile-nav';
 import { cn, setPreferredCurrency, getPreferredCurrency } from '@/lib/utils/format';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useTheme } from '@/lib/hooks/use-theme';
 
 export default function DashboardLayout({
   children,
@@ -19,6 +20,19 @@ export default function DashboardLayout({
   const { profile } = useAuth();
   setPreferredCurrency(profile?.preferred_currency);
   const currency = getPreferredCurrency();
+
+  // Cross-device theme: if this device has no saved choice, adopt the theme
+  // saved in the profile (Settings on another device / iOS parity).
+  const { setTheme } = useTheme();
+  const profileTheme = profile?.dark_mode;
+  useEffect(() => {
+    if (!profileTheme) return;
+    try {
+      if (!localStorage.getItem('ark-theme') && ['light', 'dark', 'system'].includes(profileTheme)) {
+        setTheme(profileTheme as 'light' | 'dark' | 'system');
+      }
+    } catch { /* ignore */ }
+  }, [profileTheme, setTheme]);
 
   return (
     <div

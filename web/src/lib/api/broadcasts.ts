@@ -13,6 +13,8 @@ export interface Broadcast {
   view_count: number;
   images: string[];
   video_url: string | null;
+  audio_url: string | null;
+  meeting_link: string | null;
 }
 
 function toArray(v: unknown): string[] {
@@ -34,7 +36,7 @@ export async function fetchBroadcasts(): Promise<Broadcast[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('broadcasts')
-    .select('id, title, content, tags, published_at, created_at, is_pinned, reaction_count, view_count, images, video_url')
+    .select('id, title, content, tags, published_at, created_at, is_pinned, reaction_count, view_count, images, video_url, audio_url, meeting_link')
     .eq('status', 'published')
     .order('is_pinned', { ascending: false })
     .order('published_at', { ascending: false })
@@ -52,5 +54,7 @@ export async function fetchBroadcasts(): Promise<Broadcast[]> {
     view_count: Number(b.view_count ?? 0),
     images: toArray(b.images),
     video_url: (b.video_url as string) ?? null,
+    audio_url: (b.audio_url as string) ?? null,
+    meeting_link: (b.meeting_link as string) ?? null,
   }));
 }

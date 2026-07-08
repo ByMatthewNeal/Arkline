@@ -1,21 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown } from 'lucide-react';
+import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { fetchBroadcasts, type Broadcast } from '@/lib/api/broadcasts';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useBroadcastSocial } from '@/lib/hooks/use-broadcast-social';
 import { formatRelativeTime, cn } from '@/lib/utils/format';
+import { Markdown } from '@/components/dashboard/shared/markdown';
+import { ImageGallery, AudioPlayer } from '@/components/dashboard/shared/media';
 
 type Social = ReturnType<typeof useBroadcastSocial>;
 
 const DATE_FILTERS = ['All', 'Today', 'This Week', 'This Month'] as const;
 type DateFilter = (typeof DATE_FILTERS)[number];
 
-function cleanContent(md: string): string {
-  return md.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`/g, '').replace(/^#{1,6}\s*/gm, '').trim();
+/** Plain-text preview for the collapsed card (markdown stripped). */
+function previewText(md: string): string {
+  return md.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`/g, '').replace(/^#{1,6}\s*/gm, '').replace(/^>\s?/gm, '').trim();
 }
 
 function matchesDate(b: Broadcast, filter: DateFilter): boolean {
@@ -30,8 +33,7 @@ function matchesDate(b: Broadcast, filter: DateFilter): boolean {
 
 function BroadcastCard({ b, social }: { b: Broadcast; social: Social }) {
   const [expanded, setExpanded] = useState(false);
-  const body = cleanContent(b.content);
-  const paras = body.split('\n').filter(Boolean);
+  const preview = previewText(b.content).split('\n').filter(Boolean).slice(0, 3);
   const when = b.published_at ?? b.created_at;
   const liked = social.isReacted(b.id);
   const saved = social.isBookmarked(b.id);
@@ -62,9 +64,40 @@ function BroadcastCard({ b, social }: { b: Broadcast; social: Social }) {
         </div>
       )}
 
-      <div className={cn('mt-3 space-y-2 text-sm leading-relaxed text-ark-text-secondary', !expanded && 'line-clamp-3')}>
-        {(expanded ? paras : paras.slice(0, 3)).map((p, i) => <p key={i}>{p}</p>)}
-      </div>
+      {expanded ? (
+        <>
+          {/* Full content: rendered markdown + media (iOS parity) */}
+          <Markdown content={b.content} className="mt-2" />
+          {b.audio_url && <AudioPlayer src={b.audio_url} />}
+          <ImageGallery images={b.images} title={b.title} />
+          {(b.video_url || b.meeting_link) && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {b.video_url && (
+                <a
+                  href={b.video_url} target="_blank" rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 rounded-lg border border-ark-divider px-3 py-1.5 text-xs font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary"
+                >
+                  <Video className="h-3.5 w-3.5 text-ark-primary" /> Watch video
+                </a>
+              )}
+              {b.meeting_link && (
+                <a
+                  href={b.meeting_link} target="_blank" rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 rounded-lg border border-ark-divider px-3 py-1.5 text-xs font-medium text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary"
+                >
+                  <CalendarClock className="h-3.5 w-3.5 text-ark-primary" /> Join meeting
+                </a>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="mt-3 space-y-2 text-sm leading-relaxed text-ark-text-secondary line-clamp-3">
+          {preview.map((p, i) => <p key={i}>{p}</p>)}
+        </div>
+      )}
 
       <div className="mt-3 flex items-center gap-3 text-[11px] text-ark-text-disabled">
         <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{b.view_count}</span>

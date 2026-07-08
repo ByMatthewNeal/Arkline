@@ -12,7 +12,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,
-            refetchOnWindowFocus: false,
+            // Mirror the iOS refresh model: HomeViewModel runs a 5-minute
+            // auto-refresh timer and refreshes on foreground. Per-hook
+            // refetchInterval (e.g. 60 s live prices) overrides this default.
+            refetchInterval: 5 * 60 * 1000,
+            refetchOnWindowFocus: true,
             retry: 2,
           },
         },
