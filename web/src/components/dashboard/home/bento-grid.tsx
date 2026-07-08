@@ -1323,8 +1323,13 @@ function RotationTile({ onOpen }: { onOpen: () => void }) {
 }
 
 /* ── Model Portfolio Update tile (model_portfolio_trades) ── */
+const ALLOC_COLORS = ['var(--ark-primary)', '#8B5CF6', '#06B6D4', '#F59E0B', '#EC4899', '#22C55E'];
+
 function ModelPortfolioTile({ onOpen }: { onOpen: () => void }) {
   const { data, isLoading } = useModelPortfolioUpdate();
+  const alloc = data?.allocation ?? [];
+  const top = alloc.slice(0, 4);
+  const restPct = alloc.slice(4).reduce((s, a) => s + a.pct, 0);
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
@@ -1336,22 +1341,50 @@ function ModelPortfolioTile({ onOpen }: { onOpen: () => void }) {
             <PieChart className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Model Portfolio</span>
           </div>
-          <div className="mt-1.5 flex items-center justify-between">
+          <div className="mt-1.5 flex items-baseline justify-between">
             <span className="text-sm font-semibold text-ark-text">{data.portfolio_name}</span>
-            <span className="text-[10px] text-ark-text-disabled">{data.trigger}</span>
+            <span className="text-[10px] text-ark-text-tertiary">{formatRelativeTime(data.trade_date)}</span>
           </div>
-          {data.changes.length === 0 ? (
-            <p className="mt-2 text-[11px] text-ark-text-tertiary">No allocation changes</p>
-          ) : (
-            <div className="mt-2 space-y-1">
-              {data.changes.slice(0, 5).map((c) => (
-                <div key={c.asset} className="flex items-center gap-2 text-[10px]">
-                  <span className="w-12 font-semibold text-ark-text">{c.asset}</span>
-                  <span className="fig text-ark-text-disabled">{c.from.toFixed(0)}%</span>
-                  <ArrowUpRight className={cn('h-3 w-3', c.to >= c.from ? 'text-ark-success' : 'text-ark-error rotate-90')} />
-                  <span className="fig font-semibold text-ark-text">{c.to.toFixed(0)}%</span>
-                </div>
-              ))}
+
+          {/* Current allocation — stacked bar + legend */}
+          {alloc.length > 0 && (
+            <div className="mt-3">
+              <div className="flex h-2 w-full gap-px overflow-hidden rounded-full">
+                {top.map((a, i) => (
+                  <div key={a.asset} style={{ width: `${a.pct}%`, background: ALLOC_COLORS[i % ALLOC_COLORS.length] }} className="h-full opacity-80 transition-opacity group-hover:opacity-100" />
+                ))}
+                {restPct > 0.5 && <div style={{ width: `${restPct}%` }} className="h-full bg-ark-fill-tertiary" />}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                {top.map((a, i) => (
+                  <span key={a.asset} className="flex items-center gap-1 text-[10px] text-ark-text-secondary">
+                    <span className="h-1.5 w-1.5 rounded-full opacity-80" style={{ background: ALLOC_COLORS[i % ALLOC_COLORS.length] }} />
+                    {a.asset} <span className="fig font-semibold text-ark-text">{a.pct.toFixed(0)}%</span>
+                  </span>
+                ))}
+                {restPct > 0.5 && <span className="fig text-[10px] text-ark-text-tertiary">+{restPct.toFixed(0)}% other</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Latest rebalance moves */}
+          {data.changes.length > 0 && (
+            <div className="mt-auto pt-3">
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Latest rebalance · {data.trigger}</p>
+              <div className="space-y-1">
+                {data.changes.slice(0, 3).map((c) => {
+                  const up = c.to >= c.from;
+                  return (
+                    <div key={c.asset} className="flex items-center justify-between text-[10px]">
+                      <span className="font-semibold text-ark-text">{c.asset}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="fig text-ark-text-tertiary">{c.from.toFixed(0)}%</span>
+                        <span className={cn('fig font-semibold', up ? 'text-ark-success' : 'text-ark-error')}>→ {c.to.toFixed(0)}%</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -1371,14 +1404,43 @@ function WeeklyUpdateTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full items-center justify-center"><p className="text-xs text-ark-text-disabled">No deck yet</p></div>
       ) : (
         <div className="flex h-full flex-col">
-          <div className="flex items-center gap-2">
-            <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Weekly Update</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Weekly Update</span>
+            </div>
+            <span className="rounded-full bg-ark-violet/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-ark-violet">{data.status}</span>
           </div>
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="font-[family-name:var(--font-urbanist)] text-lg font-bold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</p>
-            <p className="mt-1 text-[11px] text-ark-text-tertiary">{data.slide_count} slides</p>
-            <span className="mt-2 rounded-full bg-ark-violet/10 px-2.5 py-0.5 text-[10px] font-semibold text-ark-violet capitalize">{data.status}</span>
+
+          <p className="mt-2 font-[family-name:var(--font-urbanist)] text-lg font-bold text-ark-text">
+            {fmt(data.week_start)} – {fmt(data.week_end)}
+          </p>
+
+          {/* Deck agenda — first slide titles, editorial table-of-contents style */}
+          {(() => {
+            const titled = data.slides.filter((s) => s.title && s.title.length > 1).slice(0, 3);
+            return titled.length > 0 ? (
+              <div className="mt-2.5 flex-1 space-y-1.5 border-l border-ark-violet/25 pl-3">
+                {titled.map((s, i) => (
+                  <div key={s.id} className="flex items-baseline gap-2">
+                    <span className="fig text-[9px] font-semibold text-ark-violet/60">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="truncate text-[11px] font-medium text-ark-text-secondary">{s.title}</span>
+                  </div>
+                ))}
+                {data.slide_count > titled.length && (
+                  <p className="fig text-[9px] text-ark-text-tertiary">+ {data.slide_count - titled.length} more slides</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1" />
+            );
+          })()}
+
+          <div className="mt-2 flex items-center justify-between border-t border-ark-divider/60 pt-2">
+            <span className="fig text-[10px] text-ark-text-tertiary">{data.slide_count} slides</span>
+            <span className="flex items-center gap-0.5 text-[10px] font-medium text-ark-violet">
+              Read deck <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </span>
           </div>
         </div>
       )}

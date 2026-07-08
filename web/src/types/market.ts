@@ -301,6 +301,8 @@ export interface ModelPortfolioUpdate {
   trigger: string;
   trade_date: string;
   changes: { asset: string; from: number; to: number }[];
+  /** Current (post-rebalance) allocation, sorted by weight desc. */
+  allocation: { asset: string; pct: number }[];
 }
 
 /* ── Weekly Update deck ── */

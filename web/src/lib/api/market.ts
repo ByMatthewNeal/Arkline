@@ -822,7 +822,12 @@ export async function fetchModelPortfolioUpdate(): Promise<ModelPortfolioUpdate 
     .filter((c) => Math.abs(c.from - c.to) >= 0.05)
     .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from));
 
-  return { portfolio_name, trigger: t.trigger, trade_date: t.trade_date, changes };
+  const allocation = Object.entries(to)
+    .map(([asset, pct]) => ({ asset, pct: Number(pct) }))
+    .filter((a) => a.pct > 0.01)
+    .sort((a, b) => b.pct - a.pct);
+
+  return { portfolio_name, trigger: t.trigger, trade_date: t.trade_date, changes, allocation };
 }
 
 /* ── Weekly Update deck ── (market_update_decks latest published) */
