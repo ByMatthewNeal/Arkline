@@ -188,7 +188,7 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
           </div>
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text leading-tight">
-              <span className="opacity-40 font-normal">$</span>0.00
+              <span>$</span>0.00
             </p>
             <p className="mt-1 text-[11px] text-ark-text-tertiary">No holdings yet</p>
             <p className="mt-0.5 text-[10px] text-ark-text-disabled">Add holdings to track your portfolio</p>
@@ -206,7 +206,7 @@ function PortfolioTile({ onOpen }: { onOpen: () => void }) {
             <div className="relative">
               <AmbientGlow color="var(--ark-primary)" className="-left-4 -top-2 h-16 w-32" />
               <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text leading-tight relative">
-                <span className="opacity-40 font-normal">$</span>
+                <span>$</span>
                 <span ref={counter.ref}>{counter.value}</span>
               </p>
               <span className={cn(
@@ -1732,7 +1732,7 @@ function HeroValue({ value, blurred }: { value: number; blurred: boolean }) {
   const formatted = Number(dollars).toLocaleString('en-US');
   return (
     <span className={cn('fig transition-[filter] duration-200', blurred && 'blur-md select-none')}>
-      <span className="opacity-30 font-normal">$</span>
+      <span>$</span>
       {formatted}
       <span className="text-[0.55em] font-semibold opacity-40">.{cents}</span>
     </span>
@@ -1827,7 +1827,7 @@ function PortfolioHero() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ark-primary/10"><Wallet className="h-5 w-5 text-ark-primary" /></div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Portfolio</p>
-            <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text"><span className="opacity-40 font-normal">$</span>0.00</p>
+            <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text"><span>$</span>0.00</p>
             <p className="text-[11px] text-ark-text-tertiary">No holdings yet — add positions to track your portfolio</p>
           </div>
         </div>

@@ -212,7 +212,7 @@ export default function PortfolioPage() {
                     : (portfolio?.name ?? 'Portfolio')}
                 </p>
                 <p className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold tracking-tight text-ark-text lg:text-5xl">
-                  <span className="opacity-50 font-normal">$</span>
+                  <span>$</span>
                   {(scrubbedPoint ? scrubbedPoint.value : stats.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>

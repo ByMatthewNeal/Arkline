@@ -161,7 +161,7 @@ function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
             <div className="relative">
               <AmbientGlow color="var(--ark-primary)" className="-left-4 -top-2 h-16 w-32" />
               <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text leading-tight relative">
-                <span className="opacity-40 font-normal">$</span>
+                <span>$</span>
                 <span ref={counter.ref}>{counter.value}</span>
                 <span className="text-sm opacity-40 font-normal">T</span>
               </p>

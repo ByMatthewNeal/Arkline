@@ -131,7 +131,7 @@ export function PortfolioHero() {
       {/* Value + change */}
       <div>
         <p className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold tracking-tight text-ark-text">
-          <span className="opacity-30 font-normal">$</span>
+          <span>$</span>
           {currentValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
         <span
