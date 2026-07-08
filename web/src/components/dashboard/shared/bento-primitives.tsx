@@ -138,12 +138,14 @@ export function Spark({
       <svg viewBox={`0 0 ${w} ${h}`} className="h-full w-full" preserveAspectRatio="none">
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
+            {/* Whisper of a fill — the line carries the story, not the wash. */}
+            <stop offset="0%" stopColor={color} stopOpacity={0.08} />
+            <stop offset="75%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
         <path d={area} fill={`url(#${id})`} stroke="none" />
-        <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        {/* Hairline stroke reads as a precision instrument, not a marker pen. */}
+        <path d={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" strokeOpacity={0.9} />
         {hoverPt && (
           <line
             x1={hoverPt[0]} x2={hoverPt[0]} y1={0} y2={h}
@@ -152,6 +154,18 @@ export function Spark({
           />
         )}
       </svg>
+      {/* "Now" anchor — a small dot on the latest point grounds the line. */}
+      {!hoverPt && (
+        <span
+          className="pointer-events-none absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            left: `min(${(pts[pts.length - 1][0] / w) * 100}%, calc(100% - 4px))`,
+            top: `${(pts[pts.length - 1][1] / h) * 100}%`,
+            background: color,
+            boxShadow: '0 0 0 2px var(--ark-card)',
+          }}
+        />
+      )}
       {hoverPt && (
         <>
           {/* Dot rendered in HTML so it stays round despite viewBox stretch. */}
