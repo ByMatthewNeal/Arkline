@@ -154,9 +154,7 @@ function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex h-full gap-4">
           <div className="flex flex-col justify-between flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10 transition-transform duration-300 group-hover:scale-110">
-                <Globe className="h-3.5 w-3.5 text-ark-primary" />
-              </div>
+              <Globe className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Market Overview</span>
             </div>
 
@@ -214,9 +212,7 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-warning/10 transition-transform duration-300 group-hover:scale-110">
-                <Gauge className="h-3.5 w-3.5 text-ark-warning" />
-              </div>
+              <Gauge className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Fear & Greed</span>
             </div>
             <Badge variant={variant}>{label}</Badge>
@@ -314,9 +310,7 @@ function SentimentTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10 transition-transform duration-300 group-hover:scale-110">
-                <Activity className="h-3.5 w-3.5 text-ark-primary" />
-              </div>
+              <Activity className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Sentiment</span>
             </div>
             <Badge variant={season === 'altcoin' ? 'info' : 'default'}>
@@ -372,9 +366,7 @@ function MacroTile({ onOpen }: { onOpen: () => void }) {
         <div className="flex flex-col justify-between h-full">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-success/10 transition-transform duration-300 group-hover:scale-110">
-                <BarChart3 className="h-3.5 w-3.5 text-ark-success" />
-              </div>
+              <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-success" />
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Macro</span>
                 <span className="flex items-center gap-1 rounded-full bg-ark-success/10 px-1.5 py-0.5">
@@ -429,9 +421,7 @@ function PositioningTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10 transition-transform duration-300 group-hover:scale-110">
-                <Target className="h-3.5 w-3.5 text-ark-primary" />
-              </div>
+              <Target className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Positioning</span>
             </div>
           </div>
@@ -474,9 +464,7 @@ function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
         <>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-success/10 transition-transform duration-300 group-hover:scale-110">
-                <Activity className="h-3.5 w-3.5 text-ark-success" />
-              </div>
+              <Activity className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-success" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Momentum Map</span>
             </div>
             <Badge variant={count > 0 ? 'success' : 'default'}>{count} aligned</Badge>
@@ -512,9 +500,7 @@ function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
       {isLoading ? <SkeletonListTile /> : (
         <>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-info/10 transition-transform duration-300 group-hover:scale-110">
-              <Landmark className="h-3.5 w-3.5 text-ark-info" />
-            </div>
+            <Landmark className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-info" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Trad Markets</span>
           </div>
           <div className="space-y-1.5">
@@ -592,9 +578,7 @@ function AltcoinScannerTile({ onOpen }: { onOpen: () => void }) {
       {isLoading ? <SkeletonListTile /> : (
         <>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-violet/10 transition-transform duration-300 group-hover:scale-110">
-              <Search className="h-3.5 w-3.5 text-ark-violet" />
-            </div>
+            <Search className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Alt Scanner</span>
           </div>
           <div className="space-y-1.5">
@@ -635,9 +619,7 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
       {isLoading ? <SkeletonListTile /> : (
         <>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-violet/10 transition-transform duration-300 group-hover:scale-110">
-              <Newspaper className="h-3.5 w-3.5 text-ark-violet" />
-            </div>
+            <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Headlines</span>
           </div>
           <div className="space-y-1.5">
@@ -685,9 +667,7 @@ function RetailSentimentTile({ onOpen }: { onOpen: () => void }) {
       {isLoading ? <SkeletonSparkTile /> : (
         <>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-warning/10 transition-transform duration-300 group-hover:scale-110">
-              <Users className="h-3.5 w-3.5 text-ark-warning" />
-            </div>
+            <Users className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Retail</span>
           </div>
 

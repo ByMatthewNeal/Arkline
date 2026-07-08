@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { Area, AreaChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { BellRing, Check, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Badge, Skeleton, useToast } from '@/components/ui';
 import {
@@ -34,6 +34,7 @@ export function ModelPortfoliosDetail() {
   const { data: portfolios, isLoading } = useModelPortfolios();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [range, setRange] = useState<Range>('3M');
+  const [scrubIdx, setScrubIdx] = useState<number | null>(null);
   const toast = useToast();
 
   const active = portfolios?.find((p) => p.id === selectedId) ?? portfolios?.[0];
@@ -77,6 +78,13 @@ export function ModelPortfoliosDetail() {
 
   const latest = navWindow[navWindow.length - 1];
   const totalReturn = latest ? ((latest.nav - navStart) / navStart) * 100 : 0;
+
+  // Scrubbing the chart drives the header return line.
+  const scrubbed = scrubIdx != null ? chart[scrubIdx] ?? null : null;
+  const headerReturn = scrubbed ? scrubbed.strategy : totalReturn;
+  const headerCaption = scrubbed
+    ? new Date(scrubbed.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : range;
   const allocations = latest
     ? Object.entries(latest.allocations ?? {})
         .map(([asset, v]) => ({ asset, pct: allocPct(v) }))
@@ -119,8 +127,11 @@ export function ModelPortfoliosDetail() {
           {active.description && <p className="mt-0.5 text-xs text-ark-text-tertiary">{active.description}</p>}
           {latest && (
             <div className="mt-1.5 flex items-center gap-2">
-              <span className={cn('fig text-sm font-bold', totalReturn >= 0 ? 'text-ark-success' : 'text-ark-error')}>
-                {formatPercent(totalReturn)} <span className="font-normal text-ark-text-tertiary">({range})</span>
+              <span className={cn('fig text-sm font-bold', headerReturn >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+                {formatPercent(headerReturn)} <span className="font-normal text-ark-text-tertiary">({headerCaption})</span>
+                {scrubbed?.spy != null && (
+                  <span className="fig ml-2 font-semibold text-ark-text-tertiary">SPY {formatPercent(scrubbed.spy)}</span>
+                )}
               </span>
               {latest.macro_regime && <Badge variant="default">{latest.macro_regime}</Badge>}
               {latest.btc_signal && (
@@ -166,36 +177,47 @@ export function ModelPortfoliosDetail() {
           </div>
         </div>
         {chart.length > 1 ? (
-          <div className="h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chart} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                <defs>
-                  <linearGradient id="mpFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--ark-primary)" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="var(--ark-primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="date" hide />
-                <YAxis hide domain={['auto', 'auto']} />
-                <Tooltip
-                  cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.6 }}
-                  content={({ active: a, payload }) =>
-                    a && payload?.length ? (
-                      <div className="rounded-lg border border-ark-divider bg-ark-card px-2.5 py-1.5 text-xs shadow-lg">
-                        <p className="text-[10px] text-ark-text-tertiary">{(payload[0].payload as { date: string }).date}</p>
-                        <p className="fig font-semibold text-ark-primary">{active.strategy}: {formatPercent((payload[0].payload as { strategy: number }).strategy)}</p>
-                        {(payload[0].payload as { spy: number | null }).spy != null && (
-                          <p className="fig text-ark-text-secondary">SPY: {formatPercent((payload[0].payload as { spy: number }).spy)}</p>
-                        )}
-                      </div>
-                    ) : null
-                  }
-                />
-                <Area type="monotone" dataKey="strategy" stroke="var(--ark-primary)" strokeWidth={2} fill="url(#mpFill)" />
-                <Line type="monotone" dataKey="spy" stroke="var(--ark-text-tertiary)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            <div className="h-52 w-full cursor-crosshair">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={chart}
+                  margin={{ top: 4, right: 10, bottom: 0, left: 4 }}
+                  onMouseMove={(state) => {
+                    const idx = (state as { activeTooltipIndex?: number | null })?.activeTooltipIndex;
+                    setScrubIdx(typeof idx === 'number' ? idx : null);
+                  }}
+                  onMouseLeave={() => setScrubIdx(null)}
+                >
+                  <defs>
+                    <linearGradient id="mpFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--ark-primary)" stopOpacity={0.12} />
+                      <stop offset="70%" stopColor="var(--ark-primary)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" hide />
+                  <YAxis hide domain={['auto', 'auto']} />
+                  {/* Zero line — everything is % return from the window start. */}
+                  <ReferenceLine y={0} stroke="var(--ark-text-disabled)" strokeDasharray="2 4" strokeOpacity={0.5} />
+                  <Tooltip
+                    cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.5 }}
+                    content={() => null}
+                  />
+                  <Area
+                    type="monotone" dataKey="strategy"
+                    stroke="var(--ark-primary)" strokeWidth={2} fill="url(#mpFill)"
+                    activeDot={{ r: 4, fill: 'var(--ark-primary)', stroke: 'var(--ark-card)', strokeWidth: 2 }}
+                  />
+                  <Line type="monotone" dataKey="spy" stroke="var(--ark-text-tertiary)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} activeDot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-1 flex justify-between px-1 text-[9px] font-medium uppercase tracking-wide text-ark-text-disabled">
+              <span>{chart[0] ? new Date(chart[0].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+              <span className="text-ark-text-tertiary">— {active.strategy} &nbsp;·&nbsp; ┄ SPY</span>
+              <span>{chart[chart.length - 1] ? new Date(chart[chart.length - 1].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+            </div>
+          </>
         ) : (
           <p className="py-6 text-center text-sm text-ark-text-tertiary">No NAV history yet.</p>
         )}

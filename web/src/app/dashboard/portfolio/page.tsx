@@ -12,6 +12,7 @@ import {
   AreaChart,
   XAxis,
   YAxis,
+  ReferenceLine,
 } from 'recharts';
 import { GlassCard, Badge, Skeleton, ConfirmDialog, PromptDialog, useToast } from '@/components/ui';
 import { usePortfolios, usePricedHoldings, useTransactions, usePortfolioHistory } from '@/lib/hooks/use-portfolio';
@@ -50,6 +51,7 @@ export default function PortfolioPage() {
   const [modal, setModal] = useState<{ open: boolean; type: 'buy' | 'sell'; symbol?: string }>({ open: false, type: 'buy' });
   const [newPortfolioOpen, setNewPortfolioOpen] = useState(false);
   const [removeSymbol, setRemoveSymbol] = useState<string | null>(null);
+  const [scrubbedIdx, setScrubbedIdx] = useState<number | null>(null);
   const toast = useToast();
 
   const portfolio = portfolios?.[selectedIdx];
@@ -100,6 +102,9 @@ export default function PortfolioPage() {
     date: p.date,
     value: p.value,
   }));
+
+  // Scrubbing the history chart rewrites the headline value + date.
+  const scrubbedPoint = scrubbedIdx != null ? historyData[scrubbedIdx] ?? null : null;
 
   const isLoading = loadingPortfolios || loadingHoldings;
 
@@ -194,18 +199,22 @@ export default function PortfolioPage() {
         </div>
       ) : (
         <>
-          {/* Hero stats card */}
+          {/* Hero stats card — scrubbing the chart rewrites the headline */}
           <GlassCard className="relative col-span-full overflow-hidden">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary/20 to-transparent" />
             <div className="flex flex-wrap items-end gap-8">
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-ark-text-tertiary">{portfolio?.name ?? 'Portfolio'}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-ark-text-tertiary">
+                  {scrubbedPoint
+                    ? new Date(scrubbedPoint.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                    : (portfolio?.name ?? 'Portfolio')}
+                </p>
                 <p className="fig font-[family-name:var(--font-urbanist)] text-4xl font-bold tracking-tight text-ark-text lg:text-5xl">
                   <span className="opacity-50 font-normal">$</span>
-                  {stats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {(scrubbedPoint ? scrubbedPoint.value : stats.totalValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
-              <div>
+              <div className={cn('transition-opacity duration-200', scrubbedPoint && 'opacity-30')}>
                 <p className="text-[10px] font-medium uppercase tracking-wider text-ark-text-tertiary">Total P&L</p>
                 <p
                   className={`fig mt-0.5 text-lg font-bold ${
@@ -216,7 +225,7 @@ export default function PortfolioPage() {
                 </p>
               </div>
               <div className="w-px self-stretch bg-ark-divider" />
-              <div>
+              <div className={cn('transition-opacity duration-200', scrubbedPoint && 'opacity-30')}>
                 <p className="text-[10px] font-medium uppercase tracking-wider text-ark-text-tertiary">24h Change</p>
                 <p
                   className={`fig mt-0.5 text-lg font-bold ${
@@ -226,42 +235,59 @@ export default function PortfolioPage() {
                   {formatCurrency(stats.dayChange)} ({formatPercent(stats.dayPct)})
                 </p>
               </div>
+              {scrubbedPoint && historyData[0] && (
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-ark-text-tertiary">vs. year start</p>
+                  <p className={`fig mt-0.5 text-lg font-bold ${scrubbedPoint.value >= historyData[0].value ? 'text-ark-success' : 'text-ark-error'}`}>
+                    {formatPercent(historyData[0].value ? ((scrubbedPoint.value - historyData[0].value) / historyData[0].value) * 100 : 0)}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Sparkline */}
+            {/* History — baseline at range start, scrub to explore */}
             {historyData.length > 1 && (
-              <div className="mt-5 h-32">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={historyData}>
-                    <defs>
-                      <linearGradient id="port-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.2} />
-                        <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" hide />
-                    <YAxis hide domain={['dataMin', 'dataMax']} />
-                    <Tooltip
-                      cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.6 }}
-                      content={({ active, payload }) =>
-                        active && payload?.[0] ? (
-                          <div className="rounded-lg border border-ark-divider bg-ark-card px-2.5 py-1.5 text-xs shadow-lg">
-                            <p className="text-[10px] text-ark-text-tertiary">{(payload[0].payload as { date: string }).date}</p>
-                            <p className="fig font-semibold text-ark-text">{formatCurrency(payload[0].value as number)}</p>
-                          </div>
-                        ) : null
-                      }
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#3B82F6"
-                      strokeWidth={1.5}
-                      fill="url(#port-grad)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <>
+                <div className="mt-5 h-32 cursor-crosshair">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={historyData}
+                      margin={{ top: 4, right: 10, bottom: 0, left: 4 }}
+                      onMouseMove={(state) => {
+                        const idx = (state as { activeTooltipIndex?: number | null })?.activeTooltipIndex;
+                        setScrubbedIdx(typeof idx === 'number' ? idx : null);
+                      }}
+                      onMouseLeave={() => setScrubbedIdx(null)}
+                    >
+                      <defs>
+                        <linearGradient id="port-grad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--ark-primary)" stopOpacity={0.12} />
+                          <stop offset="70%" stopColor="var(--ark-primary)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" hide />
+                      <YAxis hide domain={['dataMin', 'dataMax']} />
+                      <ReferenceLine y={historyData[0].value} stroke="var(--ark-text-disabled)" strokeDasharray="2 4" strokeOpacity={0.5} />
+                      <Tooltip
+                        cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.5 }}
+                        content={() => null}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="var(--ark-primary)"
+                        strokeWidth={1.5}
+                        fill="url(#port-grad)"
+                        activeDot={{ r: 4, fill: 'var(--ark-primary)', stroke: 'var(--ark-card)', strokeWidth: 2 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-1 flex justify-between px-1 text-[9px] font-medium uppercase tracking-wide text-ark-text-disabled">
+                  <span>{new Date(historyData[0].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span>{new Date(historyData[historyData.length - 1].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                </div>
+              </>
             )}
           </GlassCard>
 
