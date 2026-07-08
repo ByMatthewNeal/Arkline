@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { ChevronRight, ChevronLeft, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronRight, ChevronLeft, ArrowUp, ArrowDown, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
-import { useRiskLevels, useIndicatorHistory } from '@/lib/hooks/use-market';
+import { useRiskLevels, useIndicatorHistory, useArkLineScore } from '@/lib/hooks/use-market';
 import { cn } from '@/lib/utils/format';
 import type { RiskBand, RiskLevelItem } from '@/types';
 
@@ -157,6 +157,107 @@ function Row({ it, kind, period, divider, onClick }: { it: RiskLevelItem; kind: 
   );
 }
 
+/* ── Multi-factor market composite (risk_snapshots.components) ── */
+function MultiFactorSection() {
+  const { data } = useArkLineScore();
+  if (!data?.components?.length) return null;
+
+  const sigColor = (signal?: string) =>
+    /bull/i.test(signal ?? '') ? 'var(--ark-success)' : /bear/i.test(signal ?? '') ? 'var(--ark-error)' : 'var(--ark-warning)';
+
+  return (
+    <div className="rounded-xl border border-ark-divider p-3.5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-ark-text">Multi-Factor Analysis</p>
+        <span className="fig text-sm font-bold text-ark-text">
+          {data.score}<span className="text-[10px] font-medium text-ark-text-tertiary"> / 100 · {data.tier}</span>
+        </span>
+      </div>
+      <p className="mt-1 text-[11px] leading-relaxed text-ark-text-tertiary">
+        Market-wide composite of weighted risk factors — context for the regression risk above.
+      </p>
+      <div className="mt-3 space-y-2">
+        {data.components.map((c) => (
+          <div key={c.name} className="flex items-center gap-2.5">
+            <span className="w-28 shrink-0 truncate text-[11px] text-ark-text-secondary">{c.name}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(100, Math.max(0, c.value * 100))}%`, background: sigColor(c.signal) }}
+              />
+            </div>
+            <span className="w-24 shrink-0 text-right text-[10px] font-semibold" style={{ color: sigColor(c.signal) }}>
+              {c.signal ?? '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+      {data.recommendation && (
+        <p className="mt-3 border-t border-ark-divider/60 pt-2.5 text-[11px] leading-relaxed text-ark-text-secondary">{data.recommendation}</p>
+      )}
+    </div>
+  );
+}
+
+/* ── Risk Level Guide (iOS "About Risk Level" sheet, copy matched) ── */
+function RiskLevelGuide({ kind }: { kind: 'crypto' | 'stock' }) {
+  const [open, setOpen] = useState(false);
+
+  const sections: { title: string; body: string }[] = [
+    {
+      title: 'What is the Risk Level?',
+      body: `The Risk Level is a score from 0.00 to 1.00 that measures where an asset sits in its market cycle. It uses ${kind === 'stock' ? 'trend and momentum models' : 'logarithmic regression'} on historical price data to determine whether the current price is relatively cheap or expensive compared to its long-term trend.`,
+    },
+    {
+      title: 'How to Use It',
+      body: 'Low risk (below 0.40) suggests the asset is undervalued relative to its historical trend — a potentially good time to accumulate. Neutral (0.40 – 0.55) means the asset is fairly priced; neither a strong buy nor sell signal. High risk (above 0.70) indicates the asset may be overheated — consider taking profits or reducing exposure.',
+    },
+    {
+      title: 'Why It Matters',
+      body: 'Markets move in cycles. Buying when risk is low and being cautious when risk is high has historically led to better outcomes. This tool helps you avoid buying tops and missing bottoms by providing an objective, data-driven perspective on market conditions.',
+    },
+    {
+      title: 'Multi-Factor Analysis',
+      body: 'The Multi-Factor Risk score combines multiple on-chain and technical indicators to produce a more robust signal than any single metric alone. Each factor is weighted based on its historical reliability.',
+    },
+    {
+      title: 'Interacting with the Chart',
+      body: 'Hover over the chart to explore historical risk levels at specific dates. Use the time-range buttons (7D, 30D, 90D, 1Y, All) to zoom in or out, and the back link to switch between assets.',
+    },
+  ];
+
+  return (
+    <div className="rounded-xl bg-ark-fill-secondary/40">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-3.5 py-3 text-left"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-ark-text">
+          <HelpCircle className="h-4 w-4 text-ark-primary" /> About Risk Levels
+        </span>
+        <ChevronLeft className={cn('h-4 w-4 text-ark-text-tertiary transition-transform', open ? 'rotate-90' : '-rotate-90')} />
+      </button>
+      {open && (
+        <div className="space-y-4 border-t border-ark-divider/60 px-3.5 py-3.5">
+          {/* Band legend */}
+          <div className="flex overflow-hidden rounded-lg text-center text-[9px] font-bold text-white">
+            <div className="flex-[40] bg-ark-success py-1.5">LOW &lt; 0.40</div>
+            <div className="flex-[15] bg-ark-warning py-1.5">0.40–0.55</div>
+            <div className="flex-[15] bg-ark-warning/70 py-1.5">0.55–0.70</div>
+            <div className="flex-[30] bg-ark-error py-1.5">HIGH &gt; 0.70</div>
+          </div>
+          {sections.map((s) => (
+            <div key={s.title}>
+              <p className="text-xs font-semibold text-ark-text">{s.title}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-ark-text-secondary">{s.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Per-asset risk history chart ── */
 const PERIODS = [{ label: '7D', days: 7 }, { label: '30D', days: 30 }, { label: '90D', days: 90 }, { label: '1Y', days: 365 }, { label: 'ALL', days: 3650 }];
 
@@ -228,6 +329,11 @@ function AssetRiskChart({ kind, item, onBack }: { kind: 'crypto' | 'stock'; item
       <p className="text-[13px] leading-relaxed text-ark-text-secondary">
         Risk is {item.symbol}&apos;s position within its long-term {kind === 'stock' ? 'trend & momentum model' : 'logarithmic regression channel'} — 0.0 is deeply undervalued (accumulation), 1.0 is historically overextended (distribution).
       </p>
+
+      {/* Multi-factor market composite (iOS RiskFactorBreakdownView parity) */}
+      {kind === 'crypto' && <MultiFactorSection />}
+
+      <RiskLevelGuide kind={kind} />
     </div>
   );
 }

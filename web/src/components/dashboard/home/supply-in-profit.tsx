@@ -1,10 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import { PieChart } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceArea } from 'recharts';
 import { GlassCard, Badge, Skeleton } from '@/components/ui';
 import { useSupplyInProfit } from '@/lib/hooks/use-market';
+import { cn } from '@/lib/utils/format';
 import type { SupplyInProfitStatus } from '@/types';
+
+const RANGES = ['1M', '3M', '6M', '1Y'] as const;
+type Range = (typeof RANGES)[number];
+const RANGE_DAYS: Record<Range, number> = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365 };
 
 function statusVariant(status: SupplyInProfitStatus): 'success' | 'info' | 'warning' | 'error' {
   switch (status) {
@@ -26,6 +32,7 @@ function statusColor(status: SupplyInProfitStatus): string {
 
 export function SupplyInProfit() {
   const { data, isLoading } = useSupplyInProfit();
+  const [range, setRange] = useState<Range>('3M');
 
   const percentage = data?.percentage ?? 0;
   const status = data?.status ?? 'Normal';
@@ -33,7 +40,12 @@ export function SupplyInProfit() {
   const date = data?.date ?? '';
   const color = statusColor(status);
 
-  const chartData = history.map((h) => ({ date: h.date, value: h.value }));
+  // History is daily — slice the selected window off the end.
+  const chartData = history
+    .slice(-RANGE_DAYS[range])
+    .map((h) => ({ date: h.date, value: h.value }));
+  const edgeDate = (d: string | undefined) =>
+    d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 
   return (
     <GlassCard className="relative overflow-hidden">
@@ -62,15 +74,32 @@ export function SupplyInProfit() {
         </div>
       ) : (
         <>
-          <div className="mb-3">
-            <span className="font-[family-name:var(--font-urbanist)] text-3xl font-bold text-ark-text" style={{ color }}>
-              {percentage.toFixed(2)}%
-            </span>
-            {date && (
-              <p className="mt-0.5 text-[10px] text-ark-text-disabled">
-                As of {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            )}
+          <div className="mb-3 flex items-end justify-between">
+            <div>
+              <span className="font-[family-name:var(--font-urbanist)] text-3xl font-bold text-ark-text" style={{ color }}>
+                {percentage.toFixed(2)}%
+              </span>
+              {date && (
+                <p className="mt-0.5 text-[10px] text-ark-text-disabled">
+                  As of {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+            {/* Time-range selector (same grammar as the portfolio hero) */}
+            <div className="flex gap-1 rounded-full bg-ark-fill-secondary/60 p-1">
+              {RANGES.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={cn(
+                    'rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors',
+                    range === r ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text',
+                  )}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="h-36">
@@ -119,6 +148,10 @@ export function SupplyInProfit() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+          <div className="mt-1 flex justify-between px-8 text-[9px] font-medium uppercase tracking-wide text-ark-text-disabled">
+            <span>{edgeDate(chartData[0]?.date)}</span>
+            <span>{edgeDate(chartData[chartData.length - 1]?.date)}</span>
           </div>
         </>
       )}

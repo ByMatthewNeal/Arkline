@@ -722,7 +722,8 @@ export async function fetchSupplyInProfit(): Promise<SupplyInProfitData> {
     .from('indicator_snapshots')
     .select('value, recorded_date')
     .eq('indicator', 'supply_in_profit')
-    .gte('recorded_date', daysAgoISO(120))
+    // Full year of history so the detail view can offer 1M–1Y ranges.
+    .gte('recorded_date', daysAgoISO(365))
     .order('recorded_date', { ascending: true });
 
   if (error || !data?.length) return demoSupplyInProfit;
