@@ -17,11 +17,20 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+/** Sign-in methods: password, or email OTP code (iOS-onboarding parity —
+ *  members who signed up on iOS verified via email code and may have no password). */
+type Method = 'password' | 'otp';
+
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [method, setMethod] = useState<Method>('password');
+  // OTP flow state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
   const {
     register,
@@ -53,6 +62,70 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const sendOtp = async () => {
+    setError('');
+    const email = otpEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+    if (!isSupabaseConfigured()) {
+      setError('Sign-in is not available right now. Please try again later.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      // shouldCreateUser: false — Arkline is invite-only; the code only goes
+      // to existing accounts, mirroring the iOS sign-in (not onboarding) flow.
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      if (otpError) throw otpError;
+      setOtpSent(true);
+      setOtpCode('');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not send code';
+      // Supabase returns "Signups not allowed for otp" for unknown emails.
+      setError(/signup/i.test(msg) ? 'No account found with that email.' : msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setError('');
+    if (otpCode.trim().length < 6) {
+      setError('Enter the 6-digit code from your email.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: otpEmail.trim(),
+        token: otpCode.trim(),
+        type: 'email',
+      });
+      if (verifyError) throw verifyError;
+      router.push('/dashboard');
+      router.refresh();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Invalid or expired code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMethod = (m: Method) => {
+    setMethod(m);
+    setError('');
+    setResetSent(false);
+    setOtpSent(false);
+    setOtpCode('');
   };
 
   const onForgotPassword = async () => {
@@ -92,7 +165,88 @@ export default function LoginPage() {
           Welcome back. Access your portfolio, risk scoring, and daily briefings.
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
+        {/* Method toggle */}
+        <div className="mt-6 flex rounded-xl bg-ark-fill-secondary/60 p-1">
+          {([['password', 'Password'], ['otp', 'Email code']] as const).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => switchMethod(m)}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                method === m ? 'bg-ark-primary text-white shadow-sm' : 'text-ark-text-tertiary hover:text-ark-text'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {method === 'otp' ? (
+          <div className="mt-6 space-y-4">
+            {!otpSent ? (
+              <>
+                <Input
+                  id="otp-email"
+                  type="email"
+                  label="Email"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  value={otpEmail}
+                  onChange={(e) => setOtpEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendOtp(); } }}
+                />
+                <p className="text-xs text-ark-text-tertiary">
+                  We&apos;ll email you a 6-digit code — the same way you signed in on the iOS app.
+                </p>
+                {error && (
+                  <div className="rounded-xl border border-ark-error/20 bg-ark-error/5 p-3">
+                    <p className="text-sm text-ark-error">{error}</p>
+                  </div>
+                )}
+                <Button type="button" onClick={sendOtp} loading={loading} className="w-full shadow-lg shadow-ark-primary/20">
+                  Send Code
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-ark-text-secondary">
+                  Enter the 6-digit code we sent to <span className="font-semibold text-ark-text">{otpEmail.trim()}</span>.
+                </p>
+                <Input
+                  id="otp-code"
+                  type="text"
+                  label="Verification code"
+                  placeholder="123456"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); verifyOtp(); } }}
+                />
+                {error && (
+                  <div className="rounded-xl border border-ark-error/20 bg-ark-error/5 p-3">
+                    <p className="text-sm text-ark-error">{error}</p>
+                  </div>
+                )}
+                <Button type="button" onClick={verifyOtp} loading={loading} className="w-full shadow-lg shadow-ark-primary/20">
+                  Verify &amp; Sign In
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                <div className="flex items-center justify-between text-xs">
+                  <button type="button" onClick={() => { setOtpSent(false); setError(''); }} className="font-medium text-ark-text-tertiary transition-colors hover:text-ark-text">
+                    Use a different email
+                  </button>
+                  <button type="button" onClick={sendOtp} className="font-medium text-ark-primary transition-colors hover:text-ark-accent-light">
+                    Resend code
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
           <Input
             id="email"
             type="email"
@@ -140,6 +294,7 @@ export default function LoginPage() {
             <ArrowRight className="h-4 w-4" />
           </Button>
         </form>
+        )}
 
         <div className="mt-8 flex items-center gap-3">
           <div className="h-px flex-1 bg-ark-divider" />
