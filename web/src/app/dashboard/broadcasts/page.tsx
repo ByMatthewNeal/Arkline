@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock } from 'lucide-react';
+import Link from 'next/link';
+import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { fetchBroadcasts, type Broadcast } from '@/lib/api/broadcasts';
@@ -154,10 +155,18 @@ export default function BroadcastsPage() {
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ark-primary/10">
           <Radio className="h-5 w-5 text-ark-primary" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">Broadcasts</h1>
           <p className="text-sm text-ark-text-tertiary">Market insights & updates from Arkline</p>
         </div>
+        {/* Member Q&A entry — mirrors the iOS floating Q&A button on Insights */}
+        <Link
+          href="/dashboard/qa"
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-ark-primary/25 transition-all hover:brightness-110"
+        >
+          <MessagesSquare className="h-4 w-4" />
+          Ask a Question
+        </Link>
       </div>
 
       {/* Search + date filters */}
