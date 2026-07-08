@@ -5,11 +5,12 @@ import {
   Wallet, Brain, Sparkles, Gauge, Shield, BarChart3, Globe,
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
-  SlidersHorizontal, X, Check, RotateCcw, ChevronDown, ChevronRight,
+  SlidersHorizontal, RotateCcw, ChevronDown, ChevronRight,
+  Eye, EyeOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip, ReferenceLine } from 'recharts';
 import { Play, Square } from 'lucide-react';
 import { Badge, Skeleton, GlassCard } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
@@ -1615,40 +1616,55 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
 
 
 /* ── Portfolio hero ── (pinned full-width at the top, like the iOS app) */
-/* Clean smooth area chart (gradient fill + end dot + hover scrubbing) —
- * matches the iOS look, with a desktop-native crosshair tooltip. */
-function PortfolioChart({ data, color, dates }: { data: number[]; color: string; dates?: string[] }) {
+/* Scrub-to-headline chart: hovering doesn't pop a tooltip — it drives the big
+ * number itself (the iOS/pro-fintech pattern). A dashed baseline marks the
+ * period-start value so gains/losses read relative to something; the fill is
+ * kept quiet so a red month doesn't flood the card. */
+function PortfolioChart({
+  data,
+  color,
+  dates,
+  onScrub,
+}: {
+  data: number[];
+  color: string;
+  dates?: string[];
+  onScrub?: (index: number | null) => void;
+}) {
   const cd = data.map((v, i) => ({ i, v, date: dates?.[i] }));
+  const baseline = data[0];
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={cd} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
+      <AreaChart
+        data={cd}
+        margin={{ top: 8, right: 14, bottom: 4, left: 4 }}
+        onMouseMove={(state) => {
+          const idx = (state as { activeTooltipIndex?: number | null })?.activeTooltipIndex;
+          onScrub?.(typeof idx === 'number' ? idx : null);
+        }}
+        onMouseLeave={() => onScrub?.(null)}
+      >
         <defs>
           <linearGradient id="pf-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
+            <stop offset="0%" stopColor={color} stopOpacity={0.1} />
+            <stop offset="70%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
         <YAxis domain={['dataMin', 'dataMax']} hide />
+        {/* Period-start baseline — the reference everything is measured against. */}
+        <ReferenceLine y={baseline} stroke="var(--ark-text-disabled)" strokeDasharray="2 4" strokeOpacity={0.5} />
         <Tooltip
-          cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.6 }}
-          content={({ active, payload }) =>
-            active && payload?.[0] ? (
-              <div className="rounded-lg border border-ark-divider bg-ark-card px-2.5 py-1.5 text-xs shadow-lg">
-                {(payload[0].payload as { date?: string }).date && (
-                  <p className="text-[10px] text-ark-text-tertiary">{(payload[0].payload as { date?: string }).date}</p>
-                )}
-                <p className="fig font-semibold text-ark-text">{formatCurrency(payload[0].value as number)}</p>
-              </div>
-            ) : null
-          }
+          cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.5 }}
+          content={() => null}
         />
         <Area
           type="monotone"
           dataKey="v"
           stroke={color}
-          strokeWidth={2.5}
+          strokeWidth={2}
           fill="url(#pf-area)"
           isAnimationActive={false}
+          activeDot={{ r: 4, fill: color, stroke: 'var(--ark-card)', strokeWidth: 2 }}
           dot={(p: { cx?: number; cy?: number; index?: number }) => {
             const isLast = p.index === cd.length - 1;
             return (
@@ -1656,7 +1672,7 @@ function PortfolioChart({ data, color, dates }: { data: number[]; color: string;
                 key={p.index}
                 cx={p.cx}
                 cy={p.cy}
-                r={isLast ? 4 : 0}
+                r={isLast ? 3.5 : 0}
                 fill={color}
                 stroke="var(--ark-card)"
                 strokeWidth={isLast ? 2 : 0}
@@ -1666,6 +1682,19 @@ function PortfolioChart({ data, color, dates }: { data: number[]; color: string;
         />
       </AreaChart>
     </ResponsiveContainer>
+  );
+}
+
+/** "$1,943,979.00" with tabular numerals, muted symbol, and de-emphasized cents. */
+function HeroValue({ value, blurred }: { value: number; blurred: boolean }) {
+  const [dollars, cents] = value.toFixed(2).split('.');
+  const formatted = Number(dollars).toLocaleString('en-US');
+  return (
+    <span className={cn('fig transition-[filter] duration-200', blurred && 'blur-md select-none')}>
+      <span className="opacity-30 font-normal">$</span>
+      {formatted}
+      <span className="text-[0.55em] font-semibold opacity-40">.{cents}</span>
+    </span>
   );
 }
 
@@ -1716,13 +1745,36 @@ function PortfolioHero() {
   const periodChange = currentValue - periodStart;
   const periodChangePct = periodStart ? (periodChange / periodStart) * 100 : 0;
   const useDayLive = period === '1H' || period === '1D';
-  const change = useDayLive ? dayChange : periodChange;
-  const changePct = useDayLive ? dayChangePct : periodChangePct;
-  const isUp = change >= 0;
+
+  // Scrubbing the chart drives the headline (value, delta, and date caption).
+  const [scrubIdx, setScrubIdx] = useState<number | null>(null);
+  const scrubbed = scrubIdx != null ? windowPts[scrubIdx] : null;
+  const displayValue = scrubbed ? scrubbed.value : currentValue;
+  const displayChange = scrubbed ? scrubbed.value - periodStart : (useDayLive ? dayChange : periodChange);
+  const displayChangePct = scrubbed
+    ? (periodStart ? ((scrubbed.value - periodStart) / periodStart) * 100 : 0)
+    : (useDayLive ? dayChangePct : periodChangePct);
+  const isUp = displayChange >= 0;
+  const scrubDateLabel = scrubbed
+    ? new Date(scrubbed.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : null;
+  const edgeDate = (d: string | undefined) =>
+    d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+  // Balance privacy toggle (persisted) — glanceable dashboards get screenshared.
+  const [hideBalance, setHideBalance] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('arkline-hide-balance') === '1'; } catch { return false; }
+  });
+  const toggleHideBalance = () => {
+    setHideBalance((v) => {
+      try { localStorage.setItem('arkline-hide-balance', v ? '0' : '1'); } catch { /* ignore */ }
+      return !v;
+    });
+  };
 
   const assetCount = holdings?.length ?? 0;
   const hasHoldings = assetCount > 0;
-  const counter = useCountUp(currentValue, isLoading, 2);
 
   return (
     <GlassCard className="relative mb-4 overflow-hidden p-5">
@@ -1740,11 +1792,18 @@ function PortfolioHero() {
         </div>
       ) : (
         <>
-          {/* Header: label + pill period selector */}
+          {/* Header: label + privacy toggle + pill period selector */}
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-ark-primary/10"><Wallet className="h-3.5 w-3.5 text-ark-primary" /></div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-disabled">Portfolio</span>
+              <button
+                onClick={toggleHideBalance}
+                title={hideBalance ? 'Show balance' : 'Hide balance'}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-ark-text-disabled transition-colors hover:bg-ark-fill-secondary hover:text-ark-text-secondary"
+              >
+                {hideBalance ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+              </button>
             </div>
             <div className="flex w-full gap-1 overflow-x-auto rounded-full bg-ark-fill-secondary/60 p-1 sm:w-auto">
               {PORTFOLIO_PERIODS.map((p) => (
@@ -1763,36 +1822,50 @@ function PortfolioHero() {
           </div>
 
           <div className="mt-5 flex items-center gap-8">
-            {/* Value block — spacious */}
+            {/* Value block — scrubbing the chart rewrites this in place */}
             <div className="min-w-0 shrink-0">
               <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold leading-none tracking-tight text-ark-text sm:text-[40px]">
-                <span className="opacity-30 font-normal">$</span>{counter.value}
+                <HeroValue value={displayValue} blurred={hideBalance} />
               </p>
               <span
                 className={cn(
-                  'fig mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold',
+                  'fig mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold transition-colors',
                   isUp ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error',
+                  hideBalance && 'blur-sm select-none',
                 )}
               >
                 {isUp ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {formatCurrency(Math.abs(change))} ({formatPercent(changePct)})
+                {formatCurrency(Math.abs(displayChange))} ({formatPercent(displayChangePct)})
               </span>
               <div className="mt-4 flex items-center gap-3 text-[11px] text-ark-text-tertiary">
-                <span><span className="font-semibold text-ark-text-secondary">{assetCount}</span> assets</span>
-                <span className="text-ark-text-disabled">·</span>
-                <span className="capitalize">{PERIOD_SUFFIX[period]}</span>
+                {scrubDateLabel ? (
+                  <span className="fig font-semibold text-ark-text-secondary">{scrubDateLabel}</span>
+                ) : (
+                  <>
+                    <span><span className="font-semibold text-ark-text-secondary">{assetCount}</span> assets</span>
+                    <span className="text-ark-text-disabled">·</span>
+                    <span className="capitalize">{PERIOD_SUFFIX[period]}</span>
+                  </>
+                )}
                 <span className="text-ark-text-disabled">·</span>
                 <Link href="/dashboard/portfolio" className="font-medium text-ark-primary hover:text-ark-accent-light">View details →</Link>
               </div>
             </div>
-            {/* Smooth area chart with hover scrubbing */}
+            {/* Chart: scrub to explore — baseline marks period start */}
             {sparkVals.length > 1 && (
-              <div className="hidden h-28 flex-1 sm:block">
-                <PortfolioChart
-                  data={sparkVals}
-                  dates={windowPts.map((x) => x.date)}
-                  color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'}
-                />
+              <div className="hidden flex-1 sm:block">
+                <div className="h-28 cursor-crosshair">
+                  <PortfolioChart
+                    data={sparkVals}
+                    dates={windowPts.map((x) => x.date)}
+                    color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'}
+                    onScrub={setScrubIdx}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between px-1 text-[9px] font-medium uppercase tracking-wide text-ark-text-disabled">
+                  <span>{edgeDate(windowPts[0]?.date)}</span>
+                  <span>{edgeDate(windowPts[windowPts.length - 1]?.date)}</span>
+                </div>
               </div>
             )}
           </div>
