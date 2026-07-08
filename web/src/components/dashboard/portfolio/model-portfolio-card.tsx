@@ -72,12 +72,13 @@ export function ModelPortfolioCard() {
             </div>
 
             {points.length > 1 && (
-              <div className="mt-3 h-10">
+              <div className="mt-3">
                 <Spark
                   data={points}
                   color={up ? 'var(--ark-success)' : 'var(--ark-error)'}
                   format={(v) => v.toFixed(0)}
                   interactive={false}
+                  className="h-10"
                 />
               </div>
             )}
