@@ -136,16 +136,18 @@ export async function fetchNews(limit = 20): Promise<NewsItem[]> {
 export async function fetchEconomicEvents(): Promise<EconomicEvent[]> {
   if (!isSupabaseConfigured()) return demoEvents;
   const supabase = getSupabase();
-  const todayISO = new Date().toISOString().split('T')[0];
-  // Pull a window around today so the feed has both upcoming and just-released
-  // events (released ones carry actual + analysis).
-  const sinceISO = new Date(Date.now() - 7 * 86_400_000).toISOString().split('T')[0];
+  // Pull a window around today: a short lookback for just-released events
+  // (they carry actual + analysis) plus everything upcoming. Keep the lookback
+  // SHORT and the limit generous — with ascending order, a long lookback can
+  // consume the entire row limit with past events and starve out today's and
+  // upcoming ones (this exact bug made the Events tile show 0).
+  const sinceISO = new Date(Date.now() - 2 * 86_400_000).toISOString().split('T')[0];
   const { data, error } = await supabase
     .from('economic_events')
     .select('id, title, country, currency, event_date, event_time, impact, forecast, previous, actual, beat_miss, claude_analysis')
     .gte('event_date', sinceISO)
     .order('event_date', { ascending: true })
-    .limit(40);
+    .limit(80);
   if (error || !data?.length) return demoEvents;
   return (data as {
     id: string;
