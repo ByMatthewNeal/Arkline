@@ -1,13 +1,25 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { recordTransaction, deleteHoldingsBySymbol, updateHoldingTarget, createPortfolio, type RecordTxInput } from '@/lib/api/portfolio-mutations';
+import { recordTransaction, deleteTransaction, deleteHoldingsBySymbol, updateHoldingTarget, createPortfolio, type RecordTxInput } from '@/lib/api/portfolio-mutations';
 import { useAuth } from './use-auth';
 
 export function useRecordTransaction(portfolioId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: Omit<RecordTxInput, 'portfolioId'>) => recordTransaction({ ...input, portfolioId: portfolioId! }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['holdings', portfolioId] });
+      qc.invalidateQueries({ queryKey: ['transactions', portfolioId] });
+    },
+  });
+}
+
+export function useDeleteTransaction(portfolioId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ txId, symbol }: { txId: string; symbol: string }) =>
+      deleteTransaction(portfolioId!, txId, symbol),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['holdings', portfolioId] });
       qc.invalidateQueries({ queryKey: ['transactions', portfolioId] });

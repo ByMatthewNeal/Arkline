@@ -81,8 +81,26 @@ function smoothLine(points: [number, number][]): string {
   return d;
 }
 
-export function Spark({ data, color, className = '' }: { data: number[]; color: string; className?: string }) {
+export function Spark({
+  data,
+  color,
+  className = '',
+  labels,
+  format,
+  interactive = true,
+}: {
+  data: number[];
+  color: string;
+  className?: string;
+  /** Optional per-point labels (e.g. dates) shown in the hover chip. */
+  labels?: string[];
+  /** Optional value formatter for the hover chip. */
+  format?: (v: number) => string;
+  /** Set false to disable hover scrubbing (decorative sparklines). */
+  interactive?: boolean;
+}) {
   const id = useSparkId();
+  const [hover, setHover] = useState<number | null>(null);
   if (data.length < 2) return null;
   const w = 120, h = 32;
   const min = Math.min(...data);
@@ -94,17 +112,68 @@ export function Spark({ data, color, className = '' }: { data: number[]; color: 
   ]);
   const line = smoothLine(pts);
   const area = `${line} L ${w},${h} L 0,${h} Z`;
+
+  const hoverPt = hover !== null ? pts[hover] : null;
+  const hoverValue =
+    hover !== null
+      ? format
+        ? format(data[hover])
+        : data[hover].toLocaleString('en-US', { maximumFractionDigits: 2 })
+      : '';
+
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className={`w-full ${className}`} preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.22} />
-          <stop offset="100%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#${id})`} stroke="none" />
-      <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-    </svg>
+    <div
+      className={cn('relative w-full', className)}
+      onMouseLeave={interactive ? () => setHover(null) : undefined}
+      onMouseMove={
+        interactive
+          ? (e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const idx = Math.round(((e.clientX - rect.left) / rect.width) * (data.length - 1));
+              setHover(Math.max(0, Math.min(data.length - 1, idx)));
+            }
+          : undefined
+      }
+    >
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-full w-full" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${id})`} stroke="none" />
+        <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        {hoverPt && (
+          <line
+            x1={hoverPt[0]} x2={hoverPt[0]} y1={0} y2={h}
+            stroke="var(--ark-text-tertiary)" strokeWidth={1} strokeDasharray="2 2"
+            vectorEffect="non-scaling-stroke" opacity={0.6}
+          />
+        )}
+      </svg>
+      {hoverPt && (
+        <>
+          {/* Dot rendered in HTML so it stays round despite viewBox stretch. */}
+          <span
+            className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
+            style={{
+              left: `${(hoverPt[0] / w) * 100}%`,
+              top: `${(hoverPt[1] / h) * 100}%`,
+              background: color,
+              borderColor: 'var(--ark-card)',
+            }}
+          />
+          <span
+            className="fig pointer-events-none absolute top-0 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-ark-divider bg-ark-card px-1.5 py-0.5 text-[10px] font-medium text-ark-text shadow-md"
+            style={{ left: `${Math.min(88, Math.max(12, (hoverPt[0] / w) * 100))}%` }}
+          >
+            {hoverValue}
+            {hover !== null && labels?.[hover] && <span className="text-ark-text-tertiary"> · {labels[hover]}</span>}
+          </span>
+        </>
+      )}
+    </div>
   );
 }
 

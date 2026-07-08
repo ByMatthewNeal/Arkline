@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
 import { Play, Square } from 'lucide-react';
 import { Badge, Skeleton, GlassCard } from '@/components/ui';
 import { DetailDrawer } from '@/components/ui/detail-drawer';
@@ -105,7 +105,7 @@ function LazyDrawerWidget({ widgetKey, param }: { widgetKey: WidgetKey; param?: 
       stockRisk: () => import('./risk-levels-detail').then(m => ({ default: m.StockRiskLevelsDetail })),
       tradeSignals: () => import('./signals-detail').then(m => ({ default: m.TradeSignalsDetail })),
       rotation: () => import('./signals-detail').then(m => ({ default: m.RotationDetail })),
-      modelPortfolio: () => import('./signals-detail').then(m => ({ default: m.ModelPortfolioDetail })),
+      modelPortfolio: () => import('./model-portfolios-detail').then(m => ({ default: m.ModelPortfoliosDetail })),
       weeklyUpdate: () => import('./signals-detail').then(m => ({ default: m.WeeklyUpdateDetail })),
       usFutures: () => import('./extras-detail').then(m => ({ default: m.USFuturesDetail })),
       perpPremium: () => import('./extras-detail').then(m => ({ default: m.PerpPremiumDetail })),
@@ -1613,9 +1613,10 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
 
 
 /* ── Portfolio hero ── (pinned full-width at the top, like the iOS app) */
-/* Clean smooth area chart (gradient fill + end dot) — matches the iOS look. */
-function PortfolioChart({ data, color }: { data: number[]; color: string }) {
-  const cd = data.map((v, i) => ({ i, v }));
+/* Clean smooth area chart (gradient fill + end dot + hover scrubbing) —
+ * matches the iOS look, with a desktop-native crosshair tooltip. */
+function PortfolioChart({ data, color, dates }: { data: number[]; color: string; dates?: string[] }) {
+  const cd = data.map((v, i) => ({ i, v, date: dates?.[i] }));
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={cd} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
@@ -1626,6 +1627,19 @@ function PortfolioChart({ data, color }: { data: number[]; color: string }) {
           </linearGradient>
         </defs>
         <YAxis domain={['dataMin', 'dataMax']} hide />
+        <Tooltip
+          cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.6 }}
+          content={({ active, payload }) =>
+            active && payload?.[0] ? (
+              <div className="rounded-lg border border-ark-divider bg-ark-card px-2.5 py-1.5 text-xs shadow-lg">
+                {(payload[0].payload as { date?: string }).date && (
+                  <p className="text-[10px] text-ark-text-tertiary">{(payload[0].payload as { date?: string }).date}</p>
+                )}
+                <p className="fig font-semibold text-ark-text">{formatCurrency(payload[0].value as number)}</p>
+              </div>
+            ) : null
+          }
+        />
         <Area
           type="monotone"
           dataKey="v"
@@ -1769,10 +1783,14 @@ function PortfolioHero() {
                 <Link href="/dashboard/portfolio" className="font-medium text-ark-primary hover:text-ark-accent-light">View details →</Link>
               </div>
             </div>
-            {/* Smooth area chart */}
+            {/* Smooth area chart with hover scrubbing */}
             {sparkVals.length > 1 && (
               <div className="hidden h-28 flex-1 sm:block">
-                <PortfolioChart data={sparkVals} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} />
+                <PortfolioChart
+                  data={sparkVals}
+                  dates={windowPts.map((x) => x.date)}
+                  color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'}
+                />
               </div>
             )}
           </div>

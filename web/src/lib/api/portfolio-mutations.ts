@@ -108,6 +108,93 @@ export async function recordTransaction(input: RecordTxInput): Promise<void> {
   if (txErr) throw txErr;
 }
 
+/**
+ * Delete a transaction and rebuild the symbol's holding from the remaining
+ * transactions (chronological replay — matches the iOS "recalculates
+ * holdings" behavior). Buys / transfers-in add at weighted-average cost;
+ * sells / transfers-out reduce quantity, average cost unchanged.
+ */
+export async function deleteTransaction(
+  portfolioId: string,
+  txId: string,
+  symbol: string,
+): Promise<void> {
+  if (!isSupabaseConfigured()) throw new Error('Not available in demo mode.');
+  const supabase = getSupabase();
+
+  const { error: delErr } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('id', txId)
+    .eq('portfolio_id', portfolioId);
+  if (delErr) throw delErr;
+
+  // Replay the remaining transactions for this symbol.
+  const { data: txs, error: txErr } = await supabase
+    .from('transactions')
+    .select('type, quantity, price_per_unit, transaction_date, asset_type, symbol')
+    .eq('portfolio_id', portfolioId)
+    .ilike('symbol', symbol)
+    .order('transaction_date', { ascending: true });
+  if (txErr) throw txErr;
+
+  let qty = 0;
+  let avg = 0;
+  let assetType = 'crypto';
+  let displaySymbol = symbol.toUpperCase();
+  for (const t of (txs ?? []) as {
+    type: string; quantity: number; price_per_unit: number; asset_type?: string; symbol?: string;
+  }[]) {
+    const q = Math.abs(Number(t.quantity));
+    const price = Math.abs(Number(t.price_per_unit));
+    if (t.asset_type) assetType = t.asset_type;
+    if (t.symbol) displaySymbol = String(t.symbol).toUpperCase();
+    if (t.type === 'buy' || t.type === 'transfer_in') {
+      const newQty = qty + q;
+      avg = newQty > 0 ? (avg * qty + price * q) / newQty : price;
+      qty = newQty;
+    } else {
+      qty = Math.max(0, qty - q);
+      // avg cost unchanged on sells/transfers-out
+    }
+  }
+
+  // Rebuild the consolidated holding row.
+  const { data: rows } = await supabase
+    .from('holdings')
+    .select('id, name')
+    .eq('portfolio_id', portfolioId)
+    .ilike('symbol', symbol);
+  const existing = (rows ?? []) as { id: string; name?: string }[];
+
+  if (qty <= 1e-9) {
+    if (existing.length) {
+      await supabase.from('holdings').delete().in('id', existing.map((h) => h.id));
+    }
+    return;
+  }
+
+  if (existing.length) {
+    const [keep, ...extras] = existing;
+    if (extras.length) await supabase.from('holdings').delete().in('id', extras.map((h) => h.id));
+    const { error } = await supabase
+      .from('holdings')
+      .update({ quantity: qty, average_buy_price: avg, updated_at: new Date().toISOString() })
+      .eq('id', keep.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('holdings').insert({
+      portfolio_id: portfolioId,
+      asset_type: assetType,
+      symbol: displaySymbol,
+      name: displaySymbol,
+      quantity: qty,
+      average_buy_price: avg,
+    });
+    if (error) throw error;
+  }
+}
+
 export async function deleteHolding(holdingId: string): Promise<void> {
   if (!isSupabaseConfigured()) throw new Error('Not available in demo mode.');
   const supabase = getSupabase();

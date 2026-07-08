@@ -19,6 +19,7 @@ import { useDeleteHolding, useUpdateHoldingTarget, useCreatePortfolio } from '@/
 import { formatCurrency, formatPercent, formatDate, cn } from '@/lib/utils/format';
 import { AddTransactionModal } from '@/components/dashboard/portfolio/add-transaction-modal';
 import { PerformancePanel } from '@/components/dashboard/portfolio/performance-panel';
+import { TransactionsPanel } from '@/components/dashboard/portfolio/transactions-panel';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -240,6 +241,17 @@ export default function PortfolioPage() {
                     </defs>
                     <XAxis dataKey="date" hide />
                     <YAxis hide domain={['dataMin', 'dataMax']} />
+                    <Tooltip
+                      cursor={{ stroke: 'var(--ark-text-tertiary)', strokeDasharray: '3 3', strokeOpacity: 0.6 }}
+                      content={({ active, payload }) =>
+                        active && payload?.[0] ? (
+                          <div className="rounded-lg border border-ark-divider bg-ark-card px-2.5 py-1.5 text-xs shadow-lg">
+                            <p className="text-[10px] text-ark-text-tertiary">{(payload[0].payload as { date: string }).date}</p>
+                            <p className="fig font-semibold text-ark-text">{formatCurrency(payload[0].value as number)}</p>
+                          </div>
+                        ) : null
+                      }
+                    />
                     <Area
                       type="monotone"
                       dataKey="value"
@@ -372,46 +384,8 @@ export default function PortfolioPage() {
             </GlassCard>
           </div>
 
-          {/* Transactions */}
-          <GlassCard className="relative overflow-hidden">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-text-disabled/20 to-transparent" />
-            <h3 className="mb-4 text-sm font-semibold text-ark-text">Recent Transactions</h3>
-            <div className="space-y-2">
-              {(transactions ?? []).length === 0 && (
-                <p className="text-sm text-ark-text-tertiary">No transactions.</p>
-              )}
-              {(transactions ?? []).slice(0, 10).map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between rounded-xl bg-ark-fill-secondary/60 px-4 py-2.5 transition-colors hover:bg-ark-fill-secondary"
-                >
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      variant={
-                        t.type === 'buy' ? 'success' : t.type === 'sell' ? 'error' : 'default'
-                      }
-                    >
-                      {t.type}
-                    </Badge>
-                    <div>
-                      <p className="text-xs font-medium text-ark-text">{t.symbol.toUpperCase()}</p>
-                      <p className="text-[10px] text-ark-text-tertiary">
-                        {formatDate(t.transaction_date)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-semibold text-ark-text">
-                      {formatCurrency(t.total_value)}
-                    </p>
-                    <p className="text-[10px] text-ark-text-tertiary">
-                      {t.quantity} @ {formatCurrency(t.price_per_unit)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
+          {/* Transaction history — filters, detail drawer, delete w/ recalc (iOS History-tab parity) */}
+          <TransactionsPanel transactions={transactions ?? []} portfolioId={portfolio?.id} />
 
           {/* Performance */}
           <PerformancePanel
