@@ -46,6 +46,23 @@ export async function fetchQuestions(userId: string | undefined): Promise<Member
   }));
 }
 
+/** Admin: answer (or update the answer of) a member question — iOS parity. */
+export async function answerQuestion(questionId: string, answer: string, adminId: string): Promise<void> {
+  if (!isSupabaseConfigured()) throw new Error('Not available in demo mode.');
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('member_questions')
+    .update({
+      answer: answer.trim(),
+      answered_by: adminId,
+      answered_at: new Date().toISOString(),
+      status: 'answered',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', questionId);
+  if (error) throw error;
+}
+
 export async function createQuestion(userId: string, question: string, isAnonymous: boolean, authorName: string | null): Promise<void> {
   if (!isSupabaseConfigured()) throw new Error('Not available in demo mode.');
   const supabase = createClient();

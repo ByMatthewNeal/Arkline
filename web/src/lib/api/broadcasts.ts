@@ -30,6 +30,24 @@ function toArray(v: unknown): string[] {
   return [];
 }
 
+/**
+ * Broadcast images are stored by the iOS admin composer as objects
+ * `{ id, image_url, annotations }` (older rows may be plain URL strings).
+ * Normalize both shapes to a plain list of URLs.
+ */
+function toImageUrls(v: unknown): string[] {
+  return toArray(v)
+    .map((item: unknown) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object') {
+        const url = (item as Record<string, unknown>).image_url ?? (item as Record<string, unknown>).url;
+        if (typeof url === 'string') return url;
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
 /** Published broadcasts, pinned first then newest. */
 export async function fetchBroadcasts(): Promise<Broadcast[]> {
   if (!isSupabaseConfigured()) return [];
@@ -52,7 +70,7 @@ export async function fetchBroadcasts(): Promise<Broadcast[]> {
     is_pinned: Boolean(b.is_pinned),
     reaction_count: Number(b.reaction_count ?? 0),
     view_count: Number(b.view_count ?? 0),
-    images: toArray(b.images),
+    images: toImageUrls(b.images),
     video_url: (b.video_url as string) ?? null,
     audio_url: (b.audio_url as string) ?? null,
     meeting_link: (b.meeting_link as string) ?? null,

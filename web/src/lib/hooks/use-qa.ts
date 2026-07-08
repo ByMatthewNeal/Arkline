@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './use-auth';
-import { fetchQuestions, createQuestion, toggleQuestionLike, deleteQuestion, type MemberQuestion } from '@/lib/api/qa';
+import { fetchQuestions, createQuestion, toggleQuestionLike, deleteQuestion, answerQuestion, type MemberQuestion } from '@/lib/api/qa';
 
 export function useQuestions() {
   const { authUser } = useAuth();
@@ -35,5 +35,12 @@ export function useQaMutations() {
 
   const remove = useMutation({ mutationFn: (id: string) => deleteQuestion(id), onSuccess: invalidate });
 
-  return { ask, like, remove };
+  // Admin only — RLS enforces the role server-side.
+  const answer = useMutation({
+    mutationFn: ({ questionId, text }: { questionId: string; text: string }) =>
+      answerQuestion(questionId, text, authUser!.id),
+    onSuccess: invalidate,
+  });
+
+  return { ask, like, remove, answer };
 }

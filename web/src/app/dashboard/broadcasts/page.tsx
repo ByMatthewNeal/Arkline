@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
@@ -11,6 +10,7 @@ import { useBroadcastSocial } from '@/lib/hooks/use-broadcast-social';
 import { formatRelativeTime, cn } from '@/lib/utils/format';
 import { Markdown } from '@/components/dashboard/shared/markdown';
 import { ImageGallery, AudioPlayer } from '@/components/dashboard/shared/media';
+import { QuickAskModal } from '@/components/dashboard/shared/quick-ask';
 
 type Social = ReturnType<typeof useBroadcastSocial>;
 
@@ -126,6 +126,7 @@ export default function BroadcastsPage() {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('All');
   const [savedOnly, setSavedOnly] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
   const social = useBroadcastSocial();
 
   const { data: broadcasts, isLoading } = useQuery({
@@ -160,14 +161,16 @@ export default function BroadcastsPage() {
           <p className="text-sm text-ark-text-tertiary">Market insights & updates from Arkline</p>
         </div>
         {/* Member Q&A entry — mirrors the iOS floating Q&A button on Insights */}
-        <Link
-          href="/dashboard/qa"
+        <button
+          onClick={() => setAskOpen(true)}
           className="flex shrink-0 items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-ark-primary/25 transition-all hover:brightness-110"
         >
           <MessagesSquare className="h-4 w-4" />
           Ask a Question
-        </Link>
+        </button>
       </div>
+
+      <QuickAskModal open={askOpen} onClose={() => setAskOpen(false)} />
 
       {/* Search + date filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
