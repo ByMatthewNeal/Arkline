@@ -91,6 +91,29 @@ export async function fetchSignalHistory(days?: number, limit = 400): Promise<Tr
 
 export const isLong = (t: SignalType) => t === 'buy' || t === 'strong_buy';
 
+/**
+ * Admin-only manual resolution (RLS `is_admin()` enforces the role server-side).
+ * Mirrors the iOS "Manual Resolution" panel.
+ */
+export async function resolveSignal(
+  id: string,
+  patch: { status: SignalStatus; outcome: SignalOutcome | null; outcome_pct: number | null },
+): Promise<void> {
+  if (!isSupabaseConfigured()) throw new Error('Not available in demo mode.');
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('trade_signals')
+    .update({
+      status: patch.status,
+      outcome: patch.outcome,
+      outcome_pct: patch.outcome_pct,
+      closed_at: new Date().toISOString(),
+      resolution_source: 'manual',
+    })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 export const SIGNAL_TYPE_LABEL: Record<SignalType, string> = {
   strong_buy: 'Strong Long',
   buy: 'Long',
