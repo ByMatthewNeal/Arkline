@@ -40,7 +40,11 @@ async function fetchFutures() {
   const out: unknown[] = [];
   for (const f of FUTURES) {
     try {
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(f.symbol)}?interval=1d&range=5d`;
+      // range=1d so meta.chartPreviousClose is YESTERDAY's close (the correct
+      // daily-change reference). range=5d makes chartPreviousClose a ~6-day-old
+      // close, which flips the change sign vs live sources (CNN) and the iOS app,
+      // whose fetchQuote also uses range=1d.
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(f.symbol)}?interval=1d&range=1d`;
       const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
       if (!res.ok) continue;
       const json = await res.json();
@@ -137,14 +141,26 @@ async function fetchFedWatch() {
   await upsertCache("fed_watch", { rate, meetings });
 }
 
-Deno.serve(async () => {
-  const results = await Promise.allSettled([
-    fetchFutures(),
-    fetchPerpPremium(),
-    fetchFedWatch(),
-  ]);
+Deno.serve(async (req) => {
+  // Optional `?jobs=us_futures,perp_premium` filter so a caller can refresh just
+  // a subset. No param = refresh everything (backward compatible). This lets US
+  // Futures (free Yahoo) run on a fast cron without also hammering the CoinGecko
+  // (perp premium) and FRED (fed watch) quotas.
+  const requested = new URL(req.url).searchParams.get("jobs");
+  const wanted = requested
+    ? new Set(requested.split(",").map((s) => s.trim()).filter(Boolean))
+    : null;
+  const shouldRun = (job: string) => !wanted || wanted.has(job);
+
+  const tasks: Promise<unknown>[] = [];
+  const jobNames: string[] = [];
+  if (shouldRun("us_futures")) { tasks.push(fetchFutures()); jobNames.push("us_futures"); }
+  if (shouldRun("perp_premium")) { tasks.push(fetchPerpPremium()); jobNames.push("perp_premium"); }
+  if (shouldRun("fed_watch")) { tasks.push(fetchFedWatch()); jobNames.push("fed_watch"); }
+
+  const results = await Promise.allSettled(tasks);
   const status = results.map((r, i) => ({
-    job: ["us_futures", "perp_premium", "fed_watch"][i],
+    job: jobNames[i],
     ok: r.status === "fulfilled",
   }));
   return new Response(JSON.stringify({ ok: true, status }), {
