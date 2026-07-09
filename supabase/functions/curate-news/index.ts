@@ -190,8 +190,8 @@ Deno.serve(async (req) => {
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
 
-  // Batch enrich (up to 8 per call)
-  const BATCH_SIZE = 8
+  // Batch enrich (up to 5 per call — keeps the JSON response well under max_tokens)
+  const BATCH_SIZE = 5
   const enriched: EnrichedArticle[] = []
 
   for (let i = 0; i < toEnrich.length; i += BATCH_SIZE) {
@@ -204,14 +204,21 @@ Deno.serve(async (req) => {
       .join("\n\n")
 
     try {
+      // 8000 tokens: ~5 articles × (headline + 3 bullets + reason) needs far
+      // more than the old 2000, which truncated the JSON mid-array and made
+      // every batch silently parse to null → 0 articles inserted.
       const enrichResponse = await callClaude(
         anthropicKey,
         ENRICH_SYSTEM_PROMPT,
         `Analyze and rewrite these articles:\n\n${batchInput}`,
-        2000,
+        8000,
         "claude-sonnet-5"
       )
-      const results = parseJSONResponse<EnrichResult[]>(enrichResponse) ?? []
+      const results = parseJSONResponse<EnrichResult[]>(enrichResponse)
+      if (results === null) {
+        // Surface parse failures instead of swallowing them as an empty batch
+        throw new Error(`Enrich response was not valid JSON (len ${enrichResponse.length})`)
+      }
 
       for (const result of results) {
         const item = batch[result.index]
@@ -409,7 +416,19 @@ async function callClaude(
   }
 
   const data = await resp.json()
-  return data.content?.[0]?.text ?? ""
+  if (data.stop_reason === "max_tokens") {
+    throw new Error(`Claude response truncated at max_tokens=${maxTokens} — increase budget or shrink batch`)
+  }
+  // Newer models may prepend non-text blocks (e.g. thinking) — collect every
+  // text block rather than assuming content[0] is the text.
+  const text = ((data.content ?? []) as { type: string; text?: string }[])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("")
+  if (!text) {
+    throw new Error(`Claude returned no text (stop_reason=${data.stop_reason}, blocks=${(data.content ?? []).map((b: { type: string }) => b.type).join(",")})`)
+  }
+  return text
 }
 
 function parseJSONResponse<T>(text: string): T | null {
