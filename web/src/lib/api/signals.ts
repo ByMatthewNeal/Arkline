@@ -7,6 +7,7 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 export type SignalType = 'strong_buy' | 'buy' | 'strong_sell' | 'sell';
 export type SignalStatus = 'active' | 'triggered' | 'invalidated' | 'target_hit' | 'expired';
+export type SignalOutcome = 'win' | 'partial' | 'loss';
 
 export interface TradeSignal {
   id: string;
@@ -28,11 +29,20 @@ export interface TradeSignal {
   arkline_score: number | null;
   composite_score: number | null;
   suggested_risk_pct: number | null;
+  outcome: SignalOutcome | null;
   outcome_pct: number | null;
+  t1_pnl_pct: number | null;
+  runner_pnl_pct: number | null;
+  duration_hours: number | null;
+  volatility_regime: string | null;
+  low_conviction: boolean | null;
+  counter_trend: boolean | null;
+  ema_trend_aligned: boolean | null;
   short_rationale: string | null;
   briefing_text: string | null;
   generated_at: string;
   triggered_at: string | null;
+  t1_hit_at: string | null;
   closed_at: string | null;
   expires_at: string | null;
 }
@@ -41,7 +51,9 @@ const COLUMNS =
   'id, asset, signal_type, status, timeframe, entry_zone_low, entry_zone_high, entry_price_mid, ' +
   'target_1, target_2, stop_loss, risk_reward_ratio, invalidation_note, btc_risk_score, ' +
   'fear_greed_index, macro_regime, arkline_score, composite_score, suggested_risk_pct, ' +
-  'outcome_pct, short_rationale, briefing_text, generated_at, triggered_at, closed_at, expires_at';
+  'outcome, outcome_pct, t1_pnl_pct, runner_pnl_pct, duration_hours, volatility_regime, ' +
+  'low_conviction, counter_trend, ema_trend_aligned, ' +
+  'short_rationale, briefing_text, generated_at, triggered_at, t1_hit_at, closed_at, expires_at';
 
 export async function fetchTradeSignalsFull(limit = 12): Promise<TradeSignal[]> {
   if (!isSupabaseConfigured()) return [];
@@ -51,6 +63,28 @@ export async function fetchTradeSignalsFull(limit = 12): Promise<TradeSignal[]> 
     .select(COLUMNS)
     .order('generated_at', { ascending: false })
     .limit(limit);
+  if (error || !data) return [];
+  return data as unknown as TradeSignal[];
+}
+
+/**
+ * Closed signals (win / partial / loss) for the History and Performance tabs.
+ * Optionally windowed to the last `days`; ordered newest first.
+ */
+export async function fetchSignalHistory(days?: number, limit = 400): Promise<TradeSignal[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = createClient();
+  let q = supabase
+    .from('trade_signals')
+    .select(COLUMNS)
+    .not('outcome', 'is', null)
+    .order('closed_at', { ascending: false })
+    .limit(limit);
+  if (days) {
+    const since = new Date(Date.now() - days * 86_400_000).toISOString();
+    q = q.gte('closed_at', since);
+  }
+  const { data, error } = await q;
   if (error || !data) return [];
   return data as unknown as TradeSignal[];
 }

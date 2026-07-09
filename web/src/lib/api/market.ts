@@ -777,14 +777,11 @@ export async function fetchTradeSignals(): Promise<TradeSignalItem[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('trade_signals')
-    .select('id, asset, signal_type, status, risk_reward_ratio, timeframe, generated_at')
+    .select('id, asset, signal_type, status, risk_reward_ratio, timeframe, outcome, outcome_pct, entry_zone_low, entry_zone_high, generated_at, closed_at')
     .order('generated_at', { ascending: false })
     .limit(6);
   if (error || !data?.length) return [];
-  return (data as TradeSignalItem[]).map((r) => ({
-    id: r.id, asset: r.asset, signal_type: r.signal_type, status: r.status,
-    risk_reward_ratio: r.risk_reward_ratio, timeframe: r.timeframe,
-  }));
+  return data as unknown as TradeSignalItem[];
 }
 
 /* ── Rotation Signal ── (rotation_signals + top sectors) */

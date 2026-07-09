@@ -289,6 +289,12 @@ export interface TradeSignalItem {
   status: string; // 'target_hit' | 'invalidated' | 'active' | ...
   risk_reward_ratio: number | null;
   timeframe: string | null;
+  outcome: string | null; // 'win' | 'partial' | 'loss'
+  outcome_pct: number | null;
+  entry_zone_low: number | null;
+  entry_zone_high: number | null;
+  generated_at: string | null;
+  closed_at: string | null;
 }
 
 /* ── Rotation Signal (crypto vs equities) ── */

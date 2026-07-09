@@ -805,51 +805,60 @@ function EventsTile({ onOpen }: { onOpen: () => void }) {
 function FavoritesTile({ onOpen }: { onOpen: () => void }) {
   const { data: assets, isLoading } = useCryptoAssets(1);
   const { has } = useWatchlist();
-  const favorites = (assets ?? []).filter((a) => has(a.symbol));
+  const all = assets ?? [];
+  const favorites = all.filter((a) => has(a.symbol));
+  // Backfill with top-cap suggestions so a 1-2 coin watchlist doesn't leave the tile hollow.
+  const suggested = favorites.length < 4 ? all.filter((a) => !has(a.symbol)).slice(0, 4 - favorites.length) : [];
+
+  const Row = ({ asset, dim }: { asset: (typeof all)[number]; dim?: boolean }) => {
+    const isUp = (asset.price_change_percentage_24h ?? 0) >= 0;
+    const sparkData = asset.sparkline_in_7d?.price?.slice(-24) ?? [];
+    return (
+      <div className={cn('flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1.5', dim && 'opacity-55')}>
+        {asset.image ? (
+          <img src={asset.image} alt={asset.name} className="h-5 w-5 rounded-full" />
+        ) : (
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-ark-primary/15 text-[8px] font-bold text-ark-primary uppercase">
+            {asset.symbol.slice(0, 2)}
+          </div>
+        )}
+        <div className="w-14 min-w-0">
+          <p className="text-[10px] font-bold leading-tight text-ark-text">{asset.symbol.toUpperCase()}</p>
+          <p className="truncate text-[8px] leading-tight text-ark-text-disabled">{dim ? 'Suggested' : asset.name}</p>
+        </div>
+        <div className="h-4 flex-1">
+          {sparkData.length > 2 && <Spark data={sparkData} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-4" />}
+        </div>
+        <div className="text-right">
+          <p className="fig text-[10px] font-bold leading-tight text-ark-text">{formatCurrency(asset.current_price)}</p>
+          <p className={cn('fig text-[9px] font-semibold leading-tight', isUp ? 'text-ark-success' : 'text-ark-error')}>
+            {formatPercent(asset.price_change_percentage_24h ?? 0)}
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-warning)">
       <AccentLine color="var(--ark-warning)" />
       {isLoading ? <SkeletonListTile /> : (
-        <>
+        <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Star className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Watchlist</span>
             </div>
-            <span className="text-[9px] text-ark-text-disabled">{favorites.length} tracked</span>
+            <span className="fig text-[9px] text-ark-text-disabled">{favorites.length} tracked</span>
           </div>
 
-          <div className="space-y-1.5">
-            {favorites.slice(0, 3).map((asset) => {
-              const isUp = (asset.price_change_percentage_24h ?? 0) >= 0;
-              const sparkData = asset.sparkline_in_7d?.price?.slice(-24) ?? [];
-              return (
-                <div key={asset.id} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1">
-                  {asset.image ? (
-                    <img src={asset.image} alt={asset.name} className="h-5 w-5 rounded-full" />
-                  ) : (
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-ark-primary/15 text-[8px] font-bold text-ark-primary uppercase">
-                      {asset.symbol.slice(0, 2)}
-                    </div>
-                  )}
-                  <span className="text-[10px] font-bold text-ark-text">{asset.symbol.toUpperCase()}</span>
-                  <div className="flex-1 h-3">
-                    {sparkData.length > 2 && <Spark data={sparkData} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-3" />}
-                  </div>
-                  <span className="fig text-[10px] font-bold text-ark-text">{formatCurrency(asset.current_price)}</span>
-                  <span className={cn('fig text-[9px] font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
-                    {formatPercent(asset.price_change_percentage_24h ?? 0)}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="mt-2 flex flex-1 flex-col justify-evenly gap-1.5">
+            {favorites.slice(0, 5).map((asset) => <Row key={asset.id} asset={asset} />)}
+            {suggested.map((asset) => <Row key={asset.id} asset={asset} dim />)}
           </div>
 
-          {favorites.length === 0 && (
-            <p className="text-[10px] text-ark-text-disabled text-center">No favorites set</p>
-          )}
-        </>
+          <p className="mt-1.5 text-right text-[9px] font-semibold text-ark-warning/80">Manage watchlist →</p>
+        </div>
       )}
     </Tile>
   );
@@ -1251,12 +1260,22 @@ function StockRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
   );
 }
 
-/* ── Trade Signals tile (trade_signals) ── */
+/* ── Trade Signals tile (trade_signals) — iOS signal-card rows ── */
 function TradeSignalsTile({ onOpen }: { onOpen: () => void }) {
   const { data, isLoading } = useTradeSignals();
   const signals = data ?? [];
-  const outcomeColor = (s: string) => s === 'target_hit' ? 'var(--ark-success)' : s === 'invalidated' ? 'var(--ark-error)' : 'var(--ark-warning)';
-  const outcomeLabel = (s: string) => s === 'target_hit' ? 'Win' : s === 'invalidated' ? 'Stopped' : s.charAt(0).toUpperCase() + s.slice(1);
+  const closed = signals.filter((s) => s.outcome != null);
+  const wins = closed.filter((s) => s.outcome === 'win').length;
+
+  const statusChip = (s: (typeof signals)[number]) => {
+    if (s.outcome === 'win') return { label: 'Win', cls: 'bg-ark-success/10 text-ark-success' };
+    if (s.outcome === 'partial') return { label: 'Partial', cls: 'bg-ark-warning/10 text-ark-warning' };
+    if (s.outcome === 'loss') return { label: 'Stopped', cls: 'bg-ark-error/10 text-ark-error' };
+    if (s.status === 'triggered') return { label: 'Live', cls: 'bg-ark-warning/10 text-ark-warning' };
+    if (s.status === 'active') return { label: 'Active', cls: 'bg-ark-info/10 text-ark-info' };
+    return { label: 'Expired', cls: 'bg-ark-fill-secondary text-ark-text-tertiary' };
+  };
+
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
@@ -1265,20 +1284,38 @@ function TradeSignalsTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center gap-2">
             <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Trade Signals</span>
+            {closed.length > 0 && (
+              <span className="fig ml-auto text-[10px] font-semibold text-ark-text-tertiary">
+                <span className="text-ark-success">{wins}</span>/{closed.length} recent wins
+              </span>
+            )}
           </div>
           {signals.length === 0 ? (
             <div className="flex flex-1 items-center justify-center"><p className="text-xs text-ark-text-disabled">No recent signals</p></div>
           ) : (
-            <div className="mt-2 space-y-1.5">
-              {signals.slice(0, 5).map((s) => (
-                <div key={s.id} className="flex items-center gap-2">
-                  <span className={cn('rounded px-1.5 py-0.5 text-[9px] font-bold text-white', s.signal_type === 'buy' ? 'bg-ark-success' : 'bg-ark-error')}>{s.signal_type.toUpperCase()}</span>
-                  <span className="w-10 truncate text-[11px] font-semibold text-ark-text">{s.asset}</span>
-                  {s.timeframe && <span className="text-[10px] text-ark-text-disabled">{s.timeframe}</span>}
-                  {s.risk_reward_ratio != null && <span className="fig text-[10px] text-ark-text-tertiary">{s.risk_reward_ratio.toFixed(1)}x</span>}
-                  <span className="ml-auto text-[10px] font-semibold" style={{ color: outcomeColor(s.status) }}>{outcomeLabel(s.status)}</span>
-                </div>
-              ))}
+            <div className="mt-2 flex flex-1 flex-col justify-between gap-1">
+              {signals.slice(0, 5).map((s) => {
+                const long = s.signal_type === 'buy' || s.signal_type === 'strong_buy';
+                const chip = statusChip(s);
+                return (
+                  <div key={s.id} className="flex items-center gap-2 rounded-lg px-1 py-0.5">
+                    <span className={cn('h-4 w-0.5 shrink-0 rounded-full', long ? 'bg-ark-success' : 'bg-ark-error')} />
+                    <CoinIcon symbol={s.asset} size="xs" />
+                    <span className="w-11 truncate text-[11px] font-bold text-ark-text">{s.asset.toUpperCase()}</span>
+                    <span className={cn('text-[9px] font-bold', long ? 'text-ark-success' : 'text-ark-error')}>{long ? 'LONG' : 'SHORT'}</span>
+                    {s.timeframe && <span className="text-[9px] uppercase text-ark-text-disabled">{s.timeframe}</span>}
+                    {s.risk_reward_ratio != null && <span className="fig text-[9px] text-ark-text-tertiary">{s.risk_reward_ratio.toFixed(1)}x</span>}
+                    {s.outcome_pct != null && (
+                      <span className={cn('fig ml-auto text-[10px] font-bold', s.outcome_pct >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+                        {s.outcome_pct >= 0 ? '+' : ''}{s.outcome_pct.toFixed(1)}%
+                      </span>
+                    )}
+                    <span className={cn('shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold', chip.cls, s.outcome_pct == null && 'ml-auto')}>
+                      {chip.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1548,22 +1585,51 @@ function PerpPremiumTile({ onOpen }: { onOpen: () => void }) {
               <p className="text-xs text-ark-text-tertiary">Awaiting data</p>
               <p className="mt-0.5 text-[10px] text-ark-text-disabled">Updates when the market-extras job runs</p>
             </div>
-          ) : (
-            <div className="mt-2 space-y-2">
-              {perps.map((p) => {
-                const bullish = p.funding_rate >= 0;
-                return (
-                  <div key={p.symbol} className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-ark-text">{p.symbol}</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className={cn('fig text-sm font-bold', bullish ? 'text-ark-success' : 'text-ark-error')}>{(p.funding_rate * 100).toFixed(4)}%</span>
-                      <span className="text-[10px] text-ark-text-disabled">{bullish ? 'longs pay' : 'shorts pay'}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          ) : (() => {
+            const avg = perps.reduce((a, p) => a + p.funding_rate, 0) / perps.length;
+            // Neutral band ≈ ±0.01% per 8h; beyond that leverage is crowded.
+            const read = avg > 0.0001 ? { label: 'Leverage crowded long', tone: 'text-ark-warning' }
+              : avg < -0.0001 ? { label: 'Leverage crowded short', tone: 'text-ark-warning' }
+              : { label: 'Funding near neutral', tone: 'text-ark-text-tertiary' };
+            const SCALE = 0.0005; // ±0.05% full-bar scale
+            return (
+              <div className="mt-2 flex flex-1 flex-col">
+                <p className={cn('text-[10px] font-semibold', read.tone)}>{read.label}</p>
+                <div className="mt-2 flex flex-1 flex-col justify-evenly gap-2">
+                  {perps.map((p) => {
+                    const bullish = p.funding_rate >= 0;
+                    const annualized = p.funding_rate * 3 * 365 * 100; // 8h funding → APR
+                    const fill = Math.min(Math.abs(p.funding_rate) / SCALE, 1) * 50;
+                    return (
+                      <div key={p.symbol}>
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-ark-text">
+                            <CoinIcon symbol={p.symbol} size="xs" />{p.symbol}
+                          </span>
+                          <div className="flex items-baseline gap-2">
+                            <span className={cn('fig text-sm font-bold', bullish ? 'text-ark-success' : 'text-ark-error')}>{(p.funding_rate * 100).toFixed(4)}%</span>
+                            <span className="text-[10px] text-ark-text-disabled">{bullish ? 'longs pay' : 'shorts pay'}</span>
+                          </div>
+                        </div>
+                        {/* Centered funding bar: left of center = shorts pay, right = longs pay */}
+                        <div className="relative mt-1 h-1 rounded-full bg-ark-fill-secondary">
+                          <div className="absolute left-1/2 top-0 h-full w-px bg-ark-divider" />
+                          <div
+                            className={cn('absolute top-0 h-full rounded-full', bullish ? 'bg-ark-success' : 'bg-ark-error')}
+                            style={bullish ? { left: '50%', width: `${fill}%` } : { right: '50%', width: `${fill}%` }}
+                          />
+                        </div>
+                        <p className="fig mt-0.5 text-right text-[9px] text-ark-text-disabled">≈ {annualized.toFixed(1)}% APR {bullish ? 'paid by longs' : 'paid by shorts'}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 text-[9px] leading-relaxed text-ark-text-disabled">
+                  Positive funding = longs pay shorts. Extremes often precede squeezes.
+                </p>
+              </div>
+            );
+          })()}
         </div>
       )}
     </Tile>
