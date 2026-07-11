@@ -377,6 +377,11 @@ verify_jwt = false
 [functions.signal-monitor]
 verify_jwt = false
 
+# System-to-system (called by sync-economic-events); authenticates via CRON_SECRET
+# in code, so gateway JWT verification isn't needed.
+[functions.analyze-economic-event]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -98,7 +98,14 @@ Write in a direct, conversational tone. No disclaimers. No hedging language like
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text()
       console.error(`Claude API error: ${claudeResponse.status} ${errorText}`)
-      return jsonResponse({ error: "Analysis generation failed" }, 502)
+      // Surface the upstream status/message. This is a system-to-system function
+      // gated by CRON_SECRET, and a masked error here previously hid an expired
+      // Anthropic key for days (briefings + news curation silently stopped too).
+      return jsonResponse({
+        error: "Analysis generation failed",
+        upstream_status: claudeResponse.status,
+        upstream_error: errorText.slice(0, 400),
+      }, 502)
     }
 
     const claudeData = await claudeResponse.json()
