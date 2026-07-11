@@ -370,6 +370,13 @@ verify_jwt = false
 [functions.refresh-market-extras]
 verify_jwt = false
 
+# Cron-invoked (pg_cron sends x-cron-secret, not a JWT) and it authenticates the
+# cron secret itself in code. Without this, `supabase functions deploy` defaults
+# to verify_jwt = true and the gateway rejects every cron run with 401 — silently
+# killing signal expiry plus all T1/stop/proximity/profit alerts.
+[functions.signal-monitor]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
