@@ -81,8 +81,10 @@ struct AltcoinScreenerSection: View {
     /// Glance mode: collapsed shows best/worst movers; expanded shows the full chart + table.
     @AppStorage("marketGlance.expanded.altcoin_screener") private var isExpanded = false
 
-    // Per-range cache
-    @State private var dataCache: [ScreenerTimeRange: (data: [CoinScreenerData], fetchedAt: Date)] = [:]
+    // Per-range cache. `static` so it survives view destruction — the zone filter
+    // on Market Overview remounts sections when switching chips, and an @State
+    // cache would die with the view, forcing 15 chart refetches per remount.
+    private static var dataCache: [ScreenerTimeRange: (data: [CoinScreenerData], fetchedAt: Date)] = [:]
 
     private let marketService: MarketServiceProtocol = ServiceContainer.shared.marketService
     private let cacheTTL: TimeInterval = 600
@@ -300,7 +302,7 @@ struct AltcoinScreenerSection: View {
         }
 
         // Check cache
-        if let cached = dataCache[newRange],
+        if let cached = Self.dataCache[newRange],
            Date().timeIntervalSince(cached.fetchedAt) < cacheTTL {
             withAnimation(.easeOut(duration: 0.2)) {
                 screenData = cached.data
@@ -563,7 +565,7 @@ struct AltcoinScreenerSection: View {
     // MARK: - Data Loading
 
     private func loadIfNeeded() async {
-        if let cached = dataCache[timeRange],
+        if let cached = Self.dataCache[timeRange],
            Date().timeIntervalSince(cached.fetchedAt) < cacheTTL {
             screenData = cached.data
             isLoading = false
@@ -613,7 +615,7 @@ struct AltcoinScreenerSection: View {
             }
 
             screenData = result
-            dataCache[timeRange] = (data: result, fetchedAt: Date())
+            Self.dataCache[timeRange] = (data: result, fetchedAt: Date())
         } catch {
             if screenData.isEmpty {
                 errorMessage = "Failed to load screener data"

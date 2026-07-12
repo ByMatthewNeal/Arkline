@@ -313,8 +313,11 @@ final class TradeSignalTests: XCTestCase {
         XCTAssertTrue(HomeWidgetType.defaultOrder.contains(.flashIntel))
     }
 
-    func testFlashIntelWidget_inDefaultEnabled() {
-        XCTAssertTrue(HomeWidgetType.defaultEnabled.contains(.flashIntel))
+    func testFlashIntelWidget_notInDefaultEnabled() {
+        // Product decision (commit "leaner defaults"): flashIntel is a premium widget,
+        // discoverable via Customize but OFF by default. It must still be in defaultOrder
+        // (tested above) so it appears in the Customize list.
+        XCTAssertFalse(HomeWidgetType.defaultEnabled.contains(.flashIntel))
     }
 
     func testFlashIntelWidget_defaultOrderPosition() {
@@ -352,18 +355,22 @@ final class TradeSignalTests: XCTestCase {
         }
 
         XCTAssertTrue(config.widgetOrder.contains(.flashIntel))
-        XCTAssertTrue(config.enabledWidgets.contains(.flashIntel))
+        // Migration only auto-enables widgets in defaultEnabled; flashIntel is not
+        // (premium, off by default) — so it's added to the order but stays disabled.
+        XCTAssertFalse(config.enabledWidgets.contains(.flashIntel))
     }
 
     func testWidgetConfiguration_toggleWidget() {
+        // Default-agnostic: toggling must invert state, twice must restore it —
+        // regardless of what the current product defaults are.
         var config = WidgetConfiguration()
-        XCTAssertTrue(config.isEnabled(.flashIntel))
+        let initial = config.isEnabled(.flashIntel)
 
         config.toggleWidget(.flashIntel)
-        XCTAssertFalse(config.isEnabled(.flashIntel))
+        XCTAssertEqual(config.isEnabled(.flashIntel), !initial)
 
         config.toggleWidget(.flashIntel)
-        XCTAssertTrue(config.isEnabled(.flashIntel))
+        XCTAssertEqual(config.isEnabled(.flashIntel), initial)
     }
 
     func testWidgetConfiguration_sizeDefaults() {
@@ -381,14 +388,13 @@ final class TradeSignalTests: XCTestCase {
     }
 
     func testWidgetConfiguration_orderedEnabledWidgets() {
+        // Explicit set (not toggle) so the test doesn't depend on the default state
         var config = WidgetConfiguration()
-        // Disable flashIntel
-        config.toggleWidget(.flashIntel)
+        config.setWidgetEnabled(.flashIntel, enabled: false)
         let ordered = config.orderedEnabledWidgets
         XCTAssertFalse(ordered.contains(.flashIntel))
 
-        // Re-enable
-        config.toggleWidget(.flashIntel)
+        config.setWidgetEnabled(.flashIntel, enabled: true)
         let ordered2 = config.orderedEnabledWidgets
         XCTAssertTrue(ordered2.contains(.flashIntel))
     }
@@ -602,8 +608,8 @@ final class TradeSignalTests: XCTestCase {
     func testWidgetConfiguration_encodeDecode() throws {
         var config = WidgetConfiguration()
         config.setSize(.compact, for: .flashIntel)
-        // flashIntel starts enabled (in defaultEnabled), toggle it off
-        config.toggleWidget(.flashIntel)
+        // Explicit set (not toggle) so the round-trip assertion is default-agnostic
+        config.setWidgetEnabled(.flashIntel, enabled: false)
 
         let data = try JSONEncoder().encode(config)
         let decoded = try JSONDecoder().decode(WidgetConfiguration.self, from: data)
@@ -631,11 +637,12 @@ final class TradeSignalTests: XCTestCase {
 
     func testWidgetConfiguration_rapidToggle() {
         var config = WidgetConfiguration()
-        // Toggle flashIntel 1000 times — should end up back in original state (enabled)
+        let initial = config.isEnabled(.flashIntel)
+        // Toggle flashIntel 1000 times (even count) — must end up back in its initial state
         for _ in 0..<1000 {
             config.toggleWidget(.flashIntel)
         }
-        XCTAssertTrue(config.isEnabled(.flashIntel))
+        XCTAssertEqual(config.isEnabled(.flashIntel), initial)
     }
 
     // MARK: - WidgetSize Tests

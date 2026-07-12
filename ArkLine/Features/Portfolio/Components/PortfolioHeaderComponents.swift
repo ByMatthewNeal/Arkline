@@ -4,6 +4,9 @@ import SwiftUI
 struct PortfolioHeader: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    /// Same privacy toggle as the Home hero — hiding your balance in one place
+    /// must hide it everywhere.
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
     let totalValue: Double
     let dayChange: Double
     let dayChangePercentage: Double
@@ -16,11 +19,22 @@ struct PortfolioHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Total Value")
-                .font(AppFonts.caption12)
-                .foregroundColor(AppColors.textSecondary)
+            HStack(spacing: 8) {
+                Text("Total Value")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
 
-            Text(totalValue.asCurrency(code: currency))
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) { isHidden.toggle() }
+                }) {
+                    Image(systemName: isHidden ? "eye.slash" : "eye")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                .accessibilityLabel(isHidden ? "Show balance" : "Hide balance")
+            }
+
+            Text(isHidden ? "••••••" : totalValue.asCurrency(code: currency))
                 .font(AppFonts.number44)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
                 .contentTransition(.numericText())
@@ -35,12 +49,14 @@ struct PortfolioHeader: View {
                     HStack(spacing: 4) {
                         Image(systemName: dayChange >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
-                        Text("\(dayChange >= 0 ? "+" : "")\(dayChange.asCurrency(code: currency))")
+                        Text(isHidden ? "••••" : "\(dayChange >= 0 ? "+" : "")\(dayChange.asCurrency(code: currency))")
                             .font(AppFonts.body14Medium)
                             .contentTransition(.numericText())
-                        Text("(\(dayChangePercentage >= 0 ? "+" : "")\(dayChangePercentage, specifier: "%.2f")%)")
-                            .font(AppFonts.caption12)
-                            .contentTransition(.numericText())
+                        if !isHidden {
+                            Text("(\(dayChangePercentage >= 0 ? "+" : "")\(dayChangePercentage, specifier: "%.2f")%)")
+                                .font(AppFonts.caption12)
+                                .contentTransition(.numericText())
+                        }
                     }
                     .foregroundColor(dayChange >= 0 ? AppColors.success : AppColors.error)
                 }
@@ -56,12 +72,14 @@ struct PortfolioHeader: View {
                     HStack(spacing: 4) {
                         Image(systemName: profitLoss >= 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10))
-                        Text("\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency(code: currency))")
+                        Text(isHidden ? "••••" : "\(profitLoss >= 0 ? "+" : "")\(profitLoss.asCurrency(code: currency))")
                             .font(AppFonts.body14Medium)
                             .contentTransition(.numericText())
-                        Text("(\(profitLossPercentage >= 0 ? "+" : "")\(profitLossPercentage, specifier: "%.2f")%)")
-                            .font(AppFonts.caption12)
-                            .contentTransition(.numericText())
+                        if !isHidden {
+                            Text("(\(profitLossPercentage >= 0 ? "+" : "")\(profitLossPercentage, specifier: "%.2f")%)")
+                                .font(AppFonts.caption12)
+                                .contentTransition(.numericText())
+                        }
                     }
                     .foregroundColor(profitLoss >= 0 ? AppColors.success : AppColors.error)
                 }

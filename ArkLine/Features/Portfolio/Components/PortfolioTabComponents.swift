@@ -12,14 +12,14 @@ struct PortfolioOverviewContent: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            // Model Portfolios
-            ModelPortfolioCard()
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-        }
-
         if viewModel.holdings.isEmpty {
+            // No holdings yet: model portfolios lead as a starting point
+            VStack(spacing: 20) {
+                ModelPortfolioCard()
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+            }
+
             EmptyStateView(
                 icon: "chart.pie",
                 title: "No Holdings Yet",
@@ -97,6 +97,10 @@ struct PortfolioOverviewContent: View {
                         .padding(.horizontal, 20)
                     }
                 }
+
+                // Model Portfolios — research/ideas support the user's own data, never precede it
+                ModelPortfolioCard()
+                    .padding(.horizontal, 20)
             }
             .padding(.top, 20)
         }

@@ -161,7 +161,22 @@ struct MarketBreadthSection: View {
 
     // MARK: - Data Loading
 
+    // Remount cache: the zone filter on Market Overview destroys and re-creates
+    // this view when switching chips; a static cache avoids re-querying Supabase
+    // on every remount. Breadth data updates daily, so a 5-minute TTL is generous.
+    private static var cache: (latest: MarketBreadthPoint?, history: [MarketBreadthPoint], fetchedAt: Date)?
+    private static let cacheTTL: TimeInterval = 300
+
     private func loadData() async {
+        // Serve fresh-enough cached data instantly (survives view remounts)
+        if let cached = Self.cache,
+           Date().timeIntervalSince(cached.fetchedAt) < Self.cacheTTL {
+            latest = cached.latest
+            history = cached.history
+            isLoading = false
+            return
+        }
+
         let service = ServiceContainer.shared.marketBreadthService
         do {
             async let latestFetch = service.fetchLatest()
@@ -169,6 +184,7 @@ struct MarketBreadthSection: View {
             let (l, h) = try await (latestFetch, historyFetch)
             latest = l
             history = h
+            Self.cache = (latest: l, history: h, fetchedAt: Date())
         } catch {
             logWarning("MarketBreadthSection: \(error.localizedDescription)", category: .network)
         }

@@ -193,8 +193,12 @@ struct USFuturesSection: View {
     @State private var session = USMarketSession.current
     @State private var sessionTimer: Timer?
 
-    /// Cache last successful fetch so refreshes never show empty shimmers
+    /// Cache last successful fetch so refreshes never show empty shimmers.
+    /// `cachedAt` + TTL also skips the network entirely on quick remounts
+    /// (the Market zone filter re-creates this view on every chip switch).
     private static var cachedFutures: [USFuturesQuote] = []
+    private static var cachedAt: Date?
+    private static let cacheTTL: TimeInterval = 60
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private let yahoo = YahooFinanceService.shared
@@ -327,6 +331,13 @@ struct USFuturesSection: View {
             isLoading = false
         }
 
+        // Fresh-enough cache: skip the network entirely (zone-switch remounts)
+        if let cachedAt = Self.cachedAt,
+           !Self.cachedFutures.isEmpty,
+           Date().timeIntervalSince(cachedAt) < Self.cacheTTL {
+            return
+        }
+
         // Try Yahoo and FMP concurrently
         async let yahooTask: [USFuturesQuote] = {
             do {
@@ -354,9 +365,11 @@ struct USFuturesSection: View {
         if !yahooResult.isEmpty {
             futures = yahooResult
             Self.cachedFutures = yahooResult
+            Self.cachedAt = Date()
         } else if !fmpResult.isEmpty {
             futures = fmpResult
             Self.cachedFutures = fmpResult
+            Self.cachedAt = Date()
         }
         // If both failed and no cache, futures stays empty → shows error message
         isLoading = false

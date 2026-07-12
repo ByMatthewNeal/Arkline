@@ -589,14 +589,10 @@ class AppState: ObservableObject {
                 }
             }
         }
-        // Ensure upcomingEvents is always enabled and first
-        config.enabledWidgets.insert(.upcomingEvents)
-        if let index = config.widgetOrder.firstIndex(of: .upcomingEvents) {
-            if index > 0 {
-                config.widgetOrder.remove(at: index)
-                config.widgetOrder.insert(.upcomingEvents, at: 0)
-            }
-        } else {
+        // Ensure upcomingEvents exists in the order array (it's in the default set for
+        // new users, but we no longer force-enable or force-reorder it — the user's
+        // Customize choices must stick across launches).
+        if !config.widgetOrder.contains(.upcomingEvents) {
             config.widgetOrder.insert(.upcomingEvents, at: 0)
         }
     }
