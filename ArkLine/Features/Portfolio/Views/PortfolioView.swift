@@ -207,6 +207,16 @@ struct PortfolioView: View {
                         appState.shouldShowPortfolioCreation = false
                     }
                 }
+                if let pendingTab = appState.pendingPortfolioTab {
+                    viewModel.selectedTab = pendingTab
+                    appState.pendingPortfolioTab = nil
+                }
+            }
+            .onChange(of: appState.pendingPortfolioTab) { _, pendingTab in
+                if let pendingTab {
+                    viewModel.selectedTab = pendingTab
+                    appState.pendingPortfolioTab = nil
+                }
             }
         }
     }

@@ -298,9 +298,16 @@ struct ProfileStatItem: View {
 }
 
 // MARK: - Profile Allocation Section
+/// Compact link row into Portfolio → Allocation. The full pie chart + legend live there;
+/// this shows the top categories inline to avoid duplicating the chart on Profile.
 struct ProfileAllocationSection: View {
     @Environment(\.colorScheme) var colorScheme
     let allocations: [PortfolioAllocation]
+    var onTap: (() -> Void)? = nil
+
+    private var topAllocations: [PortfolioAllocation] {
+        Array(allocations.sorted { $0.percentage > $1.percentage }.prefix(3))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -308,51 +315,51 @@ struct ProfileAllocationSection: View {
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            if allocations.isEmpty {
-                HStack {
-                    Spacer()
-                    VStack(spacing: 8) {
-                        Image(systemName: "chart.pie")
-                            .font(.title2)
-                            .foregroundColor(AppColors.textTertiary)
+            Button(action: { onTap?() }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "chart.pie")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(AppColors.accent)
+
+                    if allocations.isEmpty {
                         Text("No holdings yet")
-                            .font(AppFonts.caption12)
+                            .font(AppFonts.body14)
                             .foregroundColor(AppColors.textSecondary)
-                    }
-                    .padding(.vertical, 20)
-                    Spacer()
-                }
-                .glassCard(cornerRadius: 12)
-            } else {
-                VStack(spacing: 16) {
-                    AllocationPieChart(allocations: allocations, colorScheme: colorScheme)
-                        .frame(height: 160)
+                    } else {
+                        // Top categories inline: "Crypto 62% · Stocks 28% · Cash 10%"
+                        HStack(spacing: 8) {
+                            ForEach(topAllocations) { alloc in
+                                HStack(spacing: 5) {
+                                    Circle()
+                                        .fill(Color(hex: alloc.color))
+                                        .frame(width: 8, height: 8)
 
-                    // Legend
-                    VStack(spacing: 8) {
-                        ForEach(allocations) { alloc in
-                            HStack(spacing: 10) {
-                                Circle()
-                                    .fill(Color(hex: alloc.color))
-                                    .frame(width: 10, height: 10)
+                                    Text("\(alloc.category) \(String(format: "%.0f%%", alloc.percentage))")
+                                        .font(AppFonts.body14)
+                                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                                        .lineLimit(1)
+                                }
+                            }
 
-                                Text(alloc.category)
-                                    .font(AppFonts.body14)
-                                    .foregroundColor(AppColors.textPrimary(colorScheme))
-
-                                Spacer()
-
-                                Text(String(format: "%.1f%%", alloc.percentage))
-                                    .font(AppFonts.body14Medium)
+                            if allocations.count > topAllocations.count {
+                                Text("+\(allocations.count - topAllocations.count)")
+                                    .font(AppFonts.caption12)
                                     .foregroundColor(AppColors.textSecondary)
-                                    .monospacedDigit()
                             }
                         }
                     }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.textTertiary)
                 }
                 .padding(ArkSpacing.md)
                 .glassCard(cornerRadius: 12)
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Portfolio allocation. Opens the Allocation tab in Portfolio.")
         }
     }
 }

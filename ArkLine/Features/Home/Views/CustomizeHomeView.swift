@@ -89,6 +89,9 @@ struct CustomizeHomeView: View {
                                     isEnabled: appState.isWidgetEnabled(widget),
                                     currentSize: appState.widgetSize(widget),
                                     isExpanded: expandedWidget == widget,
+                                    // Daily Briefing and Market Ticker render at fixed
+                                    // positions/sizes — hide the size picker for them.
+                                    showsSizePicker: widget != .aiMarketSummary && widget != .marketTicker,
                                     onToggle: {
                                         withAnimation(.spring(response: 0.3)) {
                                             appState.toggleWidget(widget)
@@ -184,6 +187,8 @@ struct WidgetConfigRow: View {
     let isEnabled: Bool
     let currentSize: WidgetSize
     let isExpanded: Bool
+    /// Widgets that render at a fixed position/size (e.g. Daily Briefing) have no size options.
+    var showsSizePicker: Bool = true
     let onToggle: () -> Void
     let onExpand: () -> Void
     let onSizeChange: (WidgetSize) -> Void
@@ -214,12 +219,26 @@ struct WidgetConfigRow: View {
 
                 // Widget info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(widget.displayName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(textPrimary)
+                    HStack(spacing: 6) {
+                        Text(widget.displayName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(textPrimary)
+
+                        if widget.isMirroredOnMarket {
+                            Text("Also on Market")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundColor(textPrimary.opacity(0.45))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule()
+                                        .fill(textPrimary.opacity(0.06))
+                                )
+                        }
+                    }
 
                     HStack(spacing: 6) {
-                        if isEnabled {
+                        if isEnabled && showsSizePicker {
                             // Size indicator
                             HStack(spacing: 4) {
                                 Image(systemName: currentSize.icon)
@@ -243,7 +262,7 @@ struct WidgetConfigRow: View {
                     }
                 }
                 .onTapGesture {
-                    if isEnabled {
+                    if isEnabled && showsSizePicker {
                         onExpand()
                     }
                 }
@@ -270,13 +289,13 @@ struct WidgetConfigRow: View {
             .padding(14)
             .contentShape(Rectangle())
             .onTapGesture {
-                if isEnabled {
+                if isEnabled && showsSizePicker {
                     onExpand()
                 }
             }
 
             // Size picker (shown when expanded)
-            if isExpanded && isEnabled {
+            if isExpanded && isEnabled && showsSizePicker {
                 VStack(spacing: 12) {
                     Divider()
                         .background(AppColors.divider(colorScheme))

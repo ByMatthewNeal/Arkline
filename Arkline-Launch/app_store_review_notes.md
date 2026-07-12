@@ -6,14 +6,23 @@
 
 ## Reviewer Sign-In Credentials
 
-These go in App Store Connect → My App → (build) → **App Review Information** → **Sign-In Required (toggle ON)** → **Username / Password** fields. Do NOT put these in the Notes field — they have dedicated fields.
+App Store Connect only exposes one Username / Password pair in the App Review Information → Sign-In Required fields, so put the **active** account there and describe the **expired** account in the Notes field.
+
+### Active-subscription account (goes in Sign-In Required fields)
 
 - **Username:** `reviewer@arkline.io`
 - **Password:** `Reviewer2026!`
 
-Account is pre-activated with `subscription_status = active`, `current_period_end = 1 year from creation`, `role = user`. Reviewer will land in MainTabView on first sign-in.
+Pre-activated with `subscription_status = active`, `current_period_end ≈ May 2027`, `role = user`. Reviewer will land in MainTabView on first sign-in and can exercise all paid features.
 
-If you ever change the password (e.g., security rotation), update both Supabase (`auth.users.encrypted_password` for `reviewer@arkline.io`) AND this document AND App Store Connect.
+### Expired-subscription account (call out in Notes field)
+
+- **Username:** `reviewer-expired@arkline.io`
+- **Password:** `Reviewer2026!`
+
+Pre-provisioned 2026-07-08 with `subscription_status = canceled`, `current_period_end = 30 days in the past`, `source = stripe`, `role = user`. This account exists specifically so App Review can walk the expired-subscription lockout flow: sign in → land on `SubscriptionExpiredView` → tap "Re-subscribe" → in-app IAP paywall (RevenueCat).
+
+If you ever rotate a password (security or otherwise), update all three places: Supabase (`auth.users.encrypted_password`) → this document → App Store Connect.
 
 ---
 

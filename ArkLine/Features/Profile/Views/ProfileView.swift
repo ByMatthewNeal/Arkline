@@ -51,9 +51,12 @@ struct ProfileView: View {
                     )
                         .padding(.horizontal, 20)
 
-                    // Portfolio Allocation
-                    ProfileAllocationSection(allocations: viewModel.allocations)
-                        .padding(.horizontal, 20)
+                    // Portfolio Allocation (compact link — full chart lives in Portfolio → Allocation)
+                    ProfileAllocationSection(allocations: viewModel.allocations) {
+                        appState.pendingPortfolioTab = .allocation
+                        appState.selectedTab = .portfolio
+                    }
+                    .padding(.horizontal, 20)
 
                     // Recent Activity
                     ProfileRecentActivity(activities: viewModel.recentActivity)

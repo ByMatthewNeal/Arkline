@@ -9,6 +9,7 @@ struct MarketOverviewView: View {
     @State private var pendingSignalId: UUID?
     @State private var showSentimentRegime = false
     @State private var widgetRefreshId = UUID()
+    @State private var selectedZone: MarketZone = .all
     @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
 
@@ -37,24 +38,27 @@ struct MarketOverviewView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
                     } else {
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
                         Color.clear.frame(height: 0).id("scrollTop")
 
-                        ReorderableMarketWidgetStack(
-                            viewModel: viewModel,
-                            sentimentViewModel: sentimentViewModel,
-                            allocationViewModel: allocationViewModel,
-                            appState: appState,
-                            widgetRefreshId: widgetRefreshId
-                        )
-                        .padding(.top, 16)
+                        Section(header: MarketZoneChipRow(selectedZone: $selectedZone)) {
+                            ReorderableMarketWidgetStack(
+                                viewModel: viewModel,
+                                sentimentViewModel: sentimentViewModel,
+                                allocationViewModel: allocationViewModel,
+                                appState: appState,
+                                widgetRefreshId: widgetRefreshId,
+                                selectedZone: selectedZone
+                            )
+                            .padding(.top, 8)
 
-                        // Disclaimer
-                        FinancialDisclaimer()
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
+                            // Disclaimer
+                            FinancialDisclaimer()
+                                .padding(.horizontal, 20)
+                                .padding(.top, 16)
 
-                        Spacer(minLength: 100)
+                            Spacer(minLength: 100)
+                        }
                     }
                     } // else
                 }

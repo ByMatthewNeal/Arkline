@@ -78,6 +78,8 @@ struct AltcoinScreenerSection: View {
     @State private var timeRange: ScreenerTimeRange = .thirtyDays
     @State private var showFullscreen = false
     @State private var showExpandedTable = false
+    /// Glance mode: collapsed shows best/worst movers; expanded shows the full chart + table.
+    @AppStorage("marketGlance.expanded.altcoin_screener") private var isExpanded = false
 
     // Per-range cache
     @State private var dataCache: [ScreenerTimeRange: (data: [CoinScreenerData], fetchedAt: Date)] = [:]
@@ -111,7 +113,7 @@ struct AltcoinScreenerSection: View {
                 // Time range picker
                 timeRangePicker
 
-                if !screenData.isEmpty {
+                if !screenData.isEmpty && isExpanded {
                     Button {
                         showFullscreen = true
                     } label: {
@@ -120,6 +122,17 @@ struct AltcoinScreenerSection: View {
                             .foregroundColor(AppColors.textSecondary)
                     }
                 }
+
+                Button(action: {
+                    withAnimation(.spring(response: 0.3)) { isExpanded.toggle() }
+                }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .padding(.leading, 4)
+                .accessibilityLabel(isExpanded ? "Collapse Altcoin Screener" : "Expand Altcoin Screener")
             }
             .padding(.horizontal, 20)
 
@@ -132,6 +145,10 @@ struct AltcoinScreenerSection: View {
                     .padding(.horizontal, 20)
             } else if screenData.isEmpty {
                 emptyView
+                    .padding(.horizontal, 20)
+            } else if !isExpanded {
+                // Glance: best/worst movers over the selected range, full chart + table one tap away
+                glanceCard
                     .padding(.horizontal, 20)
             } else {
                 VStack(spacing: 16) {
@@ -177,6 +194,74 @@ struct AltcoinScreenerSection: View {
                 highlightedCoinId: $highlightedCoinId
             )
         }
+    }
+
+    // MARK: - Glance Card
+
+    /// Collapsed Layer-1 view: best and worst movers for the selected range.
+    private var glanceCard: some View {
+        let sorted = screenData.sorted { $0.totalReturn > $1.totalReturn }
+        let leaders = Array(sorted.prefix(3))
+        let laggard = sorted.last
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("LEADERS · \(timeRange.rawValue)")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(textPrimary.opacity(0.4))
+                    .tracking(1)
+
+                Spacer()
+
+                Text("\(screenData.count) coins tracked")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppColors.textTertiary)
+            }
+
+            HStack(spacing: 8) {
+                ForEach(leaders) { coin in
+                    glanceMoverChip(coin)
+                }
+
+                Spacer()
+
+                if let worst = laggard, !leaders.contains(where: { $0.id == worst.id }) {
+                    glanceMoverChip(worst)
+                }
+            }
+
+            Text("Tap for full chart and rankings")
+                .font(.system(size: 11))
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3)) { isExpanded = true }
+        }
+    }
+
+    private func glanceMoverChip(_ coin: CoinScreenerData) -> some View {
+        VStack(spacing: 2) {
+            Text(coin.symbol)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(textPrimary)
+
+            Text(String(format: "%+.1f%%", coin.totalReturn))
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(coin.totalReturn >= 0 ? AppColors.success : AppColors.error)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            Capsule()
+                .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+        )
     }
 
     // MARK: - Time Range Picker

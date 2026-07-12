@@ -206,12 +206,6 @@ struct SettingsView: View {
                             }
                         }
                         .disabled(viewModel.isLoadingBillingPortal)
-
-                        if let error = viewModel.billingPortalError {
-                            Text(error)
-                                .font(AppFonts.caption12)
-                                .foregroundColor(AppColors.error)
-                        }
                     }
 
                     // Restore Purchases — Apple 3.1.1 requirement.
@@ -388,6 +382,18 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("We couldn't find an active subscription tied to your Apple ID. If you believe this is a mistake, make sure you're signed in to the App Store with the Apple ID that made the purchase.")
+            }
+            .alert("Manage Subscription", isPresented: $viewModel.showBillingPortalErrorAlert) {
+                Button("Email Support") {
+                    #if canImport(UIKit)
+                    if let url = URL(string: "mailto:support@arkline.io?subject=Manage%20subscription") {
+                        UIApplication.shared.open(url)
+                    }
+                    #endif
+                }
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("We couldn't open the billing portal right now. To manage your subscription, please email support@arkline.io and we'll take care of it.")
             }
         }
     }

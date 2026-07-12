@@ -30,6 +30,7 @@ enum WidgetSize: String, CaseIterable, Codable, Identifiable {
 // MARK: - Home Widget Type
 /// Represents the different widgets that can be displayed on the home screen
 enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
+    case marketTicker = "market_ticker"
     case upcomingEvents = "upcoming_events"
     case riskScore = "risk_score"
     case fearGreedIndex = "fear_greed"
@@ -60,6 +61,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     var displayName: String {
         switch self {
+        case .marketTicker: return "Market Ticker"
         case .upcomingEvents: return "Upcoming Events"
         case .riskScore: return "ArkLine Score"
         case .fearGreedIndex: return "Fear & Greed Index"
@@ -89,6 +91,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     var description: String {
         switch self {
+        case .marketTicker: return "Scrolling strip of prices, sentiment, and top headlines"
         case .upcomingEvents: return "Economic calendar events that may impact markets"
         case .riskScore: return "Composite risk score based on multiple indicators"
         case .fearGreedIndex: return "Market sentiment gauge from 0-100"
@@ -118,6 +121,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     var icon: String {
         switch self {
+        case .marketTicker: return "dot.radiowaves.left.and.right"
         case .upcomingEvents: return "calendar.badge.clock"
         case .riskScore: return "gauge.with.dots.needle.33percent"
         case .fearGreedIndex: return "speedometer"
@@ -150,10 +154,25 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         return AppColors.accent
     }
 
+    /// Whether this widget mirrors content that also lives on the Market tab.
+    /// Shown as a hint in Customize Home so users know where the canonical version lives.
+    var isMirroredOnMarket: Bool {
+        switch self {
+        case .fedWatch, .dailyNews, .vixIndicator, .dxyIndicator, .globalLiquidity,
+             .macroDashboard, .supplyInProfit, .flashIntel, .usFutures, .qpsSignals,
+             .rotationGauge, .marketBreadth, .riskScore, .fearGreedIndex:
+            return true
+        case .marketTicker, .upcomingEvents, .marketMovers, .dcaReminders, .assetRiskLevel,
+             .favorites, .aiMarketSummary, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate,
+             .perpPremium:
+            return false
+        }
+    }
+
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth:
+        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium, .rotationGauge:
             return true
@@ -162,12 +181,15 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
 
     /// Default order for widgets
     static var defaultOrder: [HomeWidgetType] {
-        [.modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.marketTicker, .modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
-    /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize)
+    /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize).
+    /// Home focuses on "my situation"; broad market content lives on the Market tab, with the
+    /// Market Ticker as the always-on bridge. Fear & Greed and Macro Dashboard remain one
+    /// toggle away (their headline values scroll in the ticker).
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.upcomingEvents, .aiMarketSummary, .marketMovers, .fearGreedIndex, .macroDashboard, .marketDeck, .assetRiskLevel, .dailyNews])
+        Set([.marketTicker, .upcomingEvents, .aiMarketSummary, .marketMovers, .marketDeck, .assetRiskLevel, .dailyNews])
     }
 
     /// Default widget sizes (compact where appropriate to keep the home screen tight)

@@ -17,6 +17,16 @@ struct HomeView: View {
         viewModel.unreadNotificationCount > 0
     }
 
+    /// Extracted subview: keeps HomeView's large body cheap for the type-checker.
+    @ViewBuilder
+    private var marketTickerSection: some View {
+        if appState.isWidgetEnabled(.marketTicker) {
+            MarketTickerBanner(viewModel: viewModel) {
+                appState.selectedTab = .market
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack {
@@ -29,6 +39,9 @@ struct HomeView: View {
                     ScrollView(.vertical) {
                         VStack(spacing: 20) {
                             Color.clear.frame(height: 0).id("scrollTop")
+
+                        // Market ticker (fixed position under header, toggleable in Customize)
+                        marketTickerSection
 
                         // Stale data warning (shown when fetches failed)
                         if viewModel.failedFetchCount > 0, !viewModel.isLoading {

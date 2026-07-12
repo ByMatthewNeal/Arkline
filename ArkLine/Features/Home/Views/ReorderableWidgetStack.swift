@@ -133,6 +133,9 @@ struct ReorderableWidgetStack: View {
             return true
         case .aiMarketSummary:
             return false
+        case .marketTicker:
+            // Rendered at fixed position under the Home header, not in the stack
+            return false
         case .flashIntel:
             return true
         case .usFutures:
@@ -161,6 +164,10 @@ struct ReorderableWidgetStack: View {
     @ViewBuilder
     private func widgetView(for type: HomeWidgetType) -> some View {
         switch type {
+        case .marketTicker:
+            // Rendered at fixed position under the Home header (see HomeView), never in the stack
+            EmptyView()
+
         case .upcomingEvents:
             UpcomingEventsSection(
                 events: viewModel.upcomingEvents,

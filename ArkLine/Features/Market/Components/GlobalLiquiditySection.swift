@@ -10,6 +10,8 @@ struct GlobalLiquiditySection: View {
     @State private var isLoading = true
     @State private var showInfo = false
     @State private var lastLoaded: Date?
+    /// Glance mode: collapsed shows composite + signal + YoY; expanded shows the full breakdown.
+    @AppStorage("marketGlance.expanded.global_liquidity") private var isExpanded = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color {
@@ -35,39 +37,52 @@ struct GlobalLiquiditySection: View {
                 if let gli = liquidityIndex {
                     signalBadge(gli.signal)
                 }
+
+                Button(action: {
+                    withAnimation(.spring(response: 0.3)) { isExpanded.toggle() }
+                }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .padding(.leading, 4)
+                .accessibilityLabel(isExpanded ? "Collapse Central Bank Liquidity" : "Expand Central Bank Liquidity")
             }
 
             if isLoading {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(cardBackground)
-                    .frame(height: 200)
+                    .frame(height: isExpanded ? 200 : 84)
                     .redacted(reason: .placeholder)
             } else if let gli = liquidityIndex {
-                // Composite headline
+                // Glance: composite headline always; full breakdown when expanded
                 VStack(spacing: 16) {
                     compositeRow(gli)
 
-                    Divider()
-                        .background(textPrimary.opacity(0.08))
+                    if isExpanded {
+                        Divider()
+                            .background(textPrimary.opacity(0.08))
 
-                    // US Net Liquidity breakdown
-                    usNetLiquidityRow(gli)
+                        // US Net Liquidity breakdown
+                        usNetLiquidityRow(gli)
 
-                    Divider()
-                        .background(textPrimary.opacity(0.08))
+                        Divider()
+                            .background(textPrimary.opacity(0.08))
 
-                    // Per-country breakdown
-                    countryBreakdown(gli)
+                        // Per-country breakdown
+                        countryBreakdown(gli)
 
-                    // Changes
-                    changesRow(gli)
+                        // Changes
+                        changesRow(gli)
 
-                    // Synced timestamp
-                    if let loaded = lastLoaded {
-                        Text("Synced \(loaded.formatted(.relative(presentation: .named))) · US data weekly, BIS monthly")
-                            .font(.system(size: 10))
-                            .foregroundColor(AppColors.textTertiary)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        // Synced timestamp
+                        if let loaded = lastLoaded {
+                            Text("Synced \(loaded.formatted(.relative(presentation: .named))) · US data weekly, BIS monthly")
+                                .font(.system(size: 10))
+                                .foregroundColor(AppColors.textTertiary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
                     }
                 }
                 .padding(16)
@@ -75,6 +90,13 @@ struct GlobalLiquiditySection: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(cardBackground)
                 )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Tap-to-expand on the collapsed card; collapsing is via the chevron
+                    if !isExpanded {
+                        withAnimation(.spring(response: 0.3)) { isExpanded = true }
+                    }
+                }
             } else {
                 Button {
                     Task { await loadData() }

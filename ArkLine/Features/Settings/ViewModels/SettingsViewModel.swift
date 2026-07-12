@@ -23,7 +23,7 @@ final class SettingsViewModel {
     var showSignOutAlert = false
     var showDeleteAccountAlert = false
     var isLoadingBillingPortal = false
-    var billingPortalError: String?
+    var showBillingPortalErrorAlert = false
 
     // Restore Purchases (Apple 3.1.1 requirement)
     var isRestoringPurchases = false
@@ -182,14 +182,19 @@ final class SettingsViewModel {
         UserDefaults.standard.set(riskCoins, forKey: Constants.UserDefaults.riskCoins)
     }
 
+    /// Open the Stripe customer billing portal for legacy Stripe subscribers.
+    /// If the backend call fails (network error, missing Stripe customer, or
+    /// any other reason), we surface a friendly alert with an "Email Support"
+    /// action rather than inline error text. This was flagged in App Review
+    /// (Guideline 2.1(a)) when a stale demo Stripe customer produced a scary
+    /// red error string under the button.
     func openBillingPortal(email: String?) async {
         guard let email = email, !email.isEmpty else {
-            billingPortalError = "No email associated with your account."
+            showBillingPortalErrorAlert = true
             return
         }
 
         isLoadingBillingPortal = true
-        billingPortalError = nil
         defer { isLoadingBillingPortal = false }
 
         do {
@@ -205,13 +210,16 @@ final class SettingsViewModel {
                 options: .init(body: PortalRequest(customer_email: email))
             )
 
-            if let url = URL(string: response.url) {
-                #if canImport(UIKit)
-                await UIApplication.shared.open(url)
-                #endif
+            guard let url = URL(string: response.url) else {
+                showBillingPortalErrorAlert = true
+                return
             }
+
+            #if canImport(UIKit)
+            await UIApplication.shared.open(url)
+            #endif
         } catch {
-            billingPortalError = "Unable to open billing portal. Please try again."
+            showBillingPortalErrorAlert = true
             logError(error, context: "Billing Portal", category: .network)
         }
     }

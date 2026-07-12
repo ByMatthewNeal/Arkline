@@ -78,9 +78,52 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
         [.usFutures, .qpsGrid, .liquidityCycle, .globalLiquidity, .dailyNews, .fedWatch, .allocation, .traditionalMarkets, .topCoins, .sentiment, .marketBreadth, .swingSetups, .altcoinScreener]
     }
 
-    /// All widgets enabled by default
+    /// Widgets enabled by default — a lean starter set covering futures, sentiment,
+    /// macro (Liquidity Cycle), Fed, coins, news, and trade signals. The remaining
+    /// sections stay one toggle away in Customize Market.
+    /// Note: users who installed before Market customization shipped keep the
+    /// all-widgets layout via a one-time migration in `AppState.loadState()`.
     static var defaultEnabled: Set<MarketWidgetType> {
-        Set(allCases)
+        [.usFutures, .sentiment, .liquidityCycle, .fedWatch, .topCoins, .dailyNews, .swingSetups]
+    }
+}
+
+// MARK: - Market Zone
+/// Groups Market widgets into scannable zones for the sticky chip filter on Market Overview.
+/// "All" shows every enabled widget in the user's order (and is the only mode where reordering is allowed).
+enum MarketZone: String, CaseIterable, Identifiable {
+    case all
+    case today
+    case macro
+    case assets
+    case signals
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .all: return "All"
+        case .today: return "Today"
+        case .macro: return "Macro"
+        case .assets: return "Assets"
+        case .signals: return "Signals"
+        }
+    }
+}
+
+extension MarketWidgetType {
+    /// Which zone chip this widget belongs to.
+    var zone: MarketZone {
+        switch self {
+        case .usFutures, .sentiment, .fedWatch, .dailyNews:
+            return .today
+        case .qpsGrid, .liquidityCycle, .globalLiquidity, .allocation:
+            return .macro
+        case .topCoins, .traditionalMarkets, .marketBreadth, .altcoinScreener:
+            return .assets
+        case .swingSetups:
+            return .signals
+        }
     }
 }
 

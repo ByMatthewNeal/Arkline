@@ -10,6 +10,8 @@ struct LiquidityCycleSection: View {
     @State private var isLoading = true
     @State private var showInfo = false
     @State private var lastLoaded: Date?
+    /// Glance mode: collapsed shows phase + momentum + crypto positioning line; expanded shows the full clock.
+    @AppStorage("marketGlance.expanded.liquidity_cycle") private var isExpanded = false
 
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var cardBackground: Color {
@@ -35,13 +37,27 @@ struct LiquidityCycleSection: View {
                 if let cycle = liquidityIndex?.liquidityCycle {
                     phaseBadge(cycle.phase)
                 }
+
+                Button(action: {
+                    withAnimation(.spring(response: 0.3)) { isExpanded.toggle() }
+                }) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppColors.textSecondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .padding(.leading, 4)
+                .accessibilityLabel(isExpanded ? "Collapse Liquidity Cycle" : "Expand Liquidity Cycle")
             }
 
             if isLoading {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(cardBackground)
-                    .frame(height: 320)
+                    .frame(height: isExpanded ? 320 : 84)
                     .redacted(reason: .placeholder)
+            } else if let gli = liquidityIndex, let cycle = gli.liquidityCycle, !isExpanded {
+                // Glance: momentum + crypto positioning, full clock one tap away
+                glanceCard(cycle)
             } else if let gli = liquidityIndex, let cycle = gli.liquidityCycle {
                 VStack(spacing: 16) {
                     // Clock + Momentum side by side
@@ -186,6 +202,59 @@ struct LiquidityCycleSection: View {
         }
         .sheet(isPresented: $showInfo) {
             LiquidityCycleInfoSheet()
+        }
+    }
+
+    // MARK: - Glance Card
+
+    /// Collapsed Layer-1 view: momentum index + crypto positioning label + one-line guidance.
+    private func glanceCard(_ cycle: LiquidityCycle) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("MOMENTUM")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(textPrimary.opacity(0.4))
+                        .tracking(1)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(cycle.momentumIndex)")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .foregroundColor(momentumColor(cycle.momentumIndex))
+                        Text("/ 100")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("CRYPTO")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(textPrimary.opacity(0.4))
+                        .tracking(1)
+
+                    Text(cycle.phase.cryptoLabel)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(cycle.phase.color)
+                }
+            }
+
+            Text(cycle.cryptoGuidance)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textSecondary)
+                .lineLimit(2)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(cardBackground)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3)) { isExpanded = true }
         }
     }
 

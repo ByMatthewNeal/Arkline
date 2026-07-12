@@ -303,6 +303,8 @@ class AppState: ObservableObject {
     // Tab navigation
     @Published var selectedTab: AppTab = .home
     @Published var shouldShowPortfolioCreation = false
+    /// Deep-link: when set, PortfolioView switches to this sub-tab on appear and clears it
+    @Published var pendingPortfolioTab: PortfolioTab? = nil
 
     var colorScheme: ColorScheme? {
         switch darkModePreference {
@@ -354,6 +356,17 @@ class AppState: ObservableObject {
             widgetConfiguration = config
             // Save migrated config
             setWidgetConfiguration(config)
+        } else if UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser) != nil {
+            // One-time migration: existing user with no saved Home config. Preserve the
+            // pre-rebalance layout (Fear & Greed + Macro Dashboard stay visible) and add
+            // the Market Ticker. The leaner `defaultEnabled` applies to fresh installs only.
+            let legacyConfig = WidgetConfiguration(
+                enabledWidgets: Set([.marketTicker, .upcomingEvents, .aiMarketSummary, .marketMovers,
+                                     .fearGreedIndex, .macroDashboard, .marketDeck, .assetRiskLevel, .dailyNews]),
+                widgetOrder: HomeWidgetType.defaultOrder,
+                widgetSizes: HomeWidgetType.defaultSizes
+            )
+            setWidgetConfiguration(legacyConfig)
         }
 
         // Load dashboard presets
@@ -386,6 +399,15 @@ class AppState: ObservableObject {
             }
             marketWidgetConfiguration = config
             setMarketWidgetConfiguration(config)
+        } else if UserDefaults.standard.data(forKey: Constants.UserDefaults.currentUser) != nil {
+            // One-time migration: existing user from a build before Market customization
+            // shipped (no saved config yet). Preserve the all-widgets layout they're used
+            // to — the lean `defaultEnabled` set applies to fresh installs only.
+            let legacyConfig = MarketWidgetConfiguration(
+                enabledWidgets: Set(MarketWidgetType.allCases),
+                widgetOrder: MarketWidgetType.defaultOrder
+            )
+            setMarketWidgetConfiguration(legacyConfig)
         }
 
         // Load current user

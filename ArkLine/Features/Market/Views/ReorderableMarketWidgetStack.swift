@@ -7,13 +7,17 @@ struct ReorderableMarketWidgetStack: View {
     var allocationViewModel: AllocationViewModel?
     @ObservedObject var appState: AppState
     var widgetRefreshId: UUID = UUID()
+    var selectedZone: MarketZone = .all
     @State private var isEditMode: Bool = false
+    @State private var showCustomizeSheet: Bool = false
     @State private var draggingWidget: MarketWidgetType?
     @State private var draggedOverWidget: MarketWidgetType?
     @Environment(\.colorScheme) var colorScheme
 
     private var visibleWidgets: [MarketWidgetType] {
-        appState.marketWidgetConfiguration.orderedEnabledWidgets
+        let enabled = appState.marketWidgetConfiguration.orderedEnabledWidgets
+        guard selectedZone != .all else { return enabled }
+        return enabled.filter { $0.zone == selectedZone }
     }
 
     var body: some View {
@@ -28,17 +32,53 @@ struct ReorderableMarketWidgetStack: View {
                 Spacer()
 
                 Button(action: {
-                    withAnimation(.spring(response: 0.3)) {
-                        isEditMode.toggle()
-                    }
+                    showCustomizeSheet = true
                 }) {
-                    Text(isEditMode ? "Done" : "Edit")
-                        .font(AppFonts.caption12Medium)
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AppColors.accent)
                 }
-                .accessibilityLabel(isEditMode ? "Done editing widgets" : "Edit widget order")
+                .accessibilityLabel("Customize Market sections")
+
+                // Reordering applies to the full list, so Edit is only offered in "All"
+                if selectedZone == .all {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            isEditMode.toggle()
+                        }
+                    }) {
+                        Text(isEditMode ? "Done" : "Edit")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.accent)
+                    }
+                    .padding(.leading, 12)
+                    .accessibilityLabel(isEditMode ? "Done editing widgets" : "Edit widget order")
+                }
             }
             .padding(.horizontal, 24)
+
+            // Empty state: no visible sections (all hidden, or none in this zone)
+            if visibleWidgets.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 32))
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text(selectedZone == .all
+                        ? "All sections are hidden"
+                        : "No \(selectedZone.displayName) sections enabled")
+                        .font(AppFonts.body14Medium)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Button(action: { showCustomizeSheet = true }) {
+                        Text("Customize Market")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 48)
+            }
 
             // Widget list
             ForEach(Array(visibleWidgets.enumerated()), id: \.element) { index, widgetType in
@@ -71,6 +111,14 @@ struct ReorderableMarketWidgetStack: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: appState.marketWidgetConfiguration.orderedEnabledWidgets)
+        .onChange(of: selectedZone) { _, _ in
+            // Leaving "All" exits edit mode — reordering a filtered view would be ambiguous
+            isEditMode = false
+        }
+        .sheet(isPresented: $showCustomizeSheet) {
+            CustomizeMarketView()
+                .environmentObject(appState)
+        }
     }
 
     private func moveWidget(_ widget: MarketWidgetType, direction: Int) {
