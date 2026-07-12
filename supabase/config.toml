@@ -382,6 +382,25 @@ verify_jwt = false
 [functions.analyze-economic-event]
 verify_jwt = false
 
+# Cron-invoked weekly (Sunday morning draft generation). Authenticates
+# x-cron-secret in code; without this block the gateway 401s every cron run.
+[functions.generate-market-deck]
+verify_jwt = false
+
+# Cron-invoked Sundays 16:00 & 17:00 UTC (12pm ET publish with DST guard).
+# Authenticates x-cron-secret (or admin JWT for manual runs) in code.
+[functions.publish-market-deck]
+verify_jwt = false
+
+# Cron-invoked hourly (+ Sunday runs). Authenticates x-cron-secret in code.
+# Was verify_jwt=true, which made the gateway 401 every cron run silently.
+[functions.fibonacci-pipeline]
+verify_jwt = false
+
+# Cron-invoked. Authenticates x-cron-secret (or admin JWT) in code.
+[functions.generate-reel-script]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

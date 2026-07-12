@@ -15,14 +15,35 @@ Deno.serve(async (req) => {
     return json({ error: "Method not allowed" }, 405)
   }
 
-  // Auth: cron secret or admin JWT
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Auth: cron secret or a VERIFIED admin JWT. (Previously this only checked
+  // that an Authorization header existed, relying on the gateway's verify_jwt.
+  // Now that verify_jwt is off so pg_cron can reach us, the JWT must be
+  // validated here — same pattern as generate-market-deck.)
   const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
   const secret = req.headers.get("x-cron-secret") ?? ""
   const authHeader = req.headers.get("Authorization") ?? ""
-  const isCron = cronSecret && secret === cronSecret
-  const isAuth = authHeader.startsWith("Bearer ")
+  let isAuthorized = Boolean(cronSecret) && secret === cronSecret
 
-  if (!isCron && !isAuth) {
+  if (!isAuthorized && authHeader.startsWith("Bearer ")) {
+    const jwt = authHeader.replace("Bearer ", "")
+    const { data: userData, error: userError } = await supabase.auth.getUser(jwt)
+    if (!userError && userData?.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userData.user.id)
+        .single()
+      if (profile?.role === "admin") {
+        isAuthorized = true
+      }
+    }
+  }
+
+  if (!isAuthorized) {
     return json({ error: "Unauthorized" }, 401)
   }
 
@@ -30,10 +51,6 @@ Deno.serve(async (req) => {
   if (!anthropicKey) {
     return json({ error: "ANTHROPIC_API_KEY not set" }, 500)
   }
-
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  const supabase = createClient(supabaseUrl, supabaseKey)
 
   // Check if we should force regenerate or use a custom topic
   let forceRegenerate = false
