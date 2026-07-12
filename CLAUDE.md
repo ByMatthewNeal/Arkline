@@ -6,26 +6,28 @@ Arkline is an iOS financial app (iOS 17+/macOS 14+) built with SwiftUI and Swift
 
 ## Business Model
 
-**TL;DR: Invite-only, web-paid, single-tier. The iOS app is a client to a paid service — it does NOT collect payments.**
+**TL;DR: Single-tier subscription with dual-track billing — web Stripe checkout AND App Store IAP via RevenueCat. Supabase is the authoritative subscription source of truth.**
 
-- **Access model:** Invite-only. Every user must enter a valid invite code (format: `ARK-XXXXXX`) during onboarding.
-- **Pricing:** Single subscription tier. Every paying user gets full access — no free tier, no premium tier, no feature gating.
-- **Payment processing:** Stripe (web only, never in-app).
-- **Signup flow:**
-  1. Prospective user receives an invite code + a unique Stripe checkout link
-  2. User completes payment on the web via Stripe
-  3. User downloads the iOS app
-  4. User enters invite code → email verification → profile setup → in
-- **No In-App Purchase (IAP):** The app contains zero StoreKit / IAP code. This is intentional — Apple's 30% commission is avoided by handling all payments off-platform.
-- **Compliance posture:** Architecture mirrors Spotify / Notion / 1Password ("reader app" / SaaS client model). Apple permits this so long as no in-app payment UI exists and no anti-steering language is shown.
+> Historical note: the app originally shipped web-paid-only with zero IAP code
+> (reader-app model). That changed when RevenueCat + the in-app paywall were
+> added. If you see older docs/comments claiming "no IAP code," they are stale.
 
-**Important architectural rules to preserve this model:**
+- **Pricing:** Single subscription tier ("Arkline Pro"). Every paying user gets full access — no free tier, no feature gating.
+- **Billing track 1 — Web (Stripe):** Users pay via Stripe checkout on the web. Tracked in Supabase `subscriptions` with `source='stripe'`. These users never touch RevenueCat billing; they simply sign in to the app.
+- **Billing track 2 — App Store (IAP via RevenueCat):** Users can purchase in-app through `ArkPaywallSheet` (presented from `WelcomeView` during onboarding and `SubscriptionExpiredView` on lapse). RevenueCat forwards purchase events to the `revenuecat-webhook` Supabase edge function, which writes `source='apple'` rows into `subscriptions`.
+- **Source of truth:** The Supabase RPC `is_user_subscribed(uuid)` is the authoritative access gate. `RevenueCatService.isPro` is only a fast local signal for paywall presentation — it reflects IAP customers only, never Stripe customers.
+- **RevenueCat wiring:** SDK configured at app launch (`RevenueCatService.configure()`); the Supabase user id is used as the RevenueCat `appUserID` so webhook events attribute to the right account. Entitlement id: `"Arkline Pro"` (see `Constants.RevenueCat`). Settings includes Restore Purchases and IAP-aware subscription management.
+- **Invite codes:** The onboarding flow still contains an invite-code step (format: `ARK-XXXXXX`). KNOWN TRANSITIONAL GAP: IAP purchasers are currently routed through the invite-code step too — there is a TODO in `WelcomeView` to conditionalize this and add post-purchase account creation (linking `apple_original_transaction_id` to a Supabase user).
 
-- **NEVER add StoreKit, SKProduct, Product.purchase, Transaction, or any IAP-related code** to the iOS app. It would void the entire model and require Apple's 30% cut.
-- **NEVER add a sign-up flow inside the iOS app** — sign-up is web-only via Stripe checkout. The app has sign-in only.
-- **NEVER add in-app pricing displays, "Upgrade" buttons, or links to external payment pages** — Apple's anti-steering rules still apply.
-- **`isPro` is hardcoded to `true` for all authenticated users.** Do not introduce tier-based feature gating without an explicit business decision (would require restructuring everything from User model onward).
-- **`User.role` includes `.premium` and `subscriptionStatus` has multiple states** — these exist for future flexibility but are NOT currently used to restrict features. Treat as forward-compatible scaffolding only.
+**Important architectural rules for the current model:**
+
+- **IAP code is intentional — do NOT remove it.** `RevenueCatService`, `ArkPaywallSheet`, and the RevenueCat package in `project.yml` are load-bearing. (Older guidance said the opposite; it is obsolete.)
+- **Never bypass RevenueCat for IAP** — no raw StoreKit purchase calls. All IAP goes through the RevenueCat SDK so the webhook → Supabase attribution keeps working.
+- **Anti-steering still applies to the IAP context:** do not add in-app links or copy steering users to the cheaper web/Stripe checkout. Stripe checkout is reached from the web only.
+- **Never collect card details or embed Stripe payment UI in the iOS app.** Stripe remains web-only.
+- **`AppState.isPro` is hardcoded to `true` for all authenticated users.** Access is binary (subscribed or not — enforced at auth/subscription level, not per-feature). Do not introduce tier-based feature gating without an explicit business decision.
+- **`User.role` includes `.premium` and `subscriptionStatus` has multiple states** — forward-compatible scaffolding, not currently used to restrict features.
+- **Do not commit `.p8` keys** (APNs / subscription keys). They are gitignored — keep it that way.
 
 ## Legal Entity
 
@@ -36,7 +38,7 @@ The product is operated by **Arkline Technologies LLC** (Wyoming-formed single-m
 - **UI:** SwiftUI with @Observable macro
 - **Architecture:** MVVM with Protocol-based services
 - **Backend:** Supabase (Auth, PostgreSQL, Storage)
-- **Dependencies:** Supabase Swift SDK, Kingfisher
+- **Dependencies:** Supabase Swift SDK, Kingfisher, RevenueCat (IAP)
 - **External APIs:** CoinGecko, Alpha Vantage, Claude, FRED, FMP, Taapi.io, and more
 
 ## Directory Structure
