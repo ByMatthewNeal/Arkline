@@ -199,6 +199,12 @@ struct BroadcastCardView: View {
 struct BroadcastDetailView: View {
     let broadcast: Broadcast
     @ObservedObject var viewModel: BroadcastViewModel
+    /// Sequential reading: neighbors in the feed's display order. When provided,
+    /// up/down chevrons let the reader move between insights without the
+    /// dismiss-and-retap dance.
+    var previousBroadcast: Broadcast? = nil
+    var nextBroadcast: Broadcast? = nil
+    var onNavigate: ((Broadcast) -> Void)? = nil
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
@@ -431,6 +437,27 @@ struct BroadcastDetailView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+
+                // Mail-style previous/next for sequential reading
+                if onNavigate != nil {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Button {
+                            if let previous = previousBroadcast { onNavigate?(previous) }
+                        } label: {
+                            Image(systemName: "chevron.up")
+                        }
+                        .disabled(previousBroadcast == nil)
+                        .accessibilityLabel("Previous insight")
+
+                        Button {
+                            if let next = nextBroadcast { onNavigate?(next) }
+                        } label: {
+                            Image(systemName: "chevron.down")
+                        }
+                        .disabled(nextBroadcast == nil)
+                        .accessibilityLabel("Next insight")
                     }
                 }
             }

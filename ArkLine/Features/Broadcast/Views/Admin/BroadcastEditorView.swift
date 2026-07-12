@@ -150,6 +150,15 @@ struct BroadcastEditorView: View {
                     // Images Section
                     imagesSection
 
+                    // App References — links macro indicators / assets into the post.
+                    // (Was fully built but accidentally dropped from the layout: the
+                    // model, save path, and user-side rendering all worked, yet
+                    // authoring was impossible.)
+                    appReferencesSection
+
+                    // Portfolio Showcase — same story as app references
+                    portfolioShowcaseSection
+
                     // Tags Section
                     tagsSection
 
@@ -186,29 +195,30 @@ struct BroadcastEditorView: View {
                     if isSaving {
                         ProgressView()
                     } else {
+                        // The primary button IS the action — no ambiguous menu.
+                        // Scheduling toggled on? The button says Schedule, so the
+                        // schedule can never be silently dropped by picking the
+                        // wrong menu item. Draft-saving is the secondary, one
+                        // long-press/menu away.
                         Menu {
-                            Button {
-                                saveBroadcast(publish: false)
-                            } label: {
-                                Label("Save as Draft", systemImage: "doc")
-                            }
-
-                            if isScheduled {
+                            if broadcast?.status != .published {
                                 Button {
-                                    saveBroadcast(publish: false, schedule: true)
+                                    saveBroadcast(publish: false)
                                 } label: {
-                                    Label("Schedule", systemImage: "clock")
+                                    Label("Save as Draft", systemImage: "doc")
                                 }
                             }
-
-                            Button {
-                                saveBroadcast(publish: true)
-                            } label: {
-                                Label("Publish Now", systemImage: "paperplane.fill")
-                            }
                         } label: {
-                            Text(broadcast?.status == .published ? "Update" : "Save")
+                            Text(primaryActionLabel)
                                 .fontWeight(.semibold)
+                        } primaryAction: {
+                            if broadcast?.status == .published {
+                                saveBroadcast(publish: true)
+                            } else if isScheduled {
+                                saveBroadcast(publish: false, schedule: true)
+                            } else {
+                                saveBroadcast(publish: true)
+                            }
                         }
                         .disabled(title.isEmpty)
                     }
@@ -1062,6 +1072,13 @@ struct BroadcastEditorView: View {
         title = template.titleTemplate
         content = template.contentTemplate
         selectedTags = template.defaultTags
+    }
+
+    /// The primary toolbar action names exactly what will happen
+    private var primaryActionLabel: String {
+        if broadcast?.status == .published { return "Update" }
+        if isScheduled { return "Schedule" }
+        return "Publish"
     }
 
     private func saveBroadcast(publish: Bool = false, schedule: Bool = false) {

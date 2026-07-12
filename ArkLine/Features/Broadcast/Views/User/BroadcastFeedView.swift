@@ -39,6 +39,7 @@ struct BroadcastFeedView: View {
     @State private var showSavedOnly = false
     @State private var navigationPath = NavigationPath()
     @State private var showDictionary = false
+    @State private var showMemberQA = false
 
     // MARK: - Filtered Broadcasts
 
@@ -135,6 +136,35 @@ struct BroadcastFeedView: View {
             .sorted { $0.key < $1.key }
     }
 
+    // MARK: - Sequential Reading Order
+
+    /// The feed's display order flattened: pinned first, then each date section.
+    /// Drives previous/next navigation inside the detail sheet.
+    private var orderedFeedBroadcasts: [Broadcast] {
+        var result: [Broadcast] = []
+        if let pinned = pinnedBroadcast { result.append(pinned) }
+        result.append(contentsOf: groupedBroadcasts.flatMap { $0.broadcasts })
+        return result
+    }
+
+    private func neighbor(of broadcast: Broadcast, offset: Int) -> Broadcast? {
+        let ordered = orderedFeedBroadcasts
+        guard let index = ordered.firstIndex(where: { $0.id == broadcast.id }) else { return nil }
+        let target = index + offset
+        guard ordered.indices.contains(target) else { return nil }
+        return ordered[target]
+    }
+
+    /// Open an insight in the detail sheet and mark it read — used by both
+    /// card taps and prev/next navigation so the two paths never diverge.
+    private func openBroadcast(_ broadcast: Broadcast) {
+        selectedBroadcast = broadcast
+        if let userId = appState.currentUser?.id {
+            viewModel.readBroadcastIds.insert(broadcast.id)
+            Task { try? await viewModel.markAsRead(broadcastId: broadcast.id, userId: userId) }
+        }
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             broadcastContent
@@ -156,11 +186,11 @@ struct BroadcastFeedView: View {
                     } else if viewModel.published.isEmpty {
                         emptyStateView
                     } else {
-                        // Dictionary quick access
-                        dictionaryCard
-
-                        // Filter bar
+                        // Filter bar — content tools lead; promos follow
                         filterBar
+
+                        // Compact utility row: Dictionary + Member Q&A
+                        utilityRow
 
                         // Pinned post (always at top)
                         if let pinned = pinnedBroadcast {
@@ -187,7 +217,14 @@ struct BroadcastFeedView: View {
                 }
             }
             .sheet(item: $selectedBroadcast) { broadcast in
-                BroadcastDetailView(broadcast: broadcast, viewModel: viewModel)
+                BroadcastDetailView(
+                    broadcast: broadcast,
+                    viewModel: viewModel,
+                    previousBroadcast: neighbor(of: broadcast, offset: -1),
+                    nextBroadcast: neighbor(of: broadcast, offset: +1),
+                    onNavigate: { target in openBroadcast(target) }
+                )
+                .id(broadcast.id) // fresh state (reactions, players) per insight
             }
             .task {
                 if let userId = appState.currentUser?.id {
@@ -434,12 +471,7 @@ struct BroadcastFeedView: View {
                 Task { await viewModel.quickToggleHeart(broadcastId: broadcast.id, userId: userId) }
             }
         ) {
-            selectedBroadcast = broadcast
-            // Mark as read when opened
-            if let userId = appState.currentUser?.id {
-                viewModel.readBroadcastIds.insert(broadcast.id)
-                Task { try? await viewModel.markAsRead(broadcastId: broadcast.id, userId: userId) }
-            }
+            openBroadcast(broadcast)
         }
         .contextMenu {
             // Bookmark / save
@@ -591,35 +623,24 @@ struct BroadcastFeedView: View {
 
     // MARK: - Dictionary Card
 
-    private var dictionaryCard: some View {
-        Button { showDictionary = true } label: {
-            HStack(spacing: ArkSpacing.sm) {
-                Image(systemName: "character.book.closed.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.purple)
+    // MARK: - Utility Row (Dictionary + Member Q&A)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Arkline Dictionary")
-                        .font(AppFonts.body14Bold)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                    Text("Look up investing terms and crypto vocabulary")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-                }
+    /// Compact half-width tiles below the filter bar. The feed leads with
+    /// insights; utilities are one glance down instead of owning the top slot.
+    private var utilityRow: some View {
+        HStack(spacing: ArkSpacing.sm) {
+            utilityTile(
+                icon: "character.book.closed.fill",
+                color: .purple,
+                title: "Dictionary"
+            ) { showDictionary = true }
 
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
-            }
-            .padding(ArkSpacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(AppColors.cardBackground(colorScheme))
-            )
+            utilityTile(
+                icon: "bubble.left.and.bubble.right.fill",
+                color: .teal,
+                title: "Member Q&A"
+            ) { showMemberQA = true }
         }
-        .buttonStyle(.plain)
         .sheet(isPresented: $showDictionary) {
             NavigationStack {
                 DictionaryView()
@@ -630,6 +651,37 @@ struct BroadcastFeedView: View {
                     }
             }
         }
+        .sheet(isPresented: $showMemberQA) {
+            MemberQAView().environmentObject(appState)
+        }
+    }
+
+    private func utilityTile(icon: String, color: Color, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: ArkSpacing.xs) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(color)
+
+                Text(title)
+                    .font(AppFonts.caption12Medium)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary.opacity(0.5))
+            }
+            .padding(.horizontal, ArkSpacing.sm)
+            .padding(.vertical, ArkSpacing.xs + 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(AppColors.cardBackground(colorScheme))
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var emptyStateView: some View {

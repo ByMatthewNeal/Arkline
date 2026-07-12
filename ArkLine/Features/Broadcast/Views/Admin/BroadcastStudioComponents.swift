@@ -558,18 +558,8 @@ struct BroadcastRowView: View {
                             .foregroundColor(AppColors.textTertiary)
                     }
 
-                    // Delete button
-                    Button(role: .destructive) {
-                        onDelete?()
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 12))
-                            .foregroundColor(AppColors.error.opacity(0.6))
-                            .padding(6)
-                            .background(AppColors.error.opacity(0.08))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
+                    // Delete lives in the long-press context menu only — an
+                    // always-visible trash can on every row invited accidents
                 }
             }
             .padding(ArkSpacing.md)
