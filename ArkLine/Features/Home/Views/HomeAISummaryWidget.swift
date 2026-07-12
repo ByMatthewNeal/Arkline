@@ -559,7 +559,8 @@ struct HomeAISummaryWidget: View {
         let isFromToday: Bool
     }
 
-    /// Schedule (ET): Mon–Fri 10 AM (after open) + 5 PM (after close); Sat/Sun 12 PM.
+    /// Schedule (ET, per the live crons): Mon–Fri 10 AM (after open) + 5 PM
+    /// (after close); Saturday 12 PM; Sunday 7 PM.
     /// Compares the briefing's date+slot against the most recent slot that should
     /// exist right now, and builds a human date descriptor.
     private func briefingContext(for summary: MarketSummary) -> BriefingContext {
@@ -581,11 +582,11 @@ struct HomeAISummaryWidget: View {
         // The most recent (date, slot) the schedule should have produced by now
         let expected: (date: String, slot: String)
         switch weekday {
-        case 7: // Saturday
+        case 7: // Saturday — briefing lands at 12 PM
             expected = hour >= 12 ? (todayString, "weekend") : (yesterdayString, "evening")
-        case 1: // Sunday
-            expected = hour >= 12 ? (todayString, "weekend") : (yesterdayString, "weekend")
-        case 2: // Monday — before 10 AM the freshest is Sunday's weekend briefing
+        case 1: // Sunday — briefing lands at 7 PM; before that, Saturday's is freshest
+            expected = hour >= 19 ? (todayString, "weekend") : (yesterdayString, "weekend")
+        case 2: // Monday — before 10 AM the freshest is Sunday evening's briefing
             expected = hour >= 17 ? (todayString, "evening")
                 : hour >= 10 ? (todayString, "morning")
                 : (yesterdayString, "weekend")
@@ -889,7 +890,8 @@ struct HomeAISummaryWidget: View {
     }
 
     /// Human phrase for when the next briefing lands, from the fixed schedule
-    /// (Mon–Fri 10 AM after open + 5 PM after close, Sat/Sun 12 PM — all ET).
+    /// (per the live crons — Mon–Fri 10 AM after open + 5 PM after close,
+    /// Saturday 12 PM, Sunday 7 PM — all ET).
     /// Shared by the footer label and the stale-briefing greeting.
     private func nextUpdatePhrase() -> String {
         let now = Date()
@@ -904,11 +906,11 @@ struct HomeAISummaryWidget: View {
             if estHour < 12 {
                 return "at 12:00 PM ET"
             } else {
-                return "Sunday at 12:00 PM ET"
+                return "Sunday at 7:00 PM ET"
             }
         case 1: // Sunday
-            if estHour < 12 {
-                return "at 12:00 PM ET"
+            if estHour < 19 {
+                return "this evening at 7:00 PM ET"
             } else {
                 return "Monday at 10:00 AM ET"
             }
