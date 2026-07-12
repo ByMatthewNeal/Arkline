@@ -346,7 +346,7 @@ struct HomeAISummaryWidget: View {
                     .textCase(.uppercase)
                     .tracking(0.5)
 
-                Text(emphasizedBody(first.body))
+                Text(first.body)
                     .font(AppFonts.body14)
                     .foregroundColor(textPrimary.opacity(0.7))
                     .lineSpacing(3)
@@ -810,7 +810,7 @@ struct HomeAISummaryWidget: View {
                         .textCase(.uppercase)
                         .tracking(0.5)
 
-                    Text(emphasizedBody(section.body))
+                    Text(section.body)
                         .font(AppFonts.body14)
                         .foregroundColor(textPrimary.opacity(0.7))
                         .lineSpacing(3)
@@ -823,34 +823,6 @@ struct HomeAISummaryWidget: View {
     private struct SummarySection: Hashable {
         let header: String
         let body: String
-    }
-
-    // MARK: - Number Emphasis
-
-    /// Bolds the figures a scanning reader hunts for — prices ($64,050, $63.5k),
-    /// percentages (+1.22%, 60%+), and multi-digit values (22, 26) — without
-    /// altering a single word of the prose. Prose explains; numbers anchor the eye.
-    private static let numberRegex = try? NSRegularExpression(
-        pattern: "[+\\-]?\\$\\d[\\d,.]*[kKmMbB]?|[+\\-]?\\d[\\d,.]*%\\+?|\\b\\d[\\d,.]*[kKmMbB]\\b|\\b\\d{2,}(?:[.,]\\d+)*\\b"
-    )
-
-    private func emphasizedBody(_ text: String) -> AttributedString {
-        var attributed = AttributedString(text)
-        guard let regex = Self.numberRegex else { return attributed }
-
-        let fullRange = NSRange(text.startIndex..<text.endIndex, in: text)
-        for match in regex.matches(in: text, range: fullRange) {
-            guard let range = Range(match.range, in: text) else { continue }
-            let startOffset = text.distance(from: text.startIndex, to: range.lowerBound)
-            let length = text.distance(from: range.lowerBound, to: range.upperBound)
-            // Offsets come from the same string the AttributedString was built
-            // from, so index arithmetic is always in bounds
-            let aStart = attributed.index(attributed.startIndex, offsetByCharacters: startOffset)
-            let aEnd = attributed.index(aStart, offsetByCharacters: length)
-            attributed[aStart..<aEnd].font = AppFonts.body14Bold
-            attributed[aStart..<aEnd].foregroundColor = textPrimary.opacity(0.92)
-        }
-        return attributed
     }
 
     private func parseSections(_ text: String) -> [SummarySection] {
