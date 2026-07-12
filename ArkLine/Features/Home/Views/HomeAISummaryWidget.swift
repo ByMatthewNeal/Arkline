@@ -517,6 +517,12 @@ struct HomeAISummaryWidget: View {
 
     // MARK: - Enhanced Greeting
 
+    /// Greeting always matches the reader's actual time of day. When the
+    /// briefing on screen is the freshest scheduled one, it reads as "your
+    /// morning briefing"; when it's from an earlier slot or a previous day,
+    /// we say so like a human would ("yesterday evening's briefing") and
+    /// point at when the next one lands — never presenting stale content
+    /// as if it were current.
     private var enhancedGreeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         let timeGreeting: String
@@ -528,7 +534,97 @@ struct HomeAISummaryWidget: View {
             timeGreeting = "Good evening"
         }
 
-        return "\(timeGreeting), \(userName). Here's your daily briefing."
+        guard let summary else {
+            return "\(timeGreeting), \(userName). Here's your daily briefing."
+        }
+
+        let context = briefingContext(for: summary)
+        if context.isCurrent && context.isFromToday {
+            return "\(timeGreeting), \(userName). Here's \(context.descriptor)."
+        } else {
+            // Not today's current briefing — say so like a human and point forward.
+            // e.g. "Here's yesterday evening's briefing — your next one lands at 10:00 AM ET."
+            return "\(timeGreeting), \(userName). Here's \(context.descriptor) — your next one lands \(nextUpdatePhrase())."
+        }
+    }
+
+    // MARK: - Briefing Freshness
+
+    private struct BriefingContext {
+        /// e.g. "morning briefing", "yesterday evening's briefing", "Friday evening's briefing"
+        let descriptor: String
+        /// true when this briefing is the most recent one the schedule could have produced
+        let isCurrent: Bool
+        /// true when the briefing was generated today (ET)
+        let isFromToday: Bool
+    }
+
+    /// Schedule (ET): Mon–Fri 10 AM (after open) + 5 PM (after close); Sat/Sun 12 PM.
+    /// Compares the briefing's date+slot against the most recent slot that should
+    /// exist right now, and builds a human date descriptor.
+    private func briefingContext(for summary: MarketSummary) -> BriefingContext {
+        var et = Calendar(identifier: .gregorian)
+        et.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
+
+        let now = Date()
+        let weekday = et.component(.weekday, from: now) // 1=Sun ... 7=Sat
+        let hour = et.component(.hour, from: now)
+
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        df.timeZone = et.timeZone
+        df.locale = Locale(identifier: "en_US_POSIX")
+
+        let todayString = df.string(from: now)
+        let yesterdayString = df.string(from: et.date(byAdding: .day, value: -1, to: now) ?? now)
+
+        // The most recent (date, slot) the schedule should have produced by now
+        let expected: (date: String, slot: String)
+        switch weekday {
+        case 7: // Saturday
+            expected = hour >= 12 ? (todayString, "weekend") : (yesterdayString, "evening")
+        case 1: // Sunday
+            expected = hour >= 12 ? (todayString, "weekend") : (yesterdayString, "weekend")
+        case 2: // Monday — before 10 AM the freshest is Sunday's weekend briefing
+            expected = hour >= 17 ? (todayString, "evening")
+                : hour >= 10 ? (todayString, "morning")
+                : (yesterdayString, "weekend")
+        default: // Tue–Fri
+            expected = hour >= 17 ? (todayString, "evening")
+                : hour >= 10 ? (todayString, "morning")
+                : (yesterdayString, "evening")
+        }
+
+        let isCurrent = summary.summaryDate == expected.date && summary.slot == expected.slot
+
+        // Human descriptor for what's on screen
+        let slotNoun: String
+        switch summary.slot {
+        case "morning": slotNoun = "morning briefing"
+        case "evening": slotNoun = "evening briefing"
+        default: slotNoun = "weekend briefing"
+        }
+
+        let descriptor: String
+        if summary.summaryDate == todayString {
+            descriptor = isCurrent ? "your \(slotNoun)" : "this \(slotNoun.replacingOccurrences(of: " briefing", with: ""))'s briefing"
+        } else if summary.summaryDate == yesterdayString {
+            descriptor = summary.slot == "weekend" ? "yesterday's briefing" : "yesterday \(summary.slot)'s briefing"
+        } else if let briefingDate = df.date(from: summary.summaryDate) {
+            let dayName = DateFormatter()
+            dayName.dateFormat = "EEEE"
+            dayName.timeZone = et.timeZone
+            let day = dayName.string(from: briefingDate)
+            descriptor = summary.slot == "weekend" ? "\(day)'s briefing" : "\(day) \(summary.slot)'s briefing"
+        } else {
+            descriptor = "your latest briefing"
+        }
+
+        return BriefingContext(
+            descriptor: descriptor,
+            isCurrent: isCurrent,
+            isFromToday: summary.summaryDate == todayString
+        )
     }
 
     // MARK: - Sentiment Pill
@@ -789,6 +885,13 @@ struct HomeAISummaryWidget: View {
     }
 
     private func nextUpdateText(slot: String) -> String {
+        "Next update \(nextUpdatePhrase())"
+    }
+
+    /// Human phrase for when the next briefing lands, from the fixed schedule
+    /// (Mon–Fri 10 AM after open + 5 PM after close, Sat/Sun 12 PM — all ET).
+    /// Shared by the footer label and the stale-briefing greeting.
+    private func nextUpdatePhrase() -> String {
         let now = Date()
         var estCal = Calendar(identifier: .gregorian)
         estCal.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
@@ -799,31 +902,31 @@ struct HomeAISummaryWidget: View {
         switch weekday {
         case 7: // Saturday
             if estHour < 12 {
-                return "Next update at 12:00 PM ET"
+                return "at 12:00 PM ET"
             } else {
-                return "Next update Sunday 12:00 PM ET"
+                return "Sunday at 12:00 PM ET"
             }
         case 1: // Sunday
             if estHour < 12 {
-                return "Next update at 12:00 PM ET"
+                return "at 12:00 PM ET"
             } else {
-                return "Next update Monday 10:00 AM ET"
+                return "Monday at 10:00 AM ET"
             }
         case 6: // Friday
             if estHour < 10 {
-                return "Next update at 10:00 AM ET"
+                return "at 10:00 AM ET"
             } else if estHour < 17 {
-                return "Next update at 5:00 PM ET"
+                return "at 5:00 PM ET"
             } else {
-                return "Next update Saturday 12:00 PM ET"
+                return "Saturday at 12:00 PM ET"
             }
         default: // Mon-Thu
             if estHour < 10 {
-                return "Next update at 10:00 AM ET"
+                return "at 10:00 AM ET"
             } else if estHour < 17 {
-                return "Next update at 5:00 PM ET"
+                return "at 5:00 PM ET"
             } else {
-                return "Next update at 10:00 AM ET"
+                return "tomorrow at 10:00 AM ET"
             }
         }
     }
