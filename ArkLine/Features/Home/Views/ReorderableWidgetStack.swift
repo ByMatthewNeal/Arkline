@@ -318,11 +318,12 @@ struct ReorderableWidgetStack: View {
             .id("widget_qpsSignals")
 
         case .perpPremium:
+            // No extra horizontal padding — the stack already applies 20pt to
+            // every row; doubling it made this card narrower than its siblings
             PerpPremiumSentimentCard(
                 btcPremium: viewModel.btcPerpPremium,
                 ethPremium: viewModel.ethPerpPremium
             )
-            .padding(.horizontal, 20)
 
         case .marketDeck:
             if let deck = viewModel.latestDeck {
