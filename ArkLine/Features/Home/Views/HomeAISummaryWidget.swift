@@ -42,9 +42,24 @@ struct HomeAISummaryWidget: View {
         isNewBriefing && !hasBeenExpandedThisSession
     }
 
+    /// Whether the on-screen briefing is today's current edition (drives
+    /// auto-expand and the footer label — stale content shouldn't claim
+    /// a full screen of space or repeat the greeting's next-update line).
+    private var isFreshBriefing: Bool {
+        guard let summary else { return false }
+        let context = briefingContext(for: summary)
+        return context.isCurrent && context.isFromToday
+    }
+
     private func resolveInitialExpandState() {
-        if isNewBriefing {
+        if isNewBriefing && isFreshBriefing {
+            // Unread AND current — open it up
             isExpanded = true
+            hasBeenExpandedThisSession = false
+        } else if isNewBriefing {
+            // Unread but from an earlier slot/day — keep it compact (TLDR peek),
+            // the unread dot still invites a tap
+            isExpanded = false
             hasBeenExpandedThisSession = false
         } else {
             isExpanded = false
@@ -126,8 +141,10 @@ struct HomeAISummaryWidget: View {
                     }
             }
 
-            // Next update indicator
-            if let summary, !isLoading {
+            // Next update indicator — only when the greeting doesn't already
+            // carry the next-update time (stale greetings end with "your next
+            // one lands at ..."; repeating it 8 lines later is noise)
+            if let summary, !isLoading, isFreshBriefing {
                 nextUpdateLabel(for: summary)
             }
 
@@ -270,23 +287,50 @@ struct HomeAISummaryWidget: View {
             Group {
                 switch audioService.playbackState {
                 case .idle:
-                    Image(systemName: "play.circle.fill")
+                    // Labeled so the audio feature is discoverable, not a mystery icon
+                    if size == .compact {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(AppColors.accent)
+                            .frame(width: 28, height: 28)
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 10, weight: .semibold))
+                            Text("Listen · \(listenDuration(for: summary))")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
                         .foregroundColor(AppColors.accent)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(AppColors.accent.opacity(0.12))
+                        .clipShape(Capsule())
+                    }
                 case .loading:
                     ProgressView()
                         .scaleEffect(0.6)
+                        .frame(width: 28, height: 28)
                 case .playing:
                     Image(systemName: "pause.circle.fill")
+                        .font(.system(size: 18))
                         .foregroundColor(AppColors.accent)
+                        .frame(width: 28, height: 28)
                 case .paused:
                     Image(systemName: "play.circle.fill")
+                        .font(.system(size: 18))
                         .foregroundColor(AppColors.accent)
+                        .frame(width: 28, height: 28)
                 }
             }
-            .font(.system(size: 18))
-            .frame(width: 28, height: 28)
         }
         .buttonStyle(.plain)
+    }
+
+    /// Rough spoken length from word count (~150 wpm TTS pace)
+    private func listenDuration(for summary: MarketSummary) -> String {
+        let words = summary.summary.split(separator: " ").count
+        let minutes = max(1, Int((Double(words) / 150.0).rounded()))
+        return "\(minutes) min"
     }
 
     // MARK: - Collapsed Preview
@@ -302,7 +346,7 @@ struct HomeAISummaryWidget: View {
                     .textCase(.uppercase)
                     .tracking(0.5)
 
-                Text(first.body)
+                Text(emphasizedBody(first.body))
                     .font(AppFonts.body14)
                     .foregroundColor(textPrimary.opacity(0.7))
                     .lineSpacing(3)
@@ -766,7 +810,7 @@ struct HomeAISummaryWidget: View {
                         .textCase(.uppercase)
                         .tracking(0.5)
 
-                    Text(section.body)
+                    Text(emphasizedBody(section.body))
                         .font(AppFonts.body14)
                         .foregroundColor(textPrimary.opacity(0.7))
                         .lineSpacing(3)
@@ -779,6 +823,34 @@ struct HomeAISummaryWidget: View {
     private struct SummarySection: Hashable {
         let header: String
         let body: String
+    }
+
+    // MARK: - Number Emphasis
+
+    /// Bolds the figures a scanning reader hunts for — prices ($64,050, $63.5k),
+    /// percentages (+1.22%, 60%+), and multi-digit values (22, 26) — without
+    /// altering a single word of the prose. Prose explains; numbers anchor the eye.
+    private static let numberRegex = try? NSRegularExpression(
+        pattern: "[+\\-]?\\$\\d[\\d,.]*[kKmMbB]?|[+\\-]?\\d[\\d,.]*%\\+?|\\b\\d[\\d,.]*[kKmMbB]\\b|\\b\\d{2,}(?:[.,]\\d+)*\\b"
+    )
+
+    private func emphasizedBody(_ text: String) -> AttributedString {
+        var attributed = AttributedString(text)
+        guard let regex = Self.numberRegex else { return attributed }
+
+        let fullRange = NSRange(text.startIndex..<text.endIndex, in: text)
+        for match in regex.matches(in: text, range: fullRange) {
+            guard let range = Range(match.range, in: text) else { continue }
+            let startOffset = text.distance(from: text.startIndex, to: range.lowerBound)
+            let length = text.distance(from: range.lowerBound, to: range.upperBound)
+            // Offsets come from the same string the AttributedString was built
+            // from, so index arithmetic is always in bounds
+            let aStart = attributed.index(attributed.startIndex, offsetByCharacters: startOffset)
+            let aEnd = attributed.index(aStart, offsetByCharacters: length)
+            attributed[aStart..<aEnd].font = AppFonts.body14Bold
+            attributed[aStart..<aEnd].foregroundColor = textPrimary.opacity(0.92)
+        }
+        return attributed
     }
 
     private func parseSections(_ text: String) -> [SummarySection] {
