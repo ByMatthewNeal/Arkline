@@ -119,34 +119,38 @@ struct BroadcastStudioView: View {
                 BroadcastAnalyticsView(viewModel: viewModel)
             }
             .fullScreenCover(isPresented: $showingUserPreview) {
-                NavigationStack {
-                    BroadcastFeedView()
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button {
-                                    showingUserPreview = false
-                                } label: {
-                                    Text("Done")
-                                        .font(ArkFonts.bodySemibold)
-                                        .foregroundColor(AppColors.accent)
-                                }
-                            }
-                        }
-                        .safeAreaInset(edge: .top) {
-                            HStack(spacing: ArkSpacing.xs) {
-                                Image(systemName: "eye")
-                                    .font(.caption)
-                                Text("User Preview")
+                // No outer NavigationStack: BroadcastFeedView brings its own, and
+                // nesting two stacks left the feed's large title trapped under the
+                // banner. One slim inset strip carries both the label and Done.
+                BroadcastFeedView()
+                    .safeAreaInset(edge: .top) {
+                        HStack(spacing: ArkSpacing.xs) {
+                            Image(systemName: "eye")
+                                .font(.caption)
+                            Text("User Preview")
+                                .font(ArkFonts.caption)
+                                .fontWeight(.semibold)
+
+                            Spacer()
+
+                            Button {
+                                showingUserPreview = false
+                            } label: {
+                                Text("Done")
                                     .font(ArkFonts.caption)
-                                    .fontWeight(.semibold)
+                                    .fontWeight(.bold)
+                                    .padding(.horizontal, ArkSpacing.sm)
+                                    .padding(.vertical, 4)
+                                    .background(Color.white.opacity(0.2))
+                                    .clipShape(Capsule())
                             }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, ArkSpacing.md)
-                            .padding(.vertical, ArkSpacing.xs)
-                            .frame(maxWidth: .infinity)
-                            .background(AppColors.accent)
                         }
-                }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, ArkSpacing.md)
+                        .padding(.vertical, ArkSpacing.xs)
+                        .frame(maxWidth: .infinity)
+                        .background(AppColors.accent)
+                    }
             }
             .task {
                 await viewModel.loadBroadcasts()
