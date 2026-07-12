@@ -51,6 +51,17 @@ interface SlidePayload {
   }
 }
 
+// ── Claude response text extraction ─────────────────────────────────────────
+// Claude 5 models (claude-sonnet-5) use adaptive reasoning and may return a
+// thinking block BEFORE the text block, so content[0] is not guaranteed to be
+// text. Grabbing content[0].text worked on claude-sonnet-4 but silently broke
+// after the model upgrade (empty editorial/outlook, "Unexpected end of JSON
+// input"). Always take the first block whose type is "text".
+// deno-lint-ignore no-explicit-any
+function extractText(data: any): string | undefined {
+  return data?.content?.find((b: { type?: string }) => b?.type === "text")?.text
+}
+
 // ── Tavily Search ───────────────────────────────────────────────────────────
 async function tavilySearch(query: string, apiKey: string, days = 7): Promise<string[]> {
   try {
@@ -198,7 +209,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 4096,
+        max_tokens: 8000,
         messages: [{ role: "user", content: contentParts }],
       }),
     })
@@ -209,7 +220,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
     }
 
     const data = await response.json()
-    const text = data.content?.[0]?.text ?? "[]"
+    const text = extractText(data) ?? "[]"
 
     // Parse JSON — strip any markdown fencing if present
     const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
@@ -283,7 +294,7 @@ Respond ONLY with a JSON array:
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 4096,
+        max_tokens: 8000,
         messages: [{ role: "user", content: contentParts }],
       }),
     })
@@ -294,7 +305,7 @@ Respond ONLY with a JSON array:
     }
 
     const data = await response.json()
-    const text = data.content?.[0]?.text ?? "[]"
+    const text = extractText(data) ?? "[]"
     const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
     return JSON.parse(cleaned)
   } catch (e) {
@@ -348,7 +359,7 @@ Respond ONLY with a JSON object (no markdown, no code blocks):
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 1024,
+        max_tokens: 4000,
         messages: [{ role: "user", content: prompt }],
       }),
     })
@@ -359,7 +370,7 @@ Respond ONLY with a JSON object (no markdown, no code blocks):
     }
 
     const data = await response.json()
-    const text = data.content?.[0]?.text ?? ""
+    const text = extractText(data) ?? ""
     const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
     return JSON.parse(cleaned)
   } catch (e) {
@@ -486,14 +497,14 @@ ${editorialContext}`
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 1500,
+        max_tokens: 4000,
         messages: [{ role: "user", content: contentParts }],
       }),
     })
 
     if (response.ok) {
       const data = await response.json()
-      return data.content?.[0]?.text ?? "Weekly narrative unavailable."
+      return extractText(data) ?? "Weekly narrative unavailable."
     }
     console.error("Narrative generation failed:", await response.text())
     return "Weekly narrative unavailable."
@@ -894,7 +905,7 @@ Respond ONLY with a JSON object (no markdown):
           },
           body: JSON.stringify({
             model: "claude-sonnet-5",
-            max_tokens: 2048,
+            max_tokens: 4000,
             messages: [{ role: "user", content: prompt }],
           }),
         })
@@ -906,7 +917,7 @@ Respond ONLY with a JSON object (no markdown):
         }
 
         const data = await response.json()
-        const text = data.content?.[0]?.text ?? "{}"
+        const text = extractText(data) ?? "{}"
         const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
         const result = JSON.parse(cleaned)
 
@@ -960,7 +971,7 @@ Respond ONLY with JSON (no markdown):
           },
           body: JSON.stringify({
             model: "claude-sonnet-5",
-            max_tokens: 1024,
+            max_tokens: 4000,
             messages: [{ role: "user", content: prompt }],
           }),
         })
@@ -970,7 +981,7 @@ Respond ONLY with JSON (no markdown):
         }
 
         const data = await response.json()
-        const text = data.content?.[0]?.text ?? "{}"
+        const text = extractText(data) ?? "{}"
         const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
         const result = JSON.parse(cleaned)
 
@@ -1005,14 +1016,14 @@ Respond ONLY with JSON: { "regime": "..." }`
           },
           body: JSON.stringify({
             model: "claude-sonnet-5",
-            max_tokens: 256,
+            max_tokens: 2000,
             messages: [{ role: "user", content: prompt }],
           }),
         })
 
         if (response.ok) {
           const data = await response.json()
-          const text = data.content?.[0]?.text ?? "{}"
+          const text = extractText(data) ?? "{}"
           const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
           const result = JSON.parse(cleaned)
 

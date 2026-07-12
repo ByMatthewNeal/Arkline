@@ -38,6 +38,15 @@ interface EditorialSlide {
   bullets: Array<{ text: string; detail?: string }>
 }
 
+
+// Claude 5 models (claude-sonnet-5) may return a thinking block before the
+// text block — content[0] is not guaranteed to be text. Always take the
+// first block whose type is "text" (same fix as generate-market-deck).
+// deno-lint-ignore no-explicit-any
+function extractText(data: any): string | undefined {
+  return data?.content?.find((b: { type?: string }) => b?.type === "text")?.text
+}
+
 async function generateEditorialSlides(
   anthropicKey: string,
   webResearch: Record<string, string[]>,
@@ -123,7 +132,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 4096,
+        max_tokens: 8000,
         messages: [{ role: "user", content: contentParts }],
       }),
       signal: AbortSignal.timeout(120_000), // 2 minute timeout
@@ -135,7 +144,7 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
     }
 
     const data = await response.json()
-    const text = data.content?.[0]?.text ?? "[]"
+    const text = extractText(data) ?? "[]"
 
     // Parse JSON — strip any markdown fencing if present
     const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
@@ -191,7 +200,7 @@ Respond ONLY with a JSON object (no markdown, no code blocks):
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
+        max_tokens: 4000,
         messages: [{ role: "user", content: prompt }],
       }),
       signal: AbortSignal.timeout(60_000), // 1 minute timeout
@@ -203,7 +212,7 @@ Respond ONLY with a JSON object (no markdown, no code blocks):
     }
 
     const data = await response.json()
-    const text = data.content?.[0]?.text ?? ""
+    const text = extractText(data) ?? ""
     const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
     return JSON.parse(cleaned)
   } catch (e) {
