@@ -102,7 +102,7 @@ const SECTORS: SectorDef[] = [
   {
     id: "defensives",
     name: "Defensives",
-    stocks: ["KO", "PG", "JNJ", "MRK", "WMT", "COST", "XOM", "CVX", "LMT"],
+    stocks: ["KO", "PG", "JNJ", "MRK", "LLY", "WMT", "COST", "XOM", "CVX", "LMT"],
     isDefensive: true,
   },
 ]

@@ -186,6 +186,11 @@ enum RiskCoin: String, CaseIterable {
     case open = "OPEN"
     case onds = "ONDS"
     case dgxx = "DGXX"
+    // Healthcare / Pharma
+    case lly = "LLY"
+    // Power / Utilities
+    case vst = "VST"
+    case ceg = "CEG"
 
     var displayName: String {
         AssetRiskConfig.forCoin(rawValue)?.displayName

@@ -700,6 +700,16 @@ struct AssetRiskConfig {
     static let onds = AssetRiskConfig(stock: "ONDS", originDate: safeDate(year: 2020, month: 12, day: 4), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Ondas Holdings")
     static let dgxx = AssetRiskConfig(stock: "DGXX", originDate: safeDate(year: 2021, month: 1, day: 8), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "Digimarc")
 
+    // Healthcare / Pharma
+    /// Eli Lilly — mature mega-cap pharma; long price history, so tight bounds + high confidence.
+    static let lly = AssetRiskConfig(stock: "LLY", originDate: safeDate(year: 1972, month: 1, day: 3), deviationBounds: (low: -0.5, high: 0.5), confidenceLevel: 9, displayName: "Eli Lilly")
+
+    // Power / Utilities
+    /// Vistra — NYSE debut 10 May 2017 after the Energy Future Holdings restructuring.
+    static let vst = AssetRiskConfig(stock: "VST", originDate: safeDate(year: 2017, month: 5, day: 10), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 5, displayName: "Vistra")
+    /// Constellation Energy — regular-way trading began 2 Feb 2022 after the Exelon spin-off.
+    static let ceg = AssetRiskConfig(stock: "CEG", originDate: safeDate(year: 2022, month: 2, day: 2), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 4, displayName: "Constellation Energy")
+
     // MARK: - All Configs
 
     /// All supported crypto assets
@@ -735,7 +745,11 @@ struct AssetRiskConfig {
         // AI / Quantum
         .qbts, .nbis, .nuai, .sidu,
         // Real Estate / Fintech / Other
-        .open, .onds, .dgxx
+        .open, .onds, .dgxx,
+        // Healthcare / Pharma
+        .lly,
+        // Power / Utilities
+        .vst, .ceg
     ]
 
     /// All supported assets (crypto + stocks)
