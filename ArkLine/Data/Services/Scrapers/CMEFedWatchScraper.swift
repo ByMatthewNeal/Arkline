@@ -1,166 +1,109 @@
 import Foundation
 
-// MARK: - CME FedWatch Scraper
-/// Provides Fed rate probability data with live rate from FMP API
-/// Probabilities are estimated — future integration with CME FedWatch API ($25/mo) planned
+// MARK: - Fed Watch Data Source
+/// Reads REAL Fed rate probabilities computed server-side from 30-Day Fed Funds
+/// futures (the `fed_watch` key in `market_data_cache`, written by the
+/// `refresh-market-extras` edge function using CME's published methodology).
+///
+/// This used to return hardcoded probabilities baked into the source ("Jul 29:
+/// 89.3% hold, 10.7% cut, 0% hike"), which meant the app confidently showed rate
+/// CUTS while the market was actually pricing HIKES. Never reintroduce estimates
+/// here — if the real data is unavailable we surface an error instead of
+/// inventing numbers.
+///
+/// Reading the same server-computed cache the web dashboard reads also guarantees
+/// iOS and web can never disagree.
 @MainActor
 final class CMEFedWatchScraper {
 
-    // Fallback rate if FMP API is unavailable
-    private static let fallbackFedFundsRate: Double = 3.625 // 3.50-3.75% range midpoint as of Mar 2026
-
-    // Cached live rate (refreshed once per session)
-    private var cachedLiveRate: Double?
-
     nonisolated init() {}
 
-    // MARK: - Public Methods
+    // MARK: - Public
 
     func fetchFedWatchMeetings() async throws -> [FedWatchData] {
-        let rate = await fetchLiveFedFundsRate()
-        let meetings = generateEstimatedProbabilities(currentRate: rate)
-        logDebug("FedWatch: Generated \(meetings.count) meetings (rate: \(rate)%)", category: .network)
+        guard SupabaseManager.shared.isConfigured else {
+            throw AppError.custom(message: "Fed rate data is unavailable")
+        }
+
+        let rows: [CacheRow] = try await SupabaseManager.shared.database
+            .from(SupabaseTable.marketDataCache.rawValue)
+            .select("data")
+            .eq("key", value: "fed_watch")
+            .limit(1)
+            .execute()
+            .value
+
+        guard let payload = rows.first?.data, !payload.meetings.isEmpty else {
+            throw AppError.custom(message: "Fed rate probabilities unavailable")
+        }
+
+        let meetings = payload.meetings.compactMap { m -> FedWatchData? in
+            guard let date = Self.parseDate(m.meetingDate) else { return nil }
+
+            // Server stores cumulative probabilities as percentages (0-100).
+            // The UI sums by `change` sign, so three buckets is all it needs.
+            let cut = (m.cutProbability ?? 0) / 100
+            let hold = (m.holdProbability ?? 0) / 100
+            let hike = (m.hikeProbability ?? 0) / 100
+
+            return FedWatchData(
+                meetingDate: date,
+                currentRate: payload.rate,
+                probabilities: [
+                    RateProbability(targetRate: payload.rate - 0.25, change: -25, probability: cut),
+                    RateProbability(targetRate: payload.rate, change: 0, probability: hold),
+                    RateProbability(targetRate: payload.rate + 0.25, change: 25, probability: hike)
+                ],
+                lastUpdated: Date()
+            )
+        }
+
+        guard !meetings.isEmpty else {
+            throw AppError.custom(message: "Fed rate probabilities unavailable")
+        }
+
+        logDebug("FedWatch: loaded \(meetings.count) meetings from server (rate: \(payload.rate)%)", category: .network)
         return meetings
     }
 
     func fetchFedWatchData() async throws -> FedWatchData {
         let meetings = try await fetchFedWatchMeetings()
-        guard let first = meetings.first else {
-            throw AppError.invalidResponse
-        }
+        guard let first = meetings.first else { throw AppError.invalidResponse }
         return first
     }
 
-    // MARK: - Live Fed Funds Rate
+    // MARK: - Decoding
 
-    /// Fetch the current Fed Funds rate from FMP, with caching and fallback
-    private func fetchLiveFedFundsRate() async -> Double {
-        // Return cached value if available
-        if let cached = cachedLiveRate { return cached }
+    private struct CacheRow: Decodable {
+        let data: FedWatchPayload?
+    }
 
-        do {
-            let rate = try await FMPService.shared.fetchFederalFundsRate()
-            cachedLiveRate = rate
-            logDebug("FedWatch: Live Fed Funds rate from FMP: \(rate)%", category: .network)
-            return rate
-        } catch {
-            logDebug("FedWatch: FMP rate fetch failed, using fallback \(Self.fallbackFedFundsRate)%: \(error)", category: .network)
-            return Self.fallbackFedFundsRate
+    private struct FedWatchPayload: Decodable {
+        let rate: Double
+        let meetings: [MeetingRow]
+    }
+
+    private struct MeetingRow: Decodable {
+        let meetingDate: String
+        let cutProbability: Double?
+        let holdProbability: Double?
+        let hikeProbability: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case meetingDate = "meeting_date"
+            case cutProbability = "cut_probability"
+            case holdProbability = "hold_probability"
+            case hikeProbability = "hike_probability"
         }
     }
 
-    // MARK: - Estimated Probabilities
-
-    /// Generate estimated Fed rate probabilities based on upcoming FOMC meetings
-    /// These are reasonable estimates - actual probabilities change based on economic data
-    private func generateEstimatedProbabilities(currentRate: Double) -> [FedWatchData] {
-        let calendar = Calendar.current
-        let today = Date()
-
-        logDebug("FedWatch: Today is \(today)", category: .network)
-        logDebug("FedWatch: Year is \(calendar.component(.year, from: today))", category: .network)
-
-        // 2026 FOMC Meeting Dates (decision day = second day of 2-day meeting)
-        // Source: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
-        let fomcDates: [(month: Int, day: Int)] = [
-            (1, 28),   // Jan 27-28
-            (3, 18),   // Mar 17-18
-            (4, 29),   // Apr 28-29
-            (6, 17),   // Jun 16-17
-            (7, 29),   // Jul 28-29
-            (9, 16),   // Sep 15-16
-            (10, 28),  // Oct 27-28
-            (12, 9)    // Dec 8-9
-        ]
-
-        var meetings: [FedWatchData] = []
-        let year = calendar.component(.year, from: today)
-
-        var futureIndex = 0
-        for (_, dateInfo) in fomcDates.enumerated() {
-            guard let meetingDate = calendar.date(from: DateComponents(
-                year: year,
-                month: dateInfo.month,
-                day: dateInfo.day
-            )) else { continue }
-
-            // Include today's meeting (keep visible all day) and future meetings
-            guard Calendar.current.isDateInToday(meetingDate) || meetingDate > today else { continue }
-
-            // Generate probabilities based on position among remaining meetings
-            let probabilities = generateProbabilitiesForMeeting(index: futureIndex, totalMeetings: fomcDates.count, currentRate: currentRate)
-            futureIndex += 1
-
-            meetings.append(FedWatchData(
-                meetingDate: meetingDate,
-                currentRate: currentRate,
-                probabilities: probabilities,
-                lastUpdated: today
-            ))
-
-            // Show up to 6 upcoming meetings
-            if meetings.count >= 6 { break }
-        }
-
-        return meetings
-    }
-
-    private func generateProbabilitiesForMeeting(index: Int, totalMeetings: Int, currentRate: Double) -> [RateProbability] {
-        // Probabilities based on CME FedWatch data as of 2026-05-02
-        // Current target rate: 350-375 bps (3.50-3.75%)
-        var holdProb: Double
-        var cutProb: Double
-        var hikeProb: Double
-
-        if index == 0 {
-            // Jun 17: 93.3% hold, 6.7% cut, 0% hike
-            holdProb = 0.933
-            cutProb = 0.067
-            hikeProb = 0.0
-        } else if index == 1 {
-            // Jul 29: 89.3% hold, 10.7% cut, 0% hike
-            holdProb = 0.893
-            cutProb = 0.107
-            hikeProb = 0.0
-        } else if index == 2 {
-            // Sep 16: 85.5% hold, 14.5% cut, 0% hike
-            holdProb = 0.855
-            cutProb = 0.145
-            hikeProb = 0.0
-        } else if index == 3 {
-            // Oct 28: estimate
-            holdProb = 0.82
-            cutProb = 0.18
-            hikeProb = 0.0
-        } else {
-            // Dec 9: estimate
-            holdProb = 0.78
-            cutProb = 0.22
-            hikeProb = 0.0
-        }
-
-        // Normalize to 100%
-        let total = holdProb + cutProb + hikeProb
-        holdProb /= total
-        cutProb /= total
-        hikeProb /= total
-
-        return [
-            RateProbability(
-                targetRate: currentRate - 0.25,
-                change: -25,
-                probability: cutProb
-            ),
-            RateProbability(
-                targetRate: currentRate,
-                change: 0,
-                probability: holdProb
-            ),
-            RateProbability(
-                targetRate: currentRate + 0.25,
-                change: 25,
-                probability: hikeProb
-            )
-        ]
+    /// `meeting_date` is a plain "YYYY-MM-DD" string.
+    private static func parseDate(_ s: String) -> Date? {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: s)
     }
 }
