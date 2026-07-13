@@ -159,6 +159,12 @@ class HomeViewModel {
     // Model Portfolio Updates
     var latestPortfolioTrade: ModelPortfolioTrade?
     var followedPortfolioName: String?
+    /// Current positioning of the displayed model portfolio (allocation + signals),
+    /// so the Home widget can show "where the strategy stands" even when no
+    /// rebalance happened recently.
+    var followedPortfolioNav: ModelPortfolioNav?
+    /// All strategies, for the widget's portfolio picker
+    var modelPortfolios: [ModelPortfolio] = []
     private let modelPortfolioService: ModelPortfolioServiceProtocol = ServiceContainer.shared.modelPortfolioService
 
     // Market Summary
@@ -1210,40 +1216,8 @@ class HomeViewModel {
             }
         }
 
-        // Fetch latest model portfolio trade (followed strategy, or most recent from any)
-        Task {
-            do {
-                let portfolios = try await self.modelPortfolioService.fetchPortfolios()
-                guard !portfolios.isEmpty else { return }
-
-                let followed = UserDefaults.standard.string(forKey: Constants.UserDefaults.followedModelPortfolio)
-
-                // If following a specific strategy, show that one; otherwise show most recent from any
-                let targetPortfolios = followed != nil
-                    ? portfolios.filter { $0.strategy == followed }
-                    : portfolios
-
-                // Find the most recent trade across target portfolios
-                var latestTrade: ModelPortfolioTrade?
-                var latestName: String?
-                for portfolio in targetPortfolios {
-                    let trades = try await self.modelPortfolioService.fetchTrades(portfolioId: portfolio.id, limit: 1)
-                    if let trade = trades.first {
-                        if latestTrade == nil || trade.tradeDate > (latestTrade?.tradeDate ?? "") {
-                            latestTrade = trade
-                            latestName = portfolio.name
-                        }
-                    }
-                }
-
-                await MainActor.run {
-                    self.latestPortfolioTrade = latestTrade
-                    self.followedPortfolioName = latestName
-                }
-            } catch {
-                logWarning("Model portfolio trade fetch failed: \(error.localizedDescription)", category: .network)
-            }
-        }
+        // Fetch model portfolio state for the Home widget
+        Task { await self.loadModelPortfolioUpdate() }
 
         // Fetch Rainbow Chart data (needs BTC price) in background
         if btcPrice > 0 {
@@ -1507,6 +1481,72 @@ class HomeViewModel {
         } catch {
             logError("DXY history fetch failed: \(error.localizedDescription)", category: .network)
             return []
+        }
+    }
+
+    // MARK: - Model Portfolio Widget
+
+    /// Loads everything the Home widget needs: the chosen strategy's latest
+    /// rebalance AND its current positioning snapshot (allocation + signals),
+    /// so the card can render even when no trade happened recently. Falls back
+    /// to the most recently rebalanced strategy when the user follows none.
+    func loadModelPortfolioUpdate() async {
+        do {
+            let portfolios = try await modelPortfolioService.fetchPortfolios()
+            guard !portfolios.isEmpty else { return }
+            modelPortfolios = portfolios.sorted { $0.name < $1.name }
+
+            let followed = UserDefaults.standard.string(forKey: Constants.UserDefaults.followedModelPortfolio)
+
+            var target: ModelPortfolio?
+            var latestTrade: ModelPortfolioTrade?
+
+            if let followed, let match = portfolios.first(where: { $0.strategy == followed }) {
+                target = match
+                latestTrade = try await modelPortfolioService.fetchTrades(portfolioId: match.id, limit: 1).first
+            } else {
+                // No explicit choice — surface whichever strategy rebalanced most recently
+                for portfolio in portfolios {
+                    if let trade = try await modelPortfolioService.fetchTrades(portfolioId: portfolio.id, limit: 1).first,
+                       trade.tradeDate > (latestTrade?.tradeDate ?? "") {
+                        latestTrade = trade
+                        target = portfolio
+                    }
+                }
+                target = target ?? portfolios.first
+            }
+
+            guard let resolved = target else { return }
+            let nav = try? await modelPortfolioService.fetchLatestNav(portfolioId: resolved.id)
+
+            latestPortfolioTrade = latestTrade
+            followedPortfolioName = resolved.name
+            followedPortfolioNav = nav
+        } catch {
+            logWarning("Model portfolio widget fetch failed: \(error.localizedDescription)", category: .network)
+        }
+    }
+
+    /// Widget picker: choosing a strategy here IS the app's single "Track"
+    /// preference — same UserDefaults key and profiles sync that the detail
+    /// view's Track button uses, so rebalance pushes follow the choice too.
+    func setFollowedModelPortfolio(_ strategy: String?) {
+        if let strategy {
+            UserDefaults.standard.set(strategy, forKey: Constants.UserDefaults.followedModelPortfolio)
+        } else {
+            UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.followedModelPortfolio)
+        }
+
+        struct FollowedPortfolioUpdate: Encodable { let followed_model_portfolio: String? }
+        Task {
+            if let userId = try? await SupabaseManager.shared.client.auth.session.user.id {
+                try? await SupabaseManager.shared.client
+                    .from("profiles")
+                    .update(FollowedPortfolioUpdate(followed_model_portfolio: strategy))
+                    .eq("id", value: userId.uuidString)
+                    .execute()
+            }
+            await loadModelPortfolioUpdate()
         }
     }
 

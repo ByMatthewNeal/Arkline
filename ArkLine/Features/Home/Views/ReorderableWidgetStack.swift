@@ -151,12 +151,9 @@ struct ReorderableWidgetStack: View {
         case .marketDeck:
             return viewModel.latestDeck != nil
         case .modelPortfolioUpdate:
-            guard let trade = viewModel.latestPortfolioTrade else { return false }
-            // Show for 3 days so users don't miss it
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            guard let tradeDate = formatter.date(from: trade.tradeDate) else { return true }
-            return Date().timeIntervalSince(tradeDate) < 3 * 24 * 3600
+            // Always-on when we have anything to say: a recent trade leads the
+            // card, otherwise it shows the strategy's current positioning.
+            return viewModel.followedPortfolioNav != nil || viewModel.latestPortfolioTrade != nil
         }
     }
 
@@ -331,8 +328,17 @@ struct ReorderableWidgetStack: View {
             }
 
         case .modelPortfolioUpdate:
-            if let trade = viewModel.latestPortfolioTrade, let name = viewModel.followedPortfolioName {
-                ModelPortfolioUpdateCard(trade: trade, portfolioName: name)
+            if let name = viewModel.followedPortfolioName {
+                ModelPortfolioUpdateCard(
+                    trade: viewModel.latestPortfolioTrade,
+                    nav: viewModel.followedPortfolioNav,
+                    portfolioName: name,
+                    portfolios: viewModel.modelPortfolios,
+                    followedStrategy: UserDefaults.standard.string(forKey: Constants.UserDefaults.followedModelPortfolio),
+                    onSelectStrategy: { strategy in
+                        viewModel.setFollowedModelPortfolio(strategy)
+                    }
+                )
             }
 
         case .rotationGauge:

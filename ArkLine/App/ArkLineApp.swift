@@ -353,6 +353,16 @@ class AppState: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.widgetConfiguration),
            var config = try? JSONDecoder().decode(WidgetConfiguration.self, from: data) {
             migrateWidgetConfiguration(&config)
+
+            // One-time introduction of the Model Portfolio widget as a default:
+            // existing users' saved configs predate it being default-on. Enable it
+            // once (flag-guarded), after which their Customize choice always sticks.
+            let introFlag = "arkline_did_introduce_model_portfolio_widget"
+            if !UserDefaults.standard.bool(forKey: introFlag) {
+                config.setWidgetEnabled(.modelPortfolioUpdate, enabled: true)
+                UserDefaults.standard.set(true, forKey: introFlag)
+            }
+
             widgetConfiguration = config
             // Save migrated config
             setWidgetConfiguration(config)
@@ -361,8 +371,9 @@ class AppState: ObservableObject {
             // pre-rebalance layout (Fear & Greed + Macro Dashboard stay visible) and add
             // the Market Ticker. The leaner `defaultEnabled` applies to fresh installs only.
             let legacyConfig = WidgetConfiguration(
-                enabledWidgets: Set([.marketTicker, .upcomingEvents, .aiMarketSummary, .marketMovers,
-                                     .fearGreedIndex, .macroDashboard, .marketDeck, .assetRiskLevel, .dailyNews]),
+                enabledWidgets: Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary,
+                                     .marketMovers, .fearGreedIndex, .macroDashboard, .marketDeck,
+                                     .assetRiskLevel, .dailyNews]),
                 widgetOrder: HomeWidgetType.defaultOrder,
                 widgetSizes: HomeWidgetType.defaultSizes
             )

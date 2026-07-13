@@ -179,9 +179,10 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    /// Default order for widgets
+    /// Default order for widgets. Model Portfolio sits right under Upcoming
+    /// Events — "what the strategy is doing" is front-page content.
     static var defaultOrder: [HomeWidgetType] {
-        [.marketTicker, .modelPortfolioUpdate, .marketDeck, .upcomingEvents, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize).
@@ -189,7 +190,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Market Ticker as the always-on bridge. Fear & Greed and Macro Dashboard remain one
     /// toggle away (their headline values scroll in the ticker).
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.marketTicker, .upcomingEvents, .aiMarketSummary, .marketMovers, .marketDeck, .assetRiskLevel, .dailyNews])
+        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .marketMovers, .marketDeck, .assetRiskLevel, .dailyNews])
     }
 
     /// Default widget sizes (compact where appropriate to keep the home screen tight)
