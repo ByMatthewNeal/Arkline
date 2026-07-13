@@ -85,15 +85,38 @@ struct ModelPortfolioUpdateCard: View {
         }
     }
 
-    private func allocationColor(for asset: String) -> Color {
-        switch asset.uppercased() {
-        case "BTC": return Color(hex: "F7931A")
-        case "ETH": return Color(hex: "8A92B2")
-        case "SOL": return Color(hex: "9945FF")
-        case "CASH": return Color(hex: "4CAF50").opacity(0.7)
-        case "GOLD": return Color(hex: "FFD700").opacity(0.85)
-        default: return AppColors.accent
+    /// Stable per-asset colors: known assets get brand colors, everything else
+    /// draws from a distinct palette by position — no two adjacent donut
+    /// segments share a color (AERO/ZEC/UNI were all accent-blue before).
+    private var assetColors: [String: Color] {
+        let fallback: [Color] = [
+            Color(hex: "3B82F6"), Color(hex: "14B8A6"), Color(hex: "EC4899"),
+            Color(hex: "6366F1"), Color(hex: "06B6D4"), Color(hex: "A3E635"),
+        ]
+        var map: [String: Color] = [:]
+        var fallbackIndex = 0
+        for item in currentAllocations {
+            switch item.asset.uppercased() {
+            case "BTC": map[item.asset] = Color(hex: "F7931A")
+            case "ETH": map[item.asset] = Color(hex: "8A92B2")
+            case "SOL": map[item.asset] = Color(hex: "9945FF")
+            case "CASH": map[item.asset] = Color(hex: "4CAF50").opacity(0.75)
+            case "GOLD": map[item.asset] = Color(hex: "FFD700").opacity(0.85)
+            default:
+                map[item.asset] = fallback[fallbackIndex % fallback.count]
+                fallbackIndex += 1
+            }
         }
+        return map
+    }
+
+    private func allocationColor(for asset: String) -> Color {
+        assetColors[asset] ?? AppColors.accent
+    }
+
+    /// Backend trigger strings carry raw enum values ("mild_bearish") — humanize
+    private func humanizedTrigger(_ trigger: String) -> String {
+        trigger.replacingOccurrences(of: "_", with: " ")
     }
 
     private func signalColor(_ signal: String?) -> Color {
@@ -180,8 +203,7 @@ struct ModelPortfolioUpdateCard: View {
 
                     // Current positioning — always shown when available
                     if !currentAllocations.isEmpty {
-                        allocationBar
-                        allocationLegend
+                        allocationDonutRow
                     }
 
                     // Signal chips
@@ -191,7 +213,7 @@ struct ModelPortfolioUpdateCard: View {
 
                     // Older rebalance becomes a footnote instead of vanishing
                     if !isRecentTrade, let trade {
-                        Text("Last rebalance \(tradeAge.lowercased()): \(trade.trigger)")
+                        Text("Last rebalance \(tradeAge.lowercased()): \(humanizedTrigger(trade.trigger))")
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
                             .lineLimit(2)
@@ -224,7 +246,7 @@ struct ModelPortfolioUpdateCard: View {
 
     @ViewBuilder
     private func changeAlertContent(_ trade: ModelPortfolioTrade) -> some View {
-        Text(trade.trigger)
+        Text(humanizedTrigger(trade.trigger))
             .font(AppFonts.caption12Medium)
             .foregroundColor(textPrimary.opacity(0.85))
 
@@ -257,33 +279,59 @@ struct ModelPortfolioUpdateCard: View {
 
     // MARK: - Current Positioning Mode
 
-    private var allocationBar: some View {
-        GeometryReader { geo in
-            HStack(spacing: 2) {
+    /// Mini donut + weights listed beside it — mirrors how allocations are
+    /// presented in the strategy detail view and the published pie charts.
+    private var allocationDonutRow: some View {
+        HStack(spacing: 16) {
+            allocationDonut
+                .frame(width: 76, height: 76)
+
+            VStack(alignment: .leading, spacing: 5) {
                 ForEach(currentAllocations, id: \.asset) { item in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(allocationColor(for: item.asset))
-                        .frame(width: max(4, geo.size.width * item.pct / 100))
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(allocationColor(for: item.asset))
+                            .frame(width: 7, height: 7)
+
+                        Text(item.asset)
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(textPrimary)
+
+                        Spacer(minLength: 8)
+
+                        Text("\(item.pct, specifier: "%.0f")%")
+                            .font(AppFonts.caption12Medium)
+                            .foregroundColor(AppColors.textSecondary)
+                            .monospacedDigit()
+                    }
                 }
             }
         }
-        .frame(height: 8)
+        .padding(.vertical, 2)
     }
 
-    private var allocationLegend: some View {
-        HStack(spacing: 10) {
-            ForEach(currentAllocations.prefix(5), id: \.asset) { item in
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(allocationColor(for: item.asset))
-                        .frame(width: 6, height: 6)
-                    Text("\(item.asset) \(item.pct, specifier: "%.0f")%")
-                        .font(AppFonts.caption12)
-                        .foregroundColor(AppColors.textSecondary)
-                }
-            }
-            Spacer(minLength: 0)
+    private var allocationDonut: some View {
+        let total = currentAllocations.reduce(0) { $0 + $1.pct }
+        var running: Double = 0
+        let segments: [(asset: String, start: Double, end: Double)] = currentAllocations.map { item in
+            let start = running / max(total, 1)
+            running += item.pct
+            let end = running / max(total, 1)
+            return (asset: item.asset, start: start, end: end)
         }
+
+        return ZStack {
+            ForEach(segments, id: \.asset) { segment in
+                Circle()
+                    .trim(from: segment.start, to: segment.end)
+                    .stroke(
+                        allocationColor(for: segment.asset),
+                        style: StrokeStyle(lineWidth: 12, lineCap: .butt)
+                    )
+            }
+        }
+        .padding(6)
+        .rotationEffect(.degrees(-90))
     }
 
     @ViewBuilder
