@@ -119,6 +119,15 @@ struct ModelPortfolioUpdateCard: View {
         trigger.replacingOccurrences(of: "_", with: " ")
     }
 
+    /// "2026-07-13" → "July 13, 2026"
+    private func humanDate(_ dateString: String) -> String {
+        guard let date = tradeDateParsed(dateString) else { return dateString }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d, yyyy"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter.string(from: date)
+    }
+
     private func signalColor(_ signal: String?) -> Color {
         switch signal?.lowercased() {
         case "bullish": return AppColors.success
@@ -191,7 +200,7 @@ struct ModelPortfolioUpdateCard: View {
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.accent)
                         } else if let nav {
-                            Text("As of \(nav.navDate)")
+                            Text("As of \(humanDate(nav.navDate))")
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textSecondary)
                         }
