@@ -401,6 +401,49 @@ verify_jwt = false
 [functions.generate-reel-script]
 verify_jwt = false
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Remaining cron-invoked functions. pg_cron calls these with x-cron-secret and
+# NO JWT, so verify_jwt MUST stay false or the gateway 401s every run and the
+# job dies SILENTLY. `supabase functions deploy` defaults to true, which is how
+# signal-monitor (and then compute-rotation-signals) got broken. Pinned here so
+# a deploy can't reintroduce it.
+# ─────────────────────────────────────────────────────────────────────────────
+[functions.compute-rotation-signals]
+verify_jwt = false
+
+[functions.compute-positioning-signals]
+verify_jwt = false
+
+[functions.compute-market-breadth]
+verify_jwt = false
+
+[functions.compute-model-portfolios]
+verify_jwt = false
+
+[functions.compute-signal-analytics]
+verify_jwt = false
+
+[functions.publish-scheduled]
+verify_jwt = false
+
+[functions.curate-news]
+verify_jwt = false
+
+[functions.collect-trends]
+verify_jwt = false
+
+[functions.sync-crypto-prices]
+verify_jwt = false
+
+[functions.sync-economic-events]
+verify_jwt = false
+
+[functions.sync-global-liquidity]
+verify_jwt = false
+
+[functions.health-check]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
