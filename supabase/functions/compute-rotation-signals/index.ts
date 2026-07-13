@@ -100,9 +100,15 @@ const SECTORS: SectorDef[] = [
     isDefensive: false,
   },
   {
+    id: "healthcare_pharma",
+    name: "Healthcare & Pharma",
+    stocks: ["LLY", "JNJ", "MRK", "ABBV", "UNH"],
+    isDefensive: true,
+  },
+  {
     id: "defensives",
     name: "Defensives",
-    stocks: ["KO", "PG", "JNJ", "MRK", "LLY", "WMT", "COST", "XOM", "CVX", "LMT"],
+    stocks: ["KO", "PG", "WMT", "COST", "XOM", "CVX", "LMT"],
     isDefensive: true,
   },
 ]

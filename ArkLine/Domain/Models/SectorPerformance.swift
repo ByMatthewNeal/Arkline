@@ -46,6 +46,7 @@ struct SectorPerformance: Codable, Identifiable {
         case "space_quantum": return "sparkles"
         case "rare_earths": return "mountain.2"
         case "industrials": return "gearshape.2"
+        case "healthcare_pharma": return "cross.case"
         case "defensives": return "shield.checkered"
         default: return "chart.bar"
         }
