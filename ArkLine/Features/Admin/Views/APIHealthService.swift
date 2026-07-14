@@ -122,24 +122,11 @@ actor APIHealthService {
                     return (false, "No price data")
                 }
             ),
-            HealthCheck(
-                name: "FMP",
-                category: .pricing,
-                url: "https://financialmodelingprep.com/stable/quote?symbol=AAPL&apikey=\(Constants.API.fmpAPIKey ?? "")",
-                method: "GET",
-                headers: [:],
-                validateResponse: { data, response in
-                    guard response.statusCode == 200 else { return (false, "HTTP \(response.statusCode)") }
-                    if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]], !arr.isEmpty {
-                        return (true, nil)
-                    }
-                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       json["Error Message"] != nil {
-                        return (false, "Invalid API key")
-                    }
-                    return (false, "No data")
-                }
-            ),
+            // NOTE: FMP is intentionally NOT checked here. In release builds
+            // Constants.API.fmpAPIKey is nil by design (keys are server-side only),
+            // so a direct call sent `apikey=` empty and always came back 401 —
+            // a false alarm, since the app reaches FMP through the api-proxy.
+            // It's checked via that real path in `runFMPCheck()` instead.
 
             // Macro & Economics
             HealthCheck(
@@ -348,7 +335,11 @@ actor APIHealthService {
     // MARK: - API Checks
 
     private func runAPIChecks() async -> [APIHealthResult] {
-        await withTaskGroup(of: APIHealthResult.self) { group in
+        // FMP goes through the api-proxy (see runFMPCheck), everything else is a
+        // direct keyless endpoint.
+        async let fmp = runFMPCheck()
+
+        let others = await withTaskGroup(of: APIHealthResult.self) { group -> [APIHealthResult] in
             for check in apiChecks {
                 group.addTask {
                     await self.runAPICheck(check)
@@ -360,6 +351,49 @@ actor APIHealthService {
                 results.append(result)
             }
             return results
+        }
+
+        return others + [await fmp]
+    }
+
+    /// FMP is reached through the api-proxy edge function, which holds the key
+    /// server-side. Release builds have `Constants.API.fmpAPIKey == nil` on
+    /// purpose, so hitting FMP directly would send an empty key and always report
+    /// a bogus 401. Checking the proxy tests the path the app actually uses.
+    private func runFMPCheck() async -> APIHealthResult {
+        let start = Date()
+        do {
+            let data = try await APIProxy.shared.request(
+                service: .fmp,
+                path: "quote",
+                queryItems: ["symbol": "AAPL"]
+            )
+            let latency = Int(Date().timeIntervalSince(start) * 1000)
+
+            if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]], !arr.isEmpty {
+                return APIHealthResult(
+                    name: "FMP",
+                    category: .pricing,
+                    status: latency > 5000 ? .degraded : .healthy,
+                    latencyMs: latency,
+                    detail: nil
+                )
+            }
+            return APIHealthResult(
+                name: "FMP",
+                category: .pricing,
+                status: .down,
+                latencyMs: latency,
+                detail: "No data"
+            )
+        } catch {
+            return APIHealthResult(
+                name: "FMP",
+                category: .pricing,
+                status: .down,
+                latencyMs: Int(Date().timeIntervalSince(start) * 1000),
+                detail: error.localizedDescription
+            )
         }
     }
 

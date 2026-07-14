@@ -12,9 +12,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 // ─── RSS Feed URLs ───────────────────────────────────────────────────────────
 
+// Bloomberg retired its public RSS feeds — feeds.bloomberg.com/markets/news.rss
+// and /economics/news.rss both return a hard 404, so every fetch was failing and
+// the curated pool was quietly running on Google News alone. Replaced with feeds
+// verified live (CNBC, Reuters via Google News, MarketWatch).
 const RSS_FEEDS = [
-  { url: "https://feeds.bloomberg.com/markets/news.rss", source: "Bloomberg", feed: "markets" },
-  { url: "https://feeds.bloomberg.com/economics/news.rss", source: "Bloomberg", feed: "economics" },
+  {
+    url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258",
+    source: "CNBC",
+    feed: "markets",
+  },
+  {
+    url: "https://news.google.com/rss/search?q=when:1d+allinurl:reuters.com/markets&hl=en-US&gl=US&ceid=US:en",
+    source: "Reuters",
+    feed: "markets",
+  },
+  {
+    url: "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    source: "MarketWatch",
+    feed: "economics",
+  },
   {
     url: "https://news.google.com/rss/search?q=cryptocurrency+OR+bitcoin+OR+ethereum+OR+crypto+OR+defi&hl=en-US&gl=US&ceid=US:en",
     source: "Google News",

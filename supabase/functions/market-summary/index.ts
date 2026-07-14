@@ -835,12 +835,12 @@ async function enrichPayloadFromServer(
       .eq("key", "crypto_assets_1_100")
       .maybeSingle(),
 
-    // 2. Stock indices + VIX + DXY + Gold + Futures from FMP
-    fmpKey
-      ? fetch(`https://financialmodelingprep.com/api/v3/quote/%5EGSPC,%5EIXIC,%5EVIX,DX-Y.NYB,GC=F,ES=F,NQ=F,YM=F?apikey=${fmpKey}`)
-          .then(r => r.json())
-          .catch(() => [])
-      : Promise.resolve([]),
+    // 2. Stock indices + VIX + DXY + Gold + Futures.
+    // Was FMP `api/v3/quote` (batch) — now a DEAD legacy endpoint returning 403,
+    // which silently stripped equities/VIX/DXY/gold out of the briefing context.
+    // FMP's `stable/batch-quote` is 402 "Restricted" on our plan, so we use Yahoo,
+    // which covers all eight symbols for free and is shaped identically below.
+    fetchYahooQuotes(["^GSPC", "^IXIC", "^VIX", "DX-Y.NYB", "GC=F", "ES=F", "NQ=F", "YM=F"]),
 
     // 3. Fear & Greed Index (free API)
     fetch("https://api.alternative.me/fng/?limit=1")
@@ -1014,12 +1014,14 @@ async function enrichPayloadFromServer(
   // --- Compute VIX z-score from 90-day history (contrarian fear indicator) ---
   if (payload.vixValue != null && fmpKey) {
     try {
+      // v3 `historical-price-full` is dead (403). The stable endpoint returns a
+      // FLAT array (newest-first), not the old `{ historical: [...] }` wrapper.
       const vixHistoryResp = await fetch(
-        `https://financialmodelingprep.com/api/v3/historical-price-full/%5EVIX?timeseries=90&apikey=${fmpKey}`
+        `https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${encodeURIComponent("^VIX")}&apikey=${fmpKey}`
       )
       if (vixHistoryResp.ok) {
         const vixHistoryData = await vixHistoryResp.json()
-        const historicalPrices = vixHistoryData?.historical
+        const historicalPrices = Array.isArray(vixHistoryData) ? vixHistoryData.slice(0, 90) : null
         if (Array.isArray(historicalPrices) && historicalPrices.length >= 20) {
           const closes = historicalPrices.map((d: any) => d.close as number)
           const mean = closes.reduce((a: number, b: number) => a + b, 0) / closes.length
@@ -1052,14 +1054,85 @@ async function enrichPayloadFromServer(
  * Sessions (all ET): Overnight (prev 8PM→4AM), Pre-Market (4AM→9:30AM),
  * Regular (9:30AM→4PM), After-Hours (4PM→8PM).
  */
-async function computeFuturesSessionBreakdown(fmpKey: string): Promise<string | null> {
-  // Fetch last 48 hours of 1-hour candles for ES (most representative)
-  const resp = await fetch(
-    `https://financialmodelingprep.com/api/v3/historical-chart/1hour/ES=F?apikey=${fmpKey}`
-  )
-  if (!resp.ok) return null
+/**
+ * Quotes for index/futures symbols from Yahoo, shaped exactly like the old FMP
+ * v3 batch-quote response ({ symbol, price, changesPercentage }) so all the
+ * downstream parsing stays unchanged.
+ *
+ * range=1d so `chartPreviousClose` is YESTERDAY's close — the correct daily
+ * change reference. (A 5d range makes it a ~6-day-old close and flips the sign.)
+ */
+async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
+  const out: any[] = []
+  await Promise.all(symbols.map(async (sym) => {
+    try {
+      const url =
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`
+      const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } })
+      if (!res.ok) return
+      const json = await res.json()
+      const meta = json?.chart?.result?.[0]?.meta
+      if (!meta) return
+      const price = Number(meta.regularMarketPrice)
+      const prev = Number(meta.chartPreviousClose ?? meta.previousClose ?? price)
+      if (!Number.isFinite(price) || !Number.isFinite(prev) || prev === 0) return
+      out.push({
+        symbol: sym,
+        price,
+        changesPercentage: ((price - prev) / prev) * 100,
+      })
+    } catch (_) { /* skip this symbol */ }
+  }))
+  return out
+}
 
-  const candles = await resp.json()
+/**
+ * Hourly ES=F candles from Yahoo, newest-first, with `date` as an ET wall-clock
+ * string ("2026-07-14 10:00:00"). The session bucketing reads the hour off that
+ * string to decide overnight / pre-market / regular / after-hours.
+ */
+async function fetchESHourlyCandlesET(): Promise<any[] | null> {
+  try {
+    const url =
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent("ES=F")}?interval=1h&range=5d`
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } })
+    if (!res.ok) return null
+    const json = await res.json()
+    const result = json?.chart?.result?.[0]
+    const stamps: number[] = result?.timestamp ?? []
+    const q = result?.indicators?.quote?.[0]
+    if (!Array.isArray(stamps) || !q) return null
+
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/New_York",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false,
+    })
+
+    const out: any[] = []
+    // Walk newest-first to match the shape the old FMP endpoint returned.
+    for (let i = stamps.length - 1; i >= 0; i--) {
+      const open = q.open?.[i]
+      const close = q.close?.[i]
+      if (open == null || close == null) continue
+      // "2026-07-14, 10:00:00" → "2026-07-14 10:00:00"
+      const dateStr = fmt.format(new Date(stamps[i] * 1000)).replace(",", "").trim()
+      out.push({ date: dateStr, open: Number(open), close: Number(close) })
+    }
+    return out.length ? out : null
+  } catch (_) {
+    return null
+  }
+}
+
+async function computeFuturesSessionBreakdown(fmpKey: string): Promise<string | null> {
+  // FMP's v3 `historical-chart` is dead (403) and its stable equivalent returns
+  // an EMPTY array for futures on our plan — so pull the hourly ES candles from
+  // Yahoo instead. `fetchESHourlyCandlesET` emits the same newest-first
+  // { date, open, close } shape with an ET wall-clock date string, which is what
+  // the session bucketing below expects.
+  const candles = await fetchESHourlyCandlesET()
   if (!Array.isArray(candles) || candles.length < 4) return null
 
   // FMP returns candles newest-first with `date` field like "2026-04-01 10:00:00"
