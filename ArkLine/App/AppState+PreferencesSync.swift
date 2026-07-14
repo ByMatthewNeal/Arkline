@@ -31,7 +31,8 @@ extension AppState {
             // Sorted for stable, deterministic encoding (avoids spurious uploads).
             enabledCoreAssets: Array(enabledCoreAssets).sorted { $0.rawValue < $1.rawValue },
             dashboardPresets: dashboardPresets,
-            activePresetId: activePresetId?.uuidString
+            activePresetId: activePresetId?.uuidString,
+            tickerPreferences: tickerPreferences
         )
     }
 
@@ -73,6 +74,9 @@ extension AppState {
         if let idStr = p.activePresetId, let id = UUID(uuidString: idStr) {
             activePresetId = id
             UserDefaults.standard.set(idStr, forKey: Constants.UserDefaults.activePresetId)
+        }
+        if let ticker = p.tickerPreferences {
+            setTickerPreferences(ticker)
         }
     }
 

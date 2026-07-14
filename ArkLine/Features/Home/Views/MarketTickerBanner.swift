@@ -9,12 +9,16 @@ struct MarketTickerBanner: View {
     var viewModel: HomeViewModel
     let onTap: () -> Void
 
+    @EnvironmentObject var appState: AppState
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State private var contentWidth: CGFloat = 0
 
     private let itemSpacing: CGFloat = 24
-    private let scrollSpeed: CGFloat = 30 // points per second
+
+    /// User-configurable scroll speed (points per second), from Customize Home.
+    private var scrollSpeed: CGFloat { CGFloat(appState.tickerPreferences.speed) }
+    private var prefs: TickerPreferences { appState.tickerPreferences }
 
     // MARK: - Ticker items
 
@@ -33,31 +37,33 @@ struct MarketTickerBanner: View {
     private var items: [TickerItem] {
         var stats: [TickerItem] = []
 
-        for symbol in ["BTC", "ETH", "SOL"] {
-            if let asset = viewModel.cachedCryptoAssets.first(where: { $0.symbol.uppercased() == symbol }) {
-                stats.append(.stat(
-                    label: symbol,
-                    value: asset.currentPrice.formatted(.currency(code: "USD").precision(.fractionLength(0))),
-                    change: asset.priceChangePercentage24h
-                ))
+        if prefs.showCryptoPrices {
+            for symbol in ["BTC", "ETH", "SOL"] {
+                if let asset = viewModel.cachedCryptoAssets.first(where: { $0.symbol.uppercased() == symbol }) {
+                    stats.append(.stat(
+                        label: symbol,
+                        value: asset.currentPrice.formatted(.currency(code: "USD").precision(.fractionLength(0))),
+                        change: asset.priceChangePercentage24h
+                    ))
+                }
             }
         }
 
-        if let score = viewModel.compositeRiskScore {
+        if prefs.showRiskScore, let score = viewModel.compositeRiskScore {
             stats.append(.stat(label: "RISK", value: "\(score)", change: nil))
         }
 
-        if let fg = viewModel.fearGreedIndex {
+        if prefs.showFearGreed, let fg = viewModel.fearGreedIndex {
             stats.append(.stat(label: "F&G", value: "\(fg.value) \(fg.classification)", change: nil))
         }
 
-        if let regime = viewModel.currentRegimeResult {
+        if prefs.showRegime, let regime = viewModel.currentRegimeResult {
             stats.append(.stat(label: "REGIME", value: regime.quadrant.rawValue, change: nil))
         }
 
-        let headlines: [TickerItem] = viewModel.newsItems.prefix(3).map {
-            .headline(source: $0.source, title: $0.title)
-        }
+        let headlines: [TickerItem] = prefs.showNews
+            ? viewModel.newsItems.prefix(3).map { .headline(source: $0.source, title: $0.title) }
+            : []
 
         // Alternate: a few stats, then a headline, and so on
         guard !headlines.isEmpty else { return stats }

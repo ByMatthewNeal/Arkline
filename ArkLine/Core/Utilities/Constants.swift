@@ -155,6 +155,7 @@ enum Constants {
         static let lastSyncTimestamp = "lastSyncTimestamp"
         static let widgetConfiguration = "widgetConfiguration"
         static let marketWidgetConfiguration = "marketWidgetConfiguration"
+        static let tickerPreferences = "arkline_ticker_preferences"
         static let selectedNewsTopics = "selectedNewsTopics"
         static let customNewsTopics = "customNewsTopics"
         static let notificationsPrompted = "arkline_notifications_prompted"

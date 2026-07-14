@@ -128,6 +128,12 @@ struct CustomizeHomeView: View {
                     }
                     .padding(.horizontal, 16)
 
+                    // Market Ticker customization — only when the ticker is enabled
+                    if appState.isWidgetEnabled(.marketTicker) {
+                        TickerCustomizationSection()
+                            .padding(.horizontal, 16)
+                    }
+
                     // Reset to defaults
                     Button(action: resetToDefaults) {
                         HStack(spacing: 8) {
@@ -178,6 +184,123 @@ struct CustomizeHomeView: View {
             appState.switchToPreset(id: nil)
             expandedWidget = nil
         }
+    }
+}
+
+// MARK: - Ticker Customization Section
+/// Lets the user choose which categories appear in the Home market ticker and how
+/// fast it scrolls. Bound to `appState.tickerPreferences` (persisted + cloud-synced).
+private struct TickerCustomizationSection: View {
+    @EnvironmentObject var appState: AppState
+    @Environment(\.colorScheme) var colorScheme
+
+    private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private let rows: [(title: String, icon: String, key: WritableKeyPath<TickerPreferences, Bool>)] = [
+        ("Crypto Prices", "bitcoinsign.circle", \.showCryptoPrices),
+        ("Risk Score", "gauge.medium", \.showRiskScore),
+        ("Fear & Greed", "face.dashed", \.showFearGreed),
+        ("Market Regime", "arrow.triangle.2.circlepath", \.showRegime),
+        ("News Headlines", "newspaper", \.showNews),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Market Ticker")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(textPrimary.opacity(0.5))
+                .textCase(.uppercase)
+                .tracking(0.8)
+                .padding(.horizontal, 4)
+
+            // Category toggles
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    Toggle(isOn: toggleBinding(for: row.key)) {
+                        HStack(spacing: 12) {
+                            Image(systemName: row.icon)
+                                .font(.system(size: 15))
+                                .foregroundColor(AppColors.accent)
+                                .frame(width: 24)
+                            Text(row.title)
+                                .font(.system(size: 15))
+                                .foregroundColor(textPrimary)
+                        }
+                    }
+                    .tint(AppColors.accent)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+
+                    if index < rows.count - 1 {
+                        Divider().padding(.leading, 52)
+                    }
+                }
+            }
+            .background(RoundedRectangle(cornerRadius: 16).fill(cardBackground))
+
+            // Speed slider
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Scroll Speed")
+                        .font(.system(size: 15))
+                        .foregroundColor(textPrimary)
+                    Spacer()
+                    Text(speedLabel)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                HStack(spacing: 10) {
+                    Image(systemName: "tortoise")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppColors.textTertiary)
+                    Slider(value: speedBinding,
+                           in: TickerPreferences.minSpeed...TickerPreferences.maxSpeed)
+                        .tint(AppColors.accent)
+                    Image(systemName: "hare")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppColors.textTertiary)
+                }
+            }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 16).fill(cardBackground))
+        }
+    }
+
+    private var speedLabel: String {
+        let s = appState.tickerPreferences.speed
+        switch s {
+        case ..<28: return "Slow"
+        case ..<52: return "Normal"
+        default: return "Fast"
+        }
+    }
+
+    /// Toggle a category, refusing to turn off the last remaining one (the ticker
+    /// would render empty otherwise).
+    private func toggleBinding(for key: WritableKeyPath<TickerPreferences, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { appState.tickerPreferences[keyPath: key] },
+            set: { newValue in
+                var prefs = appState.tickerPreferences
+                prefs[keyPath: key] = newValue
+                guard prefs.hasAnyContent else { return }
+                appState.setTickerPreferences(prefs)
+            }
+        )
+    }
+
+    private var speedBinding: Binding<Double> {
+        Binding(
+            get: { appState.tickerPreferences.speed },
+            set: { newValue in
+                var prefs = appState.tickerPreferences
+                prefs.speed = newValue
+                appState.setTickerPreferences(prefs)
+            }
+        )
     }
 }
 

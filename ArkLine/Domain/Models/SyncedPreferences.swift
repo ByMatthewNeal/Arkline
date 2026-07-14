@@ -14,4 +14,5 @@ struct SyncedPreferences: Codable, Equatable {
     var enabledCoreAssets: [CoreAsset]?
     var dashboardPresets: [DashboardPreset]?
     var activePresetId: String?
+    var tickerPreferences: TickerPreferences?
 }

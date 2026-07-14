@@ -317,6 +317,7 @@ class AppState: ObservableObject {
     @Published var enabledCoreAssets: Set<CoreAsset> = CoreAsset.defaultEnabled
     @Published var dashboardPresets: [DashboardPreset] = []
     @Published var activePresetId: UUID? = nil
+    @Published var tickerPreferences: TickerPreferences = .default
     @Published var didJustSignOut = false
 
     /// Tracks in-flight refresh so rapid foreground/background cycling
@@ -394,6 +395,12 @@ class AppState: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: "enabledCoreAssets"),
            let assets = try? JSONDecoder().decode(Set<CoreAsset>.self, from: data) {
             enabledCoreAssets = assets.isEmpty ? CoreAsset.defaultEnabled : assets
+        }
+
+        // Load market ticker preferences
+        if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.tickerPreferences),
+           let prefs = try? JSONDecoder().decode(TickerPreferences.self, from: data) {
+            tickerPreferences = prefs
         }
 
         // Load widget configuration
@@ -523,6 +530,13 @@ class AppState: ObservableObject {
     func setDarkModePreference(_ preference: Constants.DarkModePreference) {
         darkModePreference = preference
         UserDefaults.standard.set(preference.rawValue, forKey: Constants.UserDefaults.darkModePreference)
+    }
+
+    func setTickerPreferences(_ prefs: TickerPreferences) {
+        tickerPreferences = prefs
+        if let data = try? JSONEncoder().encode(prefs) {
+            UserDefaults.standard.set(data, forKey: Constants.UserDefaults.tickerPreferences)
+        }
     }
 
     func setAvatarColorTheme(_ theme: Constants.AvatarColorTheme) {

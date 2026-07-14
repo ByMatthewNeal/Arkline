@@ -79,6 +79,7 @@
 		1F56BE9BEBB55F6E869BB0DE /* PositioningSignalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7AC5A305AA02E255BB13BCD /* PositioningSignalService.swift */; };
 		202A9B1ED05C7A38A7A938DD /* FeatureBacklogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A29B1F3744182F834C1BA3 /* FeatureBacklogView.swift */; };
 		20772E61CE61CD1D9F367125 /* QuestionShareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3398C0AA7860049DBD7C3C4 /* QuestionShareCard.swift */; };
+		20C6B827F8BCCC3C2E3DB60C /* TickerPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34DA357CF50530942C01434F /* TickerPreferences.swift */; };
 		220CD613DA9F07D9C02A9991 /* AllocationPieChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 966F47FAEEC9B46F512706CC /* AllocationPieChart.swift */; };
 		227673D3B03254A206947644 /* TrendChannelChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9826C0F2067E4C92C420B423 /* TrendChannelChart.swift */; };
 		23214E7B8C0194ADDBE2F6CF /* SignalChangeHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 386FE738319D4BF2055D09A9 /* SignalChangeHistoryView.swift */; };
@@ -669,6 +670,7 @@
 		33E08BAA534682CEDE329E97 /* QPSFullGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QPSFullGridView.swift; sourceTree = "<group>"; };
 		3474227A4F36DC0E526EFA67 /* SentimentRegimeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentRegimeDetailView.swift; sourceTree = "<group>"; };
 		34D015A3DD521DAFC105AD4D /* DailyMarketUpdateViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyMarketUpdateViewModel.swift; sourceTree = "<group>"; };
+		34DA357CF50530942C01434F /* TickerPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickerPreferences.swift; sourceTree = "<group>"; };
 		36F9A053EE94F27B45371F78 /* CommunityPost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityPost.swift; sourceTree = "<group>"; };
 		3734A6788EEBE7830A322555 /* APINewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APINewsService.swift; sourceTree = "<group>"; };
 		37AE87A85EDD17313B2F6A20 /* HomeMacroWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeMacroWidgets.swift; sourceTree = "<group>"; };
@@ -1568,6 +1570,7 @@
 				882264A675D38EAA876A42F7 /* SupplyProfitData.swift */,
 				5B8F1C3FAFABE5A978DA028A /* SyncedPreferences.swift */,
 				809EC62EBAD1E6B547403712 /* TechnicalAnalysis.swift */,
+				34DA357CF50530942C01434F /* TickerPreferences.swift */,
 				719FBF6001FF5EAE2DBA0528 /* TradeSignal.swift */,
 				1932000FA607265666E09FA8 /* Transaction.swift */,
 				FBEE2AB1904E9E24D7B1229D /* User.swift */,
@@ -3014,6 +3017,7 @@
 				8DA380AA71E873D49F251944 /* TechnicalScoreCards.swift in Sources */,
 				3E0397C8B637C4F779945ADA /* TechnicalTrendCards.swift in Sources */,
 				033D1DBC97CA548DFC7B6EE3 /* TemplatePickerView.swift in Sources */,
+				20C6B827F8BCCC3C2E3DB60C /* TickerPreferences.swift in Sources */,
 				7E33A3F40162A6EB2BC0F79D /* ToastManager.swift in Sources */,
 				3728AECE54E6D4CEF317A0E3 /* ToastOverlay.swift in Sources */,
 				78F15E09D170B61BD4292FFF /* TodaysEventsWidget.swift in Sources */,
