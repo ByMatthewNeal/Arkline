@@ -169,22 +169,17 @@ function formatDate(d: Date): string {
 }
 
 /**
- * Parse FMP date string as America/New_York timezone.
- * FMP returns "2026-03-11 08:30:00" which is in ET.
+ * Parse the FMP date string. The `stable/economic-calendar` endpoint returns
+ * times in **UTC**, e.g. "2026-07-14 12:30:00" for a CPI print — which is the
+ * standard 8:30 AM ET release.
+ *
+ * This previously assumed the string was Eastern and appended a -04:00/-05:00
+ * offset, which re-converted an already-UTC time and pushed every event 4-5
+ * hours into the future (CPI showed as 12:30 PM ET instead of 8:30 AM ET).
+ * Treat it as UTC and let the clients convert to the viewer's local zone.
  */
 function parseEventDateTime(dateStr: string): string {
-  const isoLike = dateStr.replace(" ", "T")
-
-  // Use Intl to determine if ET is currently EDT (-04:00) or EST (-05:00)
-  const testDate = new Date(isoLike + "Z")
-  const etFormat = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    timeZoneName: "short",
-  }).format(testDate)
-  const isEdt = etFormat.includes("EDT")
-  const offset = isEdt ? "-04:00" : "-05:00"
-
-  return isoLike + offset
+  return dateStr.replace(" ", "T") + "Z"
 }
 
 /**
