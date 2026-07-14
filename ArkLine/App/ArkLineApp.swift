@@ -41,6 +41,14 @@ struct ArkLineApp: App {
                         // Restore cloud-synced dashboard layout + settings on launch.
                         await appState.restorePreferencesFromCloud()
                     }
+                    // Cold-start deep link: if the app was LAUNCHED by a notification
+                    // tap, replay it once the UI's subscribers have mounted so it
+                    // routes exactly like a warm tap. Previously only 'swing_signal'
+                    // had a cold-start path; every other type silently did nothing.
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(800))
+                        replayLaunchNotificationTap()
+                    }
                 }
                 .onOpenURL { url in
                     Task {
@@ -101,6 +109,45 @@ struct ArkLineApp: App {
             }
             // .inactive: intentionally no-op — see the .background comment above.
         }
+    }
+
+    /// Replays a notification tap that LAUNCHED the app (cold start) through the
+    /// same NotificationCenter event a warm tap uses, so every notification type
+    /// deep-links consistently. Runs after a short delay so ContentView's
+    /// `.onReceive` subscribers are mounted. Ignores a stale pending result.
+    /// Types whose tap handler lives at the app root (ContentView `.onReceive`),
+    /// so a mounted subscriber always exists — safe to deliver via a posted event.
+    /// swing_signal / broadcast / rotation_signal are handled by view-local
+    /// subscribers, so their cold-start path stays with `pendingNotificationResult`
+    /// (consumed by those views) — the replay leaves them alone to avoid a regress.
+    private static let rootHandledNotificationTypes: Set<String> = [
+        "briefing", "qps_change", "dca_reminder",
+        "model_portfolio", "sentiment_regime", "market_deck"
+    ]
+
+    @MainActor
+    private func replayLaunchNotificationTap() {
+        let service = BroadcastNotificationService.shared
+        guard let pending = service.pendingNotificationResult,
+              let capturedAt = service.pendingNotificationTime,
+              Date().timeIntervalSince(capturedAt) < 20 else {
+            // Nothing pending, or stale (an old warm tap) — clear so it can't misfire.
+            service.pendingNotificationResult = nil
+            service.pendingNotificationTime = nil
+            return
+        }
+
+        // Only replay root-handled types. Leave view-local ones (swing_signal,
+        // broadcast, rotation_signal) for their own consumers to pick up.
+        guard Self.rootHandledNotificationTypes.contains(pending.type) else { return }
+
+        service.pendingNotificationResult = nil
+        service.pendingNotificationTime = nil
+        NotificationCenter.default.post(
+            name: BroadcastNotificationService.tapNotificationName(for: pending.type),
+            object: nil,
+            userInfo: ["type": pending.type, "id": pending.id]
+        )
     }
 
     /// One-time migration: copy the old DCA reminder key to the new service key.
@@ -847,34 +894,23 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        // Handle notification response
+        // Is the app already running in the foreground? If so, the tap is handled
+        // live by the ContentView subscribers below and the cold-start fallback
+        // isn't needed — clearing it prevents a stale replay on a later launch.
+        let appIsActive = UIApplication.shared.applicationState == .active
+
+        // handleNotificationResponse also stores the result as the cold-start
+        // fallback (pendingNotificationResult), consumed by the launch replay.
         if let result = BroadcastNotificationService.shared.handleNotificationResponse(response) {
-            let notificationName: Notification.Name
-            switch result.type {
-            case "briefing":
-                notificationName = Notification.Name("BriefingNotificationTapped")
-            case "swing_signal":
-                notificationName = Notification.Name("SwingSignalNotificationTapped")
-            case "qps_change":
-                notificationName = Notification.Name("QPSChangeNotificationTapped")
-            case "dca_reminder":
-                notificationName = Notification.Name("DCANotificationTapped")
-            case "model_portfolio":
-                notificationName = Notification.Name("ModelPortfolioNotificationTapped")
-            case "sentiment_regime":
-                notificationName = Notification.Name("SentimentRegimeNotificationTapped")
-            case "market_deck":
-                notificationName = Notification.Name("MarketDeckNotificationTapped")
-            case "rotation_signal":
-                notificationName = Notification.Name("RotationSignalNotificationTapped")
-            default:
-                notificationName = Notification.Name("BroadcastNotificationTapped")
-            }
             NotificationCenter.default.post(
-                name: notificationName,
+                name: BroadcastNotificationService.tapNotificationName(for: result.type),
                 object: nil,
                 userInfo: ["type": result.type, "id": result.id]
             )
+            if appIsActive {
+                BroadcastNotificationService.shared.pendingNotificationResult = nil
+                BroadcastNotificationService.shared.pendingNotificationTime = nil
+            }
         }
 
         // Clear badge

@@ -20,8 +20,28 @@ class BroadcastNotificationService: ObservableObject {
     @Published var notificationStatus: UNAuthorizationStatus = .notDetermined
 
     /// Stores the last notification tap result for cold-start deep linking.
-    /// Views should check this on appear and clear it after handling.
+    /// The app replays this at launch through the same handlers a warm tap uses.
     var pendingNotificationResult: (type: String, id: String)?
+    /// When `pendingNotificationResult` was captured — used to ignore a stale tap
+    /// (e.g. an old warm-tap result) on a much-later cold launch.
+    var pendingNotificationTime: Date?
+
+    /// Single source of truth mapping a notification `type` to the NotificationCenter
+    /// event that routes it. Used by BOTH the live tap handler and the cold-start
+    /// replay so warm and cold taps behave identically.
+    static func tapNotificationName(for type: String) -> Notification.Name {
+        switch type {
+        case "briefing":        return Notification.Name("BriefingNotificationTapped")
+        case "swing_signal":    return Notification.Name("SwingSignalNotificationTapped")
+        case "qps_change":      return Notification.Name("QPSChangeNotificationTapped")
+        case "dca_reminder":    return Notification.Name("DCANotificationTapped")
+        case "model_portfolio": return Notification.Name("ModelPortfolioNotificationTapped")
+        case "sentiment_regime":return Notification.Name("SentimentRegimeNotificationTapped")
+        case "market_deck":     return Notification.Name("MarketDeckNotificationTapped")
+        case "rotation_signal": return Notification.Name("RotationSignalNotificationTapped")
+        default:                return Notification.Name("BroadcastNotificationTapped")
+        }
+    }
 
     // MARK: - UserDefaults Keys
 
@@ -492,13 +512,17 @@ extension BroadcastNotificationService {
             result = (type: "sentiment_regime", id: "")
         case "rotation_signal":
             result = (type: "rotation_signal", id: "")
+        case "market_deck":
+            let deckId = userInfo["id"] as? String ?? userInfo["deck_id"] as? String ?? "latest"
+            result = (type: "market_deck", id: deckId)
         default:
             break
         }
 
-        // Store for cold-start deep linking (views may not be mounted yet)
+        // Store for cold-start deep linking (views may not be mounted yet).
         if let result {
             pendingNotificationResult = result
+            pendingNotificationTime = Date()
         }
 
         return result
