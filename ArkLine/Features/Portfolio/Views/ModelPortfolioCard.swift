@@ -7,6 +7,9 @@ struct ModelPortfolioCard: View {
     @State private var showInfo = false
     @State private var pendingPortfolio: ModelPortfolio?
     @State private var isExpanded = false
+    @State private var rotation: MarketRotation?
+    @State private var showRotationDetail = false
+    private let rotationService = MarketRotationService()
 
     var body: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.md) {
@@ -51,68 +54,60 @@ struct ModelPortfolioCard: View {
                     .foregroundColor(AppColors.textSecondary)
             } else {
                 VStack(spacing: ArkSpacing.sm) {
-                    // Core
-                    if let core = viewModel.corePortfolio {
-                        NavigationLink(destination: ModelPortfolioDetailView(
-                            portfolio: core,
-                            viewModel: viewModel
-                        )) {
-                            portfolioRow(
-                                name: core.name,
-                                returnPct: viewModel.coreReturn,
-                                nav: viewModel.latestCoreNav?.nav,
-                                signal: viewModel.latestCoreNav?.btcSignal,
-                                regime: viewModel.latestCoreNav?.macroRegime,
-                                isFollowed: viewModel.isFollowing(core)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                    // Cross-market rotation strip: which market conditions favor, and why
+                    if let rotation {
+                        rotationStrip(rotation)
                     }
 
-                    Divider()
-                        .background(AppColors.divider(colorScheme))
+                    // Crypto portfolios
+                    if !viewModel.cryptoPortfolios.isEmpty {
+                        sectionLabel("Crypto")
+                        ForEach(viewModel.cryptoPortfolios) { portfolio in
+                            NavigationLink(destination: ModelPortfolioDetailView(
+                                portfolio: portfolio,
+                                viewModel: viewModel
+                            )) {
+                                portfolioRow(
+                                    name: portfolio.name,
+                                    strategy: portfolio.strategy,
+                                    returnPct: viewModel.returnPct(for: portfolio),
+                                    nav: viewModel.latestNav(for: portfolio)?.nav,
+                                    signal: viewModel.latestNav(for: portfolio)?.btcSignal,
+                                    regime: viewModel.latestNav(for: portfolio)?.macroRegime,
+                                    isFollowed: viewModel.isFollowing(portfolio)
+                                )
+                            }
+                            .buttonStyle(.plain)
 
-                    // Edge
-                    if let edge = viewModel.edgePortfolio {
-                        NavigationLink(destination: ModelPortfolioDetailView(
-                            portfolio: edge,
-                            viewModel: viewModel
-                        )) {
-                            portfolioRow(
-                                name: edge.name,
-                                returnPct: viewModel.edgeReturn,
-                                nav: viewModel.latestEdgeNav?.nav,
-                                signal: viewModel.latestEdgeNav?.btcSignal,
-                                regime: viewModel.latestEdgeNav?.macroRegime,
-                                isFollowed: viewModel.isFollowing(edge)
-                            )
+                            Divider()
+                                .background(AppColors.divider(colorScheme))
                         }
-                        .buttonStyle(.plain)
                     }
 
-                    Divider()
-                        .background(AppColors.divider(colorScheme))
+                    // Stock portfolios
+                    if !viewModel.stockPortfolios.isEmpty {
+                        sectionLabel("Stocks")
+                        ForEach(viewModel.stockPortfolios) { portfolio in
+                            NavigationLink(destination: ModelPortfolioDetailView(
+                                portfolio: portfolio,
+                                viewModel: viewModel
+                            )) {
+                                portfolioRow(
+                                    name: portfolio.name,
+                                    strategy: portfolio.strategy,
+                                    returnPct: viewModel.returnPct(for: portfolio),
+                                    nav: viewModel.latestNav(for: portfolio)?.nav,
+                                    signal: nil,
+                                    regime: viewModel.latestNav(for: portfolio)?.macroRegime,
+                                    isFollowed: viewModel.isFollowing(portfolio)
+                                )
+                            }
+                            .buttonStyle(.plain)
 
-                    // Alpha
-                    if let alpha = viewModel.alphaPortfolio {
-                        NavigationLink(destination: ModelPortfolioDetailView(
-                            portfolio: alpha,
-                            viewModel: viewModel
-                        )) {
-                            portfolioRow(
-                                name: alpha.name,
-                                returnPct: viewModel.alphaReturn,
-                                nav: viewModel.latestAlphaNav?.nav,
-                                signal: viewModel.latestAlphaNav?.btcSignal,
-                                regime: viewModel.latestAlphaNav?.macroRegime,
-                                isFollowed: viewModel.isFollowing(alpha)
-                            )
+                            Divider()
+                                .background(AppColors.divider(colorScheme))
                         }
-                        .buttonStyle(.plain)
                     }
-
-                    Divider()
-                        .background(AppColors.divider(colorScheme))
 
                     // SPY Benchmark
                     if let spy = viewModel.latestBenchmark {
@@ -153,6 +148,7 @@ struct ModelPortfolioCard: View {
         )
         .task {
             await viewModel.loadOverview()
+            rotation = try? await rotationService.fetchLatest()
         }
         .sheet(isPresented: $showInfo) {
             ModelPortfolioInfoSheet()
@@ -172,35 +168,155 @@ struct ModelPortfolioCard: View {
     }
 
     private func navigateToStrategy(_ strategy: String) {
-        let portfolio: ModelPortfolio?
-        switch strategy {
-        case "core": portfolio = viewModel.corePortfolio
-        case "edge": portfolio = viewModel.edgePortfolio
-        case "alpha": portfolio = viewModel.alphaPortfolio
-        default: portfolio = viewModel.corePortfolio
-        }
+        let portfolio = viewModel.portfolio(forStrategy: strategy) ?? viewModel.corePortfolio
         if let portfolio {
             pendingPortfolio = portfolio
             appState.pendingModelPortfolioStrategy = nil
         }
     }
 
-    // Portfolio accent colors
-    private static let coreColor = Color(hex: "3369FF")   // Blue
-    private static let edgeColor = Color(hex: "8B5CF6")   // Purple
-    private static let alphaColor = Color(hex: "F97316")  // Orange
+    // Portfolio accent colors (keyed by strategy)
+    private static let strategyColors: [String: Color] = [
+        "core": Color(hex: "3369FF"),        // Blue
+        "edge": Color(hex: "8B5CF6"),        // Purple
+        "alpha": Color(hex: "F97316"),       // Orange
+        "stock_core": Color(hex: "10B981"),  // Green
+        "stock_edge": Color(hex: "14B8A6"),  // Teal
+    ]
     private static let spyColor = Color(hex: "FF9500")    // Amber
 
-    private func portfolioColor(for name: String) -> Color {
-        if name.contains("Core") { return Self.coreColor }
-        if name.contains("Edge") { return Self.edgeColor }
-        if name.contains("Alpha") { return Self.alphaColor }
-        return AppColors.accent
+    private func portfolioColor(forStrategy strategy: String) -> Color {
+        Self.strategyColors[strategy] ?? AppColors.accent
+    }
+
+    // MARK: - Rotation Strip
+
+    /// 30-day return for a market, using the best-known series per asset class
+    private func thirtyDayReturn(for portfolios: [ModelPortfolio]) -> Double? {
+        let cutoff = Self.dateString(daysAgo: 30)
+        var best: Double?
+        for p in portfolios {
+            let nav = viewModel.navHistory(for: p)
+            guard let last = nav.last,
+                  let start = nav.first(where: { $0.navDate >= cutoff }), start.nav > 0 else { continue }
+            let ret = ((last.nav / start.nav) - 1) * 100
+            if best == nil || ret > best! { best = ret }
+        }
+        return best
+    }
+
+    private var spyThirtyDayReturn: Double? {
+        let cutoff = Self.dateString(daysAgo: 30)
+        guard let last = viewModel.benchmarkNav.last,
+              let start = viewModel.benchmarkNav.first(where: { $0.navDate >= cutoff }),
+              start.nav > 0 else { return nil }
+        return ((last.nav / start.nav) - 1) * 100
+    }
+
+    private static func dateString(daysAgo: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter.string(from: Date().addingTimeInterval(-Double(daysAgo) * 86400))
+    }
+
+    private func rotationColor(_ vote: String) -> Color {
+        switch vote {
+        case "crypto": return Color(hex: "F7931A")   // BTC orange
+        case "stocks": return Color(hex: "10B981")   // equity green
+        default: return AppColors.textSecondary
+        }
+    }
+
+    @ViewBuilder
+    private func rotationStrip(_ rotation: MarketRotation) -> some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { showRotationDetail.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.left.arrow.right.circle.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(rotationColor(rotation.favored))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Conditions favoring: \(rotation.favoredDisplay)")
+                            .font(AppFonts.body14Medium)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                        HStack(spacing: 6) {
+                            if let cryptoRet = thirtyDayReturn(for: viewModel.cryptoPortfolios) {
+                                Text("Crypto 30D \(cryptoRet >= 0 ? "+" : "")\(cryptoRet, specifier: "%.1f")%")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(cryptoRet >= 0 ? AppColors.success : AppColors.error)
+                            }
+                            if let stockRet = thirtyDayReturn(for: viewModel.stockPortfolios) {
+                                Text("Stocks 30D \(stockRet >= 0 ? "+" : "")\(stockRet, specifier: "%.1f")%")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(stockRet >= 0 ? AppColors.success : AppColors.error)
+                            }
+                            if let spyRet = spyThirtyDayReturn {
+                                Text("SPY \(spyRet >= 0 ? "+" : "")\(spyRet, specifier: "%.1f")%")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(AppColors.textTertiary)
+                            }
+                        }
+                    }
+                    Spacer()
+                    Image(systemName: showRotationDetail ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textTertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showRotationDetail {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(rotation.factors, id: \.factor) { f in
+                        HStack(alignment: .top, spacing: 6) {
+                            Circle()
+                                .fill(rotationColor(f.vote))
+                                .frame(width: 6, height: 6)
+                                .padding(.top, 4)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(f.factor)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text(f.detail)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(AppColors.textTertiary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    Text("Descriptive market context, not a recommendation. Where conditions are favorable is where Arkline's coverage leans — you decide where your money goes.")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppColors.textTertiary)
+                        .padding(.top, 2)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(ArkSpacing.sm)
+        .background(rotationColor(rotation.favored).opacity(0.06))
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(rotationColor(rotation.favored).opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(AppColors.textTertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
     private func portfolioRow(
         name: String,
+        strategy: String,
         returnPct: Double,
         nav: Double?,
         signal: String?,
@@ -209,7 +325,7 @@ struct ModelPortfolioCard: View {
     ) -> some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(portfolioColor(for: name))
+                .fill(portfolioColor(forStrategy: strategy))
                 .frame(width: 4, height: 36)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -279,7 +395,7 @@ private struct ModelPortfolioInfoSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
                     // Intro
-                    Text("Arkline Model Portfolios are AI-generated systematic strategies that use daily positioning signals, macro regime data, and trend analysis to dynamically allocate across crypto assets.")
+                    Text("Arkline Model Portfolios come in two flavors. Crypto portfolios are AI-generated systematic strategies driven by daily positioning signals, macro regime data, and trend analysis. Equity portfolios are curated investment portfolios — positions held for months to years, updated only when the thesis or risk picture changes.")
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
 
@@ -303,6 +419,18 @@ private struct ModelPortfolioInfoSheet: View {
                     )
 
                     portfolioSection(
+                        name: "Arkline Equity Core",
+                        color: Color(hex: "10B981"),
+                        description: "Conservative equity portfolio. Eight quality AI-era compounders held for years, plus a cash reserve that scales with the macro regime. Low turnover by design."
+                    )
+
+                    portfolioSection(
+                        name: "Arkline Equity Edge",
+                        color: Color(hex: "14B8A6"),
+                        description: "Aggressive equity portfolio. Core compounders plus a thematic sleeve of 6–12 month catalyst positions across power, rare earths, AI software, and compute."
+                    )
+
+                    portfolioSection(
                         name: "S&P 500 Benchmark",
                         color: Color(hex: "FF9500"),
                         description: "Buy & hold S&P 500 benchmark for performance comparison. All portfolios start at the same NAV to provide a fair reference point."
@@ -313,7 +441,7 @@ private struct ModelPortfolioInfoSheet: View {
                         Text("How It Works")
                             .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
-                        Text("All positions are spot only — no leverage, futures, or short selling. Portfolios rebalance once daily at 8:30 PM ET based on positioning signals and macro regime conditions. Allocations shift between crypto exposure and defensive assets (stablecoins, gold) depending on market conditions.")
+                        Text("All positions are spot only — no leverage, futures, or short selling. Crypto portfolios rebalance once daily at 8:30 PM ET based on positioning signals and macro regime conditions, shifting between crypto exposure and defensive assets (stablecoins, gold). Equity portfolios are investment portfolios, not trading strategies: NAV is marked to market each trading day, and positions change only when the underlying thesis, valuation, or risk picture changes. Equity history before launch is simulated (backtested).")
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
                     }
@@ -328,7 +456,7 @@ private struct ModelPortfolioInfoSheet: View {
                                 .font(AppFonts.body14Medium)
                                 .foregroundColor(AppColors.textPrimary(colorScheme))
                         }
-                        Text("These model portfolios are generated entirely by AI and are for educational and informational purposes only. They do not constitute financial advice, investment recommendations, or an offer to buy or sell any securities. Past performance does not guarantee future results. Always do your own research (DYOR) and consult a qualified financial advisor before making any investment decisions.")
+                        Text("These are hypothetical model portfolios for educational and informational purposes only. They do not constitute financial advice, investment recommendations, or an offer to buy or sell any securities. Past performance does not guarantee future results. Always do your own research (DYOR) and consult a qualified financial advisor before making any investment decisions.")
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
                     }

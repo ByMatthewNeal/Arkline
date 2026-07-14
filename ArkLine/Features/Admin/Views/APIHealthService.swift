@@ -182,17 +182,9 @@ actor APIHealthService {
                     return (str.contains("<item>") || str.contains("<entry>") || str.contains("rss")) ? (true, nil) : (false, "No items in feed")
                 }
             ),
-            HealthCheck(
-                name: "Bloomberg RSS",
-                category: .news,
-                url: "https://feeds.bloomberg.com/markets/news.rss",
-                method: "GET",
-                headers: ["User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"],
-                validateResponse: { data, response in
-                    // Bloomberg may block or redirect mobile UAs — accept any 2xx/3xx as reachable
-                    response.statusCode < 400 ? (true, nil) : (false, "HTTP \(response.statusCode)")
-                }
-            ),
+            // Bloomberg RSS check removed — Bloomberg retired its public feeds and
+            // every feeds.bloomberg.com URL now returns 404, so this check was
+            // permanently red for a source we no longer pull.
 
             // Backend & Infrastructure
             HealthCheck(
@@ -310,7 +302,7 @@ actor APIHealthService {
                 query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
                 maxAgeMinutes: 60,
                 degradedAgeMinutes: 120,
-                explanation: "curate-news runs every 30 min. Fetches Bloomberg + Google News RSS, filters with Claude Haiku, enriches with Sonnet. If stale, check Claude API key or RSS feed availability."
+                explanation: "curate-news runs every 30 min. Fetches CNBC, Reuters and MarketWatch RSS, filters with Claude Haiku, enriches with Sonnet. If stale, check Claude API credits or RSS feed availability."
             ),
             FreshnessCheck(
                 name: "Trade Signals",

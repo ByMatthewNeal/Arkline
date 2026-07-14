@@ -12,7 +12,6 @@ final class APINewsService: NewsServiceProtocol {
     /// Creates a fresh instance per call — RSS services hold mutable XML parser
     /// state and are not safe to reuse across concurrent calls.
     private func makeRSSService() -> GoogleNewsRSSService { GoogleNewsRSSService() }
-    private func makeBloombergService() -> BloombergRSSService { BloombergRSSService() }
 
     // MARK: - NewsServiceProtocol
 
@@ -100,11 +99,11 @@ final class APINewsService: NewsServiceProtocol {
     ) async throws -> [NewsItem] {
         var allNews: [NewsItem] = []
 
-        // Fetch Google News and Bloomberg in parallel
-        let googleLimit = (limit * 2) / 3  // ~2/3 from Google
-        let bloombergLimit = limit / 3      // ~1/3 from Bloomberg
-
-        async let bloombergNews = makeBloombergService().fetchNews(for: topics, limit: bloombergLimit)
+        // Bloomberg retired its public RSS feeds (every feeds.bloomberg.com URL
+        // now 404s), so it was contributing zero items while still reserving a
+        // third of the budget — starving this fallback feed. Google News now gets
+        // the full limit.
+        let googleLimit = limit
 
         // Fetch Google News based on user preferences
         if includeGoogleNews {
@@ -131,11 +130,6 @@ final class APINewsService: NewsServiceProtocol {
                 }
             }
         }
-
-        // Collect Bloomberg results (non-throwing — returns empty on failure)
-        let bloomberg = await bloombergNews
-        allNews.append(contentsOf: bloomberg)
-        logDebug("Fetched \(bloomberg.count) Bloomberg news items", category: .network)
 
         // Sort by date (newest first) and limit
         allNews.sort { $0.publishedAt > $1.publishedAt }

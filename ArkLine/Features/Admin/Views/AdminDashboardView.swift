@@ -111,6 +111,24 @@ struct AdminDashboardView: View {
                         )
                     }
 
+                    NavigationLink(destination: PortfolioTargetsAdminView()) {
+                        AdminDashboardRow(
+                            icon: "chart.pie.fill",
+                            iconColor: AppColors.success,
+                            title: "Portfolio Positions",
+                            subtitle: "Update equity model portfolio allocations"
+                        )
+                    }
+
+                    NavigationLink(destination: ResearchNotesAdminView()) {
+                        AdminDashboardRow(
+                            icon: "doc.text.magnifyingglass",
+                            iconColor: AppColors.info,
+                            title: "Research Notes",
+                            subtitle: "Generate, review & publish position research"
+                        )
+                    }
+
                     NavigationLink(destination: MarketDeckAdminView()) {
                         AdminDashboardRow(
                             icon: "doc.richtext",

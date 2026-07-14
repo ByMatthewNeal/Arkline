@@ -15,10 +15,6 @@ struct DailyNewsSection: View {
         news.filter { $0.sourceType == .googleNews }
     }
 
-    private var bloombergNews: [NewsItem] {
-        news.filter { $0.sourceType == .bloomberg }
-    }
-
     private var curatedNews: [NewsItem] {
         news.filter { $0.sourceType == .curated }
     }
@@ -58,7 +54,6 @@ struct DailyNewsSection: View {
                     }
                     NewsSourceBadge(sourceType: .twitter, count: twitterNews.count)
                     NewsSourceBadge(sourceType: .googleNews, count: googleNews.count)
-                    NewsSourceBadge(sourceType: .bloomberg, count: bloombergNews.count)
                 }
                 .padding(.horizontal, 20)
             }

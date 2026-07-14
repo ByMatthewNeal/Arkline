@@ -327,17 +327,17 @@ struct NewsItem: Identifiable {
 }
 
 // MARK: - News Source Type
+// Bloomberg was removed: it retired its public RSS feeds (all feeds.bloomberg.com
+// URLs 404), so the source produced no items and its filter pill was always empty.
 enum NewsSourceType: String, CaseIterable {
     case twitter = "Twitter"
     case googleNews = "Google News"
-    case bloomberg = "Bloomberg"
     case curated = "ArkLine"
 
     var icon: String {
         switch self {
         case .twitter: return "bird" // X logo approximation
         case .googleNews: return "g.circle.fill"
-        case .bloomberg: return "chart.line.uptrend.xyaxis"
         case .curated: return "sparkles"
         }
     }
@@ -346,7 +346,6 @@ enum NewsSourceType: String, CaseIterable {
         switch self {
         case .twitter: return "#1DA1F2" // Twitter blue
         case .googleNews: return "#4285F4" // Google blue
-        case .bloomberg: return "#FF6600" // Bloomberg orange
         case .curated: return "#3369FF" // ArkLine accent
         }
     }
@@ -355,7 +354,6 @@ enum NewsSourceType: String, CaseIterable {
         switch self {
         case .twitter: return "X"
         case .googleNews: return "Google"
-        case .bloomberg: return "Bloomberg"
         case .curated: return "ArkLine"
         }
     }
