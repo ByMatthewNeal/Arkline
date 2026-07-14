@@ -71,6 +71,17 @@ struct MarketDeckCard: View {
             }
             .buttonStyle(.plain)
 
+            // Next update expectation (weekly, Sundays)
+            if let nextText = nextUpdateText {
+                HStack(spacing: ArkSpacing.xs) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 11))
+                    Text(nextText)
+                        .font(AppFonts.caption12)
+                }
+                .foregroundColor(AppColors.textSecondary)
+            }
+
             // Past updates link
             Button(action: { showHistory = true }) {
                 HStack(spacing: ArkSpacing.xs) {
@@ -117,6 +128,35 @@ struct MarketDeckCard: View {
                     Capsule().fill(regimeColor(regime))
                 )
         }
+    }
+
+    /// The next expected weekly update — the Sunday after the shown deck was
+    /// published, rolled forward so it's never a past date (updates publish
+    /// weekly on Sundays; a draft auto-generates Saturday).
+    private var nextUpdateDate: Date? {
+        let cal = Calendar(identifier: .gregorian)
+        let reference = deck.publishedAt ?? deck.weekEnd
+        // Sunday == weekday 1 in the Gregorian calendar.
+        guard var next = cal.nextDate(
+            after: reference,
+            matching: DateComponents(weekday: 1),
+            matchingPolicy: .nextTime
+        ) else { return nil }
+        let now = Date()
+        while next < now {
+            guard let bumped = cal.date(byAdding: .day, value: 7, to: next) else { break }
+            next = bumped
+        }
+        return next
+    }
+
+    private var nextUpdateText: String? {
+        guard let date = nextUpdateDate else { return nil }
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale.current
+        formatter.dateFormat = "EEEE, MMM d" // e.g. "Sunday, Jul 19"
+        return "Next update: \(formatter.string(from: date))"
     }
 
     private var coverSlideData: CoverSlideData? {
