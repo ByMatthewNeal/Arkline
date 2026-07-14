@@ -368,6 +368,25 @@ Deno.serve(async (req) => {
     console.error("Failed to fetch key levels:", err instanceof Error ? err.message : String(err))
   }
 
+  // --- Cross-Market Rotation (which market conditions favor, and why) ---
+  try {
+    const { data: rotRows } = await supabase
+      .from("market_rotation")
+      .select("rotation_date, favored, score, factors")
+      .order("rotation_date", { ascending: false })
+      .limit(1)
+    const rot = rotRows?.[0]
+    if (rot) {
+      const factors = Array.isArray(rot.factors) ? rot.factors : []
+      const factorLines = factors.map((f: any) => `- [votes ${f.vote}] ${f.factor}: ${f.detail}`)
+      sections.push(
+        `MARKET ROTATION (as of ${rot.rotation_date}) — conditions currently favor: ${String(rot.favored).toUpperCase()}\n${factorLines.join("\n")}`
+      )
+    }
+  } catch (err) {
+    console.error("Failed to fetch market rotation:", err instanceof Error ? err.message : String(err))
+  }
+
   // --- Model Portfolio Updates ---
   try {
     // Fetch today's rebalance trades
@@ -401,12 +420,12 @@ Deno.serve(async (req) => {
         sections.push(`MODEL PORTFOLIOS (today's changes):\n${portfolioLines.join("\n")}`)
       }
     } else {
-      // No rebalances — fetch latest NAV for context
+      // No rebalances — fetch latest NAV for context (5 portfolios: 3 crypto + 2 equity)
       const { data: latestNav } = await supabase
         .from("model_portfolio_nav")
         .select("portfolio_id, nav, allocations, btc_signal, macro_regime")
         .order("nav_date", { ascending: false })
-        .limit(3)
+        .limit(5)
 
       if (latestNav && latestNav.length > 0 && portfolios) {
         const portfolioMap: Record<string, string> = {}
@@ -414,7 +433,9 @@ Deno.serve(async (req) => {
 
         const navLines = latestNav.map((n: any) => {
           const name = portfolioMap[n.portfolio_id] ?? "Unknown"
-          return `${name}: NAV $${Number(n.nav).toLocaleString()}, signal: ${n.btc_signal}, regime: ${n.macro_regime}`
+          // Stock portfolio rows have no btc_signal — show regime only
+          const signalPart = n.btc_signal ? `, signal: ${n.btc_signal}` : ""
+          return `${name}: NAV $${Number(n.nav).toLocaleString()}${signalPart}, regime: ${n.macro_regime}`
         })
         sections.push(`MODEL PORTFOLIOS (no changes today):\n${navLines.join("\n")}`)
       }
@@ -679,19 +700,21 @@ Rules:
 - Never start any section with "Today" or "The market"
 ${feedbackBlock}`
 
-          : `You are writing a quick ${timeLabel} market briefing for ArkLine, a crypto and macro tracking app. Write like a sharp, knowledgeable friend — concise, clear, no filler. Every sentence must earn its place.
+          : `You are writing a quick ${timeLabel} market briefing for ArkLine, an app that tracks BOTH crypto and equity markets with equal seriousness — neither is the "default" market. Write like a sharp, knowledgeable friend — concise, clear, no filler. Every sentence must earn its place.
 
 ${slotInstructions}
 
 ${sessionContext}
 
+MARKET EMPHASIS: If MARKET ROTATION data is present, weight your coverage toward the favored market — it leads the TLDR and gets the deeper treatment in What's Happening, while the other market still gets covered. Include one short clause explaining WHY the emphasis leans that way, drawn from the rotation factors (e.g. "with equities outpacing BTC over 30 days and breadth supportive"). If the verdict is BALANCED, cover both markets evenly. Never present the rotation as advice — it describes where conditions and momentum are; the reader decides what to do.
+
 Write a structured briefing using EXACTLY these section headers on their own line, prefixed with "##". Do NOT add any other sections.
 
 ## TLDR
-2-3 sentences. MUST start with the macro regime label (e.g. "Risk-Off:" or "Risk-On:") followed by BTC state + price, sentiment, portfolio stance, one thing to watch.
+2-3 sentences. MUST start with the macro regime label (e.g. "Risk-Off:" or "Risk-On:"), then cover both markets with the rotation-favored market first — BTC state + price, S&P/equity state, sentiment, portfolio stance, one thing to watch.
 
 ## What's Happening
-2-3 sentences. The day's story across crypto and equities — what moved and why. Weave in any notable credit or risk appetite shifts if relevant. BTC, ETH, SOL action plus any standout alts.
+2-3 sentences. The day's story across crypto and equities, favored market first and deepest — what moved and why. Weave in any notable credit or risk appetite shifts if relevant. Cover BTC/ETH/SOL and index/sector action as the rotation warrants.
 
 ## Macro
 2-3 sentences. Surface any important news, economic data, or events to be aware of. Liquidity trend, VIX/DXY only if notable. Skip if nothing changed.
@@ -704,7 +727,7 @@ Write a structured briefing using EXACTLY these section headers on their own lin
 
 ${isFriday && slot === "evening" ? `## Week in Review
 2-3 sentences. Weekly moves for BTC, ETH, S&P. Defining narrative and what to watch next week.` : `## Signals
-1-2 sentences. Only the 2-3 most notable signal changes or portfolio rebalances.`}
+1-2 sentences. Only the 2-3 most notable signal changes, portfolio rebalances (crypto), or position changes (equity model portfolios).`}
 
 Rules:
 - STRICT: No section may exceed 3 sentences. This is non-negotiable.

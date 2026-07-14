@@ -377,6 +377,13 @@ verify_jwt = false
 [functions.signal-monitor]
 verify_jwt = false
 
+# Sends EVERY push (briefings, signal alerts, scheduled broadcasts). Called
+# internally by other functions with x-cron-secret and no JWT; it authenticates
+# that secret (or an admin JWT) in code. When left at verify_jwt = true the
+# gateway 401'd every internal call, silently killing ALL notifications.
+[functions.send-broadcast-notification]
+verify_jwt = false
+
 # System-to-system (called by sync-economic-events); authenticates via CRON_SECRET
 # in code, so gateway JWT verification isn't needed.
 [functions.analyze-economic-event]
@@ -442,6 +449,23 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.health-check]
+verify_jwt = false
+
+# Internal-call targets: invoked by other functions with x-cron-secret (no JWT),
+# so they must stay verify_jwt=false or the gateway 401s them.
+# generate-signal-briefing — called by signal-monitor / fibonacci-pipeline.
+# briefing-tts — called by market-summary to pre-generate audio.
+[functions.generate-signal-briefing]
+verify_jwt = false
+
+[functions.briefing-tts]
+verify_jwt = false
+
+# Cron-invoked compute jobs (pg_cron, no JWT).
+[functions.compute-market-rotation]
+verify_jwt = false
+
+[functions.compute-stock-portfolios]
 verify_jwt = false
 
 [analytics]
