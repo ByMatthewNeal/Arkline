@@ -361,7 +361,7 @@ actor APIHealthService {
         do {
             let data = try await APIProxy.shared.request(
                 service: .fmp,
-                path: "quote",
+                path: "/quote", // api-proxy requires a leading slash (matches FMPService)
                 queryItems: ["symbol": "AAPL"]
             )
             let latency = Int(Date().timeIntervalSince(start) * 1000)
