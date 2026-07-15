@@ -267,10 +267,14 @@ actor APIHealthService {
             FreshnessCheck(
                 name: "Economic Events",
                 table: "economic_events",
-                query: .latestRow(dateColumn: "created_at", orderDesc: true, extraFilters: []),
+                // Use updated_at, not created_at: the sync UPSERTS every 30 min so it
+                // touches updated_at each run, but created_at only advances when a
+                // brand-new event is inserted (weekly-ish batches). Watching created_at
+                // made this go red during normal gaps between new events.
+                query: .latestRow(dateColumn: "updated_at", orderDesc: true, extraFilters: []),
                 maxAgeMinutes: 60,
                 degradedAgeMinutes: 120,
-                explanation: "sync-economic-events runs every 30 min via FMP. Brief gaps are normal outside market hours."
+                explanation: "sync-economic-events runs every 30 min via FMP. Freshness tracks the last sync (updated_at)."
             ),
             FreshnessCheck(
                 name: "Model Portfolio NAV",
