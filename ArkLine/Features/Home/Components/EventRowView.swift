@@ -22,12 +22,20 @@ struct EventRowView: View {
         event.country.uppercased()
     }
 
+    private var isHighImpact: Bool { event.impact == .high }
+
+    /// Full-row tint so high-impact events read at a glance, not just the side bar.
+    private var rowBackground: Color {
+        guard isHighImpact else { return .clear }
+        return event.impact.color.opacity(colorScheme == .dark ? 0.13 : 0.07)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             // Vertical impact indicator bar
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(event.impact.color)
-                .frame(width: 3, height: isCompact ? 32 : 44)
+                .frame(width: isHighImpact ? 4 : 3, height: isCompact ? 32 : 44)
                 .padding(.trailing, isCompact ? 8 : 12)
 
             VStack(alignment: .leading, spacing: isCompact ? 2 : 4) {
@@ -45,9 +53,15 @@ struct EventRowView: View {
 
                     // Event title
                     Text(event.title)
-                        .font(.system(size: isCompact ? 11 : 13, weight: .medium))
+                        .font(.system(size: isCompact ? 11 : 13, weight: isHighImpact ? .semibold : .medium))
                         .foregroundColor(textPrimary)
                         .lineLimit(1)
+
+                    if isHighImpact {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: isCompact ? 8 : 9))
+                            .foregroundColor(event.impact.color)
+                    }
 
                     Spacer()
 
@@ -83,6 +97,10 @@ struct EventRowView: View {
             }
         }
         .padding(.vertical, isCompact ? 4 : 8)
+        .padding(.horizontal, isHighImpact ? 8 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: 8).fill(rowBackground)
+        )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(event.title), \(event.date.formatted(date: .omitted, time: .shortened)), \(event.impact.rawValue) impact\(event.actual.map { ", actual \($0)" } ?? "")\(event.forecast.map { ", forecast \($0)" } ?? "")")
     }

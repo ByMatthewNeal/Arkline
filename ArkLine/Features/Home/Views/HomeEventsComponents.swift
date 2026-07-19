@@ -262,19 +262,27 @@ struct UpcomingEventRow: View {
         }
     }
 
+    private var isHighImpact: Bool { event.impact == .high }
+
+    /// Full-row tint so high-impact events read at a glance, not just the side bar.
+    private var rowBackground: Color {
+        guard isHighImpact else { return .clear }
+        return event.impact.color.opacity(colorScheme == .dark ? 0.13 : 0.07)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             // Impact bar
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(event.impact.color)
-                .frame(width: 3, height: isCompact ? 28 : 36)
+                .frame(width: isHighImpact ? 4 : 3, height: isCompact ? 28 : 36)
                 .padding(.trailing, isCompact ? 6 : 8)
 
             // Title + time + data
             VStack(alignment: .leading, spacing: isCompact ? 1 : 2) {
                 HStack(spacing: 6) {
                     Text(event.title)
-                        .font(.system(size: isCompact ? 11 : 13, weight: .medium))
+                        .font(.system(size: isCompact ? 11 : 13, weight: isHighImpact ? .semibold : .medium))
                         .foregroundColor(textPrimary)
                         .lineLimit(1)
 
@@ -320,6 +328,10 @@ struct UpcomingEventRow: View {
             }
         }
         .padding(.vertical, isCompact ? 3 : 6)
+        .padding(.horizontal, isHighImpact ? 8 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: 8).fill(rowBackground)
+        )
     }
 
     @ViewBuilder
@@ -532,11 +544,20 @@ struct EventDetailRow: View {
         event.country.uppercased()
     }
 
+    private var isHighImpact: Bool { event.impact == .high }
+
+    /// Full-row tint so high-impact events read at a glance — not just the thin
+    /// side bar. Subtle enough to keep the list scannable.
+    private var rowBackground: Color {
+        guard isHighImpact else { return .clear }
+        return event.impact.color.opacity(colorScheme == .dark ? 0.13 : 0.07)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(event.impact.color)
-                .frame(width: 3, height: 44)
+                .frame(width: isHighImpact ? 4 : 3, height: 44)
                 .padding(.trailing, 12)
 
             if !timeString.isEmpty {
@@ -559,8 +580,16 @@ struct EventDetailRow: View {
 
             Text(event.title)
                 .font(.subheadline)
+                .fontWeight(isHighImpact ? .semibold : .regular)
                 .foregroundColor(textPrimary)
                 .lineLimit(2)
+
+            if isHighImpact {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(event.impact.color)
+                    .padding(.leading, 6)
+            }
 
             Spacer()
 
@@ -600,6 +629,7 @@ struct EventDetailRow: View {
         .padding(.leading, 16)
         .padding(.trailing, 16)
         .padding(.vertical, 12)
+        .background(rowBackground)
     }
 }
 
