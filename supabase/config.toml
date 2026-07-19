@@ -399,6 +399,12 @@ verify_jwt = false
 [functions.publish-market-deck]
 verify_jwt = false
 
+# Cron-invoked every minute to auto-publish scheduled broadcasts when their
+# scheduled_at arrives. Authenticates x-cron-secret in code; without this block
+# the gateway 401s every cron run and nothing ever publishes.
+[functions.publish-scheduled-broadcasts]
+verify_jwt = false
+
 # Cron-invoked hourly (+ Sunday runs). Authenticates x-cron-secret in code.
 # Was verify_jwt=true, which made the gateway 401 every cron run silently.
 [functions.fibonacci-pipeline]
