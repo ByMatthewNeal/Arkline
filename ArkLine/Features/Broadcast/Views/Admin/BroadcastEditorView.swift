@@ -191,27 +191,22 @@ struct BroadcastEditorView: View {
                     }
                 }
 
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItemGroup(placement: .confirmationAction) {
                     if isSaving {
                         ProgressView()
                     } else {
-                        // The primary button IS the action — no ambiguous menu.
-                        // Scheduling toggled on? The button says Schedule, so the
-                        // schedule can never be silently dropped by picking the
-                        // wrong menu item. Draft-saving is the secondary, one
-                        // long-press/menu away.
-                        Menu {
-                            if broadcast?.status != .published {
-                                Button {
-                                    saveBroadcast(publish: false)
-                                } label: {
-                                    Label("Save as Draft", systemImage: "doc")
-                                }
+                        // "Draft" is a visible, one-tap action for any post that
+                        // isn't already published. It used to be buried under a
+                        // long-press on the primary button, so admins had no
+                        // obvious way to save a draft mid-compose.
+                        if broadcast?.status != .published {
+                            Button("Draft") {
+                                saveBroadcast(publish: false)
                             }
-                        } label: {
-                            Text(primaryActionLabel)
-                                .fontWeight(.semibold)
-                        } primaryAction: {
+                            .disabled(title.isEmpty)
+                        }
+
+                        Button(primaryActionLabel) {
                             if broadcast?.status == .published {
                                 saveBroadcast(publish: true)
                             } else if isScheduled {
@@ -220,6 +215,7 @@ struct BroadcastEditorView: View {
                                 saveBroadcast(publish: true)
                             }
                         }
+                        .fontWeight(.semibold)
                         .disabled(title.isEmpty)
                     }
                 }
@@ -1093,8 +1089,12 @@ struct BroadcastEditorView: View {
         Task {
             do {
                 var savedBroadcastId: UUID
+                // Deferred so push delivery never blocks the save/dismiss and the
+                // Publish button can't hang spinning on a slow notification call.
+                var pendingNotify: (broadcast: Broadcast, audience: TargetAudience)?
 
                 if let existing = broadcast {
+                    let wasPublished = existing.status == .published
                     var updated = existing
                     updated.title = title
                     updated.content = content
@@ -1125,12 +1125,11 @@ struct BroadcastEditorView: View {
                     try await viewModel.updateBroadcast(updated)
                     savedBroadcastId = updated.id
 
-                    // Send notification if publishing
-                    if publish && updated.status == .published {
-                        await BroadcastNotificationService.shared.sendBroadcastNotification(
-                            for: updated,
-                            audience: targetAudience
-                        )
+                    // Only notify on the transition INTO published — never re-notify
+                    // when merely editing an already-published post (that re-spammed
+                    // every user and blocked the UI on push delivery).
+                    if publish && updated.status == .published && !wasPublished {
+                        pendingNotify = (updated, targetAudience)
                     }
                 } else {
                     var status: BroadcastStatus = .draft
@@ -1164,12 +1163,9 @@ struct BroadcastEditorView: View {
                     try await viewModel.createBroadcast(newBroadcast)
                     savedBroadcastId = newBroadcast.id
 
-                    // Send notification if publishing immediately
+                    // Send notification if publishing immediately (deferred below).
                     if publish {
-                        await BroadcastNotificationService.shared.sendBroadcastNotification(
-                            for: newBroadcast,
-                            audience: targetAudience
-                        )
+                        pendingNotify = (newBroadcast, targetAudience)
                     }
                 }
 
@@ -1200,6 +1196,17 @@ struct BroadcastEditorView: View {
 
                 isSaving = false
                 dismiss()
+
+                // Fire-and-forget: deliver the push after the editor closes so a
+                // slow/failed notification call can never strand the save button.
+                if let pendingNotify {
+                    Task.detached {
+                        await BroadcastNotificationService.shared.sendBroadcastNotification(
+                            for: pendingNotify.broadcast,
+                            audience: pendingNotify.audience
+                        )
+                    }
+                }
             } catch {
                 isSaving = false
                 errorMessage = AppError.from(error).userMessage
