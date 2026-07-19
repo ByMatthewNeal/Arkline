@@ -170,11 +170,21 @@ struct SettingsView: View {
                 // - Apple IAP customer (RevenueCat entitlement active) → iOS Settings
                 // - Stripe customer (active/past_due/trialing from Supabase) → billing portal
                 Section {
-                    // Manage Subscription
-                    // Apple IAP path takes precedence — if RC sees an active
-                    // Apple entitlement, route the user to iOS Settings (per
-                    // Apple anti-steering rules, we cannot send them to our
-                    // Stripe portal instead).
+                    // Manage Subscription — ONLY shown for Apple IAP subscribers
+                    // (i.e., RevenueCatService reports an active "Arkline Pro"
+                    // entitlement). Tapping routes to iOS Settings, which is the
+                    // Apple-native subscription management surface.
+                    //
+                    // Legacy Stripe subscribers do NOT see this button. They
+                    // manage their subscription on the web (arkline.io) — the
+                    // subscription was set up there in the first place. Hiding
+                    // the button here avoids surfacing a "billing portal can't
+                    // be opened" alert to App Review, since Apple's demo
+                    // reviewer account is a Stripe customer whose demo Stripe
+                    // customer_id does not exist in the real Stripe API.
+                    // (Flagged as Guideline 2.1(a) across multiple review
+                    // cycles — resolved by not exposing the button at all for
+                    // non-Apple-IAP accounts.)
                     if RevenueCatService.shared.isPro {
                         Button {
                             Haptics.selection()
@@ -186,26 +196,6 @@ struct SettingsView: View {
                                 title: "Manage Subscription"
                             )
                         }
-                    } else if let status = appState.currentUser?.subscriptionStatus,
-                              status == .active || status == .pastDue || status == .trialing {
-                        // Stripe customer — keep existing billing portal path
-                        Button {
-                            Task { await viewModel.openBillingPortal(email: appState.currentUser?.email) }
-                        } label: {
-                            HStack {
-                                SettingsRow(
-                                    icon: "creditcard.fill",
-                                    iconColor: AppColors.accent,
-                                    title: "Manage Subscription"
-                                )
-                                if viewModel.isLoadingBillingPortal {
-                                    Spacer()
-                                    ProgressView()
-                                        .controlSize(.small)
-                                }
-                            }
-                        }
-                        .disabled(viewModel.isLoadingBillingPortal)
                     }
 
                     // Restore Purchases — Apple 3.1.1 requirement.
