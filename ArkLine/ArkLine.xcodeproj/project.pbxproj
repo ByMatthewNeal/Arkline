@@ -304,7 +304,6 @@
 		8378398BE85A7A2DF1973F75 /* CoinglassServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFAE6203E090C957B000DF24 /* CoinglassServiceProtocol.swift */; };
 		83EC6B0C5A0596EE214313A9 /* SettingsSubviews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2252B1EA56078CD585EDE39E /* SettingsSubviews.swift */; };
 		85030D9B4F243212B135BC23 /* MockDCAService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D4FA1A5F9032170FCD48F8 /* MockDCAService.swift */; };
-		8560769A218FA4630F183853 /* ArkSupabaseDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAE91280E863EB76F72AB7B /* ArkSupabaseDecoder.swift */; };
 		85AA3CAFA6EC4B72DACBB6B5 /* ResearchNoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD4EB13B2E8FA083D3E4EE33 /* ResearchNoteView.swift */; };
 		86279303BD396F32CCA316D1 /* MemberDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DE9537870AFEA78CFB2851 /* MemberDetailView.swift */; };
 		86549ACE265843978550890B /* ReelScriptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A511EF02204638D5A535EEA9 /* ReelScriptsView.swift */; };
@@ -973,7 +972,6 @@
 		BE0E8CCBD0004E1E4DB73EBD /* PrivacyOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyOverlayView.swift; sourceTree = "<group>"; };
 		BE16E3A73A7B3A315C115845 /* PasscodeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeManager.swift; sourceTree = "<group>"; };
 		BE883285CE04F5CF944E0233 /* FlashIntelCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlashIntelCard.swift; sourceTree = "<group>"; };
-		BEAE91280E863EB76F72AB7B /* ArkSupabaseDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArkSupabaseDecoder.swift; sourceTree = "<group>"; };
 		BF3D07CDE88161D4E175F526 /* RiskScoreShareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskScoreShareCard.swift; sourceTree = "<group>"; };
 		C020CF24D89DA500878B422B /* SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBar.swift; sourceTree = "<group>"; };
 		C067D2FDD15D1D6D5691D214 /* SendInviteViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendInviteViewModel.swift; sourceTree = "<group>"; };
@@ -1391,7 +1389,6 @@
 		35E2337C8AA09E78D6BB9C39 /* Supabase */ = {
 			isa = PBXGroup;
 			children = (
-				BEAE91280E863EB76F72AB7B /* ArkSupabaseDecoder.swift */,
 				9D552FD3A75DDA320D9458EC /* AvatarUploadService.swift */,
 				51DB69E8364D8BD5DBE47D11 /* DataCollectionDTOs.swift */,
 				3882181D1C76831A5D00FA28 /* SupabaseAuth.swift */,
@@ -2582,7 +2579,6 @@
 				8DDE7EA399DF4E536DDE3E3A /* ArkLineLogoShape.swift in Sources */,
 				7070D21FB1B98867679B1613 /* ArkLineScoreDetailView.swift in Sources */,
 				E49CDC372314ADE1A2487DA0 /* ArkPaywallSheet.swift in Sources */,
-				8560769A218FA4630F183853 /* ArkSupabaseDecoder.swift in Sources */,
 				E48A8A3623954A7CB598D429 /* ArkSystemPrompt.swift in Sources */,
 				AE207516A40E1AAD2CDA9E2D /* ArticleSummaryService.swift in Sources */,
 				140BA6F215F30D04AE81C591 /* Asset.swift in Sources */,
