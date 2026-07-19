@@ -156,6 +156,11 @@ struct BroadcastStudioView: View {
                 await viewModel.loadBroadcasts()
             }
         }
+        // Return to root when the Insights tab is (re)selected. This stack uses
+        // closure-based navigation with no path binding, so re-identifying it is
+        // the only reset. The view model is @StateObject on this struct (outside
+        // the stack), so it isn't recreated.
+        .id(appState.insightsNavigationReset)
     }
 
     // MARK: - Header Section

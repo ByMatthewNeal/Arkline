@@ -130,6 +130,11 @@ struct ProfileView: View {
                 Task { await AnalyticsService.shared.trackScreenView("profile") }
             }
         }
+        // Return to root when this tab is (re)selected — closure-based
+        // NavigationLinks (e.g. the Settings gear) aren't tracked by
+        // navigationPath, so re-identifying the stack is the reliable reset. View
+        // model is cached @State outside the stack, so no reload.
+        .id(appState.profileNavigationReset)
     }
 }
 

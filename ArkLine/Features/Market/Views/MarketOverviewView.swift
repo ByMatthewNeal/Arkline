@@ -71,6 +71,7 @@ struct MarketOverviewView: View {
                 }
                 .onChange(of: appState.marketNavigationReset) { _, _ in
                     navigationPath = NavigationPath()
+                    showSentimentRegime = false
                     withAnimation(.arkSpring) {
                         scrollProxy.scrollTo("scrollTop", anchor: .top)
                     }
@@ -172,6 +173,13 @@ struct MarketOverviewView: View {
                 }
             }
         }
+        // Re-identify the stack when this tab is (re)selected so it returns to
+        // root. The app navigates almost entirely with closure-based
+        // NavigationLinks, which aren't tracked by `navigationPath` — emptying the
+        // path can't pop them, so re-identifying is the only reliable reset.
+        // View models are @State on this struct (outside the stack) and cached, so
+        // this doesn't trigger a reload.
+        .id(appState.marketNavigationReset)
     }
 }
 

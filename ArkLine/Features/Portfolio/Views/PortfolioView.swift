@@ -219,6 +219,11 @@ struct PortfolioView: View {
                 }
             }
         }
+        // Return to root when this tab is (re)selected — closure-based
+        // NavigationLinks aren't tracked by navigationPath, so re-identifying the
+        // stack is the only reliable reset. View model is cached @State outside
+        // the stack, so no reload.
+        .id(appState.portfolioNavigationReset)
     }
 }
 

@@ -169,6 +169,11 @@ struct BroadcastFeedView: View {
         NavigationStack(path: $navigationPath) {
             broadcastContent
         }
+        // Return to root when the Insights tab is (re)selected. Broadcast detail
+        // is pushed with closure-based NavigationLinks the path never tracks, so
+        // re-identifying the stack is the reliable reset. View model is
+        // @StateObject on this struct (outside the stack), so no reload.
+        .id(appState.insightsNavigationReset)
     }
 
     private var broadcastContent: some View {

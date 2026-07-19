@@ -304,6 +304,12 @@ struct HomeView: View {
                 }
             }
         }
+        // Return to root whenever this tab is (re)selected. Detail screens are
+        // pushed with closure-based NavigationLinks that `navigationPath` never
+        // tracks, so re-identifying the stack is the only reliable reset. The
+        // view model is @State on this struct (outside the stack) and cached, so
+        // no reload is triggered.
+        .id(appState.homeNavigationReset)
     }
 
     private func handleNotificationNavigation(_ notification: AppNotification) {
