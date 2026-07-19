@@ -8,6 +8,10 @@ import SwiftUI
 /// Plain text (no markdown) renders identically to the previous Text-based display.
 struct MarkdownContentView: View {
     let content: String
+    /// Optional override for `##` heading color. Defaults to primary text so
+    /// existing surfaces (broadcasts, briefings) are unchanged; Resources passes
+    /// the brand accent to tint article headings.
+    var headingColor: Color? = nil
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -143,7 +147,7 @@ struct MarkdownContentView: View {
         case .heading(let level, let text):
             Text(parseInlineMarkdown(text))
                 .font(.system(size: level == 1 ? 22 : level == 2 ? 18 : 16, weight: .bold))
-                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .foregroundColor(headingColor ?? AppColors.textPrimary(colorScheme))
                 .tint(AppColors.accent)
 
         case .blockquote(let text):

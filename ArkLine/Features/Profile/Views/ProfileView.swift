@@ -35,6 +35,32 @@ struct ProfileView: View {
                     )
                     .padding(.horizontal, 20)
 
+                    // Resources / Learn hub
+                    NavigationLink(destination: ResourcesView(profileViewModel: viewModel)) {
+                        HStack(spacing: 14) {
+                            Image(systemName: "books.vertical.fill")
+                                .font(.title3)
+                                .foregroundColor(AppColors.accent)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Resources")
+                                    .font(AppFonts.body14Medium)
+                                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                                Text("Guides, glossary, and how to use Arkline")
+                                    .font(AppFonts.caption12)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(AppColors.textTertiary)
+                        }
+                        .padding(ArkSpacing.md)
+                        .background(RoundedRectangle(cornerRadius: ArkSpacing.Radius.card).fill(AppColors.cardBackground(colorScheme)))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+
                     // Admin Section (only for admins)
                     if appState.currentUser?.isAdmin == true {
                         NavigationLink(destination: AdminDashboardView()) {
