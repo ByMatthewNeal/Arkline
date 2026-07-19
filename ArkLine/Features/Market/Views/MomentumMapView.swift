@@ -150,14 +150,6 @@ struct MomentumMapView: View {
                     Text(pair.asset)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(textPrimary)
-                    if !pair.isRealBTCPair {
-                        Text("synthetic")
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(AppColors.textTertiary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Capsule().fill(textPrimary.opacity(0.06)))
-                    }
                 }
                 Text(pair.displayName)
                     .font(.system(size: 11))
@@ -232,7 +224,6 @@ struct MomentumMapView: View {
             bulletPoint("True momentum = both pairs bullish. Historically the strongest, most durable moves happen when an asset is rising in dollars AND gaining on Bitcoin at the same time.")
             bulletPoint("Outperforming BTC = the BTC pair is bullish while USD lags. These are relative-strength leaders that often move first when risk turns back on.")
             bulletPoint("Leading in USD = strong in dollar terms but not yet beating Bitcoin. Both bearish = no momentum.")
-            bulletPoint("Synthetic pairs are derived as USD ÷ BTC price; when Bitcoin itself is falling they can read bullish simply because the asset is dropping slower. Treat the real Coinbase pairs as the cleaner read.")
         }
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 12).fill(cardBackground))
