@@ -18,6 +18,15 @@ struct NotificationsDetailView: View {
     @AppStorage(Constants.UserDefaults.notifyBriefings)
     private var dailyBriefings = true
 
+    @AppStorage(Constants.UserDefaults.notifyDailyDigest)
+    private var dailyDigest = true
+
+    @AppStorage(Constants.UserDefaults.dailyDigestHour)
+    private var digestHour = 17
+
+    @AppStorage(Constants.UserDefaults.dailyDigestMinute)
+    private var digestMinute = 0
+
     @AppStorage(Constants.UserDefaults.notifySwingSignals)
     private var swingSignals = true
 
@@ -69,6 +78,41 @@ struct NotificationsDetailView: View {
                     }
                 } header: {
                     Text("Daily Briefings")
+                }
+                .listRowBackground(AppColors.cardBackground(colorScheme))
+
+                // MARK: - Daily Digest
+                Section {
+                    Toggle(isOn: $dailyDigest) {
+                        NotificationRow(
+                            icon: "sun.max.fill",
+                            iconColor: AppColors.warning,
+                            title: "Daily Digest",
+                            description: "One reminder a day with your briefing headline and unread insights"
+                        )
+                    }
+                    .onChange(of: dailyDigest) { _, _ in
+                        Haptics.selection()
+                        rearmDigest()
+                    }
+
+                    if dailyDigest {
+                        DatePicker(
+                            selection: digestTime,
+                            displayedComponents: .hourAndMinute
+                        ) {
+                            NotificationRow(
+                                icon: "clock.fill",
+                                iconColor: AppColors.accent,
+                                title: "Reminder Time",
+                                description: "When your digest arrives each day"
+                            )
+                        }
+                    }
+                } header: {
+                    Text("Daily Digest")
+                } footer: {
+                    Text("A once-a-day nudge so you don't miss the latest briefing and insights. Fires at your local time.")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
@@ -286,6 +330,30 @@ struct NotificationsDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    /// Bridges the stored hour/minute to the DatePicker's Date, re-arming the
+    /// digest whenever the user changes the time.
+    private var digestTime: Binding<Date> {
+        Binding(
+            get: {
+                var comps = DateComponents()
+                comps.hour = digestHour
+                comps.minute = digestMinute
+                return Calendar.current.date(from: comps) ?? Date()
+            },
+            set: { newDate in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                digestHour = comps.hour ?? 17
+                digestMinute = comps.minute ?? 0
+                rearmDigest()
+            }
+        )
+    }
+
+    /// Re-schedule the digest after a preference change.
+    private func rearmDigest() {
+        Task { await DailyDigestScheduler.rearm(unreadInsights: appState.insightsUnreadCount) }
     }
 
     private func syncModelPortfolioPreference(_ enabled: Bool) {

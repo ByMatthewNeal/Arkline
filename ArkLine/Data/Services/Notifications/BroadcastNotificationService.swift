@@ -32,6 +32,7 @@ class BroadcastNotificationService: ObservableObject {
     static func tapNotificationName(for type: String) -> Notification.Name {
         switch type {
         case "briefing":        return Notification.Name("BriefingNotificationTapped")
+        case "daily_digest":    return Notification.Name("BriefingNotificationTapped")
         case "swing_signal":    return Notification.Name("SwingSignalNotificationTapped")
         case "qps_change":      return Notification.Name("QPSChangeNotificationTapped")
         case "dca_reminder":    return Notification.Name("DCANotificationTapped")
@@ -495,6 +496,9 @@ extension BroadcastNotificationService {
         case "briefing":
             let slot = userInfo["slot"] as? String ?? "morning"
             result = (type: "briefing", id: slot)
+        case "daily_digest":
+            // Opens Home + expands the briefing, same as a briefing tap.
+            result = (type: "daily_digest", id: "")
         case "swing_signal":
             if let signalId = userInfo["signal_id"] as? String {
                 result = (type: "swing_signal", id: signalId)

@@ -15,4 +15,7 @@ struct SyncedPreferences: Codable, Equatable {
     var dashboardPresets: [DashboardPreset]?
     var activePresetId: String?
     var tickerPreferences: TickerPreferences?
+    /// Key ("summaryDate_slot") of the most recent briefing the user has read, so
+    /// the Daily Digest's caught-up suppression is consistent across their devices.
+    var lastReadBriefingKey: String?
 }

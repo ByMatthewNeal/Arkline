@@ -166,6 +166,11 @@ enum Constants {
         static let notifyBriefings = "arkline_briefing_notifications_enabled"
         static let notifySwingSignals = "arkline_swing_signal_notifications_enabled"
         static let lastReadBriefingKey = "arkline_last_read_briefing_key"
+        // Daily Digest — a once-daily local reminder at a user-chosen time that
+        // surfaces the latest briefing headline + unread insight count.
+        static let notifyDailyDigest = "arkline_daily_digest_enabled"
+        static let dailyDigestHour = "arkline_daily_digest_hour"
+        static let dailyDigestMinute = "arkline_daily_digest_minute"
         static let notifyEmail = "notifyEmail"
         static let notifyEmailMarketAlerts = "notifyEmailMarketAlerts"
         static let notifyEmailInsights = "notifyEmailInsights"

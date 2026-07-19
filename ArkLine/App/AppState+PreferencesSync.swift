@@ -32,7 +32,8 @@ extension AppState {
             enabledCoreAssets: Array(enabledCoreAssets).sorted { $0.rawValue < $1.rawValue },
             dashboardPresets: dashboardPresets,
             activePresetId: activePresetId?.uuidString,
-            tickerPreferences: tickerPreferences
+            tickerPreferences: tickerPreferences,
+            lastReadBriefingKey: UserDefaults.standard.string(forKey: Constants.UserDefaults.lastReadBriefingKey)
         )
     }
 
@@ -77,6 +78,11 @@ extension AppState {
         }
         if let ticker = p.tickerPreferences {
             setTickerPreferences(ticker)
+        }
+        // Adopt a newer read-briefing marker from another device so the digest's
+        // caught-up check stays consistent across the user's phones.
+        if let readKey = p.lastReadBriefingKey, !readKey.isEmpty {
+            UserDefaults.standard.set(readKey, forKey: Constants.UserDefaults.lastReadBriefingKey)
         }
     }
 

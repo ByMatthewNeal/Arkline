@@ -94,6 +94,8 @@ struct ArkLineApp: App {
                 Task { await AnalyticsService.shared.flush() }
                 // Push any dashboard/settings changes to the cloud as we leave.
                 Task { await appState.uploadPreferences(force: false) }
+                // Refresh the daily digest content with the latest briefing + unread count.
+                Task { await DailyDigestScheduler.rearm(unreadInsights: appState.insightsUnreadCount) }
             } else if newPhase == .active {
                 // Returning to the foreground — hide the overlay.
                 privacyOverlayTask?.cancel()
@@ -106,6 +108,8 @@ struct ArkLineApp: App {
                 BroadcastNotificationService.shared.clearBadge()
                 // Pick up layout/settings changes made on another device.
                 Task { await appState.restorePreferencesFromCloud() }
+                // Keep the daily digest content current on return to foreground.
+                Task { await DailyDigestScheduler.rearm(unreadInsights: appState.insightsUnreadCount) }
             }
             // .inactive: intentionally no-op — see the .background comment above.
         }
@@ -180,12 +184,17 @@ struct ArkLineApp: App {
                 DispatchQueue.main.async {
                     UIApplication.shared.registerForRemoteNotifications()
                 }
+                // Arm the digest now that we have permission (first-launch path).
+                Task { await DailyDigestScheduler.rearm(unreadInsights: appState.insightsUnreadCount) }
             }
         }
 
         // Cancel any legacy local briefing notifications —
         // server-side push handles this now
         BriefingNotificationScheduler.cancelAll()
+
+        // Arm the once-daily local digest with the latest cached content.
+        Task { await DailyDigestScheduler.rearm(unreadInsights: appState.insightsUnreadCount) }
     }
 
     private func handleDeepLink(_ url: URL) async {
