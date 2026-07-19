@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
   }
 
   const now = new Date()
-  const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0, notifications: 0, proximityAlerts: 0 }
+  const stats = { resolved: 0, t1Hits: 0, runnerStops: 0, losses: 0, expired: 0, notifications: 0, proximityAlerts: 0, entriesFilled: 0 }
 
   for (const signal of allSignals) {
     // Skip if already resolved by pipeline (race condition guard)
@@ -251,6 +251,9 @@ Deno.serve(async (req) => {
     const risk1r = signal.risk_1r ? Number(signal.risk_1r) : Math.abs(entryMid - sl)
     const t1AlreadyHit = !!signal.t1_hit_at
     let bestPrice = signal.best_price ? Number(signal.best_price) : entryMid
+    // Max adverse excursion — how much heat the trade takes before it works (or
+    // doesn't). Paired with bestPrice this is what makes stop tuning data-driven.
+    let worstPrice = signal.worst_price ? Number(signal.worst_price) : entryMid
     let runnerStop = signal.runner_stop ? Number(signal.runner_stop) : sl
 
     // --- Expiry check (time-based) ---
@@ -320,6 +323,7 @@ Deno.serve(async (req) => {
       if (!t1AlreadyHit) {
         // Track best price (MFE) on every check, even before T1
         bestPrice = Math.max(bestPrice, candle.high)
+        worstPrice = Math.min(worstPrice, candle.low)
 
         // Phase 1: check SL then T1
         // Dual-source: both Coinbase AND Binance must confirm SL breach
@@ -367,14 +371,18 @@ Deno.serve(async (req) => {
           stats.notifications++
         }
 
-        // No resolution — persist best price for MFE tracking
-        if (bestPrice > (signal.best_price ? Number(signal.best_price) : 0)) {
-          await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
+        // No resolution — persist best/worst price for MFE + MAE tracking
+        if (bestPrice > (signal.best_price ? Number(signal.best_price) : 0) ||
+            worstPrice < (signal.worst_price ? Number(signal.worst_price) : Infinity)) {
+          await supabase.from("trade_signals")
+            .update({ best_price: bestPrice, worst_price: worstPrice })
+            .eq("id", signal.id)
         }
       } else {
         // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
         // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
         bestPrice = Math.max(bestPrice, latest.high)
+        worstPrice = Math.min(worstPrice, latest.low)
         runnerStop = Math.max(runnerStop, bestPrice - risk1r)
 
         // Target 2 reached — notify once. Runner keeps trailing; the user decides.
@@ -420,6 +428,7 @@ Deno.serve(async (req) => {
       if (!t1AlreadyHit) {
         // Track best price (MFE) on every check, even before T1
         bestPrice = Math.min(bestPrice, candle.low)
+        worstPrice = Math.max(worstPrice, candle.high)
 
         // Dual-source: both Coinbase AND Binance must confirm SL breach
         if (isSlBreached(signal.asset, sl, isBuy, candle, triggerMs)) {
@@ -466,15 +475,20 @@ Deno.serve(async (req) => {
           stats.notifications++
         }
 
-        // No resolution — persist best price for MFE tracking
+        // No resolution — persist best/worst price for MFE + MAE tracking
+        // (short: "best" is the lowest price reached, "worst" the highest)
         const currentBest = signal.best_price ? Number(signal.best_price) : Infinity
-        if (bestPrice < currentBest) {
-          await supabase.from("trade_signals").update({ best_price: bestPrice }).eq("id", signal.id)
+        const currentWorst = signal.worst_price ? Number(signal.worst_price) : 0
+        if (bestPrice < currentBest || worstPrice > currentWorst) {
+          await supabase.from("trade_signals")
+            .update({ best_price: bestPrice, worst_price: worstPrice })
+            .eq("id", signal.id)
         }
       } else {
         // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
         // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
         bestPrice = Math.min(bestPrice, latest.low)
+        worstPrice = Math.max(worstPrice, latest.high)
         runnerStop = Math.min(runnerStop, bestPrice + risk1r)
 
         // Target 2 reached — notify once. Runner keeps trailing; the user decides.
@@ -543,6 +557,22 @@ Deno.serve(async (req) => {
     const entryLow = Number(signal.entry_zone_low)
     const entryHigh = Number(signal.entry_zone_high)
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
+
+    // ── Entry fill ──────────────────────────────────────────────────────────
+    // Price actually traded into the published entry zone, so the setup becomes
+    // a live position. This is the only place a signal turns "In Play".
+    // triggered_at is stamped here so every downstream measure (T1, stop,
+    // duration, P&L) runs from the real fill rather than from signal creation.
+    if (price.low <= entryHigh && price.high >= entryLow) {
+      const { count: filled } = await supabase.from("trade_signals").update({
+        status: "triggered",
+        triggered_at: now.toISOString(),
+      }, { count: "exact" })
+        .eq("id", signal.id)
+        .eq("status", "active") // guard: overlapping runs can't double-fill
+      if (filled && filled > 0) stats.entriesFilled++
+      continue
+    }
 
     // Check if price is approaching but hasn't fully entered the zone
     const approachPrice = isBuy ? price.low : price.high

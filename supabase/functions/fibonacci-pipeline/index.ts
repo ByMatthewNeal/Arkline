@@ -1158,6 +1158,24 @@ async function evaluateEMAPullbackSignals(
       continue
     }
 
+    // The entry is the EMA21 pullback zone we PUBLISH — not spot at detection.
+    // Previously entry/stop/targets were computed from currentPrice while the
+    // zone shown to members came from the EMA, so the app displayed one entry
+    // and traded another (and a short's stop could land below its entry zone).
+    const entryZoneLow = setup.ema21 * 0.995
+    const entryZoneHigh = setup.ema21 * 1.005
+    const entryMid = setup.ema21
+
+    // Staleness gate: if price already ran past the zone in the trade's
+    // direction, a member can't take the stated entry — don't publish at all.
+    if (isBuy ? currentPrice > entryZoneHigh : currentPrice < entryZoneLow) {
+      stats.skipReasons.push(
+        `price ${currentPrice} already past entry zone ${entryZoneLow.toFixed(4)}–${entryZoneHigh.toFixed(4)}`
+      )
+      stats.skipped++
+      continue
+    }
+
     // Compute targets
     const targets = computeEMAPullbackTargets(setup, currentPrice, candles4h, swings)
     if (!targets) {
@@ -1166,8 +1184,10 @@ async function evaluateEMAPullbackSignals(
       continue
     }
 
-    const riskDist = Math.abs(currentPrice - targets.stopLoss)
-    const rewardDist = Math.abs(targets.target1 - currentPrice)
+    // Risk/reward measured from the published entry, so R:R is what a member
+    // would actually get filling in the zone.
+    const riskDist = Math.abs(entryMid - targets.stopLoss)
+    const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
 
     if (rrRatio < 0.8) {
@@ -1215,13 +1235,14 @@ async function evaluateEMAPullbackSignals(
       ? (isStrong ? "strong_buy" : "buy")
       : (isStrong ? "strong_sell" : "sell")
 
-    // Partial TP and tightened SL (same fractions as fib signals)
+    // Partial TP and tightened SL (same fractions as fib signals), anchored to
+    // the published entry so the stop always sits on the correct side of it.
     const partialTP = isBuy
-      ? currentPrice + TP_FRACTION * rewardDist
-      : currentPrice - TP_FRACTION * rewardDist
+      ? entryMid + TP_FRACTION * rewardDist
+      : entryMid - TP_FRACTION * rewardDist
     const tightenedSL = isBuy
-      ? currentPrice - SL_FRACTION * riskDist
-      : currentPrice + SL_FRACTION * riskDist
+      ? entryMid - SL_FRACTION * riskDist
+      : entryMid + SL_FRACTION * riskDist
 
     const macroRegime = fearGreedIndex !== undefined
       ? (fearGreedIndex >= 70 ? "Risk-On" : fearGreedIndex <= 30 ? "Risk-Off" : "Neutral")
@@ -1236,18 +1257,21 @@ async function evaluateEMAPullbackSignals(
     const signalRow = {
       asset: ticker,
       signal_type: signalType,
-      status: "triggered",
+      // Published as "Watching" — signal-monitor flips it to "In Play" only once
+      // price actually trades into the entry zone. Creating it already triggered
+      // meant the app claimed a live position before entry was ever reached.
+      status: "active",
       timeframe: "4h",
-      entry_zone_low: setup.ema21 * 0.995,
-      entry_zone_high: setup.ema21 * 1.005,
-      entry_price_mid: currentPrice,
+      entry_zone_low: entryZoneLow,
+      entry_zone_high: entryZoneHigh,
+      entry_price_mid: entryMid,
       confluence_zone_id: null,
       target_1: partialTP,
       target_2: targets.target2,
       stop_loss: tightenedSL,
       risk_reward_ratio: Math.round(rrRatio * 100) / 100,
       risk_1r: SL_FRACTION * riskDist,
-      best_price: currentPrice,
+      best_price: entryMid,
       runner_stop: tightenedSL,
       ema_trend_aligned: true,
       bounce_confirmed: true,
@@ -1278,7 +1302,9 @@ async function evaluateEMAPullbackSignals(
       suggested_risk_pct: lowConviction
         ? Math.min(1.0, btcVolRegime.suggestedRiskPct)
         : btcVolRegime.suggestedRiskPct,
-      triggered_at: new Date().toISOString(),
+      // triggered_at is intentionally left null. signal-monitor stamps it the
+      // moment price fills the entry zone, so T1/stop/duration/P&L all measure
+      // from the real entry instead of from signal creation.
       expires_at: expiresAt,
     }
 
@@ -2877,8 +2903,20 @@ async function evaluateSignals(
     const targets = computeTargetsAndStop(zone, allFibPrices, isBuy)
     if (!targets) continue
 
-    // Use current price as entry — more realistic than zone.mid since bounce already happened
-    const entryMid = currentPrice
+    // Entry is the confluence zone we PUBLISH, not spot at detection. Using
+    // spot meant the app displayed one entry (the zone) and traded another,
+    // and once price ran past the zone the stop could land on the wrong side
+    // of the stated entry. Anchoring here keeps entry, stop, targets and R:R
+    // consistent with what the member actually sees.
+    if (isBuy ? currentPrice > zone.high : currentPrice < zone.low) {
+      const reason = `price ${currentPrice} already past entry zone ${zone.low.toFixed(4)}–${zone.high.toFixed(4)}`
+      console.log(`[${ticker}] Zone ${zone.mid.toFixed(2)} (${zone.zone_type}): ${reason}`)
+      stats.skipReasons.push(`${zone.zone_type} @${zone.mid.toFixed(2)}: ${reason}`)
+      stats.skipped++
+      continue
+    }
+
+    const entryMid = zone.mid
     const riskDist = Math.abs(entryMid - targets.stopLoss)
     const rewardDist = Math.abs(targets.target1 - entryMid)
     const rrRatio = riskDist > 0 ? rewardDist / riskDist : 0
@@ -2993,7 +3031,8 @@ async function evaluateSignals(
     const signalRow = {
       asset: ticker,
       signal_type: signalType,
-      status: "triggered",  // Enter at current price after bounce confirmation
+      // Published as "Watching" — becomes "In Play" only on a real entry fill.
+      status: "active",
       timeframe: tier.tierName,
       entry_zone_low: zone.low,
       entry_zone_high: zone.high,
@@ -3030,7 +3069,9 @@ async function evaluateSignals(
       suggested_risk_pct: lowConviction
         ? Math.min(1.0, btcVolRegime.suggestedRiskPct)
         : btcVolRegime.suggestedRiskPct,
-      triggered_at: new Date().toISOString(),
+      // triggered_at is intentionally left null. signal-monitor stamps it the
+      // moment price fills the entry zone, so T1/stop/duration/P&L all measure
+      // from the real entry instead of from signal creation.
       expires_at: expiresAt,
     }
 
