@@ -236,20 +236,56 @@ Deno.serve(async (req) => {
   }
   if (signalLines.length) sections.push(`SIGNALS:\n${signalLines.join("\n")}`)
 
-  // --- Events ---
-  if (Array.isArray(payload.economicEvents) && payload.economicEvents.length > 0) {
-    const eventLines = payload.economicEvents.map((e: any) => {
-      let line = e.title ?? e.event
-      if (e.time) line += ` (${e.time})`
-      // Include actual vs forecast for released data
+  // --- Events (look-back + look-ahead) ---
+  // Times rendered in ET so the model can say "8:30am ET" naturally.
+  const fmtET = (iso: string | undefined): string => {
+    if (!iso) return ""
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        weekday: "short", hour: "numeric", minute: "2-digit",
+      }).format(new Date(iso)) + " ET"
+    } catch {
+      return ""
+    }
+  }
+
+  const released = payload.economicEventsReleased as any[] | undefined
+  if (Array.isArray(released) && released.length > 0) {
+    const lines = released.map((e: any) => {
+      let line = e.title
+      const when = fmtET(e.time)
+      if (when) line += ` (${when})`
+      if (e.impact) line += ` [${String(e.impact).toUpperCase()}]`
       const parts: string[] = []
-      if (e.actual != null) parts.push(`Actual: ${e.actual}`)
-      if (e.forecast != null) parts.push(`Forecast: ${e.forecast}`)
-      if (e.previous != null) parts.push(`Previous: ${e.previous}`)
-      if (parts.length > 0) line += ` [${parts.join(", ")}]`
+      if (e.actual != null && e.actual !== "") parts.push(`Actual: ${e.actual}`)
+      if (e.forecast != null && e.forecast !== "") parts.push(`Forecast: ${e.forecast}`)
+      if (e.previous != null && e.previous !== "") parts.push(`Previous: ${e.previous}`)
+      if (e.beatMiss) parts.push(String(e.beatMiss))
+      if (parts.length) line += ` — ${parts.join(", ")}`
       return line
     })
-    sections.push(`EVENTS:\n${eventLines.join("\n")}`)
+    sections.push(
+      `RECENTLY RELEASED DATA (last ~18h, including pre-open prints — address what came out and how it landed vs forecast):\n${lines.join("\n")}`
+    )
+  }
+
+  const upcoming = payload.economicEventsUpcoming as any[] | undefined
+  if (Array.isArray(upcoming) && upcoming.length > 0) {
+    const lines = upcoming.map((e: any) => {
+      let line = e.title
+      const when = fmtET(e.time)
+      if (when) line += ` (${when})`
+      if (e.impact) line += ` [${String(e.impact).toUpperCase()}]`
+      const parts: string[] = []
+      if (e.forecast != null && e.forecast !== "") parts.push(`Forecast: ${e.forecast}`)
+      if (e.previous != null && e.previous !== "") parts.push(`Previous: ${e.previous}`)
+      if (parts.length) line += ` — ${parts.join(", ")}`
+      return line
+    })
+    sections.push(
+      `UPCOMING DATA (next ~36h — flag what's ahead today and tomorrow that could move markets):\n${lines.join("\n")}`
+    )
   }
 
   // --- BTC Technical Analysis ---
@@ -717,7 +753,7 @@ Write a structured briefing using EXACTLY these section headers on their own lin
 2-3 sentences. The day's story across crypto and equities, favored market first and deepest — what moved and why. Weave in any notable credit or risk appetite shifts if relevant. Cover BTC/ETH/SOL and index/sector action as the rotation warrants.
 
 ## Macro
-2-3 sentences. Surface any important news, economic data, or events to be aware of. Liquidity trend, VIX/DXY only if notable. Skip if nothing changed.
+2-3 sentences. If RECENTLY RELEASED DATA is present, LEAD with it — name the specific release (e.g. Core PPI, CPI, jobless claims), whether it beat or missed forecast, and how markets reacted. Include prints that landed in the pre-market hours before this briefing, not just at the open. Then, if UPCOMING DATA is present, flag the most important release(s) still ahead today or tomorrow and why they matter. Add liquidity trend, VIX/DXY only if notable. Do not claim "no data" when releases are listed above.
 
 ## Technical
 2-3 sentences. BTC trend, nearest Fib support/resistance, derivatives if notable.
@@ -870,14 +906,21 @@ async function enrichPayloadFromServer(
       .then(r => r.json())
       .catch(() => null),
 
-    // 4. Economic events from Supabase
+    // 4. Economic events — a WINDOW around "now", not just today's date.
+    // Old query used non-existent columns (event/date/time vs the real
+    // title/event_date/event_time) AND filtered impact = "High" (capitalized)
+    // when values are lowercase — so it always returned nothing and the briefing
+    // never mentioned any data. We now look BACK ~18h (to catch 8:30am ET
+    // releases that land before the ~10am briefing, e.g. CPI/PPI) and AHEAD ~36h
+    // (to preview what's still coming today and tomorrow), including medium impact.
     supabase
       .from("economic_events")
-      .select("event, date, time, actual, forecast, previous, impact")
-      .eq("date", todayUTC)
-      .eq("impact", "High")
-      .order("time", { ascending: true })
-      .limit(5),
+      .select("title, country, event_time, impact, actual, forecast, previous, beat_miss")
+      .gte("event_time", new Date(Date.now() - 18 * 3600_000).toISOString())
+      .lte("event_time", new Date(Date.now() + 36 * 3600_000).toISOString())
+      .in("impact", ["high", "medium"])
+      .order("event_time", { ascending: true })
+      .limit(80),
   ])
 
   // --- Parse crypto prices ---
@@ -1023,15 +1066,51 @@ async function enrichPayloadFromServer(
     payload.fearGreedClassification = fg.value_classification
   }
 
-  // --- Parse economic events ---
-  if (events.status === "fulfilled" && events.value.data && events.value.data.length > 0) {
-    payload.economicEvents = events.value.data.map((e: any) => ({
-      title: e.event,
-      time: e.time,
-      actual: e.actual,
-      forecast: e.forecast,
-      previous: e.previous,
-    }))
+  // --- Parse economic events → split into RELEASED (look-back) + UPCOMING (look-ahead) ---
+  if (events.status === "fulfilled" && Array.isArray(events.value.data) && events.value.data.length > 0) {
+    const nowMs = Date.now()
+    const rows = events.value.data as any[]
+
+    // Rank so the most market-moving items survive the cap: high impact first,
+    // then US over foreign, then closeness to now.
+    const importance = (e: any) =>
+      (String(e.impact).toLowerCase() === "high" ? 2 : 1) +
+      (String(e.country).toUpperCase() === "US" ? 0.5 : 0)
+
+    const released = rows
+      .filter((e) => e.event_time && new Date(e.event_time).getTime() <= nowMs && e.actual != null && e.actual !== "")
+      .sort((a, b) => new Date(b.event_time).getTime() - new Date(a.event_time).getTime()) // most recent first
+      .sort((a, b) => importance(b) - importance(a)) // stable: importance wins, recency breaks ties
+      .slice(0, 6)
+      .map((e) => ({
+        title: e.title,
+        country: e.country,
+        time: e.event_time,
+        impact: e.impact,
+        actual: e.actual,
+        forecast: e.forecast,
+        previous: e.previous,
+        beatMiss: e.beat_miss,
+      }))
+
+    const upcoming = rows
+      .filter((e) => e.event_time && new Date(e.event_time).getTime() > nowMs)
+      .sort((a, b) => new Date(a.event_time).getTime() - new Date(b.event_time).getTime()) // soonest first
+      .sort((a, b) => importance(b) - importance(a))
+      .slice(0, 6)
+      .map((e) => ({
+        title: e.title,
+        country: e.country,
+        time: e.event_time,
+        impact: e.impact,
+        forecast: e.forecast,
+        previous: e.previous,
+      }))
+
+    payload.economicEventsReleased = released
+    payload.economicEventsUpcoming = upcoming
+    // Back-compat for any consumer still reading economicEvents.
+    payload.economicEvents = released
   }
 
   // --- Compute VIX z-score from 90-day history (contrarian fear indicator) ---
