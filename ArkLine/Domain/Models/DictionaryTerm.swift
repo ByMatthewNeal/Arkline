@@ -26,6 +26,7 @@ struct DictionaryTerm: Codable, Identifiable, Hashable {
         case "technical": return "chart.xyaxis.line"
         case "trading": return "arrow.left.arrow.right.circle.fill"
         case "risk": return "exclamationmark.shield.fill"
+        case "arkline": return "sparkles"
         case "general": return "book.fill"
         default: return "book.fill"
         }
@@ -38,6 +39,7 @@ struct DictionaryTerm: Codable, Identifiable, Hashable {
         case "technical": return .orange
         case "trading": return AppColors.success
         case "risk": return AppColors.error
+        case "arkline": return .indigo
         case "general": return .gray
         default: return .gray
         }

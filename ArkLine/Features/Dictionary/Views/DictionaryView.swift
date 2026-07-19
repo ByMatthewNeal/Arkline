@@ -16,7 +16,7 @@ struct DictionaryView: View {
 
     private let service = ServiceContainer.shared.dictionaryService
 
-    private let categories = ["Crypto", "Macro", "Technical", "Trading", "Risk", "General"]
+    private let categories = ["Arkline", "Crypto", "Macro", "Technical", "Trading", "Risk", "General"]
 
     // MARK: - Filtered & Grouped Terms
 
@@ -312,6 +312,7 @@ struct DictionaryView: View {
         case "technical": return .orange
         case "trading": return AppColors.success
         case "risk": return AppColors.error
+        case "arkline": return .indigo
         case "general": return .gray
         default: return .gray
         }
