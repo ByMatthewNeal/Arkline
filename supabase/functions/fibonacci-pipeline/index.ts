@@ -1196,6 +1196,14 @@ async function evaluateEMAPullbackSignals(
       rrRatio, fearGreedIndex, btcRiskScore,
     })
 
+    // Shadow score — recorded for out-of-sample comparison, drives nothing.
+    const compositeScoreV2 = computeCompositeScoreV2({
+      volumeConfluence: volConfluence,
+      bounce: { confirmed: true, details: { volume_spike: setup.volumeOnBounce } },
+      rrRatio,
+      counterTrend: false,
+    })
+
     if (compositeScore < 50) {
       stats.skipReasons.push(`score ${compositeScore} < 50`)
       stats.skipped++
@@ -1257,6 +1265,7 @@ async function evaluateEMAPullbackSignals(
       },
       counter_trend: false,
       composite_score: compositeScore,
+      composite_score_v2: compositeScoreV2,
       volume_confluence: volConfluence,
       fear_greed_index: fearGreedIndex ?? null,
       btc_risk_score: btcRiskScore ?? null,
@@ -1973,6 +1982,55 @@ function computeCompositeScore(params: {
   }
 
   return Math.min(Math.max(score, 0), 105)  // Max now 105 → clamped to 100 at caller
+}
+
+// ─── Composite Score v2 (SHADOW — drives nothing) ────────────────────────────
+//
+// v1 above proved anti-predictive across 229 closed trades: its 80+ bucket won
+// 40.5% (-0.50 expectancy) while its sub-65 bucket won 60.6%. Component-level
+// analysis showed why — v1's biggest rewards go to inputs that don't work:
+//
+//   counter_trend      v1: -10 penalty | reality: the only +EV group (+0.235)
+//   wick_rejection     v1: +8          | reality: 41% win, -0.361
+//   consecutive_closes v1: +8          | reality: 35% win, -0.507
+//   risk_reward >= 3   v1: +15 (max)   | reality: 12.5% win, -1.453
+//   volume_spike       v1: +8          | reality: 58.8% win, +0.161  ✓
+//   volume_confluence  v1: +4 (min)    | reality: 58.0% vs 44.8% win ✓ strongest
+//
+// v2 keeps only what separated outcomes. Its value is mostly at the BOTTOM: the
+// sub-35 band covered 64 trades averaging -0.71%, so it's better at telling you
+// what to avoid than what to chase.
+//
+// IMPORTANT: these weights were fitted on the same history used to judge them,
+// so this is a hypothesis, not a validated model. It is stored for comparison
+// only and must beat v1 out-of-sample on fresh signals before it influences
+// ranking, filtering, or anything shown to members.
+function computeCompositeScoreV2(params: {
+  volumeConfluence: VolumeConfluenceResult
+  bounce: { confirmed: boolean; details: Record<string, boolean> }
+  rrRatio: number
+  counterTrend: boolean
+}): number {
+  let score = 0
+
+  // Cleanest discriminator in the data — weighted far above v1's 4 points.
+  if (params.volumeConfluence.has_volume_confluence) score += 25
+
+  // The one bounce-confirmation input that actually predicted anything.
+  if (params.bounce.details.volume_spike) score += 20
+
+  // Mid-range R:R was the sweet spot (62.1% win, +0.300). Very high R:R means
+  // the target is too far or the stop too tight — it rarely fills, so it earns
+  // nothing rather than v1's maximum award.
+  if (params.rrRatio >= 3) score += 0
+  else if (params.rrRatio >= 2) score += 20
+  else score += 10
+
+  // v1 penalised this by 10; historically it was the only positive-expectancy
+  // group. Given the thin sample (n=36) it gets a modest credit, not a big one.
+  if (params.counterTrend) score += 10
+
+  return Math.min(Math.max(score, 0), 100)
 }
 
 // ─── Bounce Confirmation ─────────────────────────────────────────────────────
@@ -2867,6 +2925,14 @@ async function evaluateSignals(
       btcRiskScore,
     })
 
+    // Shadow score — recorded for out-of-sample comparison, drives nothing.
+    const compositeScoreV2 = computeCompositeScoreV2({
+      volumeConfluence: volConfluence,
+      bounce,
+      rrRatio,
+      counterTrend,
+    })
+
     // Apply adaptive direction bonus
     const dirBonus = adaptiveParams?.direction_bonus?.[ticker]
     if (dirBonus) {
@@ -2951,6 +3017,7 @@ async function evaluateSignals(
       },
       counter_trend: counterTrend,
       composite_score: compositeScore,
+      composite_score_v2: compositeScoreV2,
       volume_confluence: volConfluence,
       fear_greed_index: fearGreedIndex ?? null,
       btc_risk_score: btcRiskScore ?? null,
