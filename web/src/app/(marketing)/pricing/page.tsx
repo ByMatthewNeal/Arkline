@@ -143,20 +143,22 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 flex flex-col items-center gap-3">
                 <AppStoreCTA className="w-full justify-center" />
+                <div className="flex w-full items-center gap-3">
+                  <div className="h-px flex-1 bg-ark-divider" />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-ark-text-tertiary">or</span>
+                  <div className="h-px flex-1 bg-ark-divider" />
+                </div>
+                <Link
+                  href="/signup"
+                  className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
+                >
+                  Subscribe on the web →
+                </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                Prefer web checkout?{' '}
-                <a
-                  href="https://buy.stripe.com/14A3cxeeE3O63rP5341Fe03"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline decoration-ark-divider hover:text-ark-text"
-                >
-                  Subscribe via Stripe
-                </a>
-                .
+                iPhone or web (Mac, Windows, Android). Same features, same price.
               </p>
               <p className="mt-1 text-center text-[11px] text-ark-text-disabled">
                 Secure. Cancel anytime.

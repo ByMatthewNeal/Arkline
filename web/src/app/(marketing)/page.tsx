@@ -90,6 +90,16 @@ export default function LandingPage() {
             </Link>
           </FadeIn>
 
+          {/* Secondary web CTA — for non-iOS users */}
+          <FadeIn onMount delay={0.32} className="mt-4 text-center">
+            <Link
+              href="/signup"
+              className="text-sm text-ark-text-tertiary underline decoration-ark-divider underline-offset-4 transition-colors hover:text-ark-text"
+            >
+              No iPhone? Use ArkLine on the web →
+            </Link>
+          </FadeIn>
+
           {/* Trust strip */}
           <FadeIn onMount delay={0.4} variant="none" className="mt-8 flex flex-col items-center gap-3">
             <div className="flex items-center gap-4 sm:gap-6">
@@ -328,15 +338,17 @@ export default function LandingPage() {
                 ))}
               </ul>
 
-              <div className="mt-8 flex justify-center">
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <AppStoreCTA />
+                <Link
+                  href="/signup"
+                  className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
+                >
+                  Subscribe on the web →
+                </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                Subscribe through the App Store — or{' '}
-                <Link href="/pricing" className="underline decoration-ark-divider hover:text-ark-text">
-                  subscribe on the web
-                </Link>
-                .
+                iPhone or web. Same features, same price.
               </p>
               <p className="mt-4 border-t border-ark-divider pt-4 text-center text-[11px] text-ark-text-tertiary">
                 After 150 founding spots fill, standard pricing rises to <span className="font-semibold text-ark-text-secondary">$69.99/mo</span>.
@@ -368,10 +380,16 @@ export default function LandingPage() {
               the data-driven edge to manage your portfolio with confidence.
             </p>
             <p className="mt-3 text-sm font-medium text-ark-primary">
-              Founding members lock in $39.99/mo — forever.
+              Founding members lock in $39.99/mo forever.
             </p>
-            <div className="mt-8 flex justify-center">
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <AppStoreCTA />
+              <Link
+                href="/signup"
+                className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
+              >
+                Subscribe on the web →
+              </Link>
             </div>
 
             <div className="mt-6 flex justify-center">

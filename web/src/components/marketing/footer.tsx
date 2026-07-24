@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Twitter, Instagram, Linkedin, Apple } from 'lucide-react';
+import { Twitter, Instagram, Linkedin, Apple, Globe } from 'lucide-react';
 import { ArklineLogo } from '@/components/ui';
 
 const footerLinks = {
   Product: [
     { label: 'Features', href: '/features' },
     { label: 'Pricing', href: '/pricing' },
+    { label: 'Sign Up', href: '/signup' },
     { label: 'Log In', href: '/login' },
   ],
   Resources: [
@@ -32,10 +33,14 @@ export function Footer() {
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ark-text-secondary">
               Portfolio tracking, multi-factor risk scoring, and AI-powered market intelligence — built for investors who want a data-driven edge.
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-2">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2.5 py-1 text-[10px] text-ark-text-disabled">
                 <Apple className="h-3 w-3" />
                 Available on iOS
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2.5 py-1 text-[10px] text-ark-text-disabled">
+                <Globe className="h-3 w-3" />
+                Available on the web
               </div>
             </div>
             <div className="mt-4 flex gap-3">

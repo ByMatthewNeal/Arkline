@@ -29,26 +29,24 @@ It's live.
 
 Arkline just went live on the App Store. If you
 signed up early, you're first in line for
-founding member pricing — $39.99/mo or $399.99/yr,
+founding member pricing at $39.99/mo or $399.99/yr,
 locked forever as long as you stay subscribed. Only
 150 spots at this price, then it goes to $69.99/mo.
 
 Download here:
 https://apps.apple.com/app/arkline-market-intelligence/id6760355430
 
-Two things worth saying up front:
+Thank you for waiting. Review took longer than
+I wanted. If you signed up months ago and were
+starting to think this wasn't real, it is, and
+I appreciate your patience.
 
-- Thank you for waiting. Review took longer than
-  I wanted. If you signed up months ago and were
-  starting to think this wasn't real — it is, and
-  I appreciate your patience.
-
-- Everything I promised in the earlier emails is
-  in the app. BTC risk score. Macro dashboard.
-  Smart DCA. Morning and evening AI briefings.
-  Portfolio tracking across 20,000+ assets.
-  No tiers, no upsells — one price, everything
-  included.
+Everything I promised in the earlier emails is
+in the app. BTC risk score. Macro dashboard.
+Smart DCA. Morning and evening AI briefings.
+Portfolio tracking across 20,000+ assets.
+No tiers, no upsells. One price, everything
+included.
 
 If you subscribe and something's broken, confusing,
 or missing, hit reply. This inbox goes to me, and
@@ -61,7 +59,7 @@ Founder, Arkline
 
 P.S. Founding pricing is grandfathered. If you
 subscribe in the first 150 and stay subscribed,
-you pay $39.99 forever — even after we raise the
+you pay $39.99 forever, even after we raise the
 price. That's the deal.
 ```
 

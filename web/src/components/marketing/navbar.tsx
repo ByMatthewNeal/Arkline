@@ -11,6 +11,7 @@ const links = [
   { label: 'Features', href: '/features' },
   { label: 'Methodology', href: '/methodology' },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Sign In', href: '/login' },
 ];
 
 export function Navbar() {

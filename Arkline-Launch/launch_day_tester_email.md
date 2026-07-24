@@ -17,24 +17,31 @@
 
 ## Body
 
-Hey —
+Hey,
 
 Quick one. ArkLine is officially live on the App Store today.
 
-**Download it here →** https://apps.apple.com/app/arkline-market-intelligence/id6760355430
+Download it here:
+https://apps.apple.com/app/arkline-market-intelligence/id6760355430
 
-Big thanks for testing over the last few weeks. You helped catch bugs and shape the product before it was ready for the world. As a thank you, **your first 3 months of ArkLine Pro are on me** — no code to enter, nothing to do. Just sign in with the same email you used in TestFlight and you're good.
+Big thanks for testing over the last few weeks. You helped
+catch bugs and shape the product before it was ready for the
+world. As a thank you, your first 3 months of ArkLine Pro
+are on me. No code to enter, nothing to do. Just sign in
+with the same email you used in TestFlight and you're good.
 
 Two things:
 
 1. Delete the TestFlight version of ArkLine from your device
 2. Download the App Store version and sign in with the same email
 
-Your data is intact — portfolios, DCA settings, everything you had in TestFlight is still there. Nothing to migrate.
+Your data is intact. Portfolios, DCA settings, everything
+you had in TestFlight is still there. Nothing to migrate.
 
-Truly grateful. Reply anytime — this comes to me directly.
+Truly grateful. Reply anytime, this comes to me directly.
 
-— Matt
+Talk soon,
+Matt
 
 ---
 
