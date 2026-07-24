@@ -306,7 +306,6 @@
 		85030D9B4F243212B135BC23 /* MockDCAService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D4FA1A5F9032170FCD48F8 /* MockDCAService.swift */; };
 		85AA3CAFA6EC4B72DACBB6B5 /* ResearchNoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD4EB13B2E8FA083D3E4EE33 /* ResearchNoteView.swift */; };
 		86279303BD396F32CCA316D1 /* MemberDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DE9537870AFEA78CFB2851 /* MemberDetailView.swift */; };
-		86549ACE265843978550890B /* ReelScriptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A511EF02204638D5A535EEA9 /* ReelScriptsView.swift */; };
 		869FCACBD4C6668613E58066 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15B357FD7402C8C699282690 /* OnboardingViewModel.swift */; };
 		86A35FC4DE871DF32AFE316E /* DCAServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 546EB1AA744607463EE86B28 /* DCAServiceProtocol.swift */; };
 		86BC5F38F083F7A28F1970C7 /* QRScannerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F01012E7049C0FCF27924C /* QRScannerSheet.swift */; };
@@ -914,7 +913,6 @@
 		A42D6E84601E44BCEAA4D84A /* CrudeOilDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrudeOilDetailView.swift; sourceTree = "<group>"; };
 		A4910EA95756EA732F81117A /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
 		A4FFFAB5AE77E82240232031 /* SignalDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalDetailView.swift; sourceTree = "<group>"; };
-		A511EF02204638D5A535EEA9 /* ReelScriptsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelScriptsView.swift; sourceTree = "<group>"; };
 		A5323582A6D49F73210E861F /* CustomTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTextField.swift; sourceTree = "<group>"; };
 		A54738F656784B9C90F0421A /* USFuturesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USFuturesSection.swift; sourceTree = "<group>"; };
 		A5CE1479CE7446A3F458CAF0 /* SentimentMarketCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentMarketCards.swift; sourceTree = "<group>"; };
@@ -1785,7 +1783,6 @@
 				6BB4E143627F05C545048B81 /* MetricCard.swift */,
 				EDC03DBAF22897F25822A3F0 /* OperatingCostsView.swift */,
 				33DD408C901285201142058E /* PortfolioTargetsAdminView.swift */,
-				A511EF02204638D5A535EEA9 /* ReelScriptsView.swift */,
 				D1C4E79444B9B11F929B8C83 /* ResearchNotesAdminView.swift */,
 				19E1622C78359300DB8E4111 /* RevenueDashboardView.swift */,
 				FF2BE29C4C2BFC171462933F /* SendInviteView.swift */,
@@ -2934,7 +2931,6 @@
 				DB98C1E8CE156AF90EF6C97D /* RainbowChartServiceProtocol.swift in Sources */,
 				3F0E8146D2D75E51FDA96EF9 /* ReadArticlesStore.swift in Sources */,
 				7496022AFE7F51C4A859F208 /* RealEstateProperty.swift in Sources */,
-				86549ACE265843978550890B /* ReelScriptsView.swift in Sources */,
 				2BED83055A76252EB2444EE5 /* ReorderableMarketWidgetStack.swift in Sources */,
 				9DFB8BADA219982EEE0475A3 /* ReorderableWidgetStack.swift in Sources */,
 				9A587B37CA7F4159349EAEB2 /* ResearchNote.swift in Sources */,
