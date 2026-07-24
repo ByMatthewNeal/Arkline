@@ -3,23 +3,24 @@
 import Link from 'next/link';
 import { ViewContentEvent } from '@/components/analytics/ViewContentEvent';
 import { Check, HelpCircle, Shield } from 'lucide-react';
-import { ArklineLogo, Button } from '@/components/ui';
-import { EmailCapture } from '@/components/marketing/email-capture';
+import { ArklineLogo } from '@/components/ui';
+import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { FadeIn } from '@/components/marketing/fade-in';
 import { SpotsCounter } from '@/components/marketing/spots-counter';
 
 const proFeatures = [
-  'Full portfolio tracking across 20,000+ assets',
+  'Portfolio tracking — crypto, stocks, and custom assets (20,000+)',
+  'Performance metrics — Sharpe ratio, drawdown, volatility, allocation',
   '8-factor BTC risk scoring with historical trends',
   'Morning & evening AI briefings',
-  'Macro dashboard with regime detection',
+  'Macro dashboard with regime detection (VIX, DXY, US Net Liquidity)',
   'Smart DCA with risk-adjusted reminders',
-  'Market sentiment analysis',
-  'Coinbase App Store ranking tracker',
-  'Real-time news feed',
-  'FedWatch integration',
-  'Push notifications & alerts',
+  'Technical analysis — RSI, MACD, moving averages, BMSB',
+  'Sentiment gauges — Fear & Greed, altcoin season, BTC dominance',
+  'Derivatives data — open interest, funding rates, liquidations',
+  'Economic calendar + FedWatch rate probabilities',
+  'Real-time news, Coinbase ranking, and push alerts',
 ];
 
 const faqs = [
@@ -28,12 +29,12 @@ const faqs = [
     a: 'Yes. Cancel from Settings at any time. You keep full access until the end of your billing period.',
   },
   {
-    q: 'Is there a free trial?',
-    a: 'Arkline Pro comes with a 10-day free trial. Add a card to start — you won\'t be charged until the trial ends.',
+    q: 'How do I subscribe?',
+    a: 'Download ArkLine from the App Store and subscribe in-app through Apple, or subscribe on this page through our secure web checkout (Stripe). Both give you the same full access to ArkLine Pro.',
   },
   {
     q: 'What payment methods do you accept?',
-    a: 'All major credit cards, Apple Pay, and Google Pay through a secure payment processor.',
+    a: 'In-app: Apple ID (any payment method attached — credit/debit, Apple Pay, Apple ID balance). On the web: all major credit cards via Stripe.',
   },
   {
     q: 'What data sources does Arkline use?',
@@ -85,17 +86,17 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-lg text-ark-text-secondary">
-              Join the early access list. Be first when we launch.
+              One tier. Everything included. Subscribe on iOS or on the web.
             </p>
             <div className="mt-5 flex items-center justify-center gap-4 text-xs text-ark-text-tertiary">
               <div className="flex items-center gap-1">
                 <Shield className="h-3 w-3" />
-                Join free
+                Cancel anytime
               </div>
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1">
                 <Shield className="h-3 w-3" />
-                No spam
+                Encrypted &amp; private
               </div>
             </div>
           </FadeIn>
@@ -105,7 +106,7 @@ export default function PricingPage() {
       {/* Pricing cards */}
       <section className="pt-8 pb-20 sm:pt-12 sm:pb-28">
         <div className="mx-auto grid max-w-5xl gap-8 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-          {/* Early Investor */}
+          {/* Founding Member — active tier */}
           <FadeIn onMount delay={0.1}>
             <div className="relative h-full overflow-hidden rounded-2xl border border-ark-primary/30 bg-gradient-to-b from-ark-primary/[0.06] to-ark-primary/[0.01] p-8 shadow-xl shadow-ark-primary/10">
               {/* Corner glow */}
@@ -117,9 +118,9 @@ export default function PricingPage() {
                 Limited — first 150 members
               </div>
 
-              <h3 className="mt-3 text-lg font-semibold text-ark-text">Early Investor</h3>
+              <h3 className="mt-3 text-lg font-semibold text-ark-text">Founding Member</h3>
               <p className="mt-1 text-sm text-ark-text-secondary">
-                Lock in the lowest price. Yours forever as long as you stay subscribed.
+                Lock in the lowest price ArkLine will ever charge. Yours forever as long as you stay subscribed.
               </p>
 
               <div className="mt-5 flex items-baseline gap-1">
@@ -129,7 +130,7 @@ export default function PricingPage() {
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs text-ark-text-tertiary">
-                or <span className="font-medium text-ark-text-secondary">$400/year</span> — save over $79
+                or <span className="font-medium text-ark-text-secondary">$399.99/year</span> — save ~17%
               </p>
               <SpotsCounter className="mt-2" />
 
@@ -142,28 +143,37 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <a
-                href="https://buy.stripe.com/14A3cxeeE3O63rP5341Fe03"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-8 block"
-              >
-                <Button size="lg" className="w-full">
-                  Subscribe Now
-                </Button>
-              </a>
+              <div className="mt-8 flex justify-center">
+                <AppStoreCTA className="w-full justify-center" />
+              </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                Secure checkout via Stripe • Cancel anytime
+                Prefer web checkout?{' '}
+                <a
+                  href="https://buy.stripe.com/14A3cxeeE3O63rP5341Fe03"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-ark-divider hover:text-ark-text"
+                >
+                  Subscribe via Stripe
+                </a>
+                .
+              </p>
+              <p className="mt-1 text-center text-[11px] text-ark-text-disabled">
+                Secure. Cancel anytime.
               </p>
             </div>
           </FadeIn>
 
-          {/* Standard */}
+          {/* Standard — future pricing after founding spots fill */}
           <FadeIn onMount delay={0.2}>
             <div className="relative h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8">
-              <h3 className="mt-8 text-lg font-semibold text-ark-text">Standard</h3>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-ark-text-tertiary">
+                After founding spots fill
+              </div>
+
+              <h3 className="mt-3 text-lg font-semibold text-ark-text">Standard</h3>
               <p className="mt-1 text-sm text-ark-text-secondary">
-                Full access to Arkline Pro after the early investor window closes.
+                Once the 150 founding spots are gone, ArkLine Pro moves to standard pricing.
               </p>
 
               <div className="mt-5 flex items-baseline gap-1">
@@ -173,7 +183,7 @@ export default function PricingPage() {
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs text-ark-text-tertiary">
-                or <span className="font-medium text-ark-text-secondary">$700/year</span> — save over $139
+                Same features, no founding discount. Subscribe now to lock in $39.99 for life.
               </p>
 
               <ul className="mt-6 space-y-2.5">
@@ -185,12 +195,11 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <div className="mt-8 [&_form]:flex-col [&_form]:items-stretch [&_input]:w-full [&_button]:w-full">
-                <EmailCapture />
+              <div className="mt-8 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center">
+                <p className="text-xs text-ark-text-tertiary">
+                  Don&apos;t wait. Founding pricing is grandfathered forever.
+                </p>
               </div>
-              <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                We&apos;ll notify you when Arkline launches. No spam.
-              </p>
             </div>
           </FadeIn>
         </div>
@@ -239,10 +248,13 @@ export default function PricingPage() {
               Your edge starts here.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Risk scoring. Macro intelligence. AI briefings. See why investors choose Arkline.
+              Risk scoring. Macro intelligence. AI briefings. See why investors choose ArkLine.
             </p>
-            <div className="mt-8">
-              <EmailCapture />
+            <div className="mt-8 flex justify-center">
+              <AppStoreCTA />
+            </div>
+            <div className="mt-4 flex justify-center">
+              <SpotsCounter />
             </div>
           </FadeIn>
         </div>

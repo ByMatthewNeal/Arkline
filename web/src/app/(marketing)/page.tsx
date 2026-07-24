@@ -18,8 +18,8 @@ import {
   Mail,
 } from 'lucide-react';
 import { ArklineLogo, Button } from '@/components/ui';
-import { EmailCapture } from '@/components/marketing/email-capture';
-import { SpotsCounter, WaitlistCount } from '@/components/marketing/spots-counter';
+import { AppStoreCTA } from '@/components/marketing/app-store-cta';
+import { SpotsCounter } from '@/components/marketing/spots-counter';
 import { HeroDashboard } from '@/components/marketing/hero-dashboard';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { AnimatedCounter } from '@/components/marketing/animated-counter';
@@ -29,16 +29,17 @@ import { SocialProof } from '@/components/marketing/social-proof';
 import { FadeIn } from '@/components/marketing/fade-in';
 
 const proFeatures = [
-  'Full portfolio tracking across 20,000+ assets',
+  'Portfolio tracking — crypto, stocks, and custom assets (20,000+)',
+  'Performance metrics — Sharpe ratio, drawdown, volatility, allocation',
   '8-factor BTC risk scoring with historical trends',
   'Morning & evening AI briefings',
-  'Macro dashboard with regime detection',
+  'Macro dashboard with regime detection (VIX, DXY, US Net Liquidity)',
   'Smart DCA with risk-adjusted reminders',
-  'Market sentiment analysis',
-  'Coinbase App Store ranking tracker',
-  'Real-time news feed',
-  'FedWatch integration',
-  'Push notifications & alerts',
+  'Technical analysis — RSI, MACD, moving averages, BMSB',
+  'Sentiment gauges — Fear & Greed, altcoin season, BTC dominance',
+  'Derivatives data — open interest, funding rates, liquidations',
+  'Economic calendar + FedWatch rate probabilities',
+  'Real-time news, Coinbase ranking, and push alerts',
 ];
 
 export default function LandingPage() {
@@ -49,8 +50,14 @@ export default function LandingPage() {
         <AnimatedBackground />
 
         <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          {/* Badge */}
-          <FadeIn variant="scale" onMount className="mb-10 inline-flex items-center gap-2 rounded-full border border-ark-primary/20 bg-ark-primary/5 px-4 py-1.5 transition-colors hover:border-ark-primary/30 hover:bg-ark-primary/8">
+          {/* Badge — now-live + founding spots urgency */}
+          <FadeIn variant="scale" onMount className="mb-10 inline-flex items-center gap-2.5 rounded-full border border-ark-primary/20 bg-ark-primary/5 px-4 py-1.5 transition-colors hover:border-ark-primary/30 hover:bg-ark-primary/8">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ark-primary opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-ark-primary" />
+            </span>
+            <span className="text-xs font-medium text-ark-primary">Now live on iOS</span>
+            <span className="h-3 w-px bg-ark-primary/30" />
             <SpotsCounter />
           </FadeIn>
 
@@ -64,12 +71,12 @@ export default function LandingPage() {
           </FadeIn>
 
           <FadeIn onMount delay={0.12} as="p" className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-ark-text-secondary sm:text-xl">
-            Be first to access institutional-grade intelligence. Join the early access list.
+            Institutional-grade market intelligence — risk scoring, macro regime detection, AI briefings — now in your pocket.
           </FadeIn>
 
           {/* CTAs */}
           <FadeIn onMount delay={0.25} className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:gap-3 sm:justify-center">
-            <EmailCapture />
+            <AppStoreCTA />
             <Link
               href="/features"
               className="text-sm font-medium text-ark-text-secondary underline underline-offset-4 decoration-ark-divider transition-colors hover:text-ark-text sm:no-underline sm:decoration-0"
@@ -88,20 +95,19 @@ export default function LandingPage() {
             <div className="flex items-center gap-4 sm:gap-6">
               <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
                 <Shield className="h-3 w-3" />
-                Join free
+                iOS 17+
               </div>
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
                 <Shield className="h-3 w-3" />
-                No spam
+                Cancel anytime
               </div>
               <div className="hidden h-3 w-px bg-ark-divider sm:block" />
               <div className="hidden items-center gap-1.5 text-xs text-ark-text-tertiary sm:flex">
                 <Clock className="h-3 w-3" />
-                Founding pricing for early members
+                Also available on the web
               </div>
             </div>
-            <WaitlistCount />
           </FadeIn>
 
           {/* Dashboard preview */}
@@ -115,10 +121,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn className="text-center">
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              What You&apos;ll Get
+              What You Get
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              Sign up for early access and unlock these benefits.
+              One subscription. Every tool ArkLine has to offer.
             </p>
           </FadeIn>
 
@@ -126,18 +132,18 @@ export default function LandingPage() {
             {[
               {
                 icon: Rocket,
-                title: 'Priority Access',
-                description: 'Be first in line when Arkline launches on the App Store.',
+                title: 'Instant Access',
+                description: 'Download from the App Store and start tracking your portfolio in under a minute.',
               },
               {
                 icon: Tag,
-                title: 'Founding Member Pricing',
-                description: 'Early access members lock in the lowest price — forever.',
+                title: 'One Simple Price',
+                description: 'No tiers, no upsells. $39.99/month or $399.99/year — everything included.',
               },
               {
                 icon: MessageSquare,
-                title: 'Shape the Product',
-                description: 'Get direct input on features and priorities before launch.',
+                title: 'Built by an Investor',
+                description: 'Direct line to the founder. Reply to any email — it goes straight to Matt.',
               },
             ].map((benefit, i) => (
               <FadeIn
@@ -154,8 +160,8 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <FadeIn delay={0.3} className="mt-10 text-center">
-            <EmailCapture />
+          <FadeIn delay={0.3} className="mt-10 flex justify-center">
+            <AppStoreCTA />
           </FadeIn>
         </div>
       </section>
@@ -274,10 +280,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeIn className="text-center">
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              Transparent Pricing, Real Value
+              Founding Pricing, Locked In.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              Start with a 10-day free trial. Full access to everything — risk models, AI briefings, macro intelligence, and more.
+              The first 150 members get founding pricing — locked forever as long as they stay subscribed. After that, standard pricing kicks in.
             </p>
           </FadeIn>
 
@@ -294,9 +300,9 @@ export default function LandingPage() {
 
               <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-ark-text">Early Investor</h3>
+                  <h3 className="text-xl font-semibold text-ark-text">Founding Member</h3>
                   <p className="mt-1 text-sm text-ark-text-tertiary">
-                    Lock in the lowest price. Yours forever as long as you stay subscribed.
+                    Lock in the lowest price ArkLine will ever charge. Yours forever as long as you stay subscribed.
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -307,7 +313,7 @@ export default function LandingPage() {
                     <span className="text-sm text-ark-text-tertiary">/month</span>
                   </div>
                   <p className="mt-1 text-xs text-ark-text-tertiary">
-                    or <span className="font-medium text-ark-text-secondary">$400/year</span> — save over $79
+                    or <span className="font-medium text-ark-text-secondary">$399.99/year</span> — save ~17%
                   </p>
                   <SpotsCounter className="mt-2" />
                 </div>
@@ -322,11 +328,18 @@ export default function LandingPage() {
                 ))}
               </ul>
 
-              <div className="mt-8">
-                <EmailCapture />
+              <div className="mt-8 flex justify-center">
+                <AppStoreCTA />
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                Early access members lock in this price forever. No spam.
+                Subscribe through the App Store — or{' '}
+                <Link href="/pricing" className="underline decoration-ark-divider hover:text-ark-text">
+                  subscribe on the web
+                </Link>
+                .
+              </p>
+              <p className="mt-4 border-t border-ark-divider pt-4 text-center text-[11px] text-ark-text-tertiary">
+                After 150 founding spots fill, standard pricing rises to <span className="font-semibold text-ark-text-secondary">$69.99/mo</span>.
               </p>
               <p className="mt-2 text-center text-[11px] text-ark-text-disabled">
                 Your portfolio data is encrypted and never shared.
@@ -351,14 +364,14 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-ark-text-secondary">
-              Risk scoring. Macro intelligence. AI briefings. Arkline gives you
+              Risk scoring. Macro intelligence. AI briefings. ArkLine gives you
               the data-driven edge to manage your portfolio with confidence.
             </p>
             <p className="mt-3 text-sm font-medium text-ark-primary">
-              Early members lock in founding pricing — forever.
+              Founding members lock in $39.99/mo — forever.
             </p>
-            <div className="mt-8">
-              <EmailCapture />
+            <div className="mt-8 flex justify-center">
+              <AppStoreCTA />
             </div>
 
             <div className="mt-6 flex justify-center">

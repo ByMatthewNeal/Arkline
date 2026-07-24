@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { EmailCapture } from '@/components/marketing/email-capture';
+import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 
 export function StickyCta() {
   const [footerVisible, setFooterVisible] = useState(false);
@@ -28,7 +28,7 @@ export function StickyCta() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="border-t border-white/[0.08] bg-ark-bg/90 backdrop-blur-xl px-4 py-3">
-        <EmailCapture size="inline" className="justify-center" />
+        <AppStoreCTA size="inline" className="justify-center" />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { ArklineLogo, ThemeToggle } from '@/components/ui';
-import { EmailCapture } from '@/components/marketing/email-capture';
+import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 import { useAuth } from '@/lib/hooks/use-auth';
 
 const links = [
@@ -61,7 +61,7 @@ export function Navbar() {
           >
             {account.label}
           </Link>
-          <EmailCapture size="inline" />
+          <AppStoreCTA size="inline" />
         </div>
 
         {/* Mobile toggle */}
@@ -101,7 +101,7 @@ export function Navbar() {
             {account.label}
           </Link>
           <div className="p-1">
-            <EmailCapture size="inline" className="w-full justify-center" />
+            <AppStoreCTA size="inline" className="w-full justify-center" />
           </div>
         </div>
       </div>

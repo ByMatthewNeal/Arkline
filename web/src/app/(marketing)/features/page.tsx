@@ -17,21 +17,21 @@ import {
   Gauge,
 } from 'lucide-react';
 import { ArklineLogo } from '@/components/ui';
-import { EmailCapture } from '@/components/marketing/email-capture';
+import { AppStoreCTA } from '@/components/marketing/app-store-cta';
 import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { FadeIn } from '@/components/marketing/fade-in';
 
 /* ── Small features grid ── */
 const gridFeatures = [
-  { icon: BarChart3, title: 'Multi-Asset Portfolios', description: 'Crypto, stocks, and custom assets with live pricing.' },
+  { icon: BarChart3, title: 'Multi-Asset Portfolios', description: 'Crypto, stocks, and custom assets with live pricing across 20,000+ instruments.' },
   { icon: PieChart, title: 'Allocation Analysis', description: 'Visualize allocation and track target drift.' },
   { icon: Calculator, title: 'Performance Metrics', description: 'Sharpe ratio, drawdown, volatility — in real time.' },
   { icon: Bell, title: 'Smart DCA', description: 'Risk-adjusted reminders. Buy more when risk is low.' },
   { icon: Newspaper, title: 'News Aggregation', description: 'AI-summarized headlines. Signal without the noise.' },
   { icon: Activity, title: 'Economic Calendar', description: 'FOMC, CPI, jobs reports — never miss a catalyst.' },
-  { icon: TrendingUp, title: 'Derivatives Data', description: 'OI, funding rates, liquidations from Coinglass.' },
+  { icon: TrendingUp, title: 'Derivatives Data', description: 'Open interest, funding rates, and liquidations.' },
   { icon: Globe, title: 'FedWatch', description: 'CME rate probabilities — directly in the app.' },
-  { icon: LineChart, title: 'Coinbase Ranking', description: 'Track the Coinbase App Store rank daily.' },
+  { icon: LineChart, title: 'Technical Analysis', description: 'RSI, MACD, moving averages, and Bull Market Support Bands for every asset.' },
   { icon: Shield, title: 'Regime Detection', description: 'Auto-classified macro regimes with shift alerts.' },
   { icon: Gauge, title: 'Sentiment Gauges', description: 'Fear & Greed, BTC dominance, altcoin season.' },
   { icon: Brain, title: 'AI Briefings', description: 'Morning and evening summaries. One read. Full clarity.' },
@@ -276,16 +276,16 @@ export default function FeaturesPage() {
           <FadeIn>
             <ArklineLogo size="xl" showText={false} className="mx-auto mb-6 justify-center" />
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              See Arkline in action.
+              See ArkLine in action.
             </h2>
             <p className="mt-4 text-ark-text-secondary">
-              Start your free trial — full access to every feature for 10 days.
+              Every feature above is included in your subscription. One price. Cancel anytime.
             </p>
-            <div className="mt-8">
-              <EmailCapture />
+            <div className="mt-8 flex justify-center">
+              <AppStoreCTA />
             </div>
             <div className="mt-6 text-xs text-ark-text-disabled">
-              Coming Soon to iOS
+              Now available on iOS
             </div>
           </FadeIn>
         </div>
