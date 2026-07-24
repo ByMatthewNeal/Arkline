@@ -138,15 +138,6 @@ struct AdminDashboardView: View {
                         )
                     }
 
-                    NavigationLink(destination: ReelScriptsView()) {
-                        AdminDashboardRow(
-                            icon: "video.fill",
-                            iconColor: Color(hex: "E1306C"),
-                            title: "Reel Scripts",
-                            subtitle: "Daily camera scripts"
-                        )
-                    }
-
                     NavigationLink(destination: AdminDictionaryView()) {
                         AdminDashboardRow(
                             icon: "character.book.closed",
