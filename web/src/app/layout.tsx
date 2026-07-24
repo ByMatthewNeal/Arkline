@@ -20,9 +20,9 @@ const urbanist = Urbanist({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://arkline.io'),
-  title: 'Arkline — Market Intelligence, Simplified',
+  title: 'Arkline: Market Intelligence, Simplified',
   description:
-    'Arkline combines multi-factor risk scoring, macro intelligence, and AI-generated briefings into one platform. Track crypto & stocks, quantify risk, and invest with clarity.',
+    'Institutional-grade market intelligence across crypto and traditional markets. Multi-factor risk scoring, macro dashboard, AI briefings, and portfolio tracking in one app.',
   alternates: {
     canonical: '/',
   },
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
-    title: 'Arkline — Your Portfolio. Your Edge.',
+    title: 'Arkline: Your Portfolio. Your Edge.',
     description:
-      'Multi-factor risk scoring, macro dashboard, and AI briefings — all in one platform. Start free.',
+      'Multi-factor risk scoring, macro dashboard, and AI briefings across crypto and traditional markets. All in one app.',
     type: 'website',
     siteName: 'Arkline',
     url: 'https://arkline.io',
@@ -46,9 +46,9 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@Arklineio',
     creator: '@Arklineio',
-    title: 'Arkline — Your Portfolio. Your Edge.',
+    title: 'Arkline: Your Portfolio. Your Edge.',
     description:
-      'Multi-factor risk scoring, macro dashboard, and AI briefings — all in one platform. Start free.',
+      'Multi-factor risk scoring, macro dashboard, and AI briefings across crypto and traditional markets. All in one app.',
     images: ['/og-image.png'],
   },
 };

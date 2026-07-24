@@ -71,7 +71,7 @@ export default function LandingPage() {
           </FadeIn>
 
           <FadeIn onMount delay={0.12} as="p" className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-ark-text-secondary sm:text-xl">
-            Institutional-grade market intelligence. Risk scoring, macro regime detection, and AI briefings. Now in your pocket.
+            Institutional-grade intelligence across crypto and traditional markets. Risk scoring, macro regime detection, and AI briefings. All in one app.
           </FadeIn>
 
           {/* CTAs */}
@@ -192,7 +192,7 @@ export default function LandingPage() {
             Arkline by the numbers
           </FadeIn>
           <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-            <AnimatedCounter value="20,000+" label="Crypto & Macro Assets" icon={ChartNoAxesCombined} />
+            <AnimatedCounter value="20,000+" label="Assets Tracked" icon={ChartNoAxesCombined} />
             <AnimatedCounter value="12" label="Integrated Data Feeds" icon={Database} />
             <AnimatedCounter value="8" label="BTC Risk Factors" icon={Activity} />
             <AnimatedCounter value="24/7" label="Live Market Data" icon={Zap} />
@@ -214,10 +214,10 @@ export default function LandingPage() {
           </FadeIn>
           <FadeIn delay={0.1} className="mt-8 space-y-5 text-center text-base leading-relaxed text-ark-text-secondary sm:text-lg">
             <p>
-              Too many investors learn crypto from YouTube algorithms and Twitter noise. Sources that profit from attention, not from being right. The people who actually build wealth in this market aren&apos;t following influencers. They&apos;re reading risk models, tracking macro regimes, and watching sentiment data that most retail investors don&apos;t even know exists.
+              Most investors learn about markets from YouTube algorithms and Twitter noise. Sources that profit from attention, not from being right. The people who actually build wealth aren&apos;t following influencers. They&apos;re reading risk models across every asset they hold, tracking macro regimes, and watching sentiment data that most retail investors don&apos;t even know exists.
             </p>
             <p>
-              Arkline was built to close that gap. Institutional-grade tools like risk scoring, macro intelligence, and AI briefings, designed for everyday investors who are ready to stop guessing and start positioning with real data.
+              Arkline was built to close that gap. Institutional-grade tools that span crypto, equities, commodities, and macro. Designed for everyday investors who take both sides of the market seriously and are ready to stop guessing.
             </p>
           </FadeIn>
           {/* Founder card */}

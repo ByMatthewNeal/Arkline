@@ -115,7 +115,7 @@ export default function FeaturesPage() {
                   Macro Dashboard
                 </span>
                 <h3 className="mt-4 font-[family-name:var(--font-urbanist)] text-xl font-semibold text-ark-text sm:text-2xl">
-                  See the backdrop before it hits crypto.
+                  See the macro shift before it moves your portfolio.
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
                   VIX, DXY, WTI Crude, and US Net Liquidity with sparklines, z-scores, and regime detection, updated in real time.

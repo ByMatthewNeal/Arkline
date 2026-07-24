@@ -59,7 +59,7 @@ const bentoItems = [
   {
     icon: Globe,
     title: 'Macro Dashboard',
-    description: 'VIX, DXY, WTI Crude, and US Net Liquidity, with sparklines, z-scores, and regime detection to spot macro shifts early. See the backdrop before it hits crypto.',
+    description: 'VIX, DXY, WTI Crude, and US Net Liquidity, with sparklines, z-scores, and regime detection to spot macro shifts early. See the backdrop before it moves your portfolio.',
     span: '',
     screenshot: '/bento-macro.webp',
   },

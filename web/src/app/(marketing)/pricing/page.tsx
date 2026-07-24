@@ -57,8 +57,8 @@ const faqs = [
     a: 'Arkline is currently iOS only. Android and web app support are on the roadmap.',
   },
   {
-    q: 'What makes Arkline different from CoinGecko or CoinStats?',
-    a: 'Arkline isn\'t just a portfolio tracker. It combines a proprietary risk model, macro regime detection, AI-generated briefings, and retail sentiment tracking to help you understand where the market is heading, not just where it\'s been.',
+    q: 'What makes Arkline different from other portfolio trackers?',
+    a: 'Arkline isn\'t just a portfolio tracker. It spans crypto and traditional markets (stocks, ETFs, commodities) in one place, combined with a proprietary risk model, macro regime detection, AI-generated briefings, and sentiment tracking to help you understand where markets are heading, not just where they\'ve been.',
   },
   {
     q: 'Is Arkline a trading app?',
