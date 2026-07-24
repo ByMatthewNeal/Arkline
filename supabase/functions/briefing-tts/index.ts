@@ -8,12 +8,15 @@ Deno.serve(async (req) => {
     return ok({ error: "Method not allowed" })
   }
 
-  // Auth: require cron secret (only called server-to-server from market-summary)
+  // Auth: accept EITHER the cron secret (server-to-server from market-summary,
+  // which pre-generates the audio) OR a signed-in user (the app fetching their
+  // briefing to play it). Anonymous callers are still rejected, so this keeps the
+  // security-audit goal of no unbounded TTS spend while restoring the in-app
+  // "Listen" button — which the cron-only gate had silently killed, since the app
+  // cannot send the cron secret (that would ship a server secret in the binary).
   const cronSecret = Deno.env.get("CRON_SECRET") ?? ""
   const providedSecret = req.headers.get("x-cron-secret") ?? ""
-  if (!cronSecret || providedSecret !== cronSecret) {
-    return ok({ error: "Unauthorized" }, 401)
-  }
+  const isCron = !!cronSecret && providedSecret === cronSecret
 
   let payload: { briefingKey?: string; summaryText?: string }
   try {
@@ -30,6 +33,19 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // If this isn't the cron job, require a valid signed-in user. supabase-swift's
+  // functions.invoke attaches the user's access token as the Authorization bearer,
+  // so an authenticated member's tap arrives with a verifiable JWT.
+  if (!isCron) {
+    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "")
+    const { data: userData, error: userErr } = token
+      ? await supabase.auth.getUser(token)
+      : { data: { user: null }, error: new Error("missing token") }
+    if (userErr || !userData?.user) {
+      return ok({ error: "Unauthorized" }, 401)
+    }
+  }
 
   const bucket = "briefing-audio"
   const voiceVersion = "v2" // bump to invalidate cache on voice change
