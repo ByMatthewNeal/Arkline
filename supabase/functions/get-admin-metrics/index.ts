@@ -22,6 +22,26 @@ const PRICES = {
 type Tier = keyof typeof PRICES
 type Plan = keyof typeof PRICES["founding"]
 
+// Internal accounts — the founder's own logins and Apple's App Review reviewer
+// accounts. These are excluded from every member and revenue metric so the
+// dashboard reflects REAL external customers, not us and the reviewer. Override
+// the personal-email list via env (comma-separated) without redeploying.
+const INTERNAL_EMAILS = new Set(
+  (Deno.env.get("INTERNAL_EMAILS") ??
+    "mneal.jw@gmail.com,mneal.jw+customer@gmail.com,mattmneal1@gmail.com,neal.matthew@protonmail.com")
+    .split(",")
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean)
+)
+
+function isInternalEmail(email: string | null | undefined): boolean {
+  if (!email) return false
+  const e = email.toLowerCase()
+  if (e.endsWith("@arkline.io")) return true   // reviewer@, reviewer-expired@, etc.
+  if (e.startsWith("mneal.jw+")) return true    // any gmail plus-alias of the founder
+  return INTERNAL_EMAILS.has(e)
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://web.arkline.io",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -72,13 +92,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Pull every subscription with the columns we need for revenue math.
+    // Identify internal accounts (founder + Apple reviewer) so they can be
+    // excluded from every count below.
+    const { data: allProfiles } = await supabase
+      .from("profiles")
+      .select("id, email, subscription_status")
+    const profilesList = allProfiles ?? []
+    const internalIds = new Set(
+      profilesList.filter(p => isInternalEmail(p.email)).map(p => p.id)
+    )
+
+    // Pull every subscription with the columns we need for revenue math, then
+    // drop internal accounts — everything downstream sees external members only.
     const { data: subscriptions, error: subsError } = await supabase
       .from("subscriptions")
-      .select("plan, tier, status, source, updated_at")
+      .select("user_id, plan, tier, status, source, updated_at")
 
     if (subsError) throw subsError
-    const subs = subscriptions ?? []
+    const subs = (subscriptions ?? []).filter(s => !internalIds.has(s.user_id))
 
     // ---- Active revenue computation ----
     // MRR is the sum of monthly contribution from every PAYING subscription whose
@@ -133,25 +164,23 @@ Deno.serve(async (req) => {
       incomplete: subs.filter(s => s.status === "incomplete").length,
     }
 
-    // ---- Total members ever (any subscription activity) ----
-    const { count: totalMembers } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .neq("subscription_status", "none")
+    // ---- Total members ever (external accounts with any subscription activity) ----
+    const totalMembers = profilesList.filter(
+      p => !internalIds.has(p.id) && p.subscription_status && p.subscription_status !== "none"
+    ).length
 
     // ---- 30-day churn rate ----
     // (canceled in last 30 days) / (active at start of period)
     // We approximate "active at start" as currently-active + recently-canceled.
+    // Computed from the already-external-filtered subscription set.
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    const { count: recentlyCanceled } = await supabase
-      .from("subscriptions")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "canceled")
-      .gte("updated_at", thirtyDaysAgo)
+    const recentlyCanceled = subs.filter(
+      s => s.status === "canceled" && s.updated_at && s.updated_at >= thirtyDaysAgo
+    ).length
 
     const activeForChurn = counts.active + counts.trialing
     const churnRate = activeForChurn > 0
-      ? ((recentlyCanceled ?? 0) / (activeForChurn + (recentlyCanceled ?? 0))) * 100
+      ? (recentlyCanceled / (activeForChurn + recentlyCanceled)) * 100
       : 0
 
     // ---- Founding-member counts (capped at 150 in webhook) ----
