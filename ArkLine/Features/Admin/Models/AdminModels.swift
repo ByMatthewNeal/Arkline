@@ -81,6 +81,11 @@ struct MemberSubscription: Codable, Equatable {
 struct AdminMetrics: Codable, Equatable {
     let mrr: Double
     let arr: Double
+    /// Comped pipeline: comps pay $0 now but many convert later. Optional so older
+    /// responses without these keys still decode. See get-admin-metrics.
+    let compedActive: Int?
+    let compedPotentialMrr: Double?
+    let compedPotentialArr: Double?
     let totalMembers: Int
     let activeMembers: Int
     let trialingMembers: Int
@@ -110,6 +115,9 @@ struct AdminMetrics: Codable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case mrr, arr
+        case compedActive = "comped_active"
+        case compedPotentialMrr = "comped_potential_mrr"
+        case compedPotentialArr = "comped_potential_arr"
         case totalMembers = "total_members"
         case activeMembers = "active_members"
         case trialingMembers = "trialing_members"

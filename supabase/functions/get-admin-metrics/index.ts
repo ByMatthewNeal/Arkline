@@ -75,16 +75,24 @@ Deno.serve(async (req) => {
     // Pull every subscription with the columns we need for revenue math.
     const { data: subscriptions, error: subsError } = await supabase
       .from("subscriptions")
-      .select("plan, tier, status, updated_at")
+      .select("plan, tier, status, source, updated_at")
 
     if (subsError) throw subsError
     const subs = subscriptions ?? []
 
     // ---- Active revenue computation ----
-    // MRR is the sum of monthly contribution from every subscription whose
+    // MRR is the sum of monthly contribution from every PAYING subscription whose
     // status is 'active' or 'trialing' (trialing customers will most likely
     // convert; including them gives a more useful forward-looking number).
+    //
+    // Comped subscriptions (source='comp') pay nothing today, so they must NOT
+    // count toward MRR/ARR — including them overstates real cash. But they are
+    // convertible pipeline (many comps will start paying later), so we track them
+    // separately: how many there are and how much they WOULD contribute at their
+    // current tier/plan if they convert.
     let mrrCents = 0
+    let compedActive = 0
+    let compedPotentialCents = 0
     const breakdown = {
       founding_monthly: 0,
       founding_annual: 0,
@@ -98,13 +106,23 @@ Deno.serve(async (req) => {
       const plan = (s.plan as Plan) ?? "monthly"
       if (!(tier in PRICES) || !(plan in PRICES[tier])) continue
 
-      mrrCents += monthlyRevenueCents(tier, plan)
+      const contributionCents = monthlyRevenueCents(tier, plan)
+
+      if (s.source === "comp") {
+        compedActive += 1
+        compedPotentialCents += contributionCents
+        continue
+      }
+
+      mrrCents += contributionCents
       const key = `${tier}_${plan}` as keyof typeof breakdown
       breakdown[key] += 1
     }
 
     const mrr = mrrCents / 100
     const arr = mrr * 12
+    const compedPotentialMrr = compedPotentialCents / 100
+    const compedPotentialArr = compedPotentialMrr * 12
 
     // ---- Status counts ----
     const counts = {
@@ -156,10 +174,16 @@ Deno.serve(async (req) => {
     )
 
     return jsonResponse({
-      // Revenue
+      // Revenue (paying subscriptions only — comps excluded)
       mrr: Math.round(mrr * 100) / 100,
       arr: Math.round(arr * 100) / 100,
       revenue_breakdown: breakdown,
+
+      // Comped pipeline — active comps pay $0 now but many convert later. This is
+      // the MRR/ARR they WOULD add at their current tier/plan if they start paying.
+      comped_active: compedActive,
+      comped_potential_mrr: Math.round(compedPotentialMrr * 100) / 100,
+      comped_potential_arr: Math.round(compedPotentialArr * 100) / 100,
 
       // Member counts
       total_members: totalMembers ?? 0,

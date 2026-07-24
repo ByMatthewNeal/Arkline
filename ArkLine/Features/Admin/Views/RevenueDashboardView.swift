@@ -59,6 +59,22 @@ struct RevenueDashboardView: View {
                 icon: "chart.line.uptrend.xyaxis",
                 color: AppColors.accent
             )
+            // Comped pipeline — shown only when comps exist. MRR/ARR above are
+            // paying-only; this is the revenue comps would add if they convert.
+            if let comped = metrics.compedActive, comped > 0 {
+                MetricCard(
+                    title: "Comped",
+                    value: "\(comped)",
+                    icon: "gift.fill",
+                    color: AppColors.info
+                )
+                MetricCard(
+                    title: "Comped Potential MRR",
+                    value: formatCurrency(metrics.compedPotentialMrr ?? 0),
+                    icon: "arrow.up.forward.circle.fill",
+                    color: AppColors.warning
+                )
+            }
             MetricCard(
                 title: "Active Members",
                 value: "\(metrics.activeMembers)",
