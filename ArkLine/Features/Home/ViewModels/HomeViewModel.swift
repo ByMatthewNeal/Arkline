@@ -1492,33 +1492,45 @@ class HomeViewModel {
     /// to the most recently rebalanced strategy when the user follows none.
     func loadModelPortfolioUpdate() async {
         do {
-            let portfolios = try await modelPortfolioService.fetchPortfolios()
-            guard !portfolios.isEmpty else { return }
-            modelPortfolios = portfolios.sorted { $0.name < $1.name }
+            // Reuse the in-memory portfolio list when we already have it — the set
+            // of strategies is fixed, so re-fetching it on every strategy switch is
+            // a wasted network round-trip that delays the card updating.
+            let portfolios: [ModelPortfolio]
+            if !modelPortfolios.isEmpty {
+                portfolios = modelPortfolios
+            } else {
+                portfolios = try await modelPortfolioService.fetchPortfolios()
+                guard !portfolios.isEmpty else { return }
+                modelPortfolios = portfolios.sorted { $0.name < $1.name }
+            }
 
             let followed = UserDefaults.standard.string(forKey: Constants.UserDefaults.followedModelPortfolio)
 
-            var target: ModelPortfolio?
-            var latestTrade: ModelPortfolioTrade?
-
+            // Hot path: the user follows a specific strategy. Fetch its trade and
+            // nav concurrently (not one after the other) and publish together.
             if let followed, let match = portfolios.first(where: { $0.strategy == followed }) {
-                target = match
-                latestTrade = try await modelPortfolioService.fetchTrades(portfolioId: match.id, limit: 1).first
-            } else {
-                // No explicit choice — surface whichever strategy rebalanced most recently
-                for portfolio in portfolios {
-                    if let trade = try await modelPortfolioService.fetchTrades(portfolioId: portfolio.id, limit: 1).first,
-                       trade.tradeDate > (latestTrade?.tradeDate ?? "") {
-                        latestTrade = trade
-                        target = portfolio
-                    }
-                }
-                target = target ?? portfolios.first
+                async let tradeTask = modelPortfolioService.fetchTrades(portfolioId: match.id, limit: 1)
+                async let navTask = modelPortfolioService.fetchLatestNav(portfolioId: match.id)
+                let trade = (try? await tradeTask)?.first
+                let nav = try? await navTask
+                latestPortfolioTrade = trade
+                followedPortfolioName = match.name
+                followedPortfolioNav = nav
+                return
             }
 
-            guard let resolved = target else { return }
+            // No explicit choice — surface whichever strategy rebalanced most recently.
+            var target: ModelPortfolio?
+            var latestTrade: ModelPortfolioTrade?
+            for portfolio in portfolios {
+                if let trade = try await modelPortfolioService.fetchTrades(portfolioId: portfolio.id, limit: 1).first,
+                   trade.tradeDate > (latestTrade?.tradeDate ?? "") {
+                    latestTrade = trade
+                    target = portfolio
+                }
+            }
+            guard let resolved = target ?? portfolios.first else { return }
             let nav = try? await modelPortfolioService.fetchLatestNav(portfolioId: resolved.id)
-
             latestPortfolioTrade = latestTrade
             followedPortfolioName = resolved.name
             followedPortfolioNav = nav
@@ -1537,6 +1549,22 @@ class HomeViewModel {
             UserDefaults.standard.removeObject(forKey: Constants.UserDefaults.followedModelPortfolio)
         }
 
+        // Switch the card to the new strategy immediately using data already in
+        // memory, so the tap registers instantly instead of the card staying on
+        // the previous strategy while several network calls run. Stale nav/trade
+        // from the old strategy are cleared so we never show the wrong numbers
+        // under the new name; they refill from the background refresh below.
+        if let strategy, let match = modelPortfolios.first(where: { $0.strategy == strategy }) {
+            followedPortfolioName = match.name
+            latestPortfolioTrade = nil
+            followedPortfolioNav = nil
+        }
+
+        // Refresh the card's numbers right away — not gated behind the server sync.
+        Task { await loadModelPortfolioUpdate() }
+
+        // Persist the preference to the server independently; the UI doesn't wait
+        // on it, and a slow/failed write no longer delays the card.
         struct FollowedPortfolioUpdate: Encodable { let followed_model_portfolio: String? }
         Task {
             if let userId = try? await SupabaseManager.shared.client.auth.session.user.id {
@@ -1546,7 +1574,6 @@ class HomeViewModel {
                     .eq("id", value: userId.uuidString)
                     .execute()
             }
-            await loadModelPortfolioUpdate()
         }
     }
 
