@@ -103,7 +103,7 @@ struct ModelPortfolioDetailView: View {
             .padding(.top, ArkSpacing.md)
         }
         .refreshable {
-            await viewModel.loadDetail(for: portfolio)
+            await viewModel.loadDetail(for: portfolio, force: true)
         }
         .background(AppColors.background(colorScheme))
         .navigationTitle(portfolio.name)
@@ -336,7 +336,11 @@ struct ModelPortfolioDetailView: View {
                 }
             }
 
-            if viewModel.isLoadingDetail || !hasLoadedDetail {
+            // Show the chart as soon as we have any nav points (the overview
+            // preload), so switching portfolios is instant; the full history
+            // upgrades in place when loadDetail finishes. Only fall back to the
+            // spinner on a cold open with nothing cached yet.
+            if navHistory.count < 2 && (viewModel.isLoadingDetail || !hasLoadedDetail) {
                 ProgressView()
                     .frame(height: 200)
                     .frame(maxWidth: .infinity)

@@ -171,8 +171,28 @@ class ModelPortfolioViewModel {
 
     var isLoadingDetail = false
 
-    func loadDetail(for portfolio: ModelPortfolio) async {
-        isLoadingDetail = true
+    /// Portfolios whose full detail (long nav history + trades) has been fetched
+    /// at least once this session. Used to keep re-opens instant.
+    private var detailLoaded: Set<UUID> = []
+    /// The full benchmark series is shared by every portfolio, so fetch it once.
+    private var benchmarkDetailLoaded = false
+
+    func loadDetail(for portfolio: ModelPortfolio, force: Bool = false) async {
+        // Already have this portfolio's full history this session? Re-opening it
+        // is instant — skip the network entirely. Pull-to-refresh passes force to
+        // bypass this. (Portfolios only change on the daily rebalance, so cached
+        // detail is current for the whole session.)
+        if !force && detailLoaded.contains(portfolio.id) { return }
+
+        // Only show the blocking spinner on a genuine cold open — nothing cached
+        // to draw yet. If the overview preload already gave us nav points, render
+        // those instantly and upgrade to the full history in the background. This
+        // is what makes switching between portfolios feel snappy instead of
+        // spinner-then-content every time.
+        let hasSomethingToShow = !(navByPortfolio[portfolio.id]?.isEmpty ?? true)
+        if !hasSomethingToShow { isLoadingDetail = true }
+        defer { isLoadingDetail = false }
+
         do {
             async let navTask = service.fetchNavHistory(portfolioId: portfolio.id, limit: 3000)
             async let tradesTask = service.fetchTrades(portfolioId: portfolio.id, limit: 1000)
@@ -180,25 +200,22 @@ class ModelPortfolioViewModel {
             let (nav, trades) = try await (navTask, tradesTask)
             navByPortfolio[portfolio.id] = nav
             tradesByPortfolio[portfolio.id] = trades
+            detailLoaded.insert(portfolio.id)
         } catch {
             errorMessage = error.localizedDescription
         }
 
-        // Benchmark and risk history are supplemental — fetch independently
-        // so failures don't prevent nav/trades from loading
-        async let benchmarkTask: Void = {
-            if let benchmark = try? await service.fetchBenchmarkNav(limit: 3000) {
-                benchmarkNav = benchmark
-            }
-        }()
-        async let riskTask: Void = {
-            // Per-asset risk history only exists for crypto (BTC log-regression model)
-            if portfolio.isCrypto, let risk = try? await service.fetchRiskHistory(asset: "BTC", limit: 3000) {
-                riskHistory = risk
-            }
-        }()
-        _ = await (benchmarkTask, riskTask)
-
-        isLoadingDetail = false
+        // Benchmark is identical across all portfolios — fetch the full series
+        // once rather than re-pulling 3000 points on every portfolio open.
+        if !benchmarkDetailLoaded, let benchmark = try? await service.fetchBenchmarkNav(limit: 3000) {
+            benchmarkNav = benchmark
+            benchmarkDetailLoaded = true
+        }
+        // Per-asset risk history only exists for crypto (BTC log-regression model);
+        // it's shared too, so fetch once.
+        if portfolio.isCrypto, riskHistory.isEmpty,
+           let risk = try? await service.fetchRiskHistory(asset: "BTC", limit: 3000) {
+            riskHistory = risk
+        }
     }
 }
