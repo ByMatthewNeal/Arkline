@@ -10,15 +10,15 @@ import { FadeIn } from '@/components/marketing/fade-in';
 import { SpotsCounter } from '@/components/marketing/spots-counter';
 
 const proFeatures = [
-  'Portfolio tracking — crypto, stocks, and custom assets (20,000+)',
-  'Performance metrics — Sharpe ratio, drawdown, volatility, allocation',
+  'Portfolio tracking across crypto, stocks, and custom assets (20,000+)',
+  'Performance metrics: Sharpe ratio, drawdown, volatility, allocation',
   '8-factor BTC risk scoring with historical trends',
   'Morning & evening AI briefings',
   'Macro dashboard with regime detection (VIX, DXY, US Net Liquidity)',
   'Smart DCA with risk-adjusted reminders',
-  'Technical analysis — RSI, MACD, moving averages, BMSB',
-  'Sentiment gauges — Fear & Greed, altcoin season, BTC dominance',
-  'Derivatives data — open interest, funding rates, liquidations',
+  'Technical analysis: RSI, MACD, moving averages, BMSB',
+  'Sentiment gauges: Fear & Greed, altcoin season, BTC dominance',
+  'Derivatives data: open interest, funding rates, liquidations',
   'Economic calendar + FedWatch rate probabilities',
   'Real-time news, Coinbase ranking, and push alerts',
 ];
@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     q: 'What payment methods do you accept?',
-    a: 'In-app: Apple ID (any payment method attached — credit/debit, Apple Pay, Apple ID balance). On the web: all major credit cards via Stripe.',
+    a: 'In-app: Apple ID (any payment method attached including credit/debit, Apple Pay, Apple ID balance). On the web: all major credit cards via Stripe.',
   },
   {
     q: 'What data sources does Arkline use?',
@@ -58,11 +58,11 @@ const faqs = [
   },
   {
     q: 'What makes Arkline different from CoinGecko or CoinStats?',
-    a: 'Arkline isn\'t just a portfolio tracker. It combines a proprietary risk model, macro regime detection, AI-generated briefings, and retail sentiment tracking to help you understand where the market is heading — not just where it\'s been.',
+    a: 'Arkline isn\'t just a portfolio tracker. It combines a proprietary risk model, macro regime detection, AI-generated briefings, and retail sentiment tracking to help you understand where the market is heading, not just where it\'s been.',
   },
   {
     q: 'Is Arkline a trading app?',
-    a: 'No. Arkline is built for investors who think long-term. It helps you understand market cycles, macro conditions, and risk levels so you can make informed decisions. You execute trades on your own exchange — Arkline gives you the intelligence behind those decisions.',
+    a: 'No. Arkline is built for investors who think long-term. It helps you understand market cycles, macro conditions, and risk levels so you can make informed decisions. You execute trades on your own exchange. Arkline gives you the intelligence behind those decisions.',
   },
   {
     q: 'Can I connect my wallet or exchange?',
@@ -115,7 +115,7 @@ export default function PricingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Limited — first 150 members
+                Limited to the first 150 members
               </div>
 
               <h3 className="mt-3 text-lg font-semibold text-ark-text">Founding Member</h3>
@@ -130,7 +130,7 @@ export default function PricingPage() {
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs text-ark-text-tertiary">
-                or <span className="font-medium text-ark-text-secondary">$399.99/year</span> — save ~17%
+                or <span className="font-medium text-ark-text-secondary">$399.99/year</span>, save ~17%
               </p>
               <SpotsCounter className="mt-2" />
 

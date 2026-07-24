@@ -24,14 +24,14 @@ const bentoItems = [
   {
     icon: BarChart3,
     title: 'Portfolio Tracking',
-    description: 'Track crypto, stocks, and custom assets with live pricing, P&L breakdown, and allocation charts — all in one view.',
+    description: 'Track crypto, stocks, and custom assets with live pricing, P&L breakdown, and allocation charts, all in one view.',
     span: 'sm:col-span-2',
     screenshot: '/bento-portfolio.webp',
   },
   {
     icon: Shield,
     title: 'Risk Scoring',
-    description: 'Arkline\'s proprietary risk model combines on-chain, technical, sentiment, and macro data into a single 0–1 score. Know exactly where you are in the cycle — at a glance.',
+    description: 'Arkline\'s proprietary risk model combines on-chain, technical, sentiment, and macro data into a single 0 to 1 score. Know exactly where you are in the cycle, at a glance.',
     span: '',
     screenshot: '/bento-risk.webp',
   },
@@ -45,7 +45,7 @@ const bentoItems = [
   {
     icon: Brain,
     title: 'AI Briefings',
-    description: 'Morning and evening market summaries powered by AI — distilling prices, sentiment, macro shifts, and portfolio impact into actionable insights. One read. Full clarity.',
+    description: 'Morning and evening market summaries powered by AI. Distilling prices, sentiment, macro shifts, and portfolio impact into actionable insights. One read. Full clarity.',
     span: 'sm:col-span-2',
     screenshot: '/bento-briefings.webp',
   },
@@ -59,7 +59,7 @@ const bentoItems = [
   {
     icon: Globe,
     title: 'Macro Dashboard',
-    description: 'VIX, DXY, WTI Crude, and US Net Liquidity — with sparklines, z-scores, and regime detection to spot macro shifts early. See the backdrop before it hits crypto.',
+    description: 'VIX, DXY, WTI Crude, and US Net Liquidity, with sparklines, z-scores, and regime detection to spot macro shifts early. See the backdrop before it hits crypto.',
     span: '',
     screenshot: '/bento-macro.webp',
   },

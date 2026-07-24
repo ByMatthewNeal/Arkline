@@ -19,13 +19,13 @@ const steps = [
   {
     icon: Brain,
     title: 'Unlock AI + Risk Intelligence',
-    description: 'Arkline generates daily briefings, computes your BTC risk score, and surfaces macro shifts — automatically.',
+    description: 'Arkline generates daily briefings, computes your BTC risk score, and surfaces macro shifts, automatically.',
     color: 'var(--ark-cyan)',
   },
   {
     icon: TrendingUp,
     title: 'Invest with Confidence',
-    description: 'Use risk-adjusted DCA, sentiment gauges, and macro z-scores to time your moves with data — not emotion.',
+    description: 'Use risk-adjusted DCA, sentiment gauges, and macro z-scores to time your moves with data, not emotion.',
     color: 'var(--ark-success)',
   },
 ];

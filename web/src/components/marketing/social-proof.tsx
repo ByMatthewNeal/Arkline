@@ -5,7 +5,7 @@ import { FadeIn } from '@/components/marketing/fade-in';
 
 const featureProofs = [
   {
-    quote: 'BTC risk at 0.35 — historically favorable accumulation.',
+    quote: 'BTC risk at 0.35, historically favorable accumulation.',
     detail: 'Arkline\'s risk model identified low-risk conditions 34 days ago.',
     color: 'var(--ark-success)',
   },

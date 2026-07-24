@@ -25,12 +25,12 @@ import { FadeIn } from '@/components/marketing/fade-in';
 const gridFeatures = [
   { icon: BarChart3, title: 'Multi-Asset Portfolios', description: 'Crypto, stocks, and custom assets with live pricing across 20,000+ instruments.' },
   { icon: PieChart, title: 'Allocation Analysis', description: 'Visualize allocation and track target drift.' },
-  { icon: Calculator, title: 'Performance Metrics', description: 'Sharpe ratio, drawdown, volatility — in real time.' },
+  { icon: Calculator, title: 'Performance Metrics', description: 'Sharpe ratio, drawdown, volatility, all in real time.' },
   { icon: Bell, title: 'Smart DCA', description: 'Risk-adjusted reminders. Buy more when risk is low.' },
   { icon: Newspaper, title: 'News Aggregation', description: 'AI-summarized headlines. Signal without the noise.' },
-  { icon: Activity, title: 'Economic Calendar', description: 'FOMC, CPI, jobs reports — never miss a catalyst.' },
+  { icon: Activity, title: 'Economic Calendar', description: 'FOMC, CPI, jobs reports. Never miss a catalyst.' },
   { icon: TrendingUp, title: 'Derivatives Data', description: 'Open interest, funding rates, and liquidations.' },
-  { icon: Globe, title: 'FedWatch', description: 'CME rate probabilities — directly in the app.' },
+  { icon: Globe, title: 'FedWatch', description: 'CME rate probabilities, directly in the app.' },
   { icon: LineChart, title: 'Technical Analysis', description: 'RSI, MACD, moving averages, and Bull Market Support Bands for every asset.' },
   { icon: Shield, title: 'Regime Detection', description: 'Auto-classified macro regimes with shift alerts.' },
   { icon: Gauge, title: 'Sentiment Gauges', description: 'Fear & Greed, BTC dominance, altcoin season.' },
@@ -69,7 +69,7 @@ export default function FeaturesPage() {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-ark-text-secondary">
-              Risk scoring, macro intelligence, AI briefings, and portfolio tracking — Arkline puts the full picture at your fingertips.
+              Risk scoring, macro intelligence, AI briefings, and portfolio tracking. Arkline puts the full picture at your fingertips.
             </p>
           </FadeIn>
         </div>
@@ -93,7 +93,7 @@ export default function FeaturesPage() {
                   Know where you are in the cycle.
                 </h2>
                 <p className="mt-4 max-w-lg text-base leading-relaxed text-ark-text-secondary">
-                  Arkline&apos;s proprietary risk model combines on-chain, technical, sentiment, and macro data into a single 0–1 score — with adaptive confidence levels that grow with data.
+                  Arkline&apos;s proprietary risk model combines on-chain, technical, sentiment, and macro data into a single 0 to 1 score, with adaptive confidence levels that grow with data.
                 </p>
               </div>
               <PhoneFrame
@@ -118,7 +118,7 @@ export default function FeaturesPage() {
                   See the backdrop before it hits crypto.
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
-                  VIX, DXY, WTI Crude, and US Net Liquidity with sparklines, z-scores, and regime detection — updated in real time.
+                  VIX, DXY, WTI Crude, and US Net Liquidity with sparklines, z-scores, and regime detection, updated in real time.
                 </p>
                 <div className="mt-6 flex justify-center">
                   <PhoneFrame
@@ -143,7 +143,7 @@ export default function FeaturesPage() {
                   The full picture, not just prices.
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
-                  Sentiment gauges, altcoin season detection, BTC dominance, ETF flows, derivatives data, and Coinbase ranking — in one view.
+                  Sentiment gauges, altcoin season detection, BTC dominance, ETF flows, derivatives data, and Coinbase ranking, all in one view.
                 </p>
                 <div className="mt-6 flex justify-center">
                   <PhoneFrame
@@ -170,7 +170,7 @@ export default function FeaturesPage() {
                   Identify key levels and momentum shifts.
                 </h2>
                 <p className="mt-4 max-w-lg text-base leading-relaxed text-ark-text-secondary">
-                  Trend and valuation scores, RSI, MACD, moving averages, and Bull Market Support Bands — with investment insights generated for every asset.
+                  Trend and valuation scores, RSI, MACD, moving averages, and Bull Market Support Bands, with investment insights generated for every asset.
                 </p>
               </div>
               <PhoneFrame
@@ -195,7 +195,7 @@ export default function FeaturesPage() {
                   Your portfolio. Complete clarity.
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
-                  Track crypto, stocks, and custom assets with live pricing, P&amp;L breakdown, performance metrics, and allocation charts — all in one view.
+                  Track crypto, stocks, and custom assets with live pricing, P&amp;L breakdown, performance metrics, and allocation charts, all in one view.
                 </p>
                 <div className="mt-6 flex justify-center">
                   <PhoneFrame
@@ -220,7 +220,7 @@ export default function FeaturesPage() {
                   Everything at a glance.
                 </h3>
                 <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
-                  Prices, risk scores, macro indicators, DCA reminders, and AI briefings — your complete daily command center.
+                  Prices, risk scores, macro indicators, DCA reminders, and AI briefings. Your complete daily command center.
                 </p>
                 <div className="mt-6 flex justify-center">
                   <PhoneFrame

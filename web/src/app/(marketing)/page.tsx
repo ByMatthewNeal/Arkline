@@ -29,15 +29,15 @@ import { SocialProof } from '@/components/marketing/social-proof';
 import { FadeIn } from '@/components/marketing/fade-in';
 
 const proFeatures = [
-  'Portfolio tracking — crypto, stocks, and custom assets (20,000+)',
-  'Performance metrics — Sharpe ratio, drawdown, volatility, allocation',
+  'Portfolio tracking across crypto, stocks, and custom assets (20,000+)',
+  'Performance metrics: Sharpe ratio, drawdown, volatility, allocation',
   '8-factor BTC risk scoring with historical trends',
   'Morning & evening AI briefings',
   'Macro dashboard with regime detection (VIX, DXY, US Net Liquidity)',
   'Smart DCA with risk-adjusted reminders',
-  'Technical analysis — RSI, MACD, moving averages, BMSB',
-  'Sentiment gauges — Fear & Greed, altcoin season, BTC dominance',
-  'Derivatives data — open interest, funding rates, liquidations',
+  'Technical analysis: RSI, MACD, moving averages, BMSB',
+  'Sentiment gauges: Fear & Greed, altcoin season, BTC dominance',
+  'Derivatives data: open interest, funding rates, liquidations',
   'Economic calendar + FedWatch rate probabilities',
   'Real-time news, Coinbase ranking, and push alerts',
 ];
@@ -71,7 +71,7 @@ export default function LandingPage() {
           </FadeIn>
 
           <FadeIn onMount delay={0.12} as="p" className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-ark-text-secondary sm:text-xl">
-            Institutional-grade market intelligence — risk scoring, macro regime detection, AI briefings — now in your pocket.
+            Institutional-grade market intelligence. Risk scoring, macro regime detection, and AI briefings. Now in your pocket.
           </FadeIn>
 
           {/* CTAs */}
@@ -148,12 +148,12 @@ export default function LandingPage() {
               {
                 icon: Tag,
                 title: 'One Simple Price',
-                description: 'No tiers, no upsells. $39.99/month or $399.99/year — everything included.',
+                description: 'No tiers, no upsells. $39.99/month or $399.99/year. Everything included.',
               },
               {
                 icon: MessageSquare,
                 title: 'Built by an Investor',
-                description: 'Direct line to the founder. Reply to any email — it goes straight to Matt.',
+                description: 'Direct line to the founder. Reply to any email and it goes straight to Matt.',
               },
             ].map((benefit, i) => (
               <FadeIn
@@ -214,10 +214,10 @@ export default function LandingPage() {
           </FadeIn>
           <FadeIn delay={0.1} className="mt-8 space-y-5 text-center text-base leading-relaxed text-ark-text-secondary sm:text-lg">
             <p>
-              Too many investors learn crypto from YouTube algorithms and Twitter noise — sources that profit from attention, not from being right. The people who actually build wealth in this market aren&apos;t following influencers. They&apos;re reading risk models, tracking macro regimes, and watching sentiment data that most retail investors don&apos;t even know exists.
+              Too many investors learn crypto from YouTube algorithms and Twitter noise. Sources that profit from attention, not from being right. The people who actually build wealth in this market aren&apos;t following influencers. They&apos;re reading risk models, tracking macro regimes, and watching sentiment data that most retail investors don&apos;t even know exists.
             </p>
             <p>
-              Arkline was built to close that gap. Institutional-grade tools — risk scoring, macro intelligence, AI briefings — designed for everyday investors who are ready to stop guessing and start positioning with real data.
+              Arkline was built to close that gap. Institutional-grade tools like risk scoring, macro intelligence, and AI briefings, designed for everyday investors who are ready to stop guessing and start positioning with real data.
             </p>
           </FadeIn>
           {/* Founder card */}
@@ -246,7 +246,7 @@ export default function LandingPage() {
                   </p>
                   <p className="mt-3 text-sm leading-relaxed text-ark-text-secondary">
                     {/* FOUNDER_BIO */}
-                    I spent years looking for a tool that combined risk models, macro data, and positioning signals in one place — without the noise. It didn&apos;t exist, so I built it. ArkLine is the app I wanted as an investor.
+                    I spent years looking for a tool that combined risk models, macro data, and positioning signals in one place, without the noise. It didn&apos;t exist, so I built it. ArkLine is the app I wanted as an investor.
                     <span className="ml-1 text-ark-text-tertiary">&mdash; Matt</span>
                   </p>
 
@@ -293,7 +293,7 @@ export default function LandingPage() {
               Founding Pricing, Locked In.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              The first 150 members get founding pricing — locked forever as long as they stay subscribed. After that, standard pricing kicks in.
+              The first 150 members get founding pricing, locked forever as long as they stay subscribed. After that, standard pricing kicks in.
             </p>
           </FadeIn>
 
@@ -305,7 +305,7 @@ export default function LandingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Limited — first 150 members
+                Limited to the first 150 members
               </div>
 
               <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -323,7 +323,7 @@ export default function LandingPage() {
                     <span className="text-sm text-ark-text-tertiary">/month</span>
                   </div>
                   <p className="mt-1 text-xs text-ark-text-tertiary">
-                    or <span className="font-medium text-ark-text-secondary">$399.99/year</span> — save ~17%
+                    or <span className="font-medium text-ark-text-secondary">$399.99/year</span>, save ~17%
                   </p>
                   <SpotsCounter className="mt-2" />
                 </div>
