@@ -176,7 +176,7 @@ enum RiskCoin: String, CaseIterable {
     case rdw = "RDW"
     case satl = "SATL"
     case iren = "IREN"
-    case bitf = "BITF"
+    case keel = "KEEL"
     case wulf = "WULF"
     case axti = "AXTI"
     case sndk = "SNDK"

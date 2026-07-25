@@ -685,7 +685,10 @@ struct AssetRiskConfig {
 
     // BTC Miners / Crypto Infra
     static let iren = AssetRiskConfig(stock: "IREN", originDate: safeDate(year: 2021, month: 11, day: 17), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "IREN (Iris Energy)")
-    static let bitf = AssetRiskConfig(stock: "BITF", originDate: safeDate(year: 2019, month: 8, day: 20), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 5, displayName: "Bitfarms")
+    /// Bitfarms rebranded to Keel Infrastructure and moved BITF -> KEEL on
+    /// 6 Apr 2026 (US redomiciliation). BITF is delisted; the provider only has
+    /// KEEL data from the rename, so origin/confidence reflect that shorter history.
+    static let keel = AssetRiskConfig(stock: "KEEL", originDate: safeDate(year: 2026, month: 4, day: 6), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "Keel Infrastructure")
     static let wulf = AssetRiskConfig(stock: "WULF", originDate: safeDate(year: 1994, month: 4, day: 5), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 4, displayName: "TeraWulf")
 
     // Semiconductors / Tech
@@ -742,7 +745,7 @@ struct AssetRiskConfig {
         // Space / Satellite / Defense
         .spcx, .asts, .pl, .rklb, .rdw, .satl,
         // BTC Miners / Crypto Infra
-        .iren, .bitf, .wulf,
+        .iren, .keel, .wulf,
         // Semiconductors / Tech
         .axti, .sndk,
         // AI / Quantum
