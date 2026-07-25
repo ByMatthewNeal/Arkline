@@ -97,14 +97,18 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Failed to fetch members" }, 500)
     }
 
-    // Real external members only — matches the dashboard/Revenue counts.
-    const external = (rows ?? []).filter(r => !isInternalEmail(r.email))
+    // Show everyone, but real external members FIRST and internal accounts
+    // (founder logins, test aliases, Apple reviewers) last — so actual members
+    // aren't buried in internal noise. Each row carries is_internal so the UI
+    // can badge them.
+    const tagged = (rows ?? []).map(r => ({ ...r, is_internal: isInternalEmail(r.email) }))
+    const ordered = [...tagged.filter(r => !r.is_internal), ...tagged.filter(r => r.is_internal)]
     const offset = (page - 1) * perPage
-    const paged = external.slice(offset, offset + perPage)
+    const paged = ordered.slice(offset, offset + perPage)
 
     return jsonResponse({
       members: paged,
-      total: external.length,
+      total: ordered.length,
       page,
       per_page: perPage,
     })
