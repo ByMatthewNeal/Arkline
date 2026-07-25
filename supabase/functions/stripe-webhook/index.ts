@@ -15,15 +15,6 @@ const FOUNDING_PRICE_IDS = new Set([
   "price_1TXCJyPHuageZ7zbIGTJCHPl", // founding monthly ($39.99/mo)
   "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
 ])
-const FOUNDING_MEMBER_CAP = 150
-
-// Matches iOS InviteCode.generateCode()
-const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-function generateCode(): string {
-  return "ARK-" + Array.from({ length: 6 }, () =>
-    CHARS[Math.floor(Math.random() * CHARS.length)]
-  ).join("")
-}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
@@ -69,8 +60,7 @@ Deno.serve(async (req) => {
     }
   } catch (err) {
     console.error(`Error handling ${event.type}:`, err)
-    // Return 200 to prevent Stripe retries for processing errors
-    // Stripe will retry on 5xx but not on 2xx
+    // Return 200 to prevent Stripe retries for processing errors.
   }
 
   return new Response(JSON.stringify({ received: true }), {
@@ -88,168 +78,57 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  // Self-serve web checkout (create-self-checkout): the user already has an
-  // account and is mid-onboarding, so skip invite-code creation + email. Just
-  // link the subscription to their profile by email and activate it now.
-  if (session.metadata?.self_serve === "true") {
-    if (session.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-      await upsertSubscription(subscription, email)
-      await syncProfileStatus(subscription.id, mapStripeStatus(subscription.status))
-    }
-    console.log(`Self-serve checkout completed for ${email} — invite email skipped`)
+  if (!session.subscription) {
+    console.log(`Checkout completed for ${email} with no subscription — ignoring`)
     return
   }
 
-  // Determine tier from checkout session line items
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 })
-  const priceId = lineItems.data[0]?.price?.id ?? ""
-  const tier = FOUNDING_PRICE_IDS.has(priceId) ? "founding" : "standard"
+  const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
 
-  let code: string
-
-  // Check if this is an admin-initiated checkout (has client_reference_id)
-  const inviteId = session.client_reference_id
-  if (inviteId) {
-    const { data: existingInvite } = await supabase
-      .from("invite_codes")
-      .select("id, code, payment_status")
-      .eq("id", inviteId)
-      .single()
-
-    if (existingInvite && existingInvite.payment_status === "pending_payment") {
-      // Admin-initiated: activate the pending invite
-      code = existingInvite.code
-
-      const { error } = await supabase
-        .from("invite_codes")
-        .update({
-          payment_status: "paid",
-          stripe_checkout_session_id: session.id,
-          tier,
-        })
-        .eq("id", inviteId)
-
-      if (error) {
-        console.error("Failed to update pending invite code:", error)
-        return
-      }
-
-      console.log(`Activated pending invite ${code} (${tier}) for ${email}`)
-    } else {
-      // client_reference_id present but invite not found or not pending — create new
-      console.warn(`client_reference_id ${inviteId} not found or not pending, creating new code`)
-      code = await createNewInviteCode(email, session.id, tier)
-      if (!code) return
-    }
-  } else {
-    // Organic purchase (no admin initiation) — create new code
-    code = await createNewInviteCode(email, session.id, tier)
-    if (!code) return
-  }
-
-  // Check founding member cap
-  if (tier === "founding") {
-    const { count } = await supabase
-      .from("invite_codes")
-      .select("id", { count: "exact", head: true })
-      .eq("tier", "founding")
-
-    if (count !== null && count >= FOUNDING_MEMBER_CAP) {
-      console.log(`Founding member cap reached (${count}/${FOUNDING_MEMBER_CAP}) — deactivating founding prices`)
-      for (const priceId of FOUNDING_PRICE_IDS) {
-        try {
-          await stripe.prices.update(priceId, { active: false })
-          console.log(`Deactivated founding price: ${priceId}`)
-        } catch (err) {
-          console.error(`Failed to deactivate price ${priceId}:`, err)
-        }
-      }
-    } else {
-      console.log(`Founding members: ${count}/${FOUNDING_MEMBER_CAP}`)
-    }
-  }
-
-  // Create/update subscription record if this is a subscription checkout
-  if (session.subscription) {
-    const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+  // Self-serve web checkout (create-self-checkout): the user already has an
+  // account and is mid-onboarding. Link + activate now.
+  if (session.metadata?.self_serve === "true") {
     await upsertSubscription(subscription, email)
+    await syncProfileStatus(subscription.id, mapStripeStatus(subscription.status))
+    console.log(`Self-serve checkout completed for ${email}`)
+    return
   }
 
-  // Send invite code email
-  const isTrial = session.metadata?.is_trial === "true"
-  await sendInviteEmail(email, code, isTrial)
+  // Organic web purchase (e.g. a Quick Share payment link). The buyer may not
+  // have an Arkline account yet. upsertSubscription links by email if a profile
+  // exists, otherwise stashes the email on the row (pending_email) so the signup
+  // trigger links it the moment they create their account. No invite code —
+  // invite codes are retired; access comes from the subscription row.
+  await upsertSubscription(subscription, email)
+  await sendWelcomeEmail(email)
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (!invoice.subscription) return
-
   const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
   await updateSubscriptionStatus(subscription.id, "active")
   await syncProfileStatus(subscription.id, "active")
-
   console.log(`Subscription ${subscription.id} marked active (invoice paid)`)
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   if (!invoice.subscription) return
-
   await updateSubscriptionStatus(invoice.subscription as string, "past_due")
   await syncProfileStatus(invoice.subscription as string, "past_due")
-
   console.log(`Subscription ${invoice.subscription} marked past_due (payment failed)`)
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   await updateSubscriptionStatus(subscription.id, "canceled")
   await syncProfileStatus(subscription.id, "canceled")
-
   console.log(`Subscription ${subscription.id} canceled`)
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   await upsertSubscription(subscription)
-
   const status = mapStripeStatus(subscription.status)
   await syncProfileStatus(subscription.id, status)
-
   console.log(`Subscription ${subscription.id} updated to ${status}`)
-}
-
-// --- Invite Code Helpers ---
-
-async function createNewInviteCode(email: string, sessionId: string, tier: string): Promise<string> {
-  let code = ""
-  for (let attempt = 0; attempt < 5; attempt++) {
-    code = generateCode()
-    const { data } = await supabase
-      .from("invite_codes")
-      .select("id")
-      .eq("code", code)
-      .limit(1)
-    if (!data || data.length === 0) break
-  }
-
-  const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 15)
-
-  const { error } = await supabase.from("invite_codes").insert({
-    code,
-    created_by: Deno.env.get("SYSTEM_ADMIN_UUID"),
-    expires_at: expiresAt.toISOString(),
-    email,
-    payment_status: "paid",
-    stripe_checkout_session_id: sessionId,
-    tier,
-  })
-
-  if (error) {
-    console.error("Failed to create invite code:", error)
-    return ""
-  }
-
-  console.log(`Generated invite code ${code} (${tier}) for ${email}`)
-  return code
 }
 
 // --- Helpers ---
@@ -275,30 +154,25 @@ async function upsertSubscription(subscription: Stripe.Subscription, email?: str
   const tier = FOUNDING_PRICE_IDS.has(priceId) ? "founding" : "standard"
   const status = mapStripeStatus(subscription.status)
 
-  // Try to find user_id by email
+  // Try to find user_id by email (profile exists = they already have an account).
   let userId: string | null = null
   if (email) {
     const { data } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .single()
+      .from("profiles").select("id").eq("email", email).single()
     userId = data?.id ?? null
   }
 
-  // If no email match, try to find by existing subscription record
+  // If no email match, try to find by existing subscription record.
   if (!userId) {
     const { data } = await supabase
-      .from("subscriptions")
-      .select("user_id")
-      .eq("stripe_subscription_id", subscription.id)
-      .single()
+      .from("subscriptions").select("user_id").eq("stripe_subscription_id", subscription.id).single()
     userId = data?.user_id ?? null
   }
 
   const record: Record<string, unknown> = {
     stripe_customer_id: subscription.customer as string,
     stripe_subscription_id: subscription.id,
+    source: "stripe",
     plan,
     tier,
     status,
@@ -312,11 +186,17 @@ async function upsertSubscription(subscription: Stripe.Subscription, email?: str
 
   if (userId) {
     record.user_id = userId
+    record.pending_email = null
+  } else {
+    // No account yet — stash the email so the signup trigger links this row when
+    // the buyer creates their account with the same address.
+    record.pending_email = email ?? null
   }
 
-  await supabase.from("subscriptions").upsert(record, {
+  const { error } = await supabase.from("subscriptions").upsert(record, {
     onConflict: "stripe_subscription_id",
   })
+  if (error) console.error("[stripe-webhook] upsertSubscription error:", error)
 }
 
 async function updateSubscriptionStatus(stripeSubId: string, status: string) {
@@ -340,41 +220,21 @@ async function syncProfileStatus(stripeSubId: string, status: string) {
     } else if (status !== "trialing") {
       profileUpdate.trial_end = null
     }
-    // Always sync current_period_end so iOS can enforce access after cancellation
     profileUpdate.current_period_end = data.current_period_end ?? null
-    await supabase
-      .from("profiles")
-      .update(profileUpdate)
-      .eq("id", data.user_id)
+    await supabase.from("profiles").update(profileUpdate).eq("id", data.user_id)
   }
 }
 
 // --- Email ---
 
-async function sendInviteEmail(email: string, code: string, isTrial = false) {
+// After a web purchase, tell the buyer to download the app and sign up with the
+// SAME email — that's what links their subscription (via the signup trigger).
+async function sendWelcomeEmail(email: string) {
   const resendKey = Deno.env.get("RESEND_API_KEY")
   if (!resendKey) {
-    console.warn("RESEND_API_KEY not set — skipping invite email")
+    console.warn("RESEND_API_KEY not set — skipping welcome email")
     return
   }
-
-  const deepLink = `arkline://invite?code=${code}`
-
-  const subject = isTrial
-    ? "Your Arkline Free Trial Has Started"
-    : "Your Arkline Invite Code"
-
-  const headline = isTrial
-    ? "Your 10-Day Free Trial"
-    : "Welcome to Arkline"
-
-  const subtitle = isTrial
-    ? "Your trial is active. Download the app and use the code below to get started. You won't be charged until day 11."
-    : "Your payment was successful. Here's your invite code."
-
-  const footer = isTrial
-    ? "Your 10-day free trial has started. Your card will be charged automatically on day 11 unless you cancel."
-    : "Enter this code in the Arkline app to activate your membership.<br>This code expires in 15 days."
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -386,26 +246,26 @@ async function sendInviteEmail(email: string, code: string, isTrial = false) {
       body: JSON.stringify({
         from: "Arkline <onboarding@resend.dev>",
         to: [email],
-        subject,
+        subject: "Welcome to Arkline — one step left",
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
             <div style="text-align: center; margin-bottom: 32px;">
-              <h1 style="font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0;">${headline}</h1>
-              <p style="font-size: 16px; color: #666; margin-top: 8px;">${subtitle}</p>
+              <h1 style="font-size: 28px; font-weight: 700; color: #1a1a1a; margin: 0;">Welcome to Arkline</h1>
+              <p style="font-size: 16px; color: #666; margin-top: 8px;">Your payment was successful. One quick step to unlock it.</p>
             </div>
 
-            <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
-              <p style="font-size: 14px; color: #888; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Your Invite Code</p>
-              <p style="font-size: 36px; font-weight: 700; color: #3369FF; margin: 0; letter-spacing: 3px;">${code}</p>
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <p style="font-size: 15px; color: #333; margin: 0 0 12px 0;"><strong>Download Arkline</strong> from the App Store, then <strong>sign up with this email:</strong></p>
+              <p style="font-size: 18px; font-weight: 700; color: #3369FF; margin: 0; text-align: center; letter-spacing: 0.5px;">${email}</p>
             </div>
 
             <div style="text-align: center; margin-bottom: 32px;">
-              <a href="${deepLink}" style="display: inline-block; background: #3369FF; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Open in Arkline</a>
+              <a href="https://arkline.io" style="display: inline-block; background: #3369FF; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">Get the App</a>
             </div>
 
             <div style="border-top: 1px solid #eee; padding-top: 20px;">
               <p style="font-size: 13px; color: #999; text-align: center; margin: 0;">
-                ${footer}
+                As long as you sign up with the same email you paid with, your membership unlocks automatically — no code needed.
               </p>
             </div>
           </div>
@@ -414,12 +274,11 @@ async function sendInviteEmail(email: string, code: string, isTrial = false) {
     })
 
     if (res.ok) {
-      console.log(`Invite email sent to ${email} (trial: ${isTrial})`)
+      console.log(`Welcome email sent to ${email}`)
     } else {
-      const err = await res.text()
-      console.error(`Failed to send invite email: ${err}`)
+      console.error(`Failed to send welcome email: ${await res.text()}`)
     }
   } catch (err) {
-    console.error("Error sending invite email:", err)
+    console.error("Error sending welcome email:", err)
   }
 }
