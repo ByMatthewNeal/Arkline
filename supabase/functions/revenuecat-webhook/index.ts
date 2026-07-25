@@ -40,6 +40,8 @@ interface RCEvent {
   event_timestamp_ms?: number
   cancel_reason?: string
   store?: string
+  transferred_from?: string[]
+  transferred_to?: string[]
   environment?: string // 'SANDBOX' or 'PRODUCTION'
   is_trial_period?: boolean
   period_type?: string // 'TRIAL' | 'INTRO' | 'NORMAL' | 'PROMOTIONAL'
@@ -150,8 +152,26 @@ Deno.serve(async (req: Request) => {
   }
 
   const event = payload?.event
-  if (!event || !event.type || !event.app_user_id) {
-    return badRequest('Missing event.type or event.app_user_id')
+  if (!event || !event.type) {
+    return badRequest('Missing event.type')
+  }
+
+  // TRANSFER events describe purchases moving between app user ids and carry
+  // `transferred_from` / `transferred_to` arrays INSTEAD of `app_user_id`.
+  // They used to fall into the check below and 400, which made RevenueCat
+  // retry the event six times for nothing. Acknowledge them; the follow-up
+  // RENEWAL/INITIAL_PURCHASE for the destination user carries the state we
+  // actually persist.
+  if (event.type === 'TRANSFER') {
+    console.log('[revenuecat-webhook] TRANSFER acknowledged', {
+      from: event.transferred_from,
+      to: event.transferred_to,
+    })
+    return ok('Transfer acknowledged', { type: event.type })
+  }
+
+  if (!event.app_user_id) {
+    return badRequest('Missing event.app_user_id')
   }
 
   // Apple-only webhook — Stripe events come via the separate stripe-webhook fn.
@@ -184,17 +204,59 @@ Deno.serve(async (req: Request) => {
   const plan = planFromProductId(productId ?? undefined)
   const tier = tierFromProductId(productId ?? undefined)
 
-  // Look up existing Apple subscription row for this user, if any.
-  const { data: existing, error: lookupErr } = await supabase
-    .from('subscriptions')
-    .select('id, source, status, current_period_end')
-    .eq('user_id', userId)
-    .eq('source', 'apple')
-    .maybeSingle()
+  // Resolve which row this event belongs to.
+  //
+  // apple_original_transaction_id is the stable identity of the APPLE
+  // subscription, and it legitimately moves between Arkline accounts: a user
+  // reinstalls and signs up with a new email, taps Restore Purchases while
+  // signed into a different account, or receives it via Family Sharing.
+  // `subscriptions` has a UNIQUE index on that column, so looking up only by
+  // (user_id, source) meant those cases fell through to INSERT and died on
+  // 23505 duplicate key — a 500 that RevenueCat retries six times and then
+  // gives up on. The user has paid Apple and has no access, permanently, with
+  // nothing in our DB to show for it.
+  //
+  // So: find the row by transaction id FIRST and re-point it at the current
+  // user (that is what a transfer means), and only fall back to the per-user
+  // lookup when we have no transaction id to key on.
+  let existing: { id: string; user_id: string } | null = null
 
-  if (lookupErr) {
-    console.error('[revenuecat-webhook] lookup error', lookupErr)
-    return new Response(JSON.stringify({ error: 'DB lookup failed' }), { status: 500 })
+  if (originalTxId) {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('id, user_id')
+      .eq('apple_original_transaction_id', originalTxId)
+      .maybeSingle()
+
+    if (error) {
+      console.error('[revenuecat-webhook] lookup-by-txid error', error)
+      return new Response(JSON.stringify({
+        error: 'DB lookup failed', detail: error.message, code: error.code,
+      }), { status: 500 })
+    }
+    existing = data
+    if (existing && existing.user_id !== userId) {
+      console.log('[revenuecat-webhook] transferring apple subscription', {
+        originalTxId, from: existing.user_id, to: userId,
+      })
+    }
+  }
+
+  if (!existing) {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('id, user_id')
+      .eq('user_id', userId)
+      .eq('source', 'apple')
+      .maybeSingle()
+
+    if (error) {
+      console.error('[revenuecat-webhook] lookup error', error)
+      return new Response(JSON.stringify({
+        error: 'DB lookup failed', detail: error.message, code: error.code,
+      }), { status: 500 })
+    }
+    existing = data
   }
 
   if (existing) {
@@ -202,6 +264,9 @@ Deno.serve(async (req: Request) => {
     const { error: updateErr } = await supabase
       .from('subscriptions')
       .update({
+        // user_id is re-asserted so a transferred Apple subscription follows
+        // the account that now owns it instead of stranding on the old one.
+        user_id: userId,
         status: newStatus,
         plan,
         tier,
@@ -216,7 +281,12 @@ Deno.serve(async (req: Request) => {
 
     if (updateErr) {
       console.error('[revenuecat-webhook] update error', updateErr)
-      return new Response(JSON.stringify({ error: 'DB update failed' }), { status: 500 })
+      return new Response(JSON.stringify({
+        error: 'DB update failed',
+        detail: updateErr.message,
+        code: updateErr.code,
+        hint: updateErr.hint,
+      }), { status: 500 })
     }
 
     console.log('[revenuecat-webhook] updated', { userId, type: event.type, newStatus, expiresAt })
@@ -248,8 +318,16 @@ Deno.serve(async (req: Request) => {
     })
 
   if (insertErr) {
+    // Echo the Postgres error back to RevenueCat. Its delivery log is the only
+    // place we can read this from — Supabase edge logs surface request lines,
+    // not console output, so a bare "DB insert failed" is undebuggable.
     console.error('[revenuecat-webhook] insert error', insertErr)
-    return new Response(JSON.stringify({ error: 'DB insert failed' }), { status: 500 })
+    return new Response(JSON.stringify({
+      error: 'DB insert failed',
+      detail: insertErr.message,
+      code: insertErr.code,
+      hint: insertErr.hint,
+    }), { status: 500 })
   }
 
   console.log('[revenuecat-webhook] inserted', { userId, type: event.type, productId, plan, tier, expiresAt })
