@@ -10,6 +10,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+// Internal accounts — founder logins, plus-aliases and Apple reviewer accounts.
+// Kept in sync with get-admin-metrics so the Members list matches the member
+// counts on the dashboard/Revenue screens (real external members only).
+const INTERNAL_EMAILS = new Set(
+  (Deno.env.get("INTERNAL_EMAILS") ??
+    "mneal.jw@gmail.com,mneal.jw+customer@gmail.com,mattmneal1@gmail.com,neal.matthew@protonmail.com")
+    .split(",")
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean)
+)
+
+function isInternalEmail(email: string | null | undefined): boolean {
+  if (!email) return false
+  const e = email.toLowerCase()
+  if (e.endsWith("@arkline.io")) return true   // reviewer@, reviewer-expired@, etc.
+  if (e.startsWith("mneal.jw+")) return true    // any gmail plus-alias of the founder
+  return INTERNAL_EMAILS.has(e)
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -51,16 +70,14 @@ Deno.serve(async (req) => {
     const status = body.status ?? null
     const page = body.page ?? 1
     const perPage = body.per_page ?? 50
-    const offset = (page - 1) * perPage
 
-    // Build query for profiles with joined subscriptions
+    // Fetch matching profiles (no DB-side pagination — we filter out internal
+    // accounts in code first so page counts stay correct; member volume is small).
     let query = supabase
       .from("profiles")
-      .select("id, email, username, full_name, role, subscription_status, is_active, created_at, subscriptions(id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, trial_end)", { count: "exact" })
+      .select("id, email, username, full_name, role, subscription_status, is_active, created_at, subscriptions(id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, trial_end)")
       .order("created_at", { ascending: false })
-      .range(offset, offset + perPage - 1)
 
-    // Apply filters
     if (status && status !== "all") {
       query = query.eq("subscription_status", status)
     }
@@ -73,16 +90,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { data: members, count, error } = await query
+    const { data: rows, error } = await query
 
     if (error) {
       console.error("Query error:", error)
       return jsonResponse({ error: "Failed to fetch members" }, 500)
     }
 
+    // Real external members only — matches the dashboard/Revenue counts.
+    const external = (rows ?? []).filter(r => !isInternalEmail(r.email))
+    const offset = (page - 1) * perPage
+    const paged = external.slice(offset, offset + perPage)
+
     return jsonResponse({
-      members: members ?? [],
-      total: count ?? 0,
+      members: paged,
+      total: external.length,
       page,
       per_page: perPage,
     })
