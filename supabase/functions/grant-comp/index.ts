@@ -66,22 +66,23 @@ Deno.serve(async (req) => {
     return json({ error: "plan must be monthly or annual" }, 400)
   }
 
-  // Find the user by email. profiles.email is populated at onboarding, so a real
-  // account always has one. If we can't find them, they haven't signed up yet.
-  const { data: profile, error: pErr } = await supabase
-    .from("profiles").select("id, email").ilike("email", email).maybeSingle()
-  if (pErr) {
-    console.error("[grant-comp] lookup error", pErr)
+  // Find the user by email in auth.users. This exists the moment they verify
+  // their email, so we can comp someone who is still mid-onboarding (sitting on
+  // the paywall) — their profiles row isn't written until onboarding completes.
+  const { data: list, error: listErr } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  if (listErr) {
+    console.error("[grant-comp] listUsers error", listErr)
     return json({ error: "Lookup failed" }, 500)
   }
-  if (!profile) {
+  const authUser = list.users.find(u => (u.email ?? "").toLowerCase() === email)
+  if (!authUser) {
     return json({
       ok: false,
       notFound: true,
-      message: `No Arkline account for ${email} yet. Ask them to sign up in the app first, then grant the comp.`,
+      message: `No Arkline account for ${email} yet. Ask them to sign up in the app first (email + verification), then grant the comp.`,
     })
   }
-  const userId = profile.id
+  const userId = authUser.id
   const now = new Date().toISOString()
 
   // Idempotent: update the user's existing comp row if they have one, else insert.
