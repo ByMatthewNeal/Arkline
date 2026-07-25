@@ -1,13 +1,15 @@
-// Arkline — Admin Comp Grant
+// Arkline — Admin Comp Grant / Remove
 //
-// Lets an admin give a person free access by email. Writes an active
-// source='comp' subscription row (no expiry), which is what is_user_subscribed
-// checks — so the comped user sails past the onboarding paywall for free.
+// Lets an admin give a person free access by email, optionally for a set number
+// of days, and revoke it. Writes/updates a source='comp' subscription row.
 //
-// This replaces comp-via-invite-code now that invite codes are retired. Comps,
-// Stripe (web) and Apple (IAP) all live in the same subscriptions table, and
-// is_user_subscribed is the single access gate.
+// Access is gated by is_user_subscribed, which checks:
+//   status IN ('active','trialing') AND (current_period_end IS NULL OR > now())
+// So a comp with current_period_end = null never expires, and one with a future
+// date auto-expires when that date passes — no cron needed. Revoking cancels the
+// row immediately.
 //
+// Comps, Stripe (web) and Apple (IAP) all live in the same subscriptions table.
 // Auth: admin JWT only (profiles.role = 'admin').
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
@@ -41,6 +43,22 @@ async function verifyAdmin(req: Request) {
   return user
 }
 
+// Does the user have any OTHER active/valid subscription (apple/stripe/other
+// comp) besides the row we're about to cancel? Used on revoke so we don't wrongly
+// flip a paying user's profile cache to 'none'.
+async function hasOtherActiveSub(userId: string, excludeId: string): Promise<boolean> {
+  const nowIso = new Date().toISOString()
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("id, status, current_period_end")
+    .eq("user_id", userId)
+    .neq("id", excludeId)
+  return (data ?? []).some(s =>
+    (s.status === "active" || s.status === "trialing") &&
+    (s.current_period_end === null || s.current_period_end > nowIso)
+  )
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405)
@@ -48,7 +66,7 @@ Deno.serve(async (req) => {
   const admin = await verifyAdmin(req)
   if (!admin) return json({ error: "Admin access required" }, 403)
 
-  let payload: { email?: string; tier?: string; plan?: string }
+  let payload: { email?: string; tier?: string; plan?: string; days?: number; revoke?: boolean }
   try {
     payload = await req.json()
   } catch {
@@ -58,17 +76,17 @@ Deno.serve(async (req) => {
   const email = (payload.email ?? "").trim().toLowerCase()
   const tier = payload.tier ?? "founding"   // founding is the early-customer default
   const plan = payload.plan ?? "monthly"
+  const revoke = payload.revoke === true
+  const days = Number.isFinite(payload.days) ? Math.floor(payload.days as number) : 0
   if (!email) return json({ error: "email is required" }, 400)
-  if (tier !== "founding" && tier !== "standard") {
-    return json({ error: "tier must be founding or standard" }, 400)
-  }
-  if (plan !== "monthly" && plan !== "annual") {
-    return json({ error: "plan must be monthly or annual" }, 400)
+  if (!revoke) {
+    if (tier !== "founding" && tier !== "standard") return json({ error: "tier must be founding or standard" }, 400)
+    if (plan !== "monthly" && plan !== "annual") return json({ error: "plan must be monthly or annual" }, 400)
+    if (days < 0 || days > 3650) return json({ error: "days must be 0–3650 (0 = forever)" }, 400)
   }
 
-  // Find the user by email in auth.users. This exists the moment they verify
-  // their email, so we can comp someone who is still mid-onboarding (sitting on
-  // the paywall) — their profiles row isn't written until onboarding completes.
+  // Find the user by email in auth.users (exists right after email verification,
+  // before the profiles row is written at onboarding completion).
   const { data: list, error: listErr } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
   if (listErr) {
     console.error("[grant-comp] listUsers error", listErr)
@@ -83,16 +101,39 @@ Deno.serve(async (req) => {
     })
   }
   const userId = authUser.id
-  const now = new Date().toISOString()
+  const now = new Date()
+  const nowIso = now.toISOString()
 
-  // Idempotent: update the user's existing comp row if they have one, else insert.
   const { data: existing } = await supabase
     .from("subscriptions").select("id").eq("user_id", userId).eq("source", "comp").maybeSingle()
+
+  // ---- Revoke ----
+  if (revoke) {
+    if (!existing) return json({ ok: false, message: `${email} has no comp to remove.` })
+    const { error: rErr } = await supabase.from("subscriptions").update({
+      status: "canceled", current_period_end: nowIso, updated_at: nowIso,
+    }).eq("id", existing.id)
+    if (rErr) {
+      console.error("[grant-comp] revoke error", rErr)
+      return json({ error: "Failed to remove comp" }, 500)
+    }
+    // Only downgrade the profile cache if they have no other active subscription.
+    if (!(await hasOtherActiveSub(userId, existing.id))) {
+      await supabase.from("profiles").update({ subscription_status: "none" }).eq("id", userId)
+    }
+    console.log(`[grant-comp] ${admin.id} removed comp for ${email}`)
+    return json({ ok: true, removed: true, message: `Removed comp for ${email}.`, user_id: userId })
+  }
+
+  // ---- Grant (perpetual if days = 0, else expires in `days`) ----
+  const periodEnd = days > 0
+    ? new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString()
+    : null
 
   if (existing) {
     const { error: uErr } = await supabase.from("subscriptions").update({
       status: "active", tier, plan,
-      current_period_start: now, current_period_end: null, updated_at: now,
+      current_period_start: nowIso, current_period_end: periodEnd, updated_at: nowIso,
     }).eq("id", existing.id)
     if (uErr) {
       console.error("[grant-comp] update error", uErr)
@@ -101,7 +142,7 @@ Deno.serve(async (req) => {
   } else {
     const { error: iErr } = await supabase.from("subscriptions").insert({
       user_id: userId, source: "comp", status: "active", tier, plan,
-      current_period_start: now, current_period_end: null,
+      current_period_start: nowIso, current_period_end: periodEnd,
     })
     if (iErr) {
       console.error("[grant-comp] insert error", iErr)
@@ -109,9 +150,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Keep the denormalized profile status consistent with the granted access.
   await supabase.from("profiles").update({ subscription_status: "active" }).eq("id", userId)
 
-  console.log(`[grant-comp] ${admin.id} comped ${email} (${tier}/${plan})`)
-  return json({ ok: true, message: `Comped ${email} — ${tier} ${plan}.`, user_id: userId, tier, plan })
+  const durationText = days > 0 ? `${days} day${days === 1 ? "" : "s"}` : "forever"
+  console.log(`[grant-comp] ${admin.id} comped ${email} (${tier}/${plan}, ${durationText})`)
+  return json({
+    ok: true,
+    message: `Comped ${email} — ${tier} ${plan}, ${durationText}.`,
+    user_id: userId, tier, plan, days, expires_at: periodEnd,
+  })
 })

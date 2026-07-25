@@ -2,10 +2,10 @@ import SwiftUI
 
 // MARK: - Comp Member (Admin)
 //
-// Give a person free access by email. Calls the `grant-comp` edge function,
-// which writes an active source='comp' subscription row — the same access gate
-// (is_user_subscribed) that Stripe and Apple purchases use. Replaces the old
-// comp-via-invite-code flow now that invite codes are retired.
+// Give a person free access by email — forever or for a set number of days — and
+// remove it. Calls the `grant-comp` edge function, which writes/updates an active
+// source='comp' subscription row. Access is gated by is_user_subscribed, so a
+// timed comp auto-expires when its end date passes; removing cancels it at once.
 
 struct CompMemberView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -19,14 +19,11 @@ struct CompMemberView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
-                    Text("Give a member free access. They need to have signed up in the app first — then enter their email here.")
+                    Text("Give a member free access. They need to have signed up in the app first (entered their email and verified it), then enter that email here.")
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
 
-                    VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        Text("Email")
-                            .font(AppFonts.caption12Medium)
-                            .foregroundColor(AppColors.textSecondary)
+                    field("Email") {
                         TextField("name@example.com", text: $viewModel.email)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)
@@ -37,10 +34,7 @@ struct CompMemberView: View {
                             .cornerRadius(ArkSpacing.Radius.md)
                     }
 
-                    VStack(alignment: .leading, spacing: ArkSpacing.xs) {
-                        Text("Tier")
-                            .font(AppFonts.caption12Medium)
-                            .foregroundColor(AppColors.textSecondary)
+                    field("Tier") {
                         Picker("Tier", selection: $viewModel.tier) {
                             Text("Founding ($39.99)").tag("founding")
                             Text("Standard ($69.99)").tag("standard")
@@ -48,23 +42,37 @@ struct CompMemberView: View {
                         .pickerStyle(.segmented)
                     }
 
+                    field("Duration") {
+                        Picker("Duration", selection: $viewModel.durationDays) {
+                            Text("Forever").tag(0)
+                            Text("7 days").tag(7)
+                            Text("14 days").tag(14)
+                            Text("30 days").tag(30)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
                     Button {
                         Task { await viewModel.grant() }
                     } label: {
-                        HStack {
-                            if viewModel.isLoading {
-                                ProgressView().controlSize(.small)
-                            } else {
-                                Image(systemName: "gift.fill")
-                            }
-                            Text(viewModel.isLoading ? "Granting…" : "Grant Comp")
-                                .font(AppFonts.body14Medium)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(ArkSpacing.md)
-                        .background(viewModel.canSubmit ? AppColors.accent : AppColors.fillSecondary(colorScheme))
-                        .foregroundColor(viewModel.canSubmit ? .white : AppColors.textTertiary)
-                        .cornerRadius(ArkSpacing.Radius.md)
+                        actionLabel(
+                            icon: "gift.fill",
+                            title: viewModel.isLoading ? "Working…" : "Grant Comp",
+                            enabled: viewModel.canSubmit,
+                            destructive: false
+                        )
+                    }
+                    .disabled(!viewModel.canSubmit || viewModel.isLoading)
+
+                    Button {
+                        Task { await viewModel.remove() }
+                    } label: {
+                        actionLabel(
+                            icon: "xmark.circle.fill",
+                            title: "Remove Comp",
+                            enabled: viewModel.canSubmit,
+                            destructive: true
+                        )
                     }
                     .disabled(!viewModel.canSubmit || viewModel.isLoading)
 
@@ -93,6 +101,29 @@ struct CompMemberView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
     }
+
+    @ViewBuilder
+    private func field<Content: View>(_ label: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: ArkSpacing.xs) {
+            Text(label)
+                .font(AppFonts.caption12Medium)
+                .foregroundColor(AppColors.textSecondary)
+            content()
+        }
+    }
+
+    private func actionLabel(icon: String, title: String, enabled: Bool, destructive: Bool) -> some View {
+        let tint = destructive ? AppColors.error : AppColors.accent
+        return HStack {
+            Image(systemName: icon)
+            Text(title).font(AppFonts.body14Medium)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(ArkSpacing.md)
+        .background(enabled ? tint.opacity(destructive ? 0.12 : 1.0) : AppColors.fillSecondary(colorScheme))
+        .foregroundColor(enabled ? (destructive ? AppColors.error : .white) : AppColors.textTertiary)
+        .cornerRadius(ArkSpacing.Radius.md)
+    }
 }
 
 // MARK: - View Model
@@ -102,6 +133,7 @@ struct CompMemberView: View {
 final class CompMemberViewModel {
     var email = ""
     var tier = "founding"
+    var durationDays = 0   // 0 = forever
     var isLoading = false
     var resultMessage: String?
     var resultIsError = false
@@ -112,6 +144,8 @@ final class CompMemberViewModel {
         let email: String
         let tier: String
         let plan: String
+        let days: Int
+        let revoke: Bool
     }
     private struct GrantCompResponse: Decodable {
         let ok: Bool?
@@ -119,7 +153,10 @@ final class CompMemberViewModel {
         let error: String?
     }
 
-    func grant() async {
+    func grant() async { await call(revoke: false) }
+    func remove() async { await call(revoke: true) }
+
+    private func call(revoke: Bool) async {
         guard canSubmit else { return }
         isLoading = true
         resultMessage = nil
@@ -131,18 +168,19 @@ final class CompMemberViewModel {
                 options: .init(body: GrantCompRequest(
                     email: email.trimmingCharacters(in: .whitespaces),
                     tier: tier,
-                    plan: "monthly"
+                    plan: "monthly",
+                    days: durationDays,
+                    revoke: revoke
                 ))
             )
             if response.ok == true {
                 resultIsError = false
-                resultMessage = response.message ?? "Comp granted."
+                resultMessage = response.message ?? (revoke ? "Comp removed." : "Comp granted.")
                 Haptics.success()
-                email = ""
+                if !revoke { email = "" }
             } else {
-                // 200 with ok:false (e.g. account not found yet)
                 resultIsError = true
-                resultMessage = response.message ?? response.error ?? "Could not grant comp."
+                resultMessage = response.message ?? response.error ?? "Could not complete."
                 Haptics.error()
             }
         } catch {
