@@ -113,6 +113,23 @@ struct ResourceArticleUpsert: Encodable {
     let sortOrder: Int
     let isPublished: Bool
 
+    /// Explicit encoding so nil fields are sent as JSON null instead of being
+    /// omitted. Swift's synthesized Encodable drops nil keys, and PostgREST
+    /// treats a missing column as "leave unchanged" — which made it impossible
+    /// to CLEAR a field (e.g. deleting an article's summary silently kept the
+    /// old value on every save).
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(slug, forKey: .slug)
+        try c.encode(title, forKey: .title)
+        try c.encode(summary, forKey: .summary)   // null when nil — clears the column
+        try c.encode(body, forKey: .body)
+        try c.encode(category, forKey: .category)
+        try c.encode(icon, forKey: .icon)
+        try c.encode(sortOrder, forKey: .sortOrder)
+        try c.encode(isPublished, forKey: .isPublished)
+    }
+
     enum CodingKeys: String, CodingKey {
         case slug, title, summary, body, category, icon
         case sortOrder = "sort_order"
