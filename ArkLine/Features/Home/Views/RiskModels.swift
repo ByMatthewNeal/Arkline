@@ -169,6 +169,7 @@ enum RiskCoin: String, CaseIterable {
     case mp = "MP"
     case cifr = "CIFR"
     case bmnr = "BMNR"
+    case spcx = "SPCX"
     case asts = "ASTS"
     case pl = "PL"
     case rklb = "RKLB"

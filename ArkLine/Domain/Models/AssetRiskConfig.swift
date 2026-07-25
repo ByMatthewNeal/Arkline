@@ -674,6 +674,9 @@ struct AssetRiskConfig {
     static let bmnr = AssetRiskConfig(stock: "BMNR", originDate: safeDate(year: 2021, month: 2, day: 16), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 3, displayName: "Bitmine")
 
     // Space / Satellite / Defense
+    /// SpaceX — IPO'd 12 Jun 2026 on Nasdaq. Only weeks of price history, so wide
+    /// bounds + lowest confidence; the regression firms up as history accumulates.
+    static let spcx = AssetRiskConfig(stock: "SPCX", originDate: safeDate(year: 2026, month: 6, day: 12), deviationBounds: (low: -0.8, high: 0.8), confidenceLevel: 1, displayName: "SpaceX")
     static let asts = AssetRiskConfig(stock: "ASTS", originDate: safeDate(year: 2019, month: 11, day: 1), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 5, displayName: "AST SpaceMobile")
     static let pl = AssetRiskConfig(stock: "PL", originDate: safeDate(year: 2021, month: 4, day: 26), deviationBounds: (low: -0.65, high: 0.65), confidenceLevel: 4, displayName: "Planet Labs")
     static let rklb = AssetRiskConfig(stock: "RKLB", originDate: safeDate(year: 2020, month: 11, day: 24), deviationBounds: (low: -0.7, high: 0.7), confidenceLevel: 5, displayName: "Rocket Lab")
@@ -737,7 +740,7 @@ struct AssetRiskConfig {
         .aapl, .nvda, .googl, .msft, .amzn, .tsla, .meta, .coin, .mstr, .spy, .qqq,
         .orcl, .hood, .amd, .mu, .uber, .asml, .tsm, .mp, .cifr, .bmnr,
         // Space / Satellite / Defense
-        .asts, .pl, .rklb, .rdw, .satl,
+        .spcx, .asts, .pl, .rklb, .rdw, .satl,
         // BTC Miners / Crypto Infra
         .iren, .bitf, .wulf,
         // Semiconductors / Tech
