@@ -169,7 +169,14 @@ Deno.serve(async (req: Request) => {
   }
 
   const userId = event.app_user_id
-  const newStatus = statusFromEventType(event.type, event.cancel_reason)
+  // Free-trial purchases arrive with period_type TRIAL. Record them as
+  // 'trialing' (not 'active') so revenue metrics can distinguish "in trial"
+  // from "paying" — access is identical (is_user_subscribed accepts both).
+  // When Apple converts the trial (first paid RENEWAL), status becomes active
+  // and trial_end clears.
+  const isTrial = event.period_type === "TRIAL"
+  const baseStatus = statusFromEventType(event.type, event.cancel_reason)
+  const newStatus = (isTrial && baseStatus === "active") ? "trialing" : baseStatus
   const expiresAt = toIso(event.expiration_at_ms)
   const purchasedAt = toIso(event.purchased_at_ms)
   const originalTxId = event.original_transaction_id ?? null
@@ -202,6 +209,7 @@ Deno.serve(async (req: Request) => {
         apple_product_id: productId,
         revenuecat_subscriber_id: userId,
         current_period_end: expiresAt,
+        trial_end: newStatus === "trialing" ? expiresAt : null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', existing.id)
@@ -236,6 +244,7 @@ Deno.serve(async (req: Request) => {
       tier,
       current_period_start: purchasedAt,
       current_period_end: expiresAt,
+      trial_end: newStatus === "trialing" ? expiresAt : null,
     })
 
   if (insertErr) {

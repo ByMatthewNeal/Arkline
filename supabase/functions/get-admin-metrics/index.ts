@@ -130,6 +130,8 @@ Deno.serve(async (req) => {
     let mrrCents = 0
     let compedActive = 0
     let compedPotentialCents = 0
+    let trialsActive = 0
+    let trialPotentialCents = 0
     const breakdown = {
       founding_monthly: 0,
       founding_annual: 0,
@@ -151,6 +153,15 @@ Deno.serve(async (req) => {
         continue
       }
 
+      // Free trials haven't paid anything yet and may cancel — they are
+      // pipeline (like comps), NOT MRR. They convert into MRR when Apple
+      // bills them and the webhook flips status to 'active'.
+      if (s.status === "trialing") {
+        trialsActive += 1
+        trialPotentialCents += contributionCents
+        continue
+      }
+
       mrrCents += contributionCents
       const key = `${tier}_${plan}` as keyof typeof breakdown
       breakdown[key] += 1
@@ -160,6 +171,7 @@ Deno.serve(async (req) => {
     const arr = mrr * 12
     const compedPotentialMrr = compedPotentialCents / 100
     const compedPotentialArr = compedPotentialMrr * 12
+    const trialPotentialMrr = trialPotentialCents / 100
 
     // ---- Status counts ----
     const counts = {
@@ -219,6 +231,10 @@ Deno.serve(async (req) => {
       comped_active: compedActive,
       comped_potential_mrr: Math.round(compedPotentialMrr * 100) / 100,
       comped_potential_arr: Math.round(compedPotentialArr * 100) / 100,
+
+      // Free-trial pipeline — in trial now, becomes MRR only when Apple bills
+      trials_active: trialsActive,
+      trial_potential_mrr: Math.round(trialPotentialMrr * 100) / 100,
 
       // Member counts
       total_members: totalMembers ?? 0,
