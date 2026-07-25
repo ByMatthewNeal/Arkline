@@ -137,6 +137,18 @@ struct FeatureRequestDetailView: View {
                 }
                 .foregroundColor(AppColors.textTertiary)
             }
+
+            // Diagnostics (auto-attached at submission — key for reproducing bugs)
+            if request.appVersion != nil || request.deviceInfo != nil {
+                HStack(spacing: 6) {
+                    Image(systemName: "iphone")
+                        .font(.system(size: 12))
+                    Text([request.deviceInfo, request.appVersion.map { "v\($0)" }]
+                        .compactMap { $0 }.joined(separator: " · "))
+                        .font(ArkFonts.caption)
+                }
+                .foregroundColor(AppColors.textTertiary)
+            }
         }
         .padding(ArkSpacing.md)
         .background(AppColors.cardBackground(colorScheme))

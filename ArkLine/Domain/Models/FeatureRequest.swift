@@ -18,6 +18,30 @@ struct FeatureRequest: Codable, Identifiable, Equatable {
     var reviewedBy: UUID?
     var adminNotes: String?
     var aiAnalysis: String?
+    /// Feature idea or bug report — bugs share the same pipeline (one inbox).
+    var requestType: RequestType
+    /// Auto-attached diagnostics (app version / device + OS) — most useful on bugs.
+    var appVersion: String?
+    var deviceInfo: String?
+
+    enum RequestType: String, Codable, CaseIterable {
+        case feature
+        case bug
+
+        var displayName: String {
+            switch self {
+            case .feature: return "Feature Idea"
+            case .bug: return "Bug Report"
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .feature: return "lightbulb.fill"
+            case .bug: return "ladybug.fill"
+            }
+        }
+    }
 
     // MARK: - Coding Keys
 
@@ -36,6 +60,9 @@ struct FeatureRequest: Codable, Identifiable, Equatable {
         case reviewedBy = "reviewed_by"
         case adminNotes = "admin_notes"
         case aiAnalysis = "ai_analysis"
+        case requestType = "request_type"
+        case appVersion = "app_version"
+        case deviceInfo = "device_info"
     }
 
     // MARK: - Convenience Initializers
@@ -54,7 +81,10 @@ struct FeatureRequest: Codable, Identifiable, Equatable {
         reviewedAt: Date? = nil,
         reviewedBy: UUID? = nil,
         adminNotes: String? = nil,
-        aiAnalysis: String? = nil
+        aiAnalysis: String? = nil,
+        requestType: RequestType = .feature,
+        appVersion: String? = nil,
+        deviceInfo: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -70,6 +100,9 @@ struct FeatureRequest: Codable, Identifiable, Equatable {
         self.reviewedBy = reviewedBy
         self.adminNotes = adminNotes
         self.aiAnalysis = aiAnalysis
+        self.requestType = requestType
+        self.appVersion = appVersion
+        self.deviceInfo = deviceInfo
     }
 
     // MARK: - Display Helpers

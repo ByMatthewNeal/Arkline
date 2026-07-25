@@ -280,7 +280,7 @@ struct SettingsView: View {
                         SettingsRow(
                             icon: "lightbulb.fill",
                             iconColor: AppColors.warning,
-                            title: "Request a Feature"
+                            title: "Feedback & Bug Report"
                         )
                     }
 

@@ -218,6 +218,21 @@ struct FeatureRequestCard: View {
             VStack(alignment: .leading, spacing: ArkSpacing.sm) {
                 // Header
                 HStack {
+                    // Bug badge — bugs share the pipeline but must stand out
+                    if request.requestType == .bug {
+                        HStack(spacing: 4) {
+                            Image(systemName: "ladybug.fill")
+                                .font(.system(size: 10))
+                            Text("BUG")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundColor(AppColors.error)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppColors.error.opacity(0.15))
+                        .cornerRadius(4)
+                    }
+
                     // Category Badge
                     HStack(spacing: 4) {
                         Image(systemName: request.category.icon)

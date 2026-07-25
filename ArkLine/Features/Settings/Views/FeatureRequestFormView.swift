@@ -11,6 +11,7 @@ struct FeatureRequestFormView: View {
     @State private var title: String = ""
     @State private var description: String = ""
     @State private var selectedCategory: FeatureCategory = .other
+    @State private var requestType: FeatureRequest.RequestType = .feature
     @State private var isSubmitting = false
     @State private var showSuccess = false
     @State private var showError = false
@@ -74,18 +75,28 @@ struct FeatureRequestFormView: View {
 
     private var headerSection: some View {
         VStack(spacing: ArkSpacing.sm) {
-            Image(systemName: "lightbulb.fill")
+            Image(systemName: requestType.icon)
                 .font(.system(size: 40))
-                .foregroundColor(AppColors.warning)
+                .foregroundColor(requestType == .bug ? AppColors.error : AppColors.warning)
 
-            Text("Have an idea?")
+            Text(requestType == .bug ? "Found a bug?" : "Have an idea?")
                 .font(ArkFonts.title2)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-            Text("Help us improve Arkline by suggesting new features")
+            Text(requestType == .bug
+                 ? "Tell us what went wrong — we'll include your app version automatically"
+                 : "Help us improve Arkline by suggesting new features")
                 .font(ArkFonts.body)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)
+
+            Picker("Type", selection: $requestType) {
+                ForEach(FeatureRequest.RequestType.allCases, id: \.self) { type in
+                    Text(type.displayName).tag(type)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.top, ArkSpacing.xs)
         }
         .padding(.horizontal, ArkSpacing.xl)
     }
@@ -164,7 +175,7 @@ struct FeatureRequestFormView: View {
                 }
             }
 
-            TextField("Brief summary of your idea", text: $title)
+            TextField(requestType == .bug ? "Brief summary of the problem" : "Brief summary of your idea", text: $title)
                 .font(ArkFonts.body)
                 .padding(ArkSpacing.md)
                 .background(AppColors.cardBackground(colorScheme))
@@ -280,12 +291,24 @@ struct FeatureRequestFormView: View {
                     throw AppError.authError("Not logged in")
                 }
 
+                // Auto-attach diagnostics — invaluable for reproducing bug reports.
+                let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+                let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+                #if canImport(UIKit)
+                let device = "\(UIDevice.current.model) — iOS \(UIDevice.current.systemVersion)"
+                #else
+                let device = "macOS"
+                #endif
+
                 let request = FeatureRequest(
                     title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                     description: description.trimmingCharacters(in: .whitespacesAndNewlines),
                     category: selectedCategory,
                     authorId: userId,
-                    authorEmail: appState.currentUser?.email
+                    authorEmail: appState.currentUser?.email,
+                    requestType: requestType,
+                    appVersion: "\(version) (\(build))",
+                    deviceInfo: device
                 )
 
                 _ = try await service.createRequest(request)

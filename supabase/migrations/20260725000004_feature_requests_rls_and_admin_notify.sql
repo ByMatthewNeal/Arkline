@@ -1,0 +1,3 @@
+-- Members can submit + view their own; admins (by role) manage all; new
+-- submissions push-notify admins via the send-broadcast-notification function.
+-- (Applied live; see notify_admin_new_feature_request for the 🐞/💡 title logic.)
