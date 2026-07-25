@@ -18,12 +18,12 @@ struct AdminDashboardView: View {
             List {
                 // Quick Actions
                 Section {
-                    NavigationLink(destination: SendInviteView()) {
+                    NavigationLink(destination: CompMemberView()) {
                         AdminDashboardRow(
-                            icon: "paperplane.fill",
+                            icon: "gift.fill",
                             iconColor: AppColors.success,
-                            title: "Send Invite",
-                            subtitle: "Payment or comped invite"
+                            title: "Comp a Member",
+                            subtitle: "Grant free access by email"
                         )
                     }
 
