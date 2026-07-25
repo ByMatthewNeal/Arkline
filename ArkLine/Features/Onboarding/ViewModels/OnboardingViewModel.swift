@@ -309,6 +309,7 @@ class OnboardingViewModel {
     func beginSignUp() {
         isMovingForward = true
         isReturningUser = false
+        verificationCode = ""   // fresh code entry — never show a previous attempt's digits
         currentStep = .email
     }
 
@@ -336,6 +337,7 @@ class OnboardingViewModel {
         // the SignInView is clean if the user navigates back.
         errorMessage = nil
         password = ""
+        verificationCode = ""   // fresh code entry
         isMovingForward = true
         currentStep = .email
     }
@@ -395,6 +397,8 @@ class OnboardingViewModel {
 
         isLoading = true
         errorMessage = nil
+        // A new code is being sent — any previously typed digits are now invalid.
+        verificationCode = ""
 
         do {
             try await SupabaseAuthManager.shared.signInWithOTP(email: email)
