@@ -154,22 +154,12 @@ struct AdminDashboardView: View {
     }
 
     private func loadQuickStats() async {
-        // Member count
-        if SupabaseManager.shared.isConfigured {
-            let count: [[String: Int]]? = try? await SupabaseManager.shared.client
-                .from("profiles")
-                .select("id", head: false, count: .exact)
-                .limit(0)
-                .execute()
-                .value
-            // Use the count header instead
-            if let rows: [[String: String]] = try? await SupabaseManager.shared.client
-                .from("profiles")
-                .select("id")
-                .execute()
-                .value {
-                await MainActor.run { memberCount = rows.count }
-            }
+        // Member count — use the same source as the Revenue screen so the two
+        // agree: get-admin-metrics counts REAL external members (it excludes the
+        // founder's own logins, test accounts and the Apple reviewer). Counting
+        // raw profile rows here previously showed everyone.
+        if let metrics = try? await AdminService().fetchMetrics() {
+            await MainActor.run { memberCount = metrics.totalMembers }
         }
 
         // Health summary (quick check)
