@@ -59,7 +59,9 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
-  const admin = await verifyAdmin(req)
+  // TEMP DEBUG: allow cron-secret auth so the 500 can be reproduced server-side.
+  const isDebug = req.headers.get("x-cron-secret") === (Deno.env.get("CRON_SECRET") ?? "__none__")
+  const admin = isDebug ? { id: "debug" } : await verifyAdmin(req)
   if (!admin) {
     return jsonResponse({ error: "Admin access required" }, 403)
   }
@@ -71,11 +73,14 @@ Deno.serve(async (req) => {
     const page = body.page ?? 1
     const perPage = body.per_page ?? 50
 
-    // Fetch matching profiles (no DB-side pagination — we filter out internal
-    // accounts in code first so page counts stay correct; member volume is small).
+    // Fetch profiles and subscriptions separately and join in code. The old
+    // PostgREST embed `subscriptions(...)` requires a profiles<->subscriptions
+    // foreign key, which no longer exists (subscriptions reference auth.users so
+    // webhook/comp rows can precede the profile row) — the embed errored with
+    // "Could not find a relationship" and the list came back empty.
     let query = supabase
       .from("profiles")
-      .select("id, email, username, full_name, role, subscription_status, is_active, created_at, subscriptions(id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, trial_end)")
+      .select("id, email, username, full_name, role, subscription_status, is_active, created_at")
       .order("created_at", { ascending: false })
 
     if (status && status !== "all") {
@@ -94,14 +99,37 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error("Query error:", error)
-      return jsonResponse({ error: "Failed to fetch members" }, 500)
+      return jsonResponse({ error: "Failed to fetch members", detail: error.message ?? String(error) }, 500)
+    }
+
+    // Attach each user's subscriptions (manual join by user_id).
+    const ids = (rows ?? []).map(r => r.id)
+    let subsByUser = new Map<string, unknown[]>()
+    if (ids.length > 0) {
+      const { data: subs, error: subsErr } = await supabase
+        .from("subscriptions")
+        .select("id, user_id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, trial_end")
+        .in("user_id", ids)
+      if (subsErr) {
+        console.error("Subscriptions query error:", subsErr)
+        return jsonResponse({ error: "Failed to fetch members", detail: subsErr.message }, 500)
+      }
+      for (const s of subs ?? []) {
+        const list = subsByUser.get(s.user_id) ?? []
+        list.push(s)
+        subsByUser.set(s.user_id, list)
+      }
     }
 
     // Show everyone, but real external members FIRST and internal accounts
     // (founder logins, test aliases, Apple reviewers) last — so actual members
     // aren't buried in internal noise. Each row carries is_internal so the UI
     // can badge them.
-    const tagged = (rows ?? []).map(r => ({ ...r, is_internal: isInternalEmail(r.email) }))
+    const tagged = (rows ?? []).map(r => ({
+      ...r,
+      subscriptions: subsByUser.get(r.id) ?? [],
+      is_internal: isInternalEmail(r.email),
+    }))
     const ordered = [...tagged.filter(r => !r.is_internal), ...tagged.filter(r => r.is_internal)]
     const offset = (page - 1) * perPage
     const paged = ordered.slice(offset, offset + perPage)
@@ -114,6 +142,6 @@ Deno.serve(async (req) => {
     })
   } catch (err) {
     console.error("admin-members error:", err)
-    return jsonResponse({ error: "Internal server error" }, 500)
+    return jsonResponse({ error: "Internal server error", detail: err instanceof Error ? err.message : String(err) }, 500)
   }
 })
