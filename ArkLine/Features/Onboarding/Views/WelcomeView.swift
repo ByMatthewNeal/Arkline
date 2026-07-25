@@ -64,8 +64,7 @@ struct WelcomeView: View {
                 VStack(spacing: ArkSpacing.sm) {
                     PrimaryButton(
                         title: "Get Arkline Pro",
-                        action: { viewModel.beginSignUp() },
-                        icon: "sparkles"
+                        action: { viewModel.beginSignUp() }
                     )
 
                     Button(action: { viewModel.skipToLogin() }) {
