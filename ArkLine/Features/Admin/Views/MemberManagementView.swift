@@ -80,7 +80,7 @@ struct MemberManagementView: View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: ArkSpacing.sm) {
             MetricCard(title: "Total", value: "\(metrics.totalMembers)", icon: "person.2.fill", color: AppColors.accent)
             MetricCard(title: "Active", value: "\(metrics.activeMembers)", icon: "checkmark.circle.fill", color: AppColors.success)
-            MetricCard(title: "Trialing", value: "\(metrics.trialingMembers)", icon: "clock.fill", color: AppColors.info)
+            MetricCard(title: "Comped", value: "\(metrics.compedActive ?? 0)", icon: "gift.fill", color: AppColors.info)
             MetricCard(title: "Churned", value: "\(metrics.canceledMembers)", icon: "xmark.circle.fill", color: AppColors.error)
         }
         .padding(.horizontal, ArkSpacing.lg)

@@ -103,13 +103,19 @@ Deno.serve(async (req) => {
     )
 
     // Pull every subscription with the columns we need for revenue math, then
-    // drop internal accounts — everything downstream sees external members only.
+    // keep only subs belonging to a known EXTERNAL profile. Requiring a profile
+    // (not just "not internal") matters: mid-onboarding test accounts have no
+    // profiles row, so an exclusion list built from profiles can't catch them —
+    // that's how a sandbox sub once made Active read 4 while Total read 3.
+    const externalIds = new Set(
+      profilesList.filter(p => !isInternalEmail(p.email)).map(p => p.id)
+    )
     const { data: subscriptions, error: subsError } = await supabase
       .from("subscriptions")
       .select("user_id, plan, tier, status, source, updated_at")
 
     if (subsError) throw subsError
-    const subs = (subscriptions ?? []).filter(s => !internalIds.has(s.user_id))
+    const subs = (subscriptions ?? []).filter(s => externalIds.has(s.user_id))
 
     // ---- Active revenue computation ----
     // MRR is the sum of monthly contribution from every PAYING subscription whose

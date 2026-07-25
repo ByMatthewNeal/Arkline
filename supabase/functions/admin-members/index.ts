@@ -11,8 +11,7 @@ const corsHeaders = {
 }
 
 // Internal accounts — founder logins, plus-aliases and Apple reviewer accounts.
-// Kept in sync with get-admin-metrics so the Members list matches the member
-// counts on the dashboard/Revenue screens (real external members only).
+// Shown LAST in the members list and flagged is_internal (metrics exclude them).
 const INTERNAL_EMAILS = new Set(
   (Deno.env.get("INTERNAL_EMAILS") ??
     "mneal.jw@gmail.com,mneal.jw+customer@gmail.com,mattmneal1@gmail.com,neal.matthew@protonmail.com")
@@ -59,9 +58,7 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
-  // TEMP DEBUG: allow cron-secret auth so the 500 can be reproduced server-side.
-  const isDebug = req.headers.get("x-cron-secret") === (Deno.env.get("CRON_SECRET") ?? "__none__")
-  const admin = isDebug ? { id: "debug" } : await verifyAdmin(req)
+  const admin = await verifyAdmin(req)
   if (!admin) {
     return jsonResponse({ error: "Admin access required" }, 403)
   }
@@ -76,16 +73,11 @@ Deno.serve(async (req) => {
     // Fetch profiles and subscriptions separately and join in code. The old
     // PostgREST embed `subscriptions(...)` requires a profiles<->subscriptions
     // foreign key, which no longer exists (subscriptions reference auth.users so
-    // webhook/comp rows can precede the profile row) — the embed errored with
-    // "Could not find a relationship" and the list came back empty.
+    // webhook/comp rows can precede the profile row).
     let query = supabase
       .from("profiles")
       .select("id, email, username, full_name, role, subscription_status, is_active, created_at")
       .order("created_at", { ascending: false })
-
-    if (status && status !== "all") {
-      query = query.eq("subscription_status", status)
-    }
 
     if (search) {
       // Sanitize: strip PostgREST filter metacharacters to prevent filter injection
@@ -99,20 +91,21 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error("Query error:", error)
-      return jsonResponse({ error: "Failed to fetch members", detail: error.message ?? String(error) }, 500)
+      return jsonResponse({ error: "Failed to fetch members" }, 500)
     }
 
     // Attach each user's subscriptions (manual join by user_id).
     const ids = (rows ?? []).map(r => r.id)
-    let subsByUser = new Map<string, unknown[]>()
+    // deno-lint-ignore no-explicit-any
+    const subsByUser = new Map<string, any[]>()
     if (ids.length > 0) {
       const { data: subs, error: subsErr } = await supabase
         .from("subscriptions")
-        .select("id, user_id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, trial_end")
+        .select("id, user_id, source, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, trial_end")
         .in("user_id", ids)
       if (subsErr) {
         console.error("Subscriptions query error:", subsErr)
-        return jsonResponse({ error: "Failed to fetch members", detail: subsErr.message }, 500)
+        return jsonResponse({ error: "Failed to fetch members" }, 500)
       }
       for (const s of subs ?? []) {
         const list = subsByUser.get(s.user_id) ?? []
@@ -121,16 +114,56 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Show everyone, but real external members FIRST and internal accounts
-    // (founder logins, test aliases, Apple reviewers) last — so actual members
-    // aren't buried in internal noise. Each row carries is_internal so the UI
-    // can badge them.
+    // Real external members FIRST, internal accounts last, is_internal flagged.
     const tagged = (rows ?? []).map(r => ({
       ...r,
       subscriptions: subsByUser.get(r.id) ?? [],
       is_internal: isInternalEmail(r.email),
     }))
-    const ordered = [...tagged.filter(r => !r.is_internal), ...tagged.filter(r => r.is_internal)]
+
+    // Source-aware filters reflecting the actual business states:
+    //   paying   — valid (unexpired active/trialing) apple or stripe subscription
+    //   comp     — valid comp subscription (the convertible pipeline)
+    //   none     — no valid subscription of any kind ("No Access")
+    //   active   — any valid subscription (paying or comp)
+    //   canceled — had a subscription but nothing valid now
+    // Any other value falls back to matching the profile status (legacy clients).
+    const nowIso = new Date().toISOString()
+    // deno-lint-ignore no-explicit-any
+    const hasValid = (r: any, sources: string[] | null) =>
+      r.subscriptions.some((s: any) =>
+        (s.status === "active" || s.status === "trialing") &&
+        (s.current_period_end === null || s.current_period_end > nowIso) &&
+        (sources === null || sources.includes(s.source)))
+
+    let filtered = tagged
+    if (status && status !== "all") {
+      switch (status) {
+        case "paying":
+          filtered = tagged.filter(r => hasValid(r, ["apple", "stripe"]))
+          break
+        case "comp":
+          filtered = tagged.filter(r => hasValid(r, ["comp"]))
+          break
+        case "none":
+          filtered = tagged.filter(r => !hasValid(r, null))
+          break
+        case "active":
+          filtered = tagged.filter(r => hasValid(r, null))
+          break
+        case "canceled":
+          // deno-lint-ignore no-explicit-any
+          filtered = tagged.filter(r =>
+            !hasValid(r, null) &&
+            (r.subscription_status === "canceled" ||
+             r.subscriptions.some((s: any) => s.status === "canceled")))
+          break
+        default:
+          filtered = tagged.filter(r => r.subscription_status === status)
+      }
+    }
+
+    const ordered = [...filtered.filter(r => !r.is_internal), ...filtered.filter(r => r.is_internal)]
     const offset = (page - 1) * perPage
     const paged = ordered.slice(offset, offset + perPage)
 
@@ -142,6 +175,6 @@ Deno.serve(async (req) => {
     })
   } catch (err) {
     console.error("admin-members error:", err)
-    return jsonResponse({ error: "Internal server error", detail: err instanceof Error ? err.message : String(err) }, 500)
+    return jsonResponse({ error: "Internal server error" }, 500)
   }
 })

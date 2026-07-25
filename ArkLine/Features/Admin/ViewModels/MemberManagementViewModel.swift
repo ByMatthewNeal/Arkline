@@ -37,22 +37,24 @@ class MemberManagementViewModel {
 
     // MARK: - Filter Enum
 
+    // Source-aware filters matching the real business states (server resolves
+    // them against the subscriptions table): who pays, who's comped, who signed
+    // up but has no access, and who canceled. Billing-lifecycle filters
+    // (trial/past-due/paused) can return when those states actually exist.
     enum MemberStatusFilter: String, CaseIterable {
         case all = "All"
-        case active = "Active"
-        case trialing = "Trial"
-        case pastDue = "Past Due"
+        case paying = "Paying"
+        case comped = "Comped"
+        case noAccess = "No Access"
         case canceled = "Canceled"
-        case paused = "Paused"
 
         var queryValue: String? {
             switch self {
             case .all: return nil
-            case .active: return "active"
-            case .trialing: return "trialing"
-            case .pastDue: return "past_due"
+            case .paying: return "paying"
+            case .comped: return "comp"
+            case .noAccess: return "none"
             case .canceled: return "canceled"
-            case .paused: return "paused"
             }
         }
     }
