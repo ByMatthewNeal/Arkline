@@ -40,6 +40,7 @@ class BroadcastNotificationService: ObservableObject {
         case "sentiment_regime":return Notification.Name("SentimentRegimeNotificationTapped")
         case "market_deck":     return Notification.Name("MarketDeckNotificationTapped")
         case "rotation_signal": return Notification.Name("RotationSignalNotificationTapped")
+        case "feature_request": return Notification.Name("FeatureRequestNotificationTapped")
         default:                return Notification.Name("BroadcastNotificationTapped")
         }
     }
@@ -519,6 +520,9 @@ extension BroadcastNotificationService {
         case "market_deck":
             let deckId = userInfo["id"] as? String ?? userInfo["deck_id"] as? String ?? "latest"
             result = (type: "market_deck", id: deckId)
+        case "feature_request":
+            // Admin push for a new member feature request — route to the backlog.
+            result = (type: "feature_request", id: "")
         default:
             break
         }

@@ -103,6 +103,8 @@ struct ProfileView: View {
             .navigationDestination(for: String.self) { route in
                 if route == "dcaList" {
                     DCAListView()
+                } else if route == "featureBacklog" {
+                    FeatureBacklogView()
                 }
             }
             .navigationTitle("Profile")
@@ -135,11 +137,22 @@ struct ProfileView: View {
                     appState.pendingDCAReminderId = nil
                 }
             }
+            .onChange(of: appState.pendingOpenFeatureBacklog) { _, pending in
+                if pending {
+                    navigationPath.append("featureBacklog")
+                    appState.pendingOpenFeatureBacklog = false
+                }
+            }
             .onAppear {
                 // Handle pending DCA deep link
                 if appState.pendingDCAReminderId != nil {
                     navigationPath.append("dcaList")
                     appState.pendingDCAReminderId = nil
+                }
+                // Handle pending feature-backlog deep link (admin push tap)
+                if appState.pendingOpenFeatureBacklog {
+                    navigationPath.append("featureBacklog")
+                    appState.pendingOpenFeatureBacklog = false
                 }
                 // Use the actual user from AppState if available
                 if let currentUser = appState.currentUser {

@@ -80,6 +80,10 @@ struct ArkLineApp: App {
                     appState.selectedTab = .home
                     appState.pendingMarketDeckId = notification.userInfo?["id"] as? String ?? "latest"
                 }
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FeatureRequestNotificationTapped"))) { _ in
+                    appState.selectedTab = .profile
+                    appState.pendingOpenFeatureBacklog = true
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
@@ -126,7 +130,8 @@ struct ArkLineApp: App {
     /// (consumed by those views) — the replay leaves them alone to avoid a regress.
     private static let rootHandledNotificationTypes: Set<String> = [
         "briefing", "qps_change", "dca_reminder",
-        "model_portfolio", "sentiment_regime", "market_deck"
+        "model_portfolio", "sentiment_regime", "market_deck",
+        "feature_request"
     ]
 
     @MainActor
@@ -348,6 +353,9 @@ class AppState: ObservableObject {
     @Published var pendingSignalId: UUID?
     @Published var pendingQPSAsset: String?
     @Published var pendingDCAReminderId: String?
+    /// Set when the admin taps a "new feature request" push — Profile navigates
+    /// into the Feature Backlog and clears it.
+    @Published var pendingOpenFeatureBacklog = false
     @Published var pendingModelPortfolioStrategy: String?
     @Published var pendingMarketDeckId: String?
     @Published var shouldExpandBriefing = false
