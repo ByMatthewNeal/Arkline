@@ -54,9 +54,15 @@ struct PaywallStepView: View {
                     )
                     .padding(.horizontal, ArkSpacing.xl)
 
-                    Button("Back") { viewModel.previousStep() }
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(AppColors.textSecondary)
+                    // Back returns to WELCOME, not the previous step — the previous
+                    // step is the verification screen whose code is already used,
+                    // a dead end. Welcome offers the real choices (try again / sign in).
+                    Button("Back") {
+                        viewModel.isMovingForward = false
+                        viewModel.currentStep = .welcome
+                    }
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(AppColors.textSecondary)
                 }
             }
         }
