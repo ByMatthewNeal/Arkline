@@ -130,8 +130,8 @@ struct OnboardingFlowView: View {
                 WelcomeView(viewModel: viewModel)
             case .signIn:
                 SignInView(viewModel: viewModel)
-            case .inviteCode:
-                InviteCodeView(viewModel: viewModel)
+            case .paywall:
+                PaywallStepView(viewModel: viewModel)
             case .email:
                 EnterEmailView(viewModel: viewModel)
             case .verification:

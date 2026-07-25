@@ -4,9 +4,9 @@ import SwiftUI
 enum OnboardingStep: Int, CaseIterable {
     case welcome
     case signIn
-    case inviteCode
     case email
     case verification
+    case paywall          // Pay (or pass, if already comped/subscribed) — after auth
     case username
     case investmentInterests   // NEW: What do you invest in?
     case careerInfo            // Experience level + portfolio size
@@ -18,7 +18,7 @@ enum OnboardingStep: Int, CaseIterable {
     case notifications
 
     /// Gate steps excluded from progress tracking
-    private static let gateSteps: Set<OnboardingStep> = [.welcome, .signIn, .inviteCode]
+    private static let gateSteps: Set<OnboardingStep> = [.welcome, .signIn, .paywall]
 
     /// Progress excluding gate steps (0.0 to 1.0)
     var progress: Double {
@@ -45,7 +45,7 @@ enum OnboardingStep: Int, CaseIterable {
         switch self {
         case .welcome: return "Welcome"
         case .signIn: return "Sign In"
-        case .inviteCode: return "Invite Code"
+        case .paywall: return "Arkline Pro"
         case .email: return "Enter Email"
         case .verification: return "Verify Email"
         case .username: return "Your Name"
@@ -73,7 +73,7 @@ enum OnboardingStep: Int, CaseIterable {
     /// Category for grouping steps in UI
     var category: StepCategory {
         switch self {
-        case .welcome, .signIn, .inviteCode:
+        case .welcome, .signIn, .paywall:
             return .intro
         case .email, .verification:
             return .authentication
@@ -302,6 +302,34 @@ class OnboardingViewModel {
         currentStep = .signIn
     }
 
+    /// New customer tapping "Get Arkline Pro". Route into account creation first
+    /// (email → verification) so the user is authenticated and RevenueCat is
+    /// linked to their Supabase UUID BEFORE the paywall — otherwise an IAP
+    /// purchase attributes to an anonymous RevenueCat id and is dropped.
+    func beginSignUp() {
+        isMovingForward = true
+        isReturningUser = false
+        currentStep = .email
+    }
+
+    /// Access gate used by the paywall step: true if the user already has access
+    /// via a comp, a prior web (Stripe) purchase, or a restored Apple purchase —
+    /// in which case we skip the paywall. Checks the fast local RevenueCat
+    /// entitlement first, then the authoritative server RPC.
+    func hasActiveAccess(userId: UUID) async -> Bool {
+        if RevenueCatService.shared.isPro { return true }
+        do {
+            let subscribed: Bool = try await SupabaseManager.shared.database
+                .rpc("is_user_subscribed", params: ["check_user_id": userId.uuidString])
+                .execute()
+                .value
+            return subscribed
+        } catch {
+            logError("is_user_subscribed check failed: \(error)", category: .network)
+            return false
+        }
+    }
+
     func useEmailCodeFallback() {
         // Clear any error state from the password sign-in attempt so it
         // doesn't bleed into the OTP screen. Also wipe the password so
@@ -351,12 +379,11 @@ class OnboardingViewModel {
     }
 
     /// Handle an invite code received via deep link.
+    /// Invite codes are retired — this is now a no-op so existing deep-link
+    /// wiring in ArkLineApp doesn't break the build. Any legacy code link simply
+    /// drops the user into the normal onboarding.
     func handleDeepLinkCode(_ code: String) {
-        inviteCode = code
-        if currentStep != .inviteCode {
-            currentStep = .inviteCode
-        }
-        Task { await validateInviteCode() }
+        _ = code
     }
 
     // MARK: - Actions
@@ -611,7 +638,13 @@ class OnboardingViewModel {
                         try await SupabaseDatabase.shared.insert(into: .portfolios, values: portfolio)
                     }
 
-                    // Activate subscription for all onboarded users (single tier, no free plan)
+                    // Sync the denormalized profile cache to match the access the
+                    // user reached this point with. By the time onboarding
+                    // completes they are guaranteed subscribed — the paywall step
+                    // only lets through users with an active comp/web/Apple
+                    // subscription (is_user_subscribed) or a completed purchase.
+                    // The subscriptions table remains the authoritative gate;
+                    // this just keeps profile.subscription_status consistent.
                     do {
                         try await SupabaseManager.shared.database
                             .from(SupabaseTable.profiles.rawValue)
@@ -619,16 +652,7 @@ class OnboardingViewModel {
                             .eq("id", value: userId.uuidString)
                             .execute()
                     } catch {
-                        AppLogger.shared.error("Failed to activate subscription: \(error.localizedDescription)")
-                    }
-
-                    // Redeem the invite code
-                    if validatedInviteCode != nil {
-                        do {
-                            try await inviteCodeService.redeemCode(inviteCode, userId: userId)
-                        } catch {
-                            AppLogger.shared.error("Failed to redeem invite code: \(error.localizedDescription)")
-                        }
+                        AppLogger.shared.error("Failed to sync profile subscription status: \(error.localizedDescription)")
                     }
                 } catch {
                     // Log error but don't block onboarding - tables may not exist yet
