@@ -10,9 +10,17 @@ final class AdminService: AdminServiceProtocol {
             page: page,
             per_page: 50
         )
+        // functions.invoke defaults to a plain JSONDecoder, whose date strategy
+        // cannot parse ISO-8601 strings at all — so decoding AdminMember's Date
+        // fields (created_at, subscription periods) always threw and the Members
+        // list showed empty. Decode with the robust ISO decoder instead (same one
+        // that fixed the blank Trade Signals screens).
         let response: AdminMembersResponse = try await supabase.functions.invoke(
             "admin-members",
-            options: .init(body: request)
+            options: .init(body: request),
+            decode: { data, _ in
+                try ArkSupabaseDecoder.arkRobust.decode(AdminMembersResponse.self, from: data)
+            }
         )
         return response
     }
