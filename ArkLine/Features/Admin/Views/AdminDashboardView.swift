@@ -66,15 +66,6 @@ struct AdminDashboardView: View {
 
                 // Management
                 Section {
-                    NavigationLink(destination: InviteCodeManagementView()) {
-                        AdminDashboardRow(
-                            icon: "ticket.fill",
-                            iconColor: AppColors.accent,
-                            title: "Invite Codes",
-                            subtitle: "Generate & manage codes"
-                        )
-                    }
-
                     NavigationLink(destination: FeatureBacklogView()) {
                         AdminDashboardRow(
                             icon: "lightbulb.fill",
