@@ -13,12 +13,18 @@ final class APIProxy {
     private init() {}
 
     // MARK: - Circuit Breaker
-    /// Stops hammering the proxy after consecutive 401s.
+    /// Stops hammering the proxy after consecutive PROXY-LEVEL failures (auth
+    /// rejected, function unreachable). Endpoint-level errors passed through from
+    /// upstream APIs (404 unknown symbol, 429 rate limit, upstream 5xx) must NOT
+    /// trip this: the proxy itself is healthy, and counting them meant three
+    /// unlucky requests (e.g. one delisted ticker) blacked out EVERY widget's
+    /// data source app-wide until relaunch — the "widgets randomly stop loading
+    /// until I kill the app" bug.
     /// Resets automatically after cooldown or on successful proxy call.
     private var consecutiveFailures = 0
     private var circuitOpenedAt: Date?
     private let failureThreshold = 3
-    private let circuitCooldown: TimeInterval = 300 // 5 minutes
+    private let circuitCooldown: TimeInterval = 60 // was 300 — a genuine trip now self-heals within a minute
 
     private var isCircuitOpen: Bool {
         guard consecutiveFailures >= failureThreshold else { return false }
@@ -163,9 +169,19 @@ final class APIProxy {
                 let data = try await proxyGetRequest(service: service, path: path, method: method, queryItems: queryItems)
                 recordProxySuccess()
                 return data
+            } catch let error as APIProxyError {
+                if case .httpError(let code, _) = error, code != 401 {
+                    // The proxy relayed an upstream error (404/429/5xx for THIS
+                    // endpoint). Proxy is healthy — reset the breaker and surface
+                    // the real error instead of degrading every other request.
+                    recordProxySuccess()
+                    throw error
+                }
+                recordProxyFailure()
+                logDebug("Proxy failed for \(service.rawValue)\(path) (\(error)), using fallback", category: .network)
             } catch {
                 recordProxyFailure()
-                logDebug("Proxy failed for \(service.rawValue)\(path), using direct", category: .network)
+                logDebug("Proxy failed for \(service.rawValue)\(path), using fallback", category: .network)
             }
         }
 
@@ -191,9 +207,18 @@ final class APIProxy {
                 let data = try await proxyPostRequest(service: service, path: path, queryItems: queryItems, body: body)
                 recordProxySuccess()
                 return data
+            } catch let error as APIProxyError {
+                if case .httpError(let code, _) = error, code != 401 {
+                    // Upstream endpoint error relayed by a healthy proxy — don't
+                    // trip the breaker; surface the real error.
+                    recordProxySuccess()
+                    throw error
+                }
+                recordProxyFailure()
+                logDebug("Proxy POST failed for \(service.rawValue)\(path) (\(error)), using fallback", category: .network)
             } catch {
                 recordProxyFailure()
-                logDebug("Proxy POST failed for \(service.rawValue)\(path), using direct", category: .network)
+                logDebug("Proxy POST failed for \(service.rawValue)\(path), using fallback", category: .network)
             }
         }
 
