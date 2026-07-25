@@ -474,6 +474,31 @@ verify_jwt = false
 [functions.compute-stock-portfolios]
 verify_jwt = false
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Payment webhooks. Stripe and RevenueCat authenticate with their OWN header
+# (a signing secret / shared secret verified inside the function), never a
+# Supabase JWT. If verify_jwt flips to true the gateway 401s every callback
+# BEFORE our code runs, and purchases stop being written to `subscriptions` —
+# users pay and silently get no access. These were live with verify_jwt=false
+# but unpinned, so any `supabase functions deploy` would have re-broken them.
+# ─────────────────────────────────────────────────────────────────────────────
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+# Admin-only functions: these REQUIRE a real signed-in admin JWT and verify the
+# caller's profiles.role server-side. Pinned true so a deploy can't open them up.
+[functions.grant-comp]
+verify_jwt = true
+
+[functions.admin-members]
+verify_jwt = true
+
+[functions.get-admin-metrics]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
