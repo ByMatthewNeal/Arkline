@@ -81,8 +81,16 @@ struct PaywallStepView: View {
     private func evaluateAccess() async {
         defer { isChecking = false }
 
-        guard let userId = SupabaseAuthManager.shared.currentUserId else {
-            // Shouldn't happen — auth precedes this step. Show the paywall.
+        // Right after OTP verification the cached auth state may not have
+        // propagated yet — this step's task can run before the listener fires.
+        // Fetch the session itself (async, authoritative) so a subscribed
+        // returning user isn't shown the paywall because of a race.
+        var resolvedUserId = SupabaseAuthManager.shared.currentUserId
+        if resolvedUserId == nil {
+            resolvedUserId = try? await SupabaseManager.shared.client.auth.session.user.id
+        }
+        guard let userId = resolvedUserId else {
+            // Truly no session — show the paywall (they can go Back to sign in).
             showPaywall = true
             return
         }
