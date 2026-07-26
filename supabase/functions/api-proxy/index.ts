@@ -134,6 +134,21 @@ Deno.serve(async (req) => {
   // Get API key
   const apiKey = Deno.env.get(config.envVar) ?? ""
 
+  // A missing secret used to fall through as an EMPTY key, and the failure mode
+  // differed per vendor in a way that was very hard to diagnose:
+  //   - FMP replies 4xx, which the client surfaces as a generic error
+  //   - metals-api replies HTTP 200 with {"success":false,"error":{...}}, which
+  //     the client cannot decode, so the search silently renders nothing
+  // Fail loudly and name the service instead of proxying a request we know
+  // cannot succeed.
+  if (!apiKey && config.auth.type !== "none") {
+    console.error(`[api-proxy] ${config.envVar} is not set — refusing to call ${service}${path}`)
+    return new Response(
+      JSON.stringify({ error: `Server is missing the API key for '${service}'`, service }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
   // Build upstream URL
   const url = new URL(config.baseURL + path)
 
@@ -178,6 +193,35 @@ Deno.serve(async (req) => {
   // Forward to upstream API
   const upstreamResponse = await fetch(url.toString(), fetchOptions)
   const responseData = await upstreamResponse.text()
+
+  // Log upstream failures with the service and path (never the key or the full
+  // URL, which carries the key as a query param). Without this a broken vendor
+  // key is invisible: every proxy call still shows as whatever status the
+  // vendor returned, and metals-api in particular returns 200 on auth failure.
+  if (!upstreamResponse.ok) {
+    console.error(
+      `[api-proxy] upstream ${upstreamResponse.status} from ${service}${path} :: ${responseData.slice(0, 300)}`,
+    )
+  } else if (
+    responseData.includes('"success":false') ||
+    responseData.includes('"Error Message"')
+  ) {
+    // 200 OK carrying a vendor-level error payload. metals-api and FMP both do
+    // this, and it is the single most confusing failure mode in this proxy:
+    // the request log shows a healthy 200 while the feature is dead, because
+    // the client can't decode an error shape and renders an empty list.
+    //
+    // Relay it as 502 so a vendor-side failure is never reported as success.
+    // The body is passed through untouched, so clients that inspect it (e.g.
+    // FMPService checking for "Limit Reach" / "Invalid API KEY") still see it.
+    console.error(
+      `[api-proxy] soft error from ${service}${path} :: ${responseData.slice(0, 300)}`,
+    )
+    return new Response(responseData, {
+      status: 502,
+      headers: { "Content-Type": "application/json", "X-Upstream-Soft-Error": service },
+    })
+  }
 
   return new Response(responseData, {
     status: upstreamResponse.status,

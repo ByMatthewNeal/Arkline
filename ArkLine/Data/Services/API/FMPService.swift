@@ -125,7 +125,16 @@ final class FMPService {
 
         try validateResponseData(data)
 
-        let results = try JSONDecoder().decode([FMPSearchResult].self, from: data)
+        // Decode element-by-element so a single malformed row can't blank the
+        // entire result list. A strict `decode([FMPSearchResult].self)` is
+        // all-or-nothing, which is exactly how one bad row turned into "stocks
+        // don't work."
+        let results = Self.decodeLenientArray(FMPSearchResult.self, from: data)
+
+        if results.isEmpty {
+            logDebug("FMP: search-symbol returned no decodable rows for '\(query)'", category: .network)
+        }
+
         // Limit results and filter to primary exchanges
         let filteredResults = results
             .filter { !$0.symbol.contains(".") } // Filter out non-US exchanges (AAPL.L, AAPL.DE, etc.)
@@ -187,6 +196,22 @@ final class FMPService {
     }
 
     /// Validate FMP-specific error messages in the response body
+    /// Decodes a JSON array, skipping any element that fails to decode instead
+    /// of throwing away the whole response. Vendor APIs add and null out fields
+    /// without notice; one unexpected row should cost us that row, not the list.
+    static func decodeLenientArray<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
+        struct Failable<U: Decodable>: Decodable {
+            let value: U?
+            init(from decoder: Decoder) throws {
+                value = try? U(from: decoder)
+            }
+        }
+        guard let wrapped = try? JSONDecoder().decode([Failable<T>].self, from: data) else {
+            return []
+        }
+        return wrapped.compactMap(\.value)
+    }
+
     private func validateResponseData(_ data: Data) throws {
         if let responseString = String(data: data, encoding: .utf8) {
             if responseString.contains("Premium") || responseString.contains("not available under your current subscription") {
@@ -501,7 +526,12 @@ struct FMPMover: Codable, Identifiable {
 /// Stock Search Result from FMP
 struct FMPSearchResult: Codable {
     let symbol: String
-    let name: String
+    // `name` is optional deliberately. FMP returns rows with a null/absent name
+    // (delisted tickers, some ETFs, certain exchanges). It used to be a
+    // non-optional String, so ONE such row failed the whole `[FMPSearchResult]`
+    // decode and the search rendered an empty list — with the error swallowed,
+    // this was indistinguishable from "no matches".
+    let name: String?
     let currency: String?
     let exchange: String?
     let exchangeFullName: String?
@@ -509,7 +539,7 @@ struct FMPSearchResult: Codable {
     func toStockSearchResult() -> StockSearchResult {
         StockSearchResult(
             symbol: symbol,
-            name: name,
+            name: name ?? symbol,
             exchange: exchange ?? exchangeFullName,
             type: "Equity",
             currency: currency

@@ -43,6 +43,9 @@ struct AddTransactionView: View {
     // Search state
     @State private var searchResults: [TransactionSearchResult] = []
     @State private var isSearching = false
+    /// Non-nil when the last search failed, so a broken upstream is visible
+    /// instead of looking identical to "no matches".
+    @State private var searchError: String?
     @State private var searchTask: Task<Void, Never>?
     @State private var priceWasAutoFetched = false
     @State private var didSelectResult = false
@@ -177,6 +180,7 @@ struct AddTransactionView: View {
                             }
                             .onChange(of: assetType) { _, _ in
                                 searchResults = []
+                                searchError = nil
                                 searchTask?.cancel()
                                 isSearching = false
                                 symbol = ""
@@ -194,6 +198,21 @@ struct AddTransactionView: View {
                                     .font(AppFonts.caption12)
                                     .foregroundColor(AppColors.textSecondary)
                             }
+                        }
+
+                        // A failed search and a genuinely empty one used to look
+                        // identical: spinner stops, zero rows, no message. That
+                        // is how a dead upstream key went unnoticed. Say which
+                        // one it is.
+                        if let searchError {
+                            Text(searchError)
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.error)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else if !isSearching, searchResults.isEmpty, symbol.count >= 2 {
+                            Text("No matches for \"\(symbol)\".")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textSecondary)
                         }
 
                         ForEach(searchResults.prefix(6)) { result in
@@ -529,11 +548,13 @@ struct AddTransactionView: View {
 
         guard query.count >= 2 else {
             searchResults = []
+            searchError = nil
             isSearching = false
             return
         }
 
         isSearching = true
+        searchError = nil
 
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 300_000_000)
@@ -575,17 +596,35 @@ struct AddTransactionView: View {
                         $0.rawValue.lowercased().contains(lowered) ||
                         $0.name.lowercased().contains(lowered)
                     }
+                    // Gold, silver, platinum and palladium are a fixed local
+                    // list — the network call only decorates them with a live
+                    // price. Previously the results were built ENTIRELY from the
+                    // response, so a metals-api failure rendered nothing even
+                    // though we had a perfectly good list in hand. Show the
+                    // metals either way; the user can type the price manually.
+                    results = matched.map { metal in
+                        TransactionSearchResult(
+                            id: metal.rawValue,
+                            symbol: metal.rawValue,
+                            name: metal.name,
+                            currentPrice: nil,
+                            iconUrl: nil
+                        )
+                    }
+
                     if !matched.isEmpty {
                         let symbols = matched.map { $0.rawValue }
-                        let metals = try await marketService.fetchMetalAssets(symbols: symbols)
-                        results = metals.map { metal in
-                            TransactionSearchResult(
-                                id: metal.id,
-                                symbol: metal.symbol,
-                                name: metal.name,
-                                currentPrice: metal.currentPrice,
-                                iconUrl: nil
-                            )
+                        if let metals = try? await marketService.fetchMetalAssets(symbols: symbols),
+                           !metals.isEmpty {
+                            results = metals.map { metal in
+                                TransactionSearchResult(
+                                    id: metal.id,
+                                    symbol: metal.symbol,
+                                    name: metal.name,
+                                    currentPrice: metal.currentPrice,
+                                    iconUrl: nil
+                                )
+                            }
                         }
                     }
 
@@ -596,13 +635,17 @@ struct AddTransactionView: View {
                 await MainActor.run {
                     if !Task.isCancelled {
                         searchResults = results
+                        searchError = nil
                         isSearching = false
                     }
                 }
             } catch {
                 await MainActor.run {
+                    guard !Task.isCancelled else { return }
                     searchResults = []
+                    searchError = AppError.from(error).userMessage
                     isSearching = false
+                    logError(error, context: "Asset search (\(assetType.rawValue))", category: .network)
                 }
             }
         }
