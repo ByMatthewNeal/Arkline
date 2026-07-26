@@ -41,29 +41,45 @@ final class APIMarketService: MarketServiceProtocol {
         }
     }
 
+    /// Metal spot prices, sourced from FMP's commodities quotes.
+    ///
+    /// Previously this used metals-api.com, a second paid vendor whose only job
+    /// was four numbers. FMP — which we already pay for and already use for every
+    /// stock quote — carries the same metals as commodity contracts, so this
+    /// drops a vendor, a key, and a bill.
+    ///
+    /// Caveat worth knowing: these are front-month FUTURES (GCUSD is "Gold
+    /// Futures"), not true spot. Futures typically trade at a small premium to
+    /// spot from carry costs — immaterial for valuing a holding, but it is not
+    /// the identical number metals-api returned. Both are USD per troy ounce.
+    ///
+    /// We keep the XAU/XAG/XPT/XPD symbols throughout the app; the mapping to
+    /// FMP tickers lives here and nowhere else.
     func fetchMetalAssets(symbols: [String]) async throws -> [MetalAsset] {
         let cacheKey = CacheKey.metalAssets(symbols: symbols)
 
-        return try await sharedCache.getOrFetch(cacheKey, ttl: APICache.TTL.long) { [networkManager] in
-            let endpoint = MetalsAPIEndpoint.latest(base: "USD", symbols: symbols)
-
-            let response: MetalsAPIResponse = try await networkManager.request(endpoint)
-
+        return try await sharedCache.getOrFetch(cacheKey, ttl: APICache.TTL.long) {
             let metalNames = ["XAU": "Gold", "XAG": "Silver", "XPT": "Platinum", "XPD": "Palladium"]
+            let fmpTickers = ["XAU": "GCUSD", "XAG": "SIUSD", "XPT": "PLUSD", "XPD": "PAUSD"]
 
-            return symbols.compactMap { symbol -> MetalAsset? in
-                guard let rate = response.rates[symbol] else { return nil }
+            let requested = symbols.map { $0.uppercased() }
+            let tickers = requested.compactMap { fmpTickers[$0] }
+            guard !tickers.isEmpty else { return [] }
 
-                // Metals API returns rates per USD, we need to invert for price per unit
-                let price = 1.0 / rate
+            let quotes = try await FMPService.shared.fetchStockQuotes(symbols: tickers)
+            let quotesByTicker = Dictionary(uniqueKeysWithValues: quotes.map { ($0.symbol.uppercased(), $0) })
+
+            return requested.compactMap { symbol -> MetalAsset? in
+                guard let ticker = fmpTickers[symbol],
+                      let quote = quotesByTicker[ticker] else { return nil }
 
                 return MetalAsset(
                     id: symbol.lowercased(),
                     symbol: symbol,
                     name: metalNames[symbol] ?? symbol,
-                    currentPrice: price,
-                    priceChange24h: 0, // Would need historical data
-                    priceChangePercentage24h: 0,
+                    currentPrice: quote.price,
+                    priceChange24h: quote.change,
+                    priceChangePercentage24h: quote.changePercentage,
                     iconUrl: nil,
                     unit: "oz",
                     currency: "USD",
