@@ -12,9 +12,10 @@ import {
   type OnboardingData, type OnboardingStepId,
 } from '@/lib/onboarding/config';
 import { completeOnboarding, getOnboardingState, startSelfCheckout } from '@/lib/api/onboarding';
+import { TRIAL_DAYS } from '@/lib/pricing';
 
 const STEP_TITLES: Record<OnboardingStepId, { title: string; subtitle: string }> = {
-  payment: { title: 'Activate your membership', subtitle: 'Secure checkout via Stripe. Cancel anytime.' },
+  payment: { title: 'Start your free trial', subtitle: `${TRIAL_DAYS} days free, then your plan begins. Secure checkout via Stripe.` },
   name: { title: 'What should we call you?', subtitle: 'Your name personalizes your briefings.' },
   interests: { title: 'What do you invest in?', subtitle: 'Select all that apply.' },
   experience: { title: 'Your experience', subtitle: 'Helps us tune the depth of your signals.' },
@@ -343,10 +344,10 @@ function PaymentStep() {
       {error && <p className="text-sm text-ark-error">{error}</p>}
 
       <Button type="button" onClick={checkout} loading={loading} className="mt-2 w-full">
-        Continue to secure checkout
+        Start my free trial
         <ArrowRight className="h-4 w-4" />
       </Button>
-      <p className="text-center text-[11px] text-ark-text-tertiary">Powered by Stripe · Cancel anytime</p>
+      <p className="text-center text-[11px] text-ark-text-tertiary">Powered by Stripe · Cancel anytime during the trial and you won&apos;t be charged</p>
     </div>
   );
 }

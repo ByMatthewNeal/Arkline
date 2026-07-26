@@ -485,6 +485,11 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Self-serve web checkout. Does its own auth (reads the caller's JWT via
+# getUser) and must stay false so the browser's anon-key invoke reaches it.
+[functions.create-self-checkout]
+verify_jwt = false
+
 [functions.revenuecat-webhook]
 verify_jwt = false
 

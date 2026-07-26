@@ -95,6 +95,9 @@ const jsonLd = {
         price: '39.99',
         priceCurrency: 'USD',
         priceValidUntil: '2027-12-31',
+        // Surfaces the free trial in rich results alongside the price.
+        eligibleCustomerType: 'https://schema.org/NewCondition',
+        description: '7-day free trial, then $39.99/month. Cancel anytime.',
       },
       publisher: { '@id': 'https://arkline.io/#organization' },
     },

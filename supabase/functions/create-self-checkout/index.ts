@@ -23,6 +23,15 @@ const ALLOWED_PRICE_IDS = new Set([
   "price_1TXCOPPHuageZ7zb7d2HyeHc", // founding annual ($400/yr)
 ])
 
+// Free-trial length for WEB (Stripe) checkout, mirroring the Apple
+// introductory offer on com.arkline.app.founding.monthly so both storefronts
+// make the same promise.
+//
+// Deliberately a server constant and NOT a request field: a client-supplied
+// trial length could be tampered with to mint an arbitrarily long free
+// subscription. The web never sends it.
+const TRIAL_DAYS = 7
+
 const corsHeaders = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "https://web.arkline.io",
@@ -84,6 +93,25 @@ Deno.serve(async (req) => {
     })
   }
 
+  // One trial per account, ever. Apple enforces this per Apple ID automatically;
+  // Stripe does not, so without this check a user could cancel and re-subscribe
+  // repeatedly and never pay. Any prior subscription row — apple, stripe, or a
+  // comp — disqualifies. RLS lets a user read their own rows, so the caller's
+  // own JWT is sufficient here and no service-role key is needed.
+  const { data: priorSubs, error: priorErr } = await supabaseAuth
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", user.id)
+    .limit(1)
+
+  if (priorErr) {
+    console.error("create-self-checkout: prior-subscription lookup failed", priorErr)
+  }
+
+  // On lookup failure, fall back to NO trial. Wrongly withholding a trial is a
+  // support ticket; wrongly granting one is unbilled revenue.
+  const grantTrial = !priorErr && (priorSubs?.length ?? 0) === 0
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -92,10 +120,20 @@ Deno.serve(async (req) => {
       success_url: "https://arkline.io/onboarding?paid=1",
       cancel_url: "https://arkline.io/onboarding",
       metadata: { user_id: user.id, self_serve: "true" },
-      subscription_data: { metadata: { user_id: user.id, self_serve: "true" } },
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+          self_serve: "true",
+          is_trial: grantTrial ? "true" : "false",
+        },
+        ...(grantTrial ? { trial_period_days: TRIAL_DAYS } : {}),
+      },
     })
 
-    console.log(`Self-serve checkout created for ${user.email} (${body.price_id})`)
+    console.log(
+      `Self-serve checkout created for ${user.email} (${body.price_id})` +
+        (grantTrial ? ` with ${TRIAL_DAYS}-day trial` : " with no trial (prior subscription)")
+    )
 
     return new Response(JSON.stringify({ checkout_url: session.url }), {
       status: 200,

@@ -1,7 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Linkedin, Twitter, Mail } from 'lucide-react';
-import { EmailCapture } from '@/components/marketing/email-capture';
+import { AppStoreCTA } from '@/components/marketing/app-store-cta';
+import { PRICING, TRIAL_COPY, TRIAL_DAYS } from '@/lib/pricing';
 import { FadeIn } from '@/components/marketing/fade-in';
 
 export const metadata = {
@@ -162,18 +163,24 @@ export default function AboutPage() {
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
           <FadeIn>
             <h2 className="font-[family-name:var(--font-urbanist)] text-3xl font-semibold text-ark-text sm:text-4xl">
-              Join the early access list
+              Try ArkLine free for {TRIAL_DAYS} days
             </h2>
             <p className="mt-4 text-base leading-relaxed text-ark-text-secondary sm:text-lg">
-              First 150 members lock in $39.99/month &mdash; forever.
+              The first {PRICING.foundingSpots} members lock in {PRICING.founding.monthly}/month &mdash; forever.
             </p>
           </FadeIn>
-          <FadeIn delay={0.1} className="mt-10">
-            <EmailCapture size="lg" />
+          <FadeIn delay={0.1} className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <AppStoreCTA />
+            <Link
+              href="/signup"
+              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-ark-text transition-all hover:scale-[1.02] hover:border-white/[0.24] hover:bg-white/[0.08]"
+            >
+              Start free on the web &rarr;
+            </Link>
           </FadeIn>
           <FadeIn delay={0.15}>
             <p className="mt-4 text-sm text-ark-text-tertiary">
-              150 founding spots &middot; Launching June 2026 &middot; No card required
+              {TRIAL_COPY.withPrice} &middot; {TRIAL_COPY.reassurance}
             </p>
           </FadeIn>
         </div>

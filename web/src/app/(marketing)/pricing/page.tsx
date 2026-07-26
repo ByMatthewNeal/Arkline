@@ -9,28 +9,22 @@ import { AnimatedBackground } from '@/components/marketing/animated-bg';
 import { FadeIn } from '@/components/marketing/fade-in';
 import { SpotsCounter } from '@/components/marketing/spots-counter';
 
-const proFeatures = [
-  'Portfolio tracking across crypto, stocks, and custom assets (20,000+)',
-  'Performance metrics: Sharpe ratio, drawdown, volatility, allocation',
-  '8-factor BTC risk scoring with historical trends',
-  'Morning & evening AI briefings',
-  'Macro dashboard with regime detection (VIX, DXY, US Net Liquidity)',
-  'Smart DCA with risk-adjusted reminders',
-  'Technical analysis: RSI, MACD, moving averages, BMSB',
-  'Sentiment gauges: Fear & Greed, altcoin season, BTC dominance',
-  'Derivatives data: open interest, funding rates, liquidations',
-  'Economic calendar + FedWatch rate probabilities',
-  'Real-time news, Coinbase ranking, and push alerts',
-];
+import { PRICING, PRO_FEATURES, TRIAL_COPY, TRIAL_DAYS } from '@/lib/pricing';
+
+const proFeatures = PRO_FEATURES;
 
 const faqs = [
   {
+    q: 'How does the free trial work?',
+    a: `You get ${TRIAL_DAYS} days of full access to ArkLine Pro before you're charged anything. Cancel any time during the trial and you pay nothing. If you don't cancel, your subscription starts automatically at the end of day ${TRIAL_DAYS} at the price shown above. The trial is the same length whether you start on iPhone or on the web, and it's available once per account.`,
+  },
+  {
     q: 'Can I cancel anytime?',
-    a: 'Yes. Cancel from Settings at any time. You keep full access until the end of your billing period.',
+    a: 'Yes. Cancel from Settings at any time. During the trial you will not be charged at all. After that, you keep full access until the end of your billing period.',
   },
   {
     q: 'How do I subscribe?',
-    a: 'Download ArkLine from the App Store and subscribe in-app through Apple, or subscribe on this page through our secure web checkout (Stripe). Both give you the same full access to ArkLine Pro.',
+    a: `Download ArkLine from the App Store and start your ${TRIAL_DAYS}-day trial in-app through Apple, or start it on this page through our secure web checkout (Stripe). Both give you the same full access to ArkLine Pro.`,
   },
   {
     q: 'What payment methods do you accept?',
@@ -86,12 +80,12 @@ export default function PricingPage() {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-lg text-ark-text-secondary">
-              One tier. Everything included. Subscribe on iOS or on the web.
+              One tier. Everything included. Start with a {TRIAL_DAYS}-day free trial on iOS or on the web.
             </p>
             <div className="mt-5 flex items-center justify-center gap-4 text-xs text-ark-text-tertiary">
               <div className="flex items-center gap-1">
                 <Shield className="h-3 w-3" />
-                Cancel anytime
+                {TRIAL_DAYS} days free
               </div>
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1">
@@ -115,7 +109,7 @@ export default function PricingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Limited to the first 150 members
+                Limited to the first {PRICING.foundingSpots} members
               </div>
 
               <h3 className="mt-3 text-lg font-semibold text-ark-text">Founding Member</h3>
@@ -125,12 +119,12 @@ export default function PricingPage() {
 
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                  $39.99
+                  {PRICING.founding.monthly}
                 </span>
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs text-ark-text-tertiary">
-                or <span className="font-medium text-ark-text-secondary">$399.99/year</span>, save ~17%
+                or <span className="font-medium text-ark-text-secondary">{PRICING.founding.annual}/year</span>, save {PRICING.founding.annualSavings}
               </p>
               <SpotsCounter className="mt-2" />
 
@@ -158,10 +152,10 @@ export default function PricingPage() {
                 </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                iPhone or web (Mac, Windows, Android). Same features, same price.
+                {TRIAL_COPY.withPrice}. Same free trial on iPhone or web (Mac, Windows, Android).
               </p>
               <p className="mt-1 text-center text-[11px] text-ark-text-disabled">
-                Secure. Cancel anytime.
+                Secure. {TRIAL_COPY.reassurance}
               </p>
             </div>
           </FadeIn>
@@ -180,12 +174,12 @@ export default function PricingPage() {
 
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                  $69.99
+                  {PRICING.standard.monthly}
                 </span>
                 <span className="text-sm text-ark-text-tertiary">/month</span>
               </div>
               <p className="mt-1 text-xs text-ark-text-tertiary">
-                Same features, no founding discount. Subscribe now to lock in $39.99 for life.
+                Same features, no founding discount. Start your free trial now to lock in {PRICING.founding.monthly} for life.
               </p>
 
               <ul className="mt-6 space-y-2.5">

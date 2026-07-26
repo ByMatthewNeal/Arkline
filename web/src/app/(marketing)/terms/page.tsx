@@ -125,7 +125,7 @@ export default function TermsOfServicePage() {
 
             <p className="mt-4"><strong className="text-ark-text">Free trials</strong></p>
             <p className="mt-2">
-              If your subscription includes a free trial, you will not be charged during the trial. Your card will be charged automatically at the end of the trial unless you cancel before then.
+              New subscriptions include a 7-day free trial, available once per account. You will not be charged during the trial. If you do not cancel before it ends, your subscription begins automatically and your payment method is charged at the then-current price. Trials started in the iOS app are billed by Apple and managed in your Apple ID subscription settings; trials started on the web are billed by Stripe and managed in your account settings.
             </p>
 
             <p className="mt-4"><strong className="text-ark-text">Cancellation</strong></p>

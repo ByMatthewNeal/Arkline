@@ -28,19 +28,9 @@ import { HowItWorks } from '@/components/marketing/how-it-works';
 import { SocialProof } from '@/components/marketing/social-proof';
 import { FadeIn } from '@/components/marketing/fade-in';
 
-const proFeatures = [
-  'Portfolio tracking across crypto, stocks, and custom assets (20,000+)',
-  'Performance metrics: Sharpe ratio, drawdown, volatility, allocation',
-  '8-factor BTC risk scoring with historical trends',
-  'Morning & evening AI briefings',
-  'Macro dashboard with regime detection (VIX, DXY, US Net Liquidity)',
-  'Smart DCA with risk-adjusted reminders',
-  'Technical analysis: RSI, MACD, moving averages, BMSB',
-  'Sentiment gauges: Fear & Greed, altcoin season, BTC dominance',
-  'Derivatives data: open interest, funding rates, liquidations',
-  'Economic calendar + FedWatch rate probabilities',
-  'Real-time news, Coinbase ranking, and push alerts',
-];
+import { PRICING, PRO_FEATURES, TRIAL_COPY, TRIAL_DAYS } from '@/lib/pricing';
+
+const proFeatures = PRO_FEATURES;
 
 export default function LandingPage() {
   return (
@@ -110,7 +100,7 @@ export default function LandingPage() {
               <div className="h-3 w-px bg-ark-divider" />
               <div className="flex items-center gap-1.5 text-xs text-ark-text-tertiary">
                 <Shield className="h-3 w-3" />
-                Cancel anytime
+                {TRIAL_DAYS} days free, cancel anytime
               </div>
               <div className="hidden h-3 w-px bg-ark-divider sm:block" />
               <div className="hidden items-center gap-1.5 text-xs text-ark-text-tertiary sm:flex">
@@ -148,7 +138,7 @@ export default function LandingPage() {
               {
                 icon: Tag,
                 title: 'One Simple Price',
-                description: 'No tiers, no upsells. $39.99/month or $399.99/year. Everything included.',
+                description: `No tiers, no upsells. ${PRICING.founding.monthly}/month or ${PRICING.founding.annual}/year, after a ${TRIAL_DAYS}-day free trial. Everything included.`,
               },
               {
                 icon: MessageSquare,
@@ -293,7 +283,7 @@ export default function LandingPage() {
               Founding Pricing, Locked In.
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-ark-text-secondary">
-              The first 150 members get founding pricing, locked forever as long as they stay subscribed. After that, standard pricing kicks in.
+              Try it free for {TRIAL_DAYS} days. The first {PRICING.foundingSpots} members then get founding pricing, locked forever as long as they stay subscribed. After that, standard pricing kicks in.
             </p>
           </FadeIn>
 
@@ -305,7 +295,7 @@ export default function LandingPage() {
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ark-primary to-transparent" />
 
               <div className="inline-flex items-center gap-1.5 rounded-full bg-ark-primary/10 px-2.5 py-1 text-[11px] font-semibold text-ark-primary">
-                Limited to the first 150 members
+                Limited to the first {PRICING.foundingSpots} members
               </div>
 
               <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -318,12 +308,15 @@ export default function LandingPage() {
                 <div className="shrink-0 text-right">
                   <div className="flex items-baseline gap-1">
                     <span className="font-[family-name:var(--font-urbanist)] text-4xl font-bold text-ark-text">
-                      $39.99
+                      {PRICING.founding.monthly}
                     </span>
                     <span className="text-sm text-ark-text-tertiary">/month</span>
                   </div>
                   <p className="mt-1 text-xs text-ark-text-tertiary">
-                    or <span className="font-medium text-ark-text-secondary">$399.99/year</span>, save ~17%
+                    or <span className="font-medium text-ark-text-secondary">{PRICING.founding.annual}/year</span>, save {PRICING.founding.annualSavings}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-ark-success">
+                    {TRIAL_COPY.short}
                   </p>
                   <SpotsCounter className="mt-2" />
                 </div>
@@ -348,10 +341,13 @@ export default function LandingPage() {
                 </Link>
               </div>
               <p className="mt-3 text-center text-[11px] text-ark-text-tertiary">
-                iPhone or web. Same features, same price.
+                {TRIAL_COPY.withPrice}. {TRIAL_COPY.reassurance}
+              </p>
+              <p className="mt-1 text-center text-[11px] text-ark-text-tertiary">
+                iPhone or web. Same features, same price, same free trial.
               </p>
               <p className="mt-4 border-t border-ark-divider pt-4 text-center text-[11px] text-ark-text-tertiary">
-                After 150 founding spots fill, standard pricing rises to <span className="font-semibold text-ark-text-secondary">$69.99/mo</span>.
+                After {PRICING.foundingSpots} founding spots fill, standard pricing rises to <span className="font-semibold text-ark-text-secondary">{PRICING.standard.monthly}/mo</span>.
               </p>
               <p className="mt-2 text-center text-[11px] text-ark-text-disabled">
                 Your portfolio data is encrypted and never shared.
@@ -380,7 +376,7 @@ export default function LandingPage() {
               the data-driven edge to manage your portfolio with confidence.
             </p>
             <p className="mt-3 text-sm font-medium text-ark-primary">
-              Founding members lock in $39.99/mo forever.
+              Start free for {TRIAL_DAYS} days. Founding members lock in {PRICING.founding.monthly}/mo forever.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <AppStoreCTA />
