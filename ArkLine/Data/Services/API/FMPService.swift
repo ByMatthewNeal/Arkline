@@ -195,23 +195,17 @@ final class FMPService {
         return quotes
     }
 
-    /// Validate FMP-specific error messages in the response body
     /// Decodes a JSON array, skipping any element that fails to decode instead
     /// of throwing away the whole response. Vendor APIs add and null out fields
     /// without notice; one unexpected row should cost us that row, not the list.
     static func decodeLenientArray<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
-        struct Failable<U: Decodable>: Decodable {
-            let value: U?
-            init(from decoder: Decoder) throws {
-                value = try? U(from: decoder)
-            }
-        }
-        guard let wrapped = try? JSONDecoder().decode([Failable<T>].self, from: data) else {
+        guard let wrapped = try? JSONDecoder().decode([FailableDecodable<T>].self, from: data) else {
             return []
         }
         return wrapped.compactMap(\.value)
     }
 
+    /// Validate FMP-specific error messages in the response body
     private func validateResponseData(_ data: Data) throws {
         if let responseString = String(data: data, encoding: .utf8) {
             if responseString.contains("Premium") || responseString.contains("not available under your current subscription") {
@@ -622,5 +616,25 @@ struct FlexibleDouble: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(value)
+    }
+}
+
+// MARK: - Lenient Array Decoding
+
+/// Wrapper that decodes to nil instead of throwing when an element is malformed.
+///
+/// Declared at file scope because Swift does not allow a generic type to be
+/// nested inside a generic function — `decodeLenientArray` needs it from the
+/// outside.
+///
+/// Exists because a strict `decode([T].self)` is all-or-nothing: one row FMP
+/// returns with an unexpected shape (a null `name`, a missing field on a
+/// delisted ticker) discards the entire response, which surfaced as "stock
+/// search returns nothing" rather than as an error.
+struct FailableDecodable<T: Decodable>: Decodable {
+    let value: T?
+
+    init(from decoder: Decoder) throws {
+        value = try? T(from: decoder)
     }
 }
