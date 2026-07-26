@@ -66,8 +66,11 @@ final class APIMarketService: MarketServiceProtocol {
             let tickers = requested.compactMap { fmpTickers[$0] }
             guard !tickers.isEmpty else { return [] }
 
-            let quotes = try await FMPService.shared.fetchStockQuotes(symbols: tickers)
-            let quotesByTicker = Dictionary(uniqueKeysWithValues: quotes.map { ($0.symbol.uppercased(), $0) })
+            let quotes = try await FMPService.shared.fetchCommodityQuotes(symbols: tickers)
+            let quotesByTicker = Dictionary(
+                quotes.map { ($0.symbol.uppercased(), $0) },
+                uniquingKeysWith: { first, _ in first }
+            )
 
             return requested.compactMap { symbol -> MetalAsset? in
                 guard let ticker = fmpTickers[symbol],
@@ -78,8 +81,8 @@ final class APIMarketService: MarketServiceProtocol {
                     symbol: symbol,
                     name: metalNames[symbol] ?? symbol,
                     currentPrice: quote.price,
-                    priceChange24h: quote.change,
-                    priceChangePercentage24h: quote.changePercentage,
+                    priceChange24h: quote.change ?? 0,
+                    priceChangePercentage24h: quote.changePercentage ?? 0,
                     iconUrl: nil,
                     unit: "oz",
                     currency: "USD",

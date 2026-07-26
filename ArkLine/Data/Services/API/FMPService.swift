@@ -142,6 +142,39 @@ final class FMPService {
         return filteredResults.map { $0.toStockSearchResult() }
     }
 
+    // MARK: - Commodity Quotes
+
+    /// Quotes for commodity contracts (GCUSD gold, SIUSD silver, PLUSD platinum,
+    /// PAUSD palladium).
+    ///
+    /// Deliberately NOT reusing `fetchQuotes`/`FMPQuote`. FMPQuote requires
+    /// volume, yearHigh, yearLow, exchange and others as non-optional, and a
+    /// commodity payload does not carry all of them — the strict decode throws,
+    /// fetchQuotes swallows it per-symbol, and the metal comes back with no
+    /// price and no error. Same all-or-nothing decode that broke stock search.
+    func fetchCommodityQuotes(symbols: [String]) async throws -> [FMPLightQuote] {
+        guard isConfigured else { throw FMPError.notConfigured }
+
+        var quotes: [FMPLightQuote] = []
+        for symbol in symbols {
+            do {
+                let data = try await invokeProxy(
+                    path: "/quote",
+                    queryItems: [URLQueryItem(name: "symbol", value: symbol)]
+                )
+                try validateResponseData(data)
+                quotes.append(contentsOf: Self.decodeLenientArray(FMPLightQuote.self, from: data))
+            } catch {
+                // Surfaced by the caller as "no price"; the metal itself still
+                // lists, so the user can enter a price manually.
+                logWarning("FMP: commodity \(symbol) failed: \(error.localizedDescription)", category: .network)
+            }
+        }
+
+        logDebug("FMP: fetched \(quotes.count)/\(symbols.count) commodity quotes", category: .network)
+        return quotes
+    }
+
     // MARK: - Company Profile
 
     /// Fetch company profile/info
@@ -617,6 +650,21 @@ struct FlexibleDouble: Codable {
         var container = encoder.singleValueContainer()
         try container.encode(value)
     }
+}
+
+// MARK: - Light Quote
+
+/// The subset of `/quote` we can rely on across every FMP instrument type.
+///
+/// `FMPQuote` models a full equity quote and marks most fields non-optional,
+/// which is fine for stocks and wrong for anything else. Commodities omit
+/// several of them. Everything here past `price` is optional on purpose.
+struct FMPLightQuote: Codable {
+    let symbol: String
+    let name: String?
+    let price: Double
+    let change: Double?
+    let changePercentage: Double?
 }
 
 // MARK: - Lenient Array Decoding
