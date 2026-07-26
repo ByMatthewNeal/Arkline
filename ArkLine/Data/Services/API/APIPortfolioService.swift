@@ -200,12 +200,26 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 .value
 
             guard let created = createdPortfolios.first else {
-                throw AppError.custom(message: "Failed to create portfolio")
+                // The INSERT succeeded but RETURNING gave us nothing back — the
+                // portfolios_select_own RLS policy hid the row, which means
+                // auth.uid() did not match the user_id we wrote. The row DOES
+                // exist. Say so, instead of a bare "Failed to create portfolio"
+                // that sends us hunting for an insert that never failed.
+                logError(
+                    AppError.custom(message: "Insert returned no row (RLS hid it)"),
+                    context: "Create portfolio", category: .data
+                )
+                throw AppError.custom(
+                    message: "Portfolio was created but could not be loaded. Pull to refresh."
+                )
             }
 
             logInfo("Created portfolio: \(created.name)", category: .data)
             return created
         } catch let error as AppError {
+            // Previously rethrown WITHOUT logging, so the RLS case above and
+            // every other AppError left no trace at all in the logs.
+            logError(error, context: "Create portfolio (AppError)", category: .data)
             throw error
         } catch {
             logError(error, context: "Create portfolio", category: .data)

@@ -423,7 +423,18 @@ class OnboardingViewModel {
         errorMessage = nil
 
         do {
-            _ = try await SupabaseAuthManager.shared.verifyOTP(email: email, token: verificationCode)
+            let session = try await SupabaseAuthManager.shared.verifyOTP(email: email, token: verificationCode)
+
+            // Write the profiles row NOW, not nine screens later at the end of
+            // onboarding. The paywall is the very next step, so anyone who pays
+            // and then quits used to end up with a paid subscription and no
+            // profile — permanently, and silently. Failing here is better than
+            // admitting them into that state.
+            try await SupabaseDatabase.shared.ensureProfileExists(
+                userId: session.user.id,
+                email: email
+            )
+
             nextStep()
         } catch {
             errorMessage = AppError.from(error).userMessage
@@ -659,8 +670,24 @@ class OnboardingViewModel {
                         AppLogger.shared.error("Failed to sync profile subscription status: \(error.localizedDescription)")
                     }
                 } catch {
-                    // Log error but don't block onboarding - tables may not exist yet
-                    AppLogger.shared.error("Database upsert failed (tables may not exist): \(error.localizedDescription)")
+                    // This used to only log — with the comment "tables may not
+                    // exist yet" — and then fall through to isOnboardingComplete
+                    // = true, dropping the user into the app with no profile row
+                    // and no error. That is how a paying user ended up unable to
+                    // create a portfolio or sign back in with a password.
+                    //
+                    // The stub row is now written back at email verification, so
+                    // reaching here means the DETAIL write failed, not that the
+                    // user has no profile. Confirm that before letting them
+                    // through; if the profile is genuinely missing, stop.
+                    AppLogger.shared.error("Profile detail write failed: \(error.localizedDescription)")
+
+                    let profileExists = (try? await SupabaseDatabase.shared.getProfile(userId: userId)) ?? nil
+                    if profileExists == nil {
+                        throw AppError.custom(
+                            message: "We couldn't finish setting up your account. Check your connection and try again."
+                        )
+                    }
                 }
 
                 // Fetch the authoritative profile from DB to get server-managed fields

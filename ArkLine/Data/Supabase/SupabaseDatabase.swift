@@ -106,6 +106,49 @@ extension SupabaseDatabase {
         return results.first
     }
 
+    /// Creates a minimal `profiles` row for a freshly authenticated user if one
+    /// doesn't already exist. Safe to call repeatedly.
+    ///
+    /// Why this exists: the full profile used to be written only at the very END
+    /// of onboarding — nine screens after the paywall. Anyone who paid and then
+    /// quit (or hit any snag) ended up with an auth user and a paid subscription
+    /// but NO profile, which silently breaks portfolio creation, password
+    /// sign-in, Stripe email matching, and broadcast targeting. Writing a stub
+    /// the moment a user id exists makes "paid but no profile" impossible.
+    ///
+    /// Deliberately an INSERT and not an upsert: a returning user coming back
+    /// through the email-code path already has a profile, and an upsert keyed on
+    /// `id` would clobber their real username with the email local part. A
+    /// duplicate-key error here means the row is already there — exactly what we
+    /// want — so it is swallowed and only that case is swallowed.
+    func ensureProfileExists(userId: UUID, email: String) async throws {
+        guard SupabaseManager.shared.isConfigured else { return }
+
+        if try await getProfile(userId: userId) != nil { return }
+
+        let fallbackUsername = email
+            .split(separator: "@").first.map(String.init)?
+            .trimmingCharacters(in: .whitespaces) ?? "member"
+
+        do {
+            try await insert(into: .profiles, values: MinimalProfileRequest(
+                id: userId,
+                username: fallbackUsername.isEmpty ? "member" : fallbackUsername,
+                email: email.lowercased()
+            ))
+            logInfo("Created stub profile for \(email)", category: .data)
+        } catch {
+            // 23505 = the row was created concurrently (e.g. two onboarding
+            // paths racing). Benign. Anything else is a real failure and the
+            // caller needs to know, because admitting a user with no profile is
+            // exactly the bug this function exists to prevent.
+            if "\(error)".contains("23505") || "\(error)".lowercased().contains("duplicate") {
+                return
+            }
+            throw error
+        }
+    }
+
     func emailExists(_ email: String) async throws -> Bool {
         guard SupabaseManager.shared.isConfigured else { return false }
         let client = SupabaseManager.shared.client

@@ -64,6 +64,19 @@ struct NotificationSetupView: View {
 
                 // Bottom buttons
                 VStack(spacing: ArkSpacing.sm) {
+                    // This is the LAST onboarding screen — completeOnboarding()
+                    // runs from here, and it is where the profile and default
+                    // portfolio get written. Until now this view never rendered
+                    // errorMessage, so a failure at the finish line left the user
+                    // on a dead screen with no explanation and no way to retry.
+                    if let errorMessage = viewModel.errorMessage {
+                        Text(errorMessage)
+                            .font(AppFonts.body14)
+                            .foregroundColor(AppColors.error)
+                            .multilineTextAlignment(.center)
+                            .padding(.bottom, ArkSpacing.xs)
+                    }
+
                     PrimaryButton(
                         title: "Enable Notifications",
                         action: { requestNotifications() },

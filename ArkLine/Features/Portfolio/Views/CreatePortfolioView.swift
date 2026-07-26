@@ -144,17 +144,27 @@ struct CreatePortfolioView: View {
         isCreating = true
 
         Task {
+            // The spinner MUST be cleared on every exit path. This previously
+            // relied on dismiss() tearing down the sheet's @State on success —
+            // so if dismiss() no-opped, or the await below never returned, the
+            // user sat on a permanent spinner with no error and a disabled
+            // Create button, and the only escape was swiping the sheet away.
+            defer { Task { @MainActor in isCreating = false } }
+
             do {
-                try await viewModel.createPortfolio(
-                    name: portfolioName.trimmingCharacters(in: .whitespaces),
-                    isPublic: isPublic
-                )
-                await MainActor.run {
-                    dismiss()
+                // Hard ceiling on the round trip. The Supabase SDK resolves an
+                // access token before the insert, and a stalled token refresh
+                // has no timeout of its own — that hangs forever rather than
+                // failing. 20s is far longer than a healthy insert needs.
+                try await withTimeout(seconds: 20) {
+                    try await viewModel.createPortfolio(
+                        name: portfolioName.trimmingCharacters(in: .whitespaces),
+                        isPublic: isPublic
+                    )
                 }
+                await MainActor.run { dismiss() }
             } catch {
                 await MainActor.run {
-                    isCreating = false
                     errorMessage = AppError.from(error).userMessage
                     showError = true
                 }

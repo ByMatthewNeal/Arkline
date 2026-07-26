@@ -403,6 +403,16 @@ struct CreateUserRequest: Encodable {
     }
 }
 
+// MARK: - Minimal Profile (written the moment a user id exists)
+/// The three NOT NULL columns on `profiles`. Everything else has a DB default,
+/// so this is the smallest row that can legally exist. The real values are
+/// filled in by the remaining onboarding steps.
+struct MinimalProfileRequest: Encodable {
+    let id: UUID
+    let username: String
+    let email: String
+}
+
 // MARK: - User Update Request
 struct UpdateUserRequest: Encodable {
     var username: String?
