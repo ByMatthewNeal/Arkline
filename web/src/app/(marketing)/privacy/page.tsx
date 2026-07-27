@@ -187,6 +187,11 @@ export default function PrivacyPolicyPage() {
               To exercise any of these rights, email <a href="mailto:privacy@arkline.io" className="text-ark-primary hover:underline">privacy@arkline.io</a>. We will respond within the time required by applicable law (generally 30 days).
             </p>
 
+            <p className="mt-4"><strong className="text-ark-text">Usage analytics</strong></p>
+            <p className="mt-2">
+              Usage analytics are on by default so we can understand which features people rely on and where the app is confusing. You can turn them off at any time in the iOS app at Settings &rarr; Privacy &rarr; Usage Analytics. Turning them off stops collection immediately and discards anything not yet sent. This data is never used for advertising and is never sold or shared with advertisers.
+            </p>
+
             <p className="mt-4"><strong className="text-ark-text">Account deletion</strong></p>
             <p className="mt-2">
               You may delete your account at any time from within the iOS app at Settings &rarr; Account &rarr; Delete Account, or by emailing <a href="mailto:privacy@arkline.io" className="text-ark-primary hover:underline">privacy@arkline.io</a>. Deletion removes your portfolio data, account information, and AI conversation history within 30 days.
