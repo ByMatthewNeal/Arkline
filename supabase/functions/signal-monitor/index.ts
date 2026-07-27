@@ -190,6 +190,32 @@ Deno.serve(async (req) => {
     return { high: all[0].high, low: all[0].low, close: all[0].close }
   }
 
+  // Confirmed-rejection check (stage 2 of anticipatory entry).
+  //
+  // Returns the confirming candle when a CLOSED 1h candle — one that both
+  // started at/after the zone touch AND has already finished (start + 1h <= now)
+  // — closed back outside the zone in the trade direction. In-progress candles
+  // are excluded on purpose: a close is only meaningful once the bar is done,
+  // otherwise a mid-candle print could "confirm" and then reverse before close.
+  // This is the monitor-side equivalent of the pipeline's old
+  // consecutive_closes bounce, evaluated where it can actually be observed.
+  function closedCandleConfirming(
+    ticker: string, sinceMs: number, isBuy: boolean,
+    zoneLow: number, zoneHigh: number, nowMs: number,
+  ): { close: number } | null {
+    const all = rawCandles[ticker]
+    if (!all || all.length === 0) return null
+    const ONE_HOUR = 3600000
+    for (const c of all) { // newest-first
+      if (c.start < sinceMs) break            // older than the touch — stop
+      if (c.start + ONE_HOUR > nowMs) continue // still in progress — skip
+      if (isBuy ? c.close > zoneHigh : c.close < zoneLow) {
+        return { close: c.close }
+      }
+    }
+    return null
+  }
+
   // Dual-source T1 check: requires BOTH Coinbase and Binance to confirm target hit.
   // If Binance data is unavailable, falls back to Coinbase-only.
   // Prevents exchange-specific wicks from triggering false T1 hits.
@@ -244,7 +270,13 @@ Deno.serve(async (req) => {
     if (signal.closed_at) continue
 
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
-    const entryMid = Number(signal.entry_price_mid)
+    // Fill basis: for anticipatory signals the real entry is the confirming
+    // candle's close (entered_price), not the zone midpoint. Every P&L,
+    // breakeven-stop and consider-profit calc below keys off entryMid, so
+    // overriding it here makes all of them reflect the price a member could
+    // actually get. Signals filled before the redesign have entered_price null
+    // and fall back to entry_price_mid — identical to old behaviour.
+    const entryMid = signal.entered_price ? Number(signal.entered_price) : Number(signal.entry_price_mid)
     const t1 = signal.target_1 ? Number(signal.target_1) : null
     const t2 = signal.target_2 ? Number(signal.target_2) : null
     const sl = Number(signal.stop_loss)
@@ -587,20 +619,98 @@ Deno.serve(async (req) => {
     const entryLow = Number(signal.entry_zone_low)
     const entryHigh = Number(signal.entry_zone_high)
     const isBuy = signal.signal_type === "buy" || signal.signal_type === "strong_buy"
+    const slActive = Number(signal.stop_loss)
 
-    // ── Entry fill ──────────────────────────────────────────────────────────
-    // Price actually traded into the published entry zone, so the setup becomes
-    // a live position. This is the only place a signal turns "In Play".
-    // triggered_at is stamped here so every downstream measure (T1, stop,
-    // duration, P&L) runs from the real fill rather than from signal creation.
+    // ── Two-stage entry: touch, then confirmed rejection ────────────────────
+    // Signals are now published BEFORE price reaches the zone, so a touch alone
+    // is not an entry. Stage 1 stamps zone_entered_at when price first trades
+    // into the zone. Stage 2 grants entry only when a CLOSED 1h candle —
+    // closing after the touch — finishes back outside the zone in the trade
+    // direction (long: close above zone high; short: close below zone low).
+    // That is the monitor-side equivalent of the old publish-time
+    // bounce_confirmed, moved to where it can actually be observed.
+    //
+    // If price slices through the zone and beyond the stop without ever
+    // confirming, the setup failed WITHOUT filling: it closes as expired with
+    // no outcome, because no member could reasonably be in the trade. Under
+    // the old model these zone-failures were recorded as full 1R losses.
+
+    // Stage 2: touched, awaiting confirmation (or failure)
+    if (signal.zone_entered_at) {
+      // Failure: sliced through past the stop with no confirmation.
+      const slicedThrough = isBuy ? price.low <= slActive : price.high >= slActive
+      if (slicedThrough) {
+        await supabase.from("trade_signals").update({
+          status: "expired",
+          closed_at: now.toISOString(),
+        }, { count: "exact" }).eq("id", signal.id).is("closed_at", null)
+        stats.expired++
+        continue
+      }
+
+      // Confirmation: a candle that CLOSED after the touch, back outside the
+      // zone in the trade direction.
+      const zoneEnteredMs = new Date(signal.zone_entered_at).getTime()
+      const confirm = closedCandleConfirming(signal.asset, zoneEnteredMs, isBuy, entryLow, entryHigh, now.getTime())
+      if (confirm) {
+        const { count: filled } = await supabase.from("trade_signals").update({
+          status: "triggered",
+          triggered_at: now.toISOString(),
+          entered_price: confirm.close,
+          bounce_confirmed: true,
+        }, { count: "exact" })
+          .eq("id", signal.id)
+          .eq("status", "active") // guard: overlapping runs can't double-fill
+        if (filled && filled > 0) {
+          stats.entriesFilled++
+          // Reuses the signal_proximity preference bucket so no iOS change is
+          // required — it is the closest existing category to "zone events".
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`, "x-cron-secret": cronSecret },
+              body: JSON.stringify({
+                broadcast_id: signal.id,
+                title: `✅ ${signal.asset} ${isBuy ? "Long" : "Short"} — Entry Confirmed`,
+                body: `Rejection confirmed at ${formatPrice(confirm.close)}. Signal is now in play.`,
+                event_type: "signal_proximity",
+                target_audience: { type: "all" },
+              }),
+            })
+            stats.notifications++
+          } catch (err) {
+            console.error(`Entry-confirmed alert failed for ${signal.id}: ${err}`)
+          }
+        }
+      }
+      continue
+    }
+
+    // Stage 1: first touch of the zone
     if (price.low <= entryHigh && price.high >= entryLow) {
-      const { count: filled } = await supabase.from("trade_signals").update({
-        status: "triggered",
-        triggered_at: now.toISOString(),
+      const { count: touched } = await supabase.from("trade_signals").update({
+        zone_entered_at: now.toISOString(),
       }, { count: "exact" })
         .eq("id", signal.id)
-        .eq("status", "active") // guard: overlapping runs can't double-fill
-      if (filled && filled > 0) stats.entriesFilled++
+        .is("zone_entered_at", null) // guard: stamp only once
+      if (touched && touched > 0) {
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}`, "x-cron-secret": cronSecret },
+            body: JSON.stringify({
+              broadcast_id: signal.id,
+              title: `👀 ${signal.asset} ${isBuy ? "Long" : "Short"} — Price In Zone`,
+              body: `Price entered the zone (${formatPrice(entryLow)} – ${formatPrice(entryHigh)}). Waiting for a confirming 1h close before entry.`,
+              event_type: "signal_proximity",
+              target_audience: { type: "all" },
+            }),
+          })
+          stats.notifications++
+        } catch (err) {
+          console.error(`In-zone alert failed for ${signal.id}: ${err}`)
+        }
+      }
       continue
     }
 
