@@ -7,7 +7,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @State private var viewModel = SettingsViewModel()
-    @State private var analyticsEnabled = UserDefaults.standard.bool(forKey: "analyticsConsentGranted")
+    @State private var analyticsEnabled = AnalyticsService.currentConsent
 
     private var isDarkMode: Bool {
         appState.darkModePreference == .dark ||

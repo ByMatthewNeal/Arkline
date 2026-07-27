@@ -12,19 +12,48 @@ actor AnalyticsService {
     static let shared = AnalyticsService()
 
     // MARK: - Consent
-    private static let consentKey = "analyticsConsentGranted"
 
-    /// Whether the user has granted analytics consent. Defaults to false.
-    var isConsentGranted: Bool {
-        UserDefaults.standard.bool(forKey: Self.consentKey)
+    /// Legacy UserDefaults mirror. Kept in sync so synchronous UI reads stay
+    /// cheap, but the Keychain copy is authoritative.
+    private static let consentKey = "analyticsConsentGranted"
+    private static let keychainKey = KeychainManager.Keys.analyticsConsent
+
+    /// Opt-out model: analytics is on unless the user turns it off in Settings.
+    /// Reads Keychain first so an explicit choice survives reinstall.
+    nonisolated static var currentConsent: Bool {
+        let keychain = KeychainManager.shared
+        if keychain.loadOptional(forKey: keychainKey) != nil {
+            return keychain.loadBool(forKey: keychainKey)
+        }
+        // Migrate a pre-existing explicit choice — critically, a user who had
+        // already opted OUT must not be silently re-enabled by the new default.
+        if let legacy = UserDefaults.standard.object(forKey: consentKey) as? Bool {
+            return legacy
+        }
+        return true
     }
+
+    private lazy var consentGranted: Bool = {
+        let resolved = Self.currentConsent
+        Self.persistConsent(resolved)
+        return resolved
+    }()
+
+    /// Whether the user has granted analytics consent. Defaults to true.
+    var isConsentGranted: Bool { consentGranted }
 
     /// Call from Settings or onboarding to update consent.
     func setConsent(_ granted: Bool) {
-        UserDefaults.standard.set(granted, forKey: Self.consentKey)
+        consentGranted = granted
+        Self.persistConsent(granted)
         if !granted {
             buffer.removeAll()
         }
+    }
+
+    private nonisolated static func persistConsent(_ granted: Bool) {
+        try? KeychainManager.shared.saveBool(granted, forKey: keychainKey)
+        UserDefaults.standard.set(granted, forKey: consentKey)
     }
 
     // MARK: - Configuration
@@ -128,8 +157,27 @@ actor AnalyticsService {
         }
         guard !buffer.isEmpty else { return }
 
-        let eventsToSend = buffer
+        var eventsToSend = buffer
         buffer.removeAll()
+
+        // RLS on analytics_events is `auth.uid() = user_id`, so a NULL user_id
+        // rejects the WHOLE batch — and the catch below re-queues it. One
+        // cold-start event buffered before session restore would therefore
+        // poison every later flush permanently. Stamp anything that can now be
+        // attributed, and drop what still cannot.
+        if eventsToSend.contains(where: { $0.userId == nil }) {
+            let resolvedUserId = await getUserId()
+            for index in eventsToSend.indices where eventsToSend[index].userId == nil {
+                eventsToSend[index].userId = resolvedUserId
+            }
+            let unattributed = eventsToSend.filter { $0.userId == nil }.count
+            if unattributed > 0 {
+                eventsToSend.removeAll { $0.userId == nil }
+                logWarning("Dropped \(unattributed) analytics events with no user session", category: .network)
+            }
+        }
+
+        guard !eventsToSend.isEmpty else { return }
 
         do {
             try await SupabaseManager.shared.client

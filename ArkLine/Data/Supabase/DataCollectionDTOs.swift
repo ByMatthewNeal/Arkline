@@ -285,7 +285,9 @@ struct RegimeSnapshotDTO: Codable {
 /// Generic user behavior event
 struct AnalyticsEventDTO: Codable {
     let id: UUID
-    let userId: UUID?
+    /// Mutable so a cold-start event buffered before session restore can be
+    /// stamped with the user id once auth resolves. RLS rejects a NULL user_id.
+    var userId: UUID?
     let eventName: String
     let properties: [String: AnyCodableValue]?
     let sessionId: UUID?

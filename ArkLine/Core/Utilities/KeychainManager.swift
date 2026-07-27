@@ -205,5 +205,9 @@ extension KeychainManager {
         static let biometricEnabled = "arkline.biometricEnabled"
         static let accessToken = "arkline.accessToken"
         static let refreshToken = "arkline.refreshToken"
+        /// Analytics consent. Kept in Keychain rather than UserDefaults so it
+        /// survives delete/reinstall — UserDefaults is wiped on delete, which
+        /// silently reverted consent to off on every reinstall.
+        static let analyticsConsent = "arkline.analyticsConsent"
     }
 }
