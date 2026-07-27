@@ -379,14 +379,36 @@ Deno.serve(async (req) => {
             .eq("id", signal.id)
         }
       } else {
-        // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
-        // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
-        bestPrice = Math.max(bestPrice, latest.high)
-        worstPrice = Math.min(worstPrice, latest.low)
+        // Phase 2: Runner trailing stop.
+        //
+        // Only price action AFTER t1_hit_at may move or trigger the runner
+        // stop. The previous code used `latest` (the newest ONE_HOUR candle)
+        // to avoid stale highs from EARLIER candles — but the in-progress
+        // hourly candle still contains everything since the top of the hour,
+        // including the pre-T1 move. Concretely (SUI, 2026-07-26): T1 hit at
+        // 00:41, runner stop moved to entry; the 00:00 candle's high — set at
+        // 00:0x, forty minutes BEFORE the stop existed — was >= the stop, so
+        // the very next cycle closed the runner "at breakeven" while live
+        // price was 50 pips onside and falling toward T2. 32 of 133 runners
+        // in the book show this fingerprint (breakeven exit within an hour
+        // of T1).
+        //
+        // Fix, mirroring what aggregateAfter already does for SL/T1: use only
+        // candles that STARTED at/after t1_hit_at. Until such a candle exists,
+        // fall back to the latest close — the live price — which can't carry
+        // pre-T1 history. Checks run every ~5 min, so close-based protection
+        // is at most a few minutes behind an intra-candle spike.
+        const t1Ms = signal.t1_hit_at ? new Date(signal.t1_hit_at).getTime() : triggerMs
+        const postT1 = aggregateAfter(signal.asset, t1Ms)
+        const runHigh = postT1 ? postT1.high : latest.close
+        const runLow = postT1 ? postT1.low : latest.close
+
+        bestPrice = Math.max(bestPrice, runHigh)
+        worstPrice = Math.min(worstPrice, runLow)
         runnerStop = Math.max(runnerStop, bestPrice - risk1r)
 
         // Target 2 reached — notify once. Runner keeps trailing; the user decides.
-        if (t2 && !signal.t2_notified_at && latest.high >= t2) {
+        if (t2 && !signal.t2_notified_at && runHigh >= t2) {
           await sendSignalAlert(
             supabase, supabaseUrl, cronSecret, signal, "signal_t2_hit",
             `🎯 ${signal.asset} Long — Target 2 Reached`,
@@ -396,7 +418,7 @@ Deno.serve(async (req) => {
           stats.notifications++
         }
 
-        if (latest.low <= runnerStop) {
+        if (runLow <= runnerStop) {
           const runnerPnl = ((runnerStop - entryMid) / entryMid) * 100
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
@@ -485,14 +507,22 @@ Deno.serve(async (req) => {
             .eq("id", signal.id)
         }
       } else {
-        // Phase 2: Runner trailing stop — use only the LATEST candle (not aggregated)
-        // to avoid stale highs/lows from pre-T1 candles triggering a false runner stop
-        bestPrice = Math.min(bestPrice, latest.low)
-        worstPrice = Math.max(worstPrice, latest.high)
+        // Phase 2: Runner trailing stop (short). Same post-T1 isolation as the
+        // long branch above — see that comment for the SUI incident that
+        // motivated it. For a short the contaminated value is the in-progress
+        // candle's HIGH (the pre-T1 rally), which falsely triggers the
+        // breakeven stop.
+        const t1Ms = signal.t1_hit_at ? new Date(signal.t1_hit_at).getTime() : triggerMs
+        const postT1 = aggregateAfter(signal.asset, t1Ms)
+        const runHigh = postT1 ? postT1.high : latest.close
+        const runLow = postT1 ? postT1.low : latest.close
+
+        bestPrice = Math.min(bestPrice, runLow)
+        worstPrice = Math.max(worstPrice, runHigh)
         runnerStop = Math.min(runnerStop, bestPrice + risk1r)
 
         // Target 2 reached — notify once. Runner keeps trailing; the user decides.
-        if (t2 && !signal.t2_notified_at && latest.low <= t2) {
+        if (t2 && !signal.t2_notified_at && runLow <= t2) {
           await sendSignalAlert(
             supabase, supabaseUrl, cronSecret, signal, "signal_t2_hit",
             `🎯 ${signal.asset} Short — Target 2 Reached`,
@@ -502,7 +532,7 @@ Deno.serve(async (req) => {
           stats.notifications++
         }
 
-        if (latest.high >= runnerStop) {
+        if (runHigh >= runnerStop) {
           const runnerPnl = ((entryMid - runnerStop) / entryMid) * 100
           const t1Pnl = signal.t1_pnl_pct ? Number(signal.t1_pnl_pct) : 0
           const totalPnl = (t1Pnl + runnerPnl) / 2
