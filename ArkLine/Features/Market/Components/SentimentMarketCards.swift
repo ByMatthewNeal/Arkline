@@ -11,6 +11,7 @@ struct ArkLineScoreCard: View {
                 Text("ArkLine Score")
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
+                    .defineTerm("arkline-score", screen: "market_sentiment")
 
                 Spacer()
 
@@ -83,6 +84,7 @@ struct FearGreedSentimentCard: View {
             Text("Fear & Greed")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
+                .defineTerm("fear-greed-index", screen: "market_sentiment")
 
             Spacer()
 
@@ -157,6 +159,7 @@ struct MarketCapCard: View {
             Text("Market Cap")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
+                .defineTerm("market-cap", screen: "market_sentiment")
 
             Spacer()
 
@@ -313,6 +316,7 @@ struct AltcoinSeasonCard: View {
             Text("Altcoin Season")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
+                .defineTerm("altcoin-season", screen: "market_sentiment")
 
             Spacer()
 
@@ -464,6 +468,7 @@ struct RiskLevelCard: View {
             Text("Risk Level")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
+                .defineTerm("risk-levels", screen: "market_sentiment")
 
             Spacer()
 

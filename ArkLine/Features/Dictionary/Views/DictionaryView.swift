@@ -335,7 +335,7 @@ struct DictionaryView: View {
 // MARK: - Flow Layout
 
 /// Simple flow layout for wrapping related term chips.
-private struct DictionaryFlowLayout: Layout {
+struct DictionaryFlowLayout: Layout {
     var spacing: CGFloat = 4
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

@@ -54,6 +54,7 @@ struct AllocationDetailView: View {
                 Text("Current Macro Regime")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
+                    .defineTerm("macro-regime", screen: "allocation")
 
                 Text(summary.regime.quadrant.rawValue)
                     .font(AppFonts.title18SemiBold)

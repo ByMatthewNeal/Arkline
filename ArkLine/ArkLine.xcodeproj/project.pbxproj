@@ -10,6 +10,7 @@
 		0040B691123D65196663027A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEF32D24CEC66662543D000 /* Logger.swift */; };
 		015F622BA1DD56ECCA9AFB00 /* DictionaryTermLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5295F32BA5C880D77C32D9F /* DictionaryTermLink.swift */; };
 		0163AAB9E3115D7C8026A39F /* GlobalLiquidityServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A86D9D135C6D2AF3FD8E4791 /* GlobalLiquidityServiceProtocol.swift */; };
+		01CDC522762AA7824AD8C4A3 /* DictionaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183B41F17BC3C5B78C23A9FB /* DictionaryStore.swift */; };
 		030196495109132E123BAC5D /* LogDCAEntrySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC97ABCCC5FC625A5545CE57 /* LogDCAEntrySheet.swift */; };
 		033D1DBC97CA548DFC7B6EE3 /* TemplatePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DCAD45E39222A834A098DE /* TemplatePickerView.swift */; };
 		0344C4B0955D58DCD34C2EC8 /* CommunityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8185913CA90DB0567893C5 /* CommunityView.swift */; };
@@ -177,6 +178,7 @@
 		4C8160414F9E10ADFB569E1E /* DCACalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0542844A0A074789DB81103D /* DCACalculatorView.swift */; };
 		4D9FB9B3811A55E1947229A4 /* MarketDeckViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79B945DC45F13C5C260B37CE /* MarketDeckViewer.swift */; };
 		4DB47AE7FDB963E7A9DCF7ED /* EconomicSlideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB53CC247D189D1058B7768 /* EconomicSlideView.swift */; };
+		4DD3DD97CF8D74F90ECEA7B7 /* DefineTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE88616EB2FF5A4DF369812B /* DefineTerm.swift */; };
 		4E1CF3B74ABFF049BD3AA054 /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = C020CF24D89DA500878B422B /* SearchBar.swift */; };
 		4E2427A1AB1F1AB5415C4365 /* GEIData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0723D33F5C4A040C0468AF8 /* GEIData.swift */; };
 		4F0F3F5DACA577E7B642582B /* BroadcastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD2E46FABE9B6A498260BC1 /* BroadcastViewModel.swift */; };
@@ -610,6 +612,7 @@
 		1730741E831B9E651F52956B /* FarsideETFScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FarsideETFScraper.swift; sourceTree = "<group>"; };
 		17364D4B3A7E5E3E34F72452 /* SubscriptionExpiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionExpiredView.swift; sourceTree = "<group>"; };
 		18016E7688B6F33F7FC34961 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		183B41F17BC3C5B78C23A9FB /* DictionaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryStore.swift; sourceTree = "<group>"; };
 		18DBCC55230550D5AABD2D4F /* FeatureRequestFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureRequestFormView.swift; sourceTree = "<group>"; };
 		1932000FA607265666E09FA8 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		19E1622C78359300DB8E4111 /* RevenueDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueDashboardView.swift; sourceTree = "<group>"; };
@@ -997,6 +1000,7 @@
 		CD681A513B864C421800A693 /* BroadcastNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastNotificationService.swift; sourceTree = "<group>"; };
 		CE12B1A7FCB11B06485438B0 /* PreciousMetalsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreciousMetalsSection.swift; sourceTree = "<group>"; };
 		CE18ECC8AEFB3D93A21F46F7 /* StockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockDetailView.swift; sourceTree = "<group>"; };
+		CE88616EB2FF5A4DF369812B /* DefineTerm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefineTerm.swift; sourceTree = "<group>"; };
 		CF7A9A65A815A46682E9C732 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
 		CF8966DCE478667F559E358F /* WeeklyOutlookSlideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyOutlookSlideView.swift; sourceTree = "<group>"; };
 		CF8BD2E7991184BDF4547630 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -1304,6 +1308,7 @@
 				E8DBD00F42D571DB036123D3 /* CuratedNewsService.swift */,
 				BE0281346D7D945C59748A12 /* DCATrackerService.swift */,
 				B090123ABC1EFCBE75854A46 /* DictionaryService.swift */,
+				183B41F17BC3C5B78C23A9FB /* DictionaryStore.swift */,
 				49867222FFE59917323CC51F /* EconomicEventsService.swift */,
 				1BD6836FCB548AEE63A085A5 /* FeatureRequestService.swift */,
 				CD17498E021F8723DD2329AF /* FinnhubEconomicCalendarService.swift */,
@@ -1939,6 +1944,7 @@
 			isa = PBXGroup;
 			children = (
 				786B7DEED9C131DFA1787F31 /* AdminDictionaryView.swift */,
+				CE88616EB2FF5A4DF369812B /* DefineTerm.swift */,
 				F5295F32BA5C880D77C32D9F /* DictionaryTermLink.swift */,
 				731AF8AF3B7310E8E10DC700 /* DictionaryView.swift */,
 			);
@@ -2682,8 +2688,10 @@
 				482C7C00BFAE252A89D68010 /* DeckGenerationManager.swift in Sources */,
 				9062AA3EB4E8364B0AC01874 /* DeckPipelineRun.swift in Sources */,
 				5A71BFC0E9F269572944081C /* DeckSlideView.swift in Sources */,
+				4DD3DD97CF8D74F90ECEA7B7 /* DefineTerm.swift in Sources */,
 				DC56B48E4346BD6D97E4913C /* DerivativesDataSection.swift in Sources */,
 				82E65F765FF45E0F3B18202C /* DictionaryService.swift in Sources */,
+				01CDC522762AA7824AD8C4A3 /* DictionaryStore.swift in Sources */,
 				F6AF2CE608321F27B8A538AB /* DictionaryTerm.swift in Sources */,
 				015F622BA1DD56ECCA9AFB00 /* DictionaryTermLink.swift in Sources */,
 				2885B2A3C14D54512EE83767 /* DictionaryView.swift in Sources */,

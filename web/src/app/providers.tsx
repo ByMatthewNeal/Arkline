@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/hooks/use-theme';
 import { ToastProvider } from '@/components/ui/toast';
+import { DictionaryProvider } from '@/lib/hooks/use-dictionary';
 import { useState } from 'react';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -26,7 +27,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <DictionaryProvider>{children}</DictionaryProvider>
+        </ToastProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -61,6 +61,21 @@ enum RiskFactorType: String, CaseIterable, Codable {
         case .oilRisk: return "drop.fill"
         }
     }
+
+    /// Dictionary slug for the inline DefineTerm explainer. Slugs without a
+    /// dictionary entry yet render no trigger until the term is added.
+    var dictionarySlug: String {
+        switch self {
+        case .logRegression: return "btc-cycle-risk"
+        case .rsi: return "rsi"
+        case .smaPosition: return "sma"
+        case .bullMarketBands: return "bull-market-bands"
+        case .fundingRate: return "funding-rate"
+        case .fearGreed: return "fear-greed-index"
+        case .macroRisk: return "macro-risk"
+        case .oilRisk: return "wti-crude-oil"
+        }
+    }
 }
 
 // MARK: - Risk Factor

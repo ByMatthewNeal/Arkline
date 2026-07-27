@@ -115,6 +115,7 @@ struct MacroDashboardDetailView: View {
                                 SimpleIndicatorRow(
                                     icon: "chart.line.uptrend.xyaxis",
                                     title: "VIX",
+                                    termKey: "vix",
                                     value: vixData.map { String(format: "%.1f", $0.value) } ?? "--",
                                     status: vixStatus,
                                     statusColor: vixStatusColor,
@@ -144,6 +145,7 @@ struct MacroDashboardDetailView: View {
                                 SimpleIndicatorRow(
                                     icon: "dollarsign.arrow.trianglehead.counterclockwise.rotate.90",
                                     title: "DXY",
+                                    termKey: "dxy",
                                     value: dxyData.map { String(format: "%.1f", $0.value) } ?? "--",
                                     change: dxyData?.changePercent,
                                     status: dxyStatus,
@@ -174,6 +176,7 @@ struct MacroDashboardDetailView: View {
                                 SimpleIndicatorRow(
                                     icon: "building.columns.fill",
                                     title: "US Net Liquidity",
+                                    termKey: "net-liquidity",
                                     value: netLiquidityData.map { formatLiquidity($0.current) } ?? "--",
                                     change: netLiquidityData?.weeklyChange,
                                     status: netLiqStatus,
@@ -220,6 +223,7 @@ struct MacroDashboardDetailView: View {
                                 SimpleIndicatorRow(
                                     icon: "globe.americas.fill",
                                     title: "CB Liquidity",
+                                    termKey: "liquidity",
                                     value: String(format: "$%.1fT", gli.compositeLiquidityT),
                                     change: gli.changes.monthly,
                                     status: cbLiqStatus,

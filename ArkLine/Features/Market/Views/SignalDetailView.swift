@@ -389,6 +389,7 @@ struct SignalDetailView: View {
                             .padding(.vertical, 2)
                             .background(AppColors.error.opacity(0.12))
                             .cornerRadius(4)
+                            .defineTerm("volatility-regime", screen: "signal_detail", variant: .wrap)
                     }
                     if signal.hasVolumeConfluence {
                         Text("Vol Shelf")
@@ -398,6 +399,7 @@ struct SignalDetailView: View {
                             .padding(.vertical, 2)
                             .background(AppColors.textSecondary.opacity(0.1))
                             .cornerRadius(4)
+                            .defineTerm("confluence-zone", screen: "signal_detail", variant: .wrap)
                     }
                 }
             }
@@ -675,7 +677,8 @@ struct SignalDetailView: View {
                 }
 
                 paramRow(label: "Entry Zone",
-                         value: "$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
+                         value: "$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))",
+                         term: "entry-zone")
 
                 if signal.status.isLive, let zone = signal.considerProfitZone {
                     let low = min(zone.low, zone.high)
@@ -683,33 +686,38 @@ struct SignalDetailView: View {
                     paramRow(label: "Consider Profit",
                              value: "$\(formatSignalPrice(low)) – $\(formatSignalPrice(high))",
                              badge: "30–75%",
-                             badgeColor: AppColors.warning)
+                             badgeColor: AppColors.warning,
+                             term: "consider-profit-zone")
                 }
 
                 if let t1 = signal.target1, let pct = signal.entryPctFromTarget1 {
                     paramRow(label: "Target 1",
                              value: "$\(formatSignalPrice(t1))",
                              badge: String(format: "%+.1f%%", pct),
-                             badgeColor: AppColors.success)
+                             badgeColor: AppColors.success,
+                             term: "target-1")
                 }
 
                 if let t2 = signal.target2, let pct = signal.entryPctFromTarget2 {
                     paramRow(label: "Target 2",
                              value: "$\(formatSignalPrice(t2))",
                              badge: String(format: "%+.1f%%", pct),
-                             badgeColor: AppColors.success)
+                             badgeColor: AppColors.success,
+                             term: "target-2")
                 }
 
                 paramRow(label: "Stop Loss",
                          value: "$\(formatSignalPrice(signal.stopLoss))",
                          badge: String(format: "%.1f%%", signal.stopLossPct),
-                         badgeColor: AppColors.error)
+                         badgeColor: AppColors.error,
+                         term: "stop-loss")
 
                 Divider()
 
                 paramRow(label: "Risk / Reward",
                          value: String(format: "%.1fx", signal.riskRewardRatio),
-                         valueColor: AppColors.accent)
+                         valueColor: AppColors.accent,
+                         term: "risk-reward-ratio")
             }
         }
         .padding()
@@ -903,6 +911,7 @@ struct SignalDetailView: View {
                         Text("50% runner")
                             .font(AppFonts.body14)
                             .foregroundColor(AppColors.textSecondary)
+                            .defineTerm("runner", screen: "signal_detail")
                         Spacer()
                         Text("Trailing")
                             .font(AppFonts.body14Medium)
@@ -912,12 +921,14 @@ struct SignalDetailView: View {
                     if let best = signal.bestPrice {
                         paramRow(label: "Best Price",
                                  value: "$\(formatSignalPrice(best))",
-                                 valueColor: AppColors.success)
+                                 valueColor: AppColors.success,
+                                 term: "best-price")
                     }
                     if let trail = signal.runnerStop {
                         paramRow(label: "Trail Stop",
                                  value: "$\(formatSignalPrice(trail))",
-                                 valueColor: AppColors.warning)
+                                 valueColor: AppColors.warning,
+                                 term: "runner-stop")
                     }
                 } else if let runnerPnl = signal.runnerPnlPct {
                     HStack {
@@ -932,7 +943,8 @@ struct SignalDetailView: View {
 
                     if let exitPrice = signal.runnerExitPrice {
                         paramRow(label: "Runner Exit",
-                                 value: "$\(formatSignalPrice(exitPrice))")
+                                 value: "$\(formatSignalPrice(exitPrice))",
+                                 term: "runner")
                     }
                 }
 
@@ -1363,11 +1375,12 @@ struct SignalDetailView: View {
             .fill(colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white)
     }
 
-    private func paramRow(label: String, value: String, badge: String? = nil, badgeColor: Color? = nil, valueColor: Color? = nil) -> some View {
+    private func paramRow(label: String, value: String, badge: String? = nil, badgeColor: Color? = nil, valueColor: Color? = nil, term: String? = nil) -> some View {
         HStack {
             Text(label)
                 .font(AppFonts.body14)
                 .foregroundColor(AppColors.textSecondary)
+                .defineTerm(term ?? label, screen: "signal_detail")
             Spacer()
             Text(value)
                 .font(AppFonts.body14Medium)

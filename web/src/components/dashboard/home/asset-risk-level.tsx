@@ -6,6 +6,7 @@ import { GlassCard, Badge, Skeleton } from '@/components/ui';
 import { useAssetRiskLevels } from '@/lib/hooks/use-market';
 import { cn } from '@/lib/utils/format';
 import type { AssetRiskCategory, RiskFactorType } from '@/types';
+import { DefineTerm } from '@/components/ui/define-term';
 
 function categoryVariant(level: AssetRiskCategory): 'success' | 'warning' | 'error' | 'default' {
   switch (level) {
@@ -31,6 +32,18 @@ const factorLabels: Record<RiskFactorType, string> = {
   'Funding Rate': 'Funding Rate',
   'Fear & Greed': 'Fear & Greed',
   'Macro Risk': 'Macro Risk',
+};
+
+// Dictionary slugs per risk factor. Slugs with no dictionary row yet render
+// no "?" — they light up automatically once the term is added.
+const factorSlugs: Record<RiskFactorType, string> = {
+  'Log Regression': 'btc-cycle-risk',
+  'RSI': 'rsi',
+  'SMA Position': 'sma',
+  'Bull Market Bands': 'bull-market-bands',
+  'Funding Rate': 'funding-rate',
+  'Fear & Greed': 'fear-greed-index',
+  'Macro Risk': 'macro-risk',
 };
 
 export function AssetRiskLevel() {
@@ -145,7 +158,9 @@ export function AssetRiskLevel() {
               return (
                 <div key={f.type} className="flex items-center gap-2.5">
                   <span className="w-24 truncate text-[11px] text-ark-text-secondary">
-                    {factorLabels[f.type] ?? f.type}
+                    <DefineTerm termKey={factorSlugs[f.type] ?? ''} screen="asset_risk_level">
+                      {factorLabels[f.type] ?? f.type}
+                    </DefineTerm>
                   </span>
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
                     <div

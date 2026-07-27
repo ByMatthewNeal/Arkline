@@ -276,19 +276,22 @@ struct RotationDetailView: View {
                     icon: "gauge.with.needle",
                     label: "Risk Levels",
                     detail: "BTC: \(signal.btcRiskLevel ?? "—") / SPY: \(signal.spyRiskLevel ?? "—")",
-                    weight: "20%"
+                    weight: "20%",
+                    term: "risk-levels"
                 )
                 inputRow(
                     icon: "speedometer",
                     label: "Fear & Greed",
                     detail: "\(signal.fearGreedValue ?? 0) (\(signal.fearGreedTrend ?? "flat"))",
-                    weight: "15%"
+                    weight: "15%",
+                    term: "fear-greed-index"
                 )
                 inputRow(
                     icon: "dollarsign.arrow.trianglehead.counterclockwise.rotate.90",
                     label: "DXY Trend",
                     detail: "\(signal.dxyTrend ?? "flat") (\(String(format: "%.1f", signal.dxyValue ?? 0)))",
-                    weight: "15%"
+                    weight: "15%",
+                    term: "dxy"
                 )
                 inputRow(
                     icon: "bitcoinsign.circle",
@@ -300,7 +303,8 @@ struct RotationDetailView: View {
                     icon: "waveform.path.ecg",
                     label: "VIX",
                     detail: String(format: "%.1f", signal.vixLevel ?? 0),
-                    weight: "10%"
+                    weight: "10%",
+                    term: "vix"
                 )
             }
         }
@@ -308,7 +312,7 @@ struct RotationDetailView: View {
         .glassCard(cornerRadius: ArkSpacing.Radius.lg)
     }
 
-    private func inputRow(icon: String, label: String, detail: String, weight: String) -> some View {
+    private func inputRow(icon: String, label: String, detail: String, weight: String, term: String? = nil) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 12))
@@ -319,6 +323,7 @@ struct RotationDetailView: View {
                 Text(label)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(textPrimary)
+                    .defineTerm(term ?? "", screen: "rotation")
                 Text(detail)
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)

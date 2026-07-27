@@ -1542,6 +1542,7 @@ struct SignalCard: View {
                     Text("Entry")
                         .font(AppFonts.caption12)
                         .foregroundColor(AppColors.textSecondary)
+                        .defineTerm("entry-zone", screen: "trade_hub")
                     Spacer()
                     Text("$\(formatSignalPrice(signal.entryZoneLow)) – $\(formatSignalPrice(signal.entryZoneHigh))")
                         .font(AppFonts.body14Medium)
@@ -1613,6 +1614,7 @@ struct SignalCard: View {
                         .padding(.vertical, 4)
                         .background(AppColors.accent.opacity(0.15))
                         .cornerRadius(8)
+                        .defineTerm("risk-reward-ratio", screen: "trade_hub", variant: .wrap)
                 }
 
                 // Bottom row: runner info + status

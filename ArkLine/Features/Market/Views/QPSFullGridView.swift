@@ -106,6 +106,7 @@ struct QPSFullGridView: View {
                 Text("Momentum Map")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .defineTerm("momentum-map", screen: "momentum_map")
                 Text("Assets where the USD and BTC pair agree")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)

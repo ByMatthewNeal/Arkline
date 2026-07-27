@@ -397,6 +397,7 @@ struct RiskLevelChartView: View {
                                 .foregroundColor(textPrimary)
                                 .textCase(.uppercase)
                                 .tracking(0.8)
+                                .defineTerm("risk-levels", screen: "risk_detail")
 
                             Spacer()
 

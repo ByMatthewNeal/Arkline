@@ -9,10 +9,12 @@ struct DictionaryTerm: Codable, Identifiable, Hashable {
     var category: String?
     var example: String?
     var relatedTerms: [String]?
+    var slug: String?
+    var aliases: [String]?
     let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, term, definition, category, example
+        case id, term, definition, category, example, slug, aliases
         case relatedTerms = "related_terms"
         case createdAt = "created_at"
     }

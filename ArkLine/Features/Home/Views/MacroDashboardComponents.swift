@@ -520,6 +520,7 @@ struct LearnMoreRow: View {
 struct SimpleIndicatorRow: View {
     let icon: String
     let title: String
+    var termKey: String? = nil
     let value: String
     var change: Double? = nil
     let status: String
@@ -546,6 +547,7 @@ struct SimpleIndicatorRow: View {
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(textPrimary)
+                    .defineTerm(termKey ?? "", screen: "macro_dashboard")
 
                 HStack(spacing: 6) {
                     Text(value)

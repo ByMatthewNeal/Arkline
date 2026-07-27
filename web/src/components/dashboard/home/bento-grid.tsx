@@ -41,6 +41,7 @@ import {
 import { AssetLogo } from './risk-levels-detail';
 import { useWatchlist } from '@/lib/hooks/use-watchlist';
 import { DraggableGrid, type ResponsiveLayouts } from '../shared/draggable-grid';
+import { DefineTerm } from '@/components/ui/define-term';
 
 type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
@@ -281,7 +282,7 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Gauge className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-warning" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Fear & Greed</span>
+              <DefineTerm termKey="fear-greed-index" screen="home_bento"><span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Fear & Greed</span></DefineTerm>
             </div>
             <Badge variant={variant}>{label}</Badge>
           </div>
@@ -720,7 +721,7 @@ function AssetRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Crypto Risk Levels</span>
+              <DefineTerm termKey="risk-levels" screen="home_bento"><span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Crypto Risk Levels</span></DefineTerm>
             </div>
             <span className="flex items-center gap-0.5 text-[10px] font-semibold text-ark-primary">See all<ChevronRight className="h-3 w-3" /></span>
           </div>
@@ -1241,7 +1242,7 @@ function StockRiskTile({ onOpen, onOpenParam }: { onOpen: () => void; onOpenPara
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Stock Risk Levels</span>
+              <DefineTerm termKey="risk-levels" screen="home_bento"><span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Stock Risk Levels</span></DefineTerm>
             </div>
             <span className="flex items-center gap-0.5 text-[10px] font-semibold text-ark-primary">See all<ChevronRight className="h-3 w-3" /></span>
           </div>

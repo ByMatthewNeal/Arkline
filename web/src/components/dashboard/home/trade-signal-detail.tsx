@@ -28,6 +28,7 @@ import { computeSummary, byDirection, byAsset, dailyBuckets, notableTrades } fro
 import { Markdown } from '@/components/dashboard/shared/markdown';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { formatCurrency, formatPercent, formatRelativeTime, localDateISO, cn } from '@/lib/utils/format';
+import { DefineTerm } from '@/components/ui/define-term';
 
 function useTradeSignalsFull() {
   return useQuery({
@@ -127,10 +128,12 @@ function TradeStructureChart({ signal, entryOverride }: { signal: TradeSignal; e
 }
 
 /* ── Signal parameters (iOS SignalParametersView parity) ── */
-function ParamRow({ label, children, pct }: { label: string; children: React.ReactNode; pct?: number | null }) {
+function ParamRow({ label, children, pct, term }: { label: string; children: React.ReactNode; pct?: number | null; term?: string }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-xs text-ark-text-tertiary">{label}</span>
+      <DefineTerm termKey={term ?? label} screen="trade_signal_detail">
+        <span className="text-xs text-ark-text-tertiary">{label}</span>
+      </DefineTerm>
       <span className="fig text-sm font-semibold text-ark-text">
         {children}
         {pct != null && (
@@ -156,17 +159,17 @@ function SignalParameters({ signal, price, entryOverride }: { signal: TradeSigna
       <p className="mt-0.5 text-[10px] text-ark-text-disabled">Pattern detected — not financial advice</p>
       <div className="mt-2 divide-y divide-ark-divider/60">
         {price != null && <ParamRow label="Current price" pct={vsEntry(price)}>{formatCurrency(price)}</ParamRow>}
-        <ParamRow label="Entry zone">{formatCurrency(signal.entry_zone_low)} – {formatCurrency(signal.entry_zone_high)}</ParamRow>
+        <ParamRow label="Entry zone" term="entry-zone">{formatCurrency(signal.entry_zone_low)} – {formatCurrency(signal.entry_zone_high)}</ParamRow>
         {cpLow != null && cpHigh != null && (
-          <ParamRow label="Consider profit" pct={null}>
+          <ParamRow label="Consider profit" pct={null} term="consider-profit-zone">
             {formatCurrency(cpLow)} – {formatCurrency(cpHigh)}
             <span className="ml-2 text-[10px] font-semibold text-ark-warning">30–75%</span>
           </ParamRow>
         )}
-        {signal.target_1 != null && <ParamRow label="Target 1" pct={vsEntry(signal.target_1)}>{formatCurrency(signal.target_1)}</ParamRow>}
-        {signal.target_2 != null && <ParamRow label="Target 2" pct={vsEntry(signal.target_2)}>{formatCurrency(signal.target_2)}</ParamRow>}
-        <ParamRow label="Stop loss" pct={vsEntry(signal.stop_loss)}>{formatCurrency(signal.stop_loss)}</ParamRow>
-        <ParamRow label="Risk / Reward">{signal.risk_reward_ratio != null ? `${signal.risk_reward_ratio.toFixed(1)}x` : '—'}</ParamRow>
+        {signal.target_1 != null && <ParamRow label="Target 1" pct={vsEntry(signal.target_1)} term="target-1">{formatCurrency(signal.target_1)}</ParamRow>}
+        {signal.target_2 != null && <ParamRow label="Target 2" pct={vsEntry(signal.target_2)} term="target-2">{formatCurrency(signal.target_2)}</ParamRow>}
+        <ParamRow label="Stop loss" pct={vsEntry(signal.stop_loss)} term="stop-loss">{formatCurrency(signal.stop_loss)}</ParamRow>
+        <ParamRow label="Risk / Reward" term="risk-reward-ratio">{signal.risk_reward_ratio != null ? `${signal.risk_reward_ratio.toFixed(1)}x` : '—'}</ParamRow>
       </div>
     </div>
   );

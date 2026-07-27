@@ -514,6 +514,7 @@ struct MultiCoinRiskSection: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Crypto Risk Levels")
+                        .defineTerm("risk-levels", screen: "home")
                         .font(size == .compact ? .subheadline : .title3)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 

@@ -32,6 +32,7 @@ struct RotationGaugeWidget: View {
                 Text("Rotation Signal")
                     .font(size == .compact ? .subheadline : .headline)
                     .foregroundColor(textPrimary)
+                    .defineTerm("rotation-signal", screen: "rotation")
 
                 Spacer()
             }
@@ -70,6 +71,7 @@ struct RotationGaugeWidget: View {
                         Text("Rotation Signal")
                             .font(size == .compact ? .subheadline : .headline)
                             .foregroundColor(textPrimary)
+                            .defineTerm("rotation-signal", screen: "rotation")
                     }
 
                     Spacer()

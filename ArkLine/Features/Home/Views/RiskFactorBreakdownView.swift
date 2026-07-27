@@ -136,6 +136,7 @@ struct RiskFactorRow: View {
                     Text(factor.type.rawValue)
                         .font(.subheadline)
                         .foregroundColor(factor.isAvailable ? textPrimary : textSecondary.opacity(0.5))
+                        .defineTerm(factor.type.dictionarySlug, screen: "risk_levels")
                 }
 
                 Spacer()
