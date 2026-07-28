@@ -400,9 +400,12 @@ struct RiskIndicatorRow: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
+                // Component names resolve by term or alias, so all 12 ArkLine
+                // Score inputs become explainable from this one call site.
                 Text(component.name)
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(textPrimary)
+                    .defineTerm(component.name, screen: "arkline_score")
 
                 Text("\(Int(component.weight * 100))% weight")
                     .font(.caption2)
