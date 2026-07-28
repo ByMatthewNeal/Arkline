@@ -30,6 +30,20 @@ struct DCAListView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Spells out the screen's central term in place. "DCA" is a
+                // navigationTitle and can't carry a tap target, so the one
+                // acronym a new user is most likely to stumble on would
+                // otherwise be the only thing here they can't look up.
+                HStack {
+                    Text("Dollar-cost averaging")
+                        .font(AppFonts.caption12)
+                        .foregroundColor(AppColors.textSecondary)
+                        .defineTerm("dca", screen: "dca", variant: .underline)
+                    Spacer()
+                }
+                .padding(.horizontal, ArkSpacing.lg)
+                .padding(.bottom, ArkSpacing.xs)
+
                 // Tab selector
                 HStack(spacing: ArkSpacing.xxs) {
                     ForEach(DCATab.allCases, id: \.self) { tab in

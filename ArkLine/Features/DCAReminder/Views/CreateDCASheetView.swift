@@ -249,6 +249,7 @@ struct CreateDCASheetView: View {
                     Text("Risk Level")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(textPrimary)
+                        .defineTerm("risk-levels", screen: "dca_create")
 
                     Text("Attach the risk level to your reminder")
                         .font(.system(size: 13))

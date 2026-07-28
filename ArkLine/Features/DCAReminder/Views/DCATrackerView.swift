@@ -246,6 +246,7 @@ struct DCATrackerView: View {
             Text("LIVE PORTFOLIO")
                 .font(AppFonts.caption12Medium)
                 .foregroundColor(AppColors.accent)
+                .defineTerm("portfolio", screen: "dca_tracker")
 
             portfolioRow(label: "\(plan.assetSymbol) Held", value: formatQuantity(plan.currentQty, symbol: plan.assetSymbol))
             portfolioRow(label: "\(plan.assetSymbol) Value", value: btcValue.asCurrency)
@@ -297,6 +298,7 @@ struct DCATrackerView: View {
             Text("PORTFOLIO")
                 .font(AppFonts.caption12Medium)
                 .foregroundColor(AppColors.accent)
+                .defineTerm("portfolio", screen: "dca_tracker")
 
             portfolioRow(label: "\(plan.assetSymbol) Held", value: formatQuantity(plan.currentQty, symbol: plan.assetSymbol))
             portfolioRow(label: "Current Value", value: positionValue.asCurrency)
@@ -368,6 +370,7 @@ struct DCATrackerView: View {
             Text("TRUE P&L")
                 .font(AppFonts.caption12Medium)
                 .foregroundColor(AppColors.accent)
+                .defineTerm("p-and-l", screen: "dca_tracker")
 
             portfolioRow(label: "Cost Basis", value: plan.totalCostBasis.asCurrency)
             portfolioRow(label: "Current Value", value: plan.currentValue(price: price).asCurrency)
@@ -379,6 +382,7 @@ struct DCATrackerView: View {
                 Text("Unrealized P&L")
                     .font(AppFonts.body14Medium)
                     .foregroundColor(textPrimary.opacity(0.6))
+                    .defineTerm("p-and-l", screen: "dca_tracker")
                 Spacer()
                 Text("\(isPositive ? "+" : "")\(pnl.asCurrency) (\(isPositive ? "+" : "")\(String(format: "%.1f", pnlPct))%)")
                     .font(AppFonts.body14Bold)
