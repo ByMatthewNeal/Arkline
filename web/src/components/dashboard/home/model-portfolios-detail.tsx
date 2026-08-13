@@ -2,14 +2,16 @@
 
 /**
  * Model Portfolios — full drawer detail (iOS ModelPortfolioDetailView parity):
- * strategy tabs (Core / Edge / Alpha), follow/unfollow persisted to the
- * profile (same column iOS reads), NAV vs. SPY benchmark chart, current
- * allocations, and the rebalance/trade log.
+ * strategy tabs (crypto Core/Edge, curated Equity, systematic Metals — the
+ * retired Alpha book is filtered out server-side), follow/unfollow persisted to
+ * the profile (same column iOS reads), NAV vs. SPY benchmark chart, a
+ * metals-aware positioning strip, current allocations, and a history section
+ * that toggles between the derived Position timeline and the raw rebalance log.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Area, AreaChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
-import { BellRing, Check, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { BellRing, Check, ArrowUpRight, ArrowDownRight, Circle, CheckCircle2 } from 'lucide-react';
 import { Badge, Skeleton, useToast } from '@/components/ui';
 import {
   useModelPortfolios,
@@ -19,15 +21,36 @@ import {
   useFollowedModelPortfolio,
   useFollowModelPortfolio,
 } from '@/lib/hooks/use-model-portfolios';
-import type { AllocationDetail } from '@/lib/api/model-portfolios';
+import { allocPct, buildPositionHistory, type AllocationDetail } from '@/lib/api/model-portfolios';
 import { formatPercent, cn } from '@/lib/utils/format';
 
 const RANGES = ['1M', '3M', '6M', '1Y'] as const;
 type Range = (typeof RANGES)[number];
 const RANGE_DAYS: Record<Range, number> = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365 };
 
-function allocPct(v: AllocationDetail | number): number {
-  return typeof v === 'number' ? v : Number(v.pct ?? 0);
+/** Friendly names for the metals book's synthetic tickers. */
+const ASSET_LABEL: Record<string, string> = { GOLD: 'Gold', CASH: 'Cash' };
+const assetLabel = (a: string) => ASSET_LABEL[a] ?? a;
+
+/** Gold valuation-zone → friendly label + tone. Mirrors iOS zoneLabel/zoneColor. */
+const ZONE_MAP: Record<string, { label: string; cls: string }> = {
+  deepValue: { label: 'Deep Value', cls: 'text-emerald-500' },
+  value: { label: 'Accumulate', cls: 'text-lime-500' },
+  fair: { label: 'Fair', cls: 'text-amber-500' },
+  elevated: { label: 'Elevated', cls: 'text-orange-500' },
+  overextended: { label: 'Stretched', cls: 'text-red-500' },
+};
+function zoneTone(zone: string | null | undefined): { label: string; cls: string } | null {
+  if (!zone) return null;
+  return ZONE_MAP[zone] ?? { label: zone, cls: 'text-ark-text-secondary' };
+}
+
+function fmtDate(iso: string, withYear = true) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(withYear ? { year: 'numeric' } : {}),
+  });
 }
 
 export function ModelPortfoliosDetail() {
@@ -35,6 +58,7 @@ export function ModelPortfoliosDetail() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [range, setRange] = useState<Range>('3M');
   const [scrubIdx, setScrubIdx] = useState<number | null>(null);
+  const [historyTab, setHistoryTab] = useState<'positions' | 'rebalances'>('positions');
   const toast = useToast();
 
   const active = portfolios?.find((p) => p.id === selectedId) ?? portfolios?.[0];
@@ -43,6 +67,12 @@ export function ModelPortfoliosDetail() {
   const { data: trades } = useModelPortfolioTrades(active?.id);
   const { data: followed } = useFollowedModelPortfolio();
   const follow = useFollowModelPortfolio();
+
+  // Derived position timeline (entered/exited/P&L per name) from trades + NAV.
+  const positions = useMemo(
+    () => buildPositionHistory(trades ?? [], nav ?? []),
+    [trades, nav],
+  );
 
   if (isLoading) {
     return (
@@ -91,6 +121,20 @@ export function ModelPortfoliosDetail() {
         .filter((a) => a.pct > 0.01)
         .sort((a, b) => b.pct - a.pct)
     : [];
+
+  // ── Metals-aware positioning strip ────────────────────────────────────────
+  const isMetals = active.asset_class === 'metal';
+  const sig = latest?.signal_context ?? null;
+  const zone = zoneTone(sig?.zone);
+  const goldRaw = latest?.allocations?.GOLD;
+  const goldDetail: AllocationDetail | null =
+    goldRaw && typeof goldRaw === 'object' ? goldRaw : null;
+  const goldCostBasis =
+    goldDetail?.entry_price && goldDetail.entry_price > 0 ? goldDetail.entry_price : null;
+  const goldSpot =
+    goldDetail?.value && goldDetail?.qty && goldDetail.qty > 0
+      ? goldDetail.value / goldDetail.qty
+      : null;
 
   const toggleFollow = () => {
     const next = isFollowed ? null : active.strategy;
@@ -223,6 +267,35 @@ export function ModelPortfoliosDetail() {
         )}
       </div>
 
+      {/* Metals positioning strip — gold valuation zone, target weight, RSI */}
+      {isMetals && (zone || sig?.target_gold != null || sig?.rsi != null) && (
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+            How the book is positioned
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-ark-text-tertiary">Gold zone</p>
+              <p className={cn('mt-0.5 text-sm font-semibold capitalize', zone?.cls ?? 'text-ark-text-secondary')}>
+                {zone?.label ?? '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-ark-text-tertiary">Target gold</p>
+              <p className="fig mt-0.5 text-sm font-semibold text-ark-text">
+                {sig?.target_gold != null ? `${Math.round(sig.target_gold * (sig.target_gold <= 1 ? 100 : 1))}%` : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-ark-text-tertiary">Gold RSI</p>
+              <p className="fig mt-0.5 text-sm font-semibold text-ark-text">
+                {sig?.rsi != null ? sig.rsi.toFixed(0) : '—'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Current allocations */}
       {allocations.length > 0 && (
         <div>
@@ -230,7 +303,7 @@ export function ModelPortfoliosDetail() {
           <div className="space-y-1.5">
             {allocations.map((a) => (
               <div key={a.asset} className="flex items-center gap-3">
-                <span className="w-14 shrink-0 text-sm font-semibold text-ark-text">{a.asset}</span>
+                <span className="w-14 shrink-0 text-sm font-semibold text-ark-text">{assetLabel(a.asset)}</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
                   <div className="h-full rounded-full bg-ark-primary/70" style={{ width: `${Math.min(100, a.pct)}%` }} />
                 </div>
@@ -238,15 +311,92 @@ export function ModelPortfoliosDetail() {
               </div>
             ))}
           </div>
+          {isMetals && goldCostBasis && (
+            <p className="mt-2 text-[11px] text-ark-text-tertiary">
+              Blended gold cost basis{' '}
+              <span className="fig font-semibold text-ark-text-secondary">
+                ${goldCostBasis.toLocaleString('en-US', { maximumFractionDigits: 0 })}/oz
+              </span>
+              {goldSpot != null && (
+                <>
+                  {' · spot '}
+                  <span className="fig font-semibold text-ark-text-secondary">
+                    ${goldSpot.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  </span>
+                </>
+              )}
+            </p>
+          )}
         </div>
       )}
 
-      {/* Trade log */}
-      {(trades ?? []).length > 0 && (
+      {/* History — Position timeline (default) or the raw rebalance log */}
+      {((trades ?? []).length > 0 || positions.length > 0) && (
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Rebalance history</p>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">History</p>
+            <div className="flex gap-1 rounded-full bg-ark-fill-secondary/60 p-0.5">
+              {(['positions', 'rebalances'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setHistoryTab(tab)}
+                  className={cn(
+                    'rounded-full px-2.5 py-0.5 text-[10px] font-semibold capitalize transition-colors',
+                    historyTab === tab ? 'bg-ark-primary text-white' : 'text-ark-text-tertiary hover:text-ark-text',
+                  )}
+                >
+                  {tab === 'positions' ? 'Positions' : 'Rebalances'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Position timeline */}
+          {historyTab === 'positions' && (
+            positions.length > 0 ? (
+              <div className="space-y-1.5">
+                {positions.map((p) => {
+                  const open = p.exitedDate == null;
+                  const pnl = p.pnlPct;
+                  return (
+                    <div
+                      key={`${p.ticker}-${p.enteredDate}-${p.exitedDate ?? 'open'}`}
+                      className="flex items-center gap-3 rounded-xl border border-ark-divider/70 px-3 py-2.5"
+                    >
+                      {open ? (
+                        <Circle className="h-4 w-4 shrink-0 text-ark-success" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-ark-text-tertiary" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-ark-text">{assetLabel(p.ticker)}</span>
+                          <Badge variant={open ? 'success' : 'default'}>{open ? 'Open' : 'Closed'}</Badge>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] text-ark-text-tertiary">
+                          {fmtDate(p.enteredDate)}
+                          {p.exitedDate ? ` → ${fmtDate(p.exitedDate)}` : ' → now'}
+                          {p.exitRationale ? ` · ${p.exitRationale}` : ''}
+                        </p>
+                      </div>
+                      {pnl != null && (
+                        <span className={cn('fig shrink-0 text-sm font-semibold', pnl >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+                          {pnl >= 0 ? '+' : ''}{pnl.toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="py-4 text-center text-xs text-ark-text-tertiary">No positions yet.</p>
+            )
+          )}
+
+          {/* Raw rebalance log */}
+          {historyTab === 'rebalances' && (
           <div className="space-y-2">
-            {(trades ?? []).map((t) => {
+            {(trades ?? []).slice(0, 20).map((t) => {
               const changes = Object.keys({ ...t.from_allocation, ...t.to_allocation })
                 .map((asset) => ({
                   asset,
@@ -285,6 +435,7 @@ export function ModelPortfoliosDetail() {
               );
             })}
           </div>
+          )}
         </div>
       )}
 

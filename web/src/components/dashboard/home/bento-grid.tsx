@@ -6,7 +6,7 @@ import {
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
   SlidersHorizontal, RotateCcw, ChevronDown, ChevronRight,
-  Eye, EyeOff,
+  Eye, EyeOff, GraduationCap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -42,6 +42,9 @@ import { AssetLogo } from './risk-levels-detail';
 import { useWatchlist } from '@/lib/hooks/use-watchlist';
 import { DraggableGrid, type ResponsiveLayouts } from '../shared/draggable-grid';
 import { DefineTerm } from '@/components/ui/define-term';
+import { useRouter } from 'next/navigation';
+import { useLearnPath } from '@/lib/learn/hooks';
+import { TRAILS } from '@/lib/learn/content';
 
 type WidgetKey =
   | 'portfolio' | 'briefing' | 'fearGreed' | 'arklineScore'
@@ -49,7 +52,7 @@ type WidgetKey =
   | 'assetRisk' | 'events' | 'favorites' | 'dca' | 'news'
   | 'vix' | 'dxy' | 'm2' | 'marketBreadth' | 'signalChanges' | 'stockRisk'
   | 'tradeSignals' | 'rotation' | 'modelPortfolio' | 'weeklyUpdate'
-  | 'usFutures' | 'perpPremium' | 'fedWatch';
+  | 'usFutures' | 'perpPremium' | 'fedWatch' | 'learn';
 
 const drawerTitles: Record<WidgetKey, string> = {
   portfolio: 'Portfolio',
@@ -78,6 +81,7 @@ const drawerTitles: Record<WidgetKey, string> = {
   usFutures: 'US Futures',
   perpPremium: 'Perp Premium',
   fedWatch: 'Fed Watch',
+  learn: 'Learn',
 };
 
 /* ── Lazy drawer widget renderer ── */
@@ -1011,6 +1015,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'modelPortfolio',x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'perpPremium',   x: 3, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'fedWatch',      x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'learn',         x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'events',        x: 0, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
@@ -1036,6 +1041,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'modelPortfolio',x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'perpPremium',   x: 2, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
     { i: 'fedWatch',      x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'learn',         x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'events',        x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
@@ -1061,6 +1067,7 @@ const HOME_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'modelPortfolio',x: 0, y: 63, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'perpPremium',   x: 0, y: 66, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
     { i: 'fedWatch',      x: 0, y: 69, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'learn',         x: 0, y: 72, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
@@ -1682,6 +1689,57 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
 // Note: 'portfolio' and 'briefing' are intentionally excluded — they're pinned
 // as full-width heroes at the top of the dashboard (PortfolioHero / BriefingHero),
 // matching the iOS app's Portfolio → Briefing → widgets order.
+// Guided-learning tile: mirrors the iOS "Continue learning" surface. Navigates
+// to the Learn section (or straight into the next lesson) rather than opening a
+// drawer, so it takes no drawer loader.
+function LearnTile() {
+  const router = useRouter();
+  const { next, done, total, mounted } = useLearnPath();
+  const trail = next ? TRAILS.find((t) => t.key === next.trailKey) : undefined;
+  const target = next ? `/dashboard/learn/${next.trailKey}?open=1` : '/dashboard/learn';
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  return (
+    <Tile onClick={() => router.push(target)} accentColor="var(--ark-info)">
+      <AccentLine color="var(--ark-info)" />
+      <div className="flex items-center gap-2">
+        <GraduationCap className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-info" />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Learn</span>
+      </div>
+
+      <div className="mt-1.5 flex flex-1 flex-col justify-between">
+        {mounted && next ? (
+          <>
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-ark-info">
+                {done === 0 ? 'Start your path' : 'Up next'}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-sm font-semibold text-ark-text">{next.title}</p>
+              {trail && <p className="mt-0.5 text-[11px] text-ark-text-tertiary">{trail.navTitle}</p>}
+            </div>
+            <div>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-ark-fill-secondary">
+                <div className="h-full rounded-full bg-ark-info" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="mt-1 text-[10px] text-ark-text-tertiary">{done} of {total} lessons</p>
+            </div>
+          </>
+        ) : mounted && !next ? (
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-sm font-semibold text-ark-text">Path complete</p>
+            <p className="mt-0.5 text-[11px] text-ark-text-tertiary">Review any lesson anytime</p>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col justify-center">
+            <p className="text-sm font-semibold text-ark-text">Guided lessons</p>
+            <p className="mt-0.5 text-[11px] text-ark-text-tertiary">Markets, crypto &amp; investing — at your pace</p>
+          </div>
+        )}
+      </div>
+    </Tile>
+  );
+}
+
 const widgetKeys: WidgetKey[] = [
   // App default order (after the Daily Briefing hero)
   'events', 'weeklyUpdate', 'usFutures', 'signalChanges',
@@ -1690,7 +1748,7 @@ const widgetKeys: WidgetKey[] = [
   // Remaining widgets
   'supply', 'favorites', 'dca', 'news',
   'vix', 'dxy', 'm2', 'stockRisk', 'tradeSignals',
-  'modelPortfolio', 'perpPremium', 'fedWatch',
+  'modelPortfolio', 'perpPremium', 'fedWatch', 'learn',
 ];
 
 const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void; onOpenParam?: (p: string) => void }>> = {
@@ -1720,6 +1778,7 @@ const tileComponents: Record<WidgetKey, React.ComponentType<{ onOpen: () => void
   usFutures: USFuturesTile,
   perpPremium: PerpPremiumTile,
   fedWatch: FedWatchTile,
+  learn: LearnTile,
 };
 
 

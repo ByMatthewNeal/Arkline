@@ -8,6 +8,7 @@ import {
   Briefcase,
   Bell,
   Radio,
+  GraduationCap,
   Settings,
   User,
   ChevronLeft,
@@ -28,6 +29,7 @@ const mainNav = [
   { label: 'Market', href: '/dashboard/market', icon: TrendingUp },
   { label: 'Portfolio', href: '/dashboard/portfolio', icon: Briefcase },
   { label: 'DCA', href: '/dashboard/dca', icon: Bell },
+  { label: 'Learn', href: '/dashboard/learn', icon: GraduationCap },
   { label: 'Broadcasts', href: '/dashboard/broadcasts', icon: Radio },
 ];
 
