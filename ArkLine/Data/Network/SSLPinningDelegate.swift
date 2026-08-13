@@ -59,7 +59,7 @@ final class SSLPinningDelegate: NSObject, URLSessionDelegate {
 
         #if DEBUG
         if !SSLPinningConfiguration.enforcePinningInDebug {
-            logWarning("SSL pinning: DEBUG mode — allowing connection to \(host) despite pin mismatch", category: .network)
+            logWarning("SSL pinning: DEBUG mode, allowing connection to \(host) despite pin mismatch", category: .network)
             completionHandler(.performDefaultHandling, nil)
             return
         }

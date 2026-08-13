@@ -92,6 +92,7 @@ struct BriefingArchiveView: View {
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textTertiary)
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 

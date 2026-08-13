@@ -56,6 +56,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     case perpPremium = "perp_premium"
     case rotationGauge = "rotation_gauge"
     case marketBreadth = "market_breadth"
+    case learnCard = "learn_card"
 
     var id: String { rawValue }
 
@@ -86,6 +87,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .perpPremium: return "Perp Premium"
         case .rotationGauge: return "Crypto/Equities Rotation"
         case .marketBreadth: return "Market Breadth"
+        case .learnCard: return "Learn"
         }
     }
 
@@ -116,6 +118,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .perpPremium: return "Directional bias in perpetual futures markets"
         case .rotationGauge: return "Daily signal showing when to favor crypto vs equities, with sector rankings"
         case .marketBreadth: return "% of tokens in uptrend with EMA crossover signals"
+        case .learnCard: return "A daily lesson or 'did you know' definition to learn from"
         }
     }
 
@@ -146,6 +149,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
         case .perpPremium: return "gauge.with.dots.needle.33percent"
         case .rotationGauge: return "arrow.left.arrow.right.circle"
         case .marketBreadth: return "chart.bar.xaxis"
+        case .learnCard: return "books.vertical"
         }
     }
 
@@ -164,7 +168,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
             return true
         case .marketTicker, .upcomingEvents, .marketMovers, .dcaReminders, .assetRiskLevel,
              .favorites, .aiMarketSummary, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate,
-             .perpPremium:
+             .perpPremium, .learnCard:
             return false
         }
     }
@@ -172,7 +176,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Whether this widget requires a Pro subscription
     var isPremium: Bool {
         switch self {
-        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth:
+        case .marketTicker, .upcomingEvents, .fearGreedIndex, .marketMovers, .dcaReminders, .dailyNews, .assetRiskLevel, .favorites, .aiMarketSummary, .usFutures, .marketDeck, .stockRiskLevel, .modelPortfolioUpdate, .marketBreadth, .learnCard:
             return false
         case .riskScore, .fedWatch, .vixIndicator, .dxyIndicator, .globalLiquidity, .macroDashboard, .supplyInProfit, .flashIntel, .qpsSignals, .perpPremium, .rotationGauge:
             return true
@@ -182,7 +186,7 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Default order for widgets. Model Portfolio sits right under Upcoming
     /// Events — "what the strategy is doing" is front-page content.
     static var defaultOrder: [HomeWidgetType] {
-        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .dcaReminders, .aiMarketSummary]
+        [.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .marketDeck, .usFutures, .qpsSignals, .rotationGauge, .flashIntel, .perpPremium, .riskScore, .fearGreedIndex, .marketMovers, .favorites, .marketBreadth, .macroDashboard, .vixIndicator, .dxyIndicator, .globalLiquidity, .supplyInProfit, .assetRiskLevel, .stockRiskLevel, .fedWatch, .dailyNews, .learnCard, .dcaReminders, .aiMarketSummary]
     }
 
     /// Widgets enabled by default (lean set for new users — rest is discoverable via Customize).
@@ -190,12 +194,12 @@ enum HomeWidgetType: String, CaseIterable, Codable, Identifiable {
     /// Market Ticker as the always-on bridge. Fear & Greed and Macro Dashboard remain one
     /// toggle away (their headline values scroll in the ticker).
     static var defaultEnabled: Set<HomeWidgetType> {
-        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .marketMovers, .marketDeck, .assetRiskLevel, .dailyNews])
+        Set([.marketTicker, .upcomingEvents, .modelPortfolioUpdate, .aiMarketSummary, .marketMovers, .marketDeck, .qpsSignals, .assetRiskLevel, .stockRiskLevel, .dailyNews, .learnCard])
     }
 
     /// Default widget sizes (compact where appropriate to keep the home screen tight)
     static var defaultSizes: [HomeWidgetType: WidgetSize] {
-        [.upcomingEvents: .compact, .dailyNews: .compact]
+        [.upcomingEvents: .compact, .dailyNews: .compact, .learnCard: .compact]
     }
 }
 

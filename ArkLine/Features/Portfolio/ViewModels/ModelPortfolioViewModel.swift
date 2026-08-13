@@ -1,5 +1,12 @@
 import Foundation
 
+/// Pinned to the main actor: SwiftUI reads these published collections
+/// (navByPortfolio, tradesByPortfolio, …) on the main thread while
+/// loadOverview/loadDetail write them after `await`. Without @MainActor the
+/// writes resume on a background thread, racing the reads and corrupting the
+/// dictionaries — which crashed as `-[NSIndexPath objectForKey:]` on a garbage
+/// pointer. @MainActor serializes all access so the race can't happen.
+@MainActor
 @Observable
 class ModelPortfolioViewModel {
     private let service: ModelPortfolioServiceProtocol
@@ -21,6 +28,7 @@ class ModelPortfolioViewModel {
 
     var cryptoPortfolios: [ModelPortfolio] { sorted(portfolios.filter { $0.isCrypto }) }
     var stockPortfolios: [ModelPortfolio] { sorted(portfolios.filter { $0.isStock }) }
+    var metalPortfolios: [ModelPortfolio] { sorted(portfolios.filter { $0.isMetal }) }
 
     var corePortfolio: ModelPortfolio? { portfolios.first { $0.isCore } }
     var edgePortfolio: ModelPortfolio? { portfolios.first { $0.isEdge } }

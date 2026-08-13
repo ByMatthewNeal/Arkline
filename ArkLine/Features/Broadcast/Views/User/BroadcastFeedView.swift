@@ -9,6 +9,15 @@ enum BroadcastDateFilter: String, CaseIterable {
     case thisMonth = "This Month"
 }
 
+// MARK: - Learn tab segments
+
+/// Splits the Learn screen so the evergreen library and the daily "From the Desk"
+/// feed each get their own space instead of the library burying the feed.
+enum LearnTab: String, CaseIterable {
+    case fromTheDesk = "From the Desk"
+    case lessons = "Lessons"
+}
+
 // MARK: - Date Section Key
 
 private struct DateSectionKey: Hashable, Comparable {
@@ -40,6 +49,9 @@ struct BroadcastFeedView: View {
     @State private var navigationPath = NavigationPath()
     @State private var showDictionary = false
     @State private var showMemberQA = false
+    @State private var learnTab: LearnTab = .fromTheDesk
+    /// Bumped when a lesson is completed so the curriculum progress UI refreshes.
+    @State private var progressVersion = 0
 
     // MARK: - Filtered Broadcasts
 
@@ -176,37 +188,355 @@ struct BroadcastFeedView: View {
         .id(appState.insightsNavigationReset)
     }
 
+    // Structured-learning launcher at the top of the Learn tab: the guided
+    // Foundations trail and the guides/glossary, sitting above the broadcasts feed
+    // (which is Matt teaching in real time).
+    private var learnColumns: [GridItem] {
+        [GridItem(.flexible(), spacing: ArkSpacing.sm), GridItem(.flexible(), spacing: ArkSpacing.sm)]
+    }
+
+    private func learnGroupLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 12, weight: .bold)).tracking(0.5)
+            .foregroundColor(AppColors.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
+    }
+
+    private var learnLauncher: some View {
+        // Re-read live each render; progressVersion forces a refresh when a lesson
+        // is completed (see the .onReceive below).
+        _ = progressVersion
+        let next = Curriculum.nextLesson()
+        let nextKind = next?.kind
+        let overall = Curriculum.overall()
+        return VStack(alignment: .leading, spacing: ArkSpacing.md) {
+            continueLearningCard(next: next, overall: overall)
+
+            NavigationLink { CurriculumPathView() } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.accent)
+                    Text("View your full path")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(AppColors.accent)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(AppColors.accent.opacity(0.6))
+                }
+                .padding(.horizontal, 4)
+            }
+            .buttonStyle(.plain)
+
+            learnGroupLabel("Start here")
+            learnCard {
+                NavigationLink { TrailOverviewView(kind: .beforeInvesting) } label: {
+                    learnRow(number: "01", title: "Before You Invest", subtitle: "The groundwork first", level: TrailKind.beforeInvesting.difficulty, kind: .beforeInvesting, isNext: nextKind == .beforeInvesting)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { StartHereTrailView() } label: {
+                    learnRow(number: "02", title: "Start Here", subtitle: "Learn the basics", level: TrailKind.foundations.difficulty, kind: .foundations, isNext: nextKind == .foundations)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { PilotChecklistView() } label: {
+                    learnRow(number: "03", title: "Get the Most", subtitle: "Habits that help")
+                }
+                .buttonStyle(.plain)
+            }
+
+            learnGroupLabel("Core skills")
+            learnCard {
+                NavigationLink { TrailOverviewView(kind: .behavioral) } label: {
+                    learnRow(number: "04", title: "Your Brain vs Your Money", subtitle: "Master your own mind", level: TrailKind.behavioral.difficulty, kind: .behavioral, isNext: nextKind == .behavioral)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { TrailOverviewView(kind: .scams) } label: {
+                    learnRow(number: "05", title: "Spotting Scams", subtitle: "Protect yourself", level: TrailKind.scams.difficulty, kind: .scams, isNext: nextKind == .scams)
+                }
+                .buttonStyle(.plain)
+            }
+
+            learnGroupLabel("By asset")
+            learnCard {
+                NavigationLink { TrailOverviewView(kind: .crypto) } label: {
+                    learnRow(number: "06", title: "Understanding Crypto", subtitle: "Go deeper on crypto", level: TrailKind.crypto.difficulty, kind: .crypto, isNext: nextKind == .crypto)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { TrailOverviewView(kind: .markets) } label: {
+                    learnRow(number: "07", title: "Understanding the Markets", subtitle: "Go deeper on stocks", level: TrailKind.markets.difficulty, kind: .markets, isNext: nextKind == .markets)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { TrailOverviewView(kind: .hedging) } label: {
+                    learnRow(number: "08", title: "Understanding Hedges", subtitle: "Gold, silver, and oil", level: TrailKind.hedging.difficulty, kind: .hedging, isNext: nextKind == .hedging)
+                }
+                .buttonStyle(.plain)
+            }
+
+            learnGroupLabel("Going deeper")
+            learnCard {
+                NavigationLink { TrailOverviewView(kind: .trading) } label: {
+                    learnRow(number: "09", title: "Trading vs Investing", subtitle: "Two different games", level: TrailKind.trading.difficulty, kind: .trading, isNext: nextKind == .trading)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { TrailOverviewView(kind: .macro) } label: {
+                    learnRow(number: "10", title: "Understanding Macro", subtitle: "The Fed, rates, and cycles", level: TrailKind.macro.difficulty, kind: .macro, isNext: nextKind == .macro)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { TrailOverviewView(kind: .fees) } label: {
+                    learnRow(number: "11", title: "Fees & Taxes", subtitle: "Keep more of what's yours", level: TrailKind.fees.difficulty, kind: .fees, isNext: nextKind == .fees)
+                }
+                .buttonStyle(.plain)
+                learnRowDivider
+                NavigationLink { TrailOverviewView(kind: .sizing) } label: {
+                    learnRow(number: "12", title: "How Much to Own", subtitle: "Position sizing & weight", level: TrailKind.sizing.difficulty, kind: .sizing, isNext: nextKind == .sizing)
+                }
+                .buttonStyle(.plain)
+            }
+
+            learnGroupLabel("Reference")
+            learnCard {
+                NavigationLink { ResourcesView() } label: {
+                    learnRow(number: "13", title: "Guides", subtitle: "Plain-English how-tos")
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .trailProgressChanged)) { _ in
+            progressVersion &+= 1
+        }
+    }
+
+    // MARK: - Continue-learning card (guided next step + overall progress)
+
+    @ViewBuilder
+    private func continueLearningCard(next: (kind: TrailKind, position: Int, title: String)?,
+                                      overall: (done: Int, total: Int)) -> some View {
+        if let next {
+            NavigationLink { TrailOverviewView(kind: next.kind) } label: {
+                HStack(spacing: 14) {
+                    learnProgressRing(done: overall.done, total: overall.total)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(overall.done == 0 ? "START LEARNING" : "CONTINUE")
+                            .font(.system(size: 10, weight: .bold)).tracking(0.6)
+                            .foregroundColor(AppColors.accent)
+                        Text(next.title)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                        Text("\(next.kind.navTitle) · \(overall.done) of \(overall.total) lessons")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(AppColors.accent)
+                }
+                .padding(16)
+                .background(RoundedRectangle(cornerRadius: 16).fill(AppColors.accent.opacity(0.08)))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppColors.accent.opacity(0.25), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        } else {
+            HStack(spacing: 14) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(AppColors.success)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("ALL LESSONS COMPLETE")
+                        .font(.system(size: 10, weight: .bold)).tracking(0.6)
+                        .foregroundColor(AppColors.success)
+                    Text("You've finished the whole path")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    Text("Revisit any trail below anytime.")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                Spacer(minLength: 8)
+            }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 16).fill(AppColors.success.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppColors.success.opacity(0.25), lineWidth: 1))
+        }
+    }
+
+    private func learnProgressRing(done: Int, total: Int) -> some View {
+        let pct = total > 0 ? Double(done) / Double(total) : 0
+        return ZStack {
+            Circle().stroke(AppColors.accent.opacity(0.15), lineWidth: 4)
+            Circle()
+                .trim(from: 0, to: pct)
+                .stroke(AppColors.accent, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text("\(Int(pct * 100))%")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(AppColors.accent)
+        }
+        .frame(width: 46, height: 46)
+    }
+
+    @ViewBuilder
+    private func learnCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.cardBackground(colorScheme)))
+    }
+
+    private var learnRowDivider: some View {
+        Divider().padding(.leading, 54)
+    }
+
+    private func learnRow(number: String, title: String, subtitle: String, level: TrailDifficulty? = nil,
+                          kind: TrailKind? = nil, isNext: Bool = false) -> some View {
+        let status = kind.map { Curriculum.status(for: $0) }
+        return HStack(spacing: 14) {
+            Text(number)
+                .font(.system(size: 20, weight: .bold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundColor(isNext ? AppColors.accent : AppColors.textTertiary.opacity(0.55))
+                .frame(width: 30, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            // Progress / next indicator
+            if isNext {
+                Text("NEXT")
+                    .font(.system(size: 9, weight: .bold)).tracking(0.4)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Capsule().fill(AppColors.accent))
+            } else if case .complete? = status {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15))
+                    .foregroundColor(AppColors.success)
+            } else if case .inProgress(let done, let total)? = status {
+                Text("\(done)/\(total)")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundColor(AppColors.accent)
+            } else if let level {
+                Text(level.label)
+                    .font(.system(size: 9, weight: .bold)).tracking(0.3)
+                    .foregroundColor(level.color)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Capsule().fill(level.color.opacity(0.15)))
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(AppColors.textTertiary)
+        }
+        .padding(.vertical, 13)
+        .padding(.horizontal, 14)
+        .contentShape(Rectangle())
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        HStack {
+            Text(text)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+            Spacer()
+        }
+        .padding(.top, 8)
+    }
+
+    private func learnTile(icon: String, title: String, subtitle: String, level: TrailDifficulty? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Badge on its own reserved row so it never collides with the title,
+            // and tiles without a badge still align (row keeps its height).
+            HStack {
+                Spacer()
+                if let level {
+                    Text(level.label)
+                        .font(.system(size: 9, weight: .bold)).tracking(0.3)
+                        .foregroundColor(level.color)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Capsule().fill(level.color.opacity(0.15)))
+                }
+            }
+            .frame(height: 18)
+
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Text(subtitle)
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textSecondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(AppColors.cardBackground(colorScheme)))
+    }
+
     private var broadcastContent: some View {
             ScrollViewReader { scrollProxy in
             ScrollView {
                 VStack(spacing: ArkSpacing.md) {
                     Color.clear.frame(height: 0).id("scrollTop")
-                    // Notification prompt banner
-                    if showNotificationPrompt {
-                        notificationPromptBanner
+
+                    Picker("", selection: $learnTab) {
+                        ForEach(LearnTab.allCases, id: \.self) { tab in
+                            Text(tab.rawValue).tag(tab)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .padding(.top, 4)
 
-                    if viewModel.isLoading && viewModel.published.isEmpty {
-                        loadingView
-                    } else if viewModel.published.isEmpty {
-                        emptyStateView
+                    if learnTab == .lessons {
+                        learnLauncher
+                        dictionaryTile
                     } else {
-                        // Filter bar — content tools lead; promos follow
-                        filterBar
-
-                        // Compact utility row: Dictionary + Member Q&A
-                        utilityRow
-
-                        // Pinned post (always at top)
-                        if let pinned = pinnedBroadcast {
-                            pinnedSection(pinned)
+                        // Notification prompt banner
+                        if showNotificationPrompt {
+                            notificationPromptBanner
                         }
 
-                        // Broadcast list (grouped)
-                        if unpinnedFilteredBroadcasts.isEmpty && pinnedBroadcast == nil {
-                            noResultsView
+                        if viewModel.isLoading && viewModel.published.isEmpty {
+                            loadingView
+                        } else if viewModel.published.isEmpty {
+                            emptyStateView
                         } else {
-                            groupedBroadcastList
+                            // Filter bar — content tools lead; promos follow
+                            filterBar
+
+                            // Member questions answered from the desk
+                            memberQATile
+
+                            // Pinned post (always at top)
+                            if let pinned = pinnedBroadcast {
+                                pinnedSection(pinned)
+                            }
+
+                            // Broadcast list (grouped)
+                            if unpinnedFilteredBroadcasts.isEmpty && pinnedBroadcast == nil {
+                                noResultsView
+                            } else {
+                                groupedBroadcastList
+                            }
                         }
                     }
                 }
@@ -319,7 +649,7 @@ struct BroadcastFeedView: View {
                     .foregroundColor(AppColors.textSecondary)
                     .font(ArkFonts.body)
 
-                TextField("Search insights...", text: $searchText)
+                TextField("Search posts...", text: $searchText)
                     .font(ArkFonts.body)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
 
@@ -632,20 +962,13 @@ struct BroadcastFeedView: View {
 
     /// Compact half-width tiles below the filter bar. The feed leads with
     /// insights; utilities are one glance down instead of owning the top slot.
-    private var utilityRow: some View {
-        HStack(spacing: ArkSpacing.sm) {
-            utilityTile(
-                icon: "character.book.closed.fill",
-                color: .purple,
-                title: "Dictionary"
-            ) { showDictionary = true }
-
-            utilityTile(
-                icon: "bubble.left.and.bubble.right.fill",
-                color: .teal,
-                title: "Member Q&A"
-            ) { showMemberQA = true }
-        }
+    // Dictionary (glossary) lives with the Lessons library.
+    private var dictionaryTile: some View {
+        utilityTile(
+            icon: "character.book.closed.fill",
+            color: .purple,
+            title: "Dictionary"
+        ) { showDictionary = true }
         .sheet(isPresented: $showDictionary) {
             NavigationStack {
                 DictionaryView()
@@ -656,6 +979,15 @@ struct BroadcastFeedView: View {
                     }
             }
         }
+    }
+
+    // Member Q&A lives with the From the Desk feed.
+    private var memberQATile: some View {
+        utilityTile(
+            icon: "bubble.left.and.bubble.right.fill",
+            color: .teal,
+            title: "Member Q&A"
+        ) { showMemberQA = true }
         .sheet(isPresented: $showMemberQA) {
             MemberQAView().environmentObject(appState)
         }

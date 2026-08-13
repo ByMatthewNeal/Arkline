@@ -277,7 +277,7 @@ struct PerformanceExportSheet: View {
         let totalPnl = signals.compactMap(\.outcomePct).reduce(0, +)
         let df = Self.exportDateFormatter
 
-        var text = "ArkLine Signal Performance — \(periodLabel)\n"
+        var text = "ArkLine Signal Performance, \(periodLabel)\n"
         text += String(repeating: "─", count: 40) + "\n\n"
         text += "Total P&L: \(String(format: "%+.1f%%", totalPnl))\n"
         text += "Win Rate: \(String(format: "%.0f%%", stats.hitRate)) (\(stats.wins)W / \(stats.losses)L"

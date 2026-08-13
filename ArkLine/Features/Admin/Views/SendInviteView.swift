@@ -202,7 +202,7 @@ struct SendInviteView: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(AppColors.accent)
 
-            Text("Free full access for 15 days — no payment required. Use for friends, supporters, or beta testers.")
+            Text("Free full access for 15 days, no payment required. Use for friends, supporters, or beta testers.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
 

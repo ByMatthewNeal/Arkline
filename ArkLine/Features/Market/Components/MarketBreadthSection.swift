@@ -178,15 +178,20 @@ struct MarketBreadthSection: View {
         }
 
         let service = ServiceContainer.shared.marketBreadthService
-        do {
-            async let latestFetch = service.fetchLatest()
-            async let historyFetch = service.fetchHistory(days: 30)
-            let (l, h) = try await (latestFetch, historyFetch)
+        // Fetch the two independently. The visible card only needs `latest`;
+        // `history` just feeds the sparkline. Previously a single combined
+        // `try await` meant a hiccup in EITHER query threw and blanked the whole
+        // widget, so a transient history-fetch failure hid the current reading.
+        async let latestFetch = service.fetchLatest()
+        async let historyFetch = service.fetchHistory(days: 30)
+        let l = try? await latestFetch
+        let h = (try? await historyFetch) ?? []
+        if let l {
             latest = l
             history = h
             Self.cache = (latest: l, history: h, fetchedAt: Date())
-        } catch {
-            logWarning("MarketBreadthSection: \(error.localizedDescription)", category: .network)
+        } else {
+            logWarning("MarketBreadthSection: latest breadth fetch returned nil/failed", category: .network)
         }
         isLoading = false
     }
@@ -321,13 +326,13 @@ private struct MarketBreadthInfoSheet: View {
                         .font(.headline)
                         .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                    infoRow("EMA 12 > EMA 21 (Bullish): Market breadth is improving — more tokens entering uptrends.")
+                    infoRow("EMA 12 > EMA 21 (Bullish): Market breadth is improving, more tokens entering uptrends.")
 
-                    infoRow("EMA 12 < EMA 21 (Bearish): Market breadth is declining — tokens losing momentum.")
+                    infoRow("EMA 12 < EMA 21 (Bearish): Market breadth is declining, tokens losing momentum.")
 
                     infoRow("Crossovers mark potential turning points. A bullish crossover suggests improving conditions; bearish crossover suggests deteriorating conditions.")
 
-                    infoRow("BTC price is shown for context — divergences between breadth and BTC price can signal narrowing or broadening rallies.")
+                    infoRow("BTC price is shown for context, divergences between breadth and BTC price can signal narrowing or broadening rallies.")
                 }
                 .padding()
             }

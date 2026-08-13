@@ -304,7 +304,7 @@ struct FlashIntelSection: View {
     private var emptyStateCard: some View {
         let conditions = marketConditions
         let headline = conditions?.headline ?? "Standing By"
-        let detail = conditions?.detail ?? "No high-conviction setups right now. The system only fires when price, trend, and momentum align — sitting out is part of the strategy."
+        let detail = conditions?.detail ?? "No high-conviction setups right now. The system only fires when price, trend, and momentum align, sitting out is part of the strategy."
 
         return VStack(spacing: 10) {
             HStack(spacing: 8) {
@@ -378,7 +378,7 @@ struct FlashIntelSection: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(AppColors.warning)
 
-                Text("\(eventNames) today. Expect sharp moves — manage risk carefully.")
+                Text("\(eventNames) today. Expect sharp moves, manage risk carefully.")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)
                     .lineLimit(2)
@@ -442,7 +442,7 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "arrow.triangle.merge",
                             title: "Multi-Timeframe Confluence",
-                            detail: "The zone must align across multiple timeframes — 1H/4H for scalps and 4H/Daily for swings. More overlapping levels = stronger pattern."
+                            detail: "The zone must align across multiple timeframes, 1H/4H for scalps and 4H/Daily for swings. More overlapping levels = stronger pattern."
                         )
 
                         conditionRow(
@@ -460,7 +460,7 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "scalemass",
                             title: "Minimum 1:1 Risk/Reward",
-                            detail: "Every pattern must have at least a 1:1 risk-to-reward ratio — raised to 2:1 in choppy market conditions. Strong patterns require 2:1+ with multi-timeframe confluence."
+                            detail: "Every pattern must have at least a 1:1 risk-to-reward ratio, raised to 2:1 in choppy market conditions. Strong patterns require 2:1+ with multi-timeframe confluence."
                         )
 
                         conditionRow(
@@ -472,7 +472,7 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "chart.bar.xaxis",
                             title: "Volume Profile Confluence",
-                            detail: "The pipeline computes a volume profile from recent 4H candles to identify high-volume nodes. When a node overlaps with the Fibonacci zone, it adds structural support/resistance — shown as the \"Vol Shelf\" badge."
+                            detail: "The pipeline computes a volume profile from recent 4H candles to identify high-volume nodes. When a node overlaps with the Fibonacci zone, it adds structural support/resistance, shown as the \"Vol Shelf\" badge."
                         )
 
                         conditionRow(
@@ -484,13 +484,13 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "rectangle.compress.vertical",
                             title: "Range Compression",
-                            detail: "When an asset's 24-hour trading range is significantly below its 14-day average — especially with low volume — the market is stalling. Signals generated in compressed conditions receive a score penalty and a higher threshold to publish. Shown as the \"Compressed\" badge."
+                            detail: "When an asset's 24-hour trading range is significantly below its 14-day average, especially with low volume, the market is stalling. Signals generated in compressed conditions receive a score penalty and a higher threshold to publish. Shown as the \"Compressed\" badge."
                         )
 
                         conditionRow(
                             icon: "bolt.horizontal",
                             title: "Momentum Filter",
-                            detail: "Blocks signals that go against strong recent momentum — no shorts during a 5%+ rally over 5 days, and no longs during a 5%+ selloff."
+                            detail: "Blocks signals that go against strong recent momentum, no shorts during a 5%+ rally over 5 days, and no longs during a 5%+ selloff."
                         )
 
                         conditionRow(
@@ -502,7 +502,7 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "timer",
                             title: "24-Hour Cooldown",
-                            detail: "After a signal is generated for an asset, the same asset won't produce another signal for 24 hours — preventing signal spam in volatile conditions."
+                            detail: "After a signal is generated for an asset, the same asset won't produce another signal for 24 hours, preventing signal spam in volatile conditions."
                         )
                     }
                     .padding(.horizontal, 20)
@@ -519,7 +519,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.accent)
                                 .frame(width: 24)
 
-                            Text("Every signal receives a **0–100 quality score** combining five factors: Confluence Depth (how many Fib levels overlap + multi-timeframe bonus), EMA Alignment Strength (spread and slope), Volume Confirmation Quality (wick rejection, volume spike, consecutive closes, volume shelf), Risk/Reward Ratio, and Macro Context (Bull Market Support Band regime). The score appears as a letter grade on each signal card — A+ (90+), A (80+), B+ (70+), B (60+). Signals scoring below B are filtered out. Use the Sort by Score chip to prioritize the strongest setups.")
+                            Text("Every signal receives a **0–100 quality score** combining five factors: Confluence Depth (how many Fib levels overlap + multi-timeframe bonus), EMA Alignment Strength (spread and slope), Volume Confirmation Quality (wick rejection, volume spike, consecutive closes, volume shelf), Risk/Reward Ratio, and Macro Context (Bull Market Support Band regime). The score appears as a letter grade on each signal card, A+ (90+), A (80+), B+ (70+), B (60+). Signals scoring below B are filtered out. Use the Sort by Score chip to prioritize the strongest setups.")
                                 .font(.system(size: 14))
                                 .foregroundColor(textPrimary.opacity(0.8))
                                 .lineSpacing(3)
@@ -536,19 +536,19 @@ struct SignalMethodologySheet: View {
                         conditionRow(
                             icon: "shield.lefthalf.filled",
                             title: "Stop Loss Placement",
-                            detail: "Your stop loss is placed just beyond the nearest key support or resistance level from the entry zone. These levels are derived from Fibonacci retracements of recent price swings — areas where price has historically reacted. For a long signal, the stop sits just below support. For a short, just above resistance. A small buffer is built in so normal price noise doesn't trigger it prematurely."
+                            detail: "Your stop loss is placed just beyond the nearest key support or resistance level from the entry zone. These levels are derived from Fibonacci retracements of recent price swings, areas where price has historically reacted. For a long signal, the stop sits just below support. For a short, just above resistance. A small buffer is built in so normal price noise doesn't trigger it prematurely."
                         )
 
                         conditionRow(
                             icon: "arrow.up.to.line",
                             title: "Breakeven & Trailing Stop",
-                            detail: "If the trade moves in your favor and hits the first target (T1), the stop automatically moves to breakeven, locking in a risk-free position. The remaining 50% of the position then trails with price — the stop follows 1R behind the best price reached, only moving in your favor, never back. This lets winners run while protecting gains."
+                            detail: "If the trade moves in your favor and hits the first target (T1), the stop automatically moves to breakeven, locking in a risk-free position. The remaining 50% of the position then trails with price, the stop follows 1R behind the best price reached, only moving in your favor, never back. This lets winners run while protecting gains."
                         )
 
                         conditionRow(
                             icon: "chart.line.flattrend.xyaxis",
                             title: "Consider Profit Zone",
-                            detail: "If price reaches 30–75% of the distance from entry to T1 before getting stopped out, the outcome is classified as a partial win rather than a full loss — recognizing that the trade idea was directionally correct even if the full target wasn't reached."
+                            detail: "If price reaches 30–75% of the distance from entry to T1 before getting stopped out, the outcome is classified as a partial win rather than a full loss, recognizing that the trade idea was directionally correct even if the full target wasn't reached."
                         )
                     }
                     .padding(.horizontal, 20)
@@ -601,7 +601,7 @@ struct SignalMethodologySheet: View {
 
                         stepRow(
                             number: "1",
-                            title: "Signal Appears — \"In Play\"",
+                            title: "Signal Appears, \"In Play\"",
                             detail: "The system detects a confirmed bounce at a high-confluence Fibonacci zone (wick rejection, volume spike, or consecutive closes) and creates the signal as In Play. Check the signal score and analysis to assess quality."
                         )
 
@@ -625,7 +625,7 @@ struct SignalMethodologySheet: View {
 
                         stepRow(
                             number: "5",
-                            title: "Expiry — No Trade",
+                            title: "Expiry, No Trade",
                             detail: "If neither target nor stop is hit within the time window (48h for scalps, 72h for swings), the signal expires and is closed at the current price. Patience is the edge."
                         )
 
@@ -635,7 +635,7 @@ struct SignalMethodologySheet: View {
                                 .foregroundColor(AppColors.warning)
                                 .frame(width: 24)
 
-                            Text("These are **limit entry** signals at key reversal levels — not market orders. If price has already moved well past the entry zone, skip the signal. The risk/reward is no longer favorable.")
+                            Text("These are **limit entry** signals at key reversal levels, not market orders. If price has already moved well past the entry zone, skip the signal. The risk/reward is no longer favorable.")
                                 .font(.system(size: 13))
                                 .foregroundColor(textPrimary.opacity(0.7))
                                 .lineSpacing(2)

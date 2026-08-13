@@ -298,7 +298,7 @@ enum NewsPreset: String, CaseIterable {
 
     var subtitle: String {
         switch self {
-        case .recommended: return "Best for most investors — broad market coverage"
+        case .recommended: return "Best for most investors, broad market coverage"
         case .cryptoFocused: return "Crypto, DeFi, and regulation news"
         case .macroTrader: return "Economy, geopolitics, and stocks"
         }

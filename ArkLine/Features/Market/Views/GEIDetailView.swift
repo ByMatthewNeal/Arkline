@@ -57,7 +57,7 @@ The Global Economy Index (GEI) is a composite leading indicator that combines 6 
 \u{2022} Contraction (GEI < 0): Headwinds for crypto. Tightening credit, rising unemployment, and falling sentiment typically lead to risk-off positioning and lower crypto prices.
 \u{2022} Extreme expansion (GEI > 1.5): The economy may be overheating. Watch for central bank tightening, which can trigger sharp corrections in risk assets.
 \u{2022} Extreme contraction (GEI < -1.5): Historically marks accumulation zones for long-term investors. Maximum fear often precedes policy responses (rate cuts, QE) that fuel the next rally.
-\u{2022} Use GEI alongside individual indicators — if GEI is positive but credit spreads are widening, the expansion may be fragile.
+\u{2022} Use GEI alongside individual indicators, if GEI is positive but credit spreads are widening, the expansion may be fragile.
 """)
 
                     // Data Sources
@@ -134,7 +134,7 @@ The Global Economy Index (GEI) is a composite leading indicator that combines 6 
                 .cornerRadius(12)
 
                 if gei.isExtreme {
-                    Text(gei.score > 0 ? "Extreme reading — potential top risk" : "Extreme reading — potential accumulation zone")
+                    Text(gei.score > 0 ? "Extreme reading, potential top risk" : "Extreme reading, potential accumulation zone")
                         .font(.caption)
                         .foregroundColor(gei.scoreColor)
                         .fontWeight(.medium)
@@ -221,11 +221,11 @@ The Global Economy Index (GEI) is a composite leading indicator that combines 6 
                 .font(.headline)
                 .foregroundColor(textPrimary)
 
-            GEILevelRow(range: "Above +1.5", description: "Overheated — watch for policy tightening", color: Color(hex: "22C55E"))
-            GEILevelRow(range: "+0.25 to +1.5", description: "Expansion — favorable for risk assets", color: Color(hex: "84CC16"))
-            GEILevelRow(range: "-0.25 to +0.25", description: "Neutral — mixed signals, no clear trend", color: Color(hex: "EAB308"))
-            GEILevelRow(range: "-1.5 to -0.25", description: "Contraction — headwinds for crypto", color: Color(hex: "F97316"))
-            GEILevelRow(range: "Below -1.5", description: "Deep contraction — potential accumulation zone", color: Color(hex: "EF4444"))
+            GEILevelRow(range: "Above +1.5", description: "Overheated, watch for policy tightening", color: Color(hex: "22C55E"))
+            GEILevelRow(range: "+0.25 to +1.5", description: "Expansion, favorable for risk assets", color: Color(hex: "84CC16"))
+            GEILevelRow(range: "-0.25 to +0.25", description: "Neutral, mixed signals, no clear trend", color: Color(hex: "EAB308"))
+            GEILevelRow(range: "-1.5 to -0.25", description: "Contraction, headwinds for crypto", color: Color(hex: "F97316"))
+            GEILevelRow(range: "Below -1.5", description: "Deep contraction, potential accumulation zone", color: Color(hex: "EF4444"))
         }
         .padding()
         .background(Color(.systemGray6))

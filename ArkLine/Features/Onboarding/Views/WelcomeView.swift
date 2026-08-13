@@ -8,23 +8,29 @@ struct WelcomeView: View {
     @State private var currentPage = 0
 
     private let slides: [WelcomeSlide] = [
+        // Slide 1, Positioning: professional-grade, multi-asset. Establishes
+        // ArkLine as an institutional-quality platform, not a consumer toy.
         WelcomeSlide(
             icon: "shield.checkered",
             assetImage: "ArkLineLogo",
-            title: "Invest with Confidence",
-            description: "Real-time risk scoring, macro indicators, and daily intel — so you always know when to act, hold, or wait.",
+            title: "The tools professionals use",
+            description: "Multi-factor risk scoring, macro regime detection, and AI briefings across crypto, stocks, and commodities. Institutional-grade signals in your pocket.",
             accentColor: AppColors.fillPrimary
         ),
+        // Slide 2, What the app does day-to-day. Notifications + monitoring.
         WelcomeSlide(
             icon: "bell.badge.fill",
-            title: "Always On, Always Informed",
-            description: "Live broadcasts, DCA reminders, and market alerts — so you never miss a move.",
+            title: "Always on, always informed",
+            description: "Live broadcasts, DCA reminders, and regime shifts. The market never stops moving. Neither do your signals.",
             accentColor: AppColors.success
         ),
+        // Slide 3, Hands agency back to the user (compliance-safe positioning
+        // without saying "we're not investment advisors" explicitly). Also
+        // anti-influencer framing that matches Matt's brand voice.
         WelcomeSlide(
             icon: "sparkles",
-            title: "Intel That Keeps Up",
-            description: "Risk models that recalibrate as markets move — so your read is never a day behind.",
+            title: "You make the call",
+            description: "No hype. No \"buy this, sell that.\" Just the data, sentiment, and signals institutional investors use. What you do with them is up to you.",
             accentColor: AppColors.info
         )
     ]
@@ -63,7 +69,7 @@ struct WelcomeView: View {
                 // Bottom buttons
                 VStack(spacing: ArkSpacing.sm) {
                     PrimaryButton(
-                        title: "Get Arkline Pro",
+                        title: "Start Free Trial",
                         action: { viewModel.beginSignUp() }
                     )
 

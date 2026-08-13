@@ -56,6 +56,29 @@ struct ModelPortfolioDetailView: View {
         return ((current - start) / start) * 100
     }
 
+    /// Inception (first NAV date) — the entry date for a buy-and-hold stock book.
+    private var inceptionDate: String? {
+        navHistory.first.map { formatNavDate($0.navDate) }
+    }
+
+    /// Per-position lifecycle (entered → exited, with rationale + realized P&L),
+    /// derived from the trade log so users can browse past calls over time.
+    private var positionCalls: [PositionCall] {
+        PositionHistoryBuilder.build(
+            trades: trades,
+            navHistory: navHistory,
+            latestNav: latestNav,
+            displayName: { assetDisplayName($0) },
+            color: { assetColor($0) }
+        )
+    }
+
+    /// Adaptive price formatting so both $1,163 stocks and $0.37 alts read cleanly.
+    private func formatEntryPrice(_ price: Double) -> String {
+        if price >= 1 { return String(format: "$%.2f", price) }
+        return String(format: "$%.4f", price)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: ArkSpacing.lg) {
@@ -84,14 +107,43 @@ struct ModelPortfolioDetailView: View {
 
                     // Decision Logic (why the portfolio is positioned this way)
                     decisionLogicCard
-                } else {
+                } else if portfolio.isStock {
                     // Stock market context (macro regime, VIX, leading sectors)
                     stockMarketContext
+                } else if portfolio.isMetal {
+                    // Metals: the valuation zone driving how much gold is held
+                    metalsContext
                 }
 
                 // Trade Log
                 if !trades.isEmpty {
                     tradeLog
+                }
+
+                // Position history — per-position entered → exited timeline
+                if !positionCalls.isEmpty {
+                    NavigationLink {
+                        PositionHistoryView(portfolioName: portfolio.name, calls: positionCalls)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 14))
+                                .foregroundColor(AppColors.accent)
+                            Text("View position history")
+                                .font(AppFonts.body14Medium)
+                                .foregroundColor(AppColors.accent)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12))
+                                .foregroundColor(AppColors.textTertiary)
+                        }
+                        .padding(ArkSpacing.md)
+                        .frame(maxWidth: .infinity)
+                        .background(AppColors.cardBackground(colorScheme))
+                        .cornerRadius(12)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // Stats
@@ -293,14 +345,14 @@ struct ModelPortfolioDetailView: View {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 12))
                     .foregroundColor(AppColors.warning)
-                Text("Hypothetical model portfolio — not investment advice")
+                Text("Hypothetical model portfolio, not investment advice")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(AppColors.textSecondary)
             }
 
             Text(portfolio.isStock
-                 ? "Curated model portfolio for educational and informational purposes only. Performance shown is simulated, not actual — history before launch is backtested with allocations chosen retrospectively. Past performance does not guarantee future results. Always do your own research and consult a licensed financial advisor before making investment decisions."
-                 : "AI-generated systematic strategy for educational and informational purposes only. Performance shown is simulated, not actual. Past performance does not guarantee future results. Always do your own research and consult a licensed financial advisor before making investment decisions.")
+                 ? "Curated model portfolio for educational and informational purposes only. Performance shown is simulated, not actual, history before launch is backtested with allocations chosen retrospectively. Past performance does not guarantee future results. Always do your own research and consult a licensed financial advisor before making investment decisions."
+                 : "AI-generated systematic strategy for educational and informational purposes only. Performance shown is simulated, not actual — history before launch is backtested. Past performance does not guarantee future results. Always do your own research and consult a licensed financial advisor before making investment decisions.")
                 .font(.system(size: 11))
                 .foregroundColor(AppColors.textSecondary.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)
@@ -453,6 +505,69 @@ struct ModelPortfolioDetailView: View {
         )
     }
 
+    // MARK: - Metals Context
+
+    private var metalsContext: some View {
+        let ctx = latestNav?.signalContext
+        return VStack(alignment: .leading, spacing: ArkSpacing.sm) {
+            Text("How This Book Is Positioned")
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+            Text("Gold is held as a long-term core (40–60% of the book). The systematic engine leans it heavier when gold is cheap versus its long-term trend, and lighter when it's stretched. It never sells the gold down.")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: ArkSpacing.md) {
+                metalStat(label: "Gold valuation", value: zoneLabel(ctx?.zone), color: zoneColor(ctx?.zone))
+                if let target = ctx?.targetGold {
+                    metalStat(label: "Target gold", value: "\(Int((target * 100).rounded()))%", color: AppColors.accent)
+                }
+                if let rsi = ctx?.rsi {
+                    metalStat(label: "RSI", value: String(format: "%.0f", rsi), color: AppColors.textSecondary)
+                }
+            }
+            .padding(.top, 2)
+        }
+        .padding(ArkSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(12)
+    }
+
+    private func metalStat(label: String, value: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .semibold)).tracking(0.3)
+                .foregroundColor(AppColors.textTertiary)
+            Text(value)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func zoneLabel(_ zone: String?) -> String {
+        switch zone {
+        case "deepValue": return "Deep Value"
+        case "value": return "Accumulate"
+        case "fair": return "Fair"
+        case "elevated": return "Elevated"
+        case "overextended": return "Stretched"
+        default: return "—"
+        }
+    }
+
+    private func zoneColor(_ zone: String?) -> Color {
+        switch zone {
+        case "deepValue": return AppColors.success
+        case "value": return Color(hex: "84CC16")
+        case "fair": return AppColors.warning
+        case "elevated": return Color(hex: "F97316")
+        case "overextended": return AppColors.error
+        default: return AppColors.textSecondary
+        }
+    }
+
     // MARK: - Stock Market Context
 
     /// Regime/VIX/sector context for stock portfolios (replaces the crypto QPS sections)
@@ -491,7 +606,7 @@ struct ModelPortfolioDetailView: View {
                     }
                 }
 
-                Text("Descriptive context only — this portfolio changes positions on thesis and valuation, not daily signals.")
+                Text("Descriptive context only, this portfolio changes positions on thesis and valuation, not daily signals.")
                     .font(.system(size: 10))
                     .foregroundColor(AppColors.textTertiary)
             }
@@ -542,18 +657,59 @@ struct ModelPortfolioDetailView: View {
     // MARK: - Allocation
 
     @ViewBuilder
+    /// Display percentages that always total exactly 100.0. Percentages are
+    /// recomputed from the exact dollar values (falling back to the stored pct)
+    /// and rounded to tenths via the largest-remainder method, so the shown
+    /// numbers never drift to 99.9 or 100.2 from per-position rounding.
+    private func normalizedPercents(_ allocations: [String: ModelPortfolioNav.AllocationDetail]) -> [String: Double] {
+        let items = allocations.map { (key: $0.key, raw: max(0, $0.value.value ?? $0.value.pct)) }
+        let total = items.reduce(0.0) { $0 + $1.raw }
+        guard total > 0 else { return allocations.mapValues { $0.pct } }
+        // Work in tenths of a percent (integers) so the parts sum to exactly 1000.
+        var parts = items.map { item -> (key: String, tenths: Int, rem: Double) in
+            let exact = item.raw / total * 1000.0
+            let floored = exact.rounded(.down)
+            return (item.key, Int(floored), exact - floored)
+        }
+        var shortfall = 1000 - parts.reduce(0) { $0 + $1.tenths }
+        for idx in parts.indices.sorted(by: { parts[$0].rem > parts[$1].rem }) where shortfall > 0 {
+            parts[idx].tenths += 1
+            shortfall -= 1
+        }
+        return Dictionary(uniqueKeysWithValues: parts.map { ($0.key, Double($0.tenths) / 10.0) })
+    }
+
     private func allocationSection(_ allocations: [String: ModelPortfolioNav.AllocationDetail]) -> some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
             Text("Current Allocation")
                 .font(AppFonts.title18SemiBold)
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
+            // Entry-date context. Stock books are buy-and-hold since inception, so
+            // every position shares one entry date. Crypto rotates, so per-position
+            // entry prices below reflect the current lot rather than a single date.
+            if let entered = inceptionDate {
+                Text((portfolio.isStock || portfolio.isMetal)
+                     ? "Backtested from \(entered) · simulated, not actual holdings"
+                     : "Entry prices reflect current positions")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textTertiary)
+            }
+
+            // Blended (weighted-average) cost basis of the gold lot.
+            if portfolio.isMetal, let goldCost = allocations["GOLD"]?.entryPrice {
+                Text("Blended cost basis: \(formatEntryPrice(goldCost))/oz")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textTertiary)
+            }
+
+            let pcts = normalizedPercents(allocations)
             let sorted = allocations.sorted { $0.value.pct > $1.value.pct }
 
             // Pie chart
             Chart(sorted, id: \.key) { asset, detail in
                 SectorMark(
-                    angle: .value("Allocation", detail.pct),
+                    angle: .value("Allocation", pcts[asset] ?? detail.pct),
                     innerRadius: .ratio(0.55),
                     angularInset: 1.5
                 )
@@ -583,6 +739,10 @@ struct ModelPortfolioDetailView: View {
                             Text("USDC / USDT")
                                 .font(AppFonts.caption12)
                                 .foregroundColor(AppColors.textTertiary)
+                        } else if let entry = detail.entryPrice {
+                            Text("Entry \(formatEntryPrice(entry))")
+                                .font(AppFonts.caption12)
+                                .foregroundColor(AppColors.textTertiary)
                         }
                     }
                     Spacer()
@@ -591,7 +751,7 @@ struct ModelPortfolioDetailView: View {
                             .font(.system(size: 12, weight: .medium, design: .rounded))
                             .foregroundColor(pnl >= 0 ? AppColors.success : AppColors.error)
                     }
-                    Text("\(detail.pct, specifier: "%.1f")%")
+                    Text("\(pcts[asset] ?? detail.pct, specifier: "%.1f")%")
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
                         .frame(width: 44, alignment: .trailing)
@@ -681,16 +841,16 @@ struct ModelPortfolioDetailView: View {
         let portfolioAggressive = btcRisk.contains("Very Low") || btcRisk.contains("Low")
 
         if sentimentBullish && portfolioDefensive {
-            return "Broad market sentiment is \(appetite.lowercased()), but BTC cycle risk is \(btcRisk.lowercased()) — the portfolio stays defensive until cycle risk eases."
+            return "Broad market sentiment is \(appetite.lowercased()), but BTC cycle risk is \(btcRisk.lowercased()), the portfolio stays defensive until cycle risk eases."
         }
         if sentimentBearish && portfolioAggressive {
-            return "Broad market sentiment is \(appetite.lowercased()), but BTC cycle risk is \(btcRisk.lowercased()) — the portfolio favors exposure because long-term positioning is still early-cycle."
+            return "Broad market sentiment is \(appetite.lowercased()), but BTC cycle risk is \(btcRisk.lowercased()), the portfolio favors exposure because long-term positioning is still early-cycle."
         }
         if qpsRiskAppetite >= 70 {
-            return "Broad strength across assets. Conditions align with adding or holding positions."
+            return "Broad strength across assets. Most signals are pointing the same way, a broadly risk-on backdrop."
         }
         if qpsRiskAppetite >= 55 {
-            return "More signals tilting bullish. Conditions lean toward selective exposure."
+            return "More signals are tilting bullish than bearish, a modestly constructive backdrop."
         }
         if qpsRiskAppetite >= 45 {
             return "Signals are split across assets. The portfolio relies on BTC cycle risk to navigate mixed conditions."
@@ -836,17 +996,17 @@ struct ModelPortfolioDetailView: View {
             if btcSignal != "bullish" {
                 if btcScore < bullishThreshold {
                     let strength = btcScore >= 55 ? "building" : btcScore >= 45 ? "flat" : "weak"
-                    b.append("BTC trend is \(strength) — not strong enough for bullish yet")
+                    b.append("BTC trend is \(strength), not strong enough for bullish yet")
                 }
                 if let qps = btcQps, !qps.above200Sma {
                     b.append("BTC below 200-day SMA (−8 penalty active)")
                 }
             }
             if macro.contains("Risk-Off") {
-                b.append("Macro regime is Risk-Off — exposure reduced")
+                b.append("Macro regime is Risk-Off, exposure reduced")
             }
             if ["High Risk", "Extreme Risk"].contains(btcRisk) {
-                b.append("BTC risk level is \(btcRisk) — defensive mode")
+                b.append("BTC risk level is \(btcRisk), defensive mode")
             }
             return b
         }()
@@ -941,11 +1101,11 @@ struct ModelPortfolioDetailView: View {
                     .frame(height: 6)
 
                     if score < bullishThreshold {
-                        Text("Trend building — \(portfolio.isCore ? "full crypto deployment" : portfolio.isEdge ? "30% BTC + alts" : "20% BTC + 40% alts") activates when trend turns strong")
+                        Text("Trend building, \(portfolio.isCore ? "full crypto deployment" : portfolio.isEdge ? "30% BTC + alts" : "20% BTC + 40% alts") activates when trend turns strong")
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.textSecondary)
                     } else {
-                        Text("Bullish — crypto deployment active")
+                        Text("Bullish, crypto deployment active")
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.success)
                     }
@@ -1208,8 +1368,8 @@ struct ModelPortfolioDetailView: View {
 
     private func assetDisplayName(_ asset: String) -> String {
         switch asset {
-        case "USDC": return "Cash"
-        case "PAXG": return "Gold"
+        case "USDC", "CASH": return "Cash"
+        case "PAXG", "GOLD": return "Gold"
         default: return asset
         }
     }
@@ -1252,6 +1412,7 @@ struct ModelPortfolioDetailView: View {
         case "MP": return Color(hex: "B4975A")
         case "VRT": return Color(hex: "FF6B00")
         case "CIFR": return Color(hex: "5B21B6")
+        case "GOLD": return Color(hex: "E4B926")
         case "CASH": return Color(hex: "8E8E93")
         default: return AppColors.accent
         }
@@ -1377,6 +1538,10 @@ struct ModelPortfolioDetailView: View {
                         .foregroundColor(AppColors.textTertiary)
                         .lineLimit(2)
                 }
+                // Make the whole row a tap target, not just the text/chevron
+                // pixels — otherwise taps in the empty gaps do nothing.
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -1529,5 +1694,214 @@ struct ModelPortfolioDetailView: View {
         case "elevated risk", "high risk", "extreme risk": return AppColors.error
         default: return AppColors.textPrimary(colorScheme)
         }
+    }
+}
+
+// MARK: - Position History
+//
+// A per-position lifecycle derived from the model portfolio's trade log so users
+// can browse past calls: when each position was entered, when it was exited (and
+// why), and its realized return. Held positions are shown as "Open". Nothing is
+// destructive — this is a read-only view over the permanent trade history.
+
+struct PositionCall: Identifiable {
+    let id = UUID()
+    let ticker: String
+    let displayName: String
+    let color: Color
+    let enteredDate: String      // raw yyyy-MM-dd
+    let exitedDate: String?      // nil = still held
+    let exitRationale: String?
+    let pnlPct: Double?
+    var isOpen: Bool { exitedDate == nil }
+}
+
+enum PositionHistoryBuilder {
+    static func build(
+        trades: [ModelPortfolioTrade],
+        navHistory: [ModelPortfolioNav],
+        latestNav: ModelPortfolioNav?,
+        displayName: (String) -> String,
+        color: (String) -> Color
+    ) -> [PositionCall] {
+        let sortedTrades = trades.sorted { $0.tradeDate < $1.tradeDate }
+        let sortedNav = navHistory.sorted { $0.navDate < $1.navDate }
+        let inception = sortedNav.first?.navDate ?? ""
+
+        func held(_ alloc: [String: Double]) -> Set<String> {
+            Set(alloc.filter { $0.value > 0 && $0.key != "CASH" }.keys)
+        }
+
+        var openedAt: [String: String] = [:]   // ticker -> entered date
+        var closed: [PositionCall] = []
+
+        // Positions already held before the first recorded change entered at inception.
+        if let first = sortedTrades.first {
+            for t in held(first.fromAllocation) { openedAt[t] = inception }
+        }
+
+        for trade in sortedTrades {
+            let before = held(trade.fromAllocation)
+            let after = held(trade.toAllocation)
+            for t in before.subtracting(after) {   // exits
+                let entered = openedAt[t] ?? trade.tradeDate
+                closed.append(PositionCall(
+                    ticker: t, displayName: displayName(t), color: color(t),
+                    enteredDate: entered, exitedDate: trade.tradeDate,
+                    exitRationale: trade.trigger.isEmpty ? nil : trade.trigger,
+                    pnlPct: realizedPnl(ticker: t, entered: entered, exited: trade.tradeDate, nav: sortedNav)
+                ))
+                openedAt[t] = nil
+            }
+            for t in after.subtracting(before) {    // entries
+                openedAt[t] = trade.tradeDate
+            }
+        }
+
+        // Currently-held tickers we never saw enter (e.g. no trades at all).
+        if let latest = latestNav {
+            for t in held(latest.allocations.mapValues { $0.pct }) where openedAt[t] == nil {
+                openedAt[t] = inception
+            }
+        }
+
+        var open: [PositionCall] = openedAt.map { (t, entered) in
+            PositionCall(
+                ticker: t, displayName: displayName(t), color: color(t),
+                enteredDate: entered, exitedDate: nil, exitRationale: nil,
+                pnlPct: latestNav?.allocations[t]?.pnlPct
+            )
+        }
+        open.sort { $0.enteredDate > $1.enteredDate }
+        closed.sort { ($0.exitedDate ?? "") > ($1.exitedDate ?? "") }
+        return open + closed
+    }
+
+    /// Realized return from the stored entry price to the last held price before exit.
+    private static func realizedPnl(ticker: String, entered: String, exited: String, nav: [ModelPortfolioNav]) -> Double? {
+        let entryPrice = nav.first(where: { $0.navDate >= entered && ($0.allocations[ticker]?.entryPrice ?? 0) > 0 })?
+            .allocations[ticker]?.entryPrice
+        let exitRow = nav.last(where: { $0.navDate < exited && ($0.allocations[ticker]?.qty ?? 0) > 0 })
+        guard let ep = entryPrice, ep > 0,
+              let v = exitRow?.allocations[ticker]?.value,
+              let q = exitRow?.allocations[ticker]?.qty, q > 0 else { return nil }
+        return ((v / q) - ep) / ep * 100
+    }
+}
+
+struct PositionHistoryView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let portfolioName: String
+    let calls: [PositionCall]
+
+    private var openCalls: [PositionCall] { calls.filter { $0.isOpen } }
+    private var closedCalls: [PositionCall] { calls.filter { !$0.isOpen } }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: ArkSpacing.md) {
+                Text("Every position this portfolio has held, past and present. This is a read-only history — nothing here is ever deleted.")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if !openCalls.isEmpty {
+                    header("Open Positions", openCalls.count)
+                    ForEach(openCalls) { row($0) }
+                }
+                if !closedCalls.isEmpty {
+                    header("Closed Positions", closedCalls.count)
+                    ForEach(closedCalls) { row($0) }
+                }
+                if calls.isEmpty {
+                    Text("No position history yet.")
+                        .font(AppFonts.body14)
+                        .foregroundColor(AppColors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, ArkSpacing.md)
+            .padding(.bottom, 100)
+        }
+        .background(AppColors.background(colorScheme))
+        .navigationTitle("Position History")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+
+    private func header(_ title: String, _ count: Int) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(AppFonts.title18SemiBold)
+                .foregroundColor(AppColors.textPrimary(colorScheme))
+            Text("\(count)")
+                .font(AppFonts.caption12)
+                .foregroundColor(AppColors.textTertiary)
+            Spacer()
+        }
+        .padding(.top, 6)
+    }
+
+    private func row(_ c: PositionCall) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle().fill(c.color).frame(width: 9, height: 9)
+                Text(c.displayName)
+                    .font(AppFonts.body14Bold)
+                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                if c.isOpen {
+                    Text("OPEN")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(AppColors.success)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(AppColors.success.opacity(0.15))
+                        .cornerRadius(4)
+                }
+                Spacer()
+                if let pnl = c.pnlPct {
+                    Text("\(pnl >= 0 ? "+" : "")\(pnl, specifier: "%.1f")%")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundColor(pnl >= 0 ? AppColors.success : AppColors.error)
+                }
+            }
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 11)).foregroundColor(AppColors.textTertiary)
+                Text("Entered \(formatDate(c.enteredDate))")
+                    .font(AppFonts.caption12).foregroundColor(AppColors.textSecondary)
+            }
+            if let exited = c.exitedDate {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 11)).foregroundColor(AppColors.textTertiary)
+                    Text("Exited \(formatDate(exited))")
+                        .font(AppFonts.caption12).foregroundColor(AppColors.textSecondary)
+                }
+            } else {
+                Text("Currently held")
+                    .font(AppFonts.caption12).foregroundColor(AppColors.textTertiary)
+            }
+            if let r = c.exitRationale {
+                Text("“\(r)”")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(AppColors.textTertiary)
+                    .italic()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(ArkSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppColors.cardBackground(colorScheme))
+        .cornerRadius(12)
+    }
+
+    private func formatDate(_ s: String) -> String {
+        let inF = DateFormatter(); inF.dateFormat = "yyyy-MM-dd"
+        let outF = DateFormatter(); outF.dateFormat = "MMM d, yyyy"
+        if let d = inF.date(from: s) { return outF.string(from: d) }
+        return s
     }
 }

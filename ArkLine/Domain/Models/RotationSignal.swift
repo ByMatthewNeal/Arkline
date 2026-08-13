@@ -138,45 +138,45 @@ extension RotationSignal {
     var actionBullets: [String] {
         switch regime {
         case .equityFavored:
-            var bullets = ["Equities outperforming — consider overweighting stocks vs crypto"]
+            var bullets = ["Equities are outperforming crypto over the tracked windows"]
             if let spy = spy30dReturn, spy > 5 {
-                bullets.append("SPY momentum is strong. Look at leading sectors for targeted exposure")
+                bullets.append("SPY momentum is strong, with leadership concentrated in a handful of sectors")
             }
             if let btc = btc30dReturn, btc < 0 {
-                bullets.append("Crypto is pulling back — trim or hold, don't add until momentum returns")
+                bullets.append("Crypto is pulling back, momentum hasn't turned back up yet")
             } else {
-                bullets.append("Crypto still positive but lagging — reduce relative allocation")
+                bullets.append("Crypto is still positive but lagging equities")
             }
             return bullets
 
         case .cryptoFavored:
-            var bullets = ["Crypto leading — consider overweighting BTC and high-conviction alts"]
+            var bullets = ["Crypto is leading, with BTC and higher-conviction alts setting the pace"]
             if let btc = btc30dReturn, btc > 10 {
-                bullets.append("BTC momentum is strong. Watch for altcoin rotation as dominance shifts")
+                bullets.append("BTC momentum is strong; historically, shifts in dominance have preceded rotation into altcoins")
             }
-            bullets.append("Equities may underperform near-term — reduce equity overweight")
+            bullets.append("Equities have been lagging crypto near-term")
             return bullets
 
         case .neutral:
-            var bullets = ["Neither asset class has clear leadership — maintain balanced allocation"]
+            var bullets = ["Neither asset class has clear leadership right now"]
             if let btc30 = btc30dReturn, let spy30 = spy30dReturn {
                 let delta = spy30 - btc30
                 if delta > 5 {
-                    bullets.append("Equities slightly leading — lean equities if momentum continues")
+                    bullets.append("Equities are slightly leading over the past month")
                 } else if delta < -5 {
-                    bullets.append("Crypto slightly leading — lean crypto if momentum continues")
+                    bullets.append("Crypto is slightly leading over the past month")
                 } else {
-                    bullets.append("Performance is converging — wait for a clearer signal before rotating")
+                    bullets.append("Performance between the two is converging, no clear divergence to point to")
                 }
             }
-            bullets.append("Focus on sector selection within equities and quality within crypto")
+            bullets.append("In neutral stretches, dispersion tends to show up more within each asset class than between them")
             return bullets
 
         case .riskOff:
             return [
-                "Elevated volatility — reduce exposure across both crypto and equities",
-                "Defensive sectors (utilities, staples, healthcare) outperforming growth",
-                "Preserve capital. Raise cash or add hedges until VIX subsides"
+                "Elevated volatility across both crypto and equities",
+                "Defensive sectors (utilities, staples, healthcare) are outperforming growth",
+                "Historically a risk-off backdrop that has persisted until volatility (VIX) subsides"
             ]
         }
     }

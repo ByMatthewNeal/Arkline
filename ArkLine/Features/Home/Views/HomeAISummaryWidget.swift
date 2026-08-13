@@ -161,6 +161,7 @@ struct HomeAISummaryWidget: View {
                     }
                     .foregroundColor(AppColors.accent)
                     .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -433,7 +434,7 @@ struct HomeAISummaryWidget: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundColor(AppColors.success)
-                    Text(feedbackSentWithNote ? "Feedback sent — regenerating briefing..." : "Feedback sent")
+                    Text(feedbackSentWithNote ? "Feedback sent, regenerating briefing..." : "Feedback sent")
                         .font(AppFonts.caption12)
                         .foregroundColor(textPrimary.opacity(0.5))
                 }
@@ -481,7 +482,7 @@ struct HomeAISummaryWidget: View {
                     showNoteField = false
                     feedbackSent = true
                 } label: {
-                    Text("Skip — just rate")
+                    Text("Skip, just rate")
                         .font(AppFonts.caption12)
                         .foregroundColor(textPrimary.opacity(0.35))
                 }
@@ -588,7 +589,7 @@ struct HomeAISummaryWidget: View {
         } else {
             // Not today's current briefing — say so like a human and point forward.
             // e.g. "Here's yesterday evening's briefing — your next one lands at 10:00 AM ET."
-            return "\(timeGreeting), \(userName). Here's \(context.descriptor) — your next one lands \(nextUpdatePhrase())."
+            return "\(timeGreeting), \(userName). Here's \(context.descriptor), your next one lands \(nextUpdatePhrase())."
         }
     }
 

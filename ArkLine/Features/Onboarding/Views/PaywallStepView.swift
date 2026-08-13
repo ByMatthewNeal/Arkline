@@ -40,7 +40,7 @@ struct PaywallStepView: View {
                         Text("Unlock Arkline Pro")
                             .font(AppFonts.title24)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
-                        Text("Full access to signals, model portfolios, daily briefings, and more.")
+                        Text("Full access to every signal, briefing, and macro read. Start with a 7-day free trial. Cancel anytime.")
                             .font(AppFonts.body14)
                             .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)

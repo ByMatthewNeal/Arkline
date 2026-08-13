@@ -104,7 +104,7 @@ Gold (XAU/USD) is the world's oldest safe-haven asset and inflation hedge. Centr
                     MacroInfoSection(title: "Impact on Crypto", content: """
 \u{2022} Short-term: Gold and crypto often move inversely. When gold surges on safe-haven demand, risk assets like crypto tend to sell off.
 \u{2022} Long-term: Both gold and Bitcoin are "hard money" assets that benefit from monetary debasement and inflation. They can rally together during periods of aggressive money printing.
-\u{2022} Central bank buying of gold signals distrust in the dollar system — a narrative that also supports Bitcoin's store-of-value thesis.
+\u{2022} Central bank buying of gold signals distrust in the dollar system, a narrative that also supports Bitcoin's store-of-value thesis.
 \u{2022} Watch for divergences: if gold rises while crypto falls, it suggests risk-off positioning. If both rise together, it suggests inflation/debasement fears.
 """)
 

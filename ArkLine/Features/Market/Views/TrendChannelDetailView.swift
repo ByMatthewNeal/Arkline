@@ -438,21 +438,21 @@ struct TrendChannelDetailView: View {
                 guideRow(
                     icon: "arrow.up",
                     color: AppColors.error,
-                    title: "Above 70 — Overbought",
+                    title: "Above 70, Overbought",
                     text: "Momentum is high. The index may be due for a pullback or a period of sideways consolidation."
                 )
 
                 guideRow(
                     icon: "minus",
                     color: AppColors.accent,
-                    title: "30 to 70 — Neutral",
+                    title: "30 to 70, Neutral",
                     text: "Normal trading range. The RSI alone doesn't signal a strong directional bias in this zone."
                 )
 
                 guideRow(
                     icon: "arrow.down",
                     color: AppColors.success,
-                    title: "Below 30 — Oversold",
+                    title: "Below 30, Oversold",
                     text: "Momentum is low. Historically, these levels have preceded bounces or the start of new uptrends."
                 )
 
@@ -662,15 +662,15 @@ struct IndexWidgetCard: View {
 
         switch zone {
         case .deepValue:
-            return "Well below trend (\(growthStr)). \(rsiStr) — historically strong accumulation zone."
+            return "Well below trend (\(growthStr)). \(rsiStr), historically strong accumulation zone."
         case .value:
-            return "Below trend (\(growthStr)). \(rsiStr) — favorable risk/reward for long-term positioning."
+            return "Below trend (\(growthStr)). \(rsiStr), favorable risk/reward for long-term positioning."
         case .fair:
-            return "At trend (\(growthStr)). \(rsiStr) — trading near fair value on the long-term growth path."
+            return "At trend (\(growthStr)). \(rsiStr), trading near fair value on the long-term growth path."
         case .elevated:
-            return "Above trend (\(growthStr)). \(rsiStr) — gains may be limited, consider caution."
+            return "Above trend (\(growthStr)). \(rsiStr), gains may be limited, consider caution."
         case .overextended:
-            return "Stretched above trend (\(growthStr)). \(rsiStr) — historically precedes pullbacks."
+            return "Stretched above trend (\(growthStr)). \(rsiStr), historically precedes pullbacks."
         }
     }
 

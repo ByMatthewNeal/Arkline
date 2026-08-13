@@ -328,7 +328,7 @@ struct DailyMarketUpdateCardContent: View {
                         Text("DCA Risk Level")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(textSecondary)
-                        Text("Accumulation guide — not trade advice")
+                        Text("Accumulation guide, not trade advice")
                             .font(.system(size: 8, weight: .regular))
                             .foregroundColor(textMuted)
                     }

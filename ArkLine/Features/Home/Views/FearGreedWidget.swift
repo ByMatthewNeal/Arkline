@@ -5,44 +5,44 @@ struct FearGreedWidget: View {
 
     var body: some View {
         NavigationLink(destination: FearGreedDetailView(index: index)) {
-            VStack(spacing: 16) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Fear & Greed Index")
-                            .font(.headline)
-                            .foregroundColor(.white)
+                VStack(spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Fear & Greed Index")
+                                .font(.headline)
+                                .foregroundColor(.white)
 
-                        Text(index.level.rawValue)
-                            .font(.subheadline)
-                            .foregroundColor(Color(hex: index.level.color))
+                            Text(index.level.rawValue)
+                                .font(.subheadline)
+                                .foregroundColor(Color(hex: index.level.color))
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(Color(hex: "A1A1AA"))
                     }
 
-                    Spacer()
+                    // Gauge
+                    FearGreedGauge(value: index.value)
 
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(Color(hex: "A1A1AA"))
+                    // Stats Row
+                    HStack(spacing: 0) {
+                        FearGreedStatItem(label: "Yesterday", value: index.previousClose.map { "\($0)" } ?? "—")
+                        Divider()
+                            .frame(height: 30)
+                            .background(Color(hex: "2A2A2A"))
+                        FearGreedStatItem(label: "Last Week", value: index.weekAgo.map { "\($0)" } ?? "—")
+                        Divider()
+                            .frame(height: 30)
+                            .background(Color(hex: "2A2A2A"))
+                        FearGreedStatItem(label: "Last Month", value: index.monthAgo.map { "\($0)" } ?? "—")
+                    }
                 }
-
-                // Gauge
-                FearGreedGauge(value: index.value)
-
-                // Stats Row
-                HStack(spacing: 0) {
-                    FearGreedStatItem(label: "Yesterday", value: index.previousClose.map { "\($0)" } ?? "—")
-                    Divider()
-                        .frame(height: 30)
-                        .background(Color(hex: "2A2A2A"))
-                    FearGreedStatItem(label: "Last Week", value: index.weekAgo.map { "\($0)" } ?? "—")
-                    Divider()
-                        .frame(height: 30)
-                        .background(Color(hex: "2A2A2A"))
-                    FearGreedStatItem(label: "Last Month", value: index.monthAgo.map { "\($0)" } ?? "—")
-                }
+                .padding(20)
+                .glassCard(cornerRadius: 16)
             }
-            .padding(20)
-            .glassCard(cornerRadius: 16)
-        }
         .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Fear and Greed Index, \(index.value) out of 100, \(index.level.rawValue)")
@@ -422,11 +422,11 @@ struct FearGreedDetailView: View {
                 .tracking(1)
 
             ForEach([
-                ("0–24", "Extreme Fear", "#EF4444", "Market panic — historically a buying opportunity"),
-                ("25–44", "Fear", "#F97316", "Investors are worried — caution dominates"),
+                ("0–24", "Extreme Fear", "#EF4444", "Market panic, historically a buying opportunity"),
+                ("25–44", "Fear", "#F97316", "Investors are worried, caution dominates"),
                 ("45–55", "Neutral", "#EAB308", "No strong bias in either direction"),
-                ("56–75", "Greed", "#84CC16", "Optimism rising — markets trending up"),
-                ("76–100", "Extreme Greed", "#22C55E", "Euphoria — historically a time to be cautious"),
+                ("56–75", "Greed", "#84CC16", "Optimism rising, markets trending up"),
+                ("76–100", "Extreme Greed", "#22C55E", "Euphoria, historically a time to be cautious"),
             ], id: \.0) { range, label, color, desc in
                 HStack(spacing: 10) {
                     Circle()

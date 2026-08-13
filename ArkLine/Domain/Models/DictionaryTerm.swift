@@ -11,10 +11,13 @@ struct DictionaryTerm: Codable, Identifiable, Hashable {
     var relatedTerms: [String]?
     var slug: String?
     var aliases: [String]?
+    /// 1 = beginner, 2 = intermediate, 3 = advanced. Drives the Home "Did you
+    /// know?" card so it starts easy and progresses. Defaults to intermediate.
+    var difficulty: Int?
     let createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, term, definition, category, example, slug, aliases
+        case id, term, definition, category, example, slug, aliases, difficulty
         case relatedTerms = "related_terms"
         case createdAt = "created_at"
     }

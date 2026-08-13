@@ -295,7 +295,7 @@ private struct InvestmentInsightCard: View {
             DisclosureGroup("Understanding the Indicators", isExpanded: $showGuide) {
                 VStack(alignment: .leading, spacing: ArkSpacing.md) {
                     guideRow(title: "Trend Score", description: "Measures price direction and momentum on a 0-100 scale using moving average alignment and trend strength. Scores above 60 indicate a healthy uptrend; below 40 suggests bearish pressure.")
-                    guideRow(title: "Valuation Score", description: "Gauges how attractive the current entry point is (0-100). Higher scores mean price is oversold or near support — a potentially better value. Lower scores suggest price is extended.")
+                    guideRow(title: "Valuation Score", description: "Gauges how attractive the current entry point is (0-100). Higher scores mean price is oversold or near support, a potentially better value. Lower scores suggest price is extended.")
                     guideRow(title: "RSI (Relative Strength Index)", description: "A momentum oscillator ranging from 0-100. Readings below 30 indicate oversold conditions (potential buy zone), while above 70 signals overbought territory (potential sell zone). Mid-range values suggest neutral momentum.")
                     guideRow(title: "Market Outlook", description: "Compares short-term and long-term sentiment. When both align bullish or bearish, conviction is higher. Divergence between timeframes often signals a trend transition.")
 
@@ -336,36 +336,36 @@ private struct InvestmentInsightCard: View {
 
         // Oversold opportunity
         if rsiZone == .oversold || (valuation >= 70 && trend >= 40) {
-            return "Oversold conditions suggest a potential bounce — watch for trend confirmation before adding exposure."
+            return "Oversold conditions, historically a zone where bounces have formed, though the trend hasn't confirmed a turn yet."
         }
 
         // Overbought with strong trend
         if rsiZone == .overbought && trend >= 60 {
-            return "Trend is strong but entry is stretched — waiting for a pullback may offer better risk/reward."
+            return "Trend is strong but price is stretched here, historically a spot where pullbacks have been more common."
         }
 
         // Bullish aligned
         if trend >= 60 && valuation >= 50 && (shortTerm == .bullish || shortTerm == .stronglyBullish) {
-            return "Momentum and valuation both favor accumulation. Trend support and sentiment are aligned to the upside."
+            return "Momentum and valuation are both constructive, trend support and sentiment are aligned to the upside."
         }
 
         // Bearish aligned
         if trend <= 40 && valuation <= 40 && (shortTerm == .bearish || shortTerm == .stronglyBearish) {
-            return "Indicators suggest caution — consider reducing exposure or waiting for a reversal signal before entering."
+            return "Indicators are tilting cautious, trend, valuation, and sentiment are aligned to the downside for now."
         }
 
         // Above support bands with decent trend
         if bands == .aboveBoth && trend >= 50 {
-            return "Price is holding above bull market support bands. The broader trend remains constructive for long-term positioning."
+            return "Price is holding above bull market support bands, the broader trend remains constructive."
         }
 
         // Below support bands
         if bands == .belowBoth && trend <= 50 {
-            return "Price has broken below bull market support bands. Risk is elevated — patience may be warranted until support is reclaimed."
+            return "Price has broken below bull market support bands. Risk is elevated until support is reclaimed."
         }
 
         // Default: mixed/neutral
-        return "Signals are mixed — a wait-and-see approach is reasonable until clearer trend alignment emerges."
+        return "Signals are mixed, no clear trend alignment right now."
     }
 }
 

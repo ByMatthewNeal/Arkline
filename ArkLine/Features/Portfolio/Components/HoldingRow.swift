@@ -22,7 +22,7 @@ struct HoldingRow: View {
                 CoinIconView(
                     symbol: holding.symbol,
                     size: 44,
-                    iconUrl: AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
+                    iconUrl: holding.iconUrl ?? AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
                 )
             }
 
@@ -94,7 +94,7 @@ struct HoldingRowCompact: View {
                 CoinIconView(
                     symbol: holding.symbol,
                     size: 36,
-                    iconUrl: AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
+                    iconUrl: holding.iconUrl ?? AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
                 )
             }
 

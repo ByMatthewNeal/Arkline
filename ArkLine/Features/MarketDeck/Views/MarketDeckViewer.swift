@@ -418,7 +418,7 @@ struct DeckFeedbackBar: View {
                         }
                     }
 
-                    Button("Skip — just rate") {
+                    Button("Skip, just rate") {
                         submitWithNote()
                     }
                     .font(AppFonts.footnote10)

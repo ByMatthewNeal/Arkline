@@ -36,7 +36,7 @@ enum EntryStrategy: String, CaseIterable, Identifiable {
         switch self {
         case .aggressive: return "Enter at zone edge, first touch"
         case .midpoint: return "Center of the zone"
-        case .optimal: return "0.705 level — highest reversal probability"
+        case .optimal: return "0.705 level, highest reversal probability"
         case .conservative: return "Deep zone entry, tightest stop"
         case .split: return "40% early + 60% deep, averaged"
         }

@@ -425,11 +425,11 @@ enum PerpetualPremiumSentiment: String, Codable {
 
     var explanation: String {
         switch self {
-        case .strongLongBias: return "Longs paying heavy premium — crowded, watch for squeeze"
-        case .longBias: return "Perps trading above spot — bullish positioning"
-        case .neutral: return "Balanced — no strong directional bias in derivatives"
-        case .shortBias: return "Perps trading below spot — bearish positioning"
-        case .strongShortBias: return "Shorts paying heavy premium — crowded, watch for squeeze"
+        case .strongLongBias: return "Longs paying heavy premium, crowded, watch for squeeze"
+        case .longBias: return "Perps trading above spot, bullish positioning"
+        case .neutral: return "Balanced, no strong directional bias in derivatives"
+        case .shortBias: return "Perps trading below spot, bearish positioning"
+        case .strongShortBias: return "Shorts paying heavy premium, crowded, watch for squeeze"
         }
     }
 }

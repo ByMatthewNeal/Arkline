@@ -7,6 +7,7 @@ struct StockRiskLevelsScreen: View {
     @State private var selectedSymbol: String?
 
     var body: some View {
+        @Bindable var viewModel = viewModel
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if viewModel.isLoading && viewModel.rows.isEmpty {
@@ -32,13 +33,17 @@ struct StockRiskLevelsScreen: View {
                         .padding(.horizontal, ArkSpacing.lg)
                         .padding(.bottom, ArkSpacing.xs)
 
-                    ForEach(viewModel.bucketed, id: \.band) { section in
-                        bandSection(band: section.band, items: section.items)
-                    }
+                    if viewModel.hasNoSearchResults {
+                        noMatchesState
+                    } else {
+                        ForEach(viewModel.bucketed, id: \.band) { section in
+                            bandSection(band: section.band, items: section.items)
+                        }
 
-                    // Failed stocks section
-                    if !viewModel.failedStocks.isEmpty {
-                        failedSection
+                        // Failed stocks section
+                        if !viewModel.filteredFailedStocks.isEmpty {
+                            failedSection
+                        }
                     }
 
                     Spacer().frame(height: 100)
@@ -48,6 +53,12 @@ struct StockRiskLevelsScreen: View {
         .background(AppColors.background(colorScheme))
         .navigationTitle("Stock Risk Levels")
         .navigationBarTitleDisplayMode(.large)
+        .searchable(
+            text: $viewModel.searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search name or ticker"
+        )
+        .autocorrectionDisabled()
         .refreshable { await viewModel.refresh() }
         .task { await viewModel.loadAll() }
         .sheet(item: Binding(
@@ -226,6 +237,24 @@ struct StockRiskLevelsScreen: View {
         .padding(.top, 60)
     }
 
+    private var noMatchesState: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 28))
+                .foregroundColor(AppColors.textTertiary)
+            Text("No matches for “\(viewModel.searchText)”")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+            Text("Try a ticker (e.g. AAPL) or a name.")
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
     private var failedSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
             HStack(spacing: 6) {
@@ -239,7 +268,7 @@ struct StockRiskLevelsScreen: View {
             .padding(.horizontal, ArkSpacing.lg)
 
             VStack(spacing: 0) {
-                ForEach(Array(viewModel.failedStocks.enumerated()), id: \.element.assetId) { index, config in
+                ForEach(Array(viewModel.filteredFailedStocks.enumerated()), id: \.element.assetId) { index, config in
                     HStack(spacing: 12) {
                         if let logoURL = config.logoURL {
                             KFImage(logoURL)
@@ -272,7 +301,7 @@ struct StockRiskLevelsScreen: View {
                     .padding(.horizontal, ArkSpacing.md)
                     .padding(.vertical, 10)
 
-                    if index < viewModel.failedStocks.count - 1 {
+                    if index < viewModel.filteredFailedStocks.count - 1 {
                         Divider()
                             .padding(.leading, 56)
                             .padding(.horizontal, ArkSpacing.lg)

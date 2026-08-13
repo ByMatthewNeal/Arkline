@@ -513,10 +513,12 @@ struct MultiCoinRiskSection: View {
             // Section header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Crypto Risk Levels")
-                        .defineTerm("risk-levels", screen: "home")
-                        .font(size == .compact ? .subheadline : .title3)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    HStack(spacing: 5) {
+                        Text("Crypto Risk Levels")
+                            .font(size == .compact ? .subheadline : .title3)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                        ExplainButton(explainer: .cryptoRisk)
+                    }
 
                     Text("Regression with 7-factor cross-check")
                         .font(.system(size: 11))
@@ -538,6 +540,8 @@ struct MultiCoinRiskSection: View {
                 }
             }
             .padding(.horizontal, ArkSpacing.xs)
+
+            ExplainNudge(explainer: .cryptoRisk)
 
             // Horizontal scrolling risk cards
             ScrollView(.horizontal, showsIndicators: false) {
@@ -775,9 +779,12 @@ struct StockRiskLevelSection: View {
             // Section header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Stock Risk Levels")
-                        .font(size == .compact ? .subheadline : .title3)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    HStack(spacing: 5) {
+                        Text("Stock Risk Levels")
+                            .font(size == .compact ? .subheadline : .title3)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                        ExplainButton(explainer: .stockRisk)
+                    }
 
                     Text("Trend & Momentum Risk")
                         .font(.system(size: 11))
@@ -799,6 +806,8 @@ struct StockRiskLevelSection: View {
                 }
             }
             .padding(.horizontal, ArkSpacing.xs)
+
+            ExplainNudge(explainer: .stockRisk)
 
             // Horizontal scrolling cards (stocks will always be 3+)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -1203,7 +1212,7 @@ struct StockRiskDetailSheet: View {
                             icon: "arrow.up.and.down",
                             weight: "20%",
                             risk: factors.yearRangePosition,
-                            detail: "$\(String(format: "%.0f", factors.yearLow)) — $\(String(format: "%.0f", factors.yearHigh))"
+                            detail: "$\(String(format: "%.0f", factors.yearLow))–$\(String(format: "%.0f", factors.yearHigh))"
                         )
                         stockFactorRow(
                             name: "50-SMA Trend",
@@ -1609,5 +1618,309 @@ struct StockRiskPickerSheet: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.white)
         }
+    }
+}
+
+// MARK: - Explainer ("Explain this" companion)
+//
+// Plain-English, layered explanations attached to the objects people find most
+// confusing (risk levels, positioning signals). Every explainer follows one atom:
+// what it is / what it means for you (banded) / what it doesn't mean. Copy is
+// finalized in docs/COMPANION_COPY_DRAFT.md and hardcoded here for v1, it's
+// structured to move server-side later so it can be edited without an app release.
+
+struct ExplainerBand: Identifiable {
+    let id = UUID()
+    let label: String
+    let range: String?     // e.g. "0.00–0.40"; nil for state-based (Bullish/…)
+    let meaning: String
+    var colorHex: String? = nil   // explicit label color; falls back to bandColor(label)
+}
+
+struct Explainer: Identifiable {
+    let id: String         // stable key, also used for tap instrumentation
+    let title: String
+    let whatItIs: String
+    let bands: [ExplainerBand]
+    let whatItDoesntMean: String
+}
+
+extension Explainer {
+    static let cryptoRisk = Explainer(
+        id: "crypto_risk",
+        title: "Crypto Risk Levels",
+        whatItIs: "A quick read of how cheap or expensive a coin's price is versus its own long-term trend, on a 0.00–1.00 scale. Low means the price is cheap compared to its history; high means it has run up a lot. It's about how far the price has moved, not whether the project itself is any good.",
+        bands: [
+            ExplainerBand(label: "Cheap", range: "0.00–0.40", meaning: "Historically a bargain zone. Crypto rarely trades this low against its own trend, and when it has, patient buyers have often been rewarded. It can still fall further, though."),
+            ExplainerBand(label: "Fair", range: "0.40–0.55", meaning: "Fairly priced. Not a clear bargain, but not pricey either. The price is roughly in line with its own history."),
+            ExplainerBand(label: "Elevated", range: "0.55–0.70", meaning: "Getting pricey. Later in the cycle, prices up here have seen pullbacks more often."),
+            ExplainerBand(label: "Overheated", range: "0.70–1.00", meaning: "Prices have climbed a long way above the trend. This is the zone where past cycle tops have formed. There's less cushion here if the market turns.")
+        ],
+        whatItDoesntMean: "It's not a prediction, and it's not a buy or sell call. High doesn't mean a drop is coming, and low doesn't mean the bottom is in. Expensive can stay expensive, and cheap can get cheaper. It just shows how far the price has run. The decision is yours."
+    )
+
+    static let stockRisk = Explainer(
+        id: "stock_risk",
+        title: "Stock Risk Levels",
+        whatItIs: "A quick read of how cheap or expensive a stock's price is versus its own long-term trend, on a 0.00–1.00 scale. Low means it's cheap compared to its own history; high means it has run up a lot. It looks at the price only, not the company's earnings or fundamentals.",
+        bands: [
+            ExplainerBand(label: "Cheap", range: "0.00–0.40", meaning: "Trading low against its own history. In the past, levels like this have tended to reward patient, long-term buyers, though a cheap stock can always get cheaper."),
+            ExplainerBand(label: "Fair", range: "0.40–0.55", meaning: "Roughly in line with its own trend. No strong sign it's a bargain or overextended."),
+            ExplainerBand(label: "Elevated", range: "0.55–0.70", meaning: "On the expensive side of its history. Prices up here have historically seen pullbacks more often."),
+            ExplainerBand(label: "Overheated", range: "0.70–1.00", meaning: "Prices have climbed well above the trend. This is the kind of move that has come before bigger corrections. Less room for error.")
+        ],
+        whatItDoesntMean: "It's not a forecast or a buy/sell call, and it says nothing about whether the company is healthy. A high reading isn't a crash warning; a low one isn't a promise it can't fall further. It only measures how far the price has run from its own trend."
+    )
+
+    static let positioning = Explainer(
+        id: "positioning",
+        title: "Positioning Signals",
+        whatItIs: "A daily read on the trend and momentum behind an asset, boiled down to one word: Bullish, Neutral, or Bearish. Think of it as which way the wind is blowing right now, at the asset's back or in its face.",
+        bands: [
+            ExplainerBand(label: "Bullish", range: nil, meaning: "The trend and momentum we track are pointing up, the backdrop looks more supportive than not."),
+            ExplainerBand(label: "Neutral", range: nil, meaning: "Mixed or sideways. No clear push either way right now."),
+            ExplainerBand(label: "Bearish", range: nil, meaning: "Trend and momentum are pointing down, a tougher backdrop for now."),
+            ExplainerBand(label: "When it changes", range: nil, meaning: "A change just means the picture shifted since yesterday. Worth a look, not a reason to jump.")
+        ],
+        whatItDoesntMean: "It's not \"buy\" or \"sell.\" Bullish isn't a green light and Bearish isn't a panic button, it's background for your own thinking. And it's not a forecast: it describes what's happening now, and it can flip as things change."
+    )
+
+    static let fearGreed = Explainer(
+        id: "fear_greed",
+        title: "Fear & Greed",
+        whatItIs: "A single 0 to 100 gauge of the crowd's mood, from extreme fear to extreme greed. It blends signals like price momentum, volatility, and demand into one number. Low means people are fearful; high means they're greedy. It measures emotion, not value.",
+        bands: [
+            ExplainerBand(label: "Extreme Fear", range: "0–24", meaning: "The crowd is scared. Historically, moments of peak fear have often lined up with prices being beaten down, though fear can always deepen.", colorHex: "DC2626"),
+            ExplainerBand(label: "Fear", range: "25–44", meaning: "Nervous and cautious. Sentiment leans negative, but not at an extreme.", colorHex: "F97316"),
+            ExplainerBand(label: "Neutral", range: "45–55", meaning: "Balanced. No strong emotion pulling the crowd either way.", colorHex: "EAB308"),
+            ExplainerBand(label: "Greed", range: "56–75", meaning: "Optimistic and buying. Sentiment leans positive; things are running warm.", colorHex: "84CC16"),
+            ExplainerBand(label: "Extreme Greed", range: "76–100", meaning: "Euphoric. Historically, peak greed has often shown up when prices were overheated, though greed can run longer than seems reasonable.", colorHex: "22C55E")
+        ],
+        whatItDoesntMean: "It's not a buy or sell signal, and it doesn't predict the next move. Extreme fear isn't a guarantee of a bottom, and extreme greed isn't a guarantee of a top. It's a mirror for the crowd's emotions, most useful as a nudge to slow down when everyone else is at an extreme. The decision is yours."
+    )
+}
+
+// MARK: - Explain Button (the subtle "?" affordance)
+
+struct ExplainButton: View {
+    let explainer: Explainer
+    var size: CGFloat = 15
+    @State private var showSheet = false
+    @State private var seen: Bool
+    @State private var pulse = false
+
+    private var seenKey: String { "explainer_seen_\(explainer.id)" }
+
+    init(explainer: Explainer, size: CGFloat = 15) {
+        self.explainer = explainer
+        self.size = size
+        _seen = State(initialValue: UserDefaults.standard.bool(forKey: "explainer_seen_\(explainer.id)"))
+    }
+
+    var body: some View {
+        Button {
+            markSeen()
+            showSheet = true
+        } label: {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: size))
+                // Unseen: gently tinted to invite the tap. Seen: quiet gray.
+                .foregroundColor(seen ? AppColors.textSecondary.opacity(0.55) : AppColors.accent)
+                .overlay(alignment: .topTrailing) {
+                    if !seen {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 5, height: 5)
+                            .offset(x: 1, y: -1)
+                            .opacity(pulse ? 0.3 : 1.0)   // soft, slow pulse, invite, don't nag
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(seen
+            ? "Explain \(explainer.title) in plain English"
+            : "New. Learn what \(explainer.title) mean, in plain English")
+        .sheet(isPresented: $showSheet) {
+            ExplainerSheet(explainer: explainer)
+        }
+        .onAppear {
+            guard !seen else { return }
+            withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                pulse = true
+            }
+        }
+    }
+
+    /// Marks this explainer as seen (per person) so the "new" tint + dot settle and
+    /// never nudge again. This exposure signal also feeds the future Start Here trail.
+    private func markSeen() {
+        guard !seen else { return }
+        pulse = false
+        seen = true
+        UserDefaults.standard.set(true, forKey: seenKey)
+    }
+}
+
+// MARK: - Explain Nudge (one-time first-encounter invitation)
+
+/// A gentle, one-time line under a widget the first time someone sees it, inviting
+/// them to learn what it means. Recedes forever once tapped or once the explainer
+/// has been opened (shares the ExplainButton's per-person "seen" flag). Option 2 of
+/// the education affordance, active enough to reach a newcomer, one-time enough to
+/// never nag.
+struct ExplainNudge: View {
+    let explainer: Explainer
+    @State private var seen: Bool
+    @State private var showSheet = false
+
+    private var seenKey: String { "explainer_seen_\(explainer.id)" }
+
+    init(explainer: Explainer) {
+        self.explainer = explainer
+        _seen = State(initialValue: UserDefaults.standard.bool(forKey: "explainer_seen_\(explainer.id)"))
+    }
+
+    var body: some View {
+        if !seen {
+            Button {
+                // Open first; mark seen on dismiss. Marking seen here would remove
+                // this view (and its .sheet) in the same tick, so the sheet would
+                // never present.
+                showSheet = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 11))
+                    Text("New here? Here's what \(explainer.title.lowercased()) mean.")
+                        .font(.system(size: 12))
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundColor(AppColors.accent)
+                .padding(.vertical, 7)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(AppColors.accent.opacity(0.07))
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, ArkSpacing.xs)
+            .sheet(isPresented: $showSheet, onDismiss: {
+                UserDefaults.standard.set(true, forKey: seenKey)
+                seen = true
+            }) {
+                ExplainerSheet(explainer: explainer)
+            }
+        }
+    }
+}
+
+// MARK: - Explainer Sheet (calm bottom sheet, the three-part atom)
+
+struct ExplainerSheet: View {
+    let explainer: Explainer
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var guardrailTint: Color {
+        AppColors.accent.opacity(colorScheme == .dark ? 0.12 : 0.08)
+    }
+
+    /// Semantic color per band so the sheet isn't monotone, matches the color
+    /// language used everywhere else (Bullish green, Bearish red, etc.).
+    private func bandColor(_ label: String) -> Color {
+        switch label {
+        case "Bullish", "Cheap": return AppColors.success
+        case "Neutral", "Fair": return AppColors.warning
+        case "Elevated": return Color(hex: "F97316")
+        case "Bearish", "Overheated": return AppColors.error
+        default: return AppColors.accent   // "When it changes"
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    // What it is
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("WHAT IT IS")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text(explainer.whatItIs)
+                            .font(.system(size: 15))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    // What it means for you (banded)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("WHAT IT MEANS FOR YOU")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundColor(AppColors.textSecondary)
+                        ForEach(explainer.bands) { band in
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack(spacing: 6) {
+                                    Text(band.label)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(band.colorHex.map { Color(hex: $0) } ?? bandColor(band.label))
+                                    if let range = band.range {
+                                        Text(range)
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(AppColors.textSecondary.opacity(0.7))
+                                    }
+                                }
+                                Text(band.meaning)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+
+                    // What it doesn't mean (the guardrail, visually set apart)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("WHAT IT DOESN'T MEAN")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.5)
+                            .foregroundColor(AppColors.accent)
+                        Text(explainer.whatItDoesntMean)
+                            .font(.system(size: 14))
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(guardrailTint))
+
+                    Text("For education only. Not investment advice.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppColors.textSecondary.opacity(0.7))
+
+                    Spacer(minLength: 8)
+                }
+                .padding(20)
+            }
+            .navigationTitle(explainer.title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .task {
+                // Instrumentation: which explainers people open is the signal that
+                // will design the future guided course (see LEARNING_TRAILS_NOTES.md).
+                await AnalyticsService.shared.trackScreenView("explainer_\(explainer.id)")
+            }
+        }
+        .presentationDetents([.large])
     }
 }

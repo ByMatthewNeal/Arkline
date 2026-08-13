@@ -478,9 +478,9 @@ enum SentimentRegime: String, CaseIterable, Codable {
     var description: String {
         switch self {
         case .panic: return "High volume selling pressure. Markets are fearful with heavy trading activity, often near capitulation events."
-        case .fomo: return "High volume buying frenzy. Markets are greedy with euphoric participation — historically near local tops."
-        case .apathy: return "Low volume and fearful. Markets are disinterested with minimal participation — often a bottoming signal."
-        case .complacency: return "Low volume and greedy. Quiet confidence with thin markets — vulnerable to sudden moves."
+        case .fomo: return "High volume buying frenzy. Markets are greedy with euphoric participation, historically near local tops."
+        case .apathy: return "Low volume and fearful. Markets are disinterested with minimal participation, often a bottoming signal."
+        case .complacency: return "Low volume and greedy. Quiet confidence with thin markets, vulnerable to sudden moves."
         }
     }
 

@@ -47,7 +47,7 @@ enum MarketRegime: String, Codable {
         case .riskOff:
             return "Macro conditions have shifted bearish. Elevated VIX and dollar strength may pressure crypto."
         case .mixed:
-            return "Macro signals are now conflicting. Consider reducing position sizes until clarity emerges."
+            return "Macro signals are now conflicting, a murkier backdrop with no clear direction."
         case .noData:
             return "Unable to determine market conditions."
         }
@@ -158,7 +158,7 @@ class RegimeChangeManager: ObservableObject {
                 lastNotificationDate = Date()
                 scheduleLocalNotification(for: newRegime, from: previous)
             } else if inCooldown {
-                logInfo("Regime changed to \(newRegime.rawValue) — notification suppressed (cooldown)", category: .data)
+                logInfo("Regime changed to \(newRegime.rawValue), notification suppressed (cooldown)", category: .data)
             }
 
             logInfo("Market regime changed from \(previous.rawValue) to \(newRegime.rawValue)", category: .data)

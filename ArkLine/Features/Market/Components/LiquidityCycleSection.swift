@@ -490,10 +490,10 @@ private struct LiquidityCycleInfoSheet: View {
 
                     section("The Four Phases") {
                         VStack(alignment: .leading, spacing: 12) {
-                            phaseRow(.earlyExpansion, "Liquidity momentum turns positive. BTC typically leads — it's the first major risk asset to respond to improving liquidity conditions.")
-                            phaseRow(.lateExpansion, "Peak speculation. Altcoins outperform as liquidity peaks. This is where maximum euphoria occurs. Consider taking profits.")
-                            phaseRow(.earlyContraction, "Liquidity momentum fades. Defensive rotation — reduce altcoin exposure, move to BTC or stablecoins.")
-                            phaseRow(.lateContraction, "Maximum pessimism. Smart money begins accumulating. DCA into BTC and quality projects for the next cycle.")
+                            phaseRow(.earlyExpansion, "Liquidity momentum turns positive. BTC typically leads, it's the first major risk asset to respond to improving liquidity conditions.")
+                            phaseRow(.lateExpansion, "Peak speculation. Altcoins outperform as liquidity peaks. This is where maximum euphoria has historically occurred.")
+                            phaseRow(.earlyContraction, "Liquidity momentum fades, historically a defensive-rotation phase where capital has moved from altcoins toward BTC and stablecoins.")
+                            phaseRow(.lateContraction, "Maximum pessimism, historically the phase where longer-term accumulation into BTC and quality projects has begun.")
                         }
                     }
 
@@ -502,15 +502,15 @@ private struct LiquidityCycleInfoSheet: View {
                     }
 
                     section("65-Month Wave") {
-                        Text("A theoretical sine wave anchored to the October 2022 liquidity trough. Based on Michael Howell's research at Crossborder Capital showing liquidity cycles average ~65 months. The wave shows where we \"should\" be if the cycle repeats — compare with the actual momentum index to spot divergences.")
+                        Text("A theoretical sine wave anchored to the October 2022 liquidity trough. Based on Michael Howell's research at Crossborder Capital showing liquidity cycles average ~65 months. The wave shows where we \"should\" be if the cycle repeats, compare with the actual momentum index to spot divergences.")
                     }
 
                     section("Yield Curve") {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("The 10Y-2Y Treasury spread confirms where we are in the cycle:")
-                            ycRow("Steepening", "Early cycle — bullish for risk assets", AppColors.success)
-                            ycRow("Flattening", "Late cycle — Fed tightening", AppColors.warning)
-                            ycRow("Inverted", "Recession warning — historically bearish", AppColors.error)
+                            ycRow("Steepening", "Early cycle, bullish for risk assets", AppColors.success)
+                            ycRow("Flattening", "Late cycle, Fed tightening", AppColors.warning)
+                            ycRow("Inverted", "Recession warning, historically bearish", AppColors.error)
                             ycRow("Un-inverting", "Final stage before recession begins", AppColors.error)
                         }
                     }

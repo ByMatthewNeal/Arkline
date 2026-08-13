@@ -413,30 +413,30 @@ struct PerpPremiumExplainerView: View {
                     // What is it
                     explainerSection(
                         title: "WHAT IS IT",
-                        body: "The Perp Premium score measures which side of the perpetual futures market is more aggressive. It ranges from -100 (extreme short bias) to +100 (extreme long bias). When traders are willing to pay a premium to hold long positions, funding rates go positive — the score rises. When shorts dominate, rates go negative — the score drops."
+                        body: "The Perp Premium score measures which side of the perpetual futures market is more aggressive. It ranges from -100 (extreme short bias) to +100 (extreme long bias). When traders are willing to pay a premium to hold long positions, funding rates go positive, the score rises. When shorts dominate, rates go negative, the score drops."
                     )
 
                     // How to read it
                     explainerSection(title: "HOW TO READ IT", body: nil) {
                         VStack(alignment: .leading, spacing: 10) {
-                            readingRow(range: "+50 to +100", label: "Strong Long Bias", detail: "Longs are crowded and paying high premiums. Historically precedes sharp pullbacks — be cautious adding longs here.", color: AppColors.success)
+                            readingRow(range: "+50 to +100", label: "Strong Long Bias", detail: "Longs are crowded and paying high premiums. Historically precedes sharp pullbacks, be cautious adding longs here.", color: AppColors.success)
                             readingRow(range: "+20 to +50", label: "Long Bias", detail: "Bullish positioning with conviction. If price is also rising, this confirms the move is backed by leveraged money.", color: Color(hex: "4ADE80"))
                             readingRow(range: "-20 to +20", label: "Neutral", detail: "No strong directional bet. The market is waiting for a catalyst. Good time to watch, not chase.", color: AppColors.textSecondary)
                             readingRow(range: "-50 to -20", label: "Short Bias", detail: "Bearish positioning. If price is dropping, shorts are in control. If price holds here, a squeeze may be building.", color: Color(hex: "F87171"))
-                            readingRow(range: "-100 to -50", label: "Strong Short Bias", detail: "Shorts are crowded. Historically a contrarian buy signal — short squeezes often start from these levels.", color: AppColors.error)
+                            readingRow(range: "-100 to -50", label: "Strong Short Bias", detail: "Shorts are crowded. Historically a contrarian buy signal, short squeezes often start from these levels.", color: AppColors.error)
                         }
                     }
 
                     // BTC vs ETH divergence
                     explainerSection(
                         title: "BTC vs ETH DIVERGENCE",
-                        body: "When BTC and ETH funding rates point in opposite directions, the market is in transition. One side hasn't committed yet. Wait for alignment — when both agree on direction, the move tends to be stronger and more sustained."
+                        body: "When BTC and ETH funding rates point in opposite directions, the market is in transition. One side hasn't committed yet. Wait for alignment, when both agree on direction, the move tends to be stronger and more sustained."
                     )
 
                     // How we calculate it
                     explainerSection(
                         title: "HOW IT'S CALCULATED",
-                        body: "The score is derived from funding rates on Binance perpetual futures. Funding is charged every 8 hours — when longs pay shorts, the rate is positive (bullish). When shorts pay longs, negative (bearish). We normalize the rate into a -100 to +100 scale so you can read it at a glance."
+                        body: "The score is derived from funding rates on Binance perpetual futures. Funding is charged every 8 hours, when longs pay shorts, the rate is positive (bullish). When shorts pay longs, negative (bearish). We normalize the rate into a -100 to +100 scale so you can read it at a glance."
                     )
 
                     Spacer(minLength: 40)

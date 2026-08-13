@@ -361,7 +361,8 @@ struct USFuturesSection: View {
 
         let (yahooResult, fmpResult) = await (yahooTask, fmpTask)
 
-        // Prefer Yahoo (actual futures), fall back to FMP (indices), then keep cached
+        // Prefer Yahoo (actual futures), fall back to FMP (indices), then the
+        // server cache (reliable, edge-written), then whatever was cached.
         if !yahooResult.isEmpty {
             futures = yahooResult
             Self.cachedFutures = yahooResult
@@ -370,8 +371,13 @@ struct USFuturesSection: View {
             futures = fmpResult
             Self.cachedFutures = fmpResult
             Self.cachedAt = Date()
+        } else if let serverResult = await fetchFuturesFromServerCache(), !serverResult.isEmpty {
+            futures = serverResult
+            Self.cachedFutures = serverResult
+            Self.cachedAt = Date()
         }
-        // If both failed and no cache, futures stays empty → shows error message
+        // If everything failed and no cache, futures stays empty → shows error message
+        loadFailed = futures.isEmpty
         isLoading = false
     }
 
@@ -399,6 +405,61 @@ struct USFuturesSection: View {
         }
         return results
     }
+
+    /// Last-resort source: the `us_futures` blob the `refresh-market-extras`
+    /// edge cron writes to `market_data_cache` every 2 minutes (FMP-sourced,
+    /// server-side, reliable). The live Yahoo/FMP calls above are flaky on
+    /// device, Yahoo rate-limits and FMP index quotes can 403, which left the
+    /// widget blank even though the server had fresh data the whole time.
+    /// The `data` column is jsonb, so we decode the array directly (not as a
+    /// stringified blob like the app-written cache keys).
+    private func fetchFuturesFromServerCache() async -> [USFuturesQuote]? {
+        guard SupabaseManager.shared.isConfigured else { return nil }
+        do {
+            let rows: [USFuturesCacheRow] = try await SupabaseManager.shared.database
+                .from(SupabaseTable.marketDataCache.rawValue)
+                .select("data")
+                .eq("key", value: "us_futures")
+                .limit(1)
+                .execute()
+                .value
+            guard let items = rows.first?.data, !items.isEmpty else { return nil }
+            return items.map { item in
+                USFuturesQuote(
+                    symbol: item.symbol,
+                    name: item.name,
+                    shortName: item.name,
+                    price: item.price,
+                    previousClose: item.price - item.change,
+                    change: item.change,
+                    changePercent: item.changePercent
+                )
+            }
+        } catch {
+            logWarning("USFuturesSection server-cache fallback failed: \(error.localizedDescription)", category: .network)
+            return nil
+        }
+    }
+}
+
+// MARK: - US Futures Server Cache DTOs
+
+/// Shape of the `us_futures` array stored in `market_data_cache.data` (jsonb)
+/// by the refresh-market-extras edge function.
+private struct USFuturesCacheItem: Decodable {
+    let symbol: String
+    let name: String
+    let price: Double
+    let change: Double
+    let changePercent: Double
+    enum CodingKeys: String, CodingKey {
+        case symbol, name, price, change
+        case changePercent = "change_percent"
+    }
+}
+
+private struct USFuturesCacheRow: Decodable {
+    let data: [USFuturesCacheItem]
 }
 
 // MARK: - Futures Quote Row

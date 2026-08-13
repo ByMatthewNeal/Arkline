@@ -95,7 +95,7 @@ struct SwingSetupsSummarySection: View {
                     .foregroundColor(textPrimary)
             }
 
-            Text("No high-conviction setups right now. The system only fires when price, trend, and momentum align — sitting out is part of the strategy.")
+            Text("No high-conviction setups right now. The system only fires when price, trend, and momentum align, sitting out is part of the strategy.")
                 .font(AppFonts.caption12)
                 .foregroundColor(AppColors.textSecondary)
                 .multilineTextAlignment(.center)

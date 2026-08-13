@@ -137,6 +137,7 @@ enum SupabaseTable: String {
     case sectorPerformance = "sector_performance"
     case marketBreadth = "market_breadth"
     case resourceArticles = "resource_articles"
+    case trailLessons = "trail_lessons"
 }
 
 // MARK: - Storage Buckets

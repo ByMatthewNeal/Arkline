@@ -157,7 +157,11 @@ struct TransactionDetailView: View {
                 if isRealEstate {
                     RealEstateIconView(size: 40)
                 } else {
-                    CoinIconView(symbol: transaction.symbol, size: 40)
+                    CoinIconView(
+                        symbol: transaction.symbol,
+                        size: 40,
+                        iconUrl: AssetRiskConfig.forSymbol(transaction.symbol)?.logoURL?.absoluteString
+                    )
                 }
 
                 VStack(alignment: .leading, spacing: 2) {

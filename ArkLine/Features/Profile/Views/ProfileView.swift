@@ -105,6 +105,8 @@ struct ProfileView: View {
                     DCAListView()
                 } else if route == "featureBacklog" {
                     FeatureBacklogView()
+                } else if route == "notificationSettings" {
+                    NotificationsDetailView()
                 }
             }
             .navigationTitle("Profile")
@@ -143,6 +145,12 @@ struct ProfileView: View {
                     appState.pendingOpenFeatureBacklog = false
                 }
             }
+            .onChange(of: appState.pendingOpenNotificationSettings) { _, pending in
+                if pending {
+                    navigationPath.append("notificationSettings")
+                    appState.pendingOpenNotificationSettings = false
+                }
+            }
             .onAppear {
                 // Handle pending DCA deep link
                 if appState.pendingDCAReminderId != nil {
@@ -153,6 +161,11 @@ struct ProfileView: View {
                 if appState.pendingOpenFeatureBacklog {
                     navigationPath.append("featureBacklog")
                     appState.pendingOpenFeatureBacklog = false
+                }
+                // Handle pending notification-settings deep link (checklist step 5)
+                if appState.pendingOpenNotificationSettings {
+                    navigationPath.append("notificationSettings")
+                    appState.pendingOpenNotificationSettings = false
                 }
                 // Use the actual user from AppState if available
                 if let currentUser = appState.currentUser {

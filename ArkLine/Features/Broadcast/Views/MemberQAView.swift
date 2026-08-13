@@ -101,7 +101,7 @@ struct MemberQAView: View {
             Image(systemName: "bubble.left.and.bubble.right")
                 .font(.system(size: 30))
                 .foregroundColor(AppColors.textTertiary)
-            Text("No questions yet — be the first to ask.")
+            Text("No questions yet, be the first to ask.")
                 .font(.system(size: 14))
                 .foregroundColor(AppColors.textSecondary)
         }

@@ -148,7 +148,7 @@ struct AccountSetupView: View {
 
     private func openMailto() {
         let email = appState.currentUser?.email ?? ""
-        let subject = "Account setup help — \(email)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let subject = "Account setup help, \(email)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let body = "Hi Arkline team, my account isn't activating. My signup email is \(email). Thanks.".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         if let url = URL(string: "mailto:support@arkline.io?subject=\(subject)&body=\(body)") {
             #if canImport(UIKit)

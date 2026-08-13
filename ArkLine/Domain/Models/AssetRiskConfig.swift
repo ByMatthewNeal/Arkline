@@ -652,6 +652,18 @@ struct AssetRiskConfig {
     /// AMD
     static let amd = AssetRiskConfig(stock: "AMD", originDate: safeDate(year: 1979, month: 9, day: 27), deviationBounds: (low: -0.6, high: 0.6), confidenceLevel: 9, displayName: "AMD")
 
+    /// WhiteFiber — AI/HPC data-center & GPU cloud; Nasdaq IPO 7 Aug 2025, so only
+    /// months of price history: wide bounds + lowest-tier confidence until it builds.
+    static let wyfi = AssetRiskConfig(stock: "WYFI", originDate: safeDate(year: 2025, month: 8, day: 7), deviationBounds: (low: -0.8, high: 0.8), confidenceLevel: 2, displayName: "WhiteFiber")
+
+    /// Eaton — electrical / power-management industrial; mature large-cap with a
+    /// long, moderate-volatility history.
+    static let etn = AssetRiskConfig(stock: "ETN", originDate: safeDate(year: 1984, month: 1, day: 1), deviationBounds: (low: -0.55, high: 0.55), confidenceLevel: 9, displayName: "Eaton")
+
+    /// Oklo — advanced nuclear / SMR; NYSE SPAC debut 10 May 2024, so only a short,
+    /// very volatile history: wide bounds + lowest-tier confidence until it builds.
+    static let oklo = AssetRiskConfig(stock: "OKLO", originDate: safeDate(year: 2024, month: 5, day: 10), deviationBounds: (low: -0.8, high: 0.8), confidenceLevel: 2, displayName: "Oklo")
+
     /// Uber
     static let uber = AssetRiskConfig(stock: "UBER", originDate: safeDate(year: 2019, month: 5, day: 10), deviationBounds: (low: -0.55, high: 0.55), confidenceLevel: 6, displayName: "Uber")
 
@@ -749,13 +761,13 @@ struct AssetRiskConfig {
         // Semiconductors / Tech
         .axti, .sndk,
         // AI / Quantum
-        .qbts, .nbis, .nuai, .sidu,
+        .qbts, .nbis, .nuai, .sidu, .wyfi,
         // Real Estate / Fintech / Other
         .open, .onds, .dgxx,
         // Healthcare / Pharma
         .lly,
         // Power / Utilities
-        .vst, .ceg
+        .vst, .ceg, .etn, .oklo
     ]
 
     /// All supported assets (crypto + stocks)

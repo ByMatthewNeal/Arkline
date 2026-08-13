@@ -26,7 +26,7 @@ struct EntryStrategySectionView: View {
                 Text("Zone:")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(AppColors.textSecondary)
-                Text("$\(signal.entryZoneLow.asSignalPrice) — $\(signal.entryZoneHigh.asSignalPrice)")
+                Text("$\(signal.entryZoneLow.asSignalPrice), $\(signal.entryZoneHigh.asSignalPrice)")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(textPrimary)
                     .monospacedDigit()

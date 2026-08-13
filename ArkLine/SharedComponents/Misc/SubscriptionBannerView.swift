@@ -52,7 +52,7 @@ struct SubscriptionBannerView: View {
         case .pastDue:
             return BannerConfig(
                 icon: "exclamationmark.triangle.fill",
-                message: "Payment issue — update your payment method to keep access.",
+                message: "Payment issue, update your payment method to keep access.",
                 textColor: .black.opacity(0.85),
                 backgroundColor: AppColors.warning.opacity(0.2)
             )

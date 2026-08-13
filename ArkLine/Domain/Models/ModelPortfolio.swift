@@ -22,6 +22,7 @@ struct ModelPortfolio: Codable, Identifiable, Hashable {
     /// stock portfolios are curated (target-allocation driven).
     var isCrypto: Bool { assetClass == "crypto" }
     var isStock: Bool { assetClass == "stock" }
+    var isMetal: Bool { assetClass == "metal" }
 
     enum CodingKeys: String, CodingKey {
         case id, name, strategy, description, universe, benchmark
@@ -91,12 +92,17 @@ struct ModelPortfolioNav: Codable, Identifiable, Hashable {
         let vixSignal: String?
         let vixScore: Double?
         let leadingSectors: [String]?
+        // Metals book: gold's valuation zone + RSI + target gold weight (0-1).
+        let zone: String?
+        let rsi: Double?
+        let targetGold: Double?
 
         enum CodingKeys: String, CodingKey {
-            case backfilled
+            case backfilled, zone, rsi
             case vixSignal = "vix_signal"
             case vixScore = "vix_score"
             case leadingSectors = "leading_sectors"
+            case targetGold = "target_gold"
         }
     }
 

@@ -128,6 +128,15 @@ struct AdminDashboardView: View {
                             subtitle: "Manage glossary terms"
                         )
                     }
+
+                    NavigationLink(destination: TrailAdminView()) {
+                        AdminDashboardRow(
+                            icon: "signpost.right.fill",
+                            iconColor: AppColors.accent,
+                            title: "Trail Lessons",
+                            subtitle: "Edit Foundations & Crypto lessons"
+                        )
+                    }
                 } header: {
                     Text("Management")
                 }

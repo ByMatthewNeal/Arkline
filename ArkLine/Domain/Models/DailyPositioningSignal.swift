@@ -33,15 +33,16 @@ enum QPSAssetCategory: String, Codable, CaseIterable, Hashable {
         }
     }
 
-    /// Display order for the grid
+    /// Display order for the grid. Full-market ordering: broad equity gauges and
+    /// stocks lead, crypto sits alongside them (not first), macro/commodity context last.
     var sortOrder: Int {
         switch self {
         case .index: return 0
-        case .macro: return 1
-        case .commodity: return 2
-        case .stock: return 3
-        case .crypto: return 4
-        case .alt_btc: return 5
+        case .stock: return 1
+        case .crypto: return 2
+        case .alt_btc: return 3
+        case .commodity: return 4
+        case .macro: return 5
         }
     }
 }
@@ -61,6 +62,7 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
     let above200Sma: Bool
     let riskLevel: Double?
     let category: String?
+    let serverDisplayName: String?
     let createdAt: Date?
 
     var positioningSignal: PositioningSignal {
@@ -89,7 +91,9 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
     }
 
     var displayName: String {
-        Self.assetDisplayNames[asset] ?? asset
+        // Prefer the name the pipeline stored with the signal so newly-added assets
+        // self-name without a code change; fall back to the local map, then ticker.
+        serverDisplayName ?? Self.assetDisplayNames[asset] ?? asset
     }
 
     var hasChanged: Bool {
@@ -104,6 +108,7 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case id, asset, signal, price, rsi, category
+        case serverDisplayName = "display_name"
         case signalDate = "signal_date"
         case prevSignal = "prev_signal"
         case trendScore = "trend_score"
@@ -124,6 +129,7 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         above200Sma = try container.decode(Bool.self, forKey: .above200Sma)
         riskLevel = try container.decodeIfPresent(Double.self, forKey: .riskLevel)
         category = try container.decodeIfPresent(String.self, forKey: .category)
+        serverDisplayName = try container.decodeIfPresent(String.self, forKey: .serverDisplayName)
 
         // created_at is TIMESTAMPTZ — decode normally
         createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
@@ -172,9 +178,13 @@ struct DailyPositioningSignal: Codable, Identifiable, Hashable {
         "DBB": "Industrial Metals", "REMX": "Rare Earth Metals",
         // Stocks
         "AAPL": "Apple", "NVDA": "NVIDIA", "GOOGL": "Google",
+        "AMZN": "Amazon", "META": "Meta", "MSFT": "Microsoft",
+        "TSLA": "Tesla", "NFLX": "Netflix", "ORCL": "Oracle",
+        "RKLB": "Rocket Lab", "COHR": "Coherent", "CRCL": "Circle",
+        "LUNR": "Intuitive Machines", "CIFR": "Cipher Mining",
         "COIN": "Coinbase", "MSTR": "MicroStrategy",
         "MARA": "Marathon Digital", "RIOT": "Riot Platforms",
-        "GLXY": "Galaxy Digital",
+        "GLXY": "Galaxy Digital", "AMD": "AMD", "WYFI": "WhiteFiber",
         // Alt/BTC Pairs
         "ETH/BTC": "ETH/BTC", "SOL/BTC": "SOL/BTC", "LINK/BTC": "LINK/BTC",
         "AVAX/BTC": "AVAX/BTC", "DOGE/BTC": "DOGE/BTC", "BCH/BTC": "BCH/BTC",

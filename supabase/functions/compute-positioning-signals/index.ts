@@ -115,6 +115,10 @@ const ASSETS: AssetConfig[] = [
   { ticker: "CRCL",   displayName: "Circle",          source: "fmp", symbol: "CRCL",  category: "stock" },
   { ticker: "LUNR",   displayName: "Intuitive Machines", source: "fmp", symbol: "LUNR", category: "stock" },
   { ticker: "CIFR",   displayName: "Cipher Mining",   source: "fmp", symbol: "CIFR",  category: "stock" },
+  { ticker: "AMD",    displayName: "AMD",             source: "fmp", symbol: "AMD",   category: "stock" },
+  { ticker: "WYFI",   displayName: "WhiteFiber",      source: "fmp", symbol: "WYFI",  category: "stock" },
+  { ticker: "ETN",    displayName: "Eaton",           source: "fmp", symbol: "ETN",   category: "stock" },
+  { ticker: "OKLO",   displayName: "Oklo",            source: "fmp", symbol: "OKLO",  category: "stock" },
 
   // ── Crypto Stocks (FMP) ──
   { ticker: "COIN",   displayName: "Coinbase",        source: "fmp", symbol: "COIN",  category: "stock" },
@@ -138,6 +142,7 @@ interface Candle {
 
 interface PositioningResult {
   asset: string
+  display_name: string
   category: AssetCategory
   signal: "bullish" | "neutral" | "bearish"
   prev_signal: string | null
@@ -145,6 +150,10 @@ interface PositioningResult {
   rsi: number | null
   price: number
   above_200_sma: boolean
+  _aboveSma21?: boolean
+  _aboveSma50?: boolean
+  _bmsbStatus?: string
+  _channelPosition?: number | null
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -543,6 +552,7 @@ Deno.serve(async (req) => {
 
       results.push({
         asset: asset.ticker,
+        display_name: asset.displayName,
         category: asset.category,
         signal,
         prev_signal: prevSignal,
@@ -609,6 +619,7 @@ Deno.serve(async (req) => {
   if (results.length > 0) {
     const rows = results.map((r) => ({
       asset: r.asset,
+      display_name: r.display_name,
       signal_date: today,
       signal: r.signal,
       prev_signal: r.prev_signal,
@@ -633,6 +644,56 @@ Deno.serve(async (req) => {
   }
 
   const changes = results.filter((r) => r.prev_signal && r.signal !== r.prev_signal)
+
+  // ── Push notifications for positioning-signal changes ──────────────────────
+  // The bullish/neutral/bearish label per asset is recomputed here on schedule.
+  // When one flips vs. yesterday we now fire a `qps_change` push so members hear
+  // about it even with the app closed. Previously this notification was only
+  // generated on-device while the Home screen happened to be open and refreshing,
+  // so in practice almost every flip went unannounced.
+  //
+  // To avoid flooding everyone when a broad market move flips many assets at
+  // once, we send one push for a single change and a single summary push when
+  // several change together. `send-broadcast-notification` still honors each
+  // user's `qps_change` notification preference, so opt-outs are respected.
+  let qpsNotified = 0
+  if (changes.length > 0) {
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+    const describe = (r: PositioningResult) => `${r.asset}: ${cap(r.prev_signal!)} → ${cap(r.signal)}`
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+
+    const post = async (title: string, notifyBody: string) => {
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-broadcast-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${anonKey}`,
+            "x-cron-secret": secret,
+          },
+          body: JSON.stringify({
+            broadcast_id: `qps-${today}-${panel ?? "all"}`,
+            title,
+            body: notifyBody,
+            event_type: "qps_change",
+            target_audience: { type: "all" },
+          }),
+        })
+        qpsNotified++
+      } catch (err) {
+        console.error(`QPS change push failed: ${err}`)
+      }
+    }
+
+    if (changes.length === 1) {
+      const c = changes[0]
+      await post(`${c.asset} Signal Changed`, describe(c))
+    } else {
+      const shown = changes.slice(0, 4).map(describe).join(" · ")
+      const more = changes.length > 4 ? ` · +${changes.length - 4} more` : ""
+      await post("Positioning Signals Updated", `${changes.length} assets changed — ${shown}${more}`)
+    }
+  }
 
   // ── Store daily Fear & Greed snapshot ──────────────────────────────────────
   let fearGreedStored = false
@@ -740,6 +801,7 @@ Deno.serve(async (req) => {
     date: today,
     signals: results.length,
     changes: changes.length,
+    qps_notified: qpsNotified,
     fear_greed_stored: fearGreedStored,
     derivatives_stored: derivativesStored,
     breakdown: {

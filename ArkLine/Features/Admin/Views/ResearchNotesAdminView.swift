@@ -60,7 +60,7 @@ struct ResearchNotesAdminView: View {
             } header: {
                 Text("New Research")
             } footer: {
-                Text("Pulls fundamentals, analyst estimates, the latest earnings call, and news from FMP; Claude drafts the note in the Arkline framework. Numbers come from data, prose from the model — you are the editor of record.")
+                Text("Pulls fundamentals, analyst estimates, the latest earnings call, and news from FMP; Claude drafts the note in the Arkline framework. Numbers come from data, prose from the model, you are the editor of record.")
             }
             .listRowBackground(AppColors.cardBackground(colorScheme))
 
@@ -116,7 +116,7 @@ struct ResearchNotesAdminView: View {
             } header: {
                 Text("Drafts Awaiting Review")
             } footer: {
-                Text("Drafts are never visible to users. Review carefully — published notes version rather than disappear, so accuracy at publish matters.")
+                Text("Drafts are never visible to users. Review carefully, published notes version rather than disappear, so accuracy at publish matters.")
             }
             .listRowBackground(AppColors.cardBackground(colorScheme))
         }

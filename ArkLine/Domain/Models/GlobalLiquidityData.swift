@@ -491,13 +491,13 @@ enum LiquidityCyclePhase: String, CaseIterable {
     var defaultEquityGuidance: String {
         switch self {
         case .earlyExpansion:
-            return "Favor cyclical growth — tech, discretionary, financials. Earnings growth accelerating as liquidity expands."
+            return "Cyclical growth (tech, discretionary, financials) has historically led here, with earnings growth accelerating as liquidity expands."
         case .lateExpansion:
-            return "Rotate from growth to value — energy, materials, industrials. Valuations stretched on growth names."
+            return "Leadership has historically rotated from growth to value (energy, materials, industrials), with valuations stretched on growth names."
         case .earlyContraction:
-            return "Defensive sectors — utilities, healthcare, consumer staples. Trim broad equity exposure, raise cash."
+            return "Defensive sectors (utilities, healthcare, consumer staples) have historically held up better here, as broad equities come under pressure."
         case .lateContraction:
-            return "Quality dividends and long-duration bonds. Equity valuations resetting — begin building watchlists."
+            return "Quality dividends and long-duration bonds have historically led here, with equity valuations resetting."
         }
     }
 
@@ -593,11 +593,11 @@ enum YieldCurveRegime: String, CaseIterable {
 
     var interpretation: String {
         switch self {
-        case .steepening: return "Early cycle signal — historically bullish for risk assets"
-        case .flattening: return "Late cycle signal — Fed tightening, caution warranted"
-        case .inverted: return "Recession warning — historically bearish, precedes downturns by 6-18 months"
-        case .uninverting: return "Curve normalizing — often the final stage before recession begins"
-        case .deeplyInverted: return "Strong recession signal — defensive positioning recommended"
+        case .steepening: return "Early cycle signal, historically bullish for risk assets"
+        case .flattening: return "Late cycle signal, associated with Fed tightening"
+        case .inverted: return "Recession warning, historically bearish, precedes downturns by 6-18 months"
+        case .uninverting: return "Curve normalizing, often the final stage before recession begins"
+        case .deeplyInverted: return "Strong recession signal, historically a defensive backdrop"
         case .stable: return "Neutral yield curve conditions"
         case .unknown: return "Yield curve data unavailable"
         }

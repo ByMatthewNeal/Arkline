@@ -348,7 +348,7 @@ class HomeViewModel {
 
     // User-selected risk coins from settings
     var userRiskCoins: [String] {
-        UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) ?? ["BTC", "ETH"]
+        UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) ?? ["BTC", "ETH", "SOL"]
     }
 
     // Computed property to get risk level for selected coin
@@ -372,9 +372,11 @@ class HomeViewModel {
     var stockRiskLevels: [String: ITCRiskLevel] = [:]
     var stockRiskHistories: [String: [ITCRiskLevel]] = [:]
 
-    /// Default stocks to show risk for
+    /// Stocks shown in the Home "Stock Risk Levels" widget, the Magnificent 7.
+    /// Kept to a tight, recognizable set for the home screen; the full stock
+    /// universe (AssetRiskConfig.stockConfigs) remains available on the Market tab.
     var stockRiskSymbols: [String] {
-        AssetRiskConfig.stockConfigs.map(\.assetId)
+        ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]
     }
 
     /// Stock risk data formatted for MultiCoinRiskSection
@@ -391,6 +393,79 @@ class HomeViewModel {
         guard let history = stockRiskHistories[symbol], history.count >= 3 else { return nil }
         let last7 = history.suffix(7)
         return last7.map(\.riskLevel).reduce(0, +) / Double(last7.count)
+    }
+
+    // MARK: - Resources & Glossary ("Learn" card)
+
+    /// One rotating teaching moment for the Home "Learn" card: either a short
+    /// article from the Resources library or a glossary definition. The glossary
+    /// (200+ terms) gives newer investors a steady "did you know" drip; a deeper
+    /// article surfaces every few days. Subtle education for a mixed audience —
+    /// the app is the cockpit, this is a bit of copilot hand-holding.
+    enum LearnFeature {
+        case article(ResourceArticle)
+        case term(DictionaryTerm)
+    }
+
+    var resourceArticles: [ResourceArticle] = []
+    var learnTerms: [DictionaryTerm] = []
+
+    private static let learnStartKey = "learn_card_start_date_v1"
+
+    /// Days since the user first saw the Learn card (0-based). Anchors the term
+    /// rotation to the user's own start, so everyone begins easy on their day 0
+    /// regardless of the calendar. Stamped in loadFeaturedResource.
+    private static func learnDay() -> Int {
+        guard let start = UserDefaults.standard.object(forKey: learnStartKey) as? Date else { return 0 }
+        let cal = Calendar.current
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: start), to: cal.startOfDay(for: Date())).day ?? 0
+        return max(0, days)
+    }
+
+    /// The featured item, rotating daily. Glossary terms are walked in
+    /// easy-to-hard order (difficulty tier) so a newcomer starts approachable and
+    /// only meets advanced jargon later. ~Every third day features a deeper article.
+    var featuredLearn: LearnFeature? {
+        // Educational articles only, skip the "more" bucket (FAQ/About/Disclaimer)
+        // and deep-link rows, so what's featured is always a real lesson.
+        let articles = resourceArticles.filter {
+            $0.linkType == nil && !($0.body ?? "").isEmpty &&
+            ($0.category == "learn" || $0.category == "get_started")
+        }
+        // Easy first: sort by difficulty (beginner → advanced), then alphabetically.
+        let terms = learnTerms.sorted {
+            ($0.difficulty ?? 2, $0.term.lowercased()) < ($1.difficulty ?? 2, $1.term.lowercased())
+        }
+        let day = Self.learnDay()
+
+        if day % 3 == 2, !articles.isEmpty {
+            return .article(articles[day % articles.count])
+        }
+        if !terms.isEmpty {
+            return .term(terms[day % terms.count])
+        }
+        if !articles.isEmpty {
+            return .article(articles[day % articles.count])
+        }
+        return nil
+    }
+
+    func loadFeaturedResource() async {
+        guard enableSideEffects else { return }
+        // Stamp the start date once so the term rotation starts easy per user.
+        if UserDefaults.standard.object(forKey: Self.learnStartKey) == nil {
+            UserDefaults.standard.set(Date(), forKey: Self.learnStartKey)
+        }
+        if let articles = try? await ResourceService.shared.fetchPublished() {
+            await MainActor.run { self.resourceArticles = articles }
+        }
+        // Snapshot glossary terms from the in-memory store (loaded at launch,
+        // disk-cached for offline). If not ready yet, the next refresh picks them up.
+        let terms = await MainActor.run { () -> [DictionaryTerm] in
+            DictionaryStore.shared.loadIfNeeded()
+            return DictionaryStore.shared.terms
+        }
+        await MainActor.run { self.learnTerms = terms }
     }
 
     // Calculate consecutive days at current risk category
@@ -804,7 +879,7 @@ class HomeViewModel {
         // If a previous refresh is somehow stuck, force-reset after 30s
         if isRefreshing {
             if let last = lastRefreshed, Date().timeIntervalSince(last) > 30 {
-                logWarning("HomeViewModel: isRefreshing was stuck — force-resetting", category: .data)
+                logWarning("HomeViewModel: isRefreshing was stuck, force-resetting", category: .data)
                 isRefreshing = false
             } else {
                 return
@@ -1183,28 +1258,28 @@ class HomeViewModel {
             }
         }
 
-        // Fetch QPS (daily positioning signals)
+        // Fetch QPS (daily positioning signals).
+        // Note: the "signal changed" PUSH is now sent server-side by the
+        // compute-positioning-signals cron (event_type "qps_change"), so it
+        // reaches members even with the app closed. We deliberately no longer
+        // raise a local notification here, that on-device path only fired while
+        // Home was open and refreshing (and skipped the first fetch of a
+        // session), so it missed almost every change and would now double-notify.
+        // The fetched signals still drive the in-app QPS cards and the
+        // notification inbox via `hasChanged`.
         Task {
             do {
                 let signals = try await self.qpsService.fetchLatestSignals(forceRefresh: forceRefresh)
                 await MainActor.run {
-                    // Notify for signal changes (only today's, only once per signal)
-                    let today = Calendar.current.startOfDay(for: Date())
-                    let changed = signals.filter { $0.hasChanged && $0.signalDate >= today }
-                    if !changed.isEmpty && !self.qpsSignals.isEmpty {
-                        for signal in changed {
-                            let notifId = "qps_\(signal.asset)_\(signal.signal)"
-                            guard !self.notifiedQPSIds.contains(notifId) else { continue }
-                            self.notifiedQPSIds.insert(notifId)
-                            Task { await BroadcastNotificationService.shared.sendQPSChangeNotification(for: signal) }
-                        }
-                    }
                     self.qpsSignals = signals
                 }
             } catch {
                 logWarning("QPS signals fetch failed: \(error.localizedDescription)", category: .network)
             }
         }
+
+        // Resources for the Home "Learn" card (rotating featured article)
+        Task { await self.loadFeaturedResource() }
 
         // Fetch latest weekly market deck
         Task {

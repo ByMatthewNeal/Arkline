@@ -421,7 +421,7 @@ struct SwingSetupsDetailView: View {
                     }
 
                     // Compliance footer — visible on Active and History list views
-                    Text("Prices are delayed and may lag the live market by a few minutes — they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Trade signals are educational tools, not financial advice.")
+                    Text("Prices are delayed and may lag the live market by a few minutes, they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Trade signals are educational tools, not financial advice.")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textSecondary.opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -584,7 +584,7 @@ struct SwingSetupsDetailView: View {
                     Text("Spot (1x) compounded return following every signal at equal size.")
                         .font(.system(size: 9))
                         .foregroundColor(AppColors.textSecondary.opacity(0.5))
-                    Text("Leverage amplifies both gains and losses. Use the Leverage Calculator on each signal to assess your risk before trading. This is not financial advice — always do your own research.")
+                    Text("Leverage amplifies both gains and losses. Use the Leverage Calculator on each signal to assess your risk before trading. This is not financial advice, always do your own research.")
                         .font(.system(size: 9))
                         .foregroundColor(AppColors.textSecondary.opacity(0.4))
                 }
@@ -1278,7 +1278,7 @@ struct SwingSetupsDetailView: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(AppColors.warning)
 
-                Text("\(eventNames) today. Expect sharp moves — manage risk carefully.")
+                Text("\(eventNames) today. Expect sharp moves, manage risk carefully.")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary)
                     .lineLimit(2)
@@ -1306,11 +1306,11 @@ struct SwingSetupsDetailView: View {
             }
             let combined = reasons.joined(separator: " ")
             if combined.contains("no bounce confirmation") && combined.contains("R:R") {
-                return "Markets are trending without a pullback. Signals fire when price dips to a Fibonacci support level and bounces — this avoids chasing moves already in progress."
+                return "Markets are trending without a pullback. Signals fire when price dips to a Fibonacci support level and bounces, this avoids chasing moves already in progress."
             } else if combined.contains("no bounce confirmation") {
                 return "Price is near key levels but hasn't bounced yet. The system waits for confirmation to avoid false entries."
             } else if combined.contains("R:R") {
-                return "Setups are too tight right now — the risk/reward isn't favorable. When price pulls back further from resistance, the next setups may form."
+                return "Setups are too tight right now, the risk/reward isn't favorable. When price pulls back further from resistance, the next setups may form."
             } else if combined.contains("EMA trend misaligned") {
                 return "The trend filter is blocking counter-trend signals. This protects against trading against momentum."
             } else if combined.contains("choppy") {
@@ -1819,7 +1819,7 @@ struct SignalGuideSheet: View {
                                     .frame(width: 4, height: 28)
                             ),
                             title: "Green bar",
-                            detail: "Long setup — expecting price to go up"
+                            detail: "Long setup, expecting price to go up"
                         )
                         legendRow(
                             visual: AnyView(
@@ -1828,7 +1828,7 @@ struct SignalGuideSheet: View {
                                     .frame(width: 4, height: 28)
                             ),
                             title: "Red bar",
-                            detail: "Short setup — expecting price to go down"
+                            detail: "Short setup, expecting price to go down"
                         )
                     }
 
@@ -1842,7 +1842,7 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(badgeSample("Long Setup", color: AppColors.success)),
                             title: "Long Setup / Short Setup",
-                            detail: "Valid zone with standard confluence — still meets all detection criteria"
+                            detail: "Valid zone with standard confluence, still meets all detection criteria"
                         )
                     }
 
@@ -1856,22 +1856,22 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(scoreSample("A+", color: AppColors.success)),
                             title: "A+ (90–100)",
-                            detail: "Elite setup — exceptional confluence depth, full EMA alignment, volume confirmation, and favorable macro conditions"
+                            detail: "Elite setup, exceptional confluence depth, full EMA alignment, volume confirmation, and favorable macro conditions"
                         )
                         legendRow(
                             visual: AnyView(scoreSample("A", color: AppColors.success)),
                             title: "A (80–89)",
-                            detail: "Strong setup — high confluence with most factors aligned"
+                            detail: "Strong setup, high confluence with most factors aligned"
                         )
                         legendRow(
                             visual: AnyView(scoreSample("B+", color: AppColors.warning)),
                             title: "B+ (70–79)",
-                            detail: "Good setup — solid confluence but some factors are weaker"
+                            detail: "Good setup, solid confluence but some factors are weaker"
                         )
                         legendRow(
                             visual: AnyView(scoreSample("B", color: AppColors.warning)),
                             title: "B (60–69)",
-                            detail: "Moderate setup — meets criteria but use extra caution"
+                            detail: "Moderate setup, meets criteria but use extra caution"
                         )
 
                         Text("Score breakdown: Confluence depth (35pts), EMA alignment (20pts), Volume confirmation (20pts), Risk/Reward (15pts), Macro context (15pts). Use the Sort by Score chip to rank signals.")
@@ -1901,7 +1901,7 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(confidenceSample("Low", color: AppColors.error)),
                             title: "Low Confidence",
-                            detail: "Asset has <55% win rate — extra caution warranted (e.g. BTC)"
+                            detail: "Asset has <55% win rate, extra caution warranted (e.g. BTC)"
                         )
                     }
 
@@ -1912,7 +1912,7 @@ struct SignalGuideSheet: View {
                         statusRow(label: "Watching T1", color: AppColors.accent,
                                   detail: "Trade triggered and now watching for Target 1 to be hit.")
                         statusRow(label: "Runner trailing", color: AppColors.accent,
-                                  detail: "T1 was hit — 50% of the position closed in profit. The remaining 50% is trailing with a protective stop.")
+                                  detail: "T1 was hit, 50% of the position closed in profit. The remaining 50% is trailing with a protective stop.")
                         statusRow(label: "Target Hit", color: AppColors.success,
                                   detail: "Full target reached. The signal closed as a win.")
                         statusRow(label: "Stopped Out", color: AppColors.error,
@@ -1941,7 +1941,7 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(chipSample("EMA Aligned", color: AppColors.accent)),
                             title: "EMA Aligned",
-                            detail: "The 20 and 50 EMA on the bias timeframe (4H for scalps, 4H for swings) confirm the signal direction — a positive confluence factor"
+                            detail: "The 20 and 50 EMA on the bias timeframe (4H for scalps, 4H for swings) confirm the signal direction, a positive confluence factor"
                         )
                         legendRow(
                             visual: AnyView(chipSample("Counter-Trend", color: AppColors.warning)),
@@ -1956,17 +1956,17 @@ struct SignalGuideSheet: View {
                         legendRow(
                             visual: AnyView(chipSample("Compressed", color: AppColors.warning)),
                             title: "Compressed",
-                            detail: "Asset is trading in an unusually tight range with low volume — a low-conviction environment. Signals may be less reliable as compressed markets often precede false breakouts. Score threshold is raised and a penalty is applied."
+                            detail: "Asset is trading in an unusually tight range with low volume, a low-conviction environment. Signals may be less reliable as compressed markets often precede false breakouts. Score threshold is raised and a penalty is applied."
                         )
                         legendRow(
                             visual: AnyView(chipSample("Vol Shelf", color: nil)),
                             title: "Vol Shelf",
-                            detail: "A high-volume node from the volume profile overlaps with the Fibonacci entry zone — adds structural support/resistance"
+                            detail: "A high-volume node from the volume profile overlaps with the Fibonacci entry zone, adds structural support/resistance"
                         )
                         legendRow(
                             visual: AnyView(chipSample("T1 Hit", color: AppColors.success)),
                             title: "T1 Hit",
-                            detail: "Target 1 was reached — 50% of the position was closed at a profit"
+                            detail: "Target 1 was reached, 50% of the position was closed at a profit"
                         )
                     }
 
@@ -1977,9 +1977,9 @@ struct SignalGuideSheet: View {
                             .foregroundColor(AppColors.textSecondary)
                             .padding(.bottom, 4)
 
-                        borderRow(color: AppColors.success, label: "Green border", detail: "Win — target hit or profitable close")
-                        borderRow(color: AppColors.error, label: "Red border", detail: "Loss — stopped out")
-                        borderRow(color: AppColors.warning, label: "Amber border", detail: "Partial — T1 hit but runner stopped at breakeven")
+                        borderRow(color: AppColors.success, label: "Green border", detail: "Win, target hit or profitable close")
+                        borderRow(color: AppColors.error, label: "Red border", detail: "Loss, stopped out")
+                        borderRow(color: AppColors.warning, label: "Amber border", detail: "Partial, T1 hit but runner stopped at breakeven")
                     }
 
                     // 8. Key Metrics
@@ -1991,7 +1991,7 @@ struct SignalGuideSheet: View {
                         metricRow(label: "Stop Loss",
                                   detail: "The price where the trade is invalidated. Placed below/above the Fibonacci zone to limit downside.")
                         metricRow(label: "+2.3R / -1.0R",
-                                  detail: "R-multiple — how many \"risk units\" the trade returned. +2.3R means you made 2.3x your risked amount. -1.0R means you lost exactly what you risked.")
+                                  detail: "R-multiple, how many \"risk units\" the trade returned. +2.3R means you made 2.3x your risked amount. -1.0R means you lost exactly what you risked.")
                         metricRow(label: "Hit Rate",
                                   detail: "Percentage of closed signals that reached their target. Shown in the stats card at the top.")
                         metricRow(label: "Streak",
@@ -2005,15 +2005,15 @@ struct SignalGuideSheet: View {
                         metricRow(label: "Signal Parameters",
                                   detail: "Exact price levels for entry, targets, and stop loss with percentage moves from entry.")
                         metricRow(label: "Your Setup",
-                                  detail: "Interactive calculator — set your wallet size, leverage, risk %, and entry strategy to see position sizing, liquidation price, and dollar payouts. Your wallet size is remembered between visits.")
+                                  detail: "Interactive calculator, set your wallet size, leverage, risk %, and entry strategy to see position sizing, liquidation price, and dollar payouts. Your wallet size is remembered between visits.")
                         metricRow(label: "Entry Strategy",
                                   detail: "Choose where in the entry zone to place your order: Optimal (best R:R edge), Midpoint (zone center), Aggressive (fast fill), or Split (two limit orders at 40/60 split).")
                         metricRow(label: "Split Exit Tracking",
-                                  detail: "Shows the P&L for each half of the position — the 50% closed at T1 and the 50% runner. Combined P&L shown at the bottom.")
+                                  detail: "Shows the P&L for each half of the position, the 50% closed at T1 and the 50% runner. Combined P&L shown at the bottom.")
                         metricRow(label: "AI Analysis",
                                   detail: "Claude-generated narrative context for the signal, including macro conditions and technical reasoning.")
                         metricRow(label: "Timeline",
-                                  detail: "Chronological record of every signal event — from generation to outcome.")
+                                  detail: "Chronological record of every signal event, from generation to outcome.")
                     }
 
                     // Disclaimer

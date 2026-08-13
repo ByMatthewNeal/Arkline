@@ -832,25 +832,25 @@ final class APISentimentService: SentimentServiceProtocol {
 
     private func generateRiskRecommendation(level: Int) -> String {
         switch level {
-        case 1...3: return "Low risk environment - consider increasing exposure"
-        case 4...6: return "Moderate risk - maintain balanced positions"
-        case 7...8: return "High risk - consider reducing exposure"
-        default: return "Extreme risk - exercise caution"
+        case 1...3: return "Low risk environment, historically a calmer, more supportive backdrop"
+        case 4...6: return "Moderate risk, a balanced, middle-of-the-range backdrop"
+        case 7...8: return "High risk, a more stretched, less forgiving backdrop"
+        default: return "Extreme risk, historically the kind of backdrop where moves have been most fragile"
         }
     }
 
     private func generateArkLineRecommendation(score: Int) -> String {
         switch score {
         case 0...20:
-            return "Extreme fear in the market. Historically a good accumulation zone. Consider DCA buying."
+            return "Extreme fear in the market. Sentiment is deeply washed out, historically the kind of backdrop where lasting lows have often formed."
         case 21...40:
-            return "Market showing fear. Potential buying opportunity with caution."
+            return "The market is showing fear. Sentiment is running cool, leaning cautious."
         case 41...60:
-            return "Neutral sentiment. Market in consolidation. Hold positions and monitor."
+            return "Neutral sentiment. The market is roughly balanced, with no strong pull either way."
         case 61...80:
-            return "Greed in the market. Consider taking partial profits. Reduce leverage."
+            return "Greed in the market. Sentiment is running warm, historically a stage where moves can get stretched."
         default:
-            return "Extreme greed. High risk zone. Consider de-risking portfolio significantly."
+            return "Extreme greed. Sentiment is running hot, historically the kind of stretch that has preceded pullbacks."
         }
     }
 }

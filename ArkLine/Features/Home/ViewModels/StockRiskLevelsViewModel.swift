@@ -36,14 +36,46 @@ class StockRiskLevelsViewModel {
         self.itcRiskService = itcRiskService
     }
 
+    /// Search query — filters the list by ticker or name.
+    var searchText = ""
+
+    var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    /// Rows matching the current search (ticker OR display name).
+    private var filteredRows: [StockRiskRow] {
+        let q = searchText.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return rows }
+        return rows.filter {
+            $0.config.assetId.localizedCaseInsensitiveContains(q) ||
+            $0.config.displayName.localizedCaseInsensitiveContains(q)
+        }
+    }
+
     /// Bucketed rows sorted by band order, ascending risk within each band.
     var bucketed: [(band: String, items: [StockRiskRow])] {
-        let grouped = Dictionary(grouping: rows) { $0.current.riskCategory }
+        let grouped = Dictionary(grouping: filteredRows) { $0.current.riskCategory }
         return Self.bandOrder.compactMap { band in
             guard let items = grouped[band], !items.isEmpty else { return nil }
             let sorted = items.sorted { $0.current.riskLevel < $1.current.riskLevel }
             return (band, sorted)
         }
+    }
+
+    /// Failed stocks matching the current search.
+    var filteredFailedStocks: [AssetRiskConfig] {
+        let q = searchText.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return failedStocks }
+        return failedStocks.filter {
+            $0.assetId.localizedCaseInsensitiveContains(q) ||
+            $0.displayName.localizedCaseInsensitiveContains(q)
+        }
+    }
+
+    /// True when a search is active but nothing matches.
+    var hasNoSearchResults: Bool {
+        isSearching && filteredRows.isEmpty && filteredFailedStocks.isEmpty
     }
 
     func delta(for row: StockRiskRow) -> Double? {

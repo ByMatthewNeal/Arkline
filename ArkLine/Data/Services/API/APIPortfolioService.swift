@@ -430,7 +430,11 @@ final class APIPortfolioService: PortfolioServiceProtocol {
 
         let (crypto, stocks, metals) = try await (cryptoPrices, stockPrices, metalPrices)
 
-        // Update holdings with live prices
+        // Update holdings with live prices. We also capture each asset's logo URL
+        // from the same market payload so every held asset carries its real icon
+        // (crypto via CoinGecko, stocks/metals via FMP) instead of falling back to
+        // the symbol-initials monogram. Only overwrite iconUrl when the feed
+        // actually returns one, so a good stored value is never wiped.
         for i in updatedHoldings.indices {
             let holding = updatedHoldings[i]
 
@@ -439,16 +443,19 @@ final class APIPortfolioService: PortfolioServiceProtocol {
                 if let priceData = crypto[holding.symbol.lowercased()] {
                     updatedHoldings[i].currentPrice = priceData.price
                     updatedHoldings[i].priceChangePercentage24h = priceData.change24h
+                    if let icon = priceData.iconUrl { updatedHoldings[i].iconUrl = icon }
                 }
             case "stock":
                 if let priceData = stocks[holding.symbol.uppercased()] {
                     updatedHoldings[i].currentPrice = priceData.price
                     updatedHoldings[i].priceChangePercentage24h = priceData.change24h
+                    if let icon = priceData.iconUrl { updatedHoldings[i].iconUrl = icon }
                 }
             case "metal":
                 if let priceData = metals[holding.symbol.uppercased()] {
                     updatedHoldings[i].currentPrice = priceData.price
                     updatedHoldings[i].priceChangePercentage24h = priceData.change24h
+                    if let icon = priceData.iconUrl { updatedHoldings[i].iconUrl = icon }
                 }
             default:
                 break
@@ -460,15 +467,15 @@ final class APIPortfolioService: PortfolioServiceProtocol {
 
     // MARK: - Private Helpers
 
-    private func fetchCryptoPrices(symbols: [String]) async throws -> [String: (price: Double, change24h: Double)] {
+    private func fetchCryptoPrices(symbols: [String]) async throws -> [String: (price: Double, change24h: Double, iconUrl: String?)] {
         guard !symbols.isEmpty else { return [:] }
 
         let assets = try await marketService.fetchCryptoAssets(page: 1, perPage: 100)
-        var prices: [String: (price: Double, change24h: Double)] = [:]
+        var prices: [String: (price: Double, change24h: Double, iconUrl: String?)] = [:]
 
         for asset in assets {
             if symbols.contains(asset.id) || symbols.contains(asset.symbol.lowercased()) {
-                let priceData = (asset.currentPrice, asset.priceChangePercentage24h)
+                let priceData = (asset.currentPrice, asset.priceChangePercentage24h, asset.iconUrl)
                 prices[asset.id] = priceData
                 prices[asset.symbol.lowercased()] = priceData
             }
@@ -477,27 +484,27 @@ final class APIPortfolioService: PortfolioServiceProtocol {
         return prices
     }
 
-    private func fetchStockPrices(symbols: [String]) async throws -> [String: (price: Double, change24h: Double)] {
+    private func fetchStockPrices(symbols: [String]) async throws -> [String: (price: Double, change24h: Double, iconUrl: String?)] {
         guard !symbols.isEmpty else { return [:] }
 
         let assets = try await marketService.fetchStockAssets(symbols: symbols)
-        var prices: [String: (price: Double, change24h: Double)] = [:]
+        var prices: [String: (price: Double, change24h: Double, iconUrl: String?)] = [:]
 
         for asset in assets {
-            prices[asset.symbol] = (asset.currentPrice, asset.priceChangePercentage24h)
+            prices[asset.symbol] = (asset.currentPrice, asset.priceChangePercentage24h, asset.iconUrl)
         }
 
         return prices
     }
 
-    private func fetchMetalPrices(symbols: [String]) async throws -> [String: (price: Double, change24h: Double)] {
+    private func fetchMetalPrices(symbols: [String]) async throws -> [String: (price: Double, change24h: Double, iconUrl: String?)] {
         guard !symbols.isEmpty else { return [:] }
 
         let assets = try await marketService.fetchMetalAssets(symbols: symbols)
-        var prices: [String: (price: Double, change24h: Double)] = [:]
+        var prices: [String: (price: Double, change24h: Double, iconUrl: String?)] = [:]
 
         for asset in assets {
-            prices[asset.symbol] = (asset.currentPrice, asset.priceChangePercentage24h)
+            prices[asset.symbol] = (asset.currentPrice, asset.priceChangePercentage24h, asset.iconUrl)
         }
 
         return prices

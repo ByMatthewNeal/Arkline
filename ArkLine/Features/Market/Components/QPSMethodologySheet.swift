@@ -15,7 +15,7 @@ struct QPSMethodologySheet: View {
                         title: "What Are Positioning Signals?",
                         icon: "waveform.path.ecg"
                     ) {
-                        Text("Positioning signals tell you the current trend state of an asset — whether momentum favors holding, reducing, or staying out. They're computed daily using price structure relative to key moving averages.")
+                        Text("Positioning signals describe the current trend state of an asset, whether momentum is pointing up, sideways, or down. They're computed daily using price structure relative to key moving averages.")
                     }
 
                     // Signal states
@@ -23,18 +23,18 @@ struct QPSMethodologySheet: View {
                         VStack(spacing: 12) {
                             signalRow(
                                 signal: .bullish,
-                                action: "Favorable to hold or add exposure",
+                                action: "A more supportive backdrop",
                                 detail: "Price is above key moving averages with confirmed trend strength."
                             )
                             signalRow(
                                 signal: .neutral,
-                                action: "Wait for direction or reduce size",
-                                detail: "Trend is transitioning — not yet broken, but momentum is fading or rebuilding."
+                                action: "Mixed or sideways, no clear push",
+                                detail: "Trend is transitioning, not yet broken, but momentum is fading or rebuilding."
                             )
                             signalRow(
                                 signal: .bearish,
-                                action: "Reduce exposure or stay flat",
-                                detail: "Trend is broken below key levels. Capital preservation is the priority."
+                                action: "A tougher backdrop for now",
+                                detail: "Trend is broken below key levels."
                             )
                         }
                     }
@@ -42,9 +42,9 @@ struct QPSMethodologySheet: View {
                     // How to use
                     section(title: "How to Use Signals", icon: "lightbulb.fill") {
                         VStack(alignment: .leading, spacing: 10) {
-                            guideStep("1", "Check the signal before adding to a position. Bullish = green light, Neutral = caution, Bearish = wait.")
-                            guideStep("2", "When a signal changes, review your exposure. Downgrades (Bullish \u{2192} Neutral) suggest tightening stops or trimming.")
-                            guideStep("3", "Use signals alongside risk levels and trade setups — they're one input, not the whole picture.")
+                            guideStep("1", "Read the signal as context on the backdrop: Bullish means trend and momentum are pointing up, Neutral means mixed or sideways, Bearish means they're pointing down. It describes conditions, it isn't a cue to buy or sell.")
+                            guideStep("2", "When a signal changes, the backdrop has shifted. A move from Bullish to Neutral, for example, means the upward momentum has cooled, worth noticing, not a cue to act.")
+                            guideStep("3", "Use signals alongside risk levels and trade setups, they're one input, not the whole picture.")
                             guideStep("4", "Signals update daily at midnight UTC. Intraday price moves won't change the signal until the next day.")
                         }
                     }
@@ -68,7 +68,7 @@ struct QPSMethodologySheet: View {
                                 .font(.system(size: 13))
                                 .foregroundColor(AppColors.textSecondary)
 
-                            Text("No signal system is perfect. False positives and delayed signals are inevitable — always pair with your own risk management.")
+                            Text("No signal system is perfect. False positives and delayed signals are inevitable, always pair with your own risk management.")
                                 .font(.system(size: 13))
                                 .foregroundColor(AppColors.textSecondary)
                         }

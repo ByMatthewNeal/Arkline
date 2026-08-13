@@ -130,7 +130,7 @@ struct ArkLineApp: App {
     /// subscribers, so their cold-start path stays with `pendingNotificationResult`
     /// (consumed by those views) — the replay leaves them alone to avoid a regress.
     private static let rootHandledNotificationTypes: Set<String> = [
-        "briefing", "qps_change", "dca_reminder",
+        "briefing", "daily_digest", "qps_change", "dca_reminder",
         "model_portfolio", "sentiment_regime", "market_deck",
         "feature_request"
     ]
@@ -314,7 +314,7 @@ enum CoreAsset: String, CaseIterable, Codable, Identifiable {
     }
 
     static var defaultEnabled: Set<CoreAsset> {
-        [.btc, .eth]
+        [.btc, .eth, .sol]
     }
 }
 
@@ -353,8 +353,24 @@ class AppState: ObservableObject {
     @Published var pendingBroadcastId: String?
     @Published var pendingSignalId: UUID?
     @Published var pendingQPSAsset: String?
+    /// Ticker (e.g. "GOLD") whose positioning detail should open as a sheet —
+    /// set by hedging-lesson deep-links so gold/silver/oil land on their own view.
+    @Published var pendingMarketAssetDetail: String?
+    /// Generic Home scroll target ("widget_<key>"), used by the Foundations
+    /// trail deep-links to land the user on the widget a lesson references.
+    @Published var pendingHomeScrollTarget: String?
     @Published var pendingDCAReminderId: String?
-    /// Set when the admin taps a "new feature request" push — Profile navigates
+    /// Set by the Pilot's Checklist "notifications" step, Profile pushes the
+    /// notification settings screen and clears it.
+    @Published var pendingOpenNotificationSettings = false
+    /// Set by the Pilot's Checklist "make the home screen yours" step, Home
+    /// opens the Customize sheet (where you add assets and toggle widgets).
+    @Published var pendingOpenCustomizeHome = false
+    /// Set by a lesson's "see it in your app" tap. MainTabView performs the
+    /// navigation once the reader cover has dismissed, so it runs from the tab
+    /// container's own context instead of the (dismissing) full-screen cover.
+    @Published var pendingLessonDeepLink: LessonDeepLink?
+    /// Set when the admin taps a "new feature request" push, Profile navigates
     /// into the Feature Backlog and clears it.
     @Published var pendingOpenFeatureBacklog = false
     @Published var pendingModelPortfolioStrategy: String?
@@ -365,6 +381,11 @@ class AppState: ObservableObject {
 
     // Unread broadcast badge count for Insights tab
     @Published var insightsUnreadCount: Int = 0
+
+    /// Set true for one run right after onboarding completes, so MainTabView can
+    /// route a brand-new user straight into the Start Here trail (one time only).
+    /// Transient — not persisted; existing users rely on the Home Start Here card.
+    @Published var justOnboarded = false
 
     // Tab navigation
     @Published var selectedTab: AppTab = .home
@@ -415,6 +436,27 @@ class AppState: ObservableObject {
             enabledCoreAssets = assets.isEmpty ? CoreAsset.defaultEnabled : assets
         }
 
+        // One-time introduction of SOL as a default across BOTH the Core price
+        // widget (enabledCoreAssets) and the Crypto Risk Levels widget (the
+        // separate `riskCoins` pref). Existing users' saved prefs predate SOL
+        // being default-on; enable it once (flag-guarded), after which their
+        // Customize choices stick. Mirrors the model-portfolio widget rollout.
+        let solIntroFlag = "arkline_did_introduce_sol_default_v1"
+        if !UserDefaults.standard.bool(forKey: solIntroFlag) {
+            // Core price widget
+            enabledCoreAssets.insert(.sol)
+            if let data = try? JSONEncoder().encode(enabledCoreAssets) {
+                UserDefaults.standard.set(data, forKey: "enabledCoreAssets")
+            }
+            // Crypto Risk Levels widget (separate pref store)
+            var risk = UserDefaults.standard.stringArray(forKey: Constants.UserDefaults.riskCoins) ?? ["BTC", "ETH"]
+            if !risk.contains("SOL") {
+                risk.append("SOL")
+                UserDefaults.standard.set(risk, forKey: Constants.UserDefaults.riskCoins)
+            }
+            UserDefaults.standard.set(true, forKey: solIntroFlag)
+        }
+
         // Load market ticker preferences
         if let data = UserDefaults.standard.data(forKey: Constants.UserDefaults.tickerPreferences),
            let prefs = try? JSONDecoder().decode(TickerPreferences.self, from: data) {
@@ -433,6 +475,35 @@ class AppState: ObservableObject {
             if !UserDefaults.standard.bool(forKey: introFlag) {
                 config.setWidgetEnabled(.modelPortfolioUpdate, enabled: true)
                 UserDefaults.standard.set(true, forKey: introFlag)
+            }
+
+            // One-time introduction of the Signal Changes (QPS) widget as a
+            // default, same flag-guarded pattern: existing users get it enabled
+            // once, after which their Customize choice sticks.
+            let signalsIntroFlag = "arkline_did_introduce_signal_changes_widget"
+            if !UserDefaults.standard.bool(forKey: signalsIntroFlag) {
+                config.setWidgetEnabled(.qpsSignals, enabled: true)
+                UserDefaults.standard.set(true, forKey: signalsIntroFlag)
+            }
+
+            // One-time introduction of the Stock Risk Levels (Mag 7) widget as a
+            // default, same flag-guarded pattern.
+            let stockRiskIntroFlag = "arkline_did_introduce_stock_risk_widget"
+            if !UserDefaults.standard.bool(forKey: stockRiskIntroFlag) {
+                config.setWidgetEnabled(.stockRiskLevel, enabled: true)
+                UserDefaults.standard.set(true, forKey: stockRiskIntroFlag)
+            }
+
+            // One-time introduction of the Learn card (rotating Resources article)
+            // at the tail of Home, same flag-guarded pattern.
+            let learnIntroFlag = "arkline_did_introduce_learn_card_widget"
+            if !UserDefaults.standard.bool(forKey: learnIntroFlag) {
+                config.setWidgetEnabled(.learnCard, enabled: true)
+                // The generic migration inserts new widgets right after Core; the
+                // Learn card is meant to sit at the very bottom, so pin it to the tail.
+                config.widgetOrder.removeAll { $0 == .learnCard }
+                config.widgetOrder.append(.learnCard)
+                UserDefaults.standard.set(true, forKey: learnIntroFlag)
             }
 
             widgetConfiguration = config

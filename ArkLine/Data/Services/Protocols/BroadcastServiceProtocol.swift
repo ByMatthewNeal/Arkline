@@ -140,6 +140,13 @@ protocol BroadcastServiceProtocol {
     /// - Returns: Array of ReactionSummary objects
     func fetchReactionSummary(for broadcastId: UUID, userId: UUID) async throws -> [ReactionSummary]
 
+    /// Fetches the authoritative reaction count (distinct reactors) for a broadcast.
+    /// Reads the trigger-maintained `reaction_count` column so the client can
+    /// reconcile after an optimistic update.
+    /// - Parameter broadcastId: The broadcast ID
+    /// - Returns: The distinct-user reaction count
+    func fetchReactionCount(for broadcastId: UUID) async throws -> Int
+
     // MARK: - Pinning
 
     /// Sets pinned status on a broadcast (unpins all others first)

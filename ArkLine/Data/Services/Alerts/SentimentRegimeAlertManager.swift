@@ -74,7 +74,7 @@ class SentimentRegimeAlertManager: ObservableObject {
                 lastNotificationDate = Date()
                 scheduleLocalNotification(from: previous, to: newRegime)
             } else if inCooldown {
-                logInfo("Sentiment shifted to \(newRegime.rawValue) — notification suppressed (cooldown)", category: .data)
+                logInfo("Sentiment shifted to \(newRegime.rawValue), notification suppressed (cooldown)", category: .data)
             }
 
             logInfo("Sentiment regime shifted from \(previous.rawValue) to \(newRegime.rawValue)", category: .data)
@@ -109,13 +109,13 @@ class SentimentRegimeAlertManager: ObservableObject {
     private func notificationBody(from oldRegime: SentimentRegime, to newRegime: SentimentRegime) -> String {
         switch newRegime {
         case .panic:
-            return "Market shifted to Panic — high fear with heavy activity. Historically near capitulation events."
+            return "Market shifted to Panic, high fear with heavy activity. Historically near capitulation events."
         case .fomo:
-            return "Market shifted to FOMO — greedy sentiment with surging activity. Historically near local tops."
+            return "Market shifted to FOMO, greedy sentiment with surging activity. Historically near local tops."
         case .apathy:
-            return "Market shifted to Apathy — low interest and fearful. Often a bottoming signal."
+            return "Market shifted to Apathy, low interest and fearful. Often a bottoming signal."
         case .complacency:
-            return "Market shifted to Complacency — quiet confidence on thin volume. Vulnerable to sudden moves."
+            return "Market shifted to Complacency, quiet confidence on thin volume. Vulnerable to sudden moves."
         }
     }
 

@@ -85,7 +85,7 @@ final class DeckGenerationManager {
                 self.generationStep = nil
                 await self.sendNotification(
                     title: "Market Deck Ready",
-                    body: "Your weekly update is ready to preview — \(deck.slides.count) slides generated."
+                    body: "Your weekly update is ready to preview, \(deck.slides.count) slides generated."
                 )
             } catch {
                 progressTask.cancel()

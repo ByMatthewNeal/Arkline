@@ -26,11 +26,11 @@ enum MomentumQuadrant: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .momentum: return "USD and BTC pair both bullish — the wave is real."
-        case .outperformingBTC: return "Gaining on Bitcoin while USD lags — early relative strength."
+        case .momentum: return "USD and BTC pair both bullish, the wave is real."
+        case .outperformingBTC: return "Gaining on Bitcoin while USD lags, early relative strength."
         case .usdLeading: return "Strong in dollar terms, not yet beating BTC."
-        case .bothBearish: return "Both pairs bearish — no momentum."
-        case .mixed: return "Signals not aligned — wait for confirmation."
+        case .bothBearish: return "Both pairs bearish, no momentum."
+        case .mixed: return "Signals not aligned, wait for confirmation."
         }
     }
 

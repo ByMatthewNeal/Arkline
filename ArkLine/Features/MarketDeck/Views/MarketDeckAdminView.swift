@@ -772,7 +772,7 @@ struct MarketDeckAdminView: View {
             HStack {
                 Image(systemName: "text.alignleft")
                     .foregroundColor(AppColors.accent)
-                Text("The Rundown — Narrative")
+                Text("The Rundown, Narrative")
                     .font(AppFonts.body14Medium)
                     .foregroundColor(AppColors.textPrimary(colorScheme))
             }
@@ -1026,7 +1026,7 @@ struct MarketDeckAdminView: View {
                     f.dateFormat = "MMM d, yyyy"
                     return f
                 }()
-                Text("\(displayFmt.string(from: customStart)) — \(displayFmt.string(from: customEnd))")
+                Text("\(displayFmt.string(from: customStart)), \(displayFmt.string(from: customEnd))")
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.accent)
             }

@@ -72,7 +72,7 @@ enum MacroIndicatorType: String, CaseIterable, Codable, Identifiable {
     func lowZScoreInterpretation() -> String {
         switch self {
         case .vix:
-            return "Complacency in equity markets - favorable for risk assets but watch for volatility expansion"
+            return "Complacency in equity markets - a calmer backdrop for risk assets, though these low-volatility stretches have historically been prone to sudden expansion"
         case .dxy:
             return "Unusually weak dollar - historically bullish for crypto and risk assets"
         case .m2:

@@ -107,6 +107,7 @@ struct FavoritesSection: View {
                     .foregroundColor(textPrimary.opacity(0.3))
             }
             .padding(.vertical, size == .compact ? 4 : 8)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -447,6 +448,7 @@ private struct FavoritePickerRow: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
 
@@ -519,6 +521,7 @@ private struct FavoriteStockPickerRow: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
 

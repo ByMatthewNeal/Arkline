@@ -141,7 +141,7 @@ class MarketDeckViewModel {
             deck = completed
             syncEditingState()
             hasUnsavedChanges = false
-            successMessage = "Deck generated — \(completed.slides.count) slides"
+            successMessage = "Deck generated, \(completed.slides.count) slides"
         }
         if let error = generationManager.errorMessage {
             errorMessage = error
@@ -542,7 +542,7 @@ class MarketDeckViewModel {
         contentParts.append("Swipe through all \(deck.slides.count) slides in the Weekly Market Update.")
 
         let broadcast = Broadcast(
-            title: "Weekly Market Update — \(deck.weekLabel)",
+            title: "Weekly Market Update, \(deck.weekLabel)",
             content: contentParts.joined(separator: "\n\n"),
             targetAudience: .all,
             status: .published,

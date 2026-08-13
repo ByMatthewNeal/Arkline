@@ -465,7 +465,7 @@ struct SignalDetailView: View {
             return BannerConfig(
                 icon: "arrow.up.right.circle.fill",
                 title: "Runner Trailing",
-                subtitle: "T1 hit — 50% closed, remaining position trailing",
+                subtitle: "T1 hit, 50% closed, remaining position trailing",
                 badge: signal.t1PnlPct.map { String(format: "%+.1f%%", $0) },
                 color: AppColors.accent
             )
@@ -496,9 +496,9 @@ struct SignalDetailView: View {
             let pnlSubtitle: String = {
                 if let pnl = unrealizedPnl {
                     let prefix = pnl >= 0 ? "Currently" : "Currently"
-                    return "\(prefix) \(String(format: "%+.2f%%", pnl)) — watching T1"
+                    return "\(prefix) \(String(format: "%+.2f%%", pnl)), watching T1"
                 }
-                return "Price confirmed in zone — watching T1"
+                return "Price confirmed in zone, watching T1"
             }()
             let pnlColor: Color = {
                 guard let pnl = unrealizedPnl else { return AppColors.accent }
@@ -656,7 +656,7 @@ struct SignalDetailView: View {
                     .font(.headline)
                     .foregroundColor(textPrimary)
 
-                Text("Pattern detected — not financial advice")
+                Text("Pattern detected, not financial advice")
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.textSecondary.opacity(0.6))
             }
@@ -1066,9 +1066,9 @@ struct SignalDetailView: View {
 
         if let t1Time = signal.t1HitAt {
             let t1Label = if let t1Pnl = signal.t1PnlPct {
-                "T1 Hit — 50% closed at \(String(format: "%+.1f%%", t1Pnl))"
+                "T1 Hit, 50% closed at \(String(format: "%+.1f%%", t1Pnl))"
             } else {
-                "T1 Hit — 50% closed"
+                "T1 Hit, 50% closed"
             }
             events.append(TimelineEvent(label: t1Label,
                 time: t1Time.formatted(date: .abbreviated, time: .shortened),
@@ -1079,7 +1079,7 @@ struct SignalDetailView: View {
             events.append(TimelineEvent(label: "Runner trailing (50% remaining)",
                 time: "In progress", isCompleted: false, color: AppColors.accent))
         } else if signal.outcome == .win {
-            let label = signal.isT1Hit ? "Runner closed — Win" : "Target Hit"
+            let label = signal.isT1Hit ? "Runner closed, Win" : "Target Hit"
             events.append(TimelineEvent(label: label,
                 time: signal.closedAt?.formatted(date: .abbreviated, time: .shortened) ?? "",
                 isCompleted: true, color: AppColors.success))
@@ -1360,7 +1360,7 @@ struct SignalDetailView: View {
     // MARK: - 7. Disclaimer
 
     private var disclaimerSection: some View {
-        Text("Prices are delayed and may lag the live market by a few minutes — they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Arkline signals are informational only, not financial advice. Always do your own research.")
+        Text("Prices are delayed and may lag the live market by a few minutes, they are not real-time. Set your own take-profit and stop-loss orders on your exchange at your discretion. Arkline signals are informational only, not financial advice. Always do your own research.")
             .font(.system(size: 10))
             .foregroundColor(AppColors.textSecondary.opacity(0.6))
             .multilineTextAlignment(.center)

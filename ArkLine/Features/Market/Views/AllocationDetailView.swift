@@ -456,7 +456,7 @@ struct AllocationDetailView: View {
 
             guideRow(
                 title: "What is a DCA opportunity?",
-                text: "When an asset's trend is negative but its risk level is low (the price has already corrected and stabilized), it may be a good time for dollar-cost averaging — buying small amounts gradually. This is different from a bearish signal with high risk, which means the asset is still falling."
+                text: "When an asset's trend is negative but its risk level is low (the price has already corrected and stabilized), it may be a good time for dollar-cost averaging, buying small amounts gradually. This is different from a bearish signal with high risk, which means the asset is still falling."
             )
 
             guideRow(
@@ -466,7 +466,7 @@ struct AllocationDetailView: View {
 
             guideRow(
                 title: "Why might an asset show 0%?",
-                text: "A 0% allocation means the trend is bearish AND risk is elevated — the asset is still falling or hasn't stabilized. This is different from a DCA opportunity at 25%, where the correction appears complete."
+                text: "A 0% allocation means the trend is bearish AND risk is elevated, the asset is still falling or hasn't stabilized. This is different from a DCA opportunity at 25%, where the correction appears complete."
             )
         }
         .padding()

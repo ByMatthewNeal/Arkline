@@ -937,7 +937,7 @@ When net liquidity rises, more dollars chase risk assets like crypto. When it fa
 • Rising net liquidity: Bullish. More dollars flow into risk assets including crypto.
 • Falling net liquidity: Bearish. QT and TGA refills drain capital from markets.
 • Net liquidity is the #1 short-term driver of BTC price, often moving in lockstep.
-• Weekly FRED data gives 1-2 week lag — far more timely than monthly M2 data.
+• Weekly FRED data gives 1-2 week lag, far more timely than monthly M2 data.
 """)
 
                     MacroInfoSection(title: "Why Net Liquidity Over Global M2?", content: """

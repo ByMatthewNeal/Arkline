@@ -34,6 +34,20 @@ struct PortfolioTargetsAdminView: View {
         abs(totalPct - 100) < 0.01 && !weights.isEmpty && weights.allSatisfy { $0.pct >= 0 }
     }
 
+    /// Close a position: move its entire weight into CASH so the target stays at
+    /// 100%. Posting the new target logs this as a "sold" position change.
+    private func exitPosition(_ ticker: String) {
+        guard let idx = weights.firstIndex(where: { $0.ticker == ticker }) else { return }
+        let freed = weights[idx].pct
+        weights.remove(at: idx)
+        if let cashIdx = weights.firstIndex(where: { $0.ticker == "CASH" }) {
+            weights[cashIdx].pct += freed
+        } else {
+            weights.append(TickerWeight(ticker: "CASH", pct: freed))
+        }
+        Haptics.selection()
+    }
+
     var body: some View {
         List {
             // Portfolio picker
@@ -70,8 +84,24 @@ struct PortfolioTargetsAdminView: View {
                             Text("%")
                                 .foregroundColor(AppColors.textTertiary)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                weights.removeAll { $0.id == w.id }
+                            } label: {
+                                Label("Remove", systemImage: "trash")
+                            }
+                            // Exit closes the position by moving its whole weight
+                            // into CASH, so the target stays balanced at 100%.
+                            if w.ticker != "CASH" {
+                                Button {
+                                    exitPosition(w.ticker)
+                                } label: {
+                                    Label("Exit → Cash", systemImage: "arrow.uturn.backward")
+                                }
+                                .tint(AppColors.accent)
+                            }
+                        }
                     }
-                    .onDelete { weights.remove(atOffsets: $0) }
 
                     HStack {
                         TextField("Add ticker (e.g. AAPL)", text: $newTicker)
@@ -97,7 +127,7 @@ struct PortfolioTargetsAdminView: View {
                 } header: {
                     Text("Target Allocation")
                 } footer: {
-                    Text("Must total 100%. CASH is the reserve sleeve. Swipe to remove a position.")
+                    Text("Must total 100%. CASH is the reserve sleeve. Swipe a position left to Exit it (moves its weight to CASH) or Remove it.")
                 }
                 .listRowBackground(AppColors.cardBackground(colorScheme))
 
@@ -140,6 +170,12 @@ struct PortfolioTargetsAdminView: View {
         }
         .scrollContentBackground(.hidden)
         .background(AppColors.background(colorScheme))
+        // The app's floating tab bar is a bottom overlay that doesn't inset
+        // content, so the last List row (the "Post Position Change" button) was
+        // hidden underneath it. Reserve space so the button clears the tab bar.
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 88)
+        }
         .navigationTitle("Portfolio Positions")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

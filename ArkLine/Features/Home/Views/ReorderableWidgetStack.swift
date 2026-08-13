@@ -148,6 +148,8 @@ struct ReorderableWidgetStack: View {
             return true
         case .marketBreadth:
             return true
+        case .learnCard:
+            return viewModel.featuredLearn != nil
         case .marketDeck:
             return viewModel.latestDeck != nil
         case .modelPortfolioUpdate:
@@ -184,10 +186,26 @@ struct ReorderableWidgetStack: View {
 
         case .fearGreedIndex:
             if let fearGreed = viewModel.fearGreedIndex {
-                NavigationLink(destination: FearGreedDetailView(index: fearGreed)) {
-                    GlassFearGreedCard(index: fearGreed, size: appState.widgetSize(.fearGreedIndex))
+                ZStack(alignment: .topLeading) {
+                    NavigationLink(destination: FearGreedDetailView(index: fearGreed)) {
+                        GlassFearGreedCard(index: fearGreed, size: appState.widgetSize(.fearGreedIndex))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // "?" companion — a sibling of the NavigationLink so its tap opens
+                    // the explainer instead of navigating. The hidden title reserves
+                    // the exact width so the "?" hugs the real title.
+                    HStack(spacing: 5) {
+                        Text("Fear & Greed Index")
+                            .font(appState.widgetSize(.fearGreedIndex) == .compact ? .subheadline : .headline)
+                            .opacity(0)
+                            .allowsHitTesting(false)
+                        ExplainButton(explainer: .fearGreed)
+                        Spacer().allowsHitTesting(false)
+                    }
+                    .padding(appState.widgetSize(.fearGreedIndex) == .compact ? 14 : 20)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .id("widget_fearGreed")
             }
 
         case .marketMovers:
@@ -226,12 +244,14 @@ struct ReorderableWidgetStack: View {
                 riskLevels: appState.isPro ? viewModel.userSelectedRiskLevels : viewModel.userSelectedRiskLevels.filter { $0.coin == "BTC" },
                 size: appState.widgetSize(.assetRiskLevel)
             )
+            .id("widget_assetRiskLevel")
 
         case .stockRiskLevel:
             StockRiskLevelSection(
                 riskLevels: viewModel.stockSelectedRiskLevels,
                 size: appState.widgetSize(.stockRiskLevel)
             )
+            .id("widget_stockRiskLevel")
 
         case .vixIndicator:
             VIXWidget(
@@ -271,6 +291,7 @@ struct ReorderableWidgetStack: View {
                 quadrant: viewModel.currentRegimeResult?.quadrant,
                 size: appState.widgetSize(.macroDashboard)
             )
+            .id("widget_macroDashboard")
 
         case .favorites:
             FavoritesSection(
@@ -350,6 +371,133 @@ struct ReorderableWidgetStack: View {
 
         case .marketBreadth:
             MarketBreadthSection(embedded: true)
+
+        case .learnCard:
+            if let feature = viewModel.featuredLearn {
+                HomeLearnCard(feature: feature)
+            }
+        }
+    }
+}
+
+// MARK: - Home Learn Card
+//
+// Compact, tappable "teaching moment" at the tail of Home. It rotates daily
+// (see HomeViewModel.featuredLearn) between a short Resources article ("Learn")
+// and a glossary definition ("Did you know?"), subtle, low-friction education
+// for a mixed audience of new and experienced investors. Tapping opens the full
+// article or the glossary entry.
+struct HomeLearnCard: View {
+    let feature: HomeViewModel.LearnFeature
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showSheet = false
+
+    private var cardBackground: Color {
+        colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
+    }
+
+    private var eyebrow: String {
+        switch feature {
+        case .article: return "LEARN"
+        case .term: return "DID YOU KNOW?"
+        }
+    }
+    private var accent: Color {
+        switch feature {
+        case .article: return AppColors.accent
+        case .term(let t): return t.categoryColor
+        }
+    }
+    private var iconName: String {
+        switch feature {
+        case .article(let a): return a.resolvedIcon
+        case .term(let t): return t.categoryIcon
+        }
+    }
+    private var title: String {
+        switch feature {
+        case .article(let a): return a.title
+        case .term(let t): return t.term
+        }
+    }
+    private var subtitle: String? {
+        switch feature {
+        case .article(let a): return a.summary
+        case .term(let t): return t.definition
+        }
+    }
+
+    var body: some View {
+        Button { showSheet = true } label: {
+            HStack(spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.system(size: 20))
+                    .foregroundColor(accent)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(accent.opacity(0.12))
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(eyebrow)
+                        .font(.system(size: 10, weight: .bold))
+                        .tracking(0.5)
+                        .foregroundColor(accent)
+
+                    Text(title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                        .lineLimit(1)
+
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.system(size: 12))
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.textTertiary)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(cardBackground)
+            )
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showSheet) { sheetContent }
+    }
+
+    @ViewBuilder
+    private var sheetContent: some View {
+        switch feature {
+        case .article(let article):
+            NavigationStack {
+                ResourceArticleView(article: article)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { showSheet = false }
+                        }
+                    }
+            }
+        case .term(let term):
+            NavigationStack {
+                DictionaryView(initialSearch: term.term)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { showSheet = false }
+                        }
+                    }
+            }
+            .presentationDetents([.medium, .large])
         }
     }
 }

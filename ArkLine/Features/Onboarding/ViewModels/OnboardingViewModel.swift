@@ -533,6 +533,9 @@ class OnboardingViewModel {
     }
 
     func saveInvestmentInterests() {
+        // Persist so the Home learning card can order Crypto vs Markets to the
+        // person's stated interest.
+        UserDefaults.standard.set(investmentInterests.map { $0.rawValue }, forKey: "onboarding_investment_interests_v1")
         nextStep()
     }
 

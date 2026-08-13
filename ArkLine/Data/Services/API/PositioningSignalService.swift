@@ -9,7 +9,14 @@ final class PositioningSignalService {
     private static var latestCacheTime: Date?
     private static let cacheTTL: TimeInterval = 3600 // 1 hour (signals change once daily)
 
-    /// Fetch latest signals for all assets (today or most recent)
+    /// Fetch the latest signal for every asset.
+    ///
+    /// Asset classes don't share a single signal_date: crypto/commodities/macro
+    /// update every day (incl. weekends) on the UTC calendar, while stocks and
+    /// indices are dated to the last US *trading* day. Keying off one shared
+    /// "today" date silently drops whichever class lags — most often stocks and
+    /// indices. So we pull a short recent window and keep each asset's most
+    /// recent row, which keeps every class present regardless of date skew.
     func fetchLatestSignals(forceRefresh: Bool = false) async throws -> [DailyPositioningSignal] {
         if !forceRefresh, let cached = Self.latestCache,
            let cacheTime = Self.latestCacheTime,
@@ -17,29 +24,38 @@ final class PositioningSignalService {
             return cached
         }
 
-        // Get today's date in UTC
+        // Window wide enough to cover weekends + market holidays (when stocks
+        // can lag crypto by several days) but small enough to stay well under
+        // PostgREST's default row cap. ~10 days x ~75 assets ≈ 750 rows.
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(identifier: "UTC")
-        let today = formatter.string(from: Date())
+        let cutoff = Calendar.current.date(byAdding: .day, value: -10, to: Date()) ?? Date()
+        let cutoffStr = formatter.string(from: cutoff)
 
-        // Try today first
-        var signals: [DailyPositioningSignal] = try await supabase.database
+        // Ordered newest-first so the first row seen per asset is its latest.
+        let recent: [DailyPositioningSignal] = try await supabase.database
             .from("positioning_signals")
             .select()
-            .eq("signal_date", value: today)
-            .order("asset", ascending: true)
+            .gte("signal_date", value: cutoffStr)
+            .order("signal_date", ascending: false)
+            .limit(1500)
             .execute()
             .value
 
-        // If no data for today (cron hasn't run yet), fetch most recent date
-        if signals.isEmpty {
-            signals = try await fetchMostRecentSignals()
+        var latestByAsset: [String: DailyPositioningSignal] = [:]
+        for signal in recent where latestByAsset[signal.asset] == nil {
+            latestByAsset[signal.asset] = signal
         }
+        let signals = latestByAsset.values.sorted { $0.asset < $1.asset }
 
-        Self.latestCache = signals
+        // Fallback: if the window somehow came back empty, use the old
+        // most-recent-date probe rather than showing nothing.
+        let result = signals.isEmpty ? try await fetchMostRecentSignals() : signals
+
+        Self.latestCache = result
         Self.latestCacheTime = Date()
-        return signals
+        return result
     }
 
     /// Fetch signal history for a specific asset

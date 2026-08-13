@@ -38,10 +38,15 @@ struct FullscreenImageViewer: View {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.white.opacity(0.8), .white.opacity(0.2))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 38, height: 38)
+                            .background(Color.black.opacity(0.55))
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(.white.opacity(0.3), lineWidth: 1))
                     }
+                    .contentShape(Circle())
                     .padding(ArkSpacing.md)
                 }
                 Spacer()
@@ -86,6 +91,7 @@ private struct ZoomableImageView: View {
             .aspectRatio(contentMode: .fit)
             .scaleEffect(scale)
             .offset(offset)
+            // Pinch to zoom — always active.
             .gesture(
                 MagnifyGesture()
                     .onChanged { value in
@@ -102,19 +108,23 @@ private struct ZoomableImageView: View {
                         }
                         lastScale = scale
                     }
-                    .simultaneously(with:
-                        DragGesture()
-                            .onChanged { value in
-                                guard scale > 1.0 else { return }
-                                offset = CGSize(
-                                    width: lastOffset.width + value.translation.width,
-                                    height: lastOffset.height + value.translation.height
-                                )
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                            }
-                    )
+            )
+            // Pan — ONLY when zoomed in. Disabling it at 1× lets the paging
+            // TabView receive the horizontal swipe so users can swipe between
+            // images (previously this drag swallowed the swipe, forcing them to
+            // tap the tiny page dots).
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        offset = CGSize(
+                            width: lastOffset.width + value.translation.width,
+                            height: lastOffset.height + value.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        lastOffset = offset
+                    },
+                including: scale > 1.0 ? .all : .none
             )
             .onTapGesture(count: 2) {
                 withAnimation(.spring(response: 0.3)) {

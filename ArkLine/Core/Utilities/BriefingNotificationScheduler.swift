@@ -205,7 +205,7 @@ enum DailyDigestScheduler {
         // appears the digest arms again, and the moment they catch up it's pulled.
         if isCaughtUp(unreadInsights: unreadInsights) {
             cancel()
-            logInfo("Daily digest suppressed — user is caught up", category: .data)
+            logInfo("Daily digest suppressed, user is caught up", category: .data)
             return
         }
 

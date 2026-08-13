@@ -314,7 +314,7 @@ actor APIHealthService {
                 query: .latestRow(dateColumn: "generated_at", orderDesc: true, extraFilters: []),
                 maxAgeMinutes: 60 * 24 * 7,
                 degradedAgeMinutes: 60 * 24 * 14,
-                explanation: "EMA regime filter blocks signals in choppy markets — days/weeks without a signal is normal. Check OHLC Candles to confirm the pipeline itself is running."
+                explanation: "EMA regime filter blocks signals in choppy markets, days/weeks without a signal is normal. Check OHLC Candles to confirm the pipeline itself is running."
             ),
         ]
     }

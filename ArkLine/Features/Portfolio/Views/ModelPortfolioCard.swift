@@ -54,6 +54,18 @@ struct ModelPortfolioCard: View {
                     .foregroundColor(AppColors.textSecondary)
             } else {
                 VStack(spacing: ArkSpacing.sm) {
+                    // Persistent context so the headline returns below are never read
+                    // as actual, realized performance — they're backtested simulations.
+                    HStack(spacing: 5) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.warning)
+                        Text("Hypothetical & backtested — simulated performance, not actual returns")
+                            .font(.system(size: 10))
+                            .foregroundColor(AppColors.textTertiary)
+                        Spacer()
+                    }
+
                     // Cross-market rotation strip: which market conditions favor, and why
                     if let rotation {
                         rotationStrip(rotation)
@@ -74,7 +86,8 @@ struct ModelPortfolioCard: View {
                                     nav: viewModel.latestNav(for: portfolio)?.nav,
                                     signal: viewModel.latestNav(for: portfolio)?.btcSignal,
                                     regime: viewModel.latestNav(for: portfolio)?.macroRegime,
-                                    isFollowed: viewModel.isFollowing(portfolio)
+                                    isFollowed: viewModel.isFollowing(portfolio),
+                                    sinceLabel: "since 2019"
                                 )
                             }
                             .buttonStyle(.plain)
@@ -97,9 +110,36 @@ struct ModelPortfolioCard: View {
                                     strategy: portfolio.strategy,
                                     returnPct: viewModel.returnPct(for: portfolio),
                                     nav: viewModel.latestNav(for: portfolio)?.nav,
-                                    signal: nil,
-                                    regime: viewModel.latestNav(for: portfolio)?.macroRegime,
-                                    isFollowed: viewModel.isFollowing(portfolio)
+                                    signal: viewModel.latestNav(for: portfolio)?.macroRegime,
+                                    regime: "Curated",
+                                    isFollowed: viewModel.isFollowing(portfolio),
+                                    sinceLabel: portfolio.strategy == "stock_edge" ? "since 2022" : "since 2021"
+                                )
+                            }
+                            .buttonStyle(.plain)
+
+                            Divider()
+                                .background(AppColors.divider(colorScheme))
+                        }
+                    }
+
+                    // Metals portfolios
+                    if !viewModel.metalPortfolios.isEmpty {
+                        sectionLabel("Metals")
+                        ForEach(viewModel.metalPortfolios) { portfolio in
+                            NavigationLink(destination: ModelPortfolioDetailView(
+                                portfolio: portfolio,
+                                viewModel: viewModel
+                            )) {
+                                portfolioRow(
+                                    name: portfolio.name,
+                                    strategy: portfolio.strategy,
+                                    returnPct: viewModel.returnPct(for: portfolio),
+                                    nav: viewModel.latestNav(for: portfolio)?.nav,
+                                    signal: metalStanceChip(for: portfolio),
+                                    regime: metalStanceContext(for: portfolio),
+                                    isFollowed: viewModel.isFollowing(portfolio),
+                                    sinceLabel: "since 2023"
                                 )
                             }
                             .buttonStyle(.plain)
@@ -132,6 +172,9 @@ struct ModelPortfolioCard: View {
                                 Text("\(spy.returnPct >= 0 ? "+" : "")\(spy.returnPct, specifier: "%.1f")%")
                                     .font(AppFonts.caption12Medium)
                                     .foregroundColor(spy.returnPct >= 0 ? AppColors.success : AppColors.error)
+                                Text("since 2019")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(AppColors.textTertiary)
                             }
                         }
                     }
@@ -179,9 +222,9 @@ struct ModelPortfolioCard: View {
     private static let strategyColors: [String: Color] = [
         "core": Color(hex: "3369FF"),        // Blue
         "edge": Color(hex: "8B5CF6"),        // Purple
-        "alpha": Color(hex: "F97316"),       // Orange
         "stock_core": Color(hex: "10B981"),  // Green
         "stock_edge": Color(hex: "14B8A6"),  // Teal
+        "metals": Color(hex: "E4B926"),      // Gold
     ]
     private static let spyColor = Color(hex: "FF9500")    // Amber
 
@@ -288,7 +331,7 @@ struct ModelPortfolioCard: View {
                             }
                         }
                     }
-                    Text("Descriptive market context, not a recommendation. Where conditions are favorable is where Arkline's coverage leans — you decide where your money goes.")
+                    Text("Descriptive market context, not a recommendation. Where conditions are favorable is where Arkline's coverage leans, you decide where your money goes.")
                         .font(.system(size: 10))
                         .foregroundColor(AppColors.textTertiary)
                         .padding(.top, 2)
@@ -321,7 +364,8 @@ struct ModelPortfolioCard: View {
         nav: Double?,
         signal: String?,
         regime: String?,
-        isFollowed: Bool = false
+        isFollowed: Bool = false,
+        sinceLabel: String = ""
     ) -> some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 2)
@@ -360,19 +404,53 @@ struct ModelPortfolioCard: View {
                 Text("\(returnPct >= 0 ? "+" : "")\(returnPct, specifier: "%.1f")%")
                     .font(AppFonts.caption12Medium)
                     .foregroundColor(returnPct >= 0 ? AppColors.success : AppColors.error)
+                // Make the return window explicit. Crypto is backtested from 2019 and
+                // stocks from 2026, so an unlabeled figure made equities look weaker
+                // when they're just measured over a much shorter window.
+                if !sinceLabel.isEmpty {
+                    Text(sinceLabel)
+                        .font(.system(size: 9))
+                        .foregroundColor(AppColors.textTertiary)
+                }
             }
             Image(systemName: "chevron.right")
                 .font(.system(size: 12))
                 .foregroundColor(AppColors.textTertiary)
         }
+        // Whole row is the tap target, not just the text/chevron pixels.
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Row stance helpers
+    // Every asset class shows the same second-line structure: a colored stance
+    // chip + a short context line. Each class fills it with its most relevant
+    // read so the rows stay visually consistent without being misleading.
+
+    /// Metals: gold's current valuation zone, shown as the stance chip.
+    private func metalStanceChip(for portfolio: ModelPortfolio) -> String? {
+        switch viewModel.latestNav(for: portfolio)?.signalContext?.zone {
+        case "deepValue": return "Deep Value"
+        case "value": return "Accumulate"
+        case "fair": return "Fair"
+        case "elevated": return "Elevated"
+        case "overextended": return "Stretched"
+        default: return nil
+        }
+    }
+
+    /// Metals: current gold weight, shown as the context line (e.g. "Gold 58%").
+    private func metalStanceContext(for portfolio: ModelPortfolio) -> String? {
+        guard let goldPct = viewModel.latestNav(for: portfolio)?.allocations["GOLD"]?.pct else { return nil }
+        return "Gold \(Int(goldPct.rounded()))%"
     }
 
     @ViewBuilder
     private func signalBadge(_ signal: String) -> some View {
         let color: Color = switch signal.lowercased() {
-        case "bullish": AppColors.success
-        case "bearish": AppColors.error
-        default: AppColors.warning
+        case "bullish", "risk-on", "deep value", "accumulate": AppColors.success
+        case "bearish", "risk-off", "stretched": AppColors.error
+        case "elevated": Color(hex: "F97316")
+        default: AppColors.warning // neutral, fair
         }
         Text(signal.capitalized)
             .font(.system(size: 10, weight: .semibold))
@@ -395,7 +473,7 @@ private struct ModelPortfolioInfoSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: ArkSpacing.lg) {
                     // Intro
-                    Text("Arkline Model Portfolios come in two flavors. Crypto portfolios are AI-generated systematic strategies driven by daily positioning signals, macro regime data, and trend analysis. Equity portfolios are curated investment portfolios — positions held for months to years, updated only when the thesis or risk picture changes.")
+                    Text("Arkline Model Portfolios come in three types. Crypto portfolios are systematic strategies driven by daily positioning signals, macro regime data, and trend analysis. Equity portfolios are curated investment portfolios — positions held for months to years, updated only when the thesis or risk picture changes. The Metals portfolio is a systematic gold hedge that holds gold as a long-term core and adjusts the weight based on gold's valuation versus its long-term trend.")
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
 
@@ -413,12 +491,6 @@ private struct ModelPortfolioInfoSheet: View {
                     )
 
                     portfolioSection(
-                        name: "Arkline Alpha",
-                        color: Color(hex: "F97316"),
-                        description: "Alt-heavy aggressive strategy. Allocates 40-50% into top-performing altcoins during bullish conditions. Higher volatility with greater upside potential in alt seasons."
-                    )
-
-                    portfolioSection(
                         name: "Arkline Equity Core",
                         color: Color(hex: "10B981"),
                         description: "Conservative equity portfolio. Eight quality AI-era compounders held for years, plus a cash reserve that scales with the macro regime. Low turnover by design."
@@ -428,6 +500,12 @@ private struct ModelPortfolioInfoSheet: View {
                         name: "Arkline Equity Edge",
                         color: Color(hex: "14B8A6"),
                         description: "Aggressive equity portfolio. Core compounders plus a thematic sleeve of 6–12 month catalyst positions across power, rare earths, AI software, and compute."
+                    )
+
+                    portfolioSection(
+                        name: "Arkline Metals",
+                        color: Color(hex: "E4B926"),
+                        description: "Systematic gold hedge. Holds gold as a permanent long-term core (40–60% of the book), leaning heavier when gold is cheap versus its long-term trend and lighter when it's stretched — but never selling the core down. The rest sits in cash."
                     )
 
                     portfolioSection(
@@ -441,7 +519,7 @@ private struct ModelPortfolioInfoSheet: View {
                         Text("How It Works")
                             .font(AppFonts.body14Medium)
                             .foregroundColor(AppColors.textPrimary(colorScheme))
-                        Text("All positions are spot only — no leverage, futures, or short selling. Crypto portfolios rebalance once daily at 8:30 PM ET based on positioning signals and macro regime conditions, shifting between crypto exposure and defensive assets (stablecoins, gold). Equity portfolios are investment portfolios, not trading strategies: NAV is marked to market each trading day, and positions change only when the underlying thesis, valuation, or risk picture changes. Equity history before launch is simulated (backtested).")
+                        Text("All positions are spot only, no leverage, futures, or short selling. Crypto portfolios rebalance once daily at 8:30 PM ET based on positioning signals and macro regime conditions, shifting between crypto exposure and defensive assets (stablecoins, gold). Equity portfolios are investment portfolios, not trading strategies: NAV is marked to market each trading day, and positions change only when the underlying thesis, valuation, or risk picture changes. The Metals portfolio holds gold as a long-term core and rebalances only when gold's valuation zone shifts, so turnover stays low. Equity and metals history before launch is simulated (backtested).")
                             .font(AppFonts.caption12)
                             .foregroundColor(AppColors.textSecondary)
                     }

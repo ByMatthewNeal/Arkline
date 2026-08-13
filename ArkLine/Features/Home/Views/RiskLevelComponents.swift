@@ -23,13 +23,13 @@ struct RiskLevelInfoSheet: View {
                         icon: "lightbulb",
                         title: "How to Use It",
                         body: """
-                        Use the risk level to guide your investment decisions:
+                        How to read the risk level:
 
-                        \u{2022} Low risk (below 0.40) suggests the asset is undervalued relative to its historical trend — a potentially good time to accumulate.
+                        \u{2022} Low risk (below 0.40) suggests the asset is undervalued relative to its historical trend, historically a zone that has rewarded patient, long-term buyers.
 
                         \u{2022} Neutral (0.40 - 0.55) means the asset is fairly priced. Neither a strong buy nor sell signal.
 
-                        \u{2022} High risk (above 0.70) indicates the asset may be overheated. Consider taking profits or reducing exposure.
+                        \u{2022} High risk (above 0.70) indicates the asset may be overheated, historically a zone with less cushion if the market turns.
                         """
                     )
 
@@ -44,7 +44,7 @@ struct RiskLevelInfoSheet: View {
                     infoSection(
                         icon: "slider.horizontal.3",
                         title: "Multi-Factor Analysis",
-                        body: "The Multi-Factor Risk score combines multiple on-chain and technical indicators — including logarithmic regression, MVRV ratio, NUPL, and Puell Multiple — to produce a more robust signal than any single metric alone. Each factor is weighted based on its historical reliability."
+                        body: "The Multi-Factor Risk score combines multiple on-chain and technical indicators, including logarithmic regression, MVRV ratio, NUPL, and Puell Multiple, to produce a more robust signal than any single metric alone. Each factor is weighted based on its historical reliability."
                     )
 
                     // Chart interaction

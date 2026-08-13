@@ -34,7 +34,7 @@ struct SubscriptionExpiredView: View {
                     .multilineTextAlignment(.center)
 
                 // Body
-                Text("Re-subscribe to continue receiving signals, briefings, and portfolio insights. Your data is safe — when you re-subscribe, everything will be right where you left it.")
+                Text("Re-subscribe to continue receiving signals, briefings, and portfolio insights. Your data is safe, when you re-subscribe, everything will be right where you left it.")
                     .font(AppFonts.body14)
                     .foregroundColor(AppColors.textSecondary)
                     .multilineTextAlignment(.center)

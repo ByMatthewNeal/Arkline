@@ -520,7 +520,7 @@ struct MarketBreadthDetailView: View {
             bulletPoint("Market Breadth measures the percentage of tokens in an uptrend (price above 7-day SMA).")
             bulletPoint("EMA 12/21 crossover on the breadth data identifies trend direction and momentum shifts.")
             bulletPoint("Green EMAs = bullish trend (breadth improving). Red EMAs = bearish trend (breadth declining).")
-            bulletPoint("Triangle markers show crossover points — potential turning points in market breadth.")
+            bulletPoint("Triangle markers show crossover points, potential turning points in market breadth.")
             bulletPoint("BTC price (orange) provides context for divergences between breadth and the leading asset.")
         }
         .padding(16)

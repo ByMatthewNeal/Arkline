@@ -35,7 +35,7 @@ final class RotationSignalService {
 
             signalCache = signal
             cacheTimestamp = Date()
-            logInfo("RotationSignalService: Loaded signal — score \(signal.rotationScore), regime \(signal.regime.rawValue)", category: .network)
+            logInfo("RotationSignalService: Loaded signal, score \(signal.rotationScore), regime \(signal.regime.rawValue)", category: .network)
             return signal
         } catch {
             logWarning("RotationSignalService: Failed to fetch signal: \(error)", category: .network)

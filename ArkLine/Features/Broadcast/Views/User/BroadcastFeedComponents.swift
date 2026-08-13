@@ -488,7 +488,7 @@ struct BroadcastDetailView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(AppColors.textSecondary)
 
-            Text("Broadcasts reflect the author's personal commentary and pattern analysis based on publicly available data. Market conditions change rapidly. Nothing in a broadcast — including references to the Arkline portfolio — should be the sole basis for any investment decision. You are solely responsible for your own research and any actions you take. Consult a licensed financial advisor before making investment decisions.")
+            Text("Broadcasts reflect the author's personal commentary and pattern analysis based on publicly available data. Market conditions change rapidly. Nothing in a broadcast, including references to the Arkline portfolio, should be the sole basis for any investment decision. You are solely responsible for your own research and any actions you take. Consult a licensed financial advisor before making investment decisions.")
                 .font(.system(size: 11))
                 .foregroundColor(AppColors.textSecondary.opacity(0.7))
                 .fixedSize(horizontal: false, vertical: true)

@@ -481,6 +481,29 @@ final class BroadcastService: BroadcastServiceProtocol {
         return reactions
     }
 
+    /// Reads the authoritative `reaction_count` (distinct reactors) that the
+    /// `update_broadcast_reaction_count` trigger maintains. Used to reconcile the
+    /// feed card's optimistic heart badge, which counts hearts locally but the
+    /// server counts distinct people, so the two diverge when a user stacks
+    /// multiple emoji reactions on one post.
+    func fetchReactionCount(for broadcastId: UUID) async throws -> Int {
+        guard supabase.isConfigured else { return 0 }
+
+        struct CountRow: Decodable { let reactionCount: Int?
+            enum CodingKeys: String, CodingKey { case reactionCount = "reaction_count" }
+        }
+
+        let rows: [CountRow] = try await supabase.database
+            .from(SupabaseTable.broadcasts.rawValue)
+            .select("reaction_count")
+            .eq("id", value: broadcastId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+
+        return rows.first?.reactionCount ?? 0
+    }
+
     func fetchReactionSummary(for broadcastId: UUID, userId: UUID) async throws -> [ReactionSummary] {
         guard supabase.isConfigured else {
             return []

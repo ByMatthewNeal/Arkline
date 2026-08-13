@@ -396,7 +396,7 @@ final class APICoinglassService: CoinglassServiceProtocol {
             return try decoder.decode(T.self, from: data)
         } catch {
             if let rawJSON = String(data: data.prefix(500), encoding: .utf8) {
-                logError("Coinglass decode error for \(endpoint) — raw: \(rawJSON)", category: .network)
+                logError("Coinglass decode error for \(endpoint), raw: \(rawJSON)", category: .network)
             } else {
                 logError("Coinglass decode error for \(endpoint)", category: .network)
             }

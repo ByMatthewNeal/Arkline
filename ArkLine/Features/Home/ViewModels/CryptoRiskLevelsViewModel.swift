@@ -43,9 +43,26 @@ class CryptoRiskLevelsViewModel {
         self.itcRiskService = itcRiskService
     }
 
+    /// Search query — filters the list by ticker or name.
+    var searchText = ""
+
+    var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    /// Rows matching the current search (ticker OR display name).
+    private var filteredRows: [CoinRiskRow] {
+        let q = searchText.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return rows }
+        return rows.filter {
+            $0.config.assetId.localizedCaseInsensitiveContains(q) ||
+            $0.config.displayName.localizedCaseInsensitiveContains(q)
+        }
+    }
+
     /// Bucketed rows sorted by band order, A-Z within each band.
     var bucketed: [(band: String, items: [CoinRiskRow])] {
-        let grouped = Dictionary(grouping: rows) { $0.current.riskCategory }
+        let grouped = Dictionary(grouping: filteredRows) { $0.current.riskCategory }
         return Self.bandOrder.compactMap { band in
             guard let items = grouped[band], !items.isEmpty else { return nil }
             let sorted = items.sorted { $0.config.displayName.localizedCaseInsensitiveCompare($1.config.displayName) == .orderedAscending }
@@ -55,7 +72,22 @@ class CryptoRiskLevelsViewModel {
 
     /// All rows sorted A-Z by display name (flat list, no band grouping).
     var alphabetical: [CoinRiskRow] {
-        rows.sorted { $0.config.displayName.localizedCaseInsensitiveCompare($1.config.displayName) == .orderedAscending }
+        filteredRows.sorted { $0.config.displayName.localizedCaseInsensitiveCompare($1.config.displayName) == .orderedAscending }
+    }
+
+    /// Failed coins matching the current search.
+    var filteredFailedCoins: [AssetRiskConfig] {
+        let q = searchText.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return failedCoins }
+        return failedCoins.filter {
+            $0.assetId.localizedCaseInsensitiveContains(q) ||
+            $0.displayName.localizedCaseInsensitiveContains(q)
+        }
+    }
+
+    /// True when a search is active but nothing matches.
+    var hasNoSearchResults: Bool {
+        isSearching && filteredRows.isEmpty && filteredFailedCoins.isEmpty
     }
 
     func delta(for row: CoinRiskRow) -> Double? {

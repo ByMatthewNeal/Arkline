@@ -88,7 +88,7 @@ enum RefineError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyInput:
-            return "There's nothing to refine yet — record or type some thoughts first."
+            return "There's nothing to refine yet, record or type some thoughts first."
         case .notConfigured:
             return "Refinement isn't available right now."
         case .emptyResponse:

@@ -332,12 +332,28 @@ class BroadcastViewModel: ObservableObject {
 
         do {
             try await toggleReaction(broadcastId: broadcastId, userId: userId, emoji: "❤️")
+
+            // Reconcile with the server's authoritative count. reaction_count is
+            // COUNT(DISTINCT user_id), so the optimistic ±1 above is wrong whenever
+            // the user already has (or still has) another emoji on this post —
+            // e.g. hearting a post you already 🔥'd doesn't change the distinct
+            // count. Snap the badge to the true value so it can't drift on reload.
+            if let serverCount = try? await broadcastService.fetchReactionCount(for: broadcastId),
+               let idx = broadcasts.firstIndex(where: { $0.id == broadcastId }) {
+                broadcasts[idx].reactionCount = serverCount
+            }
         } catch {
             // Revert on failure
             if wasHearted {
                 userHeartedBroadcastIds.insert(broadcastId)
+                if let idx = broadcasts.firstIndex(where: { $0.id == broadcastId }) {
+                    broadcasts[idx].reactionCount = (broadcasts[idx].reactionCount ?? 0) + 1
+                }
             } else {
                 userHeartedBroadcastIds.remove(broadcastId)
+                if let idx = broadcasts.firstIndex(where: { $0.id == broadcastId }) {
+                    broadcasts[idx].reactionCount = max(0, (broadcasts[idx].reactionCount ?? 1) - 1)
+                }
             }
             logError("Failed to toggle heart: \(error)", category: .data)
         }

@@ -56,7 +56,7 @@ struct ContentGenerateSheet: View {
             Image(systemName: "wand.and.stars")
                 .font(.title3)
                 .foregroundColor(AppColors.accent)
-            Text("Same thought, shaped for each place you post — always in your voice. Pick a format, tweak it, then copy or share.")
+            Text("Same thought, shaped for each place you post, always in your voice. Pick a format, tweak it, then copy or share.")
                 .font(ArkFonts.caption)
                 .foregroundColor(AppColors.textSecondary)
         }

@@ -93,7 +93,7 @@ struct ResearchNoteView: View {
                                 }
                                 if let fair = val.fairValue { valuationRow("Model Fair Value", String(format: "$%.0f", fair)) }
                                 if let asOf = val.asOf {
-                                    Text("Snapshot as of \(asOf) — frozen so you can judge the call, not a moving target.")
+                                    Text("Snapshot as of \(asOf), frozen so you can judge the call, not a moving target.")
                                         .font(AppFonts.caption12)
                                         .foregroundColor(AppColors.textTertiary)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,7 +136,7 @@ struct ResearchNoteView: View {
                     if !note.invalidation.isEmpty {
                         section("What Changes Our Mind") {
                             VStack(alignment: .leading, spacing: ArkSpacing.sm) {
-                                Text("If these happen, the thesis is wrong — and we act, not rationalize.")
+                                Text("If these happen, the thesis is wrong, and we act, not rationalize.")
                                     .font(AppFonts.caption12)
                                     .foregroundColor(AppColors.textTertiary)
                                 ForEach(note.invalidation, id: \.criterion) { item in
@@ -193,7 +193,7 @@ struct ResearchNoteView: View {
                     }
 
                     // Disclaimer
-                    Text("Research notes explain the reasoning behind Arkline model portfolio positions. Educational and informational only — not investment advice. Do your own research and consult a licensed financial advisor before investing.")
+                    Text("Research notes explain the reasoning behind Arkline model portfolio positions. Educational and informational only, not investment advice. Do your own research and consult a licensed financial advisor before investing.")
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.textTertiary)
                         .padding(ArkSpacing.md)

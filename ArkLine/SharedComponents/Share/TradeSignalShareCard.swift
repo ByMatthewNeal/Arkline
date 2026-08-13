@@ -579,7 +579,7 @@ struct TradeSignalShareSheet: View {
 
         var lines: [String] = []
         let gradeLabel = signal.scoreGrade.map { " (\($0) Setup)" } ?? ""
-        lines.append("\(signal.timeframeBadge.uppercased()) — \(direction) on \(signal.asset)\(gradeLabel)")
+        lines.append("\(signal.timeframeBadge.uppercased()), \(direction) on \(signal.asset)\(gradeLabel)")
         lines.append("")
 
         if let price = currentPrice {

@@ -77,7 +77,11 @@ struct SellAssetView: View {
                         if isRealEstate {
                             RealEstateIconView(size: 44)
                         } else {
-                            CoinIconView(symbol: holding.symbol, size: 44)
+                            CoinIconView(
+                                symbol: holding.symbol,
+                                size: 44,
+                                iconUrl: holding.iconUrl ?? AssetRiskConfig.forSymbol(holding.symbol)?.logoURL?.absoluteString
+                            )
                         }
 
                         VStack(alignment: .leading, spacing: 4) {

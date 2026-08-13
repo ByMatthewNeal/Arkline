@@ -165,6 +165,10 @@ struct MainTabView: View {
     /// Tracks which tabs have been visited so views are created lazily but kept alive.
     @State private var loadedTabs: Set<AppTab> = [.home]
 
+    /// One-time Start Here welcome for brand-new users (set by onboarding completion).
+    @State private var showStartHereIntro = false
+    private let startHereIntroKey = "arkline_did_show_start_here_intro_v1"
+
     var body: some View {
         ZStack(alignment: .bottom) {
             // All visited tab views stay alive — no recreation on switch
@@ -204,7 +208,52 @@ struct MainTabView: View {
                 loadedTabs.insert(.market)
                 appState.selectedTab = .market
             }
+            maybeShowStartHereIntro()
         }
+        .onChange(of: appState.justOnboarded) { _, _ in
+            maybeShowStartHereIntro()
+        }
+        .onChange(of: appState.pendingLessonDeepLink) { _, link in
+            // A lesson's "see it in your app" was tapped. The reader cover is
+            // dismissing; run the navigation here (from the tab container) once
+            // it's gone, so the tab switch and scroll actually take effect.
+            guard let link else { return }
+            appState.pendingLessonDeepLink = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                appState.navigate(to: link)
+            }
+        }
+        .fullScreenCover(isPresented: $showStartHereIntro) {
+            StartHereIntroCover { showStartHereIntro = false }
+        }
+        // Hedging lessons (gold/silver/oil) open that asset's positioning detail
+        // as a sheet, presented from the tab container so it works regardless of
+        // which tab or reader was on screen when the deep-link fired.
+        .sheet(isPresented: Binding(
+            get: { appState.pendingMarketAssetDetail != nil },
+            set: { if !$0 { appState.pendingMarketAssetDetail = nil } }
+        )) {
+            if let asset = appState.pendingMarketAssetDetail {
+                NavigationStack {
+                    QPSDetailView(asset: asset)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Close") { appState.pendingMarketAssetDetail = nil }
+                            }
+                        }
+                }
+            }
+        }
+    }
+
+    /// Show the Start Here welcome once, only for a user who just finished
+    /// onboarding and has never seen it.
+    private func maybeShowStartHereIntro() {
+        guard appState.justOnboarded else { return }
+        appState.justOnboarded = false
+        guard !UserDefaults.standard.bool(forKey: startHereIntroKey) else { return }
+        UserDefaults.standard.set(true, forKey: startHereIntroKey)
+        showStartHereIntro = true
     }
 
     @ViewBuilder

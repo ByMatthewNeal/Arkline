@@ -529,15 +529,15 @@ struct MetalMarketContextSection: View {
             return """
             Gold typically moves inversely to the US Dollar (DXY). When the dollar weakens, gold tends to rise as it becomes cheaper for foreign buyers.
 
-            Rising gold prices often signal a risk-off environment — investors move capital from stocks and crypto into safe-haven assets. For crypto traders, sustained gold rallies can indicate macro uncertainty that may pressure risk assets like Bitcoin.
+            Rising gold prices often signal a risk-off environment, investors move capital from stocks and crypto into safe-haven assets. For crypto traders, sustained gold rallies can indicate macro uncertainty that may pressure risk assets like Bitcoin.
 
             Gold also responds strongly to real interest rates. When inflation outpaces bond yields, gold becomes more attractive as an inflation hedge.
             """
         case "XAG":
             return """
-            Silver has a dual nature — it's both a precious metal (store of value) and an industrial commodity. About 50% of silver demand comes from industrial uses including electronics, solar panels, and EVs.
+            Silver has a dual nature, it's both a precious metal (store of value) and an industrial commodity. About 50% of silver demand comes from industrial uses including electronics, solar panels, and EVs.
 
-            Silver tends to be more volatile than gold, often amplifying gold's moves by 2-3x. The gold/silver ratio (currently gold price ÷ silver price) is a key indicator — ratios above 80 historically suggest silver is undervalued relative to gold.
+            Silver tends to be more volatile than gold, often amplifying gold's moves by 2-3x. The gold/silver ratio (currently gold price ÷ silver price) is a key indicator, ratios above 80 historically suggest silver is undervalued relative to gold.
 
             For crypto traders, silver's industrial demand ties it to economic growth expectations, making it a useful gauge of broader economic sentiment.
             """

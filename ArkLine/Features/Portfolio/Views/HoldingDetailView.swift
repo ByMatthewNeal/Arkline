@@ -42,7 +42,11 @@ struct HoldingDetailView: View {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 12) {
-                    CoinIconView(symbol: liveHolding.symbol, size: 64)
+                    CoinIconView(
+                        symbol: liveHolding.symbol,
+                        size: 64,
+                        iconUrl: liveHolding.iconUrl ?? AssetRiskConfig.forSymbol(liveHolding.symbol)?.logoURL?.absoluteString
+                    )
 
                     Text(liveHolding.name)
                         .font(AppFonts.title24)

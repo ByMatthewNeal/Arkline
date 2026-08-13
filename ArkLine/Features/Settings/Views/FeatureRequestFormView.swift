@@ -84,7 +84,7 @@ struct FeatureRequestFormView: View {
                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
             Text(requestType == .bug
-                 ? "Tell us what went wrong — we'll include your app version automatically"
+                 ? "Tell us what went wrong, we'll include your app version automatically"
                  : "Help us improve Arkline by suggesting new features")
                 .font(ArkFonts.body)
                 .foregroundColor(AppColors.textSecondary)
@@ -295,7 +295,7 @@ struct FeatureRequestFormView: View {
                 let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
                 let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
                 #if canImport(UIKit)
-                let device = "\(UIDevice.current.model) — iOS \(UIDevice.current.systemVersion)"
+                let device = "\(UIDevice.current.model), iOS \(UIDevice.current.systemVersion)"
                 #else
                 let device = "macOS"
                 #endif

@@ -92,6 +92,11 @@ struct HomeView: View {
                         )
                         .padding(.horizontal, 20)
 
+                        // Start Here, findable entry to the Foundations trail.
+                        // Recedes once completed or dismissed.
+                        StartHereHomeCard()
+                            .padding(.horizontal, 20)
+
                         // AI Daily Briefing (fixed position under portfolio)
                         if appState.isWidgetEnabled(.aiMarketSummary) {
                             HomeAISummaryWidget(
@@ -144,6 +149,24 @@ struct HomeView: View {
                             scrollProxy.scrollTo("widget_qpsSignals", anchor: .center)
                         }
                         appState.pendingQPSAsset = nil
+                    }
+                }
+                .onChange(of: appState.pendingHomeScrollTarget) { _, newValue in
+                    if let target = newValue {
+                        withAnimation(.arkSpring) {
+                            scrollProxy.scrollTo(target, anchor: .center)
+                        }
+                        appState.pendingHomeScrollTarget = nil
+                    }
+                }
+                .onChange(of: appState.pendingOpenCustomizeHome) { _, newValue in
+                    if newValue {
+                        appState.pendingOpenCustomizeHome = false
+                        // Wait for the lesson reader cover to finish dismissing before
+                        // presenting this sheet, to avoid a present-while-presenting clash.
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showCustomizeSheet = true
+                        }
                     }
                 }
             } // ScrollViewReader

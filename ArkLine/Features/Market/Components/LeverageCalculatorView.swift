@@ -25,11 +25,11 @@ struct LeverageCalculatorView: View {
     private var subtleBg: Color { colorScheme == .dark ? Color(hex: "2A2A2E") : Color(hex: "F5F5F7") }
 
     private var riskScaleReason: String {
-        if signal.volatilityRegime == "extreme" { return "Extreme volatility — auto-scaled to 0.25R" }
-        if signal.volatilityRegime == "elevated" { return "Elevated volatility — auto-scaled to 0.5R" }
-        if signal.isLowConviction { return "Low conviction (flat trend) — auto-scaled to 0.5R" }
-        if signal.isCounterTrend { return "Counter-trend signal — auto-scaled to 0.5R" }
-        if signal.isScalp { return "Scalp signal — auto-scaled to 0.5R" }
+        if signal.volatilityRegime == "extreme" { return "Extreme volatility, auto-scaled to 0.25R" }
+        if signal.volatilityRegime == "elevated" { return "Elevated volatility, auto-scaled to 0.5R" }
+        if signal.isLowConviction { return "Low conviction (flat trend), auto-scaled to 0.5R" }
+        if signal.isCounterTrend { return "Counter-trend signal, auto-scaled to 0.5R" }
+        if signal.isScalp { return "Scalp signal, auto-scaled to 0.5R" }
         return "Risk auto-scaled based on signal conditions"
     }
 
@@ -437,7 +437,7 @@ struct LeverageCalculatorView: View {
                 HStack {
                     Image(systemName: "checkmark.circle")
                         .foregroundColor(AppColors.success)
-                    Text("Spot trade — no leverage risk")
+                    Text("Spot trade, no leverage risk")
                         .font(AppFonts.body14)
                         .foregroundColor(AppColors.textSecondary)
                 }

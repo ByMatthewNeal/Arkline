@@ -361,7 +361,7 @@ struct APIHealthView: View {
                 }
                 var line = "\(icon) \(result.name)"
                 if let detail = result.detail {
-                    line += " — \(detail)"
+                    line += ", \(detail)"
                 }
                 if let latency = result.latencyMs {
                     line += " (\(latency)ms)"

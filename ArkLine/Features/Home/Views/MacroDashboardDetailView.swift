@@ -700,7 +700,7 @@ private struct MacroInsightCard: View {
         // Risk-on with strong conviction
         if regime == .riskOn {
             if let v = vix, v < 15 {
-                return "Macro conditions are strongly favorable — low volatility, a cooperative dollar, and expanding liquidity create a supportive backdrop for risk assets. Historically these periods align with sustained crypto rallies."
+                return "Macro conditions are strongly favorable, low volatility, a cooperative dollar, and expanding liquidity create a supportive backdrop for risk assets. Historically these periods align with sustained crypto rallies."
             }
             return "Macro indicators are aligned to the upside. Low fear, a weakening or stable dollar, and growing liquidity have historically supported risk assets like BTC."
         }
@@ -710,7 +710,7 @@ private struct MacroInsightCard: View {
             if let v = vix, v > 35 {
                 return "Extreme fear across markets with a strong dollar and tightening liquidity. These conditions historically precede further drawdowns, but extreme readings can also mark capitulation."
             }
-            return "Multiple macro headwinds are present — elevated volatility, dollar strength, or contracting liquidity. Markets have often been choppy in setups like this, and investors have historically waited for things to settle."
+            return "Multiple macro headwinds are present, elevated volatility, dollar strength, or contracting liquidity. Markets have often been choppy in setups like this, and investors have historically waited for things to settle."
         }
 
         // Mixed — try to identify the dominant factor
@@ -723,10 +723,10 @@ private struct MacroInsightCard: View {
         }
 
         if let m2 = m2Change, m2 < -0.5 {
-            return "Liquidity is contracting while other signals are mixed. Tightening money supply tends to weigh on risk assets with a lag. Watch for M2 to stabilize before turning aggressive."
+            return "Liquidity is contracting while other signals are mixed. Tightening money supply tends to weigh on risk assets with a lag."
         }
 
-        return "Macro signals are mixed — no clear directional bias. A wait-and-see approach is reasonable until indicators converge toward a clearer risk-on or risk-off regime."
+        return "Macro signals are mixed, no clear directional bias, with indicators yet to converge toward a clearer risk-on or risk-off regime."
     }
 }
 

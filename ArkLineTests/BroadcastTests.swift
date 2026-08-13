@@ -74,6 +74,9 @@ fileprivate final class MockBroadcastService: BroadcastServiceProtocol {
     func removeReaction(broadcastId: UUID, userId: UUID, emoji: String) async throws {}
     func fetchReactions(for broadcastId: UUID) async throws -> [BroadcastReaction] { [] }
     func fetchReactionSummary(for broadcastId: UUID, userId: UUID) async throws -> [ReactionSummary] { [] }
+    func fetchReactionCount(for broadcastId: UUID) async throws -> Int {
+        broadcasts.first(where: { $0.id == broadcastId })?.reactionCount ?? 0
+    }
 }
 
 // MARK: - Test Helpers

@@ -27,23 +27,27 @@ enum PositioningSignal: String, CaseIterable {
 
     var label: String { rawValue }
 
+    /// Plain-English description of what this state means, the backdrop, not a
+    /// recommendation. Deliberately non-advisory (see PRODUCT_PHILOSOPHY.md): it
+    /// describes the wind, it doesn't tell you where to steer.
     var actionGuidance: String {
         switch self {
-        case .bullish: return "Trend intact. Favorable conditions for holding or adding exposure."
-        case .neutral: return "Trend transitioning. Consider reducing size or waiting for confirmation."
-        case .bearish: return "Trend broken. Risk management priority — reduce exposure or stay flat."
+        case .bullish: return "Trend and momentum are pointing up, a more supportive backdrop for the asset."
+        case .neutral: return "Mixed or sideways, no clear push either way right now."
+        case .bearish: return "Trend and momentum are pointing down, a tougher backdrop for now."
         }
     }
 
-    /// Short action hint for signal change context
+    /// Plain-English description of what the change means, what shifted in the
+    /// backdrop, not what to do about it. No "buy/sell/trim/add" language.
     func changeHint(from prev: PositioningSignal) -> String {
         switch (prev, self) {
-        case (.bearish, .neutral): return "Downtrend pressure easing. Watch for bullish confirmation."
-        case (.bearish, .bullish): return "Trend reversal. Conditions turning favorable for exposure."
-        case (.neutral, .bullish): return "Trend strengthening. Favorable to add or hold positions."
-        case (.neutral, .bearish): return "Trend weakening. Consider reducing exposure."
-        case (.bullish, .neutral): return "Momentum fading. Consider tightening stops or trimming."
-        case (.bullish, .bearish): return "Trend breakdown. Prioritize capital preservation."
+        case (.bearish, .neutral): return "Downtrend pressure is easing, the headwind has let up."
+        case (.bearish, .bullish): return "A full turn upward, trend and momentum flipped from down to up."
+        case (.neutral, .bullish): return "Trend is strengthening, the backdrop turned more constructive."
+        case (.neutral, .bearish): return "Trend is weakening, the backdrop turned less supportive."
+        case (.bullish, .neutral): return "Momentum has faded, the upward push cooled to neutral."
+        case (.bullish, .bearish): return "A sharp turn down, trend and momentum flipped from up to down."
         default: return actionGuidance
         }
     }
@@ -77,7 +81,7 @@ enum MacroRegimeQuadrant: String, CaseIterable {
         case .riskOffInflation:
             return "Slowing growth with persistent inflation. The most challenging environment for risk assets including crypto."
         case .riskOffDisinflation:
-            return "Slowing growth with easing conditions. Defensive positioning recommended until growth signals improve."
+            return "Slowing growth with easing conditions, a defensive backdrop until growth signals firm up."
         }
     }
 
@@ -95,13 +99,13 @@ enum MacroRegimeQuadrant: String, CaseIterable {
     var cryptoPositioning: String {
         switch self {
         case .riskOnDisinflation:
-            return "Full exposure — growth is strong and liquidity conditions are easing. Historically the best regime for crypto."
+            return "Growth is strong and liquidity conditions are easing, historically the most supportive regime for crypto."
         case .riskOnInflation:
-            return "Selective exposure — growth is solid but inflation may trigger tightening. Favor large-caps (BTC, ETH), trim alts."
+            return "Growth is solid but inflation may trigger tightening, historically a stage where large-caps (BTC, ETH) have held up better than alts."
         case .riskOffInflation:
-            return "Defensive — growth is slowing while inflation persists. Reduce crypto exposure, favor stablecoins and cash."
+            return "Growth is slowing while inflation persists, historically the toughest regime for crypto, with stablecoins and cash more resilient."
         case .riskOffDisinflation:
-            return "Cautious accumulation — growth is weak but easing conditions are building. Small DCA positions, watch for regime shift."
+            return "Growth is weak but easing conditions are building, a mixed backdrop that has historically preceded a turn."
         }
     }
 }

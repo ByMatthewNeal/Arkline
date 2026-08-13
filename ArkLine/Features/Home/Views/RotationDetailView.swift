@@ -350,7 +350,7 @@ struct RotationDetailView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(AppColors.warning)
 
-                Text("Defensives rank #\(rank) — when defensive names outperform, it typically signals risk-off conditions for growth assets.")
+                Text("Defensives rank #\(rank), when defensive names outperform, it typically signals risk-off conditions for growth assets.")
                     .font(.system(size: 12))
                     .foregroundColor(textPrimary.opacity(0.8))
                     .lineSpacing(2)

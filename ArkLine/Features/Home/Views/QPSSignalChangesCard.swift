@@ -44,9 +44,12 @@ struct QPSSignalChangesCard: View {
             HStack {
                 Image(systemName: "waveform.path.ecg")
                     .foregroundColor(AppColors.accent)
-                Text("Signal Changes")
-                    .font(size == .compact ? .subheadline : .title3)
-                    .foregroundColor(AppColors.textPrimary(colorScheme))
+                HStack(spacing: 5) {
+                    Text("Signal Changes")
+                        .font(size == .compact ? .subheadline : .title3)
+                        .foregroundColor(AppColors.textPrimary(colorScheme))
+                    ExplainButton(explainer: .positioning)
+                }
 
                 Spacer()
 
@@ -59,6 +62,8 @@ struct QPSSignalChangesCard: View {
                     .buttonStyle(.plain)
                 }
             }
+
+            ExplainNudge(explainer: .positioning)
 
             if isPro {
                 // Risk appetite summary
@@ -233,25 +238,25 @@ struct QPSSignalChangesCard: View {
     private var riskGuidance: String {
         // Divergence: macro is risk-on but assets are trending down
         if let q = macroQuadrant, macroBullish && riskAppetite < 45 {
-            return "Macro backdrop is \(q.rawValue.lowercased()), but asset trends are weakening. Watch for follow-through before adding exposure."
+            return "Macro backdrop is \(q.rawValue.lowercased()), but asset trends are weakening. The big picture and the trends aren't lined up right now."
         }
         // Divergence: macro is risk-off but assets are trending up
         if let q = macroQuadrant, !macroBullish && riskAppetite >= 55 {
             return "Asset trends are tilting bullish despite a \(q.rawValue.lowercased()) macro backdrop. Momentum may lead, but stay cautious on sizing."
         }
         if riskAppetite >= 70 {
-            return "Broad strength across assets. Favor adding or holding positions."
+            return "Most assets are trending up together, a broadly supportive backdrop."
         }
         if riskAppetite >= 55 {
-            return "More signals tilting bullish. Conditions lean toward selective exposure."
+            return "More signals are tilting bullish than bearish, a modestly supportive backdrop."
         }
         if riskAppetite >= 45 {
-            return "Signals are split. Stay nimble — wait for clearer direction before sizing up."
+            return "Signals are split, no clear lean either way right now."
         }
         if riskAppetite >= 30 {
-            return "Bearish signals outweigh bullish. Consider tightening stops or reducing size."
+            return "More signals are tilting bearish than bullish, a modestly cautious backdrop."
         }
-        return "Broad weakness across assets. Prioritize capital preservation."
+        return "Most assets are trending down together, a broadly weak backdrop."
     }
 
     private var riskAppetiteBar: some View {

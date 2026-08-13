@@ -7,6 +7,7 @@ struct CryptoRiskLevelsScreen: View {
     @State private var selectedCoin: String?
 
     var body: some View {
+        @Bindable var viewModel = viewModel
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if viewModel.isLoading && viewModel.rows.isEmpty {
@@ -33,17 +34,23 @@ struct CryptoRiskLevelsScreen: View {
                         .padding(.horizontal, ArkSpacing.lg)
                         .padding(.bottom, ArkSpacing.xs)
 
-                    if viewModel.sortMode == .band {
-                        ForEach(viewModel.bucketed, id: \.band) { section in
-                            bandSection(band: section.band, items: section.items)
-                        }
+                    if viewModel.hasNoSearchResults {
+                        noMatchesState
                     } else {
-                        alphabeticalList
-                    }
+                        // While searching, always show a flat list (band grouping
+                        // is noisy when there are only a few matches).
+                        if viewModel.sortMode == .band && !viewModel.isSearching {
+                            ForEach(viewModel.bucketed, id: \.band) { section in
+                                bandSection(band: section.band, items: section.items)
+                            }
+                        } else {
+                            alphabeticalList
+                        }
 
-                    // Failed coins section
-                    if !viewModel.failedCoins.isEmpty {
-                        failedSection
+                        // Failed coins section
+                        if !viewModel.filteredFailedCoins.isEmpty {
+                            failedSection
+                        }
                     }
 
                     Spacer().frame(height: 100)
@@ -53,6 +60,12 @@ struct CryptoRiskLevelsScreen: View {
         .background(AppColors.background(colorScheme))
         .navigationTitle("Crypto Risk Levels")
         .navigationBarTitleDisplayMode(.large)
+        .searchable(
+            text: $viewModel.searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: "Search name or ticker"
+        )
+        .autocorrectionDisabled()
         .refreshable { await viewModel.refresh() }
         .task { await viewModel.loadAll() }
         .sheet(item: Binding(
@@ -296,6 +309,24 @@ struct CryptoRiskLevelsScreen: View {
         .padding(.top, 60)
     }
 
+    private var noMatchesState: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 28))
+                .foregroundColor(AppColors.textTertiary)
+            Text("No matches for “\(viewModel.searchText)”")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+            Text("Try a ticker (e.g. BTC) or a name.")
+                .font(.system(size: 12))
+                .foregroundColor(AppColors.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
+        .padding(.horizontal, ArkSpacing.lg)
+    }
+
     private var failedSection: some View {
         VStack(alignment: .leading, spacing: ArkSpacing.sm) {
             HStack(spacing: 6) {
@@ -309,7 +340,7 @@ struct CryptoRiskLevelsScreen: View {
             .padding(.horizontal, ArkSpacing.lg)
 
             VStack(spacing: 0) {
-                ForEach(Array(viewModel.failedCoins.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }.enumerated()), id: \.element.assetId) { index, config in
+                ForEach(Array(viewModel.filteredFailedCoins.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }.enumerated()), id: \.element.assetId) { index, config in
                     HStack(spacing: 12) {
                         if let logoURL = config.logoURL {
                             KFImage(logoURL)
@@ -342,7 +373,7 @@ struct CryptoRiskLevelsScreen: View {
                     .padding(.horizontal, ArkSpacing.md)
                     .padding(.vertical, 10)
 
-                    if index < viewModel.failedCoins.count - 1 {
+                    if index < viewModel.filteredFailedCoins.count - 1 {
                         Divider()
                             .padding(.leading, 56)
                             .padding(.horizontal, ArkSpacing.lg)

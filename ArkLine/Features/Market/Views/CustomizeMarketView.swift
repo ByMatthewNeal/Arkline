@@ -42,7 +42,7 @@ struct CustomizeMarketView: View {
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(textPrimary)
 
-                        Text("Choose which sections appear on your Market tab. Nothing is deleted — hidden sections stay one toggle away.")
+                        Text("Choose which sections appear on your Market tab. Nothing is deleted, hidden sections stay one toggle away.")
                             .font(.system(size: 14))
                             .foregroundColor(textPrimary.opacity(0.6))
                             .multilineTextAlignment(.center)

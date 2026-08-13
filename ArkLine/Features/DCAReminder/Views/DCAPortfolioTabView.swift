@@ -35,7 +35,7 @@ struct DCAPortfolioTabView: View {
                                 .font(AppFonts.title20)
                                 .foregroundColor(AppColors.textPrimary(colorScheme))
 
-                            Text("Set a target allocation, track your buys, monitor P&L, and build a streak — all in one place.")
+                            Text("Set a target allocation, track your buys, monitor P&L, and build a streak, all in one place.")
                                 .font(AppFonts.body14)
                                 .foregroundColor(AppColors.textSecondary)
                                 .multilineTextAlignment(.center)

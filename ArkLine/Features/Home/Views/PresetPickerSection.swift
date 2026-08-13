@@ -91,7 +91,7 @@ struct PresetPickerSection: View {
                     HStack(spacing: 4) {
                         Image(systemName: "info.circle")
                             .font(.system(size: 11))
-                        Text("\(DashboardPreset.maxPresets)/\(DashboardPreset.maxPresets) presets used — delete one to save a new layout")
+                        Text("\(DashboardPreset.maxPresets)/\(DashboardPreset.maxPresets) presets used, delete one to save a new layout")
                             .font(.system(size: 11))
                     }
                     .foregroundColor(AppColors.textSecondary)

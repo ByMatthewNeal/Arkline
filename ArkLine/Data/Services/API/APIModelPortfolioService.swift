@@ -11,9 +11,13 @@ final class APIModelPortfolioService: ModelPortfolioServiceProtocol {
     func fetchPortfolios() async throws -> [ModelPortfolio] {
         guard supabase.isConfigured else { return [] }
 
+        // Only active portfolios are shown. Retired ones (e.g. Alpha) are flagged
+        // is_active=false in the DB rather than deleted, so they can be restored by
+        // flipping the flag without losing their NAV/trade history.
         let portfolios: [ModelPortfolio] = try await supabase.database
             .from(SupabaseTable.modelPortfolios.rawValue)
             .select()
+            .eq("is_active", value: true)
             .order("strategy", ascending: true)
             .execute()
             .value

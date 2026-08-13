@@ -335,7 +335,7 @@ final class ProfileViewModel {
 
     func shareReferral() {
         let referralLink = "https://arkline.io?ref=\(referralCode)"
-        let shareText = "I use ArkLine for crypto and stock risk analysis — multi-factor risk levels, trade signals, and daily positioning. Check it out: \(referralLink)"
+        let shareText = "I use ArkLine for crypto and stock risk analysis, multi-factor risk levels, trade signals, and daily positioning. Check it out: \(referralLink)"
 
         #if canImport(UIKit)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,

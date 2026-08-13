@@ -124,26 +124,36 @@ struct BroadcastStudioView: View {
                 // banner. One slim inset strip carries both the label and Done.
                 BroadcastFeedView()
                     .safeAreaInset(edge: .top) {
-                        HStack(spacing: ArkSpacing.xs) {
-                            Image(systemName: "eye")
-                                .font(.caption)
-                            Text("User Preview")
-                                .font(ArkFonts.caption)
-                                .fontWeight(.semibold)
-
-                            Spacer()
-
-                            Button {
-                                showingUserPreview = false
-                            } label: {
-                                Text("Done")
+                        VStack(spacing: 2) {
+                            HStack(spacing: ArkSpacing.xs) {
+                                Image(systemName: "eye")
+                                    .font(.caption)
+                                Text("User Preview")
                                     .font(ArkFonts.caption)
-                                    .fontWeight(.bold)
-                                    .padding(.horizontal, ArkSpacing.sm)
-                                    .padding(.vertical, 4)
-                                    .background(Color.white.opacity(0.2))
-                                    .clipShape(Capsule())
+                                    .fontWeight(.semibold)
+
+                                Spacer()
+
+                                Button {
+                                    showingUserPreview = false
+                                } label: {
+                                    Text("Done")
+                                        .font(ArkFonts.caption)
+                                        .fontWeight(.bold)
+                                        .padding(.horizontal, ArkSpacing.sm)
+                                        .padding(.vertical, 4)
+                                        .background(Color.white.opacity(0.2))
+                                        .clipShape(Capsule())
+                                }
                             }
+
+                            // Lesson deep-links need the real tab bar, which this
+                            // isolated preview doesn't have. Flag it so tapping a
+                            // lesson's "open in the app" here doesn't look broken.
+                            Text("Lesson links open in the full app, not in this preview.")
+                                .font(ArkFonts.caption2)
+                                .foregroundColor(.white.opacity(0.85))
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, ArkSpacing.md)

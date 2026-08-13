@@ -349,7 +349,7 @@ struct CreateDCAPlanSheet: View {
                     type: .timeBased,
                     icon: "calendar.badge.clock",
                     title: "Time-Based",
-                    description: "Fixed schedule — buy the same amount every week or two weeks regardless of price. Simple and consistent."
+                    description: "Fixed schedule, buy the same amount every week or two weeks regardless of price. Simple and consistent."
                 )
 
                 strategyCard(
@@ -363,7 +363,7 @@ struct CreateDCAPlanSheet: View {
                     type: .budgetBased,
                     icon: "dollarsign.arrow.circlepath",
                     title: "Budget-Based",
-                    description: "Set a fixed amount to invest on a recurring schedule. Simple — just pick your budget and frequency."
+                    description: "Set a fixed amount to invest on a recurring schedule. Simple, just pick your budget and frequency."
                 )
             }
         }
@@ -430,9 +430,9 @@ struct CreateDCAPlanSheet: View {
                         .foregroundColor(AppColors.textSecondary)
 
                     VStack(spacing: ArkSpacing.xs) {
-                        riskBandOption(band: "very_low", label: "Very Low Risk", range: "0.00 – 0.20", description: "Deep value — historically best entries", color: AppColors.success)
-                        riskBandOption(band: "low", label: "Low Risk", range: "0.20 – 0.40", description: "Favorable — good accumulation zone", color: AppColors.success.opacity(0.7))
-                        riskBandOption(band: "neutral", label: "Neutral", range: "0.40 – 0.55", description: "Fair value — standard DCA", color: AppColors.warning)
+                        riskBandOption(band: "very_low", label: "Very Low Risk", range: "0.00 – 0.20", description: "Deep value, historically best entries", color: AppColors.success)
+                        riskBandOption(band: "low", label: "Low Risk", range: "0.20 – 0.40", description: "Favorable, good accumulation zone", color: AppColors.success.opacity(0.7))
+                        riskBandOption(band: "neutral", label: "Neutral", range: "0.40 – 0.55", description: "Fair value, standard DCA", color: AppColors.warning)
                     }
                 }
 
@@ -727,7 +727,7 @@ struct CreateDCAPlanSheet: View {
                             Text("Ongoing")
                                 .font(AppFonts.body14Medium)
                                 .foregroundColor(textPrimary)
-                            Text("Runs until you stop it — no end date")
+                            Text("Runs until you stop it, no end date")
                                 .font(AppFonts.caption12)
                                 .foregroundColor(textPrimary.opacity(0.5))
                         }
