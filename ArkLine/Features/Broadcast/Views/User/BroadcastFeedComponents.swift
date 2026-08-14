@@ -217,6 +217,7 @@ struct BroadcastDetailView: View {
     @State private var showingDeckViewer = false
     @State private var loadedDeck: MarketUpdateDeck?
     @State private var isLoadingDeck = false
+    @State private var showDictionary = false
 
     var body: some View {
         NavigationStack {
@@ -354,6 +355,39 @@ struct BroadcastDetailView: View {
 
                     // Content
                     MarkdownContentView(content: broadcast.content)
+
+                    // Dictionary: friction-free glossary access right under the insight,
+                    // so an unfamiliar term is one tap away instead of a hunt.
+                    Button {
+                        showDictionary = true
+                    } label: {
+                        HStack(spacing: ArkSpacing.xs) {
+                            Image(systemName: "character.book.closed.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Look up a term")
+                                .font(AppFonts.body14Medium)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(AppColors.accent)
+                        .padding(.horizontal, ArkSpacing.md)
+                        .padding(.vertical, ArkSpacing.sm)
+                        .frame(maxWidth: .infinity)
+                        .background(AppColors.accent.opacity(0.08))
+                        .cornerRadius(ArkSpacing.sm)
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $showDictionary) {
+                        NavigationStack {
+                            DictionaryView()
+                                .toolbar {
+                                    ToolbarItem(placement: .cancellationAction) {
+                                        Button("Close") { showDictionary = false }
+                                    }
+                                }
+                        }
+                    }
 
                     // View Deck button (for market update broadcasts)
                     if broadcast.tags.contains("marketUpdate") || broadcast.tags.contains("weekly") {

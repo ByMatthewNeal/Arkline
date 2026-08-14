@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare } from 'lucide-react';
+import Link from 'next/link';
+import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare, BookOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
 import { fetchBroadcasts, type Broadcast } from '@/lib/api/broadcasts';
@@ -115,6 +116,15 @@ function BroadcastCard({ b, social }: { b: Broadcast; social: Social }) {
         >
           <Bookmark className={cn('h-3.5 w-3.5', saved && 'fill-current')} />
         </button>
+        {/* Dictionary: friction-free jump to the glossary, right where a reader hits an unfamiliar term */}
+        <Link
+          href="/dashboard/dictionary"
+          onClick={(e) => e.stopPropagation()}
+          title="Look up a term in the dictionary"
+          className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-ark-text-disabled transition-colors hover:bg-ark-fill-secondary hover:text-ark-primary"
+        >
+          <BookOpen className="h-3.5 w-3.5" /> Dictionary
+        </Link>
         <span className="ml-auto font-medium text-ark-primary">{expanded ? 'Show less ↑' : 'Read more →'}</span>
       </div>
     </GlassCard>
@@ -160,13 +170,21 @@ export default function BroadcastsPage() {
           <h1 className="font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">Broadcasts</h1>
           <p className="text-sm text-ark-text-tertiary">Market insights & updates from Arkline</p>
         </div>
+        {/* Dictionary entry — always-visible jump to the glossary */}
+        <Link
+          href="/dashboard/dictionary"
+          className="flex shrink-0 items-center gap-2 rounded-xl border border-ark-divider px-3.5 py-2.5 text-sm font-semibold text-ark-text-secondary transition-colors hover:bg-ark-fill-secondary hover:text-ark-text"
+        >
+          <BookOpen className="h-4 w-4 text-ark-primary" />
+          <span className="hidden sm:inline">Dictionary</span>
+        </Link>
         {/* Member Q&A entry — mirrors the iOS floating Q&A button on Insights */}
         <button
           onClick={() => setAskOpen(true)}
           className="flex shrink-0 items-center gap-2 rounded-xl bg-ark-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-ark-primary/25 transition-all hover:brightness-110"
         >
           <MessagesSquare className="h-4 w-4" />
-          Ask a Question
+          <span className="hidden sm:inline">Ask a Question</span>
         </button>
       </div>
 
