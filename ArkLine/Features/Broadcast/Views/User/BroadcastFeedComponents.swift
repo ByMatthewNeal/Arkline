@@ -218,6 +218,7 @@ struct BroadcastDetailView: View {
     @State private var loadedDeck: MarketUpdateDeck?
     @State private var isLoadingDeck = false
     @State private var showDictionary = false
+    @State private var showReaders = false
 
     var body: some View {
         NavigationStack {
@@ -247,15 +248,26 @@ struct BroadcastDetailView: View {
 
                             Spacer()
 
-                            // Admin-only view count
-                            if appState.currentUser?.isAdmin == true, let views = broadcast.viewCount, views > 0 {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "eye.fill")
-                                        .font(.caption2)
-                                        .foregroundColor(AppColors.success)
-                                    Text("\(views) views")
-                                        .font(ArkFonts.caption)
-                                        .foregroundColor(AppColors.textSecondary)
+                            // Admin-only: tap the view count to see WHO has read this insight
+                            if appState.currentUser?.isAdmin == true {
+                                Button {
+                                    showReaders = true
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "eye.fill")
+                                            .font(.caption2)
+                                            .foregroundColor(AppColors.success)
+                                        Text("\(broadcast.viewCount ?? 0) views")
+                                            .font(ArkFonts.caption)
+                                            .foregroundColor(AppColors.textSecondary)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .foregroundColor(AppColors.textSecondary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .sheet(isPresented: $showReaders) {
+                                    BroadcastReadersSheet(broadcastId: broadcast.id, broadcastTitle: broadcast.title)
                                 }
                             }
                         }
@@ -830,5 +842,109 @@ func formattedBroadcastDate(_ date: Date) -> String {
         return "\(BroadcastDateFormatters.monthDay.string(from: date)) at \(time)"
     } else {
         return "\(BroadcastDateFormatters.monthDayYear.string(from: date)) at \(time)"
+    }
+}
+
+// MARK: - Broadcast Readers Sheet (admin)
+
+/// Admin-only list of who has read an insight, newest first. Backed by the
+/// `get_broadcast_readers` RPC, which enforces the admin gate server-side.
+struct BroadcastReadersSheet: View {
+    let broadcastId: UUID
+    let broadcastTitle: String
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var readers: [BroadcastReader] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let errorMessage {
+                    ContentUnavailableView(
+                        "Couldn't load readers",
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(errorMessage)
+                    )
+                } else if readers.isEmpty {
+                    ContentUnavailableView(
+                        "No views yet",
+                        systemImage: "eye.slash",
+                        description: Text("No one has opened this insight yet.")
+                    )
+                } else {
+                    List {
+                        Section {
+                            ForEach(readers) { reader in
+                                HStack(spacing: ArkSpacing.sm) {
+                                    Text(initials(reader.name))
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 34, height: 34)
+                                        .background(AppColors.accent.opacity(0.85))
+                                        .clipShape(Circle())
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(reader.name)
+                                            .font(ArkFonts.bodySemibold)
+                                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                                        if let email = reader.email, !email.isEmpty {
+                                            Text(email)
+                                                .font(ArkFonts.caption)
+                                                .foregroundColor(AppColors.textSecondary)
+                                                .lineLimit(1)
+                                        }
+                                    }
+
+                                    Spacer()
+
+                                    Text(relativeTime(reader.readAt))
+                                        .font(ArkFonts.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        } header: {
+                            Text("\(readers.count) \(readers.count == 1 ? "reader" : "readers")")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Seen by")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+        .task { await load() }
+    }
+
+    private func load() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            readers = try await ServiceContainer.shared.broadcastService.fetchReaders(for: broadcastId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func initials(_ name: String) -> String {
+        let letters = name.split(separator: " ").prefix(2).compactMap { $0.first }
+        return letters.isEmpty ? "?" : String(letters).uppercased()
+    }
+
+    private func relativeTime(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }

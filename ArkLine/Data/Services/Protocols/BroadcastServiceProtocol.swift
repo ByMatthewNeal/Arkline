@@ -92,6 +92,10 @@ protocol BroadcastServiceProtocol {
     /// - Returns: BroadcastAnalyticsSummary with totals
     func fetchAnalyticsSummary(periodDays: Int) async throws -> BroadcastAnalyticsSummary
 
+    /// Admin-only: the list of users who have read a given broadcast, newest first.
+    /// Backed by the `get_broadcast_readers` RPC, which enforces the admin gate.
+    func fetchReaders(for broadcastId: UUID) async throws -> [BroadcastReader]
+
     // MARK: - File Upload
 
     /// Uploads an audio file for a broadcast

@@ -1197,3 +1197,31 @@ enum BroadcastTag: String, CaseIterable {
         }
     }
 }
+
+// MARK: - Broadcast Reader (admin analytics)
+
+/// A single reader of a broadcast, returned by the admin-only
+/// `get_broadcast_readers` RPC. Lets the founder see who has opened an insight.
+struct BroadcastReader: Codable, Identifiable, Equatable {
+    let userId: UUID?
+    let displayName: String?
+    let email: String?
+    let readAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case displayName = "display_name"
+        case email
+        case readAt = "read_at"
+    }
+
+    /// Stable identity for lists (a user can appear once per broadcast).
+    var id: String { (userId?.uuidString ?? "anon") + "-" + String(readAt.timeIntervalSince1970) }
+
+    /// Best available human label.
+    var name: String {
+        if let n = displayName, !n.trimmingCharacters(in: .whitespaces).isEmpty { return n }
+        if let e = email, !e.isEmpty { return e }
+        return "Unknown reader"
+    }
+}

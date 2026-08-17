@@ -357,6 +357,17 @@ final class BroadcastService: BroadcastServiceProtocol {
             .value
     }
 
+    func fetchReaders(for broadcastId: UUID) async throws -> [BroadcastReader] {
+        guard supabase.isConfigured else {
+            throw AppError.supabaseNotConfigured
+        }
+
+        return try await supabase.database
+            .rpc("get_broadcast_readers", params: ["p_broadcast_id": broadcastId.uuidString])
+            .execute()
+            .value
+    }
+
     // MARK: - File Upload
 
     func uploadAudio(data: Data, for broadcastId: UUID) async throws -> URL {
