@@ -21,6 +21,7 @@ struct AdminBroadcastDetailView: View {
     @State private var showingDeckViewer = false
     @State private var loadedDeck: MarketUpdateDeck?
     @State private var isLoadingDeck = false
+    @State private var showReaders = false
 
     var body: some View {
         NavigationStack {
@@ -263,17 +264,28 @@ struct AdminBroadcastDetailView: View {
     private var engagementBanner: some View {
         VStack(spacing: ArkSpacing.sm) {
             HStack(spacing: ArkSpacing.md) {
-                // Views
-                HStack(spacing: ArkSpacing.xs) {
-                    Image(systemName: "eye.fill")
-                        .font(.caption)
-                        .foregroundColor(AppColors.success)
-                    Text("\(broadcast.viewCount ?? 0)")
-                        .font(ArkFonts.bodySemibold)
-                        .foregroundColor(AppColors.textPrimary(colorScheme))
-                    Text("views")
-                        .font(ArkFonts.caption)
-                        .foregroundColor(AppColors.textSecondary)
+                // Views — tap to see WHO read this insight
+                Button {
+                    showReaders = true
+                } label: {
+                    HStack(spacing: ArkSpacing.xs) {
+                        Image(systemName: "eye.fill")
+                            .font(.caption)
+                            .foregroundColor(AppColors.success)
+                        Text("\(broadcast.viewCount ?? 0)")
+                            .font(ArkFonts.bodySemibold)
+                            .foregroundColor(AppColors.textPrimary(colorScheme))
+                        Text("views")
+                            .font(ArkFonts.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showReaders) {
+                    BroadcastReadersSheet(broadcastId: broadcast.id, broadcastTitle: broadcast.title)
                 }
 
                 Spacer()
