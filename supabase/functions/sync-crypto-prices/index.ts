@@ -14,11 +14,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
  * Runs every 5 minutes via cron.
  *
  * Resilience: if CoinGecko's /coins/markets call fails (e.g. a lapsed API
- * subscription), we fall back to Binance's bulk 24h ticker and refresh just the
- * live prices (current_price + 24h change) on the last-known-good snapshot, so
- * prices keep flowing. Names, logos, market caps, ranks and sparklines are kept
- * from the last successful CoinGecko sync. (Global mcap/dominance still needs
- * CoinGecko and is not backfilled.)
+ * subscription), we fall back to Binance's bulk 24h ticker (primary) and
+ * Coinbase's exchange-rates map (secondary) to refresh live prices on the
+ * last-known-good snapshot, so prices keep flowing. Names, logos, market caps,
+ * ranks and sparklines are kept from the last successful CoinGecko sync.
+ * (Global mcap/dominance still needs CoinGecko and is not backfilled.)
  */
 
 const COINGECKO_PRO_BASE = "https://pro-api.coingecko.com/api/v3"
@@ -74,13 +74,13 @@ Deno.serve(async (req) => {
     console.error(msg)
     stats.errors.push(msg)
 
-    // Fallback: keep live prices flowing from Binance when CoinGecko is down.
+    // Fallback: keep live prices flowing from Binance + Coinbase when CoinGecko is down.
     try {
-      const updated = await refreshPricesFromBinance(supabase)
+      const updated = await refreshPricesFromFallbacks(supabase)
       if (updated > 0) {
         stats.markets = true
-        stats.marketsSource = "binance-fallback"
-        console.log(`Fallback: refreshed ${updated} prices from Binance`)
+        stats.marketsSource = "binance+coinbase-fallback"
+        console.log(`Fallback: refreshed ${updated} prices from Binance/Coinbase`)
       }
     } catch (fbErr) {
       const fbMsg = `markets-fallback: ${fbErr}`
@@ -181,12 +181,13 @@ async function writeCache(
 
 /**
  * Fallback price refresh. Reads the last-known-good top-100 snapshot and
- * overwrites only `current_price` and `price_change_percentage_24h` using
- * Binance's bulk 24h ticker (one request for all symbols). Everything else
- * (name, image, market_cap, rank, sparkline) is preserved from the last good
- * CoinGecko sync. Returns the number of coins whose price was refreshed.
+ * overwrites only `current_price` (and 24h change where available) using two
+ * bulk sources: Binance's 24h ticker (price + 24h change) as primary, and
+ * Coinbase's exchange-rates map (price only) to fill whatever Binance doesn't
+ * list. Everything else (name, image, market_cap, rank, sparkline) is preserved
+ * from the last good CoinGecko sync. Returns the number of coins refreshed.
  */
-async function refreshPricesFromBinance(
+async function refreshPricesFromFallbacks(
   supabase: ReturnType<typeof createClient>
 ): Promise<number> {
   // 1. Load the last-known-good snapshot.
@@ -208,50 +209,90 @@ async function refreshPricesFromBinance(
     throw new Error("snapshot is empty")
   }
 
-  // 2. One bulk request for every Binance USDT pair.
-  const resp = await fetch("https://data-api.binance.vision/api/v3/ticker/24hr")
-  if (!resp.ok) throw new Error(`Binance ${resp.status}`)
-  const tickers = await resp.json()
-  if (!Array.isArray(tickers)) throw new Error("Binance returned no tickers")
-
-  const priceBySymbol = new Map<string, { price: number; changePct: number }>()
-  for (const t of tickers) {
-    const sym = t?.symbol
-    if (typeof sym === "string" && sym.endsWith("USDT")) {
-      const base = sym.slice(0, -4)
-      const price = parseFloat(t.lastPrice)
-      const changePct = parseFloat(t.priceChangePercent)
-      if (isFinite(price) && price > 0) {
-        priceBySymbol.set(base, { price, changePct })
+  // 2. Primary source — Binance bulk 24h ticker (price + 24h change).
+  const binance = new Map<string, { price: number; changePct: number }>()
+  try {
+    const resp = await fetch("https://data-api.binance.vision/api/v3/ticker/24hr")
+    if (resp.ok) {
+      const tickers = await resp.json()
+      if (Array.isArray(tickers)) {
+        for (const t of tickers) {
+          const sym = t?.symbol
+          if (typeof sym === "string" && sym.endsWith("USDT")) {
+            const base = sym.slice(0, -4)
+            const price = parseFloat(t.lastPrice)
+            const changePct = parseFloat(t.priceChangePercent)
+            if (isFinite(price) && price > 0) {
+              binance.set(base, { price, changePct })
+            }
+          }
+        }
       }
+    } else {
+      console.error(`Binance fallback ${resp.status}`)
     }
+  } catch (e) {
+    console.error(`Binance fallback fetch failed: ${e}`)
   }
-  if (priceBySymbol.size === 0) throw new Error("no usable Binance tickers")
 
-  // 3. Overwrite prices in place. Stablecoins peg to ~1 when unlisted.
+  // 3. Secondary source — Coinbase exchange-rates (one bulk call, price only).
+  //    rates[X] = amount of X per 1 USD, so USD price = 1 / rate.
+  const coinbase = new Map<string, number>()
+  try {
+    const resp = await fetch("https://api.coinbase.com/v2/exchange-rates?currency=USD")
+    if (resp.ok) {
+      const body = await resp.json()
+      const rates = body?.data?.rates ?? {}
+      for (const [sym, rateStr] of Object.entries(rates)) {
+        const rate = parseFloat(rateStr as string)
+        if (isFinite(rate) && rate > 0) {
+          coinbase.set(sym.toUpperCase(), 1 / rate)
+        }
+      }
+    } else {
+      console.error(`Coinbase fallback ${resp.status}`)
+    }
+  } catch (e) {
+    console.error(`Coinbase fallback fetch failed: ${e}`)
+  }
+
+  if (binance.size === 0 && coinbase.size === 0) {
+    throw new Error("no fallback price source available")
+  }
+
+  // 4. Overwrite prices in place: Binance first (has 24h change), then Coinbase,
+  //    then a ~1 peg for stablecoins. Otherwise keep the last-known price.
   const STABLE = new Set(["USDT", "USDC", "DAI", "TUSD", "USDE", "FDUSD", "USDD", "PYUSD"])
   const nowISO = new Date().toISOString()
-  let updated = 0
+  let fromBinance = 0
+  let fromCoinbase = 0
   for (const c of coins) {
     const sym = String(c.symbol ?? "").toUpperCase()
     if (!sym) continue
-    const hit = priceBySymbol.get(sym)
-    if (hit) {
-      c.current_price = hit.price
-      if (isFinite(hit.changePct)) c.price_change_percentage_24h = hit.changePct
+    const b = binance.get(sym)
+    if (b) {
+      c.current_price = b.price
+      if (isFinite(b.changePct)) c.price_change_percentage_24h = b.changePct
       c.last_updated = nowISO
-      updated++
+      fromBinance++
+    } else if (coinbase.has(sym)) {
+      c.current_price = coinbase.get(sym)!
+      c.last_updated = nowISO
+      // Coinbase rates carry no 24h change; leave the prior value untouched.
+      fromCoinbase++
     } else if (STABLE.has(sym)) {
       c.current_price = 1
       c.price_change_percentage_24h = 0
       c.last_updated = nowISO
-      updated++
+      fromCoinbase++
     }
-    // Otherwise keep the last-known price rather than zeroing it out.
   }
-  if (updated === 0) throw new Error("no snapshot symbols matched Binance")
 
-  // 4. Write back with a fresh timestamp so the freshness check goes green.
+  const updated = fromBinance + fromCoinbase
+  if (updated === 0) throw new Error("no snapshot symbols matched a fallback source")
+  console.log(`Fallback coverage — Binance: ${fromBinance}, Coinbase/stable: ${fromCoinbase}`)
+
+  // 5. Write back with a fresh timestamp so the freshness check goes green.
   await writeCache(supabase, "crypto_assets_1_100", coins, 300)
   return updated
 }
