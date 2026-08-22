@@ -250,9 +250,15 @@ final class PortfolioViewModel {
                     self.isLoading = false
                 }
 
-                // Record daily portfolio snapshot for history charts (non-blocking)
+                // Record daily portfolio snapshot for history charts (non-blocking).
+                // Skip when pricing was incomplete: a held asset that failed to
+                // price (currentPrice nil/0 while quantity > 0) would record a
+                // partial total and poison the history chart with a false dip
+                // (e.g. an FMP/CoinGecko outage dropping stocks/metals to $0).
+                // Skipping a day is far better than persisting a corrupt point.
+                let anyUnpriced = holdingsWithPrices.contains { ($0.currentPrice ?? 0) <= 0 && $0.quantity > 0 }
                 let snapshotValue = holdingsWithPrices.reduce(0) { $0 + $1.currentValue }
-                if snapshotValue > 0 {
+                if snapshotValue > 0, !partialFailure, !anyUnpriced {
                     do {
                         try await portfolioService.recordPortfolioSnapshot(
                             portfolioId: portfolio.id,
@@ -261,6 +267,8 @@ final class PortfolioViewModel {
                     } catch {
                         logError("Snapshot recording failed: \(error)", category: .data)
                     }
+                } else if partialFailure || anyUnpriced {
+                    logInfo("Skipping portfolio snapshot — incomplete pricing (partialFailure=\(partialFailure), unpriced=\(anyUnpriced))", category: .data)
                 }
             } else {
                 await MainActor.run {
