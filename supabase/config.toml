@@ -364,6 +364,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# api-proxy authenticates each caller itself (getUser on the passed user JWT), so
+# it must NOT rely on the gateway. With verify_jwt = true the gateway 401s every
+# app request BEFORE the function runs, which silently takes down all proxied
+# vendor data (FMP, taapi, fred, coinglass, finnhub) for release builds — release
+# has no direct-key fallback. Keep this false.
+[functions.api-proxy]
+verify_jwt = false
+
 [functions.market-summary]
 verify_jwt = false
 
