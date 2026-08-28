@@ -128,6 +128,7 @@ export function MomentumMap() {
           <li className="flex gap-2"><span className="text-ark-primary">•</span>Each asset is read on two pairs — its USD pair (e.g. SOL/USD) and its BTC pair (e.g. SOL/BTC) — each classified bullish, neutral, or bearish.</li>
           <li className="flex gap-2"><span className="text-ark-primary">•</span>True momentum = both pairs bullish. The strongest moves happen when an asset is rising in dollars and gaining on Bitcoin at once.</li>
           <li className="flex gap-2"><span className="text-ark-primary">•</span>Outperforming BTC = the BTC pair is bullish while USD lags. These relative-strength leaders often move first when risk turns back on.</li>
+          <li className="flex gap-2"><span className="text-ark-error">•</span>Both bearish = the weakest read: both the USD pair and the BTC pair are bearish, so there&apos;s no momentum in either direction. This group only appears when coins are truly weak — in a strong market it stays empty.</li>
           <li className="flex gap-2"><span className="text-ark-primary">•</span>Synthetic pairs are derived as USD ÷ BTC price; when Bitcoin is falling they can read bullish simply because the asset drops slower. Treat the real Coinbase pairs as the cleaner read.</li>
         </ul>
       </GlassCard>
