@@ -178,6 +178,7 @@ struct NotificationsDetailView: View {
                     }
                     .onChange(of: swingSignals) { _, _ in
                         Haptics.selection()
+                        syncSignalPreferences()
                     }
 
                     Toggle(isOn: $qpsChanges) {
@@ -190,6 +191,7 @@ struct NotificationsDetailView: View {
                     }
                     .onChange(of: qpsChanges) { _, _ in
                         Haptics.selection()
+                        syncSignalPreferences()
                     }
 
                     Toggle(isOn: $rotationShifts) {
@@ -202,6 +204,7 @@ struct NotificationsDetailView: View {
                     }
                     .onChange(of: rotationShifts) { _, _ in
                         Haptics.selection()
+                        syncSignalPreferences()
                     }
 
                     Toggle(isOn: $modelPortfolio) {
@@ -212,9 +215,9 @@ struct NotificationsDetailView: View {
                             description: "When model portfolios adjust allocations"
                         )
                     }
-                    .onChange(of: modelPortfolio) { _, newValue in
+                    .onChange(of: modelPortfolio) { _, _ in
                         Haptics.selection()
-                        syncModelPortfolioPreference(newValue)
+                        syncSignalPreferences()
                     }
 
                     Toggle(isOn: $breadthCrossovers) {
@@ -225,9 +228,9 @@ struct NotificationsDetailView: View {
                             description: "When market breadth trend flips bullish or bearish"
                         )
                     }
-                    .onChange(of: breadthCrossovers) { _, newValue in
+                    .onChange(of: breadthCrossovers) { _, _ in
                         Haptics.selection()
-                        syncBreadthPreference(newValue)
+                        syncSignalPreferences()
                     }
                 } header: {
                     Text("Market Alerts")
@@ -356,37 +359,25 @@ struct NotificationsDetailView: View {
         Task { await DailyDigestScheduler.rearm(unreadInsights: appState.insightsUnreadCount) }
     }
 
-    private func syncModelPortfolioPreference(_ enabled: Bool) {
-        Task {
-            guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
-            do {
-                // Merge with existing preferences
-                let prefs: [String: Bool] = [
-                    "model_portfolio_rebalance": enabled,
-                    "signal_t1_hit": swingSignals && signalT1Hit,
-                    "signal_stop_loss": swingSignals && signalStopLoss,
-                    "signal_runner_close": swingSignals && signalRunnerClose,
-                    "signal_expiry": swingSignals && signalExpiry,
-                ]
-                try await SupabaseManager.shared.client
-                    .from("profiles")
-                    .update(["notification_preferences": prefs])
-                    .eq("id", value: userId.uuidString)
-                    .execute()
-            } catch {
-                logWarning("Failed to sync model portfolio preference: \(error)", category: .network)
-            }
-        }
-    }
-
     private func syncSignalPreferences() {
         Task {
             guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
+            // Authoritative, complete write of every notification_preferences key
+            // this screen owns. Written in full (not per-toggle subsets) so toggles
+            // never clobber one another. `signal_new` gates the "new trade signal"
+            // entry alerts and MUST be included — the server treats a missing key as
+            // enabled, so without it, turning Trade Signals off still let new-signal
+            // pushes through.
             let prefs: [String: Bool] = [
+                "signal_new": swingSignals,
                 "signal_t1_hit": swingSignals && signalT1Hit,
                 "signal_stop_loss": swingSignals && signalStopLoss,
                 "signal_runner_close": swingSignals && signalRunnerClose,
                 "signal_expiry": swingSignals && signalExpiry,
+                "model_portfolio_rebalance": modelPortfolio,
+                "breadth_crossover": breadthCrossovers,
+                "rotation_regime_change": rotationShifts,
+                "qps_change": qpsChanges,
             ]
             do {
                 try await SupabaseManager.shared.client
@@ -400,28 +391,6 @@ struct NotificationsDetailView: View {
         }
     }
 
-    private func syncBreadthPreference(_ enabled: Bool) {
-        Task {
-            guard let userId = try? await SupabaseManager.shared.client.auth.session.user.id else { return }
-            let prefs: [String: Bool] = [
-                "breadth_crossover": enabled,
-                "model_portfolio_rebalance": modelPortfolio,
-                "signal_t1_hit": swingSignals && signalT1Hit,
-                "signal_stop_loss": swingSignals && signalStopLoss,
-                "signal_runner_close": swingSignals && signalRunnerClose,
-                "signal_expiry": swingSignals && signalExpiry,
-            ]
-            do {
-                try await SupabaseManager.shared.client
-                    .from("profiles")
-                    .update(["notification_preferences": prefs])
-                    .eq("id", value: userId.uuidString)
-                    .execute()
-            } catch {
-                logWarning("Failed to sync breadth preference: \(error)", category: .network)
-            }
-        }
-    }
 
     private func cancelAllDCANotifications() {
         let center = UNUserNotificationCenter.current()
