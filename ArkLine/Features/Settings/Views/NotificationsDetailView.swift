@@ -73,8 +73,9 @@ struct NotificationsDetailView: View {
                     }
                     .onChange(of: dailyBriefings) { _, _ in
                         Haptics.selection()
-                        // Preference is stored via @AppStorage; the send-broadcast-notification
-                        // function checks this flag before delivering briefing pushes.
+                        // Writes the "briefings" key to notification_preferences so
+                        // send-broadcast-notification actually filters briefing pushes.
+                        syncSignalPreferences()
                     }
                 } header: {
                     Text("Daily Briefings")
@@ -310,6 +311,9 @@ struct NotificationsDetailView: View {
                     .onChange(of: insights) { _, newValue in
                         Haptics.selection()
                         BroadcastNotificationService.shared.broadcastNotificationsEnabled = newValue
+                        // Also gate the SERVER push: writes notification_preferences["broadcast"]
+                        // so send-broadcast-notification filters insight pushes for opted-out users.
+                        syncSignalPreferences()
                     }
                 } header: {
                     Text("Insights")
@@ -370,6 +374,7 @@ struct NotificationsDetailView: View {
             // pushes through.
             let prefs: [String: Bool] = [
                 "signal_new": swingSignals,
+                "signal_proximity": swingSignals,
                 "signal_t1_hit": swingSignals && signalT1Hit,
                 "signal_stop_loss": swingSignals && signalStopLoss,
                 "signal_runner_close": swingSignals && signalRunnerClose,
@@ -378,6 +383,8 @@ struct NotificationsDetailView: View {
                 "breadth_crossover": breadthCrossovers,
                 "rotation_regime_change": rotationShifts,
                 "qps_change": qpsChanges,
+                "briefings": dailyBriefings,
+                "broadcast": insights,
             ]
             do {
                 try await SupabaseManager.shared.client

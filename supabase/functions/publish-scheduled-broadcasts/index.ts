@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
           broadcast_id: b.id,
           title: isDeck ? "Weekly Market Update" : "New Insight",
           body: b.title,
-          event_type: isDeck ? "market_deck" : undefined,
+          event_type: isDeck ? "market_deck" : "broadcast",
           target_audience: b.target_audience ?? { type: "all" },
         }),
       })

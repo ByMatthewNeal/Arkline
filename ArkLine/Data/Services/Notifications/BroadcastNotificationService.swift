@@ -237,9 +237,11 @@ class BroadcastNotificationService: ObservableObject {
             "body": broadcast.title
         ]
 
-        if let eventType {
-            body["event_type"] = eventType
-        }
+        // Default regular broadcasts/insights to event_type "broadcast" so
+        // send-broadcast-notification runs the per-user preference filter (the
+        // Insights toggle writes notification_preferences["broadcast"]). Without an
+        // event_type the server skips filtering and pushes to every device.
+        body["event_type"] = eventType ?? "broadcast"
 
         switch audience {
         case .all:

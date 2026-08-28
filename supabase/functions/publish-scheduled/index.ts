@@ -69,6 +69,7 @@ Deno.serve(async (req) => {
             broadcast_id: broadcast.id,
             title: "New Insight",
             body: broadcast.title,
+            event_type: "broadcast",
             target_audience: broadcast.target_audience,
           },
           headers: { "x-cron-secret": cronSecret },
