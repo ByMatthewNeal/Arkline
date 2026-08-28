@@ -25,8 +25,15 @@ export function useNotifications() {
   const { data: signals } = useSignalChanges();
   const { data: reminders } = useQuery({ queryKey: ['notif-dca', authUser?.id], queryFn: () => fetchActiveReminders(authUser!.id), enabled: !!authUser?.id, staleTime: 120_000 });
 
-  const [lastSeen, setLastSeen] = useState<string>('');
-  useEffect(() => { setLastSeen(localStorage.getItem('notif_seen') ?? '2000-01-01'); }, []);
+  // Track which notifications are read by their stable id. The old timestamp
+  // model broke "mark all read": signal items used `now` (regenerated every
+  // render) and DCA items used a future due-date, so both were always newer than
+  // the saved timestamp and never cleared. Stable ids fix that for good.
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try { setSeenIds(new Set(JSON.parse(localStorage.getItem('notif_seen_ids') ?? '[]') as string[])); }
+    catch { setSeenIds(new Set()); }
+  }, []);
 
   const items: NotifItem[] = [];
 
@@ -35,7 +42,7 @@ export function useNotifications() {
   }
   const today = new Date().toISOString();
   for (const s of (signals ?? []).slice(0, 4)) {
-    items.push({ id: `s-${s.asset}`, kind: 'signal', title: `${s.asset}: ${s.prev_signal} → ${s.signal}`, subtitle: signalChangeHint(s.prev_signal, s.signal), time: today, href: '/dashboard' });
+    items.push({ id: `s-${s.asset}-${s.signal}`, kind: 'signal', title: `${s.asset}: ${s.prev_signal} → ${s.signal}`, subtitle: signalChangeHint(s.prev_signal, s.signal), time: today, href: '/dashboard' });
   }
   const soon = new Date(); soon.setDate(soon.getDate() + 2);
   for (const r of (reminders ?? [])) {
@@ -45,15 +52,20 @@ export function useNotifications() {
   }
 
   items.sort((a, b) => (a.time < b.time ? 1 : -1));
-  const unreadCount = items.filter((i) => i.time > lastSeen).length;
-  const markSeen = () => { const now = new Date().toISOString(); localStorage.setItem('notif_seen', now); setLastSeen(now); };
+  const isUnread = (i: NotifItem) => !seenIds.has(i.id);
+  const unreadCount = items.filter(isUnread).length;
+  const markSeen = () => {
+    const ids = items.map((i) => i.id);
+    localStorage.setItem('notif_seen_ids', JSON.stringify(ids));
+    setSeenIds(new Set(ids));
+  };
 
-  return { items, unreadCount, markSeen, lastSeen };
+  return { items, unreadCount, markSeen, isUnread };
 }
 
 const ICONS = { broadcast: Radio, signal: Repeat, dca: Bell };
 
-export function NotificationsPanel({ open, onClose, items, lastSeen, onMarkSeen }: { open: boolean; onClose: () => void; items: NotifItem[]; lastSeen: string; onMarkSeen: () => void }) {
+export function NotificationsPanel({ open, onClose, items, isUnread, onMarkSeen }: { open: boolean; onClose: () => void; items: NotifItem[]; isUnread: (i: NotifItem) => boolean; onMarkSeen: () => void }) {
   const router = useRouter();
   if (!open) return null;
   return (
@@ -69,7 +81,7 @@ export function NotificationsPanel({ open, onClose, items, lastSeen, onMarkSeen 
             <p className="px-4 py-8 text-center text-sm text-ark-text-tertiary">You&apos;re all caught up.</p>
           ) : items.map((it) => {
             const Icon = ICONS[it.kind];
-            const unread = it.time > lastSeen;
+            const unread = isUnread(it);
             return (
               <button key={it.id} onClick={() => { router.push(it.href); onClose(); }}
                 className={cn('flex w-full items-start gap-3 border-b border-ark-divider/60 px-4 py-3 text-left transition-colors hover:bg-ark-fill-secondary', unread && 'bg-ark-primary/[0.04]')}>

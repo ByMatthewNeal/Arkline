@@ -288,12 +288,26 @@ export function Tile({ onClick, accentColor, className = '', children }: {
   className?: string;
   children: React.ReactNode;
 }) {
+  // Distinguish a click-to-open from a drag-to-rearrange. When the user grabs a
+  // tile to move it on the home grid, the browser still fires a click on release,
+  // which would open the drawer. Track pointer movement while pressed and swallow
+  // that click so rearranging never opens a tile.
+  const downRef = useRef<{ x: number; y: number } | null>(null);
+  const movedRef = useRef(false);
   return (
     <GlassCard
       hover
       className={`cursor-pointer relative overflow-hidden p-3.5 flex flex-col justify-between h-full ${className}`}
       whileHover={{ scale: 1.008 }}
-      onClick={onClick}
+      onPointerDownCapture={(e) => { downRef.current = { x: e.clientX, y: e.clientY }; movedRef.current = false; }}
+      onPointerMoveCapture={(e) => {
+        const d = downRef.current;
+        if (d && e.buttons > 0 && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6) movedRef.current = true;
+      }}
+      onClick={() => {
+        if (movedRef.current) { movedRef.current = false; return; }
+        onClick();
+      }}
     >
       {accentColor && (
         <div

@@ -24,7 +24,7 @@ export function Topbar() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const { items, unreadCount, markSeen, lastSeen } = useNotifications();
+  const { items, unreadCount, markSeen, isUnread } = useNotifications();
 
   const pageName = pageNames[pathname] ?? 'Dashboard';
   const isSubPage = pathname !== '/dashboard';
@@ -82,7 +82,7 @@ export function Topbar() {
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ark-primary px-1 text-[9px] font-bold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
           </button>
-          <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} items={items} lastSeen={lastSeen} onMarkSeen={markSeen} />
+          <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} items={items} isUnread={isUnread} onMarkSeen={markSeen} />
         </div>
         <ThemeToggle />
         <div className="mx-2 h-5 w-px bg-ark-divider" />
