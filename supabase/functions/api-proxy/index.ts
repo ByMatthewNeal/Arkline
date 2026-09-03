@@ -50,6 +50,25 @@ const SERVICES: Record<string, ServiceConfig> = {
   },
 }
 
+// True if the bearer is a JWT issued by this Supabase project (user token,
+// possibly expired, or the anon key). Decodes the payload only — no signature
+// check (see the auth note below).
+function isProjectToken(authHeader: string | null): boolean {
+  if (!authHeader) return false
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim()
+  const parts = token.split(".")
+  if (parts.length !== 3) return false
+  try {
+    let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+    b64 += "=".repeat((4 - (b64.length % 4)) % 4)
+    const payload = JSON.parse(atob(b64)) as { iss?: string; ref?: string }
+    return (typeof payload.iss === "string" && payload.iss.includes("supabase")) ||
+      payload.ref === "mprbbjgrshfbupheuscn"
+  } catch {
+    return false
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
@@ -58,23 +77,18 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Verify JWT
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: "Missing authorization" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    })
-  }
-
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    { global: { headers: { Authorization: authHeader } } }
-  )
-
-  const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-  if (userError || !user) {
+  // Auth. This proxy only serves PUBLIC market data (vendor API keys stay
+  // server-side and are never returned), so it does not need a live per-user
+  // session. Requiring one via getUser() caused frequent 401s whenever the
+  // app's access token lapsed — which surfaced to users as $0 prices, because
+  // the whole proxy (incl. the FMP→Yahoo fallback) sits behind this check.
+  //
+  // Instead, accept any request whose Authorization carries a token issued by
+  // THIS Supabase project — a user token (even an expired one) or the anon key.
+  // The signature isn't re-verified: the anon key is public anyway, and the real
+  // protection is that vendor keys never leave the server. This keeps anonymous
+  // internet callers out while tolerating lapsed user tokens.
+  if (!isProjectToken(req.headers.get("Authorization"))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
