@@ -52,19 +52,11 @@ struct HomeAISummaryWidget: View {
     }
 
     private func resolveInitialExpandState() {
-        if isNewBriefing && isFreshBriefing {
-            // Unread AND current — open it up
-            isExpanded = true
-            hasBeenExpandedThisSession = false
-        } else if isNewBriefing {
-            // Unread but from an earlier slot/day — keep it compact (TLDR peek),
-            // the unread dot still invites a tap
-            isExpanded = false
-            hasBeenExpandedThisSession = false
-        } else {
-            isExpanded = false
-            hasBeenExpandedThisSession = true
-        }
+        // Always open collapsed to the TLDR; the reader taps "See more" for the
+        // full briefing. (A fresh, unread briefing used to auto-expand into all
+        // six sections — a wall of text the moment you opened the app.)
+        isExpanded = false
+        hasBeenExpandedThisSession = !isNewBriefing
     }
 
     var body: some View {
@@ -349,16 +341,25 @@ struct HomeAISummaryWidget: View {
 
                 Text(first.body)
                     .font(AppFonts.body14)
-                    .foregroundColor(textPrimary.opacity(0.7))
+                    .foregroundColor(textPrimary.opacity(0.85))
                     .lineSpacing(3)
-                    .lineLimit(2)
-                    .mask(
-                        VStack(spacing: 0) {
-                            Color.black
-                            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
-                                .frame(height: 12)
-                        }
-                    )
+                    .fixedSize(horizontal: false, vertical: true)
+
+                // See more — expands to the full briefing
+                Button {
+                    withAnimation(.arkSpring) { isExpanded = true }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text("See more")
+                            .font(AppFonts.caption12Medium)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(AppColors.accent)
+                    .padding(.top, 2)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
     }
