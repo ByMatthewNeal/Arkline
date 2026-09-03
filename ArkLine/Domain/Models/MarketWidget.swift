@@ -86,6 +86,12 @@ enum MarketWidgetType: String, CaseIterable, Codable, Identifiable, Hashable {
     static var defaultEnabled: Set<MarketWidgetType> {
         [.usFutures, .sentiment, .liquidityCycle, .fedWatch, .topCoins, .dailyNews, .swingSetups]
     }
+
+    /// Sections hidden app-wide regardless of a user's saved config. The enum
+    /// case, section view, and detail screen all stay intact — this just stops
+    /// them rendering, so reviving one is a one-line change. `.allocation` = the
+    /// retired "Crypto Positioning" screen.
+    static let hidden: Set<MarketWidgetType> = [.allocation]
 }
 
 // MARK: - Market Zone
@@ -141,7 +147,7 @@ struct MarketWidgetConfiguration: Codable, Equatable {
 
     /// Returns ordered list of enabled widgets
     var orderedEnabledWidgets: [MarketWidgetType] {
-        widgetOrder.filter { enabledWidgets.contains($0) }
+        widgetOrder.filter { enabledWidgets.contains($0) && !MarketWidgetType.hidden.contains($0) }
     }
 
     mutating func toggleWidget(_ widget: MarketWidgetType) {

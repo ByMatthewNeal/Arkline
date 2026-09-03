@@ -800,7 +800,8 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
 
 const widgetKeys: MarketWidgetKey[] = [
   'marketOverview', 'fearGreed', 'regime', 'sentiment', 'macro',
-  'positioning', 'momentumMap', 'tradMarkets', 'topCoins', 'altcoinScanner',
+  // 'positioning' (Crypto Positioning) retired from view — component + data kept.
+  'momentumMap', 'tradMarkets', 'topCoins', 'altcoinScanner',
   'news', 'retailSentiment', 'funding',
 ];
 

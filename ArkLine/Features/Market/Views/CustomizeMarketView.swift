@@ -21,7 +21,8 @@ struct CustomizeMarketView: View {
     private var orderedWidgets: [MarketWidgetType] {
         let order = appState.marketWidgetConfiguration.widgetOrder
         let missing = MarketWidgetType.allCases.filter { !order.contains($0) }
-        return order + missing
+        // Don't offer retired/hidden sections (e.g. Crypto Positioning) as toggles.
+        return (order + missing).filter { !MarketWidgetType.hidden.contains($0) }
     }
 
     private var enabledCount: Int {
