@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronDown, Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import {
   PieChart,
@@ -23,6 +23,8 @@ import { PerformancePanel } from '@/components/dashboard/portfolio/performance-p
 import { TransactionsPanel } from '@/components/dashboard/portfolio/transactions-panel';
 import { ModelPortfolioCard } from '@/components/dashboard/portfolio/model-portfolio-card';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
+import { HoldingDetailDrawer } from '@/components/dashboard/portfolio/holding-detail-drawer';
+import { useCryptoAssets } from '@/lib/hooks/use-market';
 import type { PortfolioHolding } from '@/types';
 
 const PIE_COLORS = ['#3B82F6', '#22C55E', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
@@ -54,7 +56,17 @@ export default function PortfolioPage() {
   const [newPortfolioOpen, setNewPortfolioOpen] = useState(false);
   const [removeSymbol, setRemoveSymbol] = useState<string | null>(null);
   const [scrubbedIdx, setScrubbedIdx] = useState<number | null>(null);
+  const [detailHolding, setDetailHolding] = useState<PortfolioHolding | null>(null);
   const toast = useToast();
+
+  // Known symbol→CoinGecko-id pairs (from the cached top list) so the holding
+  // detail chart can resolve crypto history without an extra /search round-trip.
+  const { data: cryptoAssets } = useCryptoAssets(1);
+  const knownIds = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of cryptoAssets ?? []) m.set(a.symbol.toLowerCase(), a.id);
+    return m;
+  }, [cryptoAssets]);
 
   const portfolio = portfolios?.[selectedIdx];
   // Live pricing for ALL holdings (crypto beyond top-100, stocks, metals),
@@ -149,6 +161,12 @@ export default function PortfolioPage() {
           </button>
         </div>
       </div>
+
+      <HoldingDetailDrawer
+        holding={detailHolding}
+        knownIds={knownIds}
+        onClose={() => setDetailHolding(null)}
+      />
 
       <AddTransactionModal
         open={modal.open}
@@ -383,7 +401,11 @@ export default function PortfolioPage() {
                   return (
                     <div
                       key={h.id}
-                      className="group flex items-center justify-between gap-2 rounded-xl bg-ark-fill-secondary/60 px-4 py-3 transition-colors hover:bg-ark-fill-secondary"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setDetailHolding(h)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDetailHolding(h); }}
+                      className="group flex cursor-pointer items-center justify-between gap-2 rounded-xl bg-ark-fill-secondary/60 px-4 py-3 transition-colors hover:bg-ark-fill-secondary"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <CoinIcon symbol={h.symbol} size="lg" className="h-9 w-9" />
@@ -395,11 +417,11 @@ export default function PortfolioPage() {
                       <div className="flex items-center gap-3">
                         {/* Hover actions */}
                         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                          <button onClick={() => setModal({ open: true, type: 'buy', symbol: h.symbol })} title="Buy more"
+                          <button onClick={(e) => { e.stopPropagation(); setModal({ open: true, type: 'buy', symbol: h.symbol }); }} title="Buy more"
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-success hover:bg-ark-success/10"><TrendingUp className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => setModal({ open: true, type: 'sell', symbol: h.symbol })} title="Sell"
+                          <button onClick={(e) => { e.stopPropagation(); setModal({ open: true, type: 'sell', symbol: h.symbol }); }} title="Sell"
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-error hover:bg-ark-error/10"><TrendingDown className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => setRemoveSymbol(h.symbol)} title="Remove"
+                          <button onClick={(e) => { e.stopPropagation(); setRemoveSymbol(h.symbol); }} title="Remove"
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-ark-text-tertiary hover:bg-ark-fill-secondary"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                         <div className="text-right">

@@ -39,6 +39,39 @@ struct AdminMember: Codable, Identifiable, Equatable {
         }
     }
 
+    /// Date-aware entitlement status, computed from the member's subscription rows
+    /// rather than the stored `subscription_status` / `subscriptions.status` strings.
+    ///
+    /// Those stored strings go stale: a free trial that lapsed without converting
+    /// can still read "trialing" (and the profile "active") because no webhook
+    /// updated the row after the period ended — so the admin UI mislabels an
+    /// expired member as Active/Trial. This recomputes from the period/trial dates
+    /// so what admins see matches `is_user_subscribed()`, the real access gate.
+    var effectiveStatus: EffectiveMemberStatus {
+        let now = Date()
+        guard !subscriptions.isEmpty else { return .none }
+
+        // Currently entitled: an active/trialing row whose period hasn't ended.
+        let validSub = subscriptions.first { s in
+            (s.status == "active" || s.status == "trialing") &&
+            (s.currentPeriodEnd == nil || s.currentPeriodEnd! > now)
+        }
+        if let valid = validSub {
+            if valid.status == "trialing", let trial = valid.trialEnd, trial > now {
+                return .trialing
+            }
+            return .active
+        }
+
+        // Not entitled now — categorize from the lapsed rows.
+        if subscriptions.contains(where: { $0.status == "paused" }) { return .paused }
+        if subscriptions.contains(where: { $0.status == "past_due" }) { return .pastDue }
+        if subscriptions.contains(where: { $0.status == "canceled" }) { return .canceled }
+        // An active/trialing row whose period already ended = expired (e.g. a
+        // trial that ran out without a payment following).
+        return .expired
+    }
+
     enum CodingKeys: String, CodingKey {
         case id, email, username, role, subscriptions
         case fullName = "full_name"
@@ -49,6 +82,54 @@ struct AdminMember: Codable, Identifiable, Equatable {
 
     static func == (lhs: AdminMember, rhs: AdminMember) -> Bool {
         lhs.id == rhs.id
+    }
+}
+
+// MARK: - Effective Member Status
+
+/// Entitlement status derived from subscription dates (see `AdminMember.effectiveStatus`).
+enum EffectiveMemberStatus {
+    case active
+    case trialing
+    case pastDue
+    case paused
+    case canceled
+    case expired
+    case none
+
+    /// Short badge text for the members list.
+    var label: String {
+        switch self {
+        case .active: return "Active"
+        case .trialing: return "Trial"
+        case .pastDue: return "Past Due"
+        case .paused: return "Paused"
+        case .canceled: return "Canceled"
+        case .expired: return "Expired"
+        case .none: return "No Sub"
+        }
+    }
+
+    /// Longer text for the member detail "Status" row.
+    var detailLabel: String {
+        switch self {
+        case .trialing: return "Trialing"
+        case .expired: return "Expired (trial/period ended)"
+        default: return label
+        }
+    }
+
+    /// Semantic color token — mapped to `AppColors` in the views.
+    var colorName: String {
+        switch self {
+        case .active: return "success"
+        case .trialing: return "info"
+        case .pastDue: return "warning"
+        case .paused: return "textSecondary"
+        case .canceled: return "error"
+        case .expired: return "warning"
+        case .none: return "textTertiary"
+        }
     }
 }
 

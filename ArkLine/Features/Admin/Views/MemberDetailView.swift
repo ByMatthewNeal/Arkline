@@ -150,7 +150,9 @@ struct MemberDetailView: View {
             if let sub = member.subscription {
                 VStack(spacing: ArkSpacing.sm) {
                     detailRow("Plan", value: sub.plan.capitalized)
-                    detailRow("Status", value: sub.status.capitalized)
+                    // Date-aware status so a lapsed trial reads "Expired" instead of
+                    // the stale stored "Trialing". (See AdminMember.effectiveStatus.)
+                    detailRow("Status", value: member.effectiveStatus.detailLabel)
 
                     if let end = sub.currentPeriodEnd {
                         detailRow("Period End", value: end.formatted(.dateTime.month().day().year()))

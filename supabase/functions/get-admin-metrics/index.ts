@@ -112,10 +112,22 @@ Deno.serve(async (req) => {
     )
     const { data: subscriptions, error: subsError } = await supabase
       .from("subscriptions")
-      .select("user_id, plan, tier, status, source, updated_at")
+      .select("user_id, plan, tier, status, source, updated_at, current_period_end, trial_end")
 
     if (subsError) throw subsError
     const subs = (subscriptions ?? []).filter(s => externalIds.has(s.user_id))
+
+    // A subscription only grants access while its billing/trial period is still
+    // open. The stored `status` string goes stale — a lapsed trial keeps reading
+    // 'trialing' because no webhook updates the row after it ends — so every
+    // count below must also check the date, matching `is_user_subscribed()`.
+    // Without this, an expired trial (like a trial that ended weeks ago) still
+    // inflates Active/trial counts and pipeline MRR.
+    const nowMs = Date.now()
+    // deno-lint-ignore no-explicit-any
+    const isCurrent = (s: any) =>
+      (s.status === "active" || s.status === "trialing") &&
+      (!s.current_period_end || new Date(s.current_period_end).getTime() > nowMs)
 
     // ---- Active revenue computation ----
     // MRR is the sum of monthly contribution from every PAYING subscription whose
@@ -140,7 +152,9 @@ Deno.serve(async (req) => {
     }
 
     for (const s of subs) {
-      if (s.status !== "active" && s.status !== "trialing") continue
+      // Skip subs that aren't currently granting access (includes lapsed trials
+      // and expired paid periods that still read active/trialing in the row).
+      if (!isCurrent(s)) continue
       const tier = (s.tier as Tier) ?? "standard"
       const plan = (s.plan as Plan) ?? "monthly"
       if (!(tier in PRICES) || !(plan in PRICES[tier])) continue
@@ -174,9 +188,12 @@ Deno.serve(async (req) => {
     const trialPotentialMrr = trialPotentialCents / 100
 
     // ---- Status counts ----
+    // Active/trialing require the period to still be open (date-aware), so an
+    // expired trial no longer inflates these. past_due/canceled/incomplete are
+    // terminal states and stand on their own.
     const counts = {
-      active: subs.filter(s => s.status === "active").length,
-      trialing: subs.filter(s => s.status === "trialing").length,
+      active: subs.filter(s => s.status === "active" && isCurrent(s)).length,
+      trialing: subs.filter(s => s.status === "trialing" && isCurrent(s)).length,
       past_due: subs.filter(s => s.status === "past_due").length,
       canceled: subs.filter(s => s.status === "canceled").length,
       incomplete: subs.filter(s => s.status === "incomplete").length,

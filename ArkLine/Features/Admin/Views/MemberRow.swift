@@ -4,26 +4,24 @@ struct MemberRow: View {
     let member: AdminMember
     @Environment(\.colorScheme) var colorScheme
 
+    // Badge reflects the date-aware effective status (see AdminMember.effectiveStatus),
+    // so a lapsed trial reads "Expired" instead of a stale "Active"/"Trial".
     private var statusColor: Color {
-        switch member.subscriptionStatus {
-        case "active": return AppColors.success
-        case "trialing": return AppColors.info
-        case "past_due": return AppColors.warning
-        case "canceled": return AppColors.error
-        case "paused": return AppColors.textSecondary
-        default: return AppColors.textTertiary
-        }
+        color(for: member.effectiveStatus.colorName)
     }
 
     private var statusLabel: String {
-        switch member.subscriptionStatus {
-        case "active": return "Active"
-        case "trialing": return "Trial"
-        case "past_due": return "Past Due"
-        case "canceled": return "Canceled"
-        case "paused": return "Paused"
-        case "none": return "No Sub"
-        default: return member.subscriptionStatus.capitalized
+        member.effectiveStatus.label
+    }
+
+    private func color(for token: String) -> Color {
+        switch token {
+        case "success": return AppColors.success
+        case "info": return AppColors.info
+        case "warning": return AppColors.warning
+        case "error": return AppColors.error
+        case "textSecondary": return AppColors.textSecondary
+        default: return AppColors.textTertiary
         }
     }
 

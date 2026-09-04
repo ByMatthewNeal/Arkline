@@ -1,4 +1,5 @@
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { fetchAssetSnapshots } from '@/lib/api/market';
 import type { Portfolio, PortfolioHolding, PortfolioHistoryPoint } from '@/types';
 import type { Transaction } from '@/types/transaction';
 
@@ -210,6 +211,80 @@ export async function fetchLivePrices(
   ]);
 
   return new Map([...crypto, ...stocks, ...metals]);
+}
+
+// ── Per-holding price history (for the holding-detail performance chart) ──────
+
+export interface HoldingHistoryPoint {
+  date: string;   // YYYY-MM-DD
+  value: number;  // price in USD
+}
+
+/** FMP commodity-futures symbol for a metal, matching iOS MetalDetailView. */
+const METAL_FUTURES_SYMBOL: Record<string, string> = {
+  XAU: 'GCUSD',
+  XAG: 'SIUSD',
+  XPT: 'PLUSD',
+  XPD: 'PAUSD',
+};
+
+/** Daily EOD history via FMP (stocks + metal futures), oldest→newest, last N. */
+async function fetchFmpHistory(symbol: string, tradingDays: number): Promise<HoldingHistoryPoint[]> {
+  type Row = { date?: string; close?: number };
+  const data = await invokeProxy<Row[]>({
+    service: 'fmp',
+    path: '/historical-price-eod/full',
+    queryItems: { symbol: symbol.toUpperCase() },
+  });
+  const rows = Array.isArray(data) ? data : [];
+  return rows
+    .map((r) => ({ date: String(r.date ?? ''), value: Number(r.close) }))
+    .filter((r) => r.date.length > 0 && Number.isFinite(r.value))
+    .sort((a, b) => a.date.localeCompare(b.date)) // FMP returns newest-first
+    .slice(-tradingDays);
+}
+
+/**
+ * Historical price series for a single holding over the last `days`, branched
+ * by asset class to match the iOS holding-detail chart:
+ *   crypto → daily `market_snapshots` (reliable, no live CoinGecko dependency)
+ *   stock  → FMP EOD history via the api-proxy
+ *   metal  → FMP EOD history for the mapped futures symbol
+ * Returns [] (empty chart state) when no series is available.
+ */
+export async function fetchHoldingHistory(
+  holding: PortfolioHolding,
+  days: number,
+  knownIds: Map<string, string> = new Map(),
+): Promise<HoldingHistoryPoint[]> {
+  if (!isSupabaseConfigured()) return [];
+  const sym = holding.symbol.toLowerCase();
+
+  switch (holding.asset_type) {
+    case 'crypto': {
+      const idMap = await resolveCoinGeckoIds([sym], knownIds);
+      const id = idMap.get(sym);
+      if (!id) return [];
+      const snaps = await fetchAssetSnapshots(id);
+      return snaps
+        .slice(-Math.max(2, days))
+        .map((s) => ({ date: s.date, value: s.price }));
+    }
+    case 'stock':
+      // FMP EOD is daily-only, so a calendar range maps to a trading-day count.
+      return fetchFmpHistory(holding.symbol, tradingDayLimit(days));
+    case 'metal':
+      return fetchFmpHistory(
+        METAL_FUTURES_SYMBOL[holding.symbol.toUpperCase()] ?? 'GCUSD',
+        tradingDayLimit(days),
+      );
+    default:
+      return [];
+  }
+}
+
+function tradingDayLimit(days: number): number {
+  return Math.max(2, Math.ceil((days * 5) / 7));
 }
 
 /** Merge live prices into holdings (live > cached top-100 > stored > avg cost). */

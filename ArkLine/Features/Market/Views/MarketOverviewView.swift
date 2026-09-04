@@ -76,6 +76,15 @@ struct MarketOverviewView: View {
                         scrollProxy.scrollTo("scrollTop", anchor: .top)
                     }
                 }
+                .onChange(of: selectedZone) { _, _ in
+                    // Switching zone chips swaps the visible sections. Without this,
+                    // the old scroll offset carries over — a shorter zone leaves the
+                    // user staring at blank space below the content. Snap to the top
+                    // so each zone opens at the start of its first section.
+                    withAnimation(.arkSpring) {
+                        scrollProxy.scrollTo("scrollTop", anchor: .top)
+                    }
+                }
             } // ScrollViewReader
             }
             .navigationTitle("Market Overview")

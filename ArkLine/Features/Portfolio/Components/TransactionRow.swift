@@ -3,6 +3,9 @@ import SwiftUI
 struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
+    // Same global privacy toggle as the portfolio/holding headers, so amounts
+    // stay hidden here too when the user has hidden their balance.
+    @AppStorage(Constants.UserDefaults.portfolioHidden) private var isHidden = false
     let transaction: Transaction
 
     private var currency: String { appState.preferredCurrency }
@@ -33,11 +36,11 @@ struct TransactionRow: View {
 
             // Amount & Value
             VStack(alignment: .trailing, spacing: 4) {
-                Text("\(transaction.type.isIncoming ? "+" : "-")\(transaction.quantity, specifier: "%.4f")")
+                Text(isHidden ? "••••" : "\(transaction.type.isIncoming ? "+" : "-")\(transaction.quantity, specifier: "%.4f")")
                     .font(AppFonts.body14Medium)
                     .foregroundColor(transaction.type.isIncoming ? AppColors.success : AppColors.error)
 
-                Text(transaction.totalValue.asCurrency(code: currency))
+                Text(isHidden ? "••••" : transaction.totalValue.asCurrency(code: currency))
                     .font(AppFonts.caption12)
                     .foregroundColor(AppColors.textSecondary)
             }
