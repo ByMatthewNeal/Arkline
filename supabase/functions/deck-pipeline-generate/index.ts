@@ -122,37 +122,85 @@ Respond ONLY with a JSON array of editorial sections. No markdown, no code block
   }
   contentParts.push({ type: "text", text: prompt })
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 8000,
-        messages: [{ role: "user", content: contentParts }],
-      }),
-      signal: AbortSignal.timeout(120_000), // 2 minute timeout
-    })
+  // Editorial slides are the heart of the deck. A silent failure here used to
+  // ship a 5-slide shell marked "completed"; instead we retry the fast/transient
+  // failure modes and THROW on a real failure so the caller marks the step failed
+  // (never a silent shell). Timeouts are NOT retried — a second 100s attempt would
+  // risk the edge-function wall-clock budget; those fail fast to a manual re-run.
+  const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 529])
+  const MAX_ATTEMPTS = 2
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+  let lastErr = "unknown error"
 
-    if (!response.ok) {
-      console.error("Claude editorial generation failed:", await response.text())
-      return []
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let response: Response
+    try {
+      response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-5",
+          max_tokens: 8000,
+          messages: [{ role: "user", content: contentParts }],
+        }),
+        signal: AbortSignal.timeout(100_000),
+      })
+    } catch (e) {
+      // Network error or 100s timeout — don't retry (protect wall clock).
+      lastErr = `Claude editorial request failed: ${String(e)}`
+      console.error(lastErr)
+      throw new Error(lastErr)
     }
 
-    const data = await response.json()
-    const text = extractText(data) ?? "[]"
+    if (!response.ok) {
+      const body = await response.text().catch(() => "")
+      lastErr = `Claude editorial HTTP ${response.status}: ${body.slice(0, 300)}`
+      console.error(lastErr)
+      if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_ATTEMPTS) {
+        await sleep(1500 * attempt)
+        continue
+      }
+      throw new Error(lastErr)
+    }
 
-    // Parse JSON — strip any markdown fencing if present
+    const data = await response.json().catch(() => null)
+    const text = data ? extractText(data) : undefined
+    if (!text) {
+      // No text block: truncated or thinking-only response. Retry, then fail.
+      lastErr = "Claude editorial returned no text block (possible truncation)"
+      console.error(lastErr)
+      if (attempt < MAX_ATTEMPTS) { await sleep(1500 * attempt); continue }
+      throw new Error(lastErr)
+    }
+
     const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-    return JSON.parse(cleaned)
-  } catch (e) {
-    console.error("Claude editorial generation error:", e)
-    return []
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(cleaned)
+    } catch (pe) {
+      lastErr = `Claude editorial JSON parse failed: ${String(pe)}`
+      console.error(lastErr, "raw:", cleaned.slice(0, 200))
+      if (attempt < MAX_ATTEMPTS) { await sleep(1500 * attempt); continue }
+      throw new Error(lastErr)
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      // A full deck always has themes; 0 sections means the model returned an
+      // empty/degenerate result. Retry once, then fail rather than ship a shell.
+      lastErr = "Claude editorial returned 0 sections"
+      console.error(lastErr)
+      if (attempt < MAX_ATTEMPTS) { await sleep(1500 * attempt); continue }
+      throw new Error(lastErr)
+    }
+
+    return parsed as EditorialSlide[]
   }
+
+  throw new Error(lastErr)
 }
 
 // ── Claude: Generate Weekly Outlook ──────────────────────────────────────────
