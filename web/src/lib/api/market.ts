@@ -863,7 +863,10 @@ export async function fetchWeeklyDeck(): Promise<WeeklyDeck | null> {
   const { data, error } = await supabase
     .from('market_update_decks')
     .select('week_start, week_end, status, slides, published_at')
-    .order('week_start', { ascending: false })
+    // Only published decks, ordered by publish time (not the week label) so the
+    // most-recently-published deck wins even if an older-labeled week exists.
+    .eq('status', 'published')
+    .order('published_at', { ascending: false, nullsFirst: false })
     .limit(1);
   const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown } | undefined;
   if (error || !d) return null;

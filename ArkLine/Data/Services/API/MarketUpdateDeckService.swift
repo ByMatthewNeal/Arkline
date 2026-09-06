@@ -104,7 +104,11 @@ final class MarketUpdateDeckService: MarketUpdateDeckServiceProtocol {
             .from(tableName)
             .select()
             .eq("status", value: "published")
-            .order("week_start", ascending: false)
+            // Order by publish time, not the deck's week label. Two decks with
+            // different week ranges can be published for the same week; "latest"
+            // must mean most-recently-published, else an earlier-labeled week can
+            // outrank a newer deck (e.g. Aug 31–Sep 4 beating Aug 30–Sep 7).
+            .order("published_at", ascending: false)
             .limit(1)
             .execute()
             .value
