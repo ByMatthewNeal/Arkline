@@ -203,6 +203,19 @@ class BroadcastViewModel: ObservableObject {
         }
     }
 
+    /// Broadcast IDs we've already logged an impression for this session, so a
+    /// card scrolling in and out of view only records reach once per launch.
+    private var recordedImpressions: Set<UUID> = []
+
+    /// Record a "seen in feed" impression when a card appears (reach, not a
+    /// read). Deduped locally per session and again by the DB unique constraint.
+    /// Fire-and-forget; callers should skip admins to keep analytics clean.
+    func recordImpression(broadcastId: UUID, userId: UUID) {
+        guard !recordedImpressions.contains(broadcastId) else { return }
+        recordedImpressions.insert(broadcastId)
+        Task { await broadcastService.recordImpression(broadcastId: broadcastId, userId: userId) }
+    }
+
     // MARK: - Analytics
 
     /// Load aggregated analytics for a given period

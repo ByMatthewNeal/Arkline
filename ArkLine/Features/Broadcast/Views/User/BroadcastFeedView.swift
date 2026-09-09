@@ -808,6 +808,14 @@ struct BroadcastFeedView: View {
         ) {
             openBroadcast(broadcast)
         }
+        .onAppear {
+            // Reach: log that this insight appeared in the user's feed (deduped
+            // per session). Skip admins so the founder's own scrolling isn't
+            // counted. Distinct from a read, which only fires on opening the post.
+            if appState.currentUser?.isAdmin != true, let userId = appState.currentUser?.id {
+                viewModel.recordImpression(broadcastId: broadcast.id, userId: userId)
+            }
+        }
         .contextMenu {
             // Bookmark / save
             if let userId = appState.currentUser?.id {

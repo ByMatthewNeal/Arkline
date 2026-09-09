@@ -368,6 +368,49 @@ final class BroadcastService: BroadcastServiceProtocol {
             .value
     }
 
+    /// One row per (broadcast, user); the unique constraint + DO NOTHING makes
+    /// this idempotent, so repeat appearances don't duplicate. Fire-and-forget.
+    func recordImpression(broadcastId: UUID, userId: UUID) async {
+        guard supabase.isConfigured else { return }
+
+        struct ImpressionRecord: Encodable {
+            let id: UUID
+            let broadcastId: UUID
+            let userId: UUID
+            let createdAt: Date
+            enum CodingKeys: String, CodingKey {
+                case id
+                case broadcastId = "broadcast_id"
+                case userId = "user_id"
+                case createdAt = "created_at"
+            }
+        }
+
+        let record = ImpressionRecord(id: UUID(), broadcastId: broadcastId, userId: userId, createdAt: Date())
+        do {
+            // A plain insert; the unique (broadcast_id, user_id) constraint makes
+            // this idempotent — a repeat just raises and is swallowed below.
+            try await supabase.database
+                .from("broadcast_impressions")
+                .insert(record)
+                .execute()
+        } catch {
+            // Reach is a soft metric — a duplicate or any failure never surfaces.
+            logDebug("recordImpression skipped: \(error.localizedDescription)", category: .data)
+        }
+    }
+
+    func fetchReach(for broadcastId: UUID) async throws -> Int {
+        guard supabase.isConfigured else {
+            throw AppError.supabaseNotConfigured
+        }
+
+        return try await supabase.database
+            .rpc("get_broadcast_reach", params: ["broadcast_uuid": broadcastId.uuidString])
+            .execute()
+            .value
+    }
+
     // MARK: - File Upload
 
     func uploadAudio(data: Data, for broadcastId: UUID) async throws -> URL {

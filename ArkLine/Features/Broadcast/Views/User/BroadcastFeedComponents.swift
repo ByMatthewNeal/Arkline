@@ -857,6 +857,7 @@ struct BroadcastReadersSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var readers: [BroadcastReader] = []
+    @State private var reach: Int?
     @State private var isLoading = true
     @State private var errorMessage: String?
 
@@ -874,9 +875,13 @@ struct BroadcastReadersSheet: View {
                     )
                 } else if readers.isEmpty {
                     ContentUnavailableView(
-                        "No views yet",
+                        "No opens yet",
                         systemImage: "eye.slash",
-                        description: Text("No one has opened this insight yet.")
+                        description: Text(
+                            (reach ?? 0) > 0
+                            ? "Seen by \(reach ?? 0) in the feed, but no one has opened the full post yet."
+                            : "No one has seen this insight yet."
+                        )
                     )
                 } else {
                     List {
@@ -911,7 +916,9 @@ struct BroadcastReadersSheet: View {
                                 .padding(.vertical, 2)
                             }
                         } header: {
-                            Text("\(readers.count) \(readers.count == 1 ? "reader" : "readers")")
+                            // "Opened" = tapped into the full post; "reached" = the
+                            // insight appeared in their feed (a superset of opens).
+                            Text("\(readers.count) opened" + ((reach ?? 0) > 0 ? " · \(reach ?? 0) reached" : ""))
                         }
                     }
                 }
@@ -935,6 +942,8 @@ struct BroadcastReadersSheet: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+        // Reach is best-effort — a failure here shouldn't block the readers list.
+        reach = try? await ServiceContainer.shared.broadcastService.fetchReach(for: broadcastId)
     }
 
     private func initials(_ name: String) -> String {

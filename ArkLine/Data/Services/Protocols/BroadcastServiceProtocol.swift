@@ -96,6 +96,15 @@ protocol BroadcastServiceProtocol {
     /// Backed by the `get_broadcast_readers` RPC, which enforces the admin gate.
     func fetchReaders(for broadcastId: UUID) async throws -> [BroadcastReader]
 
+    /// Records a per-user "seen in feed" impression (reach) — distinct from a
+    /// read (opening the post). Deduped by a unique (broadcast_id, user_id)
+    /// constraint; fire-and-forget, never throws into the UI.
+    func recordImpression(broadcastId: UUID, userId: UUID) async
+
+    /// Admin-only reach count: how many distinct users this insight has appeared
+    /// in front of. Backed by the admin-gated `get_broadcast_reach` RPC.
+    func fetchReach(for broadcastId: UUID) async throws -> Int
+
     // MARK: - File Upload
 
     /// Uploads an audio file for a broadcast
