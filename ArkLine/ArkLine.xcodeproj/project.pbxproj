@@ -420,6 +420,7 @@
 		BCF9170F324D43B3114D0BE4 /* HomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80FD6196FD17BC67A03C26F3 /* HomeWidget.swift */; };
 		BE6F5A429F5C7574CBF51765 /* SwingSetupsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EECF2E651C991A77B8813C9 /* SwingSetupsViewModel.swift */; };
 		BE89C92611163C89B015EF91 /* VIXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9CBCD28DAB9835627BA87F5 /* VIXData.swift */; };
+		BF0974FD0AC5981A8811E72E /* BudgetCalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE5BE0AE88BC85DE17E5E3AB /* BudgetCalculatorView.swift */; };
 		BFE8A461FEC5DE1CE2AB7546 /* CreateDCASheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3534E69736325A2DEC3B51F /* CreateDCASheetView.swift */; };
 		C095C1B0C6CEFA897FB878F2 /* ChooseUsernameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43473530DF1AB80ADBA646D3 /* ChooseUsernameView.swift */; };
 		C0F4E9391201A7AAF84C4C70 /* SentimentRegimeAlertManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A061D819CE33692C5525D095 /* SentimentRegimeAlertManager.swift */; };
@@ -1039,6 +1040,7 @@
 		DD4D25138117FE4B87FACBEE /* AllocationTargetEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllocationTargetEditor.swift; sourceTree = "<group>"; };
 		DD570AD26C90A58B12A7946D /* VoiceRecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceRecordingService.swift; sourceTree = "<group>"; };
 		DE2D1FF2A7FC24B7A1742348 /* RotationGaugeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationGaugeWidget.swift; sourceTree = "<group>"; };
+		DE5BE0AE88BC85DE17E5E3AB /* BudgetCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetCalculatorView.swift; sourceTree = "<group>"; };
 		DFA6D89396B94ACB0433199B /* PerformanceCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceCards.swift; sourceTree = "<group>"; };
 		E024112075ACF55F63004893 /* CryptoAsset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoAsset.swift; sourceTree = "<group>"; };
 		E0B46525A08963F4CC80C639 /* Fonts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fonts.swift; sourceTree = "<group>"; };
@@ -1242,6 +1244,7 @@
 				319895490145710C89575633 /* AddRealEstateView.swift */,
 				862AEB8995DDE7A9898C83EE /* AddTransactionView.swift */,
 				966F47FAEEC9B46F512706CC /* AllocationPieChart.swift */,
+				DE5BE0AE88BC85DE17E5E3AB /* BudgetCalculatorView.swift */,
 				5518A68482F92F03B8C61BD6 /* CreatePortfolioView.swift */,
 				0542844A0A074789DB81103D /* DCACalculatorView.swift */,
 				AE62F83D3AC5AFBD6B480FA4 /* EditHoldingView.swift */,
@@ -2615,6 +2618,7 @@
 				FA9F4687D5FC2FB2E4C8D6F3 /* BroadcastStudioView.swift in Sources */,
 				9470ED1F53F3D5F3FEFB592F /* BroadcastTabView.swift in Sources */,
 				4F0F3F5DACA577E7B642582B /* BroadcastViewModel.swift in Sources */,
+				BF0974FD0AC5981A8811E72E /* BudgetCalculatorView.swift in Sources */,
 				C6D58AAA96B8FBB851F1D0F0 /* CMEFedWatchScraper.swift in Sources */,
 				D7514D8CEAADA15EAF5FF113 /* CapitalRotationService.swift in Sources */,
 				91252ECC56160C486655563C /* CareerIndustryView.swift in Sources */,
