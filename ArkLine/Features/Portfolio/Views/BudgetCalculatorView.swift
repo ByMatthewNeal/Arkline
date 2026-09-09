@@ -173,19 +173,51 @@ struct BudgetCalculatorView: View {
 
             Divider()
 
-            // User-chosen share of the surplus (starts at 0 — the app never picks).
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("How much of that do you want to invest?")
-                        .font(AppFonts.body14Medium)
-                        .foregroundColor(textPrimary)
-                    Spacer()
+            // Share of the surplus to invest. The user picks — the presets are
+            // just budgeting starting points (how much of your leftover to put
+            // in), NOT asset-risk levels or a recommendation.
+            VStack(alignment: .leading, spacing: 10) {
+                Text("How much of your surplus to invest?")
+                    .font(AppFonts.body14Medium)
+                    .foregroundColor(textPrimary)
+
+                HStack(spacing: 8) {
+                    ForEach(BudgetPace.allCases) { pace in
+                        let selected = Int(sharePct) == pace.percent
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) { sharePct = Double(pace.percent) }
+                        } label: {
+                            VStack(spacing: 2) {
+                                Text(pace.label)
+                                    .font(AppFonts.caption12Medium)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+                                Text("\(pace.percent)%")
+                                    .font(AppFonts.caption12)
+                                    .opacity(0.85)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .foregroundColor(selected ? .white : AppColors.accent)
+                            .background(RoundedRectangle(cornerRadius: 10)
+                                .fill(selected ? AppColors.accent : AppColors.accent.opacity(0.12)))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Slider(value: $sharePct, in: 0...100, step: 5)
+                        .tint(AppColors.accent)
                     Text("\(Int(sharePct))%")
                         .font(AppFonts.body14Bold)
                         .foregroundColor(AppColors.accent)
+                        .frame(width: 42, alignment: .trailing)
                 }
-                Slider(value: $sharePct, in: 0...100, step: 5)
-                    .tint(AppColors.accent)
+
+                Text("A starting point — slide to fine-tune. Your call, not a recommendation.")
+                    .font(AppFonts.caption12)
+                    .foregroundColor(textPrimary.opacity(0.5))
             }
 
             Divider()
@@ -291,6 +323,31 @@ struct BudgetCalculatorCard: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showCalculator) {
             BudgetCalculatorView()
+        }
+    }
+}
+
+// MARK: - Budget Pace
+/// Preset "how much of your surplus to invest" starting points. These are
+/// budgeting intensities the user chooses — NOT asset-risk levels and NOT a
+/// recommendation. They just set the share of surplus.
+private enum BudgetPace: String, CaseIterable, Identifiable {
+    case conservative, moderate, aggressive
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .conservative: return "Conservative"
+        case .moderate: return "Moderate"
+        case .aggressive: return "Aggressive"
+        }
+    }
+
+    var percent: Int {
+        switch self {
+        case .conservative: return 25
+        case .moderate: return 50
+        case .aggressive: return 75
         }
     }
 }

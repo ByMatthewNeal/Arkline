@@ -38,6 +38,14 @@ function readLS(key: string): string {
   }
 }
 
+// Preset "how much of your surplus to invest" starting points — budgeting
+// intensities the user chooses, NOT asset-risk levels or a recommendation.
+const PACES = [
+  { label: 'Conservative', pct: 25 },
+  { label: 'Moderate', pct: 50 },
+  { label: 'Aggressive', pct: 75 },
+] as const;
+
 function Field({
   label, sub, value, onChange, sym,
 }: {
@@ -117,16 +125,35 @@ export function BudgetCalculatorDrawer({ open, onClose, onSetupDca }: Props) {
               <span className="fig text-base font-bold text-ark-text">{formatCurrency(surplus, currency)}</span>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-ark-text">How much of that do you want to invest?</span>
-                <span className="fig text-sm font-bold text-ark-primary">{Math.round(sharePct)}%</span>
+            <div className="space-y-2.5">
+              <span className="text-sm font-medium text-ark-text">How much of your surplus to invest?</span>
+              <div className="grid grid-cols-3 gap-2">
+                {PACES.map((p) => {
+                  const selected = Math.round(sharePct) === p.pct;
+                  return (
+                    <button
+                      key={p.label}
+                      onClick={() => setSharePct(p.pct)}
+                      className={cn(
+                        'rounded-lg py-2 text-center transition-colors',
+                        selected ? 'bg-ark-primary text-white' : 'bg-ark-primary/10 text-ark-primary hover:bg-ark-primary/20',
+                      )}
+                    >
+                      <span className="block text-xs font-semibold">{p.label}</span>
+                      <span className="block text-[11px] opacity-85">{p.pct}%</span>
+                    </button>
+                  );
+                })}
               </div>
-              <input
-                type="range" min={0} max={100} step={5} value={sharePct}
-                onChange={(e) => setSharePct(Number(e.target.value))}
-                className="mt-2 w-full accent-[var(--ark-primary)]"
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="range" min={0} max={100} step={5} value={sharePct}
+                  onChange={(e) => setSharePct(Number(e.target.value))}
+                  className="w-full accent-[var(--ark-primary)]"
+                />
+                <span className="fig w-10 text-right text-sm font-bold text-ark-primary">{Math.round(sharePct)}%</span>
+              </div>
+              <p className="text-[11px] text-ark-text-disabled">A starting point — slide to fine-tune. Your call, not a recommendation.</p>
             </div>
 
             <div>
