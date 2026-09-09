@@ -19,27 +19,56 @@ struct BudgetCalculatorView: View {
     /// open a DCA reminder itself.
     var onUseAmount: ((Double) -> Void)?
 
-    // Persisted on-device only (no financial data leaves the phone).
-    @AppStorage("budget_income") private var incomeText = ""
-    @AppStorage("budget_expenses") private var expensesText = ""
-    @AppStorage("budget_savings") private var savingsText = ""
-    @AppStorage("budget_fun") private var funText = ""
-    @AppStorage("budget_share_pct") private var sharePct = 0.0
+    // Live editing uses @State so typing/sliding never blocks on a synchronous
+    // UserDefaults write; inputs load on appear and save on disappear. On-device
+    // only — no financial data leaves the phone.
+    @State private var incomeText = ""
+    @State private var expensesText = ""
+    @State private var savingsText = ""
+    @State private var funText = ""
+    @State private var sharePct = 0.0
 
     @State private var dcaViewModel = DCAViewModel()
     @State private var showDCASheet = false
 
-    private var currency: String { appState.preferredCurrency }
+    // One cached formatter for the whole screen. NumberFormatter allocation is
+    // expensive and this view re-renders on every keystroke — building a fresh
+    // formatter per figure was the source of the typing/scroll lag.
+    @State private var currencyFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "USD"
+        return f
+    }()
+    @State private var currencySymbol = "$"
+
     private var textPrimary: Color { AppColors.textPrimary(colorScheme) }
     private var sectionBackground: Color {
         colorScheme == .dark ? Color(hex: "1F1F1F") : Color.white
     }
 
-    private var currencySymbol: String {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.currencyCode = currency
-        return f.currencySymbol ?? "$"
+    private func money(_ value: Double) -> String {
+        currencyFormatter.string(from: NSNumber(value: value)) ?? "$0.00"
+    }
+
+    private func loadInputs() {
+        let d = UserDefaults.standard
+        incomeText = d.string(forKey: "budget_income") ?? ""
+        expensesText = d.string(forKey: "budget_expenses") ?? ""
+        savingsText = d.string(forKey: "budget_savings") ?? ""
+        funText = d.string(forKey: "budget_fun") ?? ""
+        sharePct = d.double(forKey: "budget_share_pct")
+        currencyFormatter.currencyCode = appState.preferredCurrency
+        currencySymbol = currencyFormatter.currencySymbol ?? "$"
+    }
+
+    private func saveInputs() {
+        let d = UserDefaults.standard
+        d.set(incomeText, forKey: "budget_income")
+        d.set(expensesText, forKey: "budget_expenses")
+        d.set(savingsText, forKey: "budget_savings")
+        d.set(funText, forKey: "budget_fun")
+        d.set(sharePct, forKey: "budget_share_pct")
     }
 
     private func parse(_ s: String) -> Double {
@@ -84,6 +113,8 @@ struct BudgetCalculatorView: View {
                     prefilledFrequency: .monthly
                 )
             }
+            .onAppear { loadInputs() }
+            .onDisappear { saveInputs() }
         }
     }
 
@@ -166,7 +197,7 @@ struct BudgetCalculatorView: View {
                     .font(AppFonts.caption12)
                     .foregroundColor(textPrimary.opacity(0.6))
                 Spacer()
-                Text(surplus.asCurrency(code: currency))
+                Text(money(surplus))
                     .font(AppFonts.title18SemiBold)
                     .foregroundColor(textPrimary)
             }
@@ -226,10 +257,10 @@ struct BudgetCalculatorView: View {
                 Text("You'd invest")
                     .font(AppFonts.caption12)
                     .foregroundColor(textPrimary.opacity(0.6))
-                Text("\(investMonthly.asCurrency(code: currency)) / month")
+                Text("\(money(investMonthly)) / month")
                     .font(.system(size: 30, weight: .bold))
                     .foregroundColor(AppColors.accent)
-                Text("≈ \(investAnnual.asCurrency(code: currency)) contributed over a year at this pace")
+                Text("≈ \(money(investAnnual)) contributed over a year at this pace")
                     .font(AppFonts.caption12)
                     .foregroundColor(textPrimary.opacity(0.55))
             }
@@ -248,7 +279,7 @@ struct BudgetCalculatorView: View {
                 onUseAmount(investMonthly)
                 dismiss()
             } label: {
-                Text("Use \(investMonthly.asCurrency(code: currency)) / month")
+                Text("Use \(money(investMonthly)) / month")
                     .font(AppFonts.body16Medium)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
