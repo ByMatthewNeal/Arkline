@@ -94,7 +94,7 @@ struct BudgetCalculatorView: View {
             Text("What can I invest?")
                 .font(AppFonts.title20)
                 .foregroundColor(textPrimary)
-            Text("Enter your own numbers to see what's left over each month. You decide how much of that surplus to put toward investing — nothing here is a recommendation.")
+            Text("Enter your own numbers to see what's left over each month. You decide how much of that surplus to put toward investing. Nothing here is a recommendation.")
                 .font(AppFonts.body14)
                 .foregroundColor(textPrimary.opacity(0.65))
         }
@@ -105,7 +105,7 @@ struct BudgetCalculatorView: View {
 
     private var inputsCard: some View {
         VStack(spacing: 14) {
-            inputRow("Monthly income", subtitle: "Your take-home pay", text: $incomeText)
+            inputRow("Monthly income", subtitle: "Your take home pay", text: $incomeText)
             Divider()
             inputRow("Fixed expenses", subtitle: "Rent, insurance, bills, gas, subscriptions", text: $expensesText)
             Divider()
@@ -215,7 +215,7 @@ struct BudgetCalculatorView: View {
                         .frame(width: 42, alignment: .trailing)
                 }
 
-                Text("A starting point — slide to fine-tune. Your call, not a recommendation.")
+                Text("A starting point. Slide to adjust. Your call, not a recommendation.")
                     .font(AppFonts.caption12)
                     .foregroundColor(textPrimary.opacity(0.5))
             }
@@ -272,7 +272,7 @@ struct BudgetCalculatorView: View {
             .disabled(investMonthly <= 0)
             .opacity(investMonthly <= 0 ? 0.5 : 1)
 
-            Text("Then choose a strategy on your Portfolio tab — the Model Portfolios card shows what each one holds.")
+            Text("Then choose a strategy on your Portfolio tab. The Model Portfolios card shows what each one holds.")
                 .font(AppFonts.caption12)
                 .foregroundColor(textPrimary.opacity(0.55))
         }
@@ -299,7 +299,7 @@ struct BudgetCalculatorCard: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(AppColors.accent.opacity(0.15))
                         .frame(width: 44, height: 44)
-                    Image(systemName: "function")
+                    Image(systemName: "banknote.fill")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(AppColors.accent)
                 }
@@ -346,8 +346,8 @@ private enum BudgetPace: String, CaseIterable, Identifiable {
     var percent: Int {
         switch self {
         case .conservative: return 25
-        case .moderate: return 50
-        case .aggressive: return 75
+        case .moderate: return 40
+        case .aggressive: return 60
         }
     }
 }

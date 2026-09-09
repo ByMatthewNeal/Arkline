@@ -42,8 +42,8 @@ function readLS(key: string): string {
 // intensities the user chooses, NOT asset-risk levels or a recommendation.
 const PACES = [
   { label: 'Conservative', pct: 25 },
-  { label: 'Moderate', pct: 50 },
-  { label: 'Aggressive', pct: 75 },
+  { label: 'Moderate', pct: 40 },
+  { label: 'Aggressive', pct: 60 },
 ] as const;
 
 function Field({
@@ -107,12 +107,12 @@ export function BudgetCalculatorDrawer({ open, onClose, onSetupDca }: Props) {
           <h2 className="text-lg font-bold text-ark-text">What can I invest?</h2>
           <p className="mt-1 text-sm text-ark-text-tertiary">
             Enter your own numbers to see what&apos;s left over each month. You decide how much of that surplus to
-            put toward investing — nothing here is a recommendation.
+            put toward investing. Nothing here is a recommendation.
           </p>
         </div>
 
         <div className="space-y-3 rounded-2xl border border-ark-divider bg-ark-fill-secondary/20 p-4">
-          <Field label="Monthly income" sub="Your take-home pay" value={income} onChange={setIncome} sym={sym} />
+          <Field label="Monthly income" sub="Your take home pay" value={income} onChange={setIncome} sym={sym} />
           <Field label="Fixed expenses" sub="Rent, insurance, bills, gas, subscriptions" value={expenses} onChange={setExpenses} sym={sym} />
           <Field label="Monthly savings" sub="Cash you set aside" value={savings} onChange={setSavings} sym={sym} />
           <Field label="Fun money" sub="Eating out, gifts, trips (optional)" value={fun} onChange={setFun} sym={sym} />
@@ -153,7 +153,7 @@ export function BudgetCalculatorDrawer({ open, onClose, onSetupDca }: Props) {
                 />
                 <span className="fig w-10 text-right text-sm font-bold text-ark-primary">{Math.round(sharePct)}%</span>
               </div>
-              <p className="text-[11px] text-ark-text-disabled">A starting point — slide to fine-tune. Your call, not a recommendation.</p>
+              <p className="text-[11px] text-ark-text-disabled">A starting point. Slide to adjust. Your call, not a recommendation.</p>
             </div>
 
             <div>
@@ -177,7 +177,7 @@ export function BudgetCalculatorDrawer({ open, onClose, onSetupDca }: Props) {
               Set up a monthly DCA reminder
             </button>
             <p className="text-xs text-ark-text-disabled">
-              Then choose a strategy — the Model Portfolios card on this page shows what each one holds.
+              Then choose a strategy. The Model Portfolios card on this page shows what each one holds.
             </p>
           </div>
         ) : (
@@ -188,7 +188,7 @@ export function BudgetCalculatorDrawer({ open, onClose, onSetupDca }: Props) {
 
         <p className="text-[11px] leading-relaxed text-ark-text-disabled">
           This is a budgeting tool, not financial advice. It only does math on the numbers you enter and the share
-          you choose — it doesn&apos;t recommend an amount or an allocation, and it doesn&apos;t project investment
+          you choose. It doesn&apos;t recommend an amount or an allocation, and it doesn&apos;t project investment
           returns. Always do your own research.
         </p>
       </div>
