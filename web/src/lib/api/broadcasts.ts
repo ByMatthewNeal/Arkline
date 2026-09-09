@@ -48,6 +48,17 @@ function toImageUrls(v: unknown): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Record a per-user "seen in feed" impression (reach) — distinct from opening
+ * the post. Idempotent via the DB unique (broadcast_id, user_id) constraint, so
+ * a duplicate just errors harmlessly. Fire-and-forget.
+ */
+export async function recordBroadcastImpression(broadcastId: string, userId: string): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  const supabase = createClient();
+  await supabase.from('broadcast_impressions').insert({ broadcast_id: broadcastId, user_id: userId });
+}
+
 /** Published broadcasts, pinned first then newest. */
 export async function fetchBroadcasts(): Promise<Broadcast[]> {
   if (!isSupabaseConfigured()) return [];

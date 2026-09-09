@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Radio, Search, Pin, Eye, Heart, Bookmark, Sparkles, ChevronDown, Video, CalendarClock, MessagesSquare, BookOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard, Skeleton } from '@/components/ui';
-import { fetchBroadcasts, type Broadcast } from '@/lib/api/broadcasts';
+import { fetchBroadcasts, recordBroadcastImpression, type Broadcast } from '@/lib/api/broadcasts';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useBroadcastSocial } from '@/lib/hooks/use-broadcast-social';
+import { useAuth } from '@/lib/hooks/use-auth';
+
+// Broadcast IDs we've already logged an impression for this session, so a card
+// scrolling in and out of view only records reach once per page load.
+const recordedImpressions = new Set<string>();
 import { formatRelativeTime, cn } from '@/lib/utils/format';
 import { Markdown } from '@/components/dashboard/shared/markdown';
 import { ImageGallery, AudioPlayer } from '@/components/dashboard/shared/media';
@@ -33,16 +38,37 @@ function matchesDate(b: Broadcast, filter: DateFilter): boolean {
   return diffDays <= 31;
 }
 
-function BroadcastCard({ b, social }: { b: Broadcast; social: Social }) {
+function BroadcastCard({ b, social, uid }: { b: Broadcast; social: Social; uid?: string }) {
   const [expanded, setExpanded] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const preview = previewText(b.content).split('\n').filter(Boolean).slice(0, 3);
   const when = b.published_at ?? b.created_at;
   const liked = social.isReacted(b.id);
   const saved = social.isBookmarked(b.id);
   const likeCount = b.reaction_count + (liked ? 1 : 0);
 
+  // Reach: record a "seen in feed" impression the first time this card scrolls
+  // into view (matches iOS onAppear). Deduped per session + by the DB constraint.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el || !uid || recordedImpressions.has(b.id)) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          recordedImpressions.add(b.id);
+          void recordBroadcastImpression(b.id, uid);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.5 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [b.id, uid]);
+
   return (
     <GlassCard
+      ref={cardRef}
       className={cn('relative cursor-pointer overflow-hidden transition-shadow hover:shadow-md', b.is_pinned && 'border-ark-primary/30')}
       onClick={() => setExpanded((v) => !v)}
     >
@@ -138,6 +164,8 @@ export default function BroadcastsPage() {
   const [savedOnly, setSavedOnly] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const social = useBroadcastSocial();
+  const { authUser } = useAuth();
+  const uid = authUser?.id;
 
   const { data: broadcasts, isLoading } = useQuery({
     queryKey: ['broadcasts'],
@@ -237,12 +265,12 @@ export default function BroadcastsPage() {
           {pinned.length > 0 && (
             <div className="space-y-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Pinned</p>
-              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} />)}
+              {pinned.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} />)}
             </div>
           )}
           <div className="space-y-3">
             {pinned.length > 0 && <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Latest</p>}
-            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} />)}
+            {rest.map((b) => <BroadcastCard key={b.id} b={b} social={social} uid={uid} />)}
           </div>
         </div>
       )}
