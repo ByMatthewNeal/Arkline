@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, TrendingUp, TrendingDown, Calculator } from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -24,6 +24,8 @@ import { TransactionsPanel } from '@/components/dashboard/portfolio/transactions
 import { ModelPortfolioCard } from '@/components/dashboard/portfolio/model-portfolio-card';
 import { CoinIcon } from '@/components/dashboard/shared/coin-icon';
 import { HoldingDetailDrawer } from '@/components/dashboard/portfolio/holding-detail-drawer';
+import { BudgetCalculatorDrawer } from '@/components/dashboard/portfolio/budget-calculator';
+import { ReminderModal } from '@/components/dashboard/dca/reminder-modal';
 import { useCryptoAssets } from '@/lib/hooks/use-market';
 import type { PortfolioHolding } from '@/types';
 
@@ -57,6 +59,8 @@ export default function PortfolioPage() {
   const [removeSymbol, setRemoveSymbol] = useState<string | null>(null);
   const [scrubbedIdx, setScrubbedIdx] = useState<number | null>(null);
   const [detailHolding, setDetailHolding] = useState<PortfolioHolding | null>(null);
+  const [budgetOpen, setBudgetOpen] = useState(false);
+  const [dcaPrefill, setDcaPrefill] = useState<{ open: boolean; amount?: number }>({ open: false });
   const toast = useToast();
 
   // Known symbol→CoinGecko-id pairs (from the cached top list) so the holding
@@ -166,6 +170,22 @@ export default function PortfolioPage() {
         holding={detailHolding}
         knownIds={knownIds}
         onClose={() => setDetailHolding(null)}
+      />
+
+      <BudgetCalculatorDrawer
+        open={budgetOpen}
+        onClose={() => setBudgetOpen(false)}
+        onSetupDca={(amount) => {
+          setBudgetOpen(false);
+          setDcaPrefill({ open: true, amount });
+        }}
+      />
+
+      <ReminderModal
+        open={dcaPrefill.open}
+        onClose={() => setDcaPrefill((p) => ({ ...p, open: false }))}
+        initialAmount={dcaPrefill.amount}
+        initialFrequency="monthly"
       />
 
       <AddTransactionModal
@@ -385,6 +405,20 @@ export default function PortfolioPage() {
 
             {/* Model portfolio strategies (iOS Overview-tab parity) */}
             <ModelPortfolioCard />
+
+            {/* Investment Budget calculator entry */}
+            <GlassCard hover className="cursor-pointer" onClick={() => setBudgetOpen(true)}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-ark-primary/10">
+                  <Calculator className="h-5 w-5 text-ark-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-ark-text">Investment Budget</p>
+                  <p className="truncate text-xs text-ark-text-tertiary">Work out what you can afford to invest</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-ark-text-tertiary" />
+              </div>
+            </GlassCard>
 
             {/* Holdings list */}
             <GlassCard className="sm:col-span-2">

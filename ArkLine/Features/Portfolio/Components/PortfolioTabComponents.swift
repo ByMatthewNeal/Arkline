@@ -18,6 +18,9 @@ struct PortfolioOverviewContent: View {
                 ModelPortfolioCard()
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
+
+                BudgetCalculatorCard()
+                    .padding(.horizontal, 20)
             }
 
             EmptyStateView(
@@ -100,6 +103,9 @@ struct PortfolioOverviewContent: View {
 
                 // Model Portfolios — research/ideas support the user's own data, never precede it
                 ModelPortfolioCard()
+                    .padding(.horizontal, 20)
+
+                BudgetCalculatorCard()
                     .padding(.horizontal, 20)
             }
             .padding(.top, 20)

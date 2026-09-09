@@ -21,9 +21,12 @@ interface Props {
   open: boolean;
   onClose: () => void;
   editing?: DCAReminder | null;
+  /** Prefill for a fresh reminder (e.g. from the Investment Budget calculator). */
+  initialAmount?: number;
+  initialFrequency?: string;
 }
 
-export function ReminderModal({ open, onClose, editing }: Props) {
+export function ReminderModal({ open, onClose, editing, initialAmount, initialFrequency }: Props) {
   const { data: assets } = useCryptoAssets(1);
   const create = useCreateReminder();
   const update = useUpdateReminder();
@@ -48,12 +51,15 @@ export function ReminderModal({ open, onClose, editing }: Props) {
         setTime((editing.notification_time ?? '09:00:00').slice(0, 5));
         setStartDate(editing.start_date);
       } else {
-        setSymbol(''); setName(''); setAmount(''); setFrequency('weekly'); setTime('09:00');
+        setSymbol(''); setName('');
+        setAmount(initialAmount != null && initialAmount > 0 ? String(Math.round(initialAmount)) : '');
+        setFrequency(initialFrequency ?? 'weekly');
+        setTime('09:00');
         setStartDate(localDateISO());
       }
       setSearch('');
     }
-  }, [open, editing]);
+  }, [open, editing, initialAmount, initialFrequency]);
 
   const results = useMemo(() => {
     const term = search.trim().toLowerCase();

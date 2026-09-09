@@ -22,6 +22,19 @@ struct CreateDCASheetView: View {
     @State private var isCreating = false
     @State private var showErrorAlert = false
     @State private var errorMessage: String?
+    @State private var showBudgetCalc = false
+
+    /// Optional prefill from the Investment Budget calculator. Existing call
+    /// sites (`CreateDCASheetView(viewModel:)`) keep the previous defaults.
+    init(viewModel: DCAViewModel, prefilledAmount: Double? = nil, prefilledFrequency: DCAFrequencyOption? = nil) {
+        self._viewModel = Bindable(wrappedValue: viewModel)
+        if let amt = prefilledAmount, amt > 0 {
+            _amount = State(initialValue: String(format: "%.0f", amt.rounded()))
+        }
+        if let freq = prefilledFrequency {
+            _selectedFrequency = State(initialValue: freq)
+        }
+    }
 
     private var textPrimary: Color {
         AppColors.textPrimary(colorScheme)
@@ -90,6 +103,13 @@ struct CreateDCASheetView: View {
             }
             .sheet(isPresented: $showStockPicker) {
                 StockPickerView(selectedCoin: $selectedCoin)
+            }
+            .sheet(isPresented: $showBudgetCalc) {
+                BudgetCalculatorView(onUseAmount: { amt in
+                    amount = String(format: "%.0f", amt.rounded())
+                    selectedFrequency = .monthly
+                    showBudgetCalc = false
+                })
             }
             .alert("Error", isPresented: $showErrorAlert) {
                 Button("OK", role: .cancel) { }
@@ -234,6 +254,17 @@ struct CreateDCASheetView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
             )
+
+            Button {
+                showBudgetCalc = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "function")
+                    Text("Not sure how much? Work out your budget")
+                }
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(AppColors.accent)
+            }
         }
         .padding(16)
         .background(
