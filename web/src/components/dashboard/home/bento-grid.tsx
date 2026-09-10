@@ -934,7 +934,7 @@ function DCATile({ onOpen }: { onOpen: () => void }) {
     <Tile onClick={onOpen} accentColor="var(--ark-primary)">
       <AccentLine color="var(--ark-primary)" />
       {isLoading ? <SkeletonListTile /> : (
-        <>
+        <div className="flex h-full flex-col">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Bell className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
@@ -946,13 +946,13 @@ function DCATile({ onOpen }: { onOpen: () => void }) {
           </div>
 
           {totalMonthly > 0 && (
-            <div>
-              <span className="fig text-lg font-bold text-ark-text">~{formatCurrency(totalMonthly)}</span>
-              <span className="text-[10px] text-ark-text-disabled">/mo</span>
+            <div className="mt-1.5">
+              <span className="fig font-[family-name:var(--font-urbanist)] text-xl font-bold text-ark-text">~{formatCurrency(totalMonthly)}</span>
+              <span className="text-[10px] text-ark-text-disabled">/mo committed</span>
             </div>
           )}
 
-          <div className="space-y-1">
+          <div className="mt-2 flex flex-1 flex-col justify-evenly gap-1">
             {upcoming.slice(0, 3).map((r) => {
               const nextDate = r.next_reminder_date ? new Date(r.next_reminder_date) : null;
               const totalDays = r.frequency === 'daily' ? 1 : r.frequency === 'weekly' ? 7 : r.frequency === 'biweekly' ? 14 : 30;
@@ -971,15 +971,19 @@ function DCATile({ onOpen }: { onOpen: () => void }) {
                     </div>
                   </div>
                   {nextDate && (
-                    <div className="mt-0.5 h-0.5 overflow-hidden rounded-full bg-ark-fill-tertiary">
-                      <div className="h-full rounded-full bg-ark-primary/60" style={{ width: `${progressPct}%` }} />
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <div className="h-0.5 flex-1 overflow-hidden rounded-full bg-ark-fill-tertiary">
+                        <div className="h-full rounded-full bg-ark-primary/60" style={{ width: `${progressPct}%` }} />
+                      </div>
+                      <span className="fig shrink-0 text-[8px] text-ark-text-disabled">{daysUntil === 0 ? 'today' : `in ${daysUntil}d`}</span>
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-        </>
+          <p className="mt-1.5 text-right text-[9px] font-semibold text-ark-primary/70">Manage reminders →</p>
+        </div>
       )}
     </Tile>
   );
@@ -993,21 +997,22 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
     <Tile onClick={onOpen} accentColor="var(--ark-violet)">
       <AccentLine color="var(--ark-violet)" />
       {isLoading ? <SkeletonListTile /> : (
-        <>
+        <div className="flex h-full flex-col">
           <div className="flex items-center gap-2">
             <Newspaper className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-violet" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Headlines</span>
           </div>
 
-          <div className="space-y-1.5">
-            {articles.slice(0, 3).map((article, i) => (
+          {/* Headlines distribute across the full tile; lead story gets 2 lines */}
+          <div className="mt-2 flex flex-1 flex-col justify-evenly gap-1.5">
+            {articles.slice(0, 4).map((article, i) => (
               <div key={article.id} className={cn(
-                'rounded-lg px-2 py-1',
-                i === 0 ? 'bg-ark-violet/[0.04] border border-ark-violet/10' : 'bg-ark-fill-secondary/30',
+                'rounded-lg px-2.5 py-1.5',
+                i === 0 ? 'bg-ark-violet/[0.05] border border-ark-violet/15' : 'bg-ark-fill-secondary/30',
               )}>
                 <p className={cn(
-                  'font-medium leading-snug text-ark-text line-clamp-1',
-                  i === 0 ? 'text-[11px]' : 'text-[10px]',
+                  'font-medium leading-snug text-ark-text',
+                  i === 0 ? 'text-[11px] line-clamp-2' : 'text-[10px] line-clamp-1',
                 )}>
                   {article.title}
                 </p>
@@ -1018,12 +1023,11 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
                 </div>
               </div>
             ))}
+            {articles.length === 0 && (
+              <p className="text-center text-[10px] text-ark-text-disabled">No news available</p>
+            )}
           </div>
-
-          {articles.length === 0 && (
-            <p className="text-[10px] text-ark-text-disabled text-center">No news available</p>
-          )}
-        </>
+        </div>
       )}
     </Tile>
   );
@@ -1475,26 +1479,38 @@ function ModelPortfolioTile({ onOpen }: { onOpen: () => void }) {
             </div>
           )}
 
-          {/* Latest rebalance moves */}
-          {data.changes.length > 0 && (
-            <div className="mt-auto pt-3">
+          {/* Flexible middle: rebalance moves if any, else per-asset weight bars */}
+          {data.changes.length > 0 ? (
+            <div className="mt-3 flex flex-1 flex-col justify-evenly">
               <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Latest rebalance · {data.trigger}</p>
-              <div className="space-y-1">
-                {data.changes.slice(0, 3).map((c) => {
-                  const up = c.to >= c.from;
-                  return (
-                    <div key={c.asset} className="flex items-center justify-between text-[10px]">
-                      <span className="font-semibold text-ark-text">{c.asset}</span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="fig text-ark-text-tertiary">{c.from.toFixed(0)}%</span>
-                        <span className={cn('fig font-semibold', up ? 'text-ark-success' : 'text-ark-error')}>→ {c.to.toFixed(0)}%</span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              {data.changes.slice(0, 4).map((c) => {
+                const up = c.to >= c.from;
+                return (
+                  <div key={c.asset} className="flex items-center justify-between rounded-lg bg-ark-fill-secondary/40 px-2 py-1.5 text-[10px]">
+                    <span className="flex items-center gap-1.5 font-semibold text-ark-text"><CoinIcon symbol={c.asset} size="xs" />{c.asset}</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="fig text-ark-text-tertiary">{c.from.toFixed(0)}%</span>
+                      <span className={cn('fig font-semibold', up ? 'text-ark-success' : 'text-ark-error')}>→ {c.to.toFixed(0)}%</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-1 flex-col justify-evenly gap-1">
+              {top.map((a, i) => (
+                <div key={a.asset} className="flex items-center gap-2">
+                  <span className="w-12 truncate text-[10px] font-semibold text-ark-text">{a.asset}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ark-fill-secondary">
+                    <div className="h-full rounded-full opacity-80" style={{ width: `${a.pct}%`, background: ALLOC_COLORS[i % ALLOC_COLORS.length] }} />
+                  </div>
+                  <span className="fig w-8 text-right text-[10px] font-semibold text-ark-text-secondary">{a.pct.toFixed(0)}%</span>
+                </div>
+              ))}
             </div>
           )}
+
+          <p className="mt-1.5 text-right text-[9px] font-semibold text-ark-primary/70">View strategies →</p>
         </div>
       )}
     </Tile>
@@ -1526,9 +1542,9 @@ function WeeklyUpdateTile({ onOpen }: { onOpen: () => void }) {
 
           {/* Deck agenda — first slide titles, editorial table-of-contents style */}
           {(() => {
-            const titled = data.slides.filter((s) => s.title && s.title.length > 1).slice(0, 3);
+            const titled = data.slides.filter((s) => s.title && s.title.length > 1).slice(0, 6);
             return titled.length > 0 ? (
-              <div className="mt-2.5 flex-1 space-y-1.5 border-l border-ark-violet/25 pl-3">
+              <div className="mt-2.5 flex flex-1 flex-col justify-evenly gap-1 border-l border-ark-violet/25 pl-3">
                 {titled.map((s, i) => (
                   <div key={s.id} className="flex items-baseline gap-2">
                     <span className="fig text-[9px] font-semibold text-ark-violet/60">{String(i + 1).padStart(2, '0')}</span>
