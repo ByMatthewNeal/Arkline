@@ -47,30 +47,53 @@ export function USFuturesDetail() {
 
   return (
     <div className="space-y-5 pb-4">
-      {/* Session-aware bias banner */}
+      {/* Session-aware bias banner + per-index breadth strip */}
       <div className="rounded-2xl p-4 text-center" style={{ backgroundColor: `${biasColor}14` }}>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">{session}</p>
         <p className="mt-1 font-[family-name:var(--font-urbanist)] text-2xl font-bold" style={{ color: biasColor }}>{bias}</p>
         <p className="mt-1 text-xs text-ark-text-secondary">{up} of {futures.length} index futures higher this {sessionWord}</p>
-      </div>
-      <div className="space-y-2">
-        {futures.map((f) => (
-          <div key={f.symbol} className="flex items-center justify-between rounded-xl border border-ark-divider p-3.5">
-            <div>
-              <p className="text-sm font-semibold text-ark-text">{f.name}</p>
-              <p className="text-[11px] text-ark-text-disabled">{f.symbol} futures</p>
+        <div className="mx-auto mt-3 flex max-w-xs gap-1">
+          {futures.map((f) => (
+            <div key={f.symbol} className="flex-1">
+              <div className={cn('h-1.5 rounded-full', f.change_percent >= 0 ? 'bg-ark-success' : 'bg-ark-error')} />
+              <p className="mt-1 text-[9px] font-semibold uppercase text-ark-text-tertiary">{f.symbol}</p>
             </div>
-            <div className="text-right">
-              <p className="fig text-lg font-bold text-ark-text">{f.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-              <p className={cn('fig text-xs font-semibold', f.change_percent >= 0 ? 'text-ark-success' : 'text-ark-error')}>
+          ))}
+        </div>
+      </div>
+
+      {/* Index cards — side by side so the row doesn't stretch across dead space */}
+      <div className="grid gap-2 sm:grid-cols-3">
+        {futures.map((f) => {
+          const bullish = f.change_percent >= 0;
+          // Centered strength bar, full scale at ±1.5% (a big overnight move).
+          const fill = Math.min(Math.abs(f.change_percent) / 1.5, 1) * 50;
+          return (
+            <div key={f.symbol} className={cn(
+              'rounded-xl border p-4 text-center',
+              bullish ? 'border-ark-success/20 bg-ark-success/[0.03]' : 'border-ark-error/20 bg-ark-error/[0.03]',
+            )}>
+              <p className="text-sm font-semibold text-ark-text">{f.name}</p>
+              <p className="text-[10px] uppercase tracking-wider text-ark-text-disabled">{f.symbol} futures</p>
+              <p className="fig mt-2 font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text">
+                {f.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </p>
+              <p className={cn('fig mt-0.5 text-xs font-semibold', bullish ? 'text-ark-success' : 'text-ark-error')}>
                 {f.change >= 0 ? '+' : ''}{f.change.toLocaleString(undefined, { maximumFractionDigits: 0 })} ({formatPercent(f.change_percent)})
               </p>
-              <p className={cn('text-[10px] font-semibold', f.change_percent >= 0 ? 'text-ark-success' : 'text-ark-error')}>
-                {f.change_percent >= 0 ? 'Bullish' : 'Bearish'}
+              <div className="relative mx-auto mt-3 h-1.5 w-full rounded-full bg-ark-fill-secondary">
+                <div className="absolute left-1/2 top-0 h-full w-px bg-ark-divider" />
+                <div
+                  className={cn('absolute top-0 h-full rounded-full', bullish ? 'bg-ark-success' : 'bg-ark-error')}
+                  style={bullish ? { left: '50%', width: `${fill}%` } : { right: '50%', width: `${fill}%` }}
+                />
+              </div>
+              <p className={cn('mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold', bullish ? 'bg-ark-success/10 text-ark-success' : 'bg-ark-error/10 text-ark-error')}>
+                {bullish ? 'Bullish' : 'Bearish'}
               </p>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <Info title="About this data" items={[
         { label: 'What', text: 'Front-month index futures: S&P 500 (ES), Dow (YM), Nasdaq (NQ).' },
