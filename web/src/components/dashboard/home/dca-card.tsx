@@ -51,7 +51,7 @@ export function DCACard() {
           <div>
             <h3 className="text-sm font-semibold text-ark-text">DCA</h3>
             <p className="text-[10px] text-ark-text-disabled">
-              {upcoming.length > 0 ? `~${formatCurrency(totalMonthly)}/mo` : 'No reminders'}
+              {upcoming.length > 0 ? `${formatCurrency(totalMonthly)}/mo` : 'No reminders'}
             </p>
           </div>
         </div>
