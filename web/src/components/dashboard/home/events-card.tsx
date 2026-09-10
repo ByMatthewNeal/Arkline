@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { useEconomicEvents } from '@/lib/hooks/use-market';
 import { cn, localDateISO } from '@/lib/utils/format';
@@ -22,10 +22,12 @@ function dayLabel(dateISO: string): { primary: string; secondary: string | null 
   return { primary: formatted, secondary: null };
 }
 
-const impactStyles: Record<string, { dot: string; label: string }> = {
-  high: { dot: 'bg-ark-error', label: 'text-ark-error' },
-  medium: { dot: 'bg-ark-warning', label: 'text-ark-warning' },
-  low: { dot: 'bg-ark-text-disabled', label: 'text-ark-text-tertiary' },
+// iOS parity: a colored left accent bar per impact; high-impact events get a
+// red-tinted row + warning icon so they can't be missed while scanning.
+const impactStyles: Record<string, { bar: string; label: string }> = {
+  high: { bar: 'bg-ark-error', label: 'text-ark-error' },
+  medium: { bar: 'bg-ark-warning', label: 'text-ark-warning' },
+  low: { bar: 'bg-ark-text-disabled', label: 'text-ark-text-tertiary' },
 };
 
 function cleanAnalysis(md: string): string {
@@ -39,12 +41,20 @@ function EventRow({ e }: { e: EconomicEvent }) {
   const beat = e.beat_miss?.toLowerCase();
   const beatColor = beat === 'beat' ? 'text-ark-success' : beat === 'miss' ? 'text-ark-error' : 'text-ark-text-tertiary';
 
+  const isHigh = e.impact === 'high';
+
   return (
-    <div className="rounded-xl border border-ark-divider">
+    <div className={cn(
+      'overflow-hidden rounded-xl border',
+      isHigh ? 'border-ark-error/25 bg-ark-error/5' : 'border-ark-divider',
+    )}>
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-3 p-3 text-left">
-        <span className={cn('h-2 w-2 shrink-0 rounded-full', imp.dot)} />
+        <span className={cn('h-8 w-1 shrink-0 rounded-full', imp.bar)} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-ark-text">{e.title}</p>
+          <p className={cn('flex items-center gap-1.5 truncate text-sm text-ark-text', isHigh ? 'font-semibold' : 'font-medium')}>
+            <span className="truncate">{e.title}</span>
+            {isHigh && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-ark-error" />}
+          </p>
           <p className="text-[11px] text-ark-text-disabled">
             {e.country}{e.time ? ` · ${e.time}` : ''}{released && beat ? <span className={cn('ml-1 font-semibold capitalize', beatColor)}>· {beat}</span> : ''}
           </p>
