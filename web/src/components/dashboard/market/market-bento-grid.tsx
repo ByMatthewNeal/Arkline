@@ -5,7 +5,7 @@ import {
   Globe, Gauge, Compass, Activity, BarChart3, Target,
   Landmark, Bitcoin, Search, Newspaper, Users, DollarSign,
   ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown,
-  RotateCcw, SlidersHorizontal,
+  RotateCcw, SlidersHorizontal, CandlestickChart, Zap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Badge, Skeleton } from '@/components/ui';
@@ -20,6 +20,7 @@ import {
   useGlobalMarketData, useFearGreedIndex, useMarketSentiment,
   useMacroIndicators, useRegimeData, useCryptoPositioning, useMomentumMap,
   useTraditionalMarkets, useCryptoAssets, useAltcoinScanner, useNews,
+  useUSFutures, useRiskAppetite, useSignalChanges,
 } from '@/lib/hooks/use-market';
 import { formatCurrency, formatPercent, formatNumber, formatRelativeTime, cn } from '@/lib/utils/format';
 import { useWidgetVisibility } from '@/lib/hooks/use-widget-visibility';
@@ -32,10 +33,13 @@ import { RefreshStatus } from '@/components/dashboard/shared/refresh-status';
 type MarketWidgetKey =
   | 'marketOverview' | 'fearGreed' | 'regime' | 'sentiment'
   | 'macro' | 'positioning' | 'momentumMap' | 'tradMarkets' | 'topCoins'
-  | 'altcoinScanner' | 'news' | 'retailSentiment' | 'funding';
+  | 'altcoinScanner' | 'news' | 'retailSentiment' | 'funding'
+  | 'futures' | 'dailyPositioning';
 
 const drawerTitles: Record<MarketWidgetKey, string> = {
   marketOverview: 'Market Overview',
+  futures: 'US Futures',
+  dailyPositioning: 'Daily Positioning',
   fearGreed: 'Fear & Greed Index',
   regime: 'Market Regime',
   sentiment: 'Market Sentiment',
@@ -59,6 +63,8 @@ function LazyMarketWidget({ widgetKey }: { widgetKey: MarketWidgetKey }) {
     let cancelled = false;
     const loaders: Record<MarketWidgetKey, () => Promise<{ default?: React.ComponentType; [k: string]: unknown }>> = {
       marketOverview: () => Promise.resolve({ default: MarketOverviewDetail }),
+      futures: () => import('../home/extras-detail').then(m => ({ default: m.USFuturesDetail })),
+      dailyPositioning: () => import('../home/market-detail').then(m => ({ default: m.SignalChangesDetail })),
       fearGreed: () => import('../home/fear-greed-gauge').then(m => ({ default: m.FearGreedGauge })),
       regime: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
       sentiment: () => import('./market-sentiment').then(m => ({ default: m.MarketSentiment })),
@@ -141,9 +147,11 @@ function MarketOverviewDetail() {
 
 function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
   const { data: global, isLoading } = useGlobalMarketData();
+  const { data: sent } = useMarketSentiment();
   const mktCap = global?.total_market_cap ?? 0;
   const change = global?.market_cap_change_percentage_24h ?? 0;
   const isUp = change >= 0;
+  const sparkData = sent?.market_cap_sparkline ?? [];
 
   const counter = useCountUp(mktCap / 1e12, isLoading, 2);
 
@@ -160,7 +168,8 @@ function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
 
             <div className="relative">
               <AmbientGlow color="var(--ark-primary)" className="-left-4 -top-2 h-16 w-32" />
-              <p className="fig font-[family-name:var(--font-urbanist)] text-2xl font-bold text-ark-text leading-tight relative">
+              <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">Total Crypto Market Cap</p>
+              <p className="fig font-[family-name:var(--font-urbanist)] text-3xl font-bold text-ark-text leading-tight relative">
                 <span>$</span>
                 <span ref={counter.ref}>{counter.value}</span>
                 <span className="text-sm opacity-40 font-normal">T</span>
@@ -188,8 +197,25 @@ function MarketOverviewTile({ onOpen }: { onOpen: () => void }) {
                   {global ? `${global.btc_dominance.toFixed(1)}%` : '—'}
                 </p>
               </div>
+              {global?.eth_dominance !== undefined && (
+                <>
+                  <div className="w-px bg-ark-divider" />
+                  <div>
+                    <p className="text-[9px] font-medium uppercase tracking-wider text-ark-text-tertiary">ETH Dom</p>
+                    <p className="fig text-sm font-bold text-ark-text">{global.eth_dominance.toFixed(1)}%</p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
+
+          {/* 30d market-cap sparkline fills the right half */}
+          {sparkData.length > 2 && (
+            <div className="flex w-2/5 shrink-0 flex-col justify-end pb-1">
+              <Spark data={sparkData} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-20" />
+              <p className="mt-1 text-right text-[8px] uppercase tracking-wider text-ark-text-disabled">30d trend</p>
+            </div>
+          )}
         </div>
       )}
     </Tile>
@@ -219,7 +245,7 @@ function FearGreedTile({ onOpen }: { onOpen: () => void }) {
           </div>
 
           <div className="flex justify-center">
-            <MiniGauge value={value} max={100} color={color} size={80} />
+            <MiniGauge value={value} max={100} color={color} size={96} />
           </div>
 
           <div className="flex items-end justify-between relative">
@@ -241,7 +267,6 @@ function RegimeTile({ onOpen }: { onOpen: () => void }) {
   const isLoading = regimeLoading || posLoading;
   const regimeLabel = regime?.regime === 'risk-on' ? 'Risk On' : regime?.regime === 'risk-off' ? 'Risk Off' : 'Neutral';
   const color = regime?.regime === 'risk-on' ? 'var(--ark-success)' : regime?.regime === 'risk-off' ? 'var(--ark-error)' : 'var(--ark-text-tertiary)';
-  const variant: 'success' | 'error' | 'default' = regime?.regime === 'risk-on' ? 'success' : regime?.regime === 'risk-off' ? 'error' : 'default';
   const growth = pos?.growth_score ?? 50;
   const inflation = pos?.inflation_score ?? 50;
 
@@ -257,14 +282,22 @@ function RegimeTile({ onOpen }: { onOpen: () => void }) {
               </div>
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Regime</span>
             </div>
-            <Badge variant={variant}>{regimeLabel}</Badge>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full animate-status" style={{ backgroundColor: color }} />
-            <span className="font-[family-name:var(--font-urbanist)] text-lg font-bold" style={{ color }}>
-              {regimeLabel}
-            </span>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full animate-status" style={{ backgroundColor: color }} />
+              <span className="font-[family-name:var(--font-urbanist)] text-xl font-bold" style={{ color }}>
+                {regimeLabel}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[10px] leading-snug text-ark-text-secondary">
+              {regime?.regime === 'risk-on'
+                ? 'Macro backdrop favors risk assets'
+                : regime?.regime === 'risk-off'
+                ? 'Macro backdrop favors defensives'
+                : 'Macro signals are mixed'}
+            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -473,7 +506,7 @@ function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
           <p className="text-[10px] font-semibold text-ark-text-secondary">USD + BTC pair both bullish</p>
 
           <div className="space-y-1.5">
-            {momentum.slice(0, 3).map((p) => (
+            {momentum.slice(0, 4).map((p) => (
               <div key={p.asset} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1">
                 <span className="text-[10px] font-bold text-ark-text flex-1">{p.asset}</span>
                 <span className="rounded-full bg-ark-success/10 px-1.5 py-0.5 text-[8px] font-bold uppercase text-ark-success">USD</span>
@@ -492,7 +525,7 @@ function MomentumMapTile({ onOpen }: { onOpen: () => void }) {
 
 function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
   const { data: assets, isLoading } = useTraditionalMarkets();
-  const top3 = (assets ?? []).slice(0, 3);
+  const rows = (assets ?? []).slice(0, 4);
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-info)">
@@ -504,17 +537,18 @@ function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Trad Markets</span>
           </div>
           <div className="space-y-1.5">
-            {top3.map((asset) => {
+            {rows.map((asset) => {
               const isUp = (asset.price_change_percentage_24h ?? 0) >= 0;
-              const sparkData = asset.sparkline ?? [];
+              const sig = asset.trend_signal;
+              const sigColor = sig === 'Bullish' ? 'bg-ark-success/10 text-ark-success' : sig === 'Bearish' ? 'bg-ark-error/10 text-ark-error' : 'bg-ark-warning/10 text-ark-warning';
               return (
                 <div key={asset.id} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1">
                   <span className="text-[10px] font-bold text-ark-text w-8">{asset.symbol}</span>
-                  <div className="flex-1 h-3">
-                    {sparkData.length > 2 && <Spark data={sparkData} color={isUp ? 'var(--ark-success)' : 'var(--ark-error)'} className="h-3" />}
-                  </div>
+                  {/* iOS parity: trend signal chip instead of empty middle */}
+                  <span className={cn('rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase', sigColor)}>{sig}</span>
+                  <span className="flex-1" />
                   <span className="fig text-[10px] font-bold text-ark-text">{formatCurrency(asset.current_price)}</span>
-                  <span className={cn('fig text-[9px] font-semibold', isUp ? 'text-ark-success' : 'text-ark-error')}>
+                  <span className={cn('fig text-[9px] font-semibold w-11 text-right', isUp ? 'text-ark-success' : 'text-ark-error')}>
                     {formatPercent(asset.price_change_percentage_24h ?? 0)}
                   </span>
                 </div>
@@ -529,8 +563,11 @@ function TradMarketsTile({ onOpen }: { onOpen: () => void }) {
 
 function TopCoinsTile({ onOpen }: { onOpen: () => void }) {
   const { data: assets, isLoading } = useCryptoAssets(1);
-  const movers = (assets ?? []).filter((a) => ['bitcoin', 'ethereum', 'solana'].includes(a.id));
-  const coinColors: Record<string, string> = { btc: '#F7931A', eth: '#627EEA', sol: '#9945FF' };
+  const wanted = ['bitcoin', 'ethereum', 'solana', 'binancecoin', 'ripple'];
+  const movers = (assets ?? [])
+    .filter((a) => wanted.includes(a.id))
+    .sort((a, b) => wanted.indexOf(a.id) - wanted.indexOf(b.id));
+  const coinColors: Record<string, string> = { btc: '#F7931A', eth: '#627EEA', sol: '#9945FF', bnb: '#F3BA2F', xrp: '#23292F' };
 
   return (
     <Tile onClick={onOpen} accentColor="#F7931A">
@@ -570,7 +607,7 @@ function TopCoinsTile({ onOpen }: { onOpen: () => void }) {
 
 function AltcoinScannerTile({ onOpen }: { onOpen: () => void }) {
   const { data: alts, isLoading } = useAltcoinScanner();
-  const top3 = (alts ?? []).slice(0, 3);
+  const top3 = (alts ?? []).slice(0, 4);
 
   return (
     <Tile onClick={onOpen} accentColor="var(--ark-violet)">
@@ -623,7 +660,7 @@ function NewsTile({ onOpen }: { onOpen: () => void }) {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Headlines</span>
           </div>
           <div className="space-y-1.5">
-            {articles.slice(0, 3).map((article, i) => (
+            {articles.slice(0, 4).map((article, i) => (
               <div key={article.id} className={cn(
                 'rounded-lg px-2 py-1',
                 i === 0 ? 'bg-ark-violet/[0.04] border border-ark-violet/10' : 'bg-ark-fill-secondary/30',
@@ -747,6 +784,122 @@ function FundingTile({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+function FuturesTile({ onOpen }: { onOpen: () => void }) {
+  const { data, isLoading } = useUSFutures();
+  const futures = data ?? [];
+  const up = futures.filter((f) => f.change_percent >= 0).length;
+  const bias = futures.length === 0 ? null : up > futures.length - up ? 'bullish' : up < futures.length - up ? 'bearish' : 'mixed';
+  const biasColor = bias === 'bullish' ? 'var(--ark-success)' : bias === 'bearish' ? 'var(--ark-error)' : 'var(--ark-warning)';
+
+  return (
+    <Tile onClick={onOpen} accentColor={biasColor}>
+      <AccentLine color={biasColor} />
+      {isLoading ? <SkeletonListTile /> : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CandlestickChart className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">US Futures</span>
+            </div>
+            {bias && (
+              <Badge variant={bias === 'bullish' ? 'success' : bias === 'bearish' ? 'error' : 'warning'}>
+                {bias === 'bullish' ? 'Bullish' : bias === 'bearish' ? 'Bearish' : 'Mixed'}
+              </Badge>
+            )}
+          </div>
+
+          {/* iOS-style status line */}
+          {bias && (
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full animate-status" style={{ backgroundColor: biasColor }} />
+              <span className="text-[11px] font-semibold" style={{ color: biasColor }}>
+                {bias === 'mixed' ? 'Futures are mixed' : `Futures are ${bias}`}
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            {futures.slice(0, 3).map((f) => {
+              const isUp = f.change_percent >= 0;
+              return (
+                <div key={f.symbol} className="flex items-center gap-2 rounded-lg bg-ark-fill-secondary/40 px-2 py-1.5">
+                  <span className="flex h-5 w-7 items-center justify-center rounded bg-ark-primary/10 text-[8px] font-bold text-ark-primary">{f.symbol}</span>
+                  <span className="text-[10px] font-bold text-ark-text flex-1 truncate">{f.name}</span>
+                  <span className="fig text-[10px] font-bold text-ark-text">
+                    {f.price.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </span>
+                  <span className={cn('fig text-[9px] font-semibold w-12 text-right', isUp ? 'text-ark-success' : 'text-ark-error')}>
+                    {formatPercent(f.change_percent)}
+                  </span>
+                </div>
+              );
+            })}
+            {futures.length === 0 && (
+              <p className="text-[10px] text-ark-text-disabled">Futures data unavailable</p>
+            )}
+          </div>
+        </>
+      )}
+    </Tile>
+  );
+}
+
+function DailyPositioningTile({ onOpen }: { onOpen: () => void }) {
+  const { data: ra, isLoading } = useRiskAppetite();
+  const { data: changes } = useSignalChanges();
+  const changeCount = changes?.length ?? 0;
+  const toneColor = ra?.tone === 'success' ? 'var(--ark-success)' : ra?.tone === 'warning' ? 'var(--ark-warning)' : 'var(--ark-error)';
+
+  return (
+    <Tile onClick={onOpen} accentColor={toneColor}>
+      <AccentLine color={toneColor} />
+      {isLoading || !ra ? <SkeletonListTile /> : (
+        <>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="h-3.5 w-3.5 text-ark-text-tertiary transition-colors duration-300 group-hover:text-ark-primary" />
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">Daily Positioning</span>
+            </div>
+            <span className="fig text-xs font-bold" style={{ color: toneColor }}>
+              {ra.label} {ra.pct}%
+            </span>
+          </div>
+
+          {/* Tri-color distribution bar (iOS Risk Appetite) */}
+          <div className="flex h-[5px] gap-px overflow-hidden rounded-full">
+            <div className="rounded-l-full bg-ark-success transition-all duration-500" style={{ width: `${Math.max(ra.dist.bullish * 100, 2)}%` }} />
+            <div className="bg-ark-warning transition-all duration-500" style={{ width: `${Math.max(ra.dist.neutral * 100, 2)}%` }} />
+            <div className="rounded-r-full bg-ark-error transition-all duration-500" style={{ width: `${Math.max(ra.dist.bearish * 100, 2)}%` }} />
+          </div>
+
+          {/* Bullish / Neutral / Bearish counts */}
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              ['Bullish', ra.counts.bullish, ra.dist.bullish, 'var(--ark-success)'],
+              ['Neutral', ra.counts.neutral, ra.dist.neutral, 'var(--ark-warning)'],
+              ['Bearish', ra.counts.bearish, ra.dist.bearish, 'var(--ark-error)'],
+            ] as const).map(([label, count, share, color]) => (
+              <div key={label} className="rounded-lg bg-ark-fill-secondary/40 py-1.5 text-center">
+                <p className="fig font-[family-name:var(--font-urbanist)] text-lg font-bold leading-none" style={{ color }}>{count}</p>
+                <p className="fig mt-0.5 text-[8px] font-semibold" style={{ color }}>{Math.round(share * 100)}%</p>
+                <p className="text-[8px] font-medium uppercase tracking-wider text-ark-text-tertiary">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-[9px] font-semibold text-ark-warning">
+              <Zap className="h-2.5 w-2.5" />
+              {changeCount} signal change{changeCount === 1 ? '' : 's'} today
+            </span>
+            <span className="text-[9px] text-ark-text-disabled">All {ra.counts.total} assets →</span>
+          </div>
+        </>
+      )}
+    </Tile>
+  );
+}
+
 /* ══════════════════════ BENTO GRID ══════════════════════ */
 
 // rowHeight = 80px. h:2 = 168px (compact), h:3 = 248px (hero)
@@ -755,51 +908,58 @@ const MARKET_DEFAULT_LAYOUTS: ResponsiveLayouts = {
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
     { i: 'fearGreed',       x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
     { i: 'regime',          x: 3, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'sentiment',       x: 0, y: 3,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'macro',           x: 2, y: 3,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'positioning',     x: 0, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'tradMarkets',     x: 2, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'topCoins',        x: 3, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'altcoinScanner',  x: 0, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'news',            x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'retailSentiment', x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'funding',         x: 3, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
-    { i: 'momentumMap',     x: 0, y: 12, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'futures',         x: 0, y: 3,  w: 2, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'dailyPositioning', x: 2, y: 3, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'sentiment',       x: 0, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'macro',           x: 2, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'positioning',     x: 0, y: 9,  w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'tradMarkets',     x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'topCoins',        x: 3, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'altcoinScanner',  x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'news',            x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'retailSentiment', x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'funding',         x: 3, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 4, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 15, w: 2, h: 3, minW: 2, minH: 2, maxW: 4, maxH: 6 },
   ],
   md: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
     { i: 'fearGreed',       x: 2, y: 0,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'regime',          x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'sentiment',       x: 1, y: 3,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'macro',           x: 0, y: 6,  w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'positioning',     x: 2, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'tradMarkets',     x: 0, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'topCoins',        x: 1, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'altcoinScanner',  x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'news',            x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'retailSentiment', x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'funding',         x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
-    { i: 'momentumMap',     x: 0, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'futures',         x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'dailyPositioning', x: 1, y: 3, w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'regime',          x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'sentiment',       x: 1, y: 6,  w: 2, h: 3, minW: 2, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'macro',           x: 0, y: 9,  w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'positioning',     x: 2, y: 9,  w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'tradMarkets',     x: 0, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'topCoins',        x: 1, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'altcoinScanner',  x: 2, y: 12, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'news',            x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'retailSentiment', x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'funding',         x: 2, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 18, w: 2, h: 3, minW: 1, minH: 2, maxW: 3, maxH: 6 },
   ],
   sm: [
     { i: 'marketOverview',  x: 0, y: 0,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'fearGreed',       x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'regime',          x: 1, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'sentiment',       x: 0, y: 6,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'macro',           x: 0, y: 9,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'positioning',     x: 0, y: 12, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'tradMarkets',     x: 0, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'topCoins',        x: 1, y: 15, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'altcoinScanner',  x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'news',            x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'retailSentiment', x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'funding',         x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
-    { i: 'momentumMap',     x: 0, y: 24, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'futures',         x: 0, y: 3,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'dailyPositioning', x: 1, y: 3, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'fearGreed',       x: 0, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'regime',          x: 1, y: 6,  w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'sentiment',       x: 0, y: 9,  w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'macro',           x: 0, y: 12, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'positioning',     x: 0, y: 15, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'tradMarkets',     x: 0, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'topCoins',        x: 1, y: 18, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'altcoinScanner',  x: 0, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'news',            x: 1, y: 21, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'retailSentiment', x: 0, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'funding',         x: 1, y: 24, w: 1, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
+    { i: 'momentumMap',     x: 0, y: 27, w: 2, h: 3, minW: 1, minH: 2, maxW: 2, maxH: 6 },
   ],
 };
 
 const widgetKeys: MarketWidgetKey[] = [
-  'marketOverview', 'fearGreed', 'regime', 'sentiment', 'macro',
+  'marketOverview', 'fearGreed', 'regime', 'futures', 'dailyPositioning',
+  'sentiment', 'macro',
   // 'positioning' (Crypto Positioning) retired from view — component + data kept.
   'momentumMap', 'tradMarkets', 'topCoins', 'altcoinScanner',
   'news', 'retailSentiment', 'funding',
@@ -807,6 +967,8 @@ const widgetKeys: MarketWidgetKey[] = [
 
 const tileComponents: Record<MarketWidgetKey, React.ComponentType<{ onOpen: () => void }>> = {
   marketOverview: MarketOverviewTile,
+  futures: FuturesTile,
+  dailyPositioning: DailyPositioningTile,
   fearGreed: FearGreedTile,
   regime: RegimeTile,
   sentiment: SentimentTile,

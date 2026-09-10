@@ -733,6 +733,7 @@ export interface RiskAppetite {
   tone: 'success' | 'warning' | 'error';
   guidance: string;
   dist: { bullish: number; neutral: number; bearish: number }; // shares 0-1
+  counts: { bullish: number; neutral: number; bearish: number; total: number };
 }
 
 const APPETITE_WEIGHTS: Record<string, number> = {
@@ -779,16 +780,16 @@ export async function fetchRiskAppetite(): Promise<RiskAppetite | null> {
     : 'Most assets are trending down together, a broadly weak backdrop.';
 
   const n = rows.length;
+  const nBull = rows.filter((r) => r.signal === 'bullish').length;
+  const nNeut = rows.filter((r) => r.signal === 'neutral').length;
+  const nBear = rows.filter((r) => r.signal === 'bearish').length;
   return {
     pct: Math.round(pct),
     label,
     tone,
     guidance,
-    dist: {
-      bullish: rows.filter((r) => r.signal === 'bullish').length / n,
-      neutral: rows.filter((r) => r.signal === 'neutral').length / n,
-      bearish: rows.filter((r) => r.signal === 'bearish').length / n,
-    },
+    dist: { bullish: nBull / n, neutral: nNeut / n, bearish: nBear / n },
+    counts: { bullish: nBull, neutral: nNeut, bearish: nBear, total: n },
   };
 }
 
