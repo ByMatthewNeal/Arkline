@@ -1772,20 +1772,22 @@ function FedWatchTile({ onOpen }: { onOpen: () => void }) {
                   const top = outcomes[0];
                   return (
                     <div key={m.meeting_date} className="rounded-lg bg-ark-fill-secondary/40 px-2.5 py-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
-                        <span className={cn('fig rounded-md px-1.5 py-0.5 text-[9px] font-bold', top.cls)}>{top.label} {top.pct}%</span>
-                      </div>
+                      <span className="text-[10px] font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
                       <div className="mt-1.5 flex h-1.5 gap-px overflow-hidden rounded-full bg-ark-fill-secondary">
                         <div className="h-full bg-ark-success" style={{ width: `${m.cut_probability}%` }} />
                         <div className="h-full bg-ark-text-tertiary" style={{ width: `${m.hold_probability}%` }} />
                         <div className="h-full bg-ark-error" style={{ width: `${m.hike_probability}%` }} />
                       </div>
-                      {/* All three numbers inline — no legend decoding needed */}
-                      <div className="fig mt-1 flex items-center justify-between text-[9px] font-semibold">
-                        <span className={m.cut_probability > 0 ? 'text-ark-success' : 'text-ark-text-disabled'}>Cut {m.cut_probability}%</span>
-                        <span className={m.hold_probability > 0 ? 'text-ark-text-tertiary' : 'text-ark-text-disabled'}>Hold {m.hold_probability}%</span>
-                        <span className={m.hike_probability > 0 ? 'text-ark-error' : 'text-ark-text-disabled'}>Hike {m.hike_probability}%</span>
+                      {/* One numbers row — the likeliest outcome carries the weight */}
+                      <div className="fig mt-1 flex items-center justify-between text-[9px]">
+                        {([['Cut', m.cut_probability, 'text-ark-success'], ['Hold', m.hold_probability, 'text-ark-text-tertiary'], ['Hike', m.hike_probability, 'text-ark-error']] as const).map(([label, pct, cls]) => (
+                          <span key={label} className={cn(
+                            pct <= 0 ? 'text-ark-text-disabled' : cls,
+                            label === top.label ? 'font-bold' : 'font-medium opacity-80',
+                          )}>
+                            {label} {pct}%
+                          </span>
+                        ))}
                       </div>
                     </div>
                   );

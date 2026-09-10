@@ -162,12 +162,7 @@ export function FedWatchDetail() {
           const top = [...outcomes].sort((a, b) => b.pct - a.pct)[0];
           return (
             <div key={m.meeting_date} className="rounded-xl border border-ark-divider p-3.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
-                <span className="fig rounded-full px-2.5 py-1 text-xs font-bold" style={{ backgroundColor: `${top.color}1F`, color: top.color }}>
-                  {top.label} {top.pct}%
-                </span>
-              </div>
+              <span className="text-sm font-semibold text-ark-text">{fmt(m.meeting_date)}</span>
 
               {/* The three numbers, big and scannable */}
               <div className="mt-3 grid grid-cols-3 gap-2">
