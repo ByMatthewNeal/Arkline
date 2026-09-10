@@ -16,6 +16,8 @@ import {
   fetchSignalChanges,
   fetchSignalChangeHistory,
   fetchRiskAppetite,
+  fetchWeeklyDeckHistory,
+  fetchWeeklyDeckById,
 } from '@/lib/api/market';
 import { fetchBtcMultiFactor } from '@/lib/api/btc-multi-factor';
 import {
@@ -231,6 +233,19 @@ export function useModelPortfolioUpdate() {
 
 export function useWeeklyDeck() {
   return useQuery({ queryKey: ['weekly-deck'], queryFn: fetchWeeklyDeck, staleTime: 300_000 });
+}
+
+export function useWeeklyDeckHistory() {
+  return useQuery({ queryKey: ['weekly-deck-history'], queryFn: () => fetchWeeklyDeckHistory(), staleTime: 300_000 });
+}
+
+export function useWeeklyDeckById(id: string | null) {
+  return useQuery({
+    queryKey: ['weekly-deck-by-id', id],
+    queryFn: () => fetchWeeklyDeckById(id!),
+    enabled: !!id,
+    staleTime: 600_000,
+  });
 }
 
 export function useUSFutures() {

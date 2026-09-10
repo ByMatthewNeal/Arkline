@@ -924,6 +924,28 @@ export async function fetchModelPortfolioUpdate(): Promise<ModelPortfolioUpdate 
 }
 
 /* ── Weekly Update deck ── (market_update_decks latest published) */
+
+function parseDeckSlides(raw: unknown): DeckSlide[] {
+  if (typeof raw === 'string') {
+    try { raw = JSON.parse(raw); } catch { raw = []; }
+  }
+  const arr = Array.isArray(raw) ? raw : [];
+  return arr.map((s: Record<string, unknown>, i) => {
+    const dataObj = (s.data as Record<string, unknown> | undefined) ?? {};
+    return {
+      id: String(s.id ?? i),
+      type: String(s.type ?? dataObj.type ?? 'slide'),
+      title: String(s.title ?? ''),
+      payload: (dataObj.payload as Record<string, unknown>) ?? {},
+    };
+  });
+}
+
+function deckRowToWeeklyDeck(d: { week_start: string; week_end: string; status: string; slides: unknown }): WeeklyDeck {
+  const slides = parseDeckSlides(d.slides);
+  return { week_start: d.week_start, week_end: d.week_end, slide_count: slides.length, status: d.status, slides };
+}
+
 export async function fetchWeeklyDeck(): Promise<WeeklyDeck | null> {
   if (!isSupabaseConfigured()) return null;
   const supabase = getSupabase();
@@ -937,25 +959,54 @@ export async function fetchWeeklyDeck(): Promise<WeeklyDeck | null> {
     .limit(1);
   const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown } | undefined;
   if (error || !d) return null;
-  let raw = d.slides;
-  if (typeof raw === 'string') {
-    try { raw = JSON.parse(raw); } catch { raw = []; }
-  }
-  const arr = Array.isArray(raw) ? raw : [];
-  const slides: DeckSlide[] = arr.map((s: Record<string, unknown>, i) => {
-    const dataObj = (s.data as Record<string, unknown> | undefined) ?? {};
+  return deckRowToWeeklyDeck(d);
+}
+
+/* Past decks — iOS "Past Updates" parity. Regime + BTC weekly come from each
+   deck's cover-slide payload. */
+export interface WeeklyDeckSummary {
+  id: string;
+  week_start: string;
+  week_end: string;
+  slide_count: number;
+  regime: string | null;         // 'Risk-On' | 'Risk-Off' | 'Mixed' | …
+  btc_weekly_pct: number | null;
+}
+
+export async function fetchWeeklyDeckHistory(limit = 16): Promise<WeeklyDeckSummary[]> {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('market_update_decks')
+    .select('id, week_start, week_end, slides, published_at')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error || !data?.length) return [];
+  return (data as { id: string; week_start: string; week_end: string; slides: unknown }[]).map((d) => {
+    const slides = parseDeckSlides(d.slides);
+    const cover = slides.find((s) => s.type === 'cover')?.payload ?? {};
+    const btc = cover.btc_weekly_change;
     return {
-      id: String(s.id ?? i),
-      type: String(s.type ?? dataObj.type ?? 'slide'),
-      title: String(s.title ?? ''),
-      payload: (dataObj.payload as Record<string, unknown>) ?? {},
+      id: d.id,
+      week_start: d.week_start,
+      week_end: d.week_end,
+      slide_count: slides.length,
+      regime: typeof cover.regime === 'string' ? cover.regime : null,
+      btc_weekly_pct: typeof btc === 'number' ? btc : null,
     };
   });
-  return {
-    week_start: d.week_start,
-    week_end: d.week_end,
-    slide_count: slides.length,
-    status: d.status,
-    slides,
-  };
+}
+
+export async function fetchWeeklyDeckById(id: string): Promise<WeeklyDeck | null> {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('market_update_decks')
+    .select('week_start, week_end, status, slides')
+    .eq('id', id)
+    .limit(1);
+  const d = data?.[0] as { week_start: string; week_end: string; status: string; slides: unknown } | undefined;
+  if (error || !d) return null;
+  return deckRowToWeeklyDeck(d);
 }

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { Badge, Skeleton } from '@/components/ui';
 import { DefineTerm } from '@/components/ui/define-term';
 import { cn, formatPercent } from '@/lib/utils/format';
-import { useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck } from '@/lib/hooks/use-market';
+import { useTradeSignals, useRotationSignal, useModelPortfolioUpdate, useWeeklyDeck, useWeeklyDeckHistory, useWeeklyDeckById } from '@/lib/hooks/use-market';
 import { Spark } from '@/components/dashboard/shared/bento-primitives';
 import type { DeckSlide } from '@/types';
 
@@ -354,9 +354,69 @@ function SlideBody({ slide }: { slide: DeckSlide }) {
   }
 }
 
+/* Past Updates list (iOS parity): regime dot, week range, slide count,
+   BTC weekly move, regime chip. */
+function PastUpdatesList({ onSelect, onBack }: { onSelect: (id: string) => void; onBack: () => void }) {
+  const { data, isLoading } = useWeeklyDeckHistory();
+  const fmtShort = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const regimeMeta = (r: string | null) => {
+    const s = (r ?? '').toLowerCase();
+    if (s.includes('risk-on') || s.includes('risk_on')) return { dot: 'var(--ark-success)', cls: 'bg-ark-success/10 text-ark-success' };
+    if (s.includes('risk-off') || s.includes('risk_off')) return { dot: 'var(--ark-error)', cls: 'bg-ark-error/10 text-ark-error' };
+    return { dot: 'var(--ark-warning)', cls: 'bg-ark-warning/10 text-ark-warning' };
+  };
+
+  return (
+    <div className="space-y-3 pb-4">
+      <button onClick={onBack} className="flex items-center gap-1 text-xs font-medium text-ark-primary hover:text-ark-accent-light">
+        <ChevronLeft className="h-3.5 w-3.5" /> Latest update
+      </button>
+      <h3 className="font-[family-name:var(--font-urbanist)] text-lg font-bold text-ark-text">Past Updates</h3>
+      {isLoading ? (
+        <div className="space-y-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+      ) : (data ?? []).length === 0 ? (
+        <p className="py-8 text-center text-sm text-ark-text-tertiary">No past updates yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {(data ?? []).map((d) => {
+            const m = regimeMeta(d.regime);
+            return (
+              <button key={d.id} onClick={() => onSelect(d.id)}
+                className="flex w-full items-center gap-3 rounded-xl border border-ark-divider p-3 text-left transition-colors hover:bg-ark-fill-secondary/40">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: m.dot }} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-ark-text">{fmtShort(d.week_start)} – {fmtShort(d.week_end)}</p>
+                  <p className="fig text-[11px] text-ark-text-tertiary">
+                    {d.slide_count} slides
+                    {d.btc_weekly_pct != null && (
+                      <> · BTC <span className={cn('font-semibold', d.btc_weekly_pct >= 0 ? 'text-ark-success' : 'text-ark-error')}>{formatPercent(d.btc_weekly_pct)}</span></>
+                    )}
+                  </p>
+                </div>
+                {d.regime && <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold', m.cls)}>{d.regime}</span>}
+                <ChevronRight className="h-4 w-4 shrink-0 text-ark-text-tertiary" />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function WeeklyUpdateDetail() {
-  const { data, isLoading } = useWeeklyDeck();
+  const [view, setView] = useState<'deck' | 'history'>('deck');
+  const [pastId, setPastId] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
+  const { data: latest, isLoading: loadingLatest } = useWeeklyDeck();
+  const { data: pastDeck, isLoading: loadingPast } = useWeeklyDeckById(pastId);
+
+  if (view === 'history') {
+    return <PastUpdatesList onBack={() => setView('deck')} onSelect={(id) => { setPastId(id); setIdx(0); setView('deck'); }} />;
+  }
+
+  const data = pastId ? pastDeck : latest;
+  const isLoading = pastId ? loadingPast : loadingLatest;
   if (isLoading) return <Skeleton className="h-72 w-full" />;
   if (!data) return <p className="py-8 text-center text-sm text-ark-text-tertiary">No deck published yet.</p>;
   const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -367,9 +427,23 @@ export function WeeklyUpdateDetail() {
 
   return (
     <div className="space-y-3 pb-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</span>
-        <span className="rounded-full bg-ark-violet/10 px-2.5 py-0.5 text-[10px] font-semibold capitalize text-ark-violet">{data.status}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          {pastId && (
+            <button onClick={() => { setPastId(null); setIdx(0); }} title="Back to latest"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-ark-fill-secondary text-ark-text-tertiary hover:text-ark-text">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          )}
+          <span className="truncate text-sm font-semibold text-ark-text">{fmt(data.week_start)} – {fmt(data.week_end)}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <button onClick={() => setView('history')}
+            className="flex items-center gap-1 rounded-full bg-ark-fill-secondary px-2.5 py-1 text-[10px] font-semibold text-ark-text-secondary transition-colors hover:text-ark-text">
+            <History className="h-3 w-3" /> Past updates
+          </button>
+          <span className="rounded-full bg-ark-violet/10 px-2.5 py-0.5 text-[10px] font-semibold capitalize text-ark-violet">{data.status}</span>
+        </div>
       </div>
 
       {/* Slide */}
