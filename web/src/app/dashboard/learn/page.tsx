@@ -6,7 +6,14 @@ import { TRAILS, LESSONS, type TrailDifficulty } from '@/lib/learn/content';
 import { useCompletedSet, useLearnPath } from '@/lib/learn/hooks';
 import { cn } from '@/lib/utils/format';
 
-const DIFFICULTY_ORDER: TrailDifficulty[] = ['beginner', 'intermediate', 'advanced'];
+/** iOS Lessons hub sections (path order), not difficulty buckets. Trails
+ *  missing from the local content are skipped gracefully. */
+const SECTIONS: { title: string; keys: string[] }[] = [
+  { title: 'Start Here', keys: ['beforeInvesting', 'foundations'] },
+  { title: 'Core Skills', keys: ['behavioral', 'scams'] },
+  { title: 'By Asset', keys: ['crypto', 'markets', 'hedging'] },
+  { title: 'Going Deeper', keys: ['trading', 'macro', 'fees', 'sizing'] },
+];
 
 const DIFFICULTY_LABEL: Record<TrailDifficulty, string> = {
   beginner: 'Beginner',
@@ -75,61 +82,42 @@ function ContinueCard() {
   );
 }
 
-function TrailCard({ trailKey }: { trailKey: string }) {
+/** iOS-style numbered trail row: 01 · title · tagline · progress/difficulty. */
+function TrailRow({ trailKey, index, isNext }: { trailKey: string; index: number; isNext: boolean }) {
   const trail = TRAILS.find((t) => t.key === trailKey)!;
   const lessons = LESSONS[trailKey] ?? [];
   const completed = useCompletedSet(trailKey);
   const done = lessons.filter((l) => completed.has(l.position)).length;
   const total = lessons.length;
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const finished = total > 0 && done >= total;
 
   return (
     <Link
       href={`/dashboard/learn/${trailKey}`}
-      className="group flex flex-col rounded-2xl border border-ark-divider/60 bg-ark-fill-secondary/40 p-4 transition-colors hover:border-ark-info/50"
+      className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-ark-fill-secondary/40"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
-            {trail.eyebrow}
-          </p>
-          <h3 className="mt-0.5 text-[15px] font-semibold text-ark-text">{trail.navTitle}</h3>
-        </div>
-        {finished ? (
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
-        ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 text-ark-text-tertiary transition-transform group-hover:translate-x-0.5" />
-        )}
+      <span className={cn(
+        'fig w-8 shrink-0 font-[family-name:var(--font-urbanist)] text-xl font-bold',
+        isNext ? 'text-ark-info' : done > 0 ? 'text-ark-text-secondary' : 'text-ark-text-disabled',
+      )}>
+        {String(index).padStart(2, '0')}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-[15px] font-semibold text-ark-text">{trail.navTitle}</h3>
+        <p className="truncate text-[12px] text-ark-text-tertiary">{trail.intro.split('.')[0]}.</p>
       </div>
-
-      <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-ark-text-secondary">
-        {trail.intro}
-      </p>
-
-      {/* Footer pinned to the bottom so cards in a row align cleanly regardless
-          of how long each intro is. */}
-      <div className="mt-auto pt-3">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              'rounded-full px-2 py-0.5 text-[10px] font-semibold',
-              DIFFICULTY_BADGE[trail.difficulty],
-            )}
-          >
-            {DIFFICULTY_LABEL[trail.difficulty]}
-          </span>
-          <span className="text-[11px] text-ark-text-tertiary">
-            {finished ? `${total} lessons · done` : `${done} of ${total} lessons`}
-          </span>
-        </div>
-
-        {done > 0 && !finished && (
-          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-ark-fill-secondary">
-            <div className="h-full rounded-full bg-ark-info" style={{ width: `${pct}%` }} />
-          </div>
-        )}
-      </div>
+      {isNext ? (
+        <span className="shrink-0 rounded-full bg-ark-info px-2.5 py-0.5 text-[10px] font-bold uppercase text-white">Next</span>
+      ) : finished ? (
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
+      ) : done > 0 ? (
+        <span className="fig shrink-0 text-[12px] font-semibold text-ark-info">{done}/{total}</span>
+      ) : (
+        <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold', DIFFICULTY_BADGE[trail.difficulty])}>
+          {DIFFICULTY_LABEL[trail.difficulty]}
+        </span>
+      )}
+      <ChevronRight className="h-4 w-4 shrink-0 text-ark-text-tertiary transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }

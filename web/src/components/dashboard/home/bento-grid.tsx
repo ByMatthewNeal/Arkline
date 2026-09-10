@@ -6,7 +6,7 @@ import {
   PieChart, Calendar, Star, Bell, Newspaper, ArrowUpRight,
   ArrowDownRight, TrendingUp, TrendingDown, Clock, Repeat,
   SlidersHorizontal, RotateCcw, ChevronDown, ChevronRight,
-  Eye, EyeOff, GraduationCap,
+  Eye, EyeOff, GraduationCap, X,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -2209,6 +2209,47 @@ function VitalsRail() {
   );
 }
 
+/** Learn nudge under the portfolio hero — iOS home banner parity
+ *  ("First things first: Before You Invest ›" with a dismiss ×).
+ *  Dismissing hides it for the CURRENT next lesson only; it returns
+ *  when a new lesson is up next. */
+function LearnBanner() {
+  const router = useRouter();
+  const { next, done, mounted } = useLearnPath();
+  const [dismissed, setDismissed] = useState<string | null>(() =>
+    typeof window === 'undefined' ? null : localStorage.getItem('arkline-learn-banner-dismissed'),
+  );
+  if (!mounted || !next) return null;
+  const key = `${next.trailKey}:${next.position}`;
+  if (dismissed === key) return null;
+  const trail = TRAILS.find((t) => t.key === next.trailKey);
+
+  return (
+    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-ark-info/25 bg-ark-info/[0.05] p-3 pl-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ark-info text-white">
+        <GraduationCap className="h-4.5 w-4.5" />
+      </div>
+      <button
+        onClick={() => router.push(`/dashboard/learn/${next.trailKey}?open=1`)}
+        className="min-w-0 flex-1 text-left"
+      >
+        <p className="truncate text-sm font-semibold text-ark-text">
+          {done === 0 ? 'First things first' : 'Pick up where you left off'}: {trail?.navTitle ?? 'Learn'}
+        </p>
+        <p className="truncate text-xs text-ark-text-tertiary">{next.title}</p>
+      </button>
+      <ChevronRight className="h-4 w-4 shrink-0 text-ark-text-tertiary" />
+      <button
+        onClick={() => { localStorage.setItem('arkline-learn-banner-dismissed', key); setDismissed(key); }}
+        aria-label="Dismiss"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ark-text-disabled transition-colors hover:bg-ark-fill-secondary hover:text-ark-text-secondary"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 function BriefingHero({ greetingLine, date }: { greetingLine: string; date: string }) {
   const { data: briefing, isLoading } = useMarketBriefing();
   const { data: positioning } = useCryptoPositioning();
@@ -2367,6 +2408,7 @@ export function BentoGrid() {
       </div>
 
       <PortfolioHero />
+      <LearnBanner />
 
       <BriefingHero
         greetingLine={`${header.greeting || 'Welcome'}${name ? `, ${name}` : ''}. Here's your daily briefing.`}
