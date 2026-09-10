@@ -122,6 +122,42 @@ function TrailRow({ trailKey, index, isNext }: { trailKey: string; index: number
   );
 }
 
+/** Numbered sections need the "next" trail from the guided path. */
+function SectionList() {
+  const { next, mounted } = useLearnPath();
+  // Precompute each section's visible keys and running start index (pure —
+  // no reassignment during render).
+  const sections = SECTIONS.map((s) => ({
+    ...s,
+    keys: s.keys.filter((k) => TRAILS.some((t) => t.key === k)),
+  }));
+  const starts = sections.reduce<number[]>(
+    (acc, s, i) => [...acc, (acc[i] ?? 0) + s.keys.length],
+    [0],
+  );
+  return (
+    <>
+      {sections.map((section, i) => {
+        const { keys } = section;
+        if (!keys.length) return null;
+        const start = starts[i];
+        return (
+          <section key={section.title} className="space-y-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
+              {section.title}
+            </h2>
+            <div className="divide-y divide-ark-divider/60 overflow-hidden rounded-2xl border border-ark-divider/60 bg-ark-card">
+              {keys.map((k, j) => (
+                <TrailRow key={k} trailKey={k} index={start + j + 1} isNext={mounted && next?.trailKey === k} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
 export default function LearnPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -143,23 +179,8 @@ export default function LearnPage() {
       {/* Guided-path continue card */}
       <ContinueCard />
 
-      {/* Trails grouped by difficulty */}
-      {DIFFICULTY_ORDER.map((diff) => {
-        const trails = TRAILS.filter((t) => t.difficulty === diff);
-        if (trails.length === 0) return null;
-        return (
-          <section key={diff} className="space-y-3">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-ark-text-tertiary">
-              {DIFFICULTY_LABEL[diff]}
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {trails.map((t) => (
-                <TrailCard key={t.key} trailKey={t.key} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      {/* iOS Lessons hub: numbered path sections (Start Here → Going Deeper) */}
+      <SectionList />
 
       <p className="pb-4 text-center text-[11px] leading-relaxed text-ark-text-disabled">
         Educational content only — not financial advice. Always do your own research.
